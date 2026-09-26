@@ -146,6 +146,26 @@ pub fn capture_world_project(
     }
 }
 
+/// Capture and qualify the one native entry-room project (`NATIVE_ENTRY_SOURCE_QUALIFICATION_V1`).
+///
+/// The native variant is selected before any document is parsed and captured under the fixed
+/// `PREPRODUCTION_FIRST_SLICE` limits of `native_entry_first_slice_limits()` (#940 §4); callers do
+/// not choose limits. Ordinary [`capture_world_project`] refuses this variant.
+pub fn capture_native_entry_project(
+    ambient_parent: &Path,
+    root_basename: &OsStr,
+) -> Result<crate::content::NativeEntryProject, ProjectFilesystemError> {
+    #[cfg(target_os = "linux")]
+    {
+        linux::capture_native_entry(ambient_parent, root_basename)
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = (ambient_parent, root_basename);
+        Err(ProjectFilesystemError::UnsupportedPlatform)
+    }
+}
+
 /// Durably publish one complete canonical project revision.
 ///
 /// The caller-selected limits remain evidence limits rather than production maxima. On Linux the
@@ -197,7 +217,7 @@ mod linux {
         ProjectRecoveryOutcome,
     };
     use crate::content::project::{
-        LOCK_LOCATOR, MANIFEST_LOCATOR, PROJECT_LOCATOR, ProjectCapturePlan,
+        LOCK_LOCATOR, MANIFEST_LOCATOR, PROJECT_LOCATOR, ProjectAdmission, ProjectCapturePlan,
     };
     use crate::content::{
         CanonicalProjectDocuments, ProjectEvidenceLimits, ProjectSnapshot, WorldProject,
@@ -301,6 +321,7 @@ mod linux {
     struct CapturedProject {
         project: WorldProject,
         root_digest: String,
+        native_entry: Option<crate::content::NativeEntryProject>,
     }
 
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -434,14 +455,36 @@ mod linux {
         validate_root_basename(root_basename)?;
         let parent = Dir::open_ambient_dir(ambient_parent, ambient_authority())
             .map_err(|source| io_error("open ambient parent", "<project-parent>", source))?;
-        capture_in_parent(&parent, root_basename, limits)
+        capture_in_parent(&parent, root_basename, limits, ProjectAdmission::Ordinary)
+            .map(|captured| captured.project)
+    }
+
+    pub(super) fn capture_native_entry(
+        ambient_parent: &Path,
+        root_basename: &OsStr,
+    ) -> Result<crate::content::NativeEntryProject, ProjectFilesystemError> {
+        let limits = crate::content::native_entry_first_slice_limits().validate()?;
+        validate_root_basename(root_basename)?;
+        let parent = Dir::open_ambient_dir(ambient_parent, ambient_authority())
+            .map_err(|source| io_error("open ambient parent", "<project-parent>", source))?;
+        capture_in_parent(
+            &parent,
+            root_basename,
+            limits,
+            ProjectAdmission::NativeEntry,
+        )?
+        .native_entry
+        .ok_or(ProjectFilesystemError::Project(
+            crate::content::ProjectError::InvalidProject("native entry capture missing"),
+        ))
     }
 
     fn capture_in_parent(
         parent: &Dir,
         root_basename: &OsStr,
         limits: ProjectFilesystemLimits,
-    ) -> Result<WorldProject, ProjectFilesystemError> {
+        admission: ProjectAdmission,
+    ) -> Result<CapturedProject, ProjectFilesystemError> {
         let mut scans = ScanBudget::new(limits);
         let root_entry = exact_entry_metadata(parent, root_basename, "<project-root>", &mut scans)?;
         let root = parent.open_dir_nofollow(root_basename).map_err(|source| {
@@ -463,7 +506,7 @@ mod linux {
             ));
         }
 
-        capture_open_root(&root, limits, &mut scans, None).map(|captured| captured.project)
+        capture_open_root(&root, limits, &mut scans, None, admission)
     }
 
     fn capture_open_root(
@@ -471,6 +514,7 @@ mod linux {
         limits: ProjectFilesystemLimits,
         scans: &mut ScanBudget,
         durable_plan: Option<&TreePlan>,
+        admission: ProjectAdmission,
     ) -> Result<CapturedProject, ProjectFilesystemError> {
         let plan_index = durable_plan.map(index_tree_plan).transpose()?;
         let mut identities = BTreeSet::new();
@@ -497,11 +541,12 @@ mod linux {
             control_bytes.insert(locator, bytes);
         }
         let root_digest = world_project_sha256(&control_bytes[PROJECT_LOCATOR]);
-        let plan = ProjectCapturePlan::from_control_documents(
+        let plan = ProjectCapturePlan::from_control_documents_for(
             &control_bytes[PROJECT_LOCATOR],
             &control_bytes[MANIFEST_LOCATOR],
             &control_bytes[LOCK_LOCATOR],
             limits.project,
+            admission,
         )?;
 
         let mut documents = control_bytes;
@@ -529,12 +574,18 @@ mod linux {
             documents.insert(expected.locator.clone(), bytes);
         }
 
-        let project = ProjectSnapshot::new(documents, limits.project)?
-            .parse(limits.project)
-            .map_err(ProjectFilesystemError::from)?;
+        let snapshot = ProjectSnapshot::new(documents, limits.project)?;
+        let (project, native_entry) = match admission {
+            ProjectAdmission::Ordinary => (snapshot.parse(limits.project)?, None),
+            ProjectAdmission::NativeEntry => {
+                let native = snapshot.parse_native_entry()?;
+                (native.project().clone(), Some(native))
+            }
+        };
         Ok(CapturedProject {
             project,
             root_digest,
+            native_entry,
         })
     }
 
@@ -626,7 +677,8 @@ mod linux {
             &mut ScanBudget::new(limits),
         )?;
         let (previous, previous_digest) = if previous_identity.is_some() {
-            let captured = capture_in_parent(&parent, root_basename, limits)?;
+            let captured =
+                capture_in_parent(&parent, root_basename, limits, ProjectAdmission::Ordinary)?;
             let (locators, digest) = existing_locators_and_digest(&parent, root_basename, limits)?;
             let plan = scan_exact_tree(&parent, root_basename, &locators, limits)?;
             if Some(plan.root) != previous_identity {
@@ -2210,7 +2262,13 @@ mod linux {
 
         verify_tree_complete_open_root(&root, plan, limits)?;
         observer(RoleVerificationCheckpoint::IdentityPlanVerified)?;
-        let captured = capture_open_root(&root, limits, &mut root_scans, Some(plan))?;
+        let captured = capture_open_root(
+            &root,
+            limits,
+            &mut root_scans,
+            Some(plan),
+            ProjectAdmission::Ordinary,
+        )?;
         observer(RoleVerificationCheckpoint::CanonicalCaptureComplete)?;
         if captured.root_digest != expected_root_digest {
             return Err(conflict(
@@ -3480,8 +3538,13 @@ mod linux {
                     .expect("restore corrupted planned child to the live tree");
                 }
                 assert!(
-                    capture_in_parent(&parent, OsStr::new("project-root"), publication_limits(),)
-                        .is_err(),
+                    capture_in_parent(
+                        &parent,
+                        OsStr::new("project-root"),
+                        publication_limits(),
+                        ProjectAdmission::Ordinary,
+                    )
+                    .is_err(),
                     "the corrupt live tree remains unverifiable"
                 );
                 assert!(
