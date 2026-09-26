@@ -50,6 +50,7 @@ use durability::native_admission_source::{
     DescriptorRegistration, FreshStoreProvenance, NativeSourceOperation, NativeSourceSubject,
     SourceObservation,
 };
+use durability::recovery_evidence_composition::RecoveryEvidenceSubject;
 use durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
@@ -63,7 +64,7 @@ use foundation::admission_authority_publication::{
     AdmissionPublicationSourceV1, FreshAdmissionClaimTransitionV1,
 };
 use foundation::fnd04_verifier::{
-    FreshDurabilityCurrentAuthorityV1, FreshDurabilityTrustContext,
+    FreshDurabilityCurrentAuthorityV1, FreshDurabilityTrustContext, RecoveryCurrentEvidence,
     verify_fresh_grant_durability_v1,
 };
 use foundation::fresh_admission_durability::{
@@ -200,7 +201,8 @@ async fn fetch_real(
         Request::Trust {
             recovery: false, ..
         } => Operation::ReadFreshSigningTrustV1,
-        _ => return Err("recovery operations are outside fresh admission".into()),
+        Request::Account { recovery: true, .. } => Operation::ReadRecoveryAccountSecurityV2,
+        Request::Trust { recovery: true, .. } => Operation::ReadRecoverySigningTrustV2,
     };
     let encoded = encode_request(&request).map_err(|_| "request encoding")?;
     let raw =
@@ -286,6 +288,162 @@ async fn ingest(
         minimum_valid_generation,
         account.source_observed_at.max(trust.source_observed_at),
     ))
+}
+
+/// Real mTLS Recovery V2 -> acknowledged S2 -> locked sealed V2 verifier.
+/// The expected credential bindings are inert synthetic fixture context.
+async fn qualify_registered_recovery(
+    root: &DurabilityRoot,
+    custody: &NodeIncarnationProof,
+    descriptor: &ProducerDescriptor,
+    account_id: &str,
+    database_url: &str,
+) -> TestResult {
+    let before = authority_snapshot(database_url).await?;
+    let key_id = required("WP5_S3B_RECOVERY_KEY_ID")?;
+    let signing = SigningKey::from_bytes(&hex32(&required("WP5_S3B_RECOVERY_KEY_SEED")?)?);
+    let public_key = hex32(&required("WP5_S3B_RECOVERY_PUBLIC_KEY")?)?;
+    if signing.verifying_key().to_bytes() != public_key {
+        return Err("ephemeral Recovery signing key mismatch".into());
+    }
+    let (account, account_raw) = fetch_real(
+        descriptor,
+        Request::Account {
+            recovery: true,
+            account_id,
+            purpose: "platform_security",
+            scope: "existing_actor_recovery",
+        },
+    )
+    .await?;
+    let (trust, trust_raw) = fetch_real(
+        descriptor,
+        Request::Trust {
+            recovery: true,
+            key_id: &key_id,
+            key_purpose: "existing_actor_recovery",
+        },
+    )
+    .await?;
+    let Facts::Account {
+        allowed: true,
+        minimum_valid_generation,
+    } = account.facts
+    else {
+        return Err("real Recovery account is not allowed".into());
+    };
+    if trust.facts
+        != (Facts::Trust {
+            trusted: true,
+            public_key,
+        })
+    {
+        return Err("real Recovery fixed-purpose key mismatch".into());
+    }
+    for (operation, subject, observation, raw) in [
+        (
+            NativeSourceOperation::ReadRecoveryAccountSecurityV2,
+            NativeSourceSubject::account_security(account_id)?,
+            account,
+            account_raw,
+        ),
+        (
+            NativeSourceOperation::ReadRecoverySigningTrustV2,
+            NativeSourceSubject::signing_trust(
+                "urn:oteryn:platform:game-recovery",
+                "oteryn-reauth-recovery-v1",
+                "existing_actor_recovery",
+                &key_id,
+            )?,
+            trust,
+            trust_raw,
+        ),
+    ] {
+        root.accept_native_source_observation(
+            custody,
+            SourceObservation {
+                source_authority: SOURCE_AUTHORITY.into(),
+                operation,
+                subject,
+                source_revision: observation.source_revision,
+                decision_identity: observation.decision_identity.as_str().into(),
+                observed_at: observation.source_observed_at,
+                semantic_facts: raw,
+            },
+        )
+        .await?;
+    }
+    let current = RecoveryCurrentEvidence {
+        account_id: account_id.into(),
+        character_id: CharacterId::decode(&v7(7, 2)).map_err(|e| format!("{e:?}"))?,
+        world_id: WorldId::decode(&v7(1, 2)).map_err(|e| format!("{e:?}"))?,
+        ruleset_revision: "rules-s3b-1".into(),
+        content_revision: "content-s3b-1".into(),
+        map_revision: "map-s3b-1".into(),
+        world_policy_revision: "policy-s3b-1".into(),
+    };
+    let now = now_seconds()?;
+    let header = serde_json::json!({"alg":"Ed25519","kid":key_id,"typ":"oteryn-recovery+jwt"});
+    let payload = serde_json::json!({
+        "iss":"urn:oteryn:platform:game-recovery","aud":"urn:oteryn:game:recovery",
+        "iat":now,"nbf":now,"exp":now+10,"jti":URL_SAFE_NO_PAD.encode([7;32]),
+        "profile":"oteryn-reauth-recovery-v1","purpose":"existing_actor_recovery",
+        "attempt_ref":uuid_text(&v7(7,4)),"account_id":account_id,
+        "character_id":uuid_text(current.character_id.as_bytes()),"world_id":uuid_text(current.world_id.as_bytes()),
+        "account_security_generation":minimum_valid_generation.to_string(),"protocol_major":1,"transport_profile":1,
+        "ruleset_revision":"rules-s3b-1","content_revision":"content-s3b-1","map_revision":"map-s3b-1","world_policy_revision":"policy-s3b-1"
+    });
+    let input = format!(
+        "{}.{}",
+        URL_SAFE_NO_PAD.encode(header.to_string()),
+        URL_SAFE_NO_PAD.encode(payload.to_string())
+    );
+    let token = format!(
+        "{input}.{}",
+        URL_SAFE_NO_PAD.encode(signing.sign(input.as_bytes()).to_bytes())
+    );
+    let subject = RecoveryEvidenceSubject::new(account_id, &key_id)?;
+    let verified = root
+        .verify_registered_recovery(custody, &subject, &token, &current)
+        .await?
+        .map_err(|e| format!("Recovery verify: {e:?}"))?;
+    if verified.security().provenance.source_revision != account.source_revision
+        || verified.signing().provenance.source_revision != trust.source_revision
+        || verified.security().provenance.source_observed_at != account.source_observed_at
+        || verified.signing().provenance.source_observed_at != trust.source_observed_at
+        || verified.security().provenance.publication_revision != account.source_revision
+        || verified.signing().provenance.publication_revision != trust.source_revision
+    {
+        return Err("Recovery source provenance changed at sealed projection".into());
+    }
+    root.revalidate_registered_recovery(custody, &verified, &current)
+        .await?
+        .map_err(|e| format!("Recovery revalidate: {e:?}"))?;
+    if authority_snapshot(database_url).await? != before {
+        return Err(
+            "Recovery credential check changed existing authority or publication slot state".into(),
+        );
+    }
+    evidence(
+        "recovery_v2=real_mtls_s2_sealed_verify_revalidate source_time=preserved publication=scoped_ordinal_projection authority_mutations=0",
+    );
+    Ok(())
+}
+
+async fn authority_snapshot(database_url: &str) -> TestResult<String> {
+    let mut connection = sqlx::PgConnection::connect(database_url).await?;
+    // Fixed qualification tables: session/controller, account/Character leases,
+    // persisted grace/protection and a deliberately occupied source slot.
+    let snapshot = sqlx::query_scalar(
+        "SELECT jsonb_build_object( \
+         'sessions',(SELECT coalesce(jsonb_agg(to_jsonb(s) ORDER BY game_session_id),'[]'::jsonb) FROM game_durability_reconnect_sessions s), \
+         'accounts',(SELECT coalesce(jsonb_agg(to_jsonb(a) ORDER BY account_id),'[]'::jsonb) FROM game_durability_admission_account_guards a), \
+         'characters',(SELECT coalesce(jsonb_agg(to_jsonb(c) ORDER BY character_id),'[]'::jsonb) FROM game_durability_admission_character_guards c), \
+         'continuity',(SELECT coalesce(jsonb_agg(to_jsonb(p) ORDER BY character_id,control_loss_epoch),'[]'::jsonb) FROM game_durability_control_loss_continuity p), \
+         'source_slots',(SELECT coalesce(jsonb_agg(to_jsonb(x) ORDER BY slot_id),'[]'::jsonb) FROM game_durability_native_source_publication_slots x))::text",
+    ).fetch_one(&mut connection).await?;
+    connection.close().await?;
+    Ok(snapshot)
 }
 
 // Runtime readiness producer for the holder: the ownership generation is the
@@ -731,6 +889,10 @@ fn composition_flow(
                 other => return Err(format!("admission 1 not committed: {other:?}").into()),
             }
             evidence("fresh_admission=committed account=1 holder=A sources=platform_s2,character_414,runtime_415");
+            let slot_binding = vec![0x71];
+            let occupied_slot = root.checkpoint_native_source_publication(&node_a,slot_binding.clone(),now_seconds()?).await?;
+            qualify_registered_recovery(&root, &node_a, descriptor, &accounts[0], &url).await?;
+            root.clear_native_source_publication(&node_a,occupied_slot,slot_binding).await?;
 
             // Prepare a second admission on A, then replace A before it commits.
             let subject_two = FreshAdmissionSubject {
