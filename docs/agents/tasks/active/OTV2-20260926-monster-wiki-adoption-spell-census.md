@@ -4,12 +4,12 @@
 task_id: OTV2-20260926-monster-wiki-adoption-spell-census
 title: Adopt reference-date wiki values and census Canary monster spell scripts
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 947
 jira: KAN-16
 base_sha: bbfdfdbfb92edae587fc1ec4c556ab1bf20b16b8
 head_sha: null
