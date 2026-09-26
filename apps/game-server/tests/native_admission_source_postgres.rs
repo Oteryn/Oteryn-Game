@@ -1530,7 +1530,9 @@ fn recovery_verification_and_s2_denial_serialize_at_registration()
             let acknowledgement=tokio::spawn(async move { writer.accept_native_source_observation(&proof,recovery_account(2,now,false)).await });
             tokio::time::timeout(durability::DB_PASS_DEADLINE,async {
                 loop {
-                    let waiting:i64=sqlx::query_scalar("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND pg_backend_pid()=ANY(pg_blocking_pids(pid))").fetch_one(&mut blocker).await?;
+                    // The second request can wait on the first request's tuple
+                    // lock. Both chains must reach this registration-lock holder.
+                    let waiting:i64=sqlx::query_scalar("SELECT count(*) FROM pg_stat_activity activity WHERE datname=current_database() AND EXISTS (SELECT 1 FROM unnest(pg_blocking_pids(activity.pid)) AS dependency(blocker_pid) WHERE dependency.blocker_pid=pg_backend_pid() OR pg_backend_pid()=ANY(pg_blocking_pids(dependency.blocker_pid)))").fetch_one(&mut blocker).await?;
                     if waiting==2 {break;}
                     tokio::task::yield_now().await;
                 }
