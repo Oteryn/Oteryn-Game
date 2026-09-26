@@ -79,6 +79,6 @@ The final successor only archives this packet and records the qualification;
 it must preserve the five Rust blobs byte-for-byte, pass the document-aware
 validators on its exact SHA and receive hosted exact-head CI plus independent
 review. Before freeze, the branch was merged up to
-`main@e9d437f5a3bc7b4e48eb47d992564e2956aa86c0`; those upstream changes are
+`main@d6c6c18eb1690208213b8871a30c992681ee4f2d`; those upstream changes are
 path-disjoint from this task. No production or process-restart claim is made.
 Merge Queue and protected-main readback remain control-plane owned.
