@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:oteryn:monster-import-readiness:proposal:1",
-  "title": "Monster import disposition manifest proposal v1",
+  "$id": "urn:oteryn:monster-import-readiness:proposal:2",
+  "title": "Monster import disposition manifest proposal v2",
   "type": "object",
   "additionalProperties": false,
   "properties": {
