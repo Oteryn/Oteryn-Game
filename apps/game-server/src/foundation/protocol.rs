@@ -854,6 +854,31 @@ fn validate_client_command_ingress(payload: &[u8]) -> Result<(), FoundationProto
     Ok(())
 }
 
+fn validate_liveness_ack_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let mut probe_id = None;
+    let mut last_applied_server_sequence = None;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match field {
+            1 => read_singular_varint(payload, &mut cursor, wire, &mut probe_id)?,
+            2 => read_singular_varint(
+                payload,
+                &mut cursor,
+                wire,
+                &mut last_applied_server_sequence,
+            )?,
+            _ => skip_field(payload, &mut cursor, wire)?,
+        }
+    }
+    if probe_id.is_none_or(|id| id == 0) {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    Ok(())
+}
+
 fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
     let mut cursor = 0usize;
     let mut revision_count = 0usize;
@@ -1101,6 +1126,7 @@ fn validate_client_ingress_payload(
         MessageType::ClientBootstrap | MessageType::ClientResume => {
             validate_bootstrap_ingress(message_type, payload).map(|_| ())
         }
+        MessageType::LivenessAck => validate_liveness_ack_ingress(payload),
         MessageType::ClientCommand => validate_client_command_ingress(payload),
         MessageType::ResyncRequest => validate_resync_request_ingress(payload),
         _ => Ok(()),
@@ -2187,6 +2213,47 @@ mod tests {
             Err(FoundationProtocolError::StateRevisionMismatch)
         );
         Ok(())
+    }
+
+    #[test]
+    fn liveness_ack_requires_one_nonzero_probe_and_validates_optional_diagnostic() {
+        for payload in [
+            vec![0x08, 0x01],
+            vec![0x08, 0x01, 0x10, 0x00],
+            vec![0x10, 0x2a, 0x08, 0x01],
+            vec![0x08, 0x01, 0x18, 0x07], // additive unknown varint
+            vec![0x08, 0x01, 0x22, 0x01, 0xff], // additive unknown bytes
+            vec![
+                0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x01,
+            ],
+        ] {
+            assert!(decode_wire_envelope(&test_envelope(6, &payload)).is_ok());
+        }
+
+        for payload in [
+            vec![],
+            vec![0x10, 0x01],
+            vec![0x08, 0x00],
+            vec![0x08, 0x01, 0x08, 0x02],
+            vec![0x08, 0x01, 0x10, 0x01, 0x10, 0x02],
+            vec![0x0a, 0x01, 0x01],
+            vec![0x08, 0x01, 0x12, 0x01, 0x01],
+            vec![0x08],
+            vec![0x08, 0x80],
+            vec![
+                0x08, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02,
+            ],
+            vec![
+                0x08, 0x01, 0x10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02,
+            ],
+            vec![0x08, 0x01, 0x1a, 0x02, 0x01], // truncated unknown bytes
+        ] {
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(6, &payload)),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "payload: {payload:?}"
+            );
+        }
     }
 
     #[test]
