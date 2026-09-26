@@ -203,6 +203,9 @@ def loot_chances(source, stats):
         if names.count(name) > 1:
             row['status'] = 'MULTI_ENTRY'
             row['note'] = 'Canary splits this item over several entries; the wiki counts kills with any drop, so they are not compared.'
+        elif wiki is not None and not 0 <= wiki['times'] <= stats['kills']:
+            row.update(status='INVALID_STATISTICS', times=wiki['times'], kills=stats['kills'],
+                       note='Wiki drop count exceeds the kill count of the block.')
         elif wiki is None:
             row.update(status='NOT_OBSERVED', times=0, kills=stats['kills'], interval_95_wilson=wilson(0, stats['kills']),
                        note='Not listed in the highest-version block.')
@@ -233,7 +236,7 @@ def wiki_loot(value):
 
 
 def compare(relative, canary, _batch_dir, cache):
-    name, source, _ = cb.load_monster(canary / cb.MONSTER_DIR / (relative + '.lua'))
+    name, source, _ = cb.load_monster(canary / cb.MONSTER_DIR / (relative + '.lua'), [])
     slug = cb.slug(name)
     # Compare the plain Canary conversion, never a bundle that already carries adopted wiki values.
     cb.CONVERTER.wiki, cb.CONVERTER.pending_definitions = {}, set()
@@ -329,6 +332,7 @@ def compare(relative, canary, _batch_dir, cache):
 
 
 def totals(results):
+    """Totals over full results (before compact())."""
     summary, chances, confidence, fields = {}, {}, {}, {}
     for result in results:
         for entry in result.get('rows', []):
@@ -350,11 +354,18 @@ def compact(result):
     for entry in result.get('rows', []):
         counts[entry['status']] = counts.get(entry['status'], 0) + 1
     out['row_counts'] = dict(sorted(counts.items()))
-    out['rows'] = [r for r in result.get('rows', []) if r['status'] != 'MATCH']
+    out['rows'] = [r for r in result.get('rows', []) if r['status'] == 'DIFF']
     stats = result.get('loot_statistics')
     if stats:
         out['loot_statistics'] = {k: v for k, v in stats.items() if k != 'items'}
-    out['loot_chances'] = [c for c in result.get('loot_chances', []) if c['status'] != 'CONSISTENT']
+    chance_counts = {}
+    for entry in result.get('loot_chances', []):
+        chance_counts[entry['status']] = chance_counts.get(entry['status'], 0) + 1
+    if chance_counts:
+        out['loot_chance_counts'] = dict(sorted(chance_counts.items()))
+    keep = ('item', 'status', 'confidence', 'canary_percent', 'wiki_percent', 'interval_95_wilson', 'times', 'kills', 'wiki_line')
+    out['loot_chances'] = [{k: c[k] for k in keep if k in c} for c in result.get('loot_chances', [])
+                           if c['status'] in ('DIFF', 'NOT_OBSERVED', 'INVALID_STATISTICS')]
     return out
 
 
@@ -375,7 +386,7 @@ def main():
         for path in sorted((args.canary / cb.MONSTER_DIR).rglob('*.lua')):
             relative = str(path.relative_to(args.canary / cb.MONSTER_DIR))[:-4]
             try:
-                results.append(compact(compare(relative, args.canary, None, args.cache)))
+                results.append(compare(relative, args.canary, None, args.cache))
             except Exception as exc:  # files the converter cannot convert (see population_census.py)
                 skipped.append({'file': relative, 'error': f'{type(exc).__name__}: {str(exc).splitlines()[0][:100]}'})
         out = ROOT / 'samples' / 'wiki-population-2026-07-28.json'
@@ -386,6 +397,8 @@ def main():
     statuses = {}
     for result in results:
         statuses[result['status']] = statuses.get(result['status'], 0) + 1
+    if args.population:
+        results = [compact(result) for result in results]
     report = {'source': 'TibiaWiki (Fandom), CC BY-SA; only compared facts are recorded', 'api': API,
               'target_cut': TARGET_CUT, 'cut_rule': f'last revision at or before {CUT_TIMESTAMP}',
               'classification': 'Wiki = player-observed reference evidence; Canary = OTS_HYPOTHESIS_ONLY',
@@ -394,7 +407,8 @@ def main():
                                   f'fewer than {LOW_CONFIDENCE_DROPS} drops is low_confidence. CONSISTENT = Canary inside the interval',
               'loot_chance_totals': chances, 'loot_chance_confidence': confidence}
     if args.population:
-        report.update({'scope': 'Every convertible Canary monster file; rows and loot chances that match are only counted.',
+        report.update({'scope': 'Every convertible Canary monster file. Per monster only DIFF rows and non-consistent loot '
+                                'chances are listed; MATCH, WIKI_UNKNOWN and CONSISTENT are counted.',
                        'monster_status_totals': dict(sorted(statuses.items())), 'diff_fields': fields, 'not_converted': skipped})
     report['monsters'] = results
     out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
