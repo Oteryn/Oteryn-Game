@@ -4,11 +4,11 @@
 task_id: OTV2-20260926-monster-batch2-current-wiki
 title: Replace historical monster Wiki comparison with current source observations
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: claude/nice-edison-h9aqh0
 branch: codex/current-monster-wiki-20260926
-pr: null
+pr: 945
 issue: 162
 jira: KAN-16
 base_sha: f6d7dbf813aab16276bdb0a2abb2f8a3e685aee9
@@ -80,7 +80,7 @@ exclusive branch. No local push, force/reset/rebase or frozen-head write.
 
 ## Context checkpoint
 
-AUTHORING: bind the canonical PR number before freeze. After qualification, publish
+Final AUTHORING metadata write binds canonical PR #945; freeze the returned SHA. After qualification, publish
 exact-head evidence in PR metadata without another source write. The stacked PR
 depends on #943; protected-main qualification and integration must follow repository
 rules when that dependency is integrated. Jira KAN-16 remains aggregate W toku.
