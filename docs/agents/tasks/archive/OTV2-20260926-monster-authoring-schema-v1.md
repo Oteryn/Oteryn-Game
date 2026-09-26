@@ -4,7 +4,7 @@
 task_id: OTV2-20260926-monster-authoring-schema-v1
 title: Admit the monster authoring schema as a v1 candidate
 mode: CONTRACT
-status: completed
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 938
 jira: KAN-16
 base_sha: 3b578bc5b35e40fbff70fbe5758079fdbed6a3c0
-head_sha: 71deb830ac927fd3a49757f76b1463ad55bf3a23
-final_head_sha: 71deb830ac927fd3a49757f76b1463ad55bf3a23
+head_sha: null
+final_head_sha: null
 final_head_frozen_at: null
-owner: released
+owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
 created_at: 2026-09-26
 updated_at: 2026-09-26
 execution_policy: continuous_progress
@@ -58,25 +58,13 @@ fence, session, authority or persisted-recovery evidence is touched.
 ## Acceptance and evidence
 
 - `build_formal_schema.py` regenerates all five JSON files byte-identically.
-- `verify_formal_schema.py`: 170/170 at the final head (117 from the first candidate, 50 from the
-  owner-requested P2 repair `9368d4b`/`d9e69ca`/`8eab166`, 3 for D7); D1/D2 negative cases fail
-  when their rules are removed (mutation-checked locally).
+- `verify_formal_schema.py`: 117/117; the new D1/D2 negative cases fail when their rules are
+  removed (mutation-checked locally).
 - `verify_source_coverage.py`: 242 paths accounted, 0 unclassified.
 - Runtime, compiler admission and Tibia Global parity: UNKNOWN, not claimed.
 - Test batch (owner request): 10 Canary monsters converted by `canary_batch.py`; 10/10 bundles
   validate; after owner decisions D5-D7 (pass_through default, quest event omission, race
   residue `{item, fluid_type}` from Canary/Crystal `dropCorpse`) 10/10 manifests resolve.
-  Output is deterministic across reruns.
+  Output is deterministic across reruns; `verify_formal_schema.py` 170/170.
 
 Jira: KAN-16 stays `W toku`; this candidate does not complete the aggregate Story.
-
-## Closeout
-
-- [x] Final head `71deb830ac927fd3a49757f76b1463ad55bf3a23` passed the required checks; the owner
-  enabled auto-merge and Merge Queue squash-merged PR #938 as
-  `c72925db52ee8cc19265b63d76e8e3ca863d93fc`.
-- [x] The bounded P2 repair session (ChatGPT) released its ownership before the final
-  reconciliation push; no force push or history rewrite occurred.
-- [x] KAN-16 received the merge note; ownership released and task archived.
-- Follow-up (owner request): second Canary batch, wiki/reference-date comparison and this
-  archival run under `OTV2-20260926-monster-authoring-batch-2`.
