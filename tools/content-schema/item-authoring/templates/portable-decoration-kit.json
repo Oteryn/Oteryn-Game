@@ -1,0 +1,36 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.decoration-kit",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Decoration Kit",
+  "family_profile": "decoration",
+  "taxonomy": {
+    "item_class": "decoration",
+    "primary": "decoration",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "presentation": {},
+  "use": {
+    "usable": true,
+    "use_with": false
+  },
+  "lifecycle": {
+    "enchantable": false,
+    "destructible": false,
+    "transforms": []
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}
+
