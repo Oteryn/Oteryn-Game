@@ -477,6 +477,43 @@ impl ChannelRuntimeV1 {
         self.binding
     }
 
+    /// Unactivated Movement proof: one exclusive borrow of the composed Channel owner.
+    /// This grants neither initial position authority nor an owner scheduler.
+    pub(crate) fn borrow_movement_position(&mut self) -> CurrentOwnerMovementPosition<'_> {
+        self.carrier
+            .current_owner_movement_position(&self.continuity)
+    }
+
+    /// Synthetic context is confined to tests. A committed session still goes through
+    /// the actual runtime reservation and carrier position initialization checks.
+    #[cfg(test)]
+    pub(crate) fn initialize_movement_test_position(
+        &mut self,
+        actor: ExactActorRef,
+        position: MovementLocalPosition,
+    ) -> Result<MovementPositionSnapshot, CarrierError> {
+        let context = PreProductionPositionContext {
+            world_id: self.binding.world_id,
+            channel_id: self.binding.channel_id,
+            scope_generation: self.binding.scope_generation,
+            coordinate_frame_marker: 11,
+            map_revision_marker: 12,
+            content_generation_marker: 13,
+        };
+        self.carrier
+            .initialize_position(
+                &self.continuity,
+                actor.0,
+                context,
+                LocalPosition {
+                    x: position.x,
+                    y: position.y,
+                    floor: position.floor,
+                },
+            )
+            .map(MovementPositionSnapshot)
+    }
+
     pub(crate) fn reserve_fresh_session(
         &mut self,
         game_session_id: GameSessionId,
