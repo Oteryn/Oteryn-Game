@@ -405,7 +405,7 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Verify routing validator blob
-        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
+        run: test "$(git hash-object tools/repository/validate_pr_routing_contract.py)" = "03f252f0182f0f80a8e49101bf1b217735f2cb64"
 
       - name: Verify candidate diff whitespace
         env:
