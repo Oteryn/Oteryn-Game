@@ -11,6 +11,14 @@
       "page_id": 1245,
       "revision_id": 1191780,
       "content_sha256": "a725c2644e261e05150878bea14789782f19e5c4eff3b375e25b25ce4d65e0f8"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Loot Statistics:Necromancer",
+      "page_id": 32707,
+      "revision_id": 1196114,
+      "content_sha256": "3013731e3da0a2f8c7825ea2561cbfa0f372ed2bbf175397c3196e6109a8cef0"
     }
   ],
   "entries": [
@@ -72,7 +80,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7456 \"noble axe\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7456 \"noble axe\" is a declared source-scoped reference, not an admitted canonical Item. Wiki the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 5 drops, estimate 0.007001% (95% interval 0.003-0.0164%), low confidence; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
     },
     {
       "source_index": 0,
@@ -82,7 +90,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/1",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3324 \"skull staff\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3324 \"skull staff\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.1% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -92,7 +100,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/2",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 8073 \"spellbook of warding\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 8073 \"spellbook of warding\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.13% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -102,7 +110,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/3",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3079 \"boots of haste\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3079 \"boots of haste\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.21% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -112,7 +120,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/4",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 237 \"strong mana potion\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 237 \"strong mana potion\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.3% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -122,7 +130,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/5",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3311 \"clerical mace\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3311 \"clerical mace\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.39% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -132,7 +140,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/6",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3574 \"mystic turban\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3574 \"mystic turban\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.5% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -142,7 +150,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/7",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11475 \"necromantic robe\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11475 \"necromantic robe\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.001% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -152,7 +160,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/8",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3732 \"green mushroom\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3732 \"green mushroom\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.47% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -162,7 +170,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/9",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10320 \"book of necromantic rituals\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10320 \"book of necromantic rituals\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 10.13% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -172,7 +180,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/10",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3448 \"poison arrow\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3448 \"poison arrow\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 15.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -182,7 +190,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/11",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 30.05% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -381,7 +389,7 @@
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "approved_omission",
-      "resolution": "Canary value 1.04 superseded by the reference-date wiki value 1.65 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary)."
+      "resolution": "Canary value 1.04 superseded by the reference-date wiki value 1.65 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -409,8 +417,118 @@
       "source_field": "Infobox Creature.mitigation",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Wiki mitigation 1.65 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary).",
+      "resolution": "Wiki mitigation 1.65 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities).",
       "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 8,
+      "source_field": "Loot2.gold coin",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "21486 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 30.082746%, 95% Wilson interval 29.7475-30.4202%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/11/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 16,
+      "source_field": "Loot2.boots of haste",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "150 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 0.210016%, 95% Wilson interval 0.179-0.2464%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/3/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 14,
+      "source_field": "Loot2.clerical mace",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "269 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 0.376629%, 95% Wilson interval 0.3343-0.4243%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/5/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 18,
+      "source_field": "Loot2.skull staff",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "73 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 0.102208%, 95% Wilson interval 0.0813-0.1285%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/1/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 9,
+      "source_field": "Loot2.poison arrow",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "10676 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 14.947566%, 95% Wilson interval 14.688-15.2109%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/10/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 13,
+      "source_field": "Loot2.mystic turban",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "351 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 0.491438%, 95% Wilson interval 0.4427-0.5455%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/6/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 11,
+      "source_field": "Loot2.green mushroom",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "1066 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 1.492516%, 95% Wilson interval 1.4062-1.5841%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/8/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 15,
+      "source_field": "Loot2.strong mana potion",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "244 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 0.341627%, 95% Wilson interval 0.3014-0.3872%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/4/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 17,
+      "source_field": "Loot2.spellbook of warding",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "76 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 0.106408%, 95% Wilson interval 0.085-0.1332%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/2/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 10,
+      "source_field": "Loot2.book of necromantic rituals",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "7160 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 10.024782%, 95% Wilson interval 9.8067-10.2472%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/9/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Necromancer",
+      "source_line": 12,
+      "source_field": "Loot2.necromantic robe",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "732 drops / 71423 kills in the version 8.6 block of Loot Statistics:Necromancer (71423 kills): 1.024880%, 95% Wilson interval 0.9536-1.1014%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/7/probability_percent"
     }
   ]
 }

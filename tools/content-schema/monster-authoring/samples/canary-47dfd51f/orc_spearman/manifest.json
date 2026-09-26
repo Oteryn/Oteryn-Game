@@ -11,6 +11,14 @@
       "page_id": 1499,
       "revision_id": 1191862,
       "content_sha256": "51e84b5465c9b03392f3950f8773f67e08e4fd1d8819bb8ad362f63fbf7fde48"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Loot Statistics:Orc Spearman",
+      "page_id": 39160,
+      "revision_id": 1198004,
+      "content_sha256": "68f00bbef0d2f2ade3bb55e65fdb68b7aa782936f5dee78781759c7dbf2aab25"
     }
   ],
   "entries": [
@@ -52,7 +60,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10196 \"orc tooth\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10196 \"orc tooth\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.15% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -62,7 +70,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/1",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -72,7 +80,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/2",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11479 \"orc leather\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11479 \"orc leather\" is a declared source-scoped reference, not an admitted canonical Item. Not observed in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills) although the wiki infobox lists it at the cut, so it was probably added later; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
     },
     {
       "source_index": 0,
@@ -82,7 +90,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/3",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3308 \"machete\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3308 \"machete\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 3.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -92,7 +100,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/4",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3376 \"studded helmet\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3376 \"studded helmet\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 9.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -102,7 +110,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/5",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3362 \"studded legs\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3362 \"studded legs\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 10.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -112,7 +120,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/6",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3277 \"spear\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3277 \"spear\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 17.44% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -122,7 +130,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/7",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 25.05% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -132,7 +140,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/8",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3577 \"meat\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3577 \"meat\" is a declared source-scoped reference, not an admitted canonical Item. Not observed in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills) although the wiki infobox lists it at the cut, so it was probably added later; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
     },
     {
       "source_index": 0,
@@ -321,7 +329,7 @@
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "approved_omission",
-      "resolution": "Canary value 0.3 superseded by the reference-date wiki value 0.48 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary)."
+      "resolution": "Canary value 0.3 superseded by the reference-date wiki value 0.48 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -359,8 +367,78 @@
       "source_field": "Infobox Creature.mitigation",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Wiki mitigation 0.48 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary).",
+      "resolution": "Wiki mitigation 0.48 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities).",
       "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Spearman",
+      "source_line": 9,
+      "source_field": "Loot2.gold coin",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "5244 drops / 21566 kills in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills): 24.316053%, 95% Wilson interval 23.7481-24.8931%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/7/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Spearman",
+      "source_line": 10,
+      "source_field": "Loot2.spear",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "3867 drops / 21566 kills in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills): 17.931003%, 95% Wilson interval 17.4247-18.4487%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/6/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Spearman",
+      "source_line": 13,
+      "source_field": "Loot2.machete",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "625 drops / 21566 kills in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills): 2.898080%, 95% Wilson interval 2.6824-3.1305%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/3/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Spearman",
+      "source_line": 11,
+      "source_field": "Loot2.studded legs",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "2043 drops / 21566 kills in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills): 9.473245%, 95% Wilson interval 9.0896-9.8713%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/5/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Spearman",
+      "source_line": 12,
+      "source_field": "Loot2.studded helmet",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "1911 drops / 21566 kills in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills): 8.861170%, 95% Wilson interval 8.4892-9.2478%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/4/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Spearman",
+      "source_line": 16,
+      "source_field": "Loot2.orc tooth",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "27 drops / 21566 kills in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills): 0.125197%, 95% Wilson interval 0.0861-0.1821%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/0/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Spearman",
+      "source_line": 14,
+      "source_field": "Loot2.heavy old tome",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "436 drops / 21566 kills in the version 11.02 block of Loot Statistics:Orc Spearman (21566 kills): 2.021701%, 95% Wilson interval 1.8422-2.2183%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/1/probability_percent"
     }
   ]
 }

@@ -11,6 +11,14 @@
       "page_id": 1497,
       "revision_id": 1191856,
       "content_sha256": "d5d7a8a6dc84df740282a8c58f645089d1b0a78708bbc5e18de9c8498782ff25"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Loot Statistics:Orc Shaman",
+      "page_id": 39161,
+      "revision_id": 1198003,
+      "content_sha256": "021d84d479bff254a122d1210fab6ac016180ac141e9e1a23e291337c5f6bcf4"
     }
   ],
   "entries": [
@@ -72,7 +80,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 2824 \"book\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 2824 \"book\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.52% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -82,7 +90,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/1",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3072 \"wand of decay\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3072 \"wand of decay\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -92,7 +100,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/2",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -102,7 +110,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/3",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10196 \"orc tooth\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10196 \"orc tooth\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 2.1% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -112,7 +120,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/4",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11479 \"orc leather\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11479 \"orc leather\" is a declared source-scoped reference, not an admitted canonical Item. Not observed in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills) although the wiki infobox lists it at the cut, so it was probably added later; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
     },
     {
       "source_index": 0,
@@ -122,7 +130,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/5",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3277 \"spear\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3277 \"spear\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 4.85% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -132,7 +140,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/6",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11478 \"shamanic hood\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11478 \"shamanic hood\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 6.86% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -142,7 +150,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/7",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3358 \"chain armor\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3358 \"chain armor\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 8.75% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -152,7 +160,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/8",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11452 \"broken shamanic staff\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11452 \"broken shamanic staff\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 10.3% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -162,7 +170,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/9",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3597 \"corncob\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3597 \"corncob\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 10.6% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -172,7 +180,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/10",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 90.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -371,7 +379,7 @@
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "approved_omission",
-      "resolution": "Canary value 0.25 superseded by the reference-date wiki value 0.40 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary)."
+      "resolution": "Canary value 0.25 superseded by the reference-date wiki value 0.40 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -399,8 +407,108 @@
       "source_field": "Infobox Creature.mitigation",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Wiki mitigation 0.40 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary).",
+      "resolution": "Wiki mitigation 0.40 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities).",
       "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 18,
+      "source_field": "Loot2.book",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "67 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 0.423702%, 95% Wilson interval 0.3338-0.5377%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/0/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 8,
+      "source_field": "Loot2.gold coin",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "14246 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 90.090432%, 95% Wilson interval 89.6149-90.5464%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/10/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 17,
+      "source_field": "Loot2.wand of decay",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "167 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 1.056093%, 95% Wilson interval 0.9082-1.2277%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/1/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 13,
+      "source_field": "Loot2.spear",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "811 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 5.128692%, 95% Wilson interval 4.7957-5.4835%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/5/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 11,
+      "source_field": "Loot2.chain armor",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "1430 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 9.043192%, 95% Wilson interval 8.6061-9.5002%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/7/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 9,
+      "source_field": "Loot2.corncob",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "1762 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 11.142731%, 95% Wilson interval 10.6617-11.6426%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/9/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 15,
+      "source_field": "Loot2.orc tooth",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "349 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 2.207045%, 95% Wilson interval 1.9894-2.4479%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/3/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 10,
+      "source_field": "Loot2.broken shamanic staff",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "1578 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 9.979131%, 95% Wilson interval 9.5217-10.456%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/8/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 12,
+      "source_field": "Loot2.shamanic hood",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "1116 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 7.057484%, 95% Wilson interval 6.6686-7.4672%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/6/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Orc Shaman",
+      "source_line": 16,
+      "source_field": "Loot2.heavy old tome",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "342 drops / 15813 kills in the version 11.02 block of Loot Statistics:Orc Shaman (15813 kills): 2.162777%, 95% Wilson interval 1.9474-2.4014%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/2/probability_percent"
     }
   ]
 }

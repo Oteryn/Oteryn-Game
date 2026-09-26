@@ -60,7 +60,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/1",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3049 \"stealth ring\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3049 \"stealth ring\" is a declared source-scoped reference, not an admitted canonical Item. Wiki the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 9 drops, estimate 0.271575% (95% interval 0.1429-0.5154%), low confidence; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
     },
     {
       "source_index": 0,
@@ -70,7 +70,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/2",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3432 \"ancient shield\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3432 \"ancient shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.86% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -80,7 +80,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/3",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 2828 \"book\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 2828 \"book\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.31% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -89,8 +89,8 @@
       "source_field": "loot[9]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/4",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9690 \"ghostly tissue\" is a declared source-scoped reference, not an admitted canonical Item."
+      "destination": "/monster/loot/entries/5",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9690 \"ghostly tissue\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.87% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -99,8 +99,8 @@
       "source_field": "loot[8]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/5",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5909 \"white piece of cloth\" is a declared source-scoped reference, not an admitted canonical Item."
+      "destination": "/monster/loot/entries/4",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5909 \"white piece of cloth\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.94% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -110,7 +110,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/6",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3292 \"combat knife\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3292 \"combat knife\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 7.002% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -120,7 +120,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/7",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3565 \"cape\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3565 \"cape\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 8.8% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -130,7 +130,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/8",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3282 \"morning star\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3282 \"morning star\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 10.61% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -140,7 +140,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/9",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3740 \"shadow herb\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3740 \"shadow herb\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 14.4% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -329,7 +329,7 @@
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "approved_omission",
-      "resolution": "Canary value 0.51 superseded by the reference-date wiki value 0.80 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary)."
+      "resolution": "Canary value 0.51 superseded by the reference-date wiki value 0.80 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities)."
     },
     {
       "source_index": 0,
@@ -356,8 +356,88 @@
       "source_field": "Infobox Creature.mitigation",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Wiki mitigation 0.80 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary).",
+      "resolution": "Wiki mitigation 0.80 percent points as an exact decimal ratio (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities).",
       "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 14,
+      "source_field": "Loot2.book",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "39 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 1.176826%, 95% Wilson interval 0.8621-1.6046%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/3/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 9,
+      "source_field": "Loot2.morning star",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "356 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 10.742305%, 95% Wilson interval 9.7331-11.8424%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/8/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 11,
+      "source_field": "Loot2.combat knife",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "247 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 7.453229%, 95% Wilson interval 6.6075-8.3975%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/6/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 15,
+      "source_field": "Loot2.ancient shield",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "32 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 0.965600%, 95% Wilson interval 0.6848-1.3599%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/2/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 10,
+      "source_field": "Loot2.cape",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "343 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 10.350030%, 95% Wilson interval 9.3584-11.4334%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/7/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 8,
+      "source_field": "Loot2.shadow herb",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "488 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 14.725407%, 95% Wilson interval 13.5598-15.9727%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/9/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 13,
+      "source_field": "Loot2.white piece of cloth",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "54 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 1.629451%, 95% Wilson interval 1.251-2.1199%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/4/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Ghost",
+      "source_line": 12,
+      "source_field": "Loot2.ghostly tissue",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "66 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills): 1.991551%, 95% Wilson interval 1.5685-2.5258%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/5/probability_percent"
     },
     {
       "source_index": 2,
@@ -366,7 +446,7 @@
       "source_field": "Loot2.stone skin amulet",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Listed in the Ghost infobox loot (source 1, line 48), absent in Canary. Probability = 2 drops / 3314 kills in the version 14.12.5229e4 block, 0.060350% rounded half-even to 1 ppm: a point estimate from player-reported counts (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable and loot items missing in Canary). Inserted in ascending-probability order (register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration). Item 3081 \"stone skin amulet\" is a declared source-scoped reference, not an admitted canonical Item.",
+      "resolution": "Listed in the Ghost infobox loot (source 1, line 48), absent in Canary. Probability = 2 drops / 3314 kills in the version 14.12.5229e4 block of Loot Statistics:Ghost (3314 kills), 0.060350% rounded half-even to 1 ppm (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities). Low confidence: fewer than 10 drops. Item 3081 \"stone skin amulet\" is a declared source-scoped reference, not an admitted canonical Item.",
       "destination": "/monster/loot/entries/0"
     }
   ]

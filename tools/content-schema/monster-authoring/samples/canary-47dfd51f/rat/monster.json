@@ -217,7 +217,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 39.41,
+        "probability_percent": 35.5551,
         "skip_later_same_item_after_success": false
       },
       {
@@ -228,7 +228,7 @@
         },
         "min_count": 1,
         "max_count": 4,
-        "probability_percent": 100,
+        "probability_percent": 90.1648,
         "skip_later_same_item_after_success": false
       }
     ]

@@ -51,6 +51,9 @@ fence, session, authority or persisted-recovery evidence is touched.
   dragon trophy (item 44158 by the wiki item page) and stone skin amulet with probabilities
   from the `Loot Statistics` cut revisions. The comparison still runs against the plain Canary
   conversion (239 MATCH / 12 DIFF / 8 WIKI_UNKNOWN, unchanged).
+- D15 loot rate rule (owner-approved): 94 Canary loot chances compared with the highest-version
+  statistics block (66 consistent, 23 outside the 95% interval, 5 not observed); 79 entries with
+  at least 10 drops take the wiki estimate, the rest keep Canary as low confidence.
 - The import manifest accepts MediaWiki sources pinned by page id, revision id and wikitext
   SHA-256; `verify_formal_schema.py` 177/177. Batch 1 10/10 bundles and manifests resolve; batch 2
   unchanged.

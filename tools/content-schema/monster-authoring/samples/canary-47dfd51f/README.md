@@ -86,8 +86,19 @@ The owner decided that where the reference-date wiki differs from Canary, the wi
 - ghost: `stone skin amulet` at 0.0604% (2 drops / 3,314 kills, version 14.12 block). Two drops
   make this a weak estimate.
 
+Loot probabilities of items Canary already has (`loot_chances` in `wiki-2026-07-28.json`,
+94 entries): 66 Canary values lie inside the 95% Wilson interval of the wiki estimate, 23 lie
+outside it (e.g. rat gold coin 100% vs 90.16%, `heavy old tome` 1% vs about 2.1% in three
+monsters, dragon `wand of inferno` 0.56% vs 1.04%) and 5 items are not observed in the statistics
+block although the infobox lists them (orc spearman meat and orc leather in the 11.02 block,
+orc shaman orc leather, Demodras dragon ham and red dragon leather in the 8.6 block), so they
+were probably added later. With 10 or more drops (79 entries) the wiki estimate replaces the
+Canary probability; the 10 low-confidence entries and the 5 unobserved ones keep Canary. The
+statistics blocks range from version 8.6 (scorpion, necromancer, Demodras) to 14.12 (ghost).
+Loot amounts are recorded but not adopted: an observed maximum is only a lower bound.
+
 Loot probabilities are `times / kills` of the highest-version block, rounded half-even to
-1 ppm. The Canary manifest row of each replaced field becomes `approved_omission` naming the
+1 ppm, and entries are re-sorted by ascending probability. The Canary manifest row of each replaced field becomes `approved_omission` naming the
 superseded value; a new row points at the MediaWiki source (page id, cut revision id, SHA-256
 of that revision's wikitext, wikitext line). Both loot statistics pages were edited after the
 cut; the cut revisions are used.
