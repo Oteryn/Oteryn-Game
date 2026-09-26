@@ -78,7 +78,7 @@ pub enum ProjectV2Family {
 }
 
 impl ProjectV2Family {
-    fn from_reference(value: &str) -> Result<Self, ProjectError> {
+    pub(super) fn from_reference(value: &str) -> Result<Self, ProjectError> {
         Ok(match parse_family(value)? {
             DefinitionFamily::Terrain => Self::Terrain,
             DefinitionFamily::Presentation => Self::Presentation,
@@ -1249,6 +1249,20 @@ struct DeclarationsDocument {
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     authoring_profiles: Vec<ProjectV2AuthoringProfile>,
 }
+/// Declarations document of the native entry variant: the ordinary v2 fields plus the mandatory
+/// closed `native_first_entry` overlay (#937 §3). No default or null is accepted.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeDeclarationsDocument {
+    schema: String,
+    records: Vec<ProjectV2Declaration>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    item_authoring: Vec<ProjectV2ItemAuthoring>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    authoring_profiles: Vec<ProjectV2AuthoringProfile>,
+    native_first_entry: NativeFirstEntryDocument,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct WorldsDocument {
@@ -1286,13 +1300,14 @@ struct EditorDocument {
 
 pub(super) fn validate_v2_roles(
     roles: &BTreeMap<String, Vec<&ManifestDocument>>,
+    admission: ProjectAdmission,
 ) -> Result<(), ProjectError> {
     if roles.len() != ROLE_SPECS.len() {
         return Err(ProjectError::InvalidProject(
             "unsupported v2 manifest role set",
         ));
     }
-    for (role, locator, schema) in ROLE_SPECS {
+    for (role, locator, schema) in role_specs(admission) {
         let prefix = locator
             .split_once('/')
             .ok_or(ProjectError::InvalidProject(
@@ -1308,6 +1323,16 @@ pub(super) fn validate_v2_roles(
         }
     }
     Ok(())
+}
+
+/// The native entry variant keeps the eight v2 roles and locators and changes only the
+/// declarations document schema.
+fn role_specs(admission: ProjectAdmission) -> [(&'static str, &'static str, &'static str); 8] {
+    let mut specs = ROLE_SPECS;
+    if admission == ProjectAdmission::NativeEntry {
+        specs[1].2 = NATIVE_ENTRY_DECLARATIONS_SCHEMA;
+    }
+    specs
 }
 
 fn role_bytes<'a>(
@@ -1329,15 +1354,35 @@ pub(super) fn parse_v2_snapshot(
     limits: ProjectEvidenceLimits,
     plan: ProjectCapturePlan,
     manifest_bytes: &[u8],
-) -> Result<WorldProject, ProjectError> {
+) -> Result<(WorldProject, Option<NativeFirstEntryDocument>), ProjectError> {
     let reference: ReferenceDocument =
         parse_strict(role_bytes(snapshot, &plan, "reference-records")?, limits)?;
     let imports: ImportDocument =
         parse_strict(role_bytes(snapshot, &plan, "import-candidates")?, limits)?;
-    let declarations: DeclarationsDocument = parse_strict(
-        role_bytes(snapshot, &plan, "declarative-definitions")?,
-        limits,
-    )?;
+    let declarations_bytes = role_bytes(snapshot, &plan, "declarative-definitions")?;
+    let (declarations, native_entry) = match plan.admission {
+        ProjectAdmission::Ordinary => (
+            parse_strict::<DeclarationsDocument>(declarations_bytes, limits)?,
+            None,
+        ),
+        ProjectAdmission::NativeEntry => {
+            let native: NativeDeclarationsDocument = parse_strict(declarations_bytes, limits)?;
+            if native.schema != NATIVE_ENTRY_DECLARATIONS_SCHEMA {
+                return Err(ProjectError::InvalidProject(
+                    "v2 managed document schema mismatch",
+                ));
+            }
+            (
+                DeclarationsDocument {
+                    schema: DECLARATIONS_SCHEMA.to_owned(),
+                    records: native.records,
+                    item_authoring: native.item_authoring,
+                    authoring_profiles: native.authoring_profiles,
+                },
+                Some(native.native_first_entry),
+            )
+        }
+    };
     let worlds: WorldsDocument =
         parse_strict(role_bytes(snapshot, &plan, "world-records")?, limits)?;
     let bindings: BindingsDocument = parse_strict(
@@ -1391,19 +1436,22 @@ pub(super) fn parse_v2_snapshot(
         editor: editor.entries,
     };
     validate_v2_state(&state, &reference.records, &imports.batches, limits)?;
-    Ok(WorldProject {
-        root: plan.root,
-        manifest: plan.manifest,
-        lock: plan.lock,
-        reference,
-        imports,
-        metadata: MetadataDocument {
-            schema: WORLD_PROJECT_METADATA_SCHEMA.to_owned(),
-            entries: editor.legacy_entries,
+    Ok((
+        WorldProject {
+            root: plan.root,
+            manifest: plan.manifest,
+            lock: plan.lock,
+            reference,
+            imports,
+            metadata: MetadataDocument {
+                schema: WORLD_PROJECT_METADATA_SCHEMA.to_owned(),
+                entries: editor.legacy_entries,
+            },
+            manifest_bytes: manifest_bytes.to_vec(),
+            v2: Some(state),
         },
-        manifest_bytes: manifest_bytes.to_vec(),
-        v2: Some(state),
-    })
+        native_entry,
+    ))
 }
 
 fn validate_v2_source_text(
@@ -2693,10 +2741,34 @@ fn validate_v2_state(
 
 impl CanonicalProjectDocuments {
     pub fn from_v2_draft(
-        mut draft: ProjectV2Draft,
+        draft: ProjectV2Draft,
         limits: ProjectEvidenceLimits,
     ) -> Result<Self, ProjectError> {
+        Self::from_v2_draft_for(draft, limits, None)
+    }
+
+    /// Canonical writer for the native entry variant (#937 §2): the ordinary v2 documents with the
+    /// native root profile and the native declarations document carrying `overlay`. The result is
+    /// re-admitted through [`ProjectSnapshot::parse_native_entry`] before it is returned.
+    pub fn from_native_entry_draft(
+        draft: ProjectV2Draft,
+        overlay: NativeFirstEntryDocument,
+        limits: ProjectEvidenceLimits,
+    ) -> Result<Self, ProjectError> {
+        Self::from_v2_draft_for(draft, limits, Some(overlay))
+    }
+
+    fn from_v2_draft_for(
+        mut draft: ProjectV2Draft,
+        limits: ProjectEvidenceLimits,
+        native: Option<NativeFirstEntryDocument>,
+    ) -> Result<Self, ProjectError> {
         let limits = limits.validate()?;
+        let admission = if native.is_some() {
+            ProjectAdmission::NativeEntry
+        } else {
+            ProjectAdmission::Ordinary
+        };
         draft.core.records = sorted_records(draft.core.records);
         draft.core.imports = sorted_imports(draft.core.imports);
         draft.core.metadata = sorted_metadata(draft.core.metadata);
@@ -2777,15 +2849,22 @@ impl CanonicalProjectDocuments {
                 records: draft.core.records,
             })?,
         );
-        managed.insert(
-            ROLE_SPECS[1].1.to_owned(),
-            budget.encode(&DeclarationsDocument {
+        let declarations = match native {
+            None => budget.encode(&DeclarationsDocument {
                 schema: DECLARATIONS_SCHEMA.to_owned(),
                 records: draft.state.declarations,
                 item_authoring: draft.state.item_authoring,
                 authoring_profiles: draft.state.authoring_profiles,
             })?,
-        );
+            Some(native_first_entry) => budget.encode(&NativeDeclarationsDocument {
+                schema: NATIVE_ENTRY_DECLARATIONS_SCHEMA.to_owned(),
+                records: draft.state.declarations,
+                item_authoring: draft.state.item_authoring,
+                authoring_profiles: draft.state.authoring_profiles,
+                native_first_entry,
+            })?,
+        };
+        managed.insert(ROLE_SPECS[1].1.to_owned(), declarations);
         managed.insert(
             ROLE_SPECS[2].1.to_owned(),
             budget.encode(&WorldsDocument {
@@ -2832,7 +2911,7 @@ impl CanonicalProjectDocuments {
             })?,
         );
         let mut inventory = Vec::new();
-        for (role, locator, schema) in ROLE_SPECS {
+        for (role, locator, schema) in role_specs(admission) {
             validate_locator(locator, limits)?;
             let bytes = managed
                 .get(locator)
@@ -2873,7 +2952,11 @@ impl CanonicalProjectDocuments {
         let lock_bytes = budget.encode(&lock)?;
         let root = RootDocument {
             schema: WORLD_PROJECT_V2_ROOT_SCHEMA.to_owned(),
-            source_profile: WORLD_PROJECT_V2_SOURCE_PROFILE.to_owned(),
+            source_profile: match admission {
+                ProjectAdmission::Ordinary => WORLD_PROJECT_V2_SOURCE_PROFILE,
+                ProjectAdmission::NativeEntry => NATIVE_ENTRY_SOURCE_PROFILE,
+            }
+            .to_owned(),
             project_revision: draft.core.project_revision,
             manifest_locator: MANIFEST_LOCATOR.to_owned(),
             manifest_sha256: digest_hex(&manifest_bytes),
@@ -2884,7 +2967,14 @@ impl CanonicalProjectDocuments {
         managed.insert(LOCK_LOCATOR.to_owned(), lock_bytes);
         managed.insert(PROJECT_LOCATOR.to_owned(), budget.encode(&root)?);
         let snapshot = ProjectSnapshot::new(managed.into_iter(), limits)?;
-        snapshot.parse(limits)?;
+        match admission {
+            ProjectAdmission::Ordinary => {
+                snapshot.parse(limits)?;
+            }
+            ProjectAdmission::NativeEntry => {
+                snapshot.parse_native_entry(limits)?;
+            }
+        }
         Ok(Self {
             documents: snapshot.documents,
         })
