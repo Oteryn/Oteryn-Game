@@ -1,0 +1,37 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.armor",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Armor",
+  "family_profile": "equipment_armor",
+  "taxonomy": {
+    "item_class": "equipment",
+    "primary": "armor",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "equipment": {
+    "slot": "armor",
+    "hands": 0,
+    "reserved_slots": [],
+    "groups": []
+  },
+  "protection": {
+    "armor": 1,
+    "resistances": [],
+    "condition_suppressions": []
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}
+
