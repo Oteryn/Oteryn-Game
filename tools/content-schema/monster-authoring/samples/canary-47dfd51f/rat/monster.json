@@ -1,0 +1,228 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/rat",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Rat",
+    "inspection": {
+      "description": "a rat"
+    },
+    "stats": {
+      "max_health": 20,
+      "initial_health": 20,
+      "experience": 5,
+      "speed": 67,
+      "armor": 1,
+      "defense": 5,
+      "critical_chance_percent": 0,
+      "mitigation_percent": {
+        "numerator": 7,
+        "denominator": 100
+      }
+    },
+    "resistances": [
+      {
+        "damage_type": "earth",
+        "reduction_percent": {
+          "numerator": 20,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "ice",
+        "reduction_percent": {
+          "numerator": -10,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "holy",
+        "reduction_percent": {
+          "numerator": 20,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "death",
+        "reduction_percent": {
+          "numerator": -10,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": []
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": true,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": true,
+      "convinceable": true,
+      "is_familiar": false,
+      "mana_cost": 200
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/rat",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/rat",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": false
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "name_forms": {
+      "article": "a"
+    },
+    "bestiary": {
+      "class": "Mammal",
+      "taxonomy": "mammal",
+      "difficulty": "trivial",
+      "occurrence": "common",
+      "stars": 1,
+      "kill_thresholds": [
+        10,
+        100,
+        250
+      ],
+      "charm_points": 5,
+      "locations": "Rookgaard and Mainland, in most sewers and caves near towns. They can be found almost everywhere in Tibia."
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "canary:item/5964",
+      "revision": "canary-47dfd51f"
+    },
+    "loot": {
+      "family": "Loot",
+      "key": "canary:loot/rat",
+      "revision": "canary-47dfd51f"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/rat",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": true,
+      "push_items": false,
+      "push_creatures": false,
+      "field_permissions": {
+        "energy": false,
+        "fire": false,
+        "poison": false
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": false,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 90,
+      "flee_health": 5,
+      "change_target": {
+        "interval_ms": 4000,
+        "chance_percent": 0
+      },
+      "strategy_weights": {
+        "nearest": 100,
+        "damage": 0,
+        "health": 0,
+        "random": 0
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/rat/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      }
+    ],
+    "defenses": [],
+    "event_bindings": [],
+    "voices": {
+      "interval_ms": 5000,
+      "chance_percent": 10,
+      "entries": [
+        {
+          "text": "Meep!",
+          "mode": "say"
+        }
+      ]
+    }
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/rat",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/21",
+      "palette_bindings": [],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  },
+  "loot": {
+    "identity": {
+      "key": "canary:loot/rat",
+      "revision": "canary-47dfd51f"
+    },
+    "algorithm": "IndependentBernoulli",
+    "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3607",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 39.41,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3031",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 4,
+        "probability_percent": 100,
+        "skip_later_same_item_after_success": false
+      }
+    ]
+  }
+}

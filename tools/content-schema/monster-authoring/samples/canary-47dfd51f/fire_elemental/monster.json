@@ -1,0 +1,204 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/fire_elemental",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Fire Elemental",
+    "inspection": {
+      "description": "a fire elemental"
+    },
+    "stats": {
+      "max_health": 280,
+      "initial_health": 280,
+      "experience": 220,
+      "speed": 95,
+      "armor": 18,
+      "defense": 15,
+      "critical_chance_percent": 0,
+      "mitigation_percent": {
+        "numerator": 51,
+        "denominator": 100
+      }
+    },
+    "resistances": [
+      {
+        "damage_type": "fire",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "life_drain",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "ice",
+        "reduction_percent": {
+          "numerator": -25,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "death",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "invisible",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": true,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": true,
+      "convinceable": false,
+      "is_familiar": false,
+      "mana_cost": 690
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/fire_elemental",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/fire_elemental",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": true,
+      "forge": true,
+      "reward_boss": false
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "name_forms": {
+      "article": "a"
+    },
+    "bestiary": {
+      "class": "Elemental",
+      "taxonomy": "elemental",
+      "difficulty": "medium",
+      "occurrence": "common",
+      "stars": 3,
+      "kill_thresholds": [
+        50,
+        500,
+        1000
+      ],
+      "charm_points": 25,
+      "locations": "Cyclopolis, Hero Cave in Edron, Ankrahmun tombs, Serpentine Tower, Factory Quarter in Yalahar, Deeper Banuta, Goroma inside the volcano and beneath Fenrock."
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "canary:item/8136",
+      "revision": "canary-47dfd51f"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/fire_elemental",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": false,
+      "field_permissions": {
+        "energy": false,
+        "fire": true,
+        "poison": false
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 90,
+      "flee_health": 0,
+      "change_target": {
+        "interval_ms": 4000,
+        "chance_percent": 10
+      },
+      "strategy_weights": {
+        "nearest": 80,
+        "damage": 0,
+        "health": 0,
+        "random": 20
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/fire_elemental/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/fire_elemental/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/fire_elemental/attack-3",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 25
+      }
+    ],
+    "defenses": [],
+    "event_bindings": []
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/fire_elemental",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/49",
+      "palette_bindings": [],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 4,
+      "color_binding": "canary.appearance:light-color/208"
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  }
+}

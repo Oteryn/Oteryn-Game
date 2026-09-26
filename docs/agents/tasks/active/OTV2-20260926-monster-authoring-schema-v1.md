@@ -62,5 +62,8 @@ fence, session, authority or persisted-recovery evidence is touched.
   removed (mutation-checked locally).
 - `verify_source_coverage.py`: 242 paths accounted, 0 unclassified.
 - Runtime, compiler admission and Tibia Global parity: UNKNOWN, not claimed.
+- Test batch (owner request): 10 Canary monsters converted by `canary_batch.py`; 10/10 bundles
+  validate, 10/10 manifests blocked only by `pass_through`, race residue and 3 quest event rows
+  (see `samples/canary-47dfd51f/README.md`). Output is deterministic across reruns.
 
 Jira: KAN-16 stays `W toku`; this candidate does not complete the aggregate Story.

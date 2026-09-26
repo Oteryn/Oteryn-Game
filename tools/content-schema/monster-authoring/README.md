@@ -13,6 +13,8 @@ Contract and decisions: [`docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.m
 | `verify_formal_schema.py` | Focused synthetic positive/negative cases; regenerates the `synthetic-*.json` fixtures. |
 | `verify_source_coverage.py`, `field-census.json` | Accounts for the 242 inventoried Canary/Crystal registrar/spell paths. |
 | `normalize_monster_fields.py` | Bounded helpers for already decoded source geometry and HP values. |
+| `canary_batch.py` | Converts a fixed 10-monster Canary batch into bundles + manifests (needs `lupa==2.8` and a Canary checkout). |
+| `samples/canary-47dfd51f/` | That test batch and its findings (`README.md`). |
 
 ```text
 pip install -r requirements.txt
