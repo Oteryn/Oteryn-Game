@@ -257,6 +257,139 @@ impl<'a> MovementOwnerTurn<'a> {
     }
 }
 
+/// The caller retains this finite batch across turns. A completed input is never
+/// offered a second time by the scheduler; an over-budget input remains pending.
+/// A separately reoffered stale input still passes through the owner's checks.
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct MovementInput {
+    actor: ExactActorRef,
+    expected: MovementPositionSnapshot,
+    direction: CardinalStep,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct MovementOffer {
+    input: MovementInput,
+    completion: Option<Result<MovementPositionSnapshot, MovementError>>,
+}
+
+impl MovementOffer {
+    pub(crate) const fn pending(
+        actor: ExactActorRef,
+        expected: MovementPositionSnapshot,
+        direction: CardinalStep,
+    ) -> Self {
+        Self {
+            input: MovementInput {
+                actor,
+                expected,
+                direction,
+            },
+            completion: None,
+        }
+    }
+
+    pub(crate) const fn completion(
+        &self,
+    ) -> Option<Result<MovementPositionSnapshot, MovementError>> {
+        self.completion
+    }
+}
+
+/// Caller-owned service cursor; its ordering is deterministic for the supplied
+/// batch and does not imply a production queue or starvation-free ingress.
+#[derive(Debug, Default)]
+pub(crate) struct MovementFairCursor {
+    last_actor: Option<ExactActorRef>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum MovementBatchError {
+    OfferCapacityExceeded,
+}
+
+impl std::fmt::Display for MovementBatchError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{self:?}")
+    }
+}
+impl std::error::Error for MovementBatchError {}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct MovementBatchResult {
+    pub(crate) serviced: usize,
+    pub(crate) deferred: usize,
+}
+
+impl MovementOwnerTurn<'_> {
+    /// An explicit engineering offer cap bounds scans and retained caller work.
+    /// It is independent of the per-turn attempt budget and is not a production
+    /// resource limit. Overflow rejects the whole batch before touching an owner.
+    pub(crate) fn service_finite_batch(
+        &mut self,
+        offers: &mut [MovementOffer],
+        max_offers: NonZeroUsize,
+        cursor: &mut MovementFairCursor,
+        selection: &MovementEngineeringSelection<'_>,
+        index: &EngineeringStaticCellIndex,
+    ) -> Result<MovementBatchResult, MovementBatchError> {
+        if offers.len() > max_offers.get() {
+            return Err(MovementBatchError::OfferCapacityExceeded);
+        }
+        let mut serviced = 0;
+        while self.processed < self.max_inputs.get() {
+            // Actor order is the first appearance in this caller-owned batch.
+            // Walk once around that order after the last serviced actor and
+            // take its earliest pending input. All scans are offer-cap bounded.
+            let next = match cursor
+                .last_actor
+                .and_then(|actor| offers.iter().position(|offer| offer.input.actor == actor))
+            {
+                Some(pivot) => (pivot + 1..offers.len())
+                    .chain(0..=pivot)
+                    .find_map(|candidate| {
+                        let actor = offers[candidate].input.actor;
+                        (offers.iter().position(|offer| offer.input.actor == actor)
+                            == Some(candidate))
+                        .then(|| {
+                            offers.iter().position(|offer| {
+                                offer.input.actor == actor && offer.completion.is_none()
+                            })
+                        })
+                        .flatten()
+                    }),
+                None => offers.iter().position(|offer| offer.completion.is_none()),
+            };
+            let Some(next) = next else { break };
+            let input = offers[next].input;
+            match self.try_step(
+                input.actor,
+                input.expected,
+                selection,
+                index,
+                input.direction,
+            ) {
+                Ok(MovementTurnOutcome::Applied(snapshot)) => {
+                    offers[next].completion = Some(Ok(snapshot));
+                }
+                Ok(MovementTurnOutcome::Deferred) => break,
+                Err(error) => {
+                    offers[next].completion = Some(Err(error));
+                }
+            }
+            cursor.last_actor = Some(input.actor);
+            serviced += 1;
+        }
+        Ok(MovementBatchResult {
+            serviced,
+            deferred: offers
+                .iter()
+                .filter(|offer| offer.completion.is_none())
+                .count(),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -334,6 +467,10 @@ mod tests {
     }
 
     fn runtime() -> Result<ChannelRuntimeV1, Box<dyn Error>> {
+        runtime_with_capacity(2)
+    }
+
+    fn runtime_with_capacity(capacity: usize) -> Result<ChannelRuntimeV1, Box<dyn Error>> {
         Ok(ChannelRuntimeV1::from_committed_assignment(
             WorldId::decode(&uuid_v7(20))?,
             ChannelId::decode(&uuid_v7(21))?,
@@ -342,7 +479,7 @@ mod tests {
             3,
             11,
             "runtime-scope-assignment:11",
-            2,
+            capacity,
         )?)
     }
 
@@ -448,6 +585,270 @@ mod tests {
             MovementTurnOutcome::Deferred
         );
         assert_eq!(turn.read(actor)?, before);
+        Ok(())
+    }
+
+    #[test]
+    fn finite_batch_rotates_three_actors_and_reoffers_only_pending_inputs()
+    -> Result<(), Box<dyn Error>> {
+        let mut runtime = runtime_with_capacity(3)?;
+        let (actor_a, start_a) = admitted_at(&mut runtime, 30, 4)?;
+        let (actor_b, start_b) = admitted_at(&mut runtime, 31, 14)?;
+        let (actor_c, start_c) = admitted_at(&mut runtime, 32, 24)?;
+        let scope = scope_for_world(start_a.world_id())?;
+        let index = index(
+            &scope,
+            &[
+                (5, 5, 7, walkable()),
+                (6, 5, 7, walkable()),
+                (15, 5, 7, walkable()),
+                (25, 5, 7, walkable()),
+            ],
+        )?;
+        let binding = selection(start_a, &scope);
+        let mut cursor = MovementFairCursor::default();
+        let mut offers = [
+            MovementOffer::pending(actor_a, start_a, CardinalStep::East),
+            MovementOffer::pending(actor_a, start_a, CardinalStep::East),
+            MovementOffer::pending(actor_b, start_b, CardinalStep::East),
+            MovementOffer::pending(actor_c, start_c, CardinalStep::East),
+        ];
+        let budget = NonZeroUsize::new(2).ok_or("engineering budget")?;
+        let offer_cap = NonZeroUsize::new(4).ok_or("engineering offer cap")?;
+        {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, budget);
+            assert_eq!(
+                turn.service_finite_batch(&mut offers, offer_cap, &mut cursor, &binding, &index)?,
+                MovementBatchResult {
+                    serviced: 2,
+                    deferred: 2,
+                }
+            );
+            assert!(offers[0].completion().is_some());
+            assert_eq!(offers[1].completion(), None);
+            assert!(offers[2].completion().is_some());
+            assert_eq!(offers[3].completion(), None);
+            assert_eq!(turn.read(actor_c)?, start_c);
+            assert_eq!(
+                turn.service_finite_batch(&mut offers, offer_cap, &mut cursor, &binding, &index)?,
+                MovementBatchResult {
+                    serviced: 0,
+                    deferred: 2,
+                }
+            );
+        }
+        {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, budget);
+            assert_eq!(
+                turn.service_finite_batch(&mut offers, offer_cap, &mut cursor, &binding, &index)?,
+                MovementBatchResult {
+                    serviced: 2,
+                    deferred: 0,
+                }
+            );
+            // B was last in the previous turn: C is serviced before the stale
+            // second A offer, which must fail against the current owner state.
+            assert_eq!(
+                offers[1].completion(),
+                Some(Err(MovementError::SnapshotMismatch))
+            );
+            assert_eq!(
+                offers[3].completion().map(|r| r.map(|s| s.position().x)),
+                Some(Ok(25))
+            );
+            assert_eq!(turn.read(actor_a)?.position().x, 5);
+            assert_eq!(turn.processed(), 2);
+        }
+        {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, budget);
+            assert_eq!(
+                turn.service_finite_batch(&mut offers, offer_cap, &mut cursor, &binding, &index)?,
+                MovementBatchResult {
+                    serviced: 0,
+                    deferred: 0,
+                }
+            );
+            assert_eq!(turn.processed(), 0, "resolved offers cannot be duplicated");
+            let mut replay = [MovementOffer::pending(actor_a, start_a, CardinalStep::East)];
+            assert_eq!(
+                turn.service_finite_batch(&mut replay, offer_cap, &mut cursor, &binding, &index)?,
+                MovementBatchResult {
+                    serviced: 1,
+                    deferred: 0,
+                }
+            );
+            assert_eq!(
+                replay[0].completion(),
+                Some(Err(MovementError::SnapshotMismatch))
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn finite_batch_offer_overflow_is_atomic_and_failed_attempts_consume_budget()
+    -> Result<(), Box<dyn Error>> {
+        let mut runtime = runtime()?;
+        let (actor_a, before_a) = admitted_at(&mut runtime, 30, i32::MAX)?;
+        let (actor_b, before_b) = admitted_at(&mut runtime, 31, 14)?;
+        let scope = scope_for_world(before_a.world_id())?;
+        let index = index(&scope, &[(15, 5, 7, walkable())])?;
+        let binding = selection(before_a, &scope);
+        let budget = NonZeroUsize::new(1).ok_or("engineering budget")?;
+        let cap = NonZeroUsize::new(1).ok_or("engineering offer cap")?;
+        let mut cursor = MovementFairCursor::default();
+        let mut offers = [
+            MovementOffer::pending(actor_a, before_a, CardinalStep::East),
+            MovementOffer::pending(actor_b, before_b, CardinalStep::East),
+        ];
+        {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, budget);
+            assert_eq!(
+                turn.service_finite_batch(&mut offers, cap, &mut cursor, &binding, &index),
+                Err(MovementBatchError::OfferCapacityExceeded)
+            );
+            assert_eq!(turn.processed(), 0);
+            assert_eq!(turn.read(actor_a)?, before_a);
+            assert_eq!(turn.read(actor_b)?, before_b);
+            assert!(offers.iter().all(|offer| offer.completion().is_none()));
+        }
+        let cap = NonZeroUsize::new(2).ok_or("engineering offer cap")?;
+        {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, budget);
+            assert_eq!(
+                turn.service_finite_batch(&mut offers, cap, &mut cursor, &binding, &index)?,
+                MovementBatchResult {
+                    serviced: 1,
+                    deferred: 1,
+                }
+            );
+            assert_eq!(
+                offers[0].completion(),
+                Some(Err(MovementError::CoordinateOverflow))
+            );
+            assert_eq!(turn.read(actor_b)?, before_b);
+            assert_eq!(turn.processed(), 1);
+        }
+        {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, budget);
+            assert_eq!(
+                turn.service_finite_batch(&mut offers, cap, &mut cursor, &binding, &index)?,
+                MovementBatchResult {
+                    serviced: 1,
+                    deferred: 0,
+                }
+            );
+            assert_eq!(
+                offers[1].completion().map(|r| r.map(|s| s.position().x)),
+                Some(Ok(15))
+            );
+            assert_eq!(turn.read(actor_a)?, before_a);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn finite_batch_measures_mixed_multi_actor_engineering_cycles() -> Result<(), Box<dyn Error>> {
+        let mut runtime = runtime_with_capacity(4)?;
+        let (actor_a, mut current_a) = admitted_at(&mut runtime, 30, 4)?;
+        let (actor_b, mut current_b) = admitted_at(&mut runtime, 31, 14)?;
+        let (actor_c, stale_c) = admitted_at(&mut runtime, 32, 24)?;
+        let (actor_d, overflow_d) = admitted_at(&mut runtime, 33, i32::MAX)?;
+        runtime.borrow_movement_position().commit_cardinal(
+            stale_c,
+            MovementLocalPosition {
+                x: 25,
+                y: 5,
+                floor: 7,
+            },
+        )?;
+        let scope = scope_for_world(current_a.world_id())?;
+        let index = index(
+            &scope,
+            &[
+                (4, 5, 7, walkable()),
+                (5, 5, 7, walkable()),
+                (14, 5, 7, walkable()),
+                (15, 5, 7, walkable()),
+            ],
+        )?;
+        let binding = selection(current_a, &scope);
+        let budget = NonZeroUsize::new(3).ok_or("engineering budget")?;
+        let cap = NonZeroUsize::new(5).ok_or("engineering offer cap")?;
+        let mut cursor = MovementFairCursor::default();
+        const CYCLES: usize = 512;
+        let mut cycle_ns = Vec::with_capacity(CYCLES);
+        let start = Instant::now();
+        let mut applied = 0;
+        let mut rejected = 0;
+        for _ in 0..CYCLES {
+            let direction_a = if current_a.position().x == 4 {
+                CardinalStep::East
+            } else {
+                CardinalStep::West
+            };
+            let direction_b = if current_b.position().x == 14 {
+                CardinalStep::East
+            } else {
+                CardinalStep::West
+            };
+            let mut offers = [
+                MovementOffer::pending(actor_a, current_a, direction_a),
+                MovementOffer::pending(actor_a, current_a, direction_a),
+                MovementOffer::pending(actor_b, current_b, direction_b),
+                MovementOffer::pending(actor_c, stale_c, CardinalStep::East),
+                MovementOffer::pending(actor_d, overflow_d, CardinalStep::East),
+            ];
+            let cycle_start = Instant::now();
+            for _ in 0..2 {
+                let mut turn = MovementOwnerTurn::begin(&mut runtime, budget);
+                let result =
+                    turn.service_finite_batch(&mut offers, cap, &mut cursor, &binding, &index)?;
+                assert_eq!(result.serviced, turn.processed());
+            }
+            cycle_ns.push(cycle_start.elapsed().as_nanos());
+            assert!(offers.iter().all(|offer| offer.completion().is_some()));
+            current_a = offers[0].completion().ok_or("A absent")??;
+            current_b = offers[2].completion().ok_or("B absent")??;
+            assert_eq!(
+                offers[1].completion(),
+                Some(Err(MovementError::SnapshotMismatch))
+            );
+            assert_eq!(
+                offers[4].completion(),
+                Some(Err(MovementError::CoordinateOverflow))
+            );
+            applied += offers
+                .iter()
+                .filter(|offer| matches!(offer.completion(), Some(Ok(_))))
+                .count();
+            rejected += offers
+                .iter()
+                .filter(|offer| matches!(offer.completion(), Some(Err(_))))
+                .count();
+        }
+        let elapsed = start.elapsed();
+        cycle_ns.sort_unstable();
+        assert_eq!(applied + rejected, CYCLES * 5);
+        assert_eq!(applied, CYCLES * 2);
+        eprintln!(
+            "movement_finite_batch_engineering_sample: os={} arch={} debug_assertions={} logical_parallelism={:?} cycles={} actors=4 offered_per_cycle=5 attempts_per_turn=3 turns_per_cycle=2 applied={} rejected={} elapsed_ns={} inputs_per_sec={:.0} cycle_p50_ns={} cycle_p95_ns={} cycle_p99_ns={} cycle_max_ns={} fixture=two_oscillating_walkable_one_stale_one_overflow_one_replay_no_network_or_ingress",
+            std::env::consts::OS,
+            std::env::consts::ARCH,
+            cfg!(debug_assertions),
+            std::thread::available_parallelism()
+                .ok()
+                .map(NonZeroUsize::get),
+            CYCLES,
+            applied,
+            rejected,
+            elapsed.as_nanos(),
+            (CYCLES * 5) as f64 / elapsed.as_secs_f64(),
+            cycle_ns[CYCLES / 2],
+            cycle_ns[CYCLES * 95 / 100],
+            cycle_ns[CYCLES * 99 / 100],
+            cycle_ns[CYCLES - 1],
+        );
         Ok(())
     }
 
