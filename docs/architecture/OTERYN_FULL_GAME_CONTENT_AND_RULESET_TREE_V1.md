@@ -8,6 +8,7 @@
 - Admission main: `2389c6671000b8b0efe341540a62e303e307ad15`
 - Machine contract: `docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json`
 - Item detail companion: PR #903 (`OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1` candidate)
+- Creature detail companion: `OTERYN_MONSTER_AUTHORING_SCHEMA_V1` candidate
 
 ## 1. Decision
 

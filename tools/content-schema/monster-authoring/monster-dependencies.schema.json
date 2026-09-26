@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:monster-dependencies:candidate:1",
+  "title": "Direct monster dependencies authoring schema candidate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "abilities": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/ability"
+      },
+      "minItems": 0
+    },
+    "effects": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/effect"
+      },
+      "minItems": 0
+    },
+    "formulas": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/formula"
+      },
+      "minItems": 0
+    },
+    "documents": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/document"
+      },
+      "minItems": 0
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/item"
+      },
+      "minItems": 0
+    },
+    "loot_tables": {
+      "type": "array",
+      "items": {
+        "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/loot"
+      },
+      "minItems": 0
+    }
+  },
+  "required": [
+    "abilities",
+    "effects",
+    "formulas",
+    "documents",
+    "items",
+    "loot_tables"
+  ]
+}
