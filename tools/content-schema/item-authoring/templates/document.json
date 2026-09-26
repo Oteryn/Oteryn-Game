@@ -1,0 +1,38 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.document",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Document",
+  "family_profile": "document",
+  "taxonomy": {
+    "item_class": "document",
+    "primary": "document",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "presentation": {
+    "grammar": {
+      "article": "a",
+      "plural": "documents"
+    }
+  },
+  "readable": {
+    "readable": true,
+    "writable": false,
+    "write_policy": "none",
+    "distance_readable": false
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": false
+  }
+}
+
