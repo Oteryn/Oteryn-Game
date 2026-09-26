@@ -1,0 +1,42 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.ammunition",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Ammunition",
+  "family_profile": "weapon_distance",
+  "taxonomy": {
+    "item_class": "ammunition",
+    "primary": "ammunition",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "stack": {
+    "stackable": true,
+    "max_count": 100
+  },
+  "equipment": {
+    "slot": "ammo",
+    "hands": 0,
+    "reserved_slots": [],
+    "groups": []
+  },
+  "weapon": {
+    "weapon_type": "ammunition",
+    "ammunition_kind": "arrow",
+    "attack": 1,
+    "consumption_mode": "consume_item"
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}
+
