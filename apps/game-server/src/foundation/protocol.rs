@@ -2341,8 +2341,14 @@ mod tests {
                 last_applied_server_sequence: None,
             }
         );
-        assert_eq!(encode_liveness_probe(0, 1), Err(FoundationProtocolError::MalformedEnvelope));
-        assert_eq!(encode_liveness_probe(1, 0), Err(FoundationProtocolError::MalformedEnvelope));
+        assert_eq!(
+            encode_liveness_probe(0, 1),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        assert_eq!(
+            encode_liveness_probe(1, 0),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
         Ok(())
     }
 
@@ -2379,7 +2385,9 @@ mod tests {
             &[0x08, 0x01, 0x12, 0x01, 0x01],
             &[0x08, 0x80],
             &[0x08, 0x01, 0x10, 0x80],
-            &[0x08, 0x01, 0x10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02],
+            &[
+                0x08, 0x01, 0x10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02,
+            ],
         ] {
             assert_eq!(
                 decode_wire_envelope(&test_envelope(6, payload)),
