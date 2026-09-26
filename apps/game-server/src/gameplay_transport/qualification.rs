@@ -532,6 +532,23 @@ fn bootstrap(major: u64, profile: u64, character: &[u8; 16], material: &str) -> 
     envelope(1, 0, &payload)
 }
 
+/// Structurally valid FND-02 resume request. The qualification supplies only
+/// unissued reconnect material; this transport must not mint resume authority.
+fn resume_payload(session: &[u8; 16], material: &[u8]) -> Vec<u8> {
+    let mut payload = Vec::new();
+    bytes_field(&mut payload, 1, session);
+    bytes_field(&mut payload, 2, material);
+    scalar(&mut payload, 4, 1);
+    scalar(&mut payload, 5, 1);
+    scalar(&mut payload, 6, 1);
+    bytes_field(&mut payload, 8, b"seam-qualification");
+    payload
+}
+
+fn resume(session: &[u8; 16], material: &[u8]) -> Vec<u8> {
+    envelope(3, 0, &resume_payload(session, material))
+}
+
 fn framed(body: &[u8]) -> Vec<u8> {
     let mut output = u32::try_from(body.len())
         .unwrap_or(u32::MAX)
@@ -565,6 +582,39 @@ async fn exchange(address: SocketAddr, connector: &TlsConnector, raw: &[u8]) -> 
     let _ = stream.flush().await;
     let mut output = Vec::new();
     let _ = tokio::time::timeout(Duration::from_secs(20), stream.read_to_end(&mut output)).await;
+    Ok(frames(&output))
+}
+
+/// For continuity cases, require the serving node to actually end the
+/// connection within the bounded deadline. `exchange` deliberately tolerates
+/// a still-open admitted socket for other cases.
+async fn exchange_must_close(
+    address: SocketAddr,
+    connector: &TlsConnector,
+    raw: &[u8],
+) -> TestResult<Reply> {
+    let tcp = TcpStream::connect(address).await?;
+    let mut stream = tokio::time::timeout(
+        Duration::from_secs(30),
+        connector.connect(ServerName::try_from("localhost")?, tcp),
+    )
+    .await
+    .map_err(|_| "TLS connect did not complete")??;
+    let _ = stream.write_all(raw).await;
+    let _ = stream.flush().await;
+    let mut output = Vec::new();
+    match tokio::time::timeout(Duration::from_secs(20), stream.read_to_end(&mut output)).await {
+        Ok(Ok(_)) => {}
+        Ok(Err(error))
+            if matches!(
+                error.kind(),
+                io::ErrorKind::UnexpectedEof
+                    | io::ErrorKind::ConnectionReset
+                    | io::ErrorKind::BrokenPipe
+            ) => {}
+        Ok(Err(error)) => return Err(error.into()),
+        Err(_) => return Err("server did not close the connection".into()),
+    }
     Ok(frames(&output))
 }
 
@@ -912,6 +962,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         scope_generation,
         descriptor: &descriptor,
         url: &url,
+        runtime: &runtime,
     });
     // The listener must outlive every client case: an early listener exit is a
     // failure, never a hang on an unaccepted connection.
@@ -967,6 +1018,7 @@ struct SeamClients<'a> {
     scope_generation: u64,
     descriptor: &'a ProducerDescriptor,
     url: &'a str,
+    runtime: &'a tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>,
 }
 
 /// The #823 `SEAM_PASS` client stages against one serving node.
@@ -983,6 +1035,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         scope_generation,
         descriptor,
         url,
+        runtime,
     } = clients;
     let exact = connector(certificate, &EXACT)?;
     let mut nonce_tag = 0x40u8;
@@ -1078,6 +1131,25 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     evidence("stage=foundation_negatives");
     // Foundation negatives through the real listener, before FND-04.
     let token = sign_grant(&grant.borrowed(), now_seconds()?);
+    let malformed_session = v7(1, 0x09);
+    let mut malformed_resume = resume_payload(&malformed_session, b"unissued-reconnect-proof");
+    // All other fields are canonical; only this singular session identity repeats.
+    bytes_field(&mut malformed_resume, 1, &malformed_session);
+    let reply = exchange_must_close(
+        address,
+        &exact,
+        &framed(&envelope(3, 0, &malformed_resume)),
+    )
+    .await?;
+    if reply
+        != Reply::Frames(vec![encode_protocol_error(
+            FoundationProtocolError::MalformedEnvelope,
+            0,
+        )?])
+        || committed_admissions(url).await? != 0
+    {
+        return Err(format!("malformed ClientResume admitted or misreported: {reply:?}").into());
+    }
     for (label, raw, error) in [
         (
             "wrong_protocol_major",
@@ -1110,7 +1182,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         return Err("a Foundation negative committed an admission".into());
     }
     evidence(
-        "foundation wrong_protocol_major=rejected wrong_transport_profile=rejected phase_invalid=rejected oversized=closed truncated=closed admissions=0",
+        "foundation wrong_protocol_major=rejected wrong_transport_profile=rejected malformed_resume=protocol_error phase_invalid=rejected oversized=closed truncated=closed admissions=0",
     );
 
     evidence("stage=fnd04_negatives");
@@ -1167,7 +1239,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     let admitted_token = sign_grant(&grant.borrowed(), now_seconds()?);
     let mut raw = framed(&bootstrap(1, 1, &characters[0], &admitted_token));
     raw.extend_from_slice(&framed(&envelope(7, 1, &[])));
-    let reply = exchange(address, &exact, &raw).await?;
+    let reply = exchange_must_close(address, &exact, &raw).await?;
     let session =
         accepted_session(&reply).ok_or_else(|| format!("admission refused: {reply:?}"))?;
     let Reply::Frames(frames) = &reply else {
@@ -1187,6 +1259,27 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     evidence(
         "admission=committed server_accepted=1 post_admission_command=closed_unknown_message admissions=1",
     );
+
+    // The fresh GameSession is durably committed and its first TLS socket has
+    // ended. A new TLS connection's valid ClientResume must fail closed:
+    // no ServerResumeAccepted, no replacement, no additional admission.
+    let before = runtime.lock().await.player_slot_counts();
+    if before != (1, 0) {
+        return Err(format!("fresh admission did not retain one actor: {before:?}").into());
+    }
+    let reply = exchange_must_close(
+        address,
+        &exact,
+        &framed(&resume(&session, b"unissued-reconnect-proof")),
+    )
+    .await?;
+    let after = runtime.lock().await.player_slot_counts();
+    if reply != Reply::Closed || committed_admissions(url).await? != 1 || after != before {
+        return Err(
+            format!("valid ClientResume acquired authority: {reply:?} actors={after:?}").into(),
+        );
+    }
+    evidence("resume valid_after_committed_socket_close=refused server_resume_accepted=0 admissions=1 committed_players=1 pending_reservations=0");
 
     // Replay of the consumed grant on a fresh connection.
     let reply = exchange(
