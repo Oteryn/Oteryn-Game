@@ -12,6 +12,7 @@ mod db;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod native_admission_source;
+pub mod recovery_evidence_composition;
 pub mod runtime_scope_assignment;
 mod schema;
 
