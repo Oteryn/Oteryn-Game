@@ -1,11 +1,13 @@
 """Focused verification requested by the owner; fixtures are synthetic, not imported content."""
 import copy
 import json
+from decimal import localcontext
+from tempfile import TemporaryDirectory
 from importlib.metadata import version
 from pathlib import Path
 from jsonschema import Draft202012Validator
 from normalize_monster_fields import cast_geometry, health_disposition
-from validate_monster import validate,SCHEMAS,structural,ROOT,percent_to_ppm
+from validate_monster import validate,SCHEMAS,structural,ROOT,percent_to_ppm,read,resolve_pointer
 
 def ident(name):return {'key':'oteryn:'+name,'revision':'r1'}
 def ref(family,name):return {'family':family,**ident(name)}
@@ -229,6 +231,69 @@ if __name__=='__main__':
         results.append({'name':'binary-float structural percent '+literal,'passed':float_percent.is_valid(json.loads(literal))==expected})
     for percent,expected_ppm in [('0',0),('100',1000000),('0.19',1900),('0.0001',1),('82',820000)]:
         results.append({'name':'exact percent to native ppm '+percent,'passed':percent_to_ppm(percent)==expected_ppm})
+    # Exercise the file reader, not a float approximation of the JSON literal.
+    for precision in (6,28):
+        with localcontext() as context, TemporaryDirectory() as directory:
+            context.prec=precision
+            for literal,expected_ppm in [
+                ('0.29000000000000000000000000000001',None),
+                ('99.999999999999999999999999999999',None),
+                ('0.29000000001',None),
+                ('2.9000000000000000000000000000001e-1',None),
+                ('1e-100',None),
+                ('0.29000000000000000000000000000000',2900),
+                ('2.9000000000000000000000000000000e-1',2900),
+                ('99.9999',999999),
+                ('1e-4',1),
+                ('100.000000000000000000000000000000',1000000),
+                ('-0.000000000000000000000000000000',0),
+            ]:
+                m,d,c=fixture()
+                m['loot']['entries'][0]['probability_percent']='EXACT_PERCENT_LITERAL'
+                path=Path(directory)/'monster.json'
+                path.write_text(json.dumps(m).replace('"EXACT_PERCENT_LITERAL"',literal),encoding='utf-8')
+                parsed=read(path)
+                errors=validate(parsed,d,c)
+                try:
+                    ppm=percent_to_ppm(parsed['loot']['entries'][0]['probability_percent'])
+                    converted=True
+                except ValueError:
+                    ppm=None;converted=False
+                valid=expected_ppm is not None
+                results.append({'name':f'exact JSON percent precision={precision}: {literal}',
+                    'passed':(not errors)==valid and converted==valid and ppm==expected_ppm,
+                    'expected_valid':valid,'error_count':len(errors)})
+
+    # Array syntax must not inherit Python's signed, padded, or Unicode indices.
+    for token in ('-1','-0','00','01','+0',' 0','0 ','0_0','\u0660','\uff10','-',''):
+        case('manifest rejects noncanonical array index '+repr(token),
+            lambda m,d,c,token=token:manifest(destination='/monster/behavior/attacks/'+token+'/ability'))
+    case('manifest canonical array index resolves',
+        lambda m,d,c:manifest(destination='/monster/behavior/attacks/0/ability'),True)
+    case('manifest out-of-bounds array index rejected',
+        lambda m,d,c:manifest(destination='/monster/behavior/attacks/1/ability'))
+    case('manifest rejects malformed pointer escape',
+        lambda m,d,c:manifest(destination='/monster/creature/display_name~2'))
+
+    pointer_document={'array':list(range(11)),'-1':'negative key','00':'padded key','+0':'signed key',
+        'a/b':'slash key','m~n':'tilde key','~1':'literal escape','':'empty key',
+        'bad~2':'not an escape','bad~':'trailing tilde'}
+    for path,expected in [('',pointer_document),('/array/0',0),('/array/10',10),
+        ('/-1','negative key'),('/00','padded key'),('/+0','signed key'),
+        ('/a~1b','slash key'),('/m~0n','tilde key'),('/~01','literal escape'),('/','empty key')]:
+        try:
+            matched=resolve_pointer(pointer_document,path)==expected
+        except (KeyError,IndexError,ValueError,TypeError):
+            matched=False
+        results.append({'name':'JSON pointer valid object/array token '+repr(path),'passed':matched})
+    for path in ('/bad~2','/bad~','/array/0/x'):
+        try:
+            resolve_pointer(pointer_document,path)
+            rejected=False
+        except (KeyError,IndexError,ValueError,TypeError):
+            rejected=True
+        results.append({'name':'JSON pointer malformed escape/scalar traversal '+path,'passed':rejected})
+
     for name,schema_name in [('monster-template.json','monster.schema.json'),('monster-dependencies-template.json','monster-dependencies.schema.json')]:
         count=len(structural(schema_name,json.loads((ROOT/name).read_text(encoding='utf-8'))))
         results.append({'name':'empty placeholders are not ready data: '+name,'passed':count>0,'structural_errors':count})
