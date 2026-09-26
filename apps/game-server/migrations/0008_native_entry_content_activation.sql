@@ -9,6 +9,30 @@ ALTER TABLE game_control_scope_grants DROP CONSTRAINT game_control_scope_grants_
 ALTER TABLE game_control_scope_grants ADD CONSTRAINT game_control_scope_grants_operation_check
     CHECK (operation IN (1, 2, 3, 4));
 
+-- The assignment-receipt guard (0006) matched the command kind against any granted
+-- operation. With operation 4 grantable, it must admit only the assignment kinds, so a
+-- Content-activation grant can never authorize an assignment receipt.
+CREATE OR REPLACE FUNCTION game_control_scope_grant_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_kind INTEGER := get_byte(NEW.command, 1);
+    v_actor_len INTEGER := get_byte(NEW.command, 34);
+BEGIN
+    IF v_kind NOT IN (1, 2, 3)
+       OR convert_from(substring(NEW.command FROM 36 FOR v_actor_len), 'UTF8') <> session_user
+       -- The command kind must match the committed state (3 revoke <=> REVOKED).
+       OR (v_kind = 3) <> (NEW.state = 2)
+       OR NOT EXISTS (
+            SELECT 1 FROM game_control_scope_grants g
+            WHERE g.control_role = session_user
+              AND '\x01'::BYTEA || uuid_send(g.world_id) || uuid_send(g.channel_id) = NEW.scope_key
+              AND g.operation = v_kind
+       ) THEN
+        RAISE EXCEPTION 'runtime-scope assignment is not granted to this control role' USING ERRCODE = '42501';
+    END IF;
+    RETURN NEW;
+END; $$;
+
 CREATE TABLE game_content_activations (
     world_id UUID NOT NULL CHECK (game_node_is_uuid_v7(world_id)),
     channel_id UUID NOT NULL CHECK (game_node_is_uuid_v7(channel_id)),

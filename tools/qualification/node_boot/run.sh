@@ -345,17 +345,18 @@ node_assigned_ready() { # §4.2–§4.4
   fi
   # #935: the node activates the scope's current native entry Content issuance before its
   # Channel runtime exists. Issuance requires an exact-scope operation-4 grant.
-  if ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty; then
-    fail "content activation without an exact-scope grant"
-  fi
+  local code=0
+  ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty || code=$?
+  [[ $code == 6 ]] || fail "content activation without an exact-scope grant exit=$code"
   psql_admin oteryn_node_boot <<SQL
 INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM generate_series(1, 4) op;
 SQL
   ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
   ops content activate --request content-1.json
-  if ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty; then
-    fail "stale content activation predecessor"
-  fi
+  code=0
+  ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
+  [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
+  [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
   await_log "event=content_activated activation_sequence=1 " 60
   await_log "readiness ready=true" 60

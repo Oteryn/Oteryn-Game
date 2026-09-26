@@ -35,7 +35,8 @@ pub struct ContentActivationRecord {
 
 impl DurabilityRoot {
     /// Control-plane: durably record one activation issuance. An exact replay succeeds; a
-    /// conflicting replay, stale predecessor or non-newer sequence is `Ok(false)`.
+    /// conflicting replay, stale predecessor, non-newer sequence or missing exact-scope grant
+    /// is a definitive refusal, `Ok(false)`.
     pub async fn record_content_activation(
         &self,
         request: &ContentActivationRequest,
@@ -70,7 +71,7 @@ impl DurabilityRoot {
                     match recorded {
                         Ok(_) => {}
                         Err(sqlx::Error::Database(error))
-                            if error.code().as_deref() == Some("OTC01") =>
+                            if matches!(error.code().as_deref(), Some("OTC01" | "42501")) =>
                         {
                             return Ok(false);
                         }

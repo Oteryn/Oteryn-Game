@@ -45,6 +45,10 @@ Allocation: #162 comment 5849898542.
     sequence, or a sequence that is not newer.
 
   The newest row of a scope is its current activation and its floor.
+- **Assignment-receipt guard.** Operation 4 is grantable, so `0008` also restricts the `0006`
+  receipt guard to assignment command kinds 1–3. Without that, a Content-activation grant could
+  authorize an immutable kind-4 assignment receipt (independent review P1). A missing grant is a
+  definitive refusal (exit code 6).
 - **Operator command.** `oteryn-game-ops content activate --world --channel --sequence
   --previous empty|<n> --request <file>`:
   - computes the pair digests and the frame binding from the committed room qualified for that

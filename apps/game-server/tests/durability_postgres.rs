@@ -5547,8 +5547,8 @@ fn content_activation_floor_is_monotonic_predecessor_bound_and_immutable()
                     frame_binding_digest: [digest.wrapping_add(2); 32],
                 };
 
-                // Without an operation-4 grant for this scope the issuer is refused outright.
-                assert!(root.record_content_activation(&request(1, None, 1)).await.is_err());
+                // Without an operation-4 grant for this scope the issuance is refused.
+                assert!(!root.record_content_activation(&request(1, None, 1)).await?);
                 let mut connection = sqlx::PgConnection::connect(&url).await?;
                 sqlx::query(
                     "INSERT INTO game_control_scope_grants (control_role, world_id, channel_id, operation) \
@@ -5559,6 +5559,27 @@ fn content_activation_floor_is_monotonic_predecessor_bound_and_immutable()
                 .execute(&mut connection)
                 .await?;
                 assert_eq!(root.read_current_content_activation(world, channel).await?, None);
+                // An operation-4 grant never authorizes an assignment receipt of kind 4.
+                let receipt = sqlx::query(
+                    "INSERT INTO game_runtime_scope_assignment_receipts (operation_key, command, \
+                     scope_key, ownership_generation, state, holder_node_id, \
+                     holder_registration_revision, source_revision, decision_identity, decided_at) \
+                     VALUES (decode(repeat('00', 32), 'hex'), \
+                     '\\x0104'::bytea || decode(repeat('00', 32), 'hex') \
+                       || set_byte('\\x00'::bytea, 0, octet_length(session_user)) \
+                       || convert_to(session_user, 'UTF8'), \
+                     '\\x01'::bytea || $1 || $2, 1, 1, encode($1, 'hex')::uuid, 1, 99, \
+                     'runtime-scope-assignment:99', 0)",
+                )
+                .bind(world.as_bytes().as_slice())
+                .bind(channel.as_bytes().as_slice())
+                .execute(&mut connection)
+                .await;
+                let code = match &receipt {
+                    Err(sqlx::Error::Database(error)) => error.code().map(|code| code.into_owned()),
+                    _ => None,
+                };
+                assert_eq!(code.as_deref(), Some("42501"), "kind-4 receipt: {receipt:?}");
 
                 assert!(root.record_content_activation(&request(1, None, 1)).await?);
                 assert!(root.record_content_activation(&request(1, None, 1)).await?, "exact replay");

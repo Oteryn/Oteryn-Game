@@ -767,7 +767,11 @@ async fn content(operator: &Operator, mut arguments: Arguments) -> Outcome {
             arguments.finish()?;
             let world = WorldId::decode(&decode_uuid("world", &world_text)?)
                 .map_err(|_| Failure::Input("world".into()))?;
-            decode_uuid("channel", &channel_text)?;
+            ChannelId::decode(&decode_uuid("channel", &channel_text)?)
+                .map_err(|_| Failure::Input("channel".into()))?;
+            if world_text == channel_text {
+                return Err(Failure::Input("world and channel must differ".into()));
+            }
             let room = qualify_native_entry_room(world)
                 .map_err(|error| Failure::Input(format!("native entry room: {error}")))?;
             let file = ContentActivationRequestFile {
@@ -812,7 +816,7 @@ async fn content(operator: &Operator, mut arguments: Arguments) -> Outcome {
             Ok(())
         }
         Ok(false) => Err(Failure::Rejected(
-            "content activation is stale, not newer or conflicts with the recorded sequence".into(),
+            "content activation is not granted for this scope, stale, not newer or conflicts with the recorded sequence".into(),
         )),
         Err(error) => Err(Failure::Ambiguous(format!(
             "content activation outcome unknown ({error:?}); re-run with the same --request {name}"
