@@ -39,6 +39,19 @@ mod fresh_admission_composition_linkage {
 }
 
 #[cfg(test)]
+mod recovery_evidence_composition_linkage {
+    use super::DurabilityRoot;
+    use super::recovery_evidence_composition::RecoveryEvidenceSubject;
+
+    #[test]
+    fn recovery_evidence_composition_api_is_linked() {
+        let _ = RecoveryEvidenceSubject::new("01890f4c-3b2a-7cc2-8d11-9a321b7c0001", "key");
+        let _ = DurabilityRoot::verify_registered_recovery;
+        let _ = DurabilityRoot::revalidate_registered_recovery;
+    }
+}
+
+#[cfg(test)]
 mod native_admission_source_linkage {
     use super::DurabilityRoot;
     use super::native_admission_source::{
