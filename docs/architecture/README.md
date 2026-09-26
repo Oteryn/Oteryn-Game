@@ -30,6 +30,8 @@ Architecture acceptance is not runtime implementation or Reference parity. See `
 - [Reusable prompt index](../agents/prompts/README.md) — aliases and execution rules; current programme control-plane entry point is `Oteryn: work coordinator`.
 - [Foundation decision backlog](FOUNDATION_DECISION_BACKLOG.md) — stable/historical gate definitions; live implementation state supersedes dated execution wording.
 - [Gameplay/product architecture horizon](GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md) — detailed later product horizon; stale implementation-start wording is not current execution authority.
+- [Oteryn Evolved master product roadmap](OTERYN_EVOLVED_MASTER_PRODUCT_ROADMAP_2026-09-11.md) — proposed, non-authoritative consolidation of the historical 128-system product backlog, forum/player QoL evidence and owner clarifications into 19 Evolved programmes; `IMPLEMENTATION_AUTHORITY: NONE`.
+- [Oteryn Evolved QoL feature clusters](OTERYN_EVOLVED_QOL_FEATURE_CLUSTERS_2026-09-11.md) — retained focused QoL/forum source inventory feeding the master product roadmap; non-authoritative planning input.
 - [Architecture decision discipline](../agents/ARCHITECTURE_DECISION_DISCIPLINE.md).
 - [G4 multi-source identity binding decision](OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md) — keeps canonical Oteryn identity independent while retaining exact wiki/OTS/client source IDs for deterministic crosswalk and drift comparison.
 
