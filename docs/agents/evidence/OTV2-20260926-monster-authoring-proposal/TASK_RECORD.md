@@ -2,8 +2,8 @@
 
 ```yaml
 task_id: OTV2-20260926-monster-authoring-proposal
-title: Save the updated monster schema off main
-mode: AUDIT
+title: Repair and retain the monster authoring schema v2 off main
+mode: WORK
 status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
@@ -38,8 +38,34 @@ High-risk authority/recovery: `NOT_APPLICABLE` to isolated evidence retention. A
 
 ## Acceptance and evidence
 
-Retain the three updated formal schemas and two empty templates, with chances at 0–100% and original text. Verify all published bytes and that the complete delta is confined to the owned directory. Local source-derived coverage and prior focused checks are **DERIVED** authoring evidence; actual runtime and Global Reference qualification remain **UNKNOWN**, not claimed. Runtime/component/E2E checks are outside this retention task. The final branch receipt records the exact remote head and schema checks.
+Retain the repaired three v2 schemas, two empty templates and bounded executable authoring verification, with chances at 0–100% and original text. Verify all published bytes and that the complete delta is confined to the owned directory. Local source-derived coverage and prior focused checks are **DERIVED** authoring evidence; actual runtime and Global Reference qualification remain **UNKNOWN**, not claimed. Runtime/component/E2E checks are outside this retention task. The final branch receipt records the exact remote head and schema checks.
 
 ## Programme and hold
 
-Existing programme mapping: `KAN-16`, Full content census and catalog structure; native GitHub links include #162/#504/#708/#511, parent `KAN-6`, High, `W toku`, `readiness-active`. FixVersion was not supplied in the bounded response. Saving these proposals does not complete the aggregate Story, so no programme status mutation is requested. No paid review or independent architecture approval is claimed for this retention operation.
+Existing programme mapping: `KAN-16`, Full content census and catalog structure; native GitHub links include #162/#504/#708/#511, parent `KAN-6`, High, `W toku`, `readiness-active`. FixVersion was not supplied in the bounded response. Repairing and saving these proposals does not complete the aggregate Story, so no programme status mutation is requested. No paid review or independent architecture approval is claimed for this retention operation.
+
+## Successor repair allocation and disposition
+
+Owner instruction: "wprowadz poprawki" after the repeat Canary/Crystal audit.
+The exact previous retained proposal was a355d7d35f42367453834931b93ff3df581a2e07.
+Preflight found predecessor 1a165960ba0fcf19427067cef835ae8bd3bdbc8c with only the
+two advisory review additions; these are preserved. This session explicitly
+returns to AUTHORING for the bounded successor on the same exclusively allocated
+branch and owned directory. No force/reset, protected-main write or integration.
+
+REPAIR_NOTES.md resolves the five audit groups, zero-value import boundaries and
+the applicable advisory findings. The bounded verification scripts/requirements,
+source-path census and synthetic fixtures make the repaired rules reproducible;
+no upstream raw assets/source trees or real imported monster data are retained.
+
+Checks selected for this evidence-only Python/JSON change: generator byte
+reproducibility, JSON Schema meta-validation, 104 focused authoring cases,
+242-path source-destination mapping, synthetic CLI and complete bounded remote
+delta/readback. Required full Game/host/runtime lanes are outside this proposal
+retention scope; no PR, game-gate, runtime or independent approval is claimed.
+
+After the last API write, require fresh remote head equality with returned SHA,
+verify owned delta, freeze, then qualify exact immutable remote files. The final
+SHA-bound receipt is external because no commit can include its own SHA. Status
+remains waiting/held for later architectural and integration disposition. KAN-16
+receives one material successor result comment while aggregate status stays W toku.
