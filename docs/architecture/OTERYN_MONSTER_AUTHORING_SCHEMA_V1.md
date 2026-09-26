@@ -63,6 +63,16 @@ The Python validator uses `Decimal.as_integer_ratio()` followed by integer `divm
 so acceptance does not depend on the active Decimal precision. Data read as `f64` alone
 cannot establish the precision of the original source token.
 
+### Import decisions (owner, 2026-09-26)
+
+Recorded after the Canary test batch (`tools/content-schema/monster-authoring/samples/canary-47dfd51f/`).
+
+| # | Decision | Source basis |
+|---|---|---|
+| D5 | Imported monsters with no source counterpart set `behavior.movement.pass_through=false`. | Canary/Crystal have no pass-through monster flag. |
+| D6 | Creature event scripts that only feed quest/task progress (e.g. `RationalRequestRatDeath`) belong to Quest/Interaction and are recorded as `approved_omission` in the monster manifest. | The inspected events are task counters, not monster behaviour. |
+| D7 | `creature.death_residue` is `{item, fluid_type}`. Races `venom`/`blood`/`ink`/`chocolate`/`candy` map to splash Item 2886 with fluid `slime`/`blood`/`ink`/`chocolate`/`candy`; `undead`/`fire`/`energy` leave none, and the field is omitted. Summons drop no corpse or residue. | `creature.cpp` `Creature::dropCorpse`, identical in Canary `47dfd51f` and Crystal `be61cdd3`/`ac447fef`. One splash Item differs only by fluid, so an `ItemRef` alone could not express it; this replaces the proposal's `death_residue_item`. |
+
 ## 4. Carried semantics
 
 Retained from the proposal without change (details in the origin `README.md`/`REPAIR_NOTES.md`):
@@ -105,7 +115,7 @@ parses today. Status per area:
 | `summoning.familiar.duration_ms` | `familiar.duration_seconds` | MATCH via `/1000` (D3) |
 | `summoning.familiar.vocation`, `summon_ability`, `mana_cost`, `owner_speed_bonus` | `ProjectV2FamiliarProfile` | MATCH |
 | `loot.entries[].probability_percent` | `LootEntryDocument.probability_ppm` (`content/project.rs`); v2 has the `Loot` family but no Loot profile | MATCH via D1 |
-| flags, targeting, voices, summons, presentation, spawn/system eligibility, reflection/healing | — | GAP |
+| flags, targeting, voices, summons, presentation, spawn/system eligibility, reflection/healing, `death_residue` | — | GAP |
 
 GAP rows are the input for the executable adoption slices; they are added to v2 only when a
 real playable monster needs them.
@@ -123,7 +133,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 167 focused positive/negative cases
+python verify_formal_schema.py     # 170 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```

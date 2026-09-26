@@ -767,11 +767,26 @@
         "corpse_item": {
           "$ref": "#/$defs/ItemRef"
         },
-        "death_residue_item": {
-          "$ref": "#/$defs/ItemRef"
-        },
         "soul_core_item": {
           "$ref": "#/$defs/ItemRef"
+        },
+        "death_residue": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "item": {
+              "$ref": "#/$defs/ItemRef"
+            },
+            "fluid_type": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "item"
+          ],
+          "description": "Item placed on death beside the corpse; fluid_type distinguishes one splash Item filled with blood, slime, etc. Omit when the race leaves none."
         },
         "encyclopedia": {
           "type": "object",

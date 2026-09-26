@@ -31,15 +31,13 @@ item-look outfits, non-zero light and registered spell scripts.
 ## Result
 
 - 10/10 bundles pass `validate_monster.py` (structure, semantics, declared-reference closure).
-- 10/10 import manifests are structurally valid and **all 10 are blocked for admission**, only by
-  these open decisions:
-
-| Blocker | Monsters | Needed decision |
-|---|---|---|
-| `behavior.movement.pass_through` has no Canary counterpart | 10 | Native default rule for imported monsters |
-| Source `race` selects a death residue/splash Item | 10 | Race -> residue Item mapping |
-| Creature event scripts (`RationalRequestRatDeath`, dragon task deaths) | 2 (3 rows) | These are quest hooks; move to Quest/Interaction or approve omission |
-
+- 10/10 import manifests resolve every declared row (`validate_monster.py ... --manifest`) after
+  owner decisions D5–D7 in the architecture document. The first run was blocked in all 10 by:
+  `pass_through` without a Canary counterpart (D5), race -> death residue (D7; blood x7, venom
+  x1, none for undead and fire) and 3 quest task event rows in rat/dragon (D6).
+- "Resolved" covers only the declared manifest rows. It does not prove source-census
+  completeness, canonical Item/asset admission (all `canary:` references are declarations),
+  runtime behaviour or 2026-07-28 reference parity.
 - Every loot item name resolved to exactly one Canary item id; the rule applied is recorded in
   `sources.json`. Canary has 3,258 ambiguous item names overall, so larger batches will hit them.
 - Values that follow a documented source rule rather than a literal field are marked in the

@@ -111,6 +111,14 @@
       "key": "canary:item/5962",
       "revision": "canary-47dfd51f"
     },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "blood"
+    },
     "loot": {
       "family": "Loot",
       "key": "canary:loot/cyclops",

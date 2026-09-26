@@ -12,7 +12,8 @@
     "condition": "monsters.cpp deserializeSpell: |min|,|max| totals, max=0 -> min, startDamage>min -> 0, tick default 2000 ms",
     "area_effect": "register_monster_type.lua readSpell: an area spell without effect gets CONST_ME_POFF unless its name contains \"field\"",
     "fields": "utils_definitions.hpp ITEM_FIREFIELD_PVP_FULL=2118, ITEM_POISONFIELD_PVP=105, ITEM_ENERGYFIELD_PVP=2122",
-    "elements": "register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE"
+    "elements": "register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE",
+    "race_residue": "creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse"
   },
   "shared_sources": {
     "data/items/items.xml": "a3f0a44db14bf020029e4e09a319cbda320bd799",

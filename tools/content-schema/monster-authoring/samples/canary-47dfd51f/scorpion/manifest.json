@@ -52,9 +52,9 @@
       "source_line": 50,
       "source_field": "flags.pass_through",
       "kind": "field",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "destination": "/monster/behavior/movement/pass_through",
-      "resolution": "Oteryn-native movement field with no Canary counterpart; placeholder false awaits an explicit native decision."
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
     },
     {
       "source_index": 0,
@@ -241,8 +241,9 @@
       "source_line": 35,
       "source_field": "race",
       "kind": "dependency",
-      "status": "unresolved_dependency",
-      "resolution": "Source race \"venom\" selects a death residue/splash Item in native code; not resolved to an Item here."
+      "status": "mapped",
+      "destination": "/monster/creature/death_residue",
+      "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
     }
   ]
 }

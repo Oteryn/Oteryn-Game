@@ -2,6 +2,11 @@
   "definitions": [
     {
       "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
       "key": "canary:item/9651",
       "revision": "canary-47dfd51f"
     }

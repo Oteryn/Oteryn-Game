@@ -40,7 +40,16 @@ RULES = {
     'area_effect': 'register_monster_type.lua readSpell: an area spell without effect gets CONST_ME_POFF unless its name contains "field"',
     'fields': 'utils_definitions.hpp ITEM_FIREFIELD_PVP_FULL=2118, ITEM_POISONFIELD_PVP=105, ITEM_ENERGYFIELD_PVP=2122',
     'elements': 'register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE',
+    'race_residue': 'creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create '
+                    'ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse',
 }
+# Owner decisions 2026-09-26 (docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md section 3).
+PASS_THROUGH_DEFAULT = 'Owner decision D5: imported monsters without a source counterpart default to pass_through=false.'
+QUEST_EVENT_OMISSION = ('Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction '
+                        'and are omitted from the monster bundle.')
+RACE_RESIDUE = {'venom': 'slime', 'blood': 'blood', 'ink': 'ink', 'chocolate': 'chocolate', 'candy': 'candy',
+                'undead': None, 'fire': None, 'energy': None}
+SPLASH_ITEM = 2886
 DAMAGE = {'PHYSICALDAMAGE': 'physical', 'ENERGYDAMAGE': 'energy', 'EARTHDAMAGE': 'earth', 'FIREDAMAGE': 'fire',
           'LIFEDRAIN': 'life_drain', 'MANADRAIN': 'mana_drain', 'DROWNDAMAGE': 'drowning', 'ICEDAMAGE': 'ice',
           'HOLYDAMAGE': 'holy', 'DEATHDAMAGE': 'death', 'AGONYDAMAGE': 'agony', 'NEUTRALDAMAGE': 'neutral',
@@ -359,6 +368,10 @@ class Converter:
                 resolution='difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare).')
         if corpse_id:
             creature['corpse_item'] = ref('Item', f'canary:item/{corpse_id}')
+        fluid = RACE_RESIDUE.get(m.get('race', 'blood'))
+        if fluid:
+            creature['death_residue'] = {'item': ref('Item', f'canary:item/{SPLASH_ITEM}'), 'fluid_type': fluid}
+            definitions.add(('Item', f'canary:item/{SPLASH_ITEM}'))
         if loot_entries:
             creature['loot'] = ref('Loot', f'canary:loot/{s}')
 
@@ -394,8 +407,8 @@ class Converter:
             behavior['summons'] = {'max_summons': summon['maxSummons'], 'entries': entries}
             row('summon', 'mapped', destination='/monster/behavior/summons', line=line_of(r'^monster\.summon'),
                 resolution='Summoned creatures are declared source-scoped Creature references.')
-        row('flags.pass_through', 'unresolved_semantics', destination='/monster/behavior/movement/pass_through', line=line_of(r'^monster\.flags'),
-            resolution='Oteryn-native movement field with no Canary counterpart; placeholder false awaits an explicit native decision.')
+        row('flags.pass_through', 'mapped', destination='/monster/behavior/movement/pass_through', line=line_of(r'^monster\.flags'),
+            resolution='Oteryn-native movement field with no Canary counterpart. ' + PASS_THROUGH_DEFAULT)
         row('flags.canWalk/canTarget', 'mapped', destination='/monster/behavior/movement/can_walk', line=line_of(r'^monster\.flags'),
             resolution='Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true.')
 
@@ -454,12 +467,18 @@ class Converter:
             row(field, 'mapped', destination=destination, resolution=note or 'Direct source value.',
                 line=line_of(r'^\s*(monster\.)?' + re.escape(key) + r'\s*='))
         row('raceId', 'metadata_only', line=line_of(r'^monster\.raceId'), resolution='Foreign identifier; provenance only.') if 'raceId' in m else None
-        if 'race' in m:
+        if m.get('race', 'blood') not in RACE_RESIDUE:
             row('race', 'unresolved_dependency', 'dependency', line=line_of(r'^monster\.race\s*='),
-                resolution=f'Source race "{m["race"]}" selects a death residue/splash Item in native code; not resolved to an Item here.')
+                resolution=f'Unknown source race "{m["race"]}".')
+        elif RACE_RESIDUE[m.get('race', 'blood')]:
+            row('race', 'mapped', 'dependency', '/monster/creature/death_residue', line=line_of(r'^monster\.race\s*='),
+                resolution=f'Race "{m.get("race", "blood")}": ' + RULES['race_residue'] + '.')
+        else:
+            row('race', 'approved_omission', 'dependency', line=line_of(r'^monster\.race\s*='),
+                resolution=f'Race "{m["race"]}" leaves no death residue: ' + RULES['race_residue'] + '.')
         for event in m.get('events', []):
-            row(f'events={event}', 'unresolved_semantics', 'script', line=line_of(r'^monster\.events'),
-                resolution='Registered creature event script; needs an explicit native Interaction resolution.')
+            row(f'events={event}', 'approved_omission', 'script', line=line_of(r'^monster\.events'),
+                resolution=f'Registered creature event "{event}" updates quest/task progress on death. ' + QUEST_EVENT_OMISSION)
         for callback in sorted(callbacks):
             row(f'mType.{callback}', 'unresolved_semantics', 'script', line=line_of(r'mType\.' + callback),
                 resolution='Inline Lua callback; needs an explicit native behaviour resolution.')

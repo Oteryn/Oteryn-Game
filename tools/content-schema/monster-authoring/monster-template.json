@@ -88,15 +88,18 @@
       "key": null,
       "revision": null
     },
-    "death_residue_item": {
-      "family": null,
-      "key": null,
-      "revision": null
-    },
     "soul_core_item": {
       "family": null,
       "key": null,
       "revision": null
+    },
+    "death_residue": {
+      "item": {
+        "family": null,
+        "key": null,
+        "revision": null
+      },
+      "fluid_type": null
     },
     "encyclopedia": {
       "description_document": {

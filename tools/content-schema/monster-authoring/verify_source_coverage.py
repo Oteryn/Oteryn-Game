@@ -11,7 +11,7 @@ base={
  'Bestiary':dest('creature','bestiary'),'bosstiary':dest('creature','bosstiary'),
  'skull':dest('presentation','status_marker'),'outfit':dest('presentation','appearance'),
  'maxHealth':dest('stats','max_health'),'health':dest('stats','initial_health'),
- 'race':dest('creature','death_residue_item'),'manaCost':dest('summoning','mana_cost'),
+ 'race':dest('creature','death_residue'),'manaCost':dest('summoning','mana_cost'),
  'speed':dest('stats','speed'),'corpse':dest('creature','corpse_item'),
  'faction':dest('behavior','faction_and_preferences','faction'),
  'targetPreferPlayer':dest('behavior','faction_and_preferences','prefer_player'),
