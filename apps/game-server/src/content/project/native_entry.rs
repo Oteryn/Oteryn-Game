@@ -267,6 +267,80 @@ impl NativeEntryProject {
     }
 }
 
+/// Committed native entry-room source (#822 path). It deliberately carries no WorldId: the
+/// canonical WorldId is issued per qualification run by the owning Platform World Registry issuer
+/// and bound only through [`native_entry_room_documents`] (owner decision, #162).
+pub const NATIVE_ENTRY_ROOM_SOURCE: &[u8] = include_bytes!("native_entry_room.json");
+pub const NATIVE_ENTRY_ROOM_SOURCE_SCHEMA: &str = "OTERYN_NATIVE_ENTRY_ROOM_SOURCE/v1";
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeEntryRoomSource {
+    schema: String,
+    licensing: String,
+    records: Vec<ProjectReferenceRecord>,
+    declarations: Vec<ProjectV2Declaration>,
+    world: serde_json::Map<String, serde_json::Value>,
+    placements: Vec<ProjectV2Placement>,
+    native_first_entry: NativeFirstEntryDocument,
+}
+
+/// Binds the committed entry-room source to one issued canonical WorldId and writes the native
+/// project documents. The writer re-admits its own output through the native parser, so the
+/// result is qualified or refused; a WorldId already present in the source refuses.
+pub fn native_entry_room_documents(
+    world_id: crate::foundation::WorldId,
+) -> Result<CanonicalProjectDocuments, ProjectError> {
+    let source: NativeEntryRoomSource = serde_json::from_slice(NATIVE_ENTRY_ROOM_SOURCE)
+        .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+    if source.schema != NATIVE_ENTRY_ROOM_SOURCE_SCHEMA {
+        return Err(ProjectError::InvalidProject(
+            "native entry-room source schema mismatch",
+        ));
+    }
+    let world_id = crate::content::production::encode_world_id(world_id);
+    let mut world = source.world;
+    if world
+        .insert(
+            "world_id".to_owned(),
+            serde_json::Value::String(world_id.clone()),
+        )
+        .is_some()
+    {
+        return Err(ProjectError::InvalidProject(
+            "native entry-room source must not carry a WorldId",
+        ));
+    }
+    let world: ProjectV2World = serde_json::from_value(serde_json::Value::Object(world))
+        .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+    let draft = ProjectV2Draft {
+        core: ProjectDraft {
+            project_revision: accepted::PACKAGE_REVISION.to_owned(),
+            package_key: accepted::PACKAGE_KEY.to_owned(),
+            semantic_schema_version: accepted::SEMANTIC_SCHEMA.to_owned(),
+            licensing_metadata: source.licensing,
+            world_id,
+            coordinate_frame: world.coordinate_frame.clone(),
+            records: source.records,
+            imports: vec![],
+            metadata: vec![],
+        },
+        state: ProjectV2State {
+            declarations: source.declarations,
+            item_authoring: vec![],
+            authoring_profiles: vec![],
+            worlds: vec![world],
+            placements: source.placements,
+            appearance_bindings: vec![],
+            assets: vec![],
+            sources: vec![],
+            source_identity_bindings: vec![],
+            editor: vec![],
+        },
+    };
+    CanonicalProjectDocuments::from_native_entry_draft(draft, source.native_first_entry)
+}
+
 /// Owner-accepted values of `NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1` (#940 §1–§3) and the authored
 /// entry-room choices of `PLAYER_FIRST_ENTRY_NATIVE_CONTENT_BINDING_V1` (#935). A spelling that is
 /// not one of these is not product-policy evidence (#937 §3), so every other value refuses.

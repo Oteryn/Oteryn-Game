@@ -1,0 +1,59 @@
+name: Native entry room qualification
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/native-entry-room-qualification.yml
+      - tools/qualification/native_entry_room/**
+      - tools/qualification/wp5_s3a/platform-fpm.Dockerfile
+      - apps/game-server/src/content/**
+      - apps/game-server/tests/content_native_entry_room.rs
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-entry-room-qualification-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native-entry-room:
+    name: Native entry room / Platform-issued WorldId
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact candidate
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Check out exact public Platform issuer
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: Oteryn/Oteryn-Platform
+          ref: eb65ce453949a352fdc0e3ed0132d2cde0084fb7
+          path: _platform
+          persist-credentials: false
+
+      - name: Verify exact Platform revision
+        run: test "$(git -C _platform rev-parse HEAD)" = eb65ce453949a352fdc0e3ed0132d2cde0084fb7
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Issue WorldId and qualify the committed room
+        env:
+          PLATFORM_SOURCE: ${{ github.workspace }}/_platform
+        run: |
+          set -euo pipefail
+          evidence="$RUNNER_TEMP/native-entry-room-evidence.txt"
+          bash tools/qualification/native_entry_room/run.sh | tee "$evidence"
+          grep -Fxq 'NATIVE_ENTRY_ROOM_RESULT=PASS' "$evidence"
+          grep -E '^(native topology receipt: |NATIVE_ENTRY_ROOM_RESULT=)' "$evidence" >> "$GITHUB_STEP_SUMMARY" || true
