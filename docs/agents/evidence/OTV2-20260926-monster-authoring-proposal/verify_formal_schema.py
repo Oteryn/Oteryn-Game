@@ -220,11 +220,11 @@ if __name__=='__main__':
         results.append({'name':'empty placeholders are not ready data: '+name,'passed':count>0,'structural_errors':count})
     m,d,c=fixture()
     for name,value in [('synthetic-valid-monster.json',m),('synthetic-valid-dependencies.json',d),('synthetic-catalog.json',c)]:
-        (ROOT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+        (ROOT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
     report={'scope':'local authoring schemas and semantic validator, synthetic fixtures only; no Lua or Oteryn runtime executed',
       'jsonschema_version':version('jsonschema'),'checks':len(results),'passed':sum(x['passed'] for x in results),
       'failed':sum(not x['passed'] for x in results),'results':results}
-    (ROOT/'formal-schema-validation-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    (ROOT/'formal-schema-validation-report.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')
     print(json.dumps({k:v for k,v in report.items() if k!='results'},ensure_ascii=False))
     for r in results:
         if not r['passed']:print(json.dumps(r,ensure_ascii=False))
