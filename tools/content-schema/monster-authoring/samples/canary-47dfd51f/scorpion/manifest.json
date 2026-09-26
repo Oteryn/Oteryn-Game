@@ -49,6 +49,15 @@
     {
       "source_index": 0,
       "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
+      "source_line": 75,
+      "source_field": "voices",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "Interval/chance without any voice entry; the engine has nothing to say, so no voices section."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/vermins/scorpion.lua",
       "source_line": 50,
       "source_field": "flags.pass_through",
       "kind": "field",

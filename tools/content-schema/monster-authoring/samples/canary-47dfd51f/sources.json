@@ -13,6 +13,11 @@
     "area_effect": "register_monster_type.lua readSpell: an area spell without effect gets CONST_ME_POFF unless its name contains \"field\"",
     "fields": "utils_definitions.hpp ITEM_FIREFIELD_PVP_FULL=2118, ITEM_POISONFIELD_PVP=105, ITEM_ENERGYFIELD_PVP=2122",
     "elements": "register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE",
+    "speed": "monsters.cpp deserializeSpell speed: speedChange < -1000 clamps to -1000; >0 haste (non-aggressive), else paralyze; default duration 10000 ms; multiplier = 1 + speedChange/1000, formula vars (multiplier/2, 40, multiplier, 40)",
+    "fixed_conditions": "monsters.cpp deserializeSpell outfit/invisible/drunk: default duration 10000 ms; outfit/invisible non-aggressive",
+    "inert_spells": "monsters.cpp deserializeSpell strength/effect branches add no combat payload; only effect/shoot visuals remain",
+    "bosstiary": "io_bosstiary.hpp levelInfos kills/points per stage: bane 25/100/300 & 5/15/30, archfoe 5/20/60 & 10/30/60, nemesis 1/3/5 & 10/30/60",
+    "familiar": "data/scripts/spells/familiar/<vocation>_familiar.lua (vocation, mana) and data/libs/functions/player.lua CreateFamiliarSpell: duration = 60 * familiarTime / 2 s with config default familiarTime=30 -> 900000 ms",
     "race_residue": "creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse"
   },
   "shared_sources": {

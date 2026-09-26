@@ -25,9 +25,14 @@ REPOSITORY = 'opentibiabr/canary'
 REVISION = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 REV = 'canary-47dfd51f'
 MONSTER_DIR = 'data-otservbr-global/monster'
-BATCH = ['mammals/rat', 'giants/cyclops', 'humanoids/orc_spearman', 'vermins/scorpion', 'humanoids/orc_shaman',
+BATCH_1 = ['mammals/rat', 'giants/cyclops', 'humanoids/orc_spearman', 'vermins/scorpion', 'humanoids/orc_shaman',
          'humans/necromancer', 'elementals/fire_elemental', 'dragons/dragon', 'undeads/ghost',
          'quests/killing_in_the_name_of/demodras']
+BATCH_2 = ['bosses/morshabaal', 'humanoids/dworc_voodoomaster', 'fey/wisp',
+           'quests/forgotten_knowledge/bosses/the_enraged_thorn_knight', 'quests/cults_of_tibia/bosses/summons/sand_vortex',
+           'familiars/knight_familiar', 'humans/blood_hand', 'bosses/mad_mage', 'humanoids/crazed_summer_rearguard',
+           'constructs/war_golem']
+BATCHES = {REV: BATCH_1, REV + '-batch-2': BATCH_2}
 RULES = {
     'loot_scale': 'src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000',
     'loot_order': 'register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration',
@@ -40,6 +45,14 @@ RULES = {
     'area_effect': 'register_monster_type.lua readSpell: an area spell without effect gets CONST_ME_POFF unless its name contains "field"',
     'fields': 'utils_definitions.hpp ITEM_FIREFIELD_PVP_FULL=2118, ITEM_POISONFIELD_PVP=105, ITEM_ENERGYFIELD_PVP=2122',
     'elements': 'register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE',
+    'speed': 'monsters.cpp deserializeSpell speed: speedChange < -1000 clamps to -1000; >0 haste (non-aggressive), else paralyze; '
+             'default duration 10000 ms; multiplier = 1 + speedChange/1000, formula vars (multiplier/2, 40, multiplier, 40)',
+    'fixed_conditions': 'monsters.cpp deserializeSpell outfit/invisible/drunk: default duration 10000 ms; outfit/invisible non-aggressive',
+    'inert_spells': 'monsters.cpp deserializeSpell strength/effect branches add no combat payload; only effect/shoot visuals remain',
+    'bosstiary': 'io_bosstiary.hpp levelInfos kills/points per stage: bane 25/100/300 & 5/15/30, archfoe 5/20/60 & 10/30/60, '
+                 'nemesis 1/3/5 & 10/30/60',
+    'familiar': 'data/scripts/spells/familiar/<vocation>_familiar.lua (vocation, mana) and data/libs/functions/player.lua '
+                'CreateFamiliarSpell: duration = 60 * familiarTime / 2 s with config default familiarTime=30 -> 900000 ms',
     'race_residue': 'creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create '
                     'ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse',
 }
@@ -50,6 +63,11 @@ QUEST_EVENT_OMISSION = ('Owner decision D6: creature event scripts that only fee
 RACE_RESIDUE = {'venom': 'slime', 'blood': 'blood', 'ink': 'ink', 'chocolate': 'chocolate', 'candy': 'candy',
                 'undead': None, 'fire': None, 'energy': None}
 SPLASH_ITEM = 2886
+BOSSTIARY = {'RARITY_BANE': ('bane', (25, 100, 300), (5, 15, 30)), 'RARITY_ARCHFOE': ('archfoe', (5, 20, 60), (10, 30, 60)),
+             'RARITY_NEMESIS': ('nemesis', (1, 3, 5), (10, 30, 60))}
+FAMILIAR_DURATION_MS = 60 * 30 // 2 * 1000
+FAMILIAR_SPELLS = {'knight': ('knight', 1000), 'druid': ('druid', 1000), 'paladin': ('paladin', 1000),
+                   'sorcerer': ('sorcerer', 1000), 'monk': ('monk', 1000)}
 DAMAGE = {'PHYSICALDAMAGE': 'physical', 'ENERGYDAMAGE': 'energy', 'EARTHDAMAGE': 'earth', 'FIREDAMAGE': 'fire',
           'LIFEDRAIN': 'life_drain', 'MANADRAIN': 'mana_drain', 'DROWNDAMAGE': 'drowning', 'ICEDAMAGE': 'ice',
           'HOLYDAMAGE': 'holy', 'DEATHDAMAGE': 'death', 'AGONYDAMAGE': 'agony', 'NEUTRALDAMAGE': 'neutral',
@@ -366,6 +384,26 @@ class Converter:
                 creature['bestiary']['locations'] = bestiary['Locations']
             row('Bestiary', 'mapped', destination='/monster/creature/bestiary', line=line_of(r'^monster\.Bestiary'),
                 resolution='difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare).')
+        if 'bosstiary' in m:
+            category, kills, points = BOSSTIARY[m['bosstiary']['bossRace'][1:]]
+            creature['bosstiary'] = {'category': category, 'prowess_kills': kills[0], 'expertise_kills': kills[1], 'mastery_kills': kills[2],
+                                     'prowess_points': points[0], 'expertise_points': points[1], 'mastery_points': points[2]}
+            row('bosstiary.bossRace', 'mapped', destination='/monster/creature/bosstiary', line=line_of(r'bossRace\s*='),
+                resolution='Stage kills and points are derived from the rarity: ' + RULES['bosstiary'] + '.')
+            row('bosstiary.bossRaceId', 'metadata_only', line=line_of(r'bossRaceId'), resolution='Foreign identifier; provenance only.')
+        if creature['summoning']['is_familiar']:
+            vocation = slug(name).split('_')[0]
+            if vocation in FAMILIAR_SPELLS:
+                voc, mana = FAMILIAR_SPELLS[vocation]
+                spell_key = f'canary:ability/spell/summon_{voc}_familiar'
+                definitions.add(('Ability', spell_key))
+                creature['summoning']['familiar'] = {'vocation': voc, 'summon_ability': ref('Ability', spell_key),
+                                                     'duration_ms': FAMILIAR_DURATION_MS, 'mana_cost': mana}
+                row('flags.familiar', 'mapped', destination='/monster/creature/summoning/familiar', line=line_of(r'familiar\s*=\s*true'),
+                    resolution='The monster file only flags the familiar; the profile comes from ' + RULES['familiar'] + '.')
+            else:
+                row('flags.familiar', 'unresolved_dependency', 'dependency', line=line_of(r'familiar\s*=\s*true'),
+                    resolution='No familiar summon spell found for this monster name.')
         if corpse_id:
             creature['corpse_item'] = ref('Item', f'canary:item/{corpse_id}')
         fluid = RACE_RESIDUE.get(m.get('race', 'blood'))
@@ -395,6 +433,9 @@ class Converter:
         if voices and voices.get('_list'):
             behavior['voices'] = {'interval_ms': voices['interval'], 'chance_percent': voices['chance'],
                                   'entries': [{'text': v['text'], 'mode': 'yell' if v.get('yell') else 'say'} for v in voices['_list']]}
+        if voices and not voices.get('_list'):
+            row('voices', 'approved_omission', line=line_of(r'^monster\.voices'),
+                resolution='Interval/chance without any voice entry; the engine has nothing to say, so no voices section.')
         summon = m.get('summon')
         if summon:
             entries = []
@@ -418,6 +459,10 @@ class Converter:
             appearance_key = asset(f'canary.appearance:object/{outfit["lookTypeEx"]}')
         else:
             appearance_key = asset(f'canary.appearance:outfit/{outfit.get("lookType", 0)}')
+            if not outfit.get('lookType'):
+                row('outfit.lookType', 'unresolved_semantics', line=line_of(r'^monster\.outfit'),
+                    resolution='Source outfit has no lookType (lookType 0 placeholder). Familiar looks are chosen per player in '
+                               'data/XML/familiars.xml (e.g. Skullfrost 991 or quest Snowbash 1365 for knights); needs a native decision.')
         palette = [{'slot': slot, 'palette_binding': asset(f'canary.appearance:palette/{outfit[key]}')}
                    for slot, key in (('head', 'lookHead'), ('body', 'lookBody'), ('legs', 'lookLegs'), ('feet', 'lookFeet'))
                    if outfit.get(key)]
@@ -608,29 +653,35 @@ class Converter:
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
-    parser.add_argument('--out', type=Path, default=ROOT / 'samples' / REV)
+    parser.add_argument('--batch', choices=sorted(BATCHES), action='append', help='default: every batch')
+    parser.add_argument('--out', type=Path, default=ROOT / 'samples', help='parent directory of the batch directories')
     args = parser.parse_args()
     objects = load_appearance_objects(args.canary / 'data/items/appearances.dat')
     items = load_items_xml(args.canary / 'data/items/items.xml')
     names, index = name_index(objects, items)
     converter = Converter(args.canary, objects, items, names, index)
+    for batch in args.batch or sorted(BATCHES):
+        write_batch(converter, args.canary, args.out / batch, BATCHES[batch])
+
+
+def write_batch(converter, canary, out, batch):
     sources = []
-    for relative in BATCH:
+    for relative in batch:
         converter.pending_definitions = set()
         s, monster, deps, catalog, manifest, source = converter.convert(relative)
         for family, key in sorted(converter.pending_definitions):
             catalog['definitions'].append(ref(family, key))
-        target = args.out / s
+        target = out / s
         target.mkdir(parents=True, exist_ok=True)
         for filename, value in (('monster.json', monster), ('dependencies.json', deps), ('catalog.json', catalog), ('manifest.json', manifest)):
             (target / filename).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
         sources.append({'monster': s, **source})
     shared = {'repository': REPOSITORY, 'revision': REVISION, 'rules': RULES,
-              'shared_sources': {p: blob_id((args.canary / p).read_bytes()) for p in
+              'shared_sources': {p: blob_id((canary / p).read_bytes()) for p in
                                  ('data/items/items.xml', 'data/items/appearances.dat', 'data/scripts/lib/register_monster_type.lua')},
               'monsters': sources}
-    (args.out / 'sources.json').write_text(json.dumps(shared, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
-    print(json.dumps({'monsters': len(sources), 'out': str(args.out)}))
+    (out / 'sources.json').write_text(json.dumps(shared, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+    print(json.dumps({'monsters': len(sources), 'out': str(out)}))
 
 
 if __name__ == '__main__':

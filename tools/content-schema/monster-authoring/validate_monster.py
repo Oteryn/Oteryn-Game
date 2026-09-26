@@ -104,6 +104,7 @@ def validate(monster,deps,catalog=None,manifest=None):
         increasing(c['bestiary']['kill_thresholds'],'creature/bestiary/kill_thresholds',errors)
     if 'bosstiary' in c:
         v=c['bosstiary'];increasing([v[k] for k in ('prowess_kills','expertise_kills','mastery_kills')],'creature/bosstiary',errors)
+        increasing([v[k] for k in ('prowess_points','expertise_points','mastery_points')],'creature/bosstiary/points',errors)
     weights=b['targeting'].get('strategy_weights')
     if weights and sum(weights.values())==0:errors.append('behavior/targeting/strategy_weights: at least one weight must be positive')
     summons=b.get('summons')
