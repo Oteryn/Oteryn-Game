@@ -12,6 +12,7 @@ mod db;
 pub mod fresh_admission;
 pub mod fresh_admission_composition;
 pub mod native_admission_source;
+pub mod recovery_evidence_composition;
 pub mod runtime_scope_assignment;
 mod schema;
 
@@ -34,6 +35,19 @@ mod fresh_admission_composition_linkage {
         let _ = DurabilityRoot::publish_fresh_admission_sources;
         let _ = DurabilityRoot::compose_fresh_admission;
         let _ = DurabilityRoot::commit_composed_fresh_admission;
+    }
+}
+
+#[cfg(test)]
+mod recovery_evidence_composition_linkage {
+    use super::DurabilityRoot;
+    use super::recovery_evidence_composition::RecoveryEvidenceSubject;
+
+    #[test]
+    fn recovery_evidence_composition_api_is_linked() {
+        let _ = RecoveryEvidenceSubject::new("01890f4c-3b2a-7cc2-8d11-9a321b7c0001", "key");
+        let _ = DurabilityRoot::verify_registered_recovery;
+        let _ = DurabilityRoot::revalidate_registered_recovery;
     }
 }
 

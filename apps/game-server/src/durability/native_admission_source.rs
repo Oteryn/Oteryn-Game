@@ -40,7 +40,7 @@ impl NativeSourceOperation {
         }
     }
 
-    fn as_str(self) -> &'static str {
+    pub(super) fn as_str(self) -> &'static str {
         match self {
             Self::ReadAccountSecurityV1 => "ReadAccountSecurityV1",
             Self::ReadFreshSigningTrustV1 => "ReadFreshSigningTrustV1",
@@ -154,7 +154,7 @@ impl NativeSourceSubject {
         }
     }
 
-    fn floor_key(&self) -> String {
+    pub(super) fn floor_key(&self) -> String {
         match &self.kind {
             NativeSourceSubjectKind::AccountSecurity { account_id } => {
                 format!("account:{account_id}")
@@ -168,7 +168,7 @@ impl NativeSourceSubject {
         }
     }
 
-    fn observation_key(&self) -> String {
+    pub(super) fn observation_key(&self) -> String {
         match &self.kind {
             NativeSourceSubjectKind::AccountSecurity { account_id } => {
                 format!("account:{account_id}")
@@ -182,7 +182,7 @@ impl NativeSourceSubject {
         }
     }
 
-    fn signing_key_id(&self) -> Option<&str> {
+    pub(super) fn signing_key_id(&self) -> Option<&str> {
         match &self.kind {
             NativeSourceSubjectKind::AccountSecurity { .. } => None,
             NativeSourceSubjectKind::SigningTrust { key_id, .. } => Some(key_id),
