@@ -193,6 +193,7 @@ pub struct WireEnvelopeView<'a> {
     server_sequence: u64,
     payload: &'a [u8],
     bootstrap: Option<BootstrapIngressView<'a>>,
+    liveness_ack: Option<LivenessAckView>,
 }
 
 // Fixed-size validated metadata preserves the envelope's Copy contract without
@@ -229,6 +230,14 @@ pub(crate) struct ClientResumeView<'a> {
     pub(crate) client_build_id: &'a str,
     pub(crate) supported_capabilities: &'a [u32],
     pub(crate) last_applied_server_sequence: u64,
+}
+
+// Payload values alone do not establish current transport authority or receipt time.
+#[allow(dead_code)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LivenessAckView {
+    pub(crate) probe_id: u64,
+    pub(crate) last_applied_server_sequence: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -347,6 +356,24 @@ pub(crate) fn encode_server_resume_accepted(
     Ok(output)
 }
 
+// Stateless wire construction. The current owner must enforce monotonic probe
+// IDs and terminal exhaustion before calling this encoder.
+#[allow(dead_code)]
+pub(crate) fn encode_liveness_probe(
+    connection_generation: u64,
+    probe_id: u64,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if connection_generation == 0 || probe_id == 0 {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let mut payload = Vec::new();
+    push_scalar(&mut payload, 1, probe_id);
+    let mut output = vec![8, MessageType::LivenessProbe as u8];
+    push_scalar(&mut output, 2, connection_generation);
+    push_bytes(&mut output, 4, &payload);
+    Ok(output)
+}
+
 pub(crate) fn encode_protocol_error(
     error: FoundationProtocolError,
     generation: u64,
@@ -402,6 +429,23 @@ impl<'a> WireEnvelopeView<'a> {
             supported_capabilities: &view.capabilities[..view.capability_count],
             last_applied_server_sequence: view.last_applied_sequence,
         })
+    }
+    #[allow(dead_code)]
+    pub(crate) fn liveness_ack(
+        &self,
+        current_connection_generation: u64,
+    ) -> Result<LivenessAckView, FoundationProtocolError> {
+        self.validate(Direction::ClientToServer, true)?;
+        if self.message_type != MessageType::LivenessAck {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        if current_connection_generation == 0
+            || self.connection_generation != current_connection_generation
+        {
+            return Err(FoundationProtocolError::StaleConnectionGeneration);
+        }
+        self.liveness_ack
+            .ok_or(FoundationProtocolError::MalformedEnvelope)
     }
     pub const fn message_type(&self) -> MessageType {
         self.message_type
@@ -854,7 +898,9 @@ fn validate_client_command_ingress(payload: &[u8]) -> Result<(), FoundationProto
     Ok(())
 }
 
-fn validate_liveness_ack_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+fn validate_liveness_ack_ingress(
+    payload: &[u8],
+) -> Result<LivenessAckView, FoundationProtocolError> {
     let mut cursor = 0usize;
     let mut probe_id = None;
     let mut last_applied_server_sequence = None;
@@ -873,10 +919,13 @@ fn validate_liveness_ack_ingress(payload: &[u8]) -> Result<(), FoundationProtoco
             _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
-    if probe_id.is_none_or(|id| id == 0) {
-        return Err(FoundationProtocolError::MalformedEnvelope);
-    }
-    Ok(())
+    let probe_id = probe_id
+        .filter(|id| *id != 0)
+        .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+    Ok(LivenessAckView {
+        probe_id,
+        last_applied_server_sequence,
+    })
 }
 
 fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
@@ -1126,7 +1175,6 @@ fn validate_client_ingress_payload(
         MessageType::ClientBootstrap | MessageType::ClientResume => {
             validate_bootstrap_ingress(message_type, payload).map(|_| ())
         }
-        MessageType::LivenessAck => validate_liveness_ack_ingress(payload),
         MessageType::ClientCommand => validate_client_command_ingress(payload),
         MessageType::ResyncRequest => validate_resync_request_ingress(payload),
         _ => Ok(()),
@@ -1197,6 +1245,7 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
     {
         return Err(FoundationProtocolError::BootstrapLimitExceeded);
     }
+    let mut liveness_ack = None;
     let bootstrap = if matches!(
         message_type,
         MessageType::ClientBootstrap | MessageType::ClientResume
@@ -1204,7 +1253,13 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
         Some(validate_bootstrap_ingress(message_type, payload)?)
     } else {
         match message_type.direction() {
-            Direction::ClientToServer => validate_client_ingress_payload(message_type, payload)?,
+            Direction::ClientToServer => {
+                if message_type == MessageType::LivenessAck {
+                    liveness_ack = Some(validate_liveness_ack_ingress(payload)?);
+                } else {
+                    validate_client_ingress_payload(message_type, payload)?;
+                }
+            }
             Direction::ServerToClient => validate_server_ingress_payload(message_type, payload)?,
         }
         None
@@ -1215,6 +1270,7 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
         server_sequence: sequence.unwrap_or(0),
         payload,
         bootstrap,
+        liveness_ack,
     })
 }
 
@@ -2254,6 +2310,84 @@ mod tests {
                 "payload: {payload:?}"
             );
         }
+    }
+
+    #[test]
+    fn liveness_probe_and_ack_exact_wire_codec() -> Result<(), FoundationProtocolError> {
+        let probe = [0x08, 0x05, 0x10, 0x07, 0x22, 0x03, 0x08, 0x96, 0x01];
+        assert_eq!(encode_liveness_probe(7, 150)?, probe);
+        let outgoing = decode_wire_envelope(&probe)?;
+        assert_eq!(outgoing.message_type(), MessageType::LivenessProbe);
+        assert_eq!(outgoing.validate(Direction::ServerToClient, true), Ok(()));
+        assert_eq!(outgoing.server_sequence(), 0);
+        assert_eq!(outgoing.payload(), &[0x08, 0x96, 0x01]);
+
+        // Explicit diagnostic zero remains present, distinct from omission.
+        let ack = [
+            0x08, 0x06, 0x10, 0x07, 0x22, 0x05, 0x08, 0x96, 0x01, 0x10, 0x00,
+        ];
+        assert_eq!(
+            decode_wire_envelope(&ack)?.liveness_ack(7)?,
+            LivenessAckView {
+                probe_id: 150,
+                last_applied_server_sequence: Some(0),
+            }
+        );
+        let omitted = [0x08, 0x06, 0x10, 0x07, 0x22, 0x02, 0x08, 0x01];
+        assert_eq!(
+            decode_wire_envelope(&omitted)?.liveness_ack(7)?,
+            LivenessAckView {
+                probe_id: 1,
+                last_applied_server_sequence: None,
+            }
+        );
+        assert_eq!(encode_liveness_probe(0, 1), Err(FoundationProtocolError::MalformedEnvelope));
+        assert_eq!(encode_liveness_probe(1, 0), Err(FoundationProtocolError::MalformedEnvelope));
+        Ok(())
+    }
+
+    #[test]
+    fn liveness_ack_extraction_rejects_wrong_direction_and_generation()
+    -> Result<(), FoundationProtocolError> {
+        let ack = [0x08, 0x06, 0x10, 0x07, 0x22, 0x02, 0x08, 0x01];
+        let decoded = decode_wire_envelope(&ack)?;
+        assert_eq!(
+            decoded.liveness_ack(8),
+            Err(FoundationProtocolError::StaleConnectionGeneration)
+        );
+        assert_eq!(
+            decoded.liveness_ack(0),
+            Err(FoundationProtocolError::StaleConnectionGeneration)
+        );
+        assert_eq!(
+            decode_wire_envelope(&[0x08, 0x06, 0x22, 0x02, 0x08, 0x01])?.liveness_ack(7),
+            Err(FoundationProtocolError::StaleConnectionGeneration)
+        );
+        assert_eq!(
+            decode_wire_envelope(&[0x08, 0x06, 0x10, 0x07, 0x18, 0x01, 0x22, 0x02, 0x08, 0x01])?
+                .liveness_ack(7),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        assert_eq!(
+            decode_wire_envelope(&encode_liveness_probe(7, 1)?)?.liveness_ack(7),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        for payload in [
+            &[0x08, 0x01, 0x08, 0x02][..],
+            &[0x08, 0x01, 0x10, 0x00, 0x10, 0x01],
+            &[0x0a, 0x01, 0x01],
+            &[0x08, 0x01, 0x12, 0x01, 0x01],
+            &[0x08, 0x80],
+            &[0x08, 0x01, 0x10, 0x80],
+            &[0x08, 0x01, 0x10, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x02],
+        ] {
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(6, payload)),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "payload: {payload:?}"
+            );
+        }
+        Ok(())
     }
 
     #[test]
