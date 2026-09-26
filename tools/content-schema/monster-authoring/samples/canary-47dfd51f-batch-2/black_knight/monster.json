@@ -1,0 +1,517 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/black_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Black Knight",
+    "inspection": {
+      "description": "Black Knight"
+    },
+    "stats": {
+      "max_health": 1800,
+      "initial_health": 1800,
+      "experience": 1600,
+      "speed": 125,
+      "armor": 42,
+      "defense": 40,
+      "critical_chance_percent": 0
+    },
+    "resistances": [
+      {
+        "damage_type": "physical",
+        "reduction_percent": {
+          "numerator": 10,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "energy",
+        "reduction_percent": {
+          "numerator": 80,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "earth",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "fire",
+        "reduction_percent": {
+          "numerator": 95,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "ice",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "holy",
+        "reduction_percent": {
+          "numerator": -8,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "death",
+        "reduction_percent": {
+          "numerator": 20,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "invisible",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": false,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": false,
+      "convinceable": false,
+      "is_familiar": false
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/black_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/black_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": true
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "bosstiary": {
+      "category": "bane",
+      "prowess_kills": 25,
+      "expertise_kills": 100,
+      "mastery_kills": 300,
+      "boss_points": 50,
+      "points_per_unlock": {
+        "prowess": 5,
+        "expertise": 15,
+        "mastery": 30
+      }
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "canary:item/18074",
+      "revision": "canary-47dfd51f"
+    },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "blood"
+    },
+    "loot": {
+      "family": "Loot",
+      "key": "canary:loot/black_knight",
+      "revision": "canary-47dfd51f"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/black_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": true,
+      "field_permissions": {
+        "energy": true,
+        "fire": true,
+        "poison": true
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 90,
+      "flee_health": 0,
+      "change_target": {
+        "interval_ms": 4000,
+        "chance_percent": 10
+      },
+      "strategy_weights": {
+        "nearest": 80,
+        "damage": 10,
+        "health": 10,
+        "random": 0
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/black_knight/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/black_knight/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      }
+    ],
+    "defenses": [],
+    "event_bindings": [],
+    "voices": {
+      "interval_ms": 5000,
+      "chance_percent": 10,
+      "entries": [
+        {
+          "text": "NO PRISONERS!",
+          "mode": "yell"
+        },
+        {
+          "text": "By Bolg's blood!",
+          "mode": "say"
+        },
+        {
+          "text": "You're no match for me!",
+          "mode": "say"
+        },
+        {
+          "text": "NO MERCY!",
+          "mode": "yell"
+        },
+        {
+          "text": "MINE!",
+          "mode": "yell"
+        }
+      ]
+    }
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/black_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/131",
+      "palette_bindings": [
+        {
+          "slot": "head",
+          "palette_binding": "canary.appearance:palette/95"
+        },
+        {
+          "slot": "body",
+          "palette_binding": "canary.appearance:palette/95"
+        },
+        {
+          "slot": "legs",
+          "palette_binding": "canary.appearance:palette/95"
+        },
+        {
+          "slot": "feet",
+          "palette_binding": "canary.appearance:palette/95"
+        }
+      ],
+      "attachment_bindings": [
+        {
+          "slot": "addon",
+          "asset_binding": "canary.appearance:addon/131/3"
+        }
+      ],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  },
+  "loot": {
+    "identity": {
+      "key": "canary:loot/black_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "algorithm": "IndependentBernoulli",
+    "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/2995",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.12,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3302",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.29,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3079",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.4,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/822",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.58,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3370",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.75,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3016",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.75,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3371",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1.05,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3383",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 2.02,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3384",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 2.43,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3318",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 2.63,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3369",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 4.71,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3305",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.91,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3265",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 8.47,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3357",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 10.37,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3351",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 11.22,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3269",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 11.85,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3372",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 12.2,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3003",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 16.02,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3602",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 2,
+        "probability_percent": 21.6,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3031",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 80,
+        "probability_percent": 23,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3031",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 56,
+        "probability_percent": 23,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3277",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 3,
+        "probability_percent": 30.8,
+        "skip_later_same_item_after_success": false
+      }
+    ]
+  }
+}

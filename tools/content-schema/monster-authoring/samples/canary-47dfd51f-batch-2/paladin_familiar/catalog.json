@@ -1,0 +1,17 @@
+{
+  "definitions": [
+    {
+      "family": "Ability",
+      "key": "canary:ability/summon-paladin_familiar",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/fireattack",
+    "canary.appearance:effect/holyarea",
+    "canary.appearance:effect/magic_green",
+    "canary.appearance:missile/fire",
+    "canary.appearance:missile/holy",
+    "canary.appearance:outfit/992"
+  ]
+}

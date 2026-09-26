@@ -1,0 +1,196 @@
+{
+  "scope": "Offline authoring structure and declared manifest rows; no runtime or Global parity.",
+  "bundles": 20,
+  "structure_valid": 20,
+  "declared_manifest_ready": 15,
+  "runtime_qualified": false,
+  "records": [
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "cyclops",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "demodras",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "dragon",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "fire_elemental",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "ghost",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "necromancer",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "orc_shaman",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "orc_spearman",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "rat",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f",
+      "monster": "scorpion",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "black_knight",
+      "structure_valid": true,
+      "declared_manifest_ready": false,
+      "unresolved_source_fields": [
+        "events=BlackKnightDeath"
+      ],
+      "readiness_errors": [
+        "manifest: unresolved_semantics data-otservbr-global/monster/bosses/black_knight.lua:16 events=BlackKnightDeath",
+        "manifest: custom script requires explicit native behavior resolution or approved omission"
+      ]
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "dworc_voodoomaster",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "hydra",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "paladin_familiar",
+      "structure_valid": true,
+      "declared_manifest_ready": false,
+      "unresolved_source_fields": [
+        "familiar.owner_speed"
+      ],
+      "readiness_errors": [
+        "manifest: unresolved_semantics data-otservbr-global/monster/familiars/paladin_familiar.lua:1 familiar.owner_speed"
+      ]
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "sand_vortex",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "the_enraged_thorn_knight",
+      "structure_valid": true,
+      "declared_manifest_ready": false,
+      "unresolved_source_fields": [
+        "events=ForgottenKnowledgeBossDeath",
+        "events=HealthForgotten"
+      ],
+      "readiness_errors": [
+        "manifest: unresolved_semantics data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua:16 events=ForgottenKnowledgeBossDeath",
+        "manifest: custom script requires explicit native behavior resolution or approved omission",
+        "manifest: unresolved_semantics data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua:16 events=HealthForgotten",
+        "manifest: custom script requires explicit native behavior resolution or approved omission"
+      ]
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "the_halloween_hare",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "warlock",
+      "structure_valid": true,
+      "declared_manifest_ready": false,
+      "unresolved_source_fields": [
+        "attacks[3].name=warlock skill reducer"
+      ],
+      "readiness_errors": [
+        "manifest: unresolved_semantics data-otservbr-global/monster/humans/warlock.lua:117 attacks[3].name=warlock skill reducer",
+        "manifest: custom script requires explicit native behavior resolution or approved omission"
+      ]
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "wyrm",
+      "structure_valid": true,
+      "declared_manifest_ready": false,
+      "unresolved_source_fields": [
+        "attacks[3].name=wyrm wave"
+      ],
+      "readiness_errors": [
+        "manifest: unresolved_semantics data-otservbr-global/monster/dragons/wyrm.lua:103 attacks[3].name=wyrm wave",
+        "manifest: custom script requires explicit native behavior resolution or approved omission"
+      ]
+    },
+    {
+      "batch": "canary-47dfd51f-batch-2",
+      "monster": "zushuka",
+      "structure_valid": true,
+      "declared_manifest_ready": true,
+      "unresolved_source_fields": [],
+      "readiness_errors": []
+    }
+  ]
+}

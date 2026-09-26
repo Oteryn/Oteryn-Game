@@ -1,0 +1,666 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/zushuka",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Zushuka",
+    "inspection": {
+      "description": "zushuka"
+    },
+    "stats": {
+      "max_health": 15000,
+      "initial_health": 15000,
+      "experience": 9000,
+      "speed": 110,
+      "armor": 20,
+      "defense": 20,
+      "critical_chance_percent": 0
+    },
+    "resistances": [
+      {
+        "damage_type": "energy",
+        "reduction_percent": {
+          "numerator": -10,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "earth",
+        "reduction_percent": {
+          "numerator": 50,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "fire",
+        "reduction_percent": {
+          "numerator": 50,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "ice",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "holy",
+        "reduction_percent": {
+          "numerator": 30,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "death",
+        "reduction_percent": {
+          "numerator": -10,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "invisible",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": false,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": false,
+      "convinceable": false,
+      "is_familiar": false
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/zushuka",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/zushuka",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": true
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "bosstiary": {
+      "category": "nemesis",
+      "prowess_kills": 1,
+      "expertise_kills": 3,
+      "mastery_kills": 5,
+      "boss_points": 100,
+      "points_per_unlock": {
+        "prowess": 10,
+        "expertise": 30,
+        "mastery": 60
+      }
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "canary:item/18265",
+      "revision": "canary-47dfd51f"
+    },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "blood"
+    },
+    "loot": {
+      "family": "Loot",
+      "key": "canary:loot/zushuka",
+      "revision": "canary-47dfd51f"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/zushuka",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": true,
+      "field_permissions": {
+        "energy": false,
+        "fire": false,
+        "poison": true
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 70,
+      "flee_health": 0,
+      "change_target": {
+        "interval_ms": 4000,
+        "chance_percent": 10
+      },
+      "strategy_weights": {
+        "nearest": 70,
+        "damage": 10,
+        "health": 10,
+        "random": 10
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/zushuka/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/zushuka/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/zushuka/attack-3",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/zushuka/attack-4",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/zushuka/attack-5",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/zushuka/attack-6",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 15
+      }
+    ],
+    "defenses": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/zushuka/defense-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 10000,
+        "chance_percent": 1
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/zushuka/defense-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 3000,
+        "chance_percent": 15
+      }
+    ],
+    "event_bindings": [],
+    "voices": {
+      "interval_ms": 5000,
+      "chance_percent": 10,
+      "entries": [
+        {
+          "text": "Cool down, will you?",
+          "mode": "say"
+        },
+        {
+          "text": "And stay cool.",
+          "mode": "say"
+        },
+        {
+          "text": "Your cold dead body will be a marvelous ice statue.",
+          "mode": "say"
+        },
+        {
+          "text": "Pay for your ignorance!",
+          "mode": "say"
+        },
+        {
+          "text": "Is this all you've got?",
+          "mode": "say"
+        },
+        {
+          "text": "Freeze!",
+          "mode": "say"
+        }
+      ]
+    }
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/zushuka",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/149",
+      "palette_bindings": [
+        {
+          "slot": "body",
+          "palette_binding": "canary.appearance:palette/10"
+        },
+        {
+          "slot": "feet",
+          "palette_binding": "canary.appearance:palette/4"
+        }
+      ],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  },
+  "loot": {
+    "identity": {
+      "key": "canary:loot/zushuka",
+      "revision": "canary-47dfd51f"
+    },
+    "algorithm": "IndependentBernoulli",
+    "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/19366",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 3,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7410",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 3,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3079",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 7,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/829",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 7,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/5911",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 7,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/19365",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 7,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/5912",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3333",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3085",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/823",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/824",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/9058",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/239",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7459",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3324",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/815",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 21,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/238",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 21,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7439",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 28,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3041",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 28,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3574",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 28,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7443",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 35,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/819",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 35,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7440",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 35,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3035",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 35,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/5909",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 2,
+        "probability_percent": 35,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7449",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 42,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7642",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 42,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3284",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 42,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3052",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 42,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7290",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 57,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3031",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 200,
+        "probability_percent": 92,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/19083",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 92,
+        "skip_later_same_item_after_success": false
+      }
+    ]
+  }
+}

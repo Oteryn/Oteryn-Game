@@ -1,0 +1,657 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 116,
+      "source_field": "attacks[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/0",
+      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 117,
+      "source_field": "attacks[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 118,
+      "source_field": "attacks[3]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/2",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 119,
+      "source_field": "attacks[4]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/3",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 120,
+      "source_field": "attacks[5]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/4",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 127,
+      "source_field": "defenses[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/0",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 128,
+      "source_field": "defenses[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/1",
+      "resolution": "monsters.cpp speed branch: speedChange clamped at -1000; formula (1+change/1000)/2,40,(1+change/1000),40; default duration 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 29,
+      "source_field": "corpse",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/corpse_item",
+      "resolution": "Corpse and its decay chain are local capability projections from appearances.dat + items.xml; items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove. Weight absent in items.xml is the engine default 0. Duration seconds -> ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 101,
+      "source_field": "loot[23]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/0",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7453 \"executioner\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 102,
+      "source_field": "loot[24]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/1",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 24966 \"forbidden fruit\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 103,
+      "source_field": "loot[25]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/2",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5014 \"mandrake\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 105,
+      "source_field": "loot[27]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/3",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9302 \"sacred tree amulet\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 108,
+      "source_field": "loot[30]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/4",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 8052 \"swamplair armor\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 110,
+      "source_field": "loot[32]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/5",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 24954 \"part of a rune\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 104,
+      "source_field": "loot[26]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/6",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3436 \"medusa shield\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 106,
+      "source_field": "loot[28]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/7",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5875 \"sniper gloves\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 107,
+      "source_field": "loot[29]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/8",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5884 \"spirit container\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 109,
+      "source_field": "loot[31]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/9",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 20203 \"trapped bad dream monster\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 93,
+      "source_field": "loot[15]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/10",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3039 \"red gem\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 92,
+      "source_field": "loot[14]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/11",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3041 \"blue gem\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 94,
+      "source_field": "loot[16]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/12",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3038 \"green gem\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 95,
+      "source_field": "loot[17]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/13",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3037 \"yellow gem\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 88,
+      "source_field": "loot[10]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/14",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5887 \"piece of royal steel\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 99,
+      "source_field": "loot[21]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/15",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 281 \"giant shimmering pearl\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 87,
+      "source_field": "loot[9]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/16",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3033 \"small amethyst\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 86,
+      "source_field": "loot[8]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/17",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9057 \"small topaz\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 85,
+      "source_field": "loot[7]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/18",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3030 \"small ruby\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 81,
+      "source_field": "loot[3]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/19",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 16119 \"blue crystal shard\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 82,
+      "source_field": "loot[4]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/20",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 16120 \"violet crystal shard\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 83,
+      "source_field": "loot[5]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/21",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 16121 \"green crystal shard\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 84,
+      "source_field": "loot[6]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/22",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3032 \"small emerald\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 96,
+      "source_field": "loot[18]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/23",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 6499 \"demonic essence\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 97,
+      "source_field": "loot[19]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/24",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7439 \"berserk potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 98,
+      "source_field": "loot[20]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/25",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7443 \"bullseye potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 91,
+      "source_field": "loot[13]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/26",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7642 \"great spirit potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 90,
+      "source_field": "loot[12]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/27",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7643 \"ultimate health potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 100,
+      "source_field": "loot[22]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/28",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3295 \"bright sword\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 89,
+      "source_field": "loot[11]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/29",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 238 \"great mana potion\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 79,
+      "source_field": "loot[1]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/30",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 80,
+      "source_field": "loot[2]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/31",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3035 \"platinum coin\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 111,
+      "source_field": "loot[33]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/32",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 22721 \"gold token\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 112,
+      "source_field": "loot[34]",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/loot/entries/33",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 22516 \"silver token\" is a declared source-scoped reference, not an admitted canonical Item."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 21,
+      "source_field": "bosstiary",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/bosstiary",
+      "resolution": "Pinned src/io/io_bosstiary.hpp levelInfos gives kills and incremental points; io_bosstiary.cpp addBosstiaryKill adds the points of the new level. boss_points is the full total."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 21,
+      "source_field": "bosstiary.bossRaceId",
+      "kind": "field",
+      "status": "metadata_only",
+      "resolution": "Foreign Bosstiary identifier; provenance only."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 45,
+      "source_field": "flags.pass_through",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/pass_through",
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 45,
+      "source_field": "flags.canWalk/canTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/can_walk",
+      "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 6,
+      "source_field": "outfit.lookAddons/lookMount",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/attachment_bindings",
+      "resolution": "Exact source addon bitset and mount lookType in declared source-scoped attachment bindings; no asset or runtime admission."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 4,
+      "source_field": "description",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/inspection/description",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 26,
+      "source_field": "health",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/initial_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 27,
+      "source_field": "maxHealth",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/max_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 5,
+      "source_field": "experience",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/experience",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 30,
+      "source_field": "speed",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/speed",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 6,
+      "source_field": "outfit",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/asset_binding",
+      "resolution": "Declared source appearance binding, not an admitted asset."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 65,
+      "source_field": "light",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/light/level",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 45,
+      "source_field": "flags",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/flags",
+      "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 33,
+      "source_field": "changeTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/change_target",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 38,
+      "source_field": "strategiesTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/strategy_weights",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 70,
+      "source_field": "voices",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/voices",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 131,
+      "source_field": "elements",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/resistances",
+      "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 144,
+      "source_field": "immunities",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/immunities",
+      "resolution": "Invisible condition immunity also sets sense_invisible."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 125,
+      "source_field": "defenses.armor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/armor",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 124,
+      "source_field": "defenses.defense",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/defense",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 28,
+      "source_field": "race",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/creature/death_residue",
+      "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 16,
+      "source_field": "events=ForgottenKnowledgeBossDeath",
+      "kind": "script",
+      "status": "unresolved_semantics",
+      "resolution": "Registered creature event \"ForgottenKnowledgeBossDeath\" has not been qualified as quest/task-only; D6 does not authorize omission of this event."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "source_line": 16,
+      "source_field": "events=HealthForgotten",
+      "kind": "script",
+      "status": "unresolved_semantics",
+      "resolution": "Registered creature event \"HealthForgotten\" has not been qualified as quest/task-only; D6 does not authorize omission of this event."
+    }
+  ]
+}

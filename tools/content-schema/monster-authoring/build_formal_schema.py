@@ -60,7 +60,11 @@ d['bestiary']=obj({'class':text(),'taxonomy':text(),'difficulty':text(),'occurre
     'kill_thresholds':array(integer(1),3,False,maxItems=3),'charm_points':integer(0,65535)},
     ('class','taxonomy','difficulty','occurrence','kill_thresholds','charm_points'))
 d['bosstiary']=obj({'category':text(),'prowess_kills':integer(1),'expertise_kills':integer(1),
-    'mastery_kills':integer(1),'boss_points':integer(0,65535)},('category','prowess_kills','expertise_kills','mastery_kills','boss_points'))
+    'mastery_kills':integer(1),'boss_points':integer(0,65535),
+    'points_per_unlock':obj({k:integer(0,65535) for k in ('prowess','expertise','mastery')},
+        ('prowess','expertise','mastery'),description='Additional points awarded at each unlock, not cumulative totals. '
+        'When present, boss_points is their sum after all three unlocks. Legacy scalar-only records remain valid.')},
+    ('category','prowess_kills','expertise_kills','mastery_kills','boss_points'))
 d['creature']=obj({
     'identity':use('identity'),'display_name':text(),
     'name_forms':obj({'article':text(0),'plural':text()}),

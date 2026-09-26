@@ -1,0 +1,512 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/zushuka/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/zushuka/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/zushuka/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "area": {
+        "length_tiles": 8,
+        "spread_tiles": 0
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/zushuka/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/zushuka/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/zushuka/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/zushuka/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "area": {
+        "length_tiles": 8,
+        "spread_tiles": 0
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/zushuka/attack-4",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/zushuka/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/zushuka/attack-5",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/zushuka/attack-6",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 7,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/zushuka/attack-6",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/zushuka/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/zushuka/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/zushuka/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/zushuka/defense-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/zushuka/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/zushuka/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/zushuka/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "ice",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/zushuka/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/iceattack"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/zushuka/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "ice",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/zushuka/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "projectile_asset_binding": "canary.appearance:missile/snowball"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/zushuka/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "ice",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/zushuka/attack-4-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/icearea"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/zushuka/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 4000,
+      "appearance_transform": {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7172",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/zushuka/attack-6",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 20000,
+      "condition": {
+        "type": "paralyze",
+        "lifetime": "fixed_duration",
+        "speed_formula": {
+          "family": "Formula",
+          "key": "canary:formula/zushuka/attack-6-speed",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/icetornado"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/zushuka/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/zushuka/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/zushuka/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/zushuka/defense-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/zushuka/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 560
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/zushuka/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 100
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/zushuka/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 110
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/zushuka/attack-4-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 300,
+        "maximum": 750
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/zushuka/attack-6-speed",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "speed_modifier",
+      "speed": {
+        "minimum_multiplier": {
+          "numerator": 67,
+          "denominator": 200
+        },
+        "minimum_offset": 40,
+        "maximum_multiplier": {
+          "numerator": 67,
+          "denominator": 100
+        },
+        "maximum_offset": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/zushuka/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 7500,
+        "maximum": 7515
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/zushuka/defense-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 200,
+        "maximum": 500
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/18265",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "remains of Yakchal",
+        "asset_binding": "canary.appearance:object/18265",
+        "article": "the"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/18262",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 30
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/18262",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "remains of Yakchal",
+        "asset_binding": "canary.appearance:object/18262",
+        "article": "the"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/18263",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 30
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/18263",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "remains of Yakchal",
+        "asset_binding": "canary.appearance:object/18263",
+        "article": "the"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/18264",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 15
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/18264",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "remains of Yakchal",
+        "asset_binding": "canary.appearance:object/18264",
+        "article": "the"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

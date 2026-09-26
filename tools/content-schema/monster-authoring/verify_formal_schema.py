@@ -300,6 +300,18 @@ if __name__=='__main__':
     for name,schema_name in [('monster-template.json','monster.schema.json'),('monster-dependencies-template.json','monster-dependencies.schema.json')]:
         count=len(structural(schema_name,json.loads((ROOT/name).read_text(encoding='utf-8'))))
         results.append({'name':'empty placeholders are not ready data: '+name,'passed':count>0,'structural_errors':count})
+    boss={'category':'nemesis','prowess_kills':1,'expertise_kills':3,'mastery_kills':5,'boss_points':100,
+          'points_per_unlock':{'prowess':10,'expertise':30,'mastery':60}}
+    case('Bosstiary incremental rewards retain all tiers',set_value(['m','creature','bosstiary'],boss),True)
+    case('Bosstiary scalar-only legacy record stays valid',set_value(['m','creature','bosstiary'],
+         {k:v for k,v in boss.items() if k!='points_per_unlock'}),True)
+    case('Bosstiary full total must equal incremental rewards',set_value(['m','creature','bosstiary'],{**boss,'boss_points':60}))
+    case('Bosstiary reward tier cannot be missing',set_value(['m','creature','bosstiary'],
+         {**boss,'points_per_unlock':{'prowess':10,'expertise':30}}))
+    case('Bosstiary reward cannot be negative',set_value(['m','creature','bosstiary'],
+         {**boss,'boss_points':90,'points_per_unlock':{'prowess':-10,'expertise':30,'mastery':70}}))
+    case('Bosstiary rewards cannot introduce an extra tier',set_value(['m','creature','bosstiary'],
+         {**boss,'points_per_unlock':{**boss['points_per_unlock'],'fourth':0}}))
     m,d,c=fixture()
     for name,value in [('synthetic-valid-monster.json',m),('synthetic-valid-dependencies.json',d),('synthetic-catalog.json',c)]:
         (ROOT/name).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8',newline='\n')

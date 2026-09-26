@@ -1,0 +1,188 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/paladin_familiar",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Paladin familiar",
+    "inspection": {
+      "description": "a paladin familiar"
+    },
+    "stats": {
+      "max_health": 15000,
+      "initial_health": 15000,
+      "experience": 0,
+      "speed": 154,
+      "armor": 55,
+      "defense": 55,
+      "critical_chance_percent": 0
+    },
+    "resistances": [],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "invisible",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": false,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": false,
+      "convinceable": false,
+      "is_familiar": true,
+      "familiar": {
+        "vocation": "paladin",
+        "summon_ability": {
+          "family": "Ability",
+          "key": "canary:ability/summon-paladin_familiar",
+          "revision": "canary-47dfd51f"
+        },
+        "duration_ms": 900000,
+        "mana_cost": 2000
+      }
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/paladin_familiar",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/paladin_familiar",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": false
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "name_forms": {
+      "article": "a"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/paladin_familiar",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": false,
+      "push_creatures": true,
+      "field_permissions": {
+        "energy": true,
+        "fire": true,
+        "poison": true
+      }
+    },
+    "targeting": {
+      "hostile": false,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 2,
+      "static_attack_chance_percent": 90,
+      "flee_health": 0,
+      "change_target": {
+        "interval_ms": 4000,
+        "chance_percent": 20
+      },
+      "strategy_weights": {
+        "nearest": 70,
+        "damage": 10,
+        "health": 10,
+        "random": 10
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/paladin_familiar/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/paladin_familiar/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 18
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/paladin_familiar/attack-3",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 18
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/paladin_familiar/attack-4",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 18
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/paladin_familiar/attack-5",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 18
+      }
+    ],
+    "defenses": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/paladin_familiar/defense-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 75
+      }
+    ],
+    "event_bindings": []
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/paladin_familiar",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/992",
+      "palette_bindings": [],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  }
+}

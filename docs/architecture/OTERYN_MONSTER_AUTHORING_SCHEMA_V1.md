@@ -111,7 +111,7 @@ parses today. Status per area:
 | `behavior.attacks[]`, `defenses[]` (`ability` refs) | `abilities: Vec<ProjectV2DefinitionRef>` | PARTIAL: v2 has refs only, no interval/chance schedule |
 | `bestiary.difficulty`, `occurrence`, `kill_thresholds`, `charm_points` | `ProjectV2BestiaryProfile` | MATCH |
 | `bestiary.class`, `taxonomy`, `stars`, `locations` | — | GAP |
-| `bosstiary.*` | `ProjectV2BosstiaryProfile` | MATCH |
+| `bosstiary.*` | `ProjectV2BosstiaryProfile` | PARTIAL: kill thresholds and scalar exist, but v2 has no per-unlock award representation |
 | `summoning.familiar.duration_ms` | `familiar.duration_seconds` | MATCH via `/1000` (D3) |
 | `summoning.familiar.vocation`, `summon_ability`, `mana_cost`, `owner_speed_bonus` | `ProjectV2FamiliarProfile` | MATCH |
 | `loot.entries[].probability_percent` | `LootEntryDocument.probability_ppm` (`content/project.rs`); v2 has the `Loot` family but no Loot profile | MATCH via D1 |
@@ -126,6 +126,24 @@ This candidate does not change WorldProject/v2 storage, the compiler, runtime, p
 persistence; does not populate `content/creatures/**`; does not admit Canary/Crystal Lua
 scripts, which remain `script` entries requiring an explicit native behaviour resolution; and
 does not establish Tibia Global parity or asset/licensing rights.
+
+### Second-batch refinement (2026-09-26)
+
+Pinned `src/io/io_bosstiary.hpp` `levelInfos` and `io_bosstiary.cpp`
+`addBosstiaryKill` prove that Bosstiary rewards are incremental at three unlocks.
+The optional candidate `points_per_unlock` object preserves `prowess`, `expertise`
+and `mastery` rewards. When present, `boss_points` is their sum after all unlocks;
+the validator requires that equality. Legacy scalar-only records remain valid.
+This is a candidate authoring refinement, not a runtime or accepted v2 contract change.
+
+The source familiar baseline is configuration-dependent: `Player:CreateFamiliarSpell`
+uses `60 * familiarTime / 2` seconds. The pinned example configuration gives 15 minutes.
+Actual owner-relative speed and appearance selection require separate native qualification.
+The second batch records these boundaries and all unresolved scripts explicitly.
+
+The owner changed the first-batch comparison target to **current sources**, not
+2026-07-28. `wiki_current_comparison.py` captures latest TibiaWiki BR revision IDs,
+timestamps and structured facts; discrepancies are evidence, not automatic gameplay edits.
 
 ## 7. Validation
 

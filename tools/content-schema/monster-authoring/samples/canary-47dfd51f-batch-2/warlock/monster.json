@@ -1,0 +1,619 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/warlock",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "Warlock",
+    "inspection": {
+      "description": "a warlock"
+    },
+    "stats": {
+      "max_health": 3500,
+      "initial_health": 3500,
+      "experience": 4000,
+      "speed": 115,
+      "armor": 33,
+      "defense": 20,
+      "critical_chance_percent": 0,
+      "mitigation_percent": {
+        "numerator": 33,
+        "denominator": 25
+      }
+    },
+    "resistances": [
+      {
+        "damage_type": "physical",
+        "reduction_percent": {
+          "numerator": -5,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "energy",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "earth",
+        "reduction_percent": {
+          "numerator": 95,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "fire",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "ice",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "holy",
+        "reduction_percent": {
+          "numerator": -8,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "invisible",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": false,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": false,
+      "convinceable": false,
+      "is_familiar": false
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/warlock",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/warlock",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": false
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "name_forms": {
+      "article": "a"
+    },
+    "bestiary": {
+      "class": "Human",
+      "taxonomy": "human",
+      "difficulty": "medium",
+      "occurrence": "common",
+      "stars": 3,
+      "kill_thresholds": [
+        50,
+        500,
+        1000
+      ],
+      "charm_points": 25,
+      "locations": "Demona, Ghostland (Banshee Quest area), Temple of Xayepocax, Oasis Tomb, Kharos, Magician Quarter, beneath Fenrock, The Arcanum."
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "canary:item/18246",
+      "revision": "canary-47dfd51f"
+    },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "blood"
+    },
+    "loot": {
+      "family": "Loot",
+      "key": "canary:loot/warlock",
+      "revision": "canary-47dfd51f"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/warlock",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": true,
+      "field_permissions": {
+        "energy": true,
+        "fire": true,
+        "poison": true
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 4,
+      "static_attack_chance_percent": 90,
+      "flee_health": 900,
+      "change_target": {
+        "interval_ms": 4000,
+        "chance_percent": 10
+      },
+      "strategy_weights": {
+        "nearest": 100,
+        "damage": 0,
+        "health": 0,
+        "random": 0
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 25
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/attack-4",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/attack-5",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/attack-6",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/attack-7",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/attack-8",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 15
+      }
+    ],
+    "defenses": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/defense-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/warlock/defense-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      }
+    ],
+    "event_bindings": [],
+    "voices": {
+      "interval_ms": 5000,
+      "chance_percent": 10,
+      "entries": [
+        {
+          "text": "Even a rat is a better mage than you!",
+          "mode": "say"
+        },
+        {
+          "text": "Learn the secret of our magic! YOUR death!",
+          "mode": "say"
+        },
+        {
+          "text": "We don't like intruders!",
+          "mode": "say"
+        }
+      ]
+    },
+    "summons": {
+      "max_summons": 1,
+      "entries": [
+        {
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/stone_golem",
+            "revision": "canary-47dfd51f"
+          },
+          "interval_ms": 2000,
+          "chance_percent": 10,
+          "count": 1
+        }
+      ]
+    }
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/warlock",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/130",
+      "palette_bindings": [
+        {
+          "slot": "body",
+          "palette_binding": "canary.appearance:palette/52"
+        },
+        {
+          "slot": "legs",
+          "palette_binding": "canary.appearance:palette/128"
+        },
+        {
+          "slot": "feet",
+          "palette_binding": "canary.appearance:palette/95"
+        }
+      ],
+      "attachment_bindings": [
+        {
+          "slot": "addon",
+          "asset_binding": "canary.appearance:addon/130/1"
+        }
+      ],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  },
+  "loot": {
+    "identity": {
+      "key": "canary:loot/warlock",
+      "revision": "canary-47dfd51f"
+    },
+    "algorithm": "IndependentBernoulli",
+    "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/2995",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.06,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3360",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.24,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/2852",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.3,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3081",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.33,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3006",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.43,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/11454",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.51,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3007",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.7,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3509",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/825",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3034",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1.15,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3029",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1.19,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3567",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1.41,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/2917",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1.5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3062",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 2,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3051",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 2.2,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3728",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 3,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7368",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 4,
+        "probability_percent": 3.47,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7368",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 4,
+        "probability_percent": 3.5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/238",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 4.76,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/239",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 5.19,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3324",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 6.37,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3299",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 7.6,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3600",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 9,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3590",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 4,
+        "probability_percent": 19,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3031",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 80,
+        "probability_percent": 29.34,
+        "skip_later_same_item_after_success": false
+      }
+    ]
+  }
+}

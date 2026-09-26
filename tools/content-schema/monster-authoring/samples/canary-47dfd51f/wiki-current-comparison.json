@@ -1,0 +1,2309 @@
+{
+  "schema": "OTERYN_MONSTER_CURRENT_WIKI_COMPARISON/v1",
+  "source_role": "STRUCTURED_REFERENCE_DATA",
+  "request_mode": "latest",
+  "historical_target_date": null,
+  "retrieved_at": "2026-09-26T19:32:03.723157+00:00",
+  "api_server_timestamp": "2026-09-26T19:32:03Z",
+  "api": "https://www.tibiawiki.com.br/api.php",
+  "canary_revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "runtime_qualified": false,
+  "global_parity_proven": false,
+  "summary": {
+    "MATCH": 164,
+    "CONFLICT": 22,
+    "UNKNOWN": 20,
+    "NOT_COMPARABLE": 19
+  },
+  "records": [
+    {
+      "monster": "rat",
+      "page_title": "Rat",
+      "page_id": 5149,
+      "revision_id": 441001,
+      "revision_timestamp": "2026-07-25T07:54:05Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Rat&oldid=441001",
+      "wikitext_sha256": "61efc98d54c25f441d4a4680557f677aba95693d946a8352574d0eab8c4a7aa5",
+      "structured_facts": {
+        "hp": 20,
+        "exp": 5,
+        "summon": 200,
+        "convince": 200,
+        "illusionable": true,
+        "pushable": true,
+        "pushobjects": false,
+        "speed": 67,
+        "charm": 5,
+        "defense": 1,
+        "mitigation": "0.12",
+        "ocorrencia": "comum",
+        "dificuldade": "trivial",
+        "physicalDmgMod": 100,
+        "earthDmgMod": 80,
+        "fireDmgMod": 100,
+        "deathDmgMod": 110,
+        "energyDmgMod": 100,
+        "holyDmgMod": 80,
+        "iceDmgMod": 110,
+        "respawnblocked": false
+      },
+      "ability_observations": {
+        "hab_physical": {
+          "references": [
+            "Melee"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              8
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 20,
+          "wiki": "20",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 5,
+          "wiki": "5",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 5,
+          "wiki": "1",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "0.07",
+          "wiki": "0.12",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 67,
+          "wiki": "67",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "summonable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "summonable_mana_cost",
+          "canary": 200,
+          "wiki": "200",
+          "classification": "MATCH"
+        },
+        {
+          "field": "convinceable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "convinceable_mana_cost",
+          "canary": 200,
+          "wiki": "200",
+          "classification": "MATCH"
+        },
+        {
+          "field": "charm_points",
+          "canary": 5,
+          "wiki": "5",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "trivial",
+          "wiki": "trivial",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": "80",
+          "wiki": "80",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": "80",
+          "wiki": "80",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "cheese",
+            "gold coin"
+          ],
+          "wiki": [
+            "Cheese",
+            "Gold Coin"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [],
+          "only_wiki": []
+        }
+      ]
+    },
+    {
+      "monster": "cyclops",
+      "page_title": "Cyclops",
+      "page_id": 3625,
+      "revision_id": 441425,
+      "revision_timestamp": "2026-07-25T13:23:11Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Cyclops&oldid=441425",
+      "wikitext_sha256": "b6051e64958041a8731245f75b129f5f9bd8e9b83837e6b99ade6bfa047a8bcc",
+      "structured_facts": {
+        "hp": 260,
+        "exp": 150,
+        "summon": 490,
+        "convince": 490,
+        "illusionable": true,
+        "pushable": false,
+        "pushobjects": true,
+        "speed": 95,
+        "charm": 15,
+        "defense": 17,
+        "mitigation": "0.97",
+        "ocorrencia": "comum",
+        "dificuldade": "fácil",
+        "physicalDmgMod": 100,
+        "earthDmgMod": 110,
+        "fireDmgMod": 100,
+        "deathDmgMod": 110,
+        "energyDmgMod": 75,
+        "holyDmgMod": 80,
+        "iceDmgMod": 100,
+        "respawnblocked": ""
+      },
+      "ability_observations": {
+        "hab_physical": {
+          "references": [
+            "Melee"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              120
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 260,
+          "wiki": "260",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 150,
+          "wiki": "150",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 20,
+          "wiki": "17",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "0.62",
+          "wiki": "0.97",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 95,
+          "wiki": "95",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "summonable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "summonable_mana_cost",
+          "canary": 490,
+          "wiki": "490",
+          "classification": "MATCH"
+        },
+        {
+          "field": "convinceable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "convinceable_mana_cost",
+          "canary": 490,
+          "wiki": "490",
+          "classification": "MATCH"
+        },
+        {
+          "field": "charm_points",
+          "canary": 15,
+          "wiki": "15",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": "75",
+          "wiki": "75",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": "80",
+          "wiki": "80",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "battle shield",
+            "club ring",
+            "cyclops toe",
+            "cyclops trophy",
+            "dark helmet",
+            "gold coin",
+            "halberd",
+            "health potion",
+            "heavy old tome",
+            "meat",
+            "plate shield",
+            "short sword",
+            "wolf tooth chain"
+          ],
+          "wiki": [
+            "Battle Shield",
+            "Club Ring",
+            "Cyclops Toe",
+            "Cyclops Trophy",
+            "Dark Helmet",
+            "Gold Coin",
+            "Halberd",
+            "Health Potion",
+            "Heavy Old Tome",
+            "Meat",
+            "Plate Shield",
+            "Short Sword",
+            "Wolf Tooth Chain"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [],
+          "only_wiki": []
+        }
+      ]
+    },
+    {
+      "monster": "orc_spearman",
+      "page_title": "Orc Spearman",
+      "page_id": 5074,
+      "revision_id": 441141,
+      "revision_timestamp": "2026-07-25T09:03:23Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Orc+Spearman&oldid=441141",
+      "wikitext_sha256": "268c040fb1190c1f44deebcf25d3a6c7833406a4f026a5d07c0d15e2f823a175",
+      "structured_facts": {
+        "hp": 105,
+        "exp": 38,
+        "summon": 310,
+        "convince": 310,
+        "illusionable": true,
+        "pushable": true,
+        "pushobjects": false,
+        "speed": 88,
+        "charm": 15,
+        "defense": 6,
+        "mitigation": "0.48",
+        "ocorrencia": "comum",
+        "dificuldade": "fácil",
+        "physicalDmgMod": 100,
+        "earthDmgMod": 110,
+        "fireDmgMod": 100,
+        "deathDmgMod": 110,
+        "energyDmgMod": 80,
+        "holyDmgMod": 80,
+        "iceDmgMod": 100,
+        "respawnblocked": ""
+      },
+      "ability_observations": {
+        "hab_physical": {
+          "references": [
+            "Distance Fighting",
+            "Melee"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              20
+            ],
+            [
+              0,
+              30
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 105,
+          "wiki": "105",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 38,
+          "wiki": "38",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 10,
+          "wiki": "6",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "0.3",
+          "wiki": "0.48",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 88,
+          "wiki": "88",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "summonable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "summonable_mana_cost",
+          "canary": 310,
+          "wiki": "310",
+          "classification": "MATCH"
+        },
+        {
+          "field": "convinceable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "convinceable_mana_cost",
+          "canary": 310,
+          "wiki": "310",
+          "classification": "MATCH"
+        },
+        {
+          "field": "charm_points",
+          "canary": 15,
+          "wiki": "15",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": "80",
+          "wiki": "80",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": "80",
+          "wiki": "80",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "gold coin",
+            "heavy old tome",
+            "machete",
+            "meat",
+            "orc leather",
+            "orc tooth",
+            "spear",
+            "studded helmet",
+            "studded legs"
+          ],
+          "wiki": [
+            "Gold Coin",
+            "Heavy Old Tome",
+            "Machete",
+            "Meat",
+            "Orc Leather",
+            "Orc Tooth",
+            "Spear",
+            "Studded Helmet",
+            "Studded Legs"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [],
+          "only_wiki": []
+        }
+      ]
+    },
+    {
+      "monster": "scorpion",
+      "page_title": "Scorpion",
+      "page_id": 433,
+      "revision_id": 440835,
+      "revision_timestamp": "2026-07-25T06:38:16Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Scorpion&oldid=440835",
+      "wikitext_sha256": "8852031535fce77eada6cf0e65f46c7a5734f0bf0611ee4ee4f953e28e6352ec",
+      "structured_facts": {
+        "hp": 45,
+        "exp": 45,
+        "summon": 310,
+        "convince": "",
+        "illusionable": true,
+        "pushable": true,
+        "pushobjects": false,
+        "speed": 75,
+        "charm": 15,
+        "defense": 14,
+        "mitigation": "0.20",
+        "ocorrencia": "comum",
+        "dificuldade": "fácil",
+        "physicalDmgMod": 100,
+        "earthDmgMod": 0,
+        "fireDmgMod": 110,
+        "deathDmgMod": 100,
+        "energyDmgMod": 80,
+        "holyDmgMod": 100,
+        "iceDmgMod": 110,
+        "respawnblocked": false
+      },
+      "ability_observations": {
+        "abilities": {
+          "references": [
+            "Melee",
+            "Poison",
+            "hp"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              50
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 45,
+          "wiki": "45",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 45,
+          "wiki": "45",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 5,
+          "wiki": "14",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "0.13",
+          "wiki": "0.20",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 75,
+          "wiki": "75",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "summonable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "summonable_mana_cost",
+          "canary": 310,
+          "wiki": "310",
+          "classification": "MATCH"
+        },
+        {
+          "field": "convinceable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "charm_points",
+          "canary": 15,
+          "wiki": "15",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": "80",
+          "wiki": "80",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "scorpion tail"
+          ],
+          "wiki": [
+            "Scorpion Tail"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [],
+          "only_wiki": []
+        }
+      ]
+    },
+    {
+      "monster": "orc_shaman",
+      "page_title": "Orc Shaman",
+      "page_id": 5072,
+      "revision_id": 441142,
+      "revision_timestamp": "2026-07-25T09:03:32Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Orc+Shaman&oldid=441142",
+      "wikitext_sha256": "10be87eebef73453f84f3e1977580d5c57db6b555f4384120c34615b9456c206",
+      "structured_facts": {
+        "hp": 115,
+        "exp": 110,
+        "summon": "",
+        "convince": "",
+        "illusionable": true,
+        "pushable": false,
+        "pushobjects": true,
+        "speed": 70,
+        "charm": 15,
+        "defense": 8,
+        "mitigation": "0.40",
+        "ocorrencia": "comum",
+        "dificuldade": "fácil",
+        "physicalDmgMod": 100,
+        "earthDmgMod": 110,
+        "fireDmgMod": 100,
+        "deathDmgMod": 105,
+        "energyDmgMod": 50,
+        "holyDmgMod": 90,
+        "iceDmgMod": 100,
+        "respawnblocked": true
+      },
+      "ability_observations": {
+        "abilities": {
+          "references": [
+            "Distance Fighting",
+            "Energy",
+            "Fire",
+            "Self-Healing",
+            "Snake",
+            "Summon"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              15
+            ],
+            [
+              20,
+              31
+            ],
+            [
+              5,
+              43
+            ],
+            [
+              0,
+              4
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 115,
+          "wiki": "115",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 110,
+          "wiki": "110",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 10,
+          "wiki": "8",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "0.25",
+          "wiki": "0.40",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 70,
+          "wiki": "70",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": false,
+          "wiki": true,
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": true,
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "summonable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "convinceable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "charm_points",
+          "canary": 15,
+          "wiki": "15",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": "105",
+          "wiki": "105",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": "50",
+          "wiki": "50",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": "90",
+          "wiki": "90",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "book",
+            "broken shamanic staff",
+            "chain armor",
+            "corncob",
+            "gold coin",
+            "heavy old tome",
+            "orc leather",
+            "orc tooth",
+            "shamanic hood",
+            "spear",
+            "wand of decay"
+          ],
+          "wiki": [
+            "Broken Shamanic Staff",
+            "Chain Armor",
+            "Corncob",
+            "Gold Coin",
+            "Grey Small Book",
+            "Heavy Old Tome",
+            "Orc Leather",
+            "Orc Tooth",
+            "Shamanic Hood",
+            "Spear",
+            "Wand of Decay"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [
+            "book"
+          ],
+          "only_wiki": [
+            "Grey Small Book"
+          ]
+        }
+      ]
+    },
+    {
+      "monster": "necromancer",
+      "page_title": "Necromancer",
+      "page_id": 4807,
+      "revision_id": 441386,
+      "revision_timestamp": "2026-07-25T13:02:28Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Necromancer&oldid=441386",
+      "wikitext_sha256": "b23f8765edffbc84e9e6b1b8e9235c085208aded7d0804e1d33f8e0f829e8268",
+      "structured_facts": {
+        "hp": 580,
+        "exp": 580,
+        "summon": "",
+        "convince": "",
+        "illusionable": false,
+        "pushable": false,
+        "pushobjects": true,
+        "speed": 94,
+        "charm": 25,
+        "defense": 50,
+        "mitigation": "1.65",
+        "ocorrencia": "comum",
+        "dificuldade": "médio",
+        "physicalDmgMod": 105,
+        "earthDmgMod": 0,
+        "fireDmgMod": 105,
+        "deathDmgMod": 50,
+        "energyDmgMod": 80,
+        "holyDmgMod": 105,
+        "iceDmgMod": 90,
+        "respawnblocked": ""
+      },
+      "ability_observations": {
+        "hab_physical": {
+          "references": [
+            "Melee",
+            "Poisoned",
+            "hp"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              80
+            ]
+          ]
+        },
+        "hab_earth": {
+          "references": [
+            "Magias de Criaturas#Strike"
+          ],
+          "numeric_ranges": [
+            [
+              20,
+              120
+            ]
+          ]
+        },
+        "hab_death": {
+          "references": [
+            "Magias de Criaturas#Strike"
+          ],
+          "numeric_ranges": [
+            [
+              10,
+              120
+            ]
+          ]
+        },
+        "hab_cura": {
+          "references": [
+            "Healing"
+          ],
+          "numeric_ranges": []
+        },
+        "hab_invoca": {
+          "references": [
+            "Ghost",
+            "Ghoul",
+            "Mummy"
+          ],
+          "numeric_ranges": []
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 580,
+          "wiki": "580",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 580,
+          "wiki": "580",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 25,
+          "wiki": "50",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "1.04",
+          "wiki": "1.65",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 94,
+          "wiki": "94",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "summonable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "convinceable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "charm_points",
+          "canary": 25,
+          "wiki": "25",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "medium",
+          "wiki": "medium",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": "105",
+          "wiki": "105",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": "105",
+          "wiki": "105",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": "50",
+          "wiki": "50",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": "80",
+          "wiki": "80",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": "105",
+          "wiki": "105",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": "90",
+          "wiki": "90",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "book of necromantic rituals",
+            "boots of haste",
+            "clerical mace",
+            "gold coin",
+            "green mushroom",
+            "mystic turban",
+            "necromantic robe",
+            "noble axe",
+            "poison arrow",
+            "skull staff",
+            "spellbook of warding",
+            "strong mana potion"
+          ],
+          "wiki": [
+            "Book of Necromantic Rituals",
+            "Boots of Haste",
+            "Clerical Mace",
+            "Gold Coin",
+            "Green Mushroom",
+            "Mystic Turban",
+            "Necromantic Robe",
+            "Noble Axe",
+            "Poison Arrow",
+            "Skull Staff",
+            "Spellbook of Warding",
+            "Strong Mana Potion"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [],
+          "only_wiki": []
+        }
+      ]
+    },
+    {
+      "monster": "fire_elemental",
+      "page_title": "Fire Elemental",
+      "page_id": 2966,
+      "revision_id": 441294,
+      "revision_timestamp": "2026-07-25T11:40:45Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Fire+Elemental&oldid=441294",
+      "wikitext_sha256": "7e5c17dde00e88475a10ab232fd22cc673ed1b1ecb2347eb46bf242ff3420f5e",
+      "structured_facts": {
+        "hp": 280,
+        "exp": 220,
+        "summon": 690,
+        "convince": "",
+        "illusionable": true,
+        "pushable": false,
+        "pushobjects": true,
+        "speed": 95,
+        "charm": 25,
+        "defense": 18,
+        "mitigation": "0.80",
+        "ocorrencia": "comum",
+        "dificuldade": "médio",
+        "physicalDmgMod": 100,
+        "earthDmgMod": 100,
+        "fireDmgMod": 0,
+        "deathDmgMod": 0,
+        "energyDmgMod": 100,
+        "holyDmgMod": 100,
+        "iceDmgMod": 125,
+        "respawnblocked": false
+      },
+      "ability_observations": {
+        "hab_physical": {
+          "references": [
+            "Melee"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              80
+            ]
+          ]
+        },
+        "hab_fire": {
+          "references": [
+            "Explosion",
+            "Fire Field"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              160
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 280,
+          "wiki": "280",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 220,
+          "wiki": "220",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 15,
+          "wiki": "18",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "0.51",
+          "wiki": "0.80",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 95,
+          "wiki": "95",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "summonable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "summonable_mana_cost",
+          "canary": 690,
+          "wiki": "690",
+          "classification": "MATCH"
+        },
+        {
+          "field": "convinceable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "charm_points",
+          "canary": 25,
+          "wiki": "25",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "medium",
+          "wiki": "medium",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": "125",
+          "wiki": "125",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [],
+          "wiki": [],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [],
+          "only_wiki": []
+        }
+      ]
+    },
+    {
+      "monster": "dragon",
+      "page_title": "Dragon",
+      "page_id": 5311,
+      "revision_id": 441263,
+      "revision_timestamp": "2026-07-25T10:10:23Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Dragon&oldid=441263",
+      "wikitext_sha256": "fea2d2397e4318d1c4abf392c080bcd5570861cb259a15cb61f0d8ffda89b3d9",
+      "structured_facts": {
+        "hp": 1000,
+        "exp": 700,
+        "summon": "",
+        "convince": "",
+        "illusionable": true,
+        "pushable": false,
+        "pushobjects": true,
+        "speed": 86,
+        "charm": 25,
+        "defense": 25,
+        "mitigation": "1.56",
+        "ocorrencia": "comum",
+        "dificuldade": "médio",
+        "physicalDmgMod": 100,
+        "earthDmgMod": 20,
+        "fireDmgMod": 0,
+        "deathDmgMod": 100,
+        "energyDmgMod": 80,
+        "holyDmgMod": 100,
+        "iceDmgMod": 110,
+        "respawnblocked": true
+      },
+      "ability_observations": {
+        "hab_physical": {
+          "references": [
+            "Melee"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              130
+            ]
+          ]
+        },
+        "hab_fire": {
+          "references": [
+            "Magias de Criaturas#Ball",
+            "Magias de Criaturas#Wave"
+          ],
+          "numeric_ranges": [
+            [
+              100,
+              170
+            ],
+            [
+              60,
+              110
+            ]
+          ]
+        },
+        "hab_cura": {
+          "references": [
+            "Self-Healing"
+          ],
+          "numeric_ranges": [
+            [
+              38,
+              72
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 1000,
+          "wiki": "1000",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 700,
+          "wiki": "700",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 30,
+          "wiki": "25",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "0.99",
+          "wiki": "1.56",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 86,
+          "wiki": "86",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": true,
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "summonable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "convinceable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "charm_points",
+          "canary": 25,
+          "wiki": "25",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "medium",
+          "wiki": "medium",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": "20",
+          "wiki": "20",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": "80",
+          "wiki": "80",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": "110",
+          "wiki": "110",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "broadsword",
+            "burst arrow",
+            "crossbow",
+            "double axe",
+            "dragon ham",
+            "dragon hammer",
+            "dragon shield",
+            "dragon's tail",
+            "dragonbone staff",
+            "gold coin",
+            "green dragon leather",
+            "green dragon scale",
+            "life crystal",
+            "longsword",
+            "plate legs",
+            "serpent sword",
+            "small diamond",
+            "steel helmet",
+            "steel shield",
+            "strong health potion",
+            "wand of inferno"
+          ],
+          "wiki": [
+            "Broadsword",
+            "Burst Arrow",
+            "Crossbow",
+            "Double Axe",
+            "Dragon Ham",
+            "Dragon Hammer",
+            "Dragon Shield",
+            "Dragon Trophy",
+            "Dragon's Tail",
+            "Dragonbone Staff",
+            "Gold Coin",
+            "Green Dragon Leather",
+            "Green Dragon Scale",
+            "Life Crystal",
+            "Longsword",
+            "Plate Legs",
+            "Serpent Sword",
+            "Small Diamond",
+            "Steel Helmet",
+            "Steel Shield",
+            "Strong Health Potion",
+            "Wand of Inferno"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [],
+          "only_wiki": [
+            "Dragon Trophy"
+          ]
+        }
+      ]
+    },
+    {
+      "monster": "ghost",
+      "page_title": "Ghost",
+      "page_id": 5742,
+      "revision_id": 440925,
+      "revision_timestamp": "2026-07-25T07:25:06Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Ghost&oldid=440925",
+      "wikitext_sha256": "02731b1a9f4ec9361e5f3807367abfea95e94d543289b9c15395f84ead0ad025",
+      "structured_facts": {
+        "hp": 150,
+        "exp": 120,
+        "summon": "",
+        "convince": "",
+        "illusionable": true,
+        "pushable": false,
+        "pushobjects": true,
+        "speed": 80,
+        "charm": 15,
+        "defense": 10,
+        "mitigation": "0.80",
+        "ocorrencia": "comum",
+        "dificuldade": "fácil",
+        "physicalDmgMod": 0,
+        "earthDmgMod": 0,
+        "fireDmgMod": 100,
+        "deathDmgMod": 0,
+        "energyDmgMod": 100,
+        "holyDmgMod": 100,
+        "iceDmgMod": 100,
+        "respawnblocked": ""
+      },
+      "ability_observations": {
+        "abilities": {
+          "references": [
+            "Life Drain",
+            "Melee"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              80
+            ],
+            [
+              20,
+              45
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 150,
+          "wiki": "150",
+          "classification": "MATCH"
+        },
+        {
+          "field": "experience",
+          "canary": 120,
+          "wiki": "120",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 5,
+          "wiki": "10",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "0.51",
+          "wiki": "0.80",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "speed",
+          "canary": 80,
+          "wiki": "80",
+          "classification": "NOT_COMPARABLE",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "summonable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "convinceable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "charm_points",
+          "canary": 15,
+          "wiki": "15",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_difficulty",
+          "canary": "easy",
+          "wiki": "easy",
+          "classification": "MATCH"
+        },
+        {
+          "field": "bestiary_occurrence",
+          "canary": "common",
+          "wiki": "common",
+          "classification": "MATCH"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "ancient shield",
+            "book",
+            "cape",
+            "combat knife",
+            "ghostly tissue",
+            "morning star",
+            "shadow herb",
+            "stealth ring",
+            "white piece of cloth"
+          ],
+          "wiki": [
+            "Ancient Shield",
+            "Cape",
+            "Combat Knife",
+            "Ghostly Tissue",
+            "Morning Star",
+            "Orange Book",
+            "Shadow Herb",
+            "Stealth Ring",
+            "Stone Skin Amulet",
+            "White Piece of Cloth"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [
+            "book"
+          ],
+          "only_wiki": [
+            "Orange Book",
+            "Stone Skin Amulet"
+          ]
+        }
+      ]
+    },
+    {
+      "monster": "demodras",
+      "page_title": "Demodras",
+      "page_id": 5372,
+      "revision_id": 399182,
+      "revision_timestamp": "2023-07-21T01:43:48Z",
+      "url": "https://www.tibiawiki.com.br/index.php?title=Demodras&oldid=399182",
+      "wikitext_sha256": "6ac6cb3ad565bd9de072afb75aa4b9e7cc08798a88666cd8e21d69f13a52ca32",
+      "structured_facts": {
+        "hp": 3750,
+        "exp": 6000,
+        "summon": "",
+        "convince": "",
+        "illusionable": false,
+        "pushable": false,
+        "pushobjects": true,
+        "speed": "",
+        "charm": "",
+        "defense": "",
+        "mitigation": "",
+        "ocorrencia": "",
+        "dificuldade": "",
+        "physicalDmgMod": 100,
+        "earthDmgMod": 100,
+        "fireDmgMod": 0,
+        "deathDmgMod": 100,
+        "energyDmgMod": 100,
+        "holyDmgMod": 100,
+        "iceDmgMod": 100,
+        "respawnblocked": ""
+      },
+      "ability_observations": {
+        "abilities": {
+          "references": [
+            "Dragon",
+            "Fire Bomb Rune",
+            "Fire Wave",
+            "Great Fireball",
+            "Melee",
+            "Self-Healing",
+            "Summon"
+          ],
+          "numeric_ranges": [
+            [
+              0,
+              235
+            ],
+            [
+              300,
+              550
+            ],
+            [
+              350,
+              400
+            ],
+            [
+              405,
+              620
+            ]
+          ]
+        }
+      },
+      "ability_comparison": "UNKNOWN: wiki ranges and names do not qualify source formulas, intervals or cast geometry.",
+      "comparisons": [
+        {
+          "field": "max_health",
+          "canary": 4500,
+          "wiki": "3750",
+          "classification": "CONFLICT"
+        },
+        {
+          "field": "experience",
+          "canary": 6000,
+          "wiki": "6000",
+          "classification": "MATCH"
+        },
+        {
+          "field": "defense",
+          "canary": 25,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "mitigation_percent",
+          "canary": "1.99",
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "speed",
+          "canary": 197,
+          "wiki": null,
+          "classification": "UNKNOWN",
+          "note": "Different source speed representations; no Global/runtime unit equivalence is qualified here."
+        },
+        {
+          "field": "pushable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "push_items",
+          "canary": true,
+          "wiki": true,
+          "classification": "MATCH"
+        },
+        {
+          "field": "illusionable",
+          "canary": false,
+          "wiki": false,
+          "classification": "MATCH"
+        },
+        {
+          "field": "blocked_by_nearby_players",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "summonable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "convinceable",
+          "canary": false,
+          "wiki": null,
+          "classification": "UNKNOWN"
+        },
+        {
+          "field": "damage_received_percent/physical",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/earth",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/fire",
+          "canary": "0",
+          "wiki": "0",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/death",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/energy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/holy",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "damage_received_percent/ice",
+          "canary": 100,
+          "wiki": "100",
+          "classification": "MATCH",
+          "note": "Wiki damage modifier is received damage; Canary element percent is reduction. Compare 100 - reduction."
+        },
+        {
+          "field": "base_loot_item_names",
+          "canary": [
+            "book",
+            "dragon claw",
+            "dragon ham",
+            "dragon scale mail",
+            "energy ring",
+            "fire sword",
+            "golden mug",
+            "great health potion",
+            "great mana potion",
+            "green mushroom",
+            "life crystal",
+            "onyx arrow",
+            "platinum coin",
+            "power bolt",
+            "red dragon leather",
+            "small sapphire"
+          ],
+          "wiki": [
+            "Dragon Claw",
+            "Dragon Ham",
+            "Dragon Scale Mail",
+            "Energy Ring",
+            "Fire Sword",
+            "Gemmed Book",
+            "Golden Mug",
+            "Great Health Potion",
+            "Green Mushroom",
+            "Onyx Arrow",
+            "Platinum Coin",
+            "Power Bolt",
+            "Red Dragon Leather",
+            "Small Sapphire",
+            "Stuffed Dragon"
+          ],
+          "classification": "NOT_COMPARABLE",
+          "note": "Wiki names/frequency bands and Canary exact probabilities have different precision. Name set differences are evidence candidates, not automatic gameplay edits. Raid/event loot is excluded.",
+          "only_canary": [
+            "book",
+            "great mana potion",
+            "life crystal"
+          ],
+          "only_wiki": [
+            "Gemmed Book",
+            "Stuffed Dragon"
+          ]
+        }
+      ]
+    }
+  ]
+}

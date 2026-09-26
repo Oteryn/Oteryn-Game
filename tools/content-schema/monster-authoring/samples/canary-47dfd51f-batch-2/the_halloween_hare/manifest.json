@@ -1,0 +1,360 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 68,
+      "source_field": "attacks[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/0",
+      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 69,
+      "source_field": "attacks[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 70,
+      "source_field": "attacks[3]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/2",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 71,
+      "source_field": "attacks[4]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/3",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 72,
+      "source_field": "attacks[5]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/4",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 73,
+      "source_field": "attacks[6]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/5",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 74,
+      "source_field": "attacks[7]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/6",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 75,
+      "source_field": "attacks[8]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/7",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 76,
+      "source_field": "attacks[9]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/8",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 77,
+      "source_field": "attacks[10]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/9",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 78,
+      "source_field": "attacks[11]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/10",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 79,
+      "source_field": "attacks[12]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/11",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 80,
+      "source_field": "attacks[13]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/12",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 81,
+      "source_field": "attacks[14]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/13",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 82,
+      "source_field": "attacks[15]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/14",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 83,
+      "source_field": "attacks[16]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/15",
+      "resolution": "monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 90,
+      "source_field": "defenses[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/0",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 35,
+      "source_field": "flags.pass_through",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/pass_through",
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 35,
+      "source_field": "flags.canWalk/canTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/can_walk",
+      "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 4,
+      "source_field": "description",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/inspection/description",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 16,
+      "source_field": "health",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/initial_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 17,
+      "source_field": "maxHealth",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/max_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 5,
+      "source_field": "experience",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/experience",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 20,
+      "source_field": "speed",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/speed",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 6,
+      "source_field": "outfit",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/asset_binding",
+      "resolution": "Declared source appearance binding, not an admitted asset."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 55,
+      "source_field": "light",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/light/level",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 35,
+      "source_field": "flags",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/flags",
+      "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 23,
+      "source_field": "changeTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/change_target",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 28,
+      "source_field": "strategiesTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/strategy_weights",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 93,
+      "source_field": "elements",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/resistances",
+      "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 106,
+      "source_field": "immunities",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/immunities",
+      "resolution": "Invisible condition immunity also sets sense_invisible."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 88,
+      "source_field": "defenses.armor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/armor",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 87,
+      "source_field": "defenses.defense",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/defense",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 89,
+      "source_field": "defenses.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/mitigation_percent",
+      "resolution": "Canary float percent points as an exact decimal ratio."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "source_line": 18,
+      "source_field": "race",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/creature/death_residue",
+      "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    }
+  ]
+}

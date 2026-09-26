@@ -1,0 +1,484 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/the_enraged_thorn_knight/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_enraged_thorn_knight/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_enraged_thorn_knight/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "area": {
+        "length_tiles": 4,
+        "spread_tiles": 0
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_enraged_thorn_knight/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_enraged_thorn_knight/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "area": {
+        "length_tiles": 9,
+        "spread_tiles": 0
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_enraged_thorn_knight/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_enraged_thorn_knight/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "area": {
+        "length_tiles": 9,
+        "spread_tiles": 0
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_enraged_thorn_knight/attack-4",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_enraged_thorn_knight/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 10
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_enraged_thorn_knight/attack-5",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_enraged_thorn_knight/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_enraged_thorn_knight/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_enraged_thorn_knight/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_enraged_thorn_knight/defense-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/the_enraged_thorn_knight/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/the_enraged_thorn_knight/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_enraged_thorn_knight/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "life_drain",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/the_enraged_thorn_knight/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/poff"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_enraged_thorn_knight/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "mana_drain",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/the_enraged_thorn_knight/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/carniphila"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_enraged_thorn_knight/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "death",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/the_enraged_thorn_knight/attack-4-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/mortarea"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_enraged_thorn_knight/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/the_enraged_thorn_knight/attack-5-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_enraged_thorn_knight/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/the_enraged_thorn_knight/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_enraged_thorn_knight/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 4000,
+      "condition": {
+        "type": "haste",
+        "lifetime": "fixed_duration",
+        "speed_formula": {
+          "family": "Formula",
+          "key": "canary:formula/the_enraged_thorn_knight/defense-2-speed",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/the_enraged_thorn_knight/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 600,
+        "maximum": 1000
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/the_enraged_thorn_knight/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 400,
+        "maximum": 700
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/the_enraged_thorn_knight/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 1400,
+        "maximum": 1700
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/the_enraged_thorn_knight/attack-4-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 400,
+        "maximum": 700
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/the_enraged_thorn_knight/attack-5-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 200,
+        "maximum": 250
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/the_enraged_thorn_knight/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 1550,
+        "maximum": 2550
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/the_enraged_thorn_knight/defense-2-speed",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "speed_modifier",
+      "speed": {
+        "minimum_multiplier": {
+          "numerator": 81,
+          "denominator": 100
+        },
+        "minimum_offset": 40,
+        "maximum_multiplier": {
+          "numerator": 81,
+          "denominator": 50
+        },
+        "maximum_offset": 40
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/111",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead human",
+        "asset_binding": "canary.appearance:object/111",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4240",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4240",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead human",
+        "asset_binding": "canary.appearance:object/4240",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 1200000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4241",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4241",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead human",
+        "asset_binding": "canary.appearance:object/4241",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 1200000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/4242",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/4242",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead human",
+        "asset_binding": "canary.appearance:object/4242",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 50000,
+        "movable": true,
+        "pickupable": true
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 1200000
+      }
+    }
+  ],
+  "loot_tables": []
+}

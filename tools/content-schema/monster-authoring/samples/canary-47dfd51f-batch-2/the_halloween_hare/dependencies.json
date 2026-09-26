@@ -1,0 +1,666 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-4",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-5",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-6",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-6",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-7",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-7",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-8",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-8",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-9",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-9",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-10",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-10",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-11",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-11",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-12",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-12",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-13",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-13",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-14",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-14",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-15",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-15",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/attack-16",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/attack-16",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/the_halloween_hare/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/the_halloween_hare/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/the_halloween_hare/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/bat",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/thornback_tortoise",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/orc",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/snake",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-6",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/warlock",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-7",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/witch",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-8",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/necromancer",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-9",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/dwarf_geomancer",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-10",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/monk",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-11",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/crab",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-12",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/ghost",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-13",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/minotaur_mage",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-14",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/green_frog",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-15",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "creature": {
+          "family": "Creature",
+          "key": "canary:creature/parrot",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/attack-16",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "appearance_transform",
+      "duration_ms": 6000,
+      "appearance_transform": {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/2096",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/blockhit"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/the_halloween_hare/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/the_halloween_hare/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/the_halloween_hare/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/the_halloween_hare/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 1500,
+        "maximum": 2000
+      }
+    }
+  ],
+  "documents": [],
+  "items": [],
+  "loot_tables": []
+}

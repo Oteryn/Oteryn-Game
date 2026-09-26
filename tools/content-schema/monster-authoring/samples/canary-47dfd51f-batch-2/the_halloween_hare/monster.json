@@ -1,0 +1,354 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/the_halloween_hare",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "The Halloween Hare",
+    "inspection": {
+      "description": "a The Halloween Hare"
+    },
+    "stats": {
+      "max_health": 2000,
+      "initial_health": 2000,
+      "experience": 0,
+      "speed": 75,
+      "armor": 1244,
+      "defense": 1244,
+      "critical_chance_percent": 0,
+      "mitigation_percent": {
+        "numerator": 0,
+        "denominator": 1
+      }
+    },
+    "resistances": [
+      {
+        "damage_type": "physical",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "energy",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "earth",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "fire",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "life_drain",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "drowning",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "ice",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "holy",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      },
+      {
+        "damage_type": "death",
+        "reduction_percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "invisible",
+        "outfit",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": false,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": false,
+      "convinceable": false,
+      "is_familiar": false
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/the_halloween_hare",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/the_halloween_hare",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": false
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "name_forms": {
+      "article": "a"
+    },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "blood"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/the_halloween_hare",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": false,
+      "field_permissions": {
+        "energy": true,
+        "fire": true,
+        "poison": true
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 2,
+      "static_attack_chance_percent": 10,
+      "flee_health": 0,
+      "change_target": {
+        "interval_ms": 2000,
+        "chance_percent": 95
+      },
+      "strategy_weights": {
+        "nearest": 70,
+        "damage": 10,
+        "health": 10,
+        "random": 10
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 6
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-3",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-4",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 6
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-5",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-6",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 6
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-7",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-8",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-9",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-10",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-11",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-12",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-13",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-14",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-15",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 5
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/attack-16",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 15
+      }
+    ],
+    "defenses": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_halloween_hare/defense-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 50
+      }
+    ],
+    "event_bindings": []
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/the_halloween_hare",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/74",
+      "palette_bindings": [],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  }
+}

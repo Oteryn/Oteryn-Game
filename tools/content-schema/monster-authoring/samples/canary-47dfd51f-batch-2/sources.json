@@ -1,0 +1,90 @@
+{
+  "repository": "opentibiabr/canary",
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "rules": {
+    "loot_scale": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000",
+    "loot_order": "register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration",
+    "loot_defaults": "creatures_definitions.hpp LootBlock countmin=countmax=1; unique=false",
+    "item_names": "items.cpp nameToItems: appearance names, overridden per id by items.xml names; lookup is lower-case",
+    "item_flags": "items.cpp: blockSolid=unpass, blockProjectile=unsight, blockPathFind=avoid, pickupable=take, movable=!unmove",
+    "monster_defaults": "monsters.hpp MonsterInfo defaults",
+    "melee_chance": "monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied",
+    "condition": "monsters.cpp deserializeSpell: |min|,|max| totals, max=0 -> min, startDamage>min -> 0, tick default 2000 ms",
+    "area_effect": "register_monster_type.lua readSpell: an area spell without effect gets CONST_ME_POFF unless its name contains \"field\"",
+    "fields": "utils_definitions.hpp ITEM_FIREFIELD_PVP_FULL=2118, ITEM_POISONFIELD_PVP=105, ITEM_ENERGYFIELD_PVP=2122",
+    "elements": "register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE",
+    "race_residue": "creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse"
+  },
+  "shared_sources": {
+    "data/items/items.xml": "a3f0a44db14bf020029e4e09a319cbda320bd799",
+    "data/items/appearances.dat": "2cc2f4910af4f002f99f39e486d1a91b1b56a728",
+    "data/scripts/lib/register_monster_type.lua": "6bb42593a2e529e25bb1e5b7df21a288a64ffa33",
+    "src/creatures/monsters/monsters.cpp": "13512c48d1258b0cb7a1875e26ef60783eb53389",
+    "src/io/io_bosstiary.hpp": "dc0867c501857cb710ad07d0f3cbb61806e94c1f",
+    "src/io/io_bosstiary.cpp": "8e89ce79316e5c193e918661c50278f50d476c83",
+    "config.lua.dist": "55ccf0802351aa84a98bfe59e176a5f98f94a56b",
+    "data/libs/functions/player.lua": "0ca29c387806995913db9d955e59f627b50341bd",
+    "data/libs/systems/familiar.lua": "b4e0e403eb0fb24fcfadedbc3cd3e1e1b92b781a",
+    "data/XML/familiars.xml": "27acaac13a89cbe3bc5d834aa4021200fa1dd31e",
+    "data/scripts/spells/familiar/paladin_familiar.lua": "fe6d7b43339571d212904b0ea8b6db1d15773fe1"
+  },
+  "monsters": [
+    {
+      "monster": "hydra",
+      "file": "data-otservbr-global/monster/dragons/hydra.lua",
+      "git_blob": "bed09ae14613c241a5173f12e68b43c3dcac7e2f"
+    },
+    {
+      "monster": "warlock",
+      "file": "data-otservbr-global/monster/humans/warlock.lua",
+      "git_blob": "027399c07a6d886d6193d3e656c23a049339c2f7"
+    },
+    {
+      "monster": "dworc_voodoomaster",
+      "file": "data-otservbr-global/monster/humanoids/dworc_voodoomaster.lua",
+      "git_blob": "9a9770186f3303d5ed54674841f1f4f456501356"
+    },
+    {
+      "monster": "the_halloween_hare",
+      "file": "data-otservbr-global/monster/event_creatures/the_halloween_hare.lua",
+      "git_blob": "07cac277c007681c104a06de376a261884f2c7a0"
+    },
+    {
+      "monster": "wyrm",
+      "file": "data-otservbr-global/monster/dragons/wyrm.lua",
+      "git_blob": "afb39698c20e1fc8716da73ab692714335f608dc"
+    },
+    {
+      "monster": "zushuka",
+      "file": "data-otservbr-global/monster/bosses/zushuka.lua",
+      "git_blob": "6e5c027d4c476117d6a20b1e99e9ff2c59dcbbe1"
+    },
+    {
+      "monster": "black_knight",
+      "file": "data-otservbr-global/monster/bosses/black_knight.lua",
+      "git_blob": "359ef3e2d5b70caf3f45c237fdb2bc67c33497cd"
+    },
+    {
+      "monster": "the_enraged_thorn_knight",
+      "file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
+      "git_blob": "ab868b6f58cf5950d027111fdb3fdd99f289d628"
+    },
+    {
+      "monster": "sand_vortex",
+      "file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "git_blob": "9d361da23f4c2da2c2da663a19d25e80a7cdc8ce"
+    },
+    {
+      "monster": "paladin_familiar",
+      "file": "data-otservbr-global/monster/familiars/paladin_familiar.lua",
+      "git_blob": "181e96f394c48c4dd1f6675252cbe62b93392361"
+    }
+  ],
+  "literal_source_census": {
+    "lua_files": 1656,
+    "path_blob_sha256": "4fea07d88450ca579f8401217e7fdfcd917656c637b6b19cb30302a4751dbaa4",
+    "child_assignment_matches": 0,
+    "combat_true_matches": 0,
+    "scope": "Literal source census only, not arbitrary Lua or engine behavior completeness."
+  }
+}

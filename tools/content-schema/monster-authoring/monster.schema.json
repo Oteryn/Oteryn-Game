@@ -650,6 +650,33 @@
           "type": "integer",
           "minimum": 0,
           "maximum": 65535
+        },
+        "points_per_unlock": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prowess": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "expertise": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            },
+            "mastery": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            }
+          },
+          "required": [
+            "prowess",
+            "expertise",
+            "mastery"
+          ],
+          "description": "Additional points awarded at each unlock, not cumulative totals. When present, boss_points is their sum after all three unlocks. Legacy scalar-only records remain valid."
         }
       },
       "required": [

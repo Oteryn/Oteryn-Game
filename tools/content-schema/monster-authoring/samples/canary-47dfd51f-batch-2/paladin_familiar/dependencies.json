@@ -1,0 +1,288 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/paladin_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/paladin_familiar/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/paladin_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 5,
+      "needs_target": true,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/paladin_familiar/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/paladin_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 5,
+      "needs_target": true,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 3
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/paladin_familiar/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/paladin_familiar/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 5,
+      "needs_target": true,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 5
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/paladin_familiar/attack-4",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/paladin_familiar/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 5,
+      "needs_target": true,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 5
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/paladin_familiar/attack-5",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/paladin_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/paladin_familiar/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/paladin_familiar/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/paladin_familiar/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/paladin_familiar/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "holy",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/paladin_familiar/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/holyarea",
+        "projectile_asset_binding": "canary.appearance:missile/holy"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/paladin_familiar/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "fire",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/paladin_familiar/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/fireattack",
+        "projectile_asset_binding": "canary.appearance:missile/fire"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/paladin_familiar/attack-4",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "fire",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/paladin_familiar/attack-4-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/fireattack",
+        "projectile_asset_binding": "canary.appearance:missile/fire"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/paladin_familiar/attack-5",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "holy",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/paladin_familiar/attack-5-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/holyarea",
+        "projectile_asset_binding": "canary.appearance:missile/holy"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/paladin_familiar/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/paladin_familiar/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_green"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/paladin_familiar/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 200
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/paladin_familiar/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 200,
+        "maximum": 270
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/paladin_familiar/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 200,
+        "maximum": 270
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/paladin_familiar/attack-4-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 170,
+        "maximum": 230
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/paladin_familiar/attack-5-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 170,
+        "maximum": 230
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/paladin_familiar/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 450,
+        "maximum": 450
+      }
+    }
+  ],
+  "documents": [],
+  "items": [],
+  "loot_tables": []
+}

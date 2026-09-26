@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import re
+import subprocess
 import xml.etree.ElementTree as ET
 from decimal import Decimal
 from fractions import Fraction
@@ -28,6 +29,13 @@ MONSTER_DIR = 'data-otservbr-global/monster'
 BATCH = ['mammals/rat', 'giants/cyclops', 'humanoids/orc_spearman', 'vermins/scorpion', 'humanoids/orc_shaman',
          'humans/necromancer', 'elementals/fire_elemental', 'dragons/dragon', 'undeads/ghost',
          'quests/killing_in_the_name_of/demodras']
+SECOND_BATCH = ['dragons/hydra', 'humans/warlock', 'humanoids/dworc_voodoomaster', 'event_creatures/the_halloween_hare',
+                'dragons/wyrm', 'bosses/zushuka', 'bosses/black_knight',
+                'quests/forgotten_knowledge/bosses/the_enraged_thorn_knight',
+                'quests/cults_of_tibia/bosses/summons/sand_vortex', 'familiars/paladin_familiar']
+BOSSTIARY_LEVELS = {'bane': [(25, 5), (100, 15), (300, 30)],
+                   'archfoe': [(5, 10), (20, 30), (60, 60)],
+                   'nemesis': [(1, 10), (3, 30), (5, 60)]}
 RULES = {
     'loot_scale': 'src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000',
     'loot_order': 'register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration',
@@ -76,6 +84,11 @@ return registered, callbacks
 
 def blob_id(data):
     return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+
+
+def source_blob(canary, path):
+    """Git object identity is independent of checkout line-ending conversion."""
+    return subprocess.check_output(['git', '-C', str(canary), 'rev-parse', f'{REVISION}:{path}'], text=True).strip()
 
 
 def lua_value(value):
@@ -197,7 +210,7 @@ def ident(key):
 
 
 def ratio(value):
-    fraction = Fraction(Decimal(str(value)))
+    fraction = value if isinstance(value, Fraction) else Fraction(Decimal(str(value)))
     return {'numerator': fraction.numerator, 'denominator': fraction.denominator}
 
 
@@ -241,6 +254,21 @@ class Converter:
             return key
 
         flags = m.get('flags', {})
+        familiar = None
+        if flags.get('familiar'):
+            vocation = s.removesuffix('_familiar')
+            spell_path = f'data/scripts/spells/familiar/{vocation}_familiar.lua'
+            spell_text = (self.canary / spell_path).read_text(encoding='utf-8')
+            config_text = (self.canary / 'config.lua.dist').read_text(encoding='utf-8')
+            minutes = int(re.search(r'^familiarTime\s*=\s*(\d+)\s*$', config_text, re.M)[1])
+            mana = int(re.search(r'spell:mana\((\d+)\)', spell_text)[1])
+            ability_key = f'canary:ability/summon-{s}'
+            familiar = {'vocation': vocation, 'summon_ability': ref('Ability', ability_key),
+                        'duration_ms': minutes * 30000, 'mana_cost': mana}
+            definitions.add(('Ability', ability_key))
+            # This is the source base appearance, not the player's chosen familiar skin.
+            system = (self.canary / 'data/libs/systems/familiar.lua').read_text(encoding='utf-8')
+            base_look = int(re.search(r'VOCATION\.BASE_ID\.' + vocation.upper() + r'\].*?id\s*=\s*(\d+)', system)[1])
         defenses = m.get('defenses', {})
         if isinstance(defenses, list):
             defenses = {'_list': defenses}
@@ -349,6 +377,15 @@ class Converter:
             creature['stats']['mitigation_percent'] = ratio(defenses['mitigation'])
         if creature['summoning']['summonable'] or creature['summoning']['convinceable']:
             creature['summoning']['mana_cost'] = m.get('manaCost', 0)
+        if familiar:
+            creature['summoning']['familiar'] = familiar
+            row('flags.familiar/profile', 'mapped', destination='/monster/creature/summoning/familiar',
+                resolution='Profile from pinned familiar spell and Player:CreateFamiliarSpell: '
+                           'duration = 60 * config familiarTime / 2 seconds, using config.lua.dist baseline. '
+                           'Summon Ability is a declared external reference; no Lua implementation is admitted.')
+            row('familiar.owner_speed', 'unresolved_semantics',
+                resolution='Player:createFamiliar changes speed by max(owner speed - familiar base speed, 0); '
+                           'the optional fixed owner_speed_bonus cannot represent this state-dependent rule.')
         for element in m.get('elements', []):
             if element.get('percent'):
                 creature['resistances'].append({'damage_type': DAMAGE[constant(element['type'], 'COMBAT_')],
@@ -366,6 +403,17 @@ class Converter:
                 creature['bestiary']['locations'] = bestiary['Locations']
             row('Bestiary', 'mapped', destination='/monster/creature/bestiary', line=line_of(r'^monster\.Bestiary'),
                 resolution='difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare).')
+        if m.get('bosstiary'):
+            category = constant(m['bosstiary']['bossRace'], 'RARITY_').lower()
+            levels = BOSSTIARY_LEVELS[category]
+            creature['bosstiary'] = {'category': category,
+                                    **dict(zip(('prowess_kills', 'expertise_kills', 'mastery_kills'), (v[0] for v in levels))),
+                                    'boss_points': sum(v[1] for v in levels),
+                                    'points_per_unlock': dict(zip(('prowess', 'expertise', 'mastery'), (v[1] for v in levels)))}
+            row('bosstiary', 'mapped', destination='/monster/creature/bosstiary',
+                resolution='Pinned src/io/io_bosstiary.hpp levelInfos gives kills and incremental points; '
+                           'io_bosstiary.cpp addBosstiaryKill adds the points of the new level. boss_points is the full total.')
+            row('bosstiary.bossRaceId', 'metadata_only', resolution='Foreign Bosstiary identifier; provenance only.')
         if corpse_id:
             creature['corpse_item'] = ref('Item', f'canary:item/{corpse_id}')
         fluid = RACE_RESIDUE.get(m.get('race', 'blood'))
@@ -417,7 +465,7 @@ class Converter:
         if outfit.get('lookTypeEx'):
             appearance_key = asset(f'canary.appearance:object/{outfit["lookTypeEx"]}')
         else:
-            appearance_key = asset(f'canary.appearance:outfit/{outfit.get("lookType", 0)}')
+            appearance_key = asset(f'canary.appearance:outfit/{outfit.get("lookType", base_look if familiar else 0)}')
         palette = [{'slot': slot, 'palette_binding': asset(f'canary.appearance:palette/{outfit[key]}')}
                    for slot, key in (('head', 'lookHead'), ('body', 'lookBody'), ('legs', 'lookLegs'), ('feet', 'lookFeet'))
                    if outfit.get(key)]
@@ -431,8 +479,15 @@ class Converter:
         if m.get('variant'):
             presentation['variant_label'] = m['variant']
         if outfit.get('lookAddons') or outfit.get('lookMount'):
-            row('outfit.lookAddons/lookMount', 'unresolved_semantics', line=line_of(r'^monster\.outfit'),
-                resolution='Addon/mount attachments are not mapped by this batch converter.')
+            if outfit.get('lookAddons'):
+                presentation['appearance']['attachment_bindings'].append({'slot': 'addon', 'asset_binding':
+                    asset(f'canary.appearance:addon/{outfit.get("lookType", 0)}/{outfit["lookAddons"]}')})
+            if outfit.get('lookMount'):
+                presentation['appearance']['attachment_bindings'].append({'slot': 'mount', 'asset_binding':
+                    asset(f'canary.appearance:outfit/{outfit["lookMount"]}')})
+            row('outfit.lookAddons/lookMount', 'mapped', destination='/monster/presentation/appearance/attachment_bindings',
+                line=line_of(r'^monster\.outfit'), resolution='Exact source addon bitset and mount lookType in '
+                'declared source-scoped attachment bindings; no asset or runtime admission.')
 
         monster = {'creature': creature, 'behavior': behavior, 'presentation': presentation}
         if loot_entries:
@@ -467,6 +522,9 @@ class Converter:
             row(field, 'mapped', destination=destination, resolution=note or 'Direct source value.',
                 line=line_of(r'^\s*(monster\.)?' + re.escape(key) + r'\s*='))
         row('raceId', 'metadata_only', line=line_of(r'^monster\.raceId'), resolution='Foreign identifier; provenance only.') if 'raceId' in m else None
+        if familiar:
+            row('manaCost', 'metadata_only', resolution='The source summoning spell supplies familiar mana cost; '
+                'this monster-level field is not used by summonable/convinceable=false.')
         if m.get('race', 'blood') not in RACE_RESIDUE:
             row('race', 'unresolved_dependency', 'dependency', line=line_of(r'^monster\.race\s*='),
                 resolution=f'Unknown source race "{m["race"]}".')
@@ -477,15 +535,20 @@ class Converter:
             row('race', 'approved_omission', 'dependency', line=line_of(r'^monster\.race\s*='),
                 resolution=f'Race "{m["race"]}" leaves no death residue: ' + RULES['race_residue'] + '.')
         for event in m.get('events', []):
-            row(f'events={event}', 'approved_omission', 'script', line=line_of(r'^monster\.events'),
-                resolution=f'Registered creature event "{event}" updates quest/task progress on death. ' + QUEST_EVENT_OMISSION)
+            # D6 covers quest/task counters only, not every creature event in later batches.
+            known_quest_counter = event in {'RationalRequestRatDeath', 'TheFirstDragonDragonTaskDeath', 'TheGreatDragonHuntDeath'}
+            row(f'events={event}', 'approved_omission' if known_quest_counter else 'unresolved_semantics',
+                'script', line=line_of(r'^monster\.events'), resolution=(
+                f'Registered creature event "{event}" updates quest/task progress on death. ' + QUEST_EVENT_OMISSION
+                if known_quest_counter else f'Registered creature event "{event}" has not been qualified as quest/task-only; '
+                'D6 does not authorize omission of this event.'))
         for callback in sorted(callbacks):
             row(f'mType.{callback}', 'unresolved_semantics', 'script', line=line_of(r'mType\.' + callback),
                 resolution='Inline Lua callback; needs an explicit native behaviour resolution.')
 
         catalog = {'definitions': [ref(f, k) for f, k in sorted(definitions)], 'assets': sorted(assets)}
         manifest = {'sources': [{'repository': REPOSITORY, 'revision': REVISION}], 'entries': rows}
-        source = {'file': source_file, 'git_blob': blob_id(path.read_bytes())}
+        source = {'file': source_file, 'git_blob': source_blob(self.canary, source_file)}
         return s, monster, deps, catalog, manifest, source
 
     def spell(self, spell, base, deps, asset):
@@ -551,6 +614,50 @@ class Converter:
             geometry = cast_geometry(length=spell.get('length', 0), spread=spell.get('spread', 0),
                                      radius=spell.get('radius'), target=bool(spell.get('target', False)))
             kind, range_tiles = 'spell', spell.get('range', 0)
+        elif name in ('speed', 'outfit', 'invisible', 'drunk', 'effect'):
+            geometry = cast_geometry(length=spell.get('length', 0), spread=spell.get('spread', 0),
+                                     radius=spell.get('radius'), target=bool(spell.get('target', False)))
+            kind, range_tiles = 'spell', spell.get('range', 0)
+            duration = spell.get('duration') or 10000
+            visual = presentation()
+            if geometry.get('area') and spell.get('effect') is None:
+                visual['impact_asset_binding'] = asset('canary.appearance:effect/poff')
+                note += RULES['area_effect'] + '. '
+            if name == 'speed':
+                change = max(spell.get('speedChange', 0), -1000)
+                multiplier = Fraction(1000 + change, 1000)
+                formula_key = base.format('formula') + '-speed'
+                deps['formulas'].append({'identity': ident(formula_key), 'kind': 'speed_modifier', 'speed': {
+                    'minimum_multiplier': ratio(multiplier / 2), 'minimum_offset': 40,
+                    'maximum_multiplier': ratio(multiplier), 'maximum_offset': 40}})
+                body = {'operation': 'condition', 'duration_ms': duration,
+                        'condition': {'type': 'haste' if change > 0 else 'paralyze', 'lifetime': 'fixed_duration',
+                                      'speed_formula': ref('Formula', formula_key)}}
+                note += 'monsters.cpp speed branch: speedChange clamped at -1000; '
+                note += 'formula (1+change/1000)/2,40,(1+change/1000),40; default duration 10000 ms. '
+            elif name == 'outfit':
+                if spell.get('outfitMonster'):
+                    transform = {'creature': ref('Creature', f'canary:creature/{slug(spell["outfitMonster"])}')}
+                    self.pending_definitions.add(('Creature', transform['creature']['key']))
+                elif spell.get('outfitItem', 0) > 0:
+                    transform = {'item': ref('Item', f'canary:item/{spell["outfitItem"]}')}
+                    self.pending_definitions.add(('Item', transform['item']['key']))
+                else:
+                    return None
+                body = {'operation': 'appearance_transform', 'duration_ms': duration, 'appearance_transform': transform}
+                note += 'monsters.cpp outfit branch: lazy Creature appearance or Item appearance, duration default 10000 ms. '
+            elif name in ('invisible', 'drunk'):
+                body = {'operation': 'condition', 'duration_ms': duration,
+                        'condition': {'type': name, 'lifetime': 'fixed_duration'}}
+                note += f'monsters.cpp {name} branch, duration default 10000 ms. '
+            else:
+                if not visual:
+                    return None
+                body = {'operation': 'presentation_only'}
+                note += 'monsters.cpp effect branch adds no damage/condition; only its presentation parameters. '
+            if visual:
+                body['presentation'] = visual
+            add_effect('', body)
         else:
             return None
         condition_type = None
@@ -608,14 +715,21 @@ class Converter:
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
-    parser.add_argument('--out', type=Path, default=ROOT / 'samples' / REV)
+    parser.add_argument('--batch', choices=('first', 'second'), default='first')
+    parser.add_argument('--out', type=Path)
     args = parser.parse_args()
+    actual = subprocess.check_output(['git', '-C', str(args.canary), 'rev-parse', 'HEAD'], text=True).strip()
+    if actual != REVISION:
+        parser.error(f'Canary HEAD must be {REVISION}, got {actual}')
+    if subprocess.check_output(['git', '-C', str(args.canary), 'status', '--porcelain', '--untracked-files=no'], text=True).strip():
+        parser.error('Canary tracked source files must be unchanged')
+    args.out = args.out or ROOT / 'samples' / (REV if args.batch == 'first' else REV + '-batch-2')
     objects = load_appearance_objects(args.canary / 'data/items/appearances.dat')
     items = load_items_xml(args.canary / 'data/items/items.xml')
     names, index = name_index(objects, items)
     converter = Converter(args.canary, objects, items, names, index)
     sources = []
-    for relative in BATCH:
+    for relative in BATCH if args.batch == 'first' else SECOND_BATCH:
         converter.pending_definitions = set()
         s, monster, deps, catalog, manifest, source = converter.convert(relative)
         for family, key in sorted(converter.pending_definitions):
@@ -626,9 +740,23 @@ def main():
             (target / filename).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
         sources.append({'monster': s, **source})
     shared = {'repository': REPOSITORY, 'revision': REVISION, 'rules': RULES,
-              'shared_sources': {p: blob_id((args.canary / p).read_bytes()) for p in
+              'shared_sources': {p: source_blob(args.canary, p) for p in
                                  ('data/items/items.xml', 'data/items/appearances.dat', 'data/scripts/lib/register_monster_type.lua')},
               'monsters': sources}
+    if args.batch == 'second':
+        additional = ['src/creatures/monsters/monsters.cpp', 'src/io/io_bosstiary.hpp', 'src/io/io_bosstiary.cpp',
+                      'config.lua.dist', 'data/libs/functions/player.lua', 'data/libs/systems/familiar.lua',
+                      'data/XML/familiars.xml', 'data/scripts/spells/familiar/paladin_familiar.lua']
+        shared['shared_sources'].update({p: source_blob(args.canary, p) for p in additional})
+        paths = sorted((args.canary / MONSTER_DIR).rglob('*.lua'))
+        tree = subprocess.check_output(['git','-C',str(args.canary),'ls-tree','-r',REVISION,'--',MONSTER_DIR],text=True)
+        blobs = {line.split('\t',1)[1]: line.split('\t',1)[0].split()[2] for line in tree.splitlines()}
+        shared['literal_source_census'] = {'lua_files': len(paths),
+            'path_blob_sha256': hashlib.sha256('\n'.join(p.relative_to(args.canary).as_posix() + ':' + blobs[p.relative_to(args.canary).as_posix()]
+                                                       for p in paths).encode()).hexdigest(),
+            'child_assignment_matches': sum(bool(re.search(r'\bchild\s*=', p.read_text(encoding='utf-8'))) for p in paths),
+            'combat_true_matches': sum(bool(re.search(r'\bcombat\s*=\s*true\b', p.read_text(encoding='utf-8'))) for p in paths),
+            'scope': 'Literal source census only, not arbitrary Lua or engine behavior completeness.'}
     (args.out / 'sources.json').write_text(json.dumps(shared, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
     print(json.dumps({'monsters': len(sources), 'out': str(args.out)}))
 
