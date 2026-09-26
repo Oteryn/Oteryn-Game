@@ -1,0 +1,284 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/crazed_summer_rearguard/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/crazed_summer_rearguard/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/crazed_summer_rearguard/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 6,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/crazed_summer_rearguard/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/crazed_summer_rearguard/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 6,
+      "needs_target": true,
+      "needs_direction": false,
+      "area": {
+        "radius_tiles": 2
+      },
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/crazed_summer_rearguard/attack-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/crazed_summer_rearguard/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/crazed_summer_rearguard/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/crazed_summer_rearguard/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "fire",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/crazed_summer_rearguard/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/fireattack"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/crazed_summer_rearguard/attack-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "fire",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/crazed_summer_rearguard/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/firearea"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/crazed_summer_rearguard/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 450
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/crazed_summer_rearguard/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 150,
+        "maximum": 300
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/crazed_summer_rearguard/attack-3-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 200,
+        "maximum": 300
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/30081",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead crazed summer rearguard",
+        "asset_binding": "canary.appearance:object/30081",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/30080",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 20
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/30080",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead crazed summer rearguard",
+        "asset_binding": "canary.appearance:object/30080",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/30079",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 20
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/30079",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead crazed summer rearguard",
+        "asset_binding": "canary.appearance:object/30079",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/30078",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/30078",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "dead crazed summer rearguard",
+        "asset_binding": "canary.appearance:object/30078",
+        "article": "a"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

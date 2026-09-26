@@ -1,0 +1,229 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 62,
+      "source_field": "attacks[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/0",
+      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 63,
+      "source_field": "attacks[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 64,
+      "source_field": "attacks[3]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/2",
+      "resolution": "monsters.cpp deserializeSpell speed: speedChange < -1000 clamps to -1000; >0 haste (non-aggressive), else paralyze; default duration 10000 ms; multiplier = 1 + speedChange/1000, formula vars (multiplier/2, 40, multiplier, 40)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 65,
+      "source_field": "attacks[4]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/3",
+      "resolution": "monsters.cpp deserializeSpell outfit/invisible/drunk: default duration 10000 ms; outfit/invisible non-aggressive."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 54,
+      "source_field": "voices",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "Interval/chance without any voice entry; the engine has nothing to say, so no voices section."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 29,
+      "source_field": "flags.pass_through",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/pass_through",
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 29,
+      "source_field": "flags.canWalk/canTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/can_walk",
+      "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 4,
+      "source_field": "description",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/inspection/description",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 10,
+      "source_field": "health",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/initial_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 11,
+      "source_field": "maxHealth",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/max_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 5,
+      "source_field": "experience",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/experience",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 14,
+      "source_field": "speed",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/speed",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 6,
+      "source_field": "outfit",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/asset_binding",
+      "resolution": "Declared source appearance binding, not an admitted asset."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 49,
+      "source_field": "light",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/light/level",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 29,
+      "source_field": "flags",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/flags",
+      "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 17,
+      "source_field": "changeTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/change_target",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 22,
+      "source_field": "strategiesTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/strategy_weights",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 86,
+      "source_field": "elements",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/resistances",
+      "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 99,
+      "source_field": "immunities",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/immunities",
+      "resolution": "Invisible condition immunity also sets sense_invisible."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 70,
+      "source_field": "defenses.armor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/armor",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 69,
+      "source_field": "defenses.defense",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/defense",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/sand_vortex.lua",
+      "source_line": 12,
+      "source_field": "race",
+      "kind": "dependency",
+      "status": "mapped",
+      "destination": "/monster/creature/death_residue",
+      "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    }
+  ]
+}

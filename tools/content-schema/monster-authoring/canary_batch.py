@@ -60,6 +60,20 @@ RULES = {
 PASS_THROUGH_DEFAULT = 'Owner decision D5: imported monsters without a source counterpart default to pass_through=false.'
 QUEST_EVENT_OMISSION = ('Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction '
                         'and are omitted from the monster bundle.')
+# Creature events verified by reading their registering script at REVISION. Unlisted events stay unresolved.
+EVENTS = {
+    'RationalRequestRatDeath': ('quest', 'data-otservbr-global/scripts/quests/the_rookie_guard/mission03_rational_request.lua',
+                                'increments the Rookie Guard mission 3 rat counter'),
+    'TheFirstDragonDragonTaskDeath': ('quest', 'data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_kill_dragon.lua',
+                                      'increments The First Dragon dragon counter'),
+    'TheGreatDragonHuntDeath': ('quest', 'data-otservbr-global/scripts/quests/the_great_dragon_hunt_quest/creaturescripts_the_great_dragon_hunt.lua',
+                                'increments The Great Dragon Hunt counter inside fixed areas'),
+    'ForgottenKnowledgeBossDeath': ('encounter_bookkeeping', 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua',
+                                    'sets the per-player boss cooldown storage on death'),
+    'HealthForgotten': ('encounter_mechanic', 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_healthchange_forgotten.lua',
+                        'doubles damage taken unless a Possessed Tree is within 7 tiles'),
+}
+ENCOUNTER_OMISSION = 'Owner decision D9: boss encounter bookkeeping belongs to the Encounter definition, not the monster bundle.'
 RACE_RESIDUE = {'venom': 'slime', 'blood': 'blood', 'ink': 'ink', 'chocolate': 'chocolate', 'candy': 'candy',
                 'undead': None, 'fire': None, 'energy': None}
 SPLASH_ITEM = 2886
@@ -216,6 +230,10 @@ def ident(key):
 
 def ratio(value):
     fraction = Fraction(Decimal(str(value)))
+    return {'numerator': fraction.numerator, 'denominator': fraction.denominator}
+
+
+def fraction_ratio(fraction):
     return {'numerator': fraction.numerator, 'denominator': fraction.denominator}
 
 
@@ -522,8 +540,19 @@ class Converter:
             row('race', 'approved_omission', 'dependency', line=line_of(r'^monster\.race\s*='),
                 resolution=f'Race "{m["race"]}" leaves no death residue: ' + RULES['race_residue'] + '.')
         for event in m.get('events', []):
-            row(f'events={event}', 'approved_omission', 'script', line=line_of(r'^monster\.events'),
-                resolution=f'Registered creature event "{event}" updates quest/task progress on death. ' + QUEST_EVENT_OMISSION)
+            kind, script, effect = EVENTS.get(event, (None, None, None))
+            if kind == 'quest':
+                row(f'events={event}', 'approved_omission', 'script', line=line_of(r'^monster\.events'),
+                    resolution=f'{script} {effect}. ' + QUEST_EVENT_OMISSION)
+            elif kind == 'encounter_bookkeeping':
+                row(f'events={event}', 'approved_omission', 'script', line=line_of(r'^monster\.events'),
+                    resolution=f'{script} {effect}. ' + ENCOUNTER_OMISSION)
+            elif kind == 'encounter_mechanic':
+                row(f'events={event}', 'unresolved_semantics', 'script', line=line_of(r'^monster\.events'),
+                    resolution=f'{script} {effect}. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it.')
+            else:
+                row(f'events={event}', 'unresolved_semantics', 'script', line=line_of(r'^monster\.events'),
+                    resolution='Registered creature event whose script has not been verified.')
         for callback in sorted(callbacks):
             row(f'mType.{callback}', 'unresolved_semantics', 'script', line=line_of(r'mType\.' + callback),
                 resolution='Inline Lua callback; needs an explicit native behaviour resolution.')
@@ -593,6 +622,51 @@ class Converter:
                                      radius=spell.get('radius'), target=bool(spell.get('target', False)))
             kind, range_tiles = 'spell', spell.get('range', 0)
         elif name == 'condition':
+            geometry = cast_geometry(length=spell.get('length', 0), spread=spell.get('spread', 0),
+                                     radius=spell.get('radius'), target=bool(spell.get('target', False)))
+            kind, range_tiles = 'spell', spell.get('range', 0)
+        elif name in ('speed', 'outfit', 'invisible', 'drunk', 'strength', 'effect'):
+            visual = presentation()
+            area = spell.get('radius', 0) > 1 or spell.get('length') or spell.get('spread')
+            if area and spell.get('effect') is None:
+                visual['impact_asset_binding'] = asset('canary.appearance:effect/poff')
+                note = RULES['area_effect'] + '. '
+            duration = spell.get('duration') or 10000
+            body = None
+            if name == 'speed':
+                change = max(spell.get('speedChange', 0), -1000)
+                multiplier = Fraction(1000 + change, 1000)
+                formula_n[0] += 1
+                key = base.format('formula') + f'-{formula_n[0]}'
+                deps['formulas'].append({'identity': ident(key), 'kind': 'speed_modifier', 'speed': {
+                    'minimum_multiplier': fraction_ratio(multiplier / 2), 'minimum_offset': 40,
+                    'maximum_multiplier': fraction_ratio(multiplier), 'maximum_offset': 40}})
+                body = {'operation': 'condition', 'duration_ms': duration,
+                        'condition': {'type': 'haste' if change > 0 else 'paralyze', 'lifetime': 'fixed_duration',
+                                      'speed_formula': ref('Formula', key)}}
+                note += RULES['speed'] + '. '
+            elif name == 'outfit':
+                if spell.get('outfitMonster'):
+                    target_ref = ref('Creature', f'canary:creature/{slug(spell["outfitMonster"])}')
+                    transform = {'creature': target_ref}
+                else:
+                    target_ref = ref('Item', f'canary:item/{spell["outfitItem"]}')
+                    transform = {'item': target_ref}
+                self.pending_definitions.add((target_ref['family'], target_ref['key']))
+                body = {'operation': 'appearance_transform', 'appearance_transform': transform, 'duration_ms': duration}
+                note += RULES['fixed_conditions'] + '. '
+            elif name in ('invisible', 'drunk'):
+                body = {'operation': 'condition', 'duration_ms': duration,
+                        'condition': {'type': name, 'lifetime': 'fixed_duration'}}
+                note += RULES['fixed_conditions'] + '. '
+            elif visual:
+                body = {'operation': 'presentation_only'}
+                note += RULES['inert_spells'] + '. '
+            else:
+                return None
+            if visual:
+                body['presentation'] = visual
+            add_effect('', body)
             geometry = cast_geometry(length=spell.get('length', 0), spread=spell.get('spread', 0),
                                      radius=spell.get('radius'), target=bool(spell.get('target', False)))
             kind, range_tiles = 'spell', spell.get('range', 0)

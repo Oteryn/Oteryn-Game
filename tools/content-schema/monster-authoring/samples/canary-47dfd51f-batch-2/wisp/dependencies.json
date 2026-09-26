@@ -1,0 +1,365 @@
+{
+  "abilities": [
+    {
+      "identity": {
+        "key": "canary:ability/wisp/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "melee",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/wisp/attack-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/wisp/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 1,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/wisp/attack-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/wisp/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/wisp/defense-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/wisp/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/wisp/defense-2",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/wisp/defense-3",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:effect/wisp/defense-3",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "identity": {
+        "key": "canary:effect/wisp/attack-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "physical",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/wisp/attack-1-1",
+        "revision": "canary-47dfd51f"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/wisp/attack-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "life_drain",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/wisp/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/wisp/defense-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 5000,
+      "condition": {
+        "type": "haste",
+        "lifetime": "fixed_duration",
+        "speed_formula": {
+          "family": "Formula",
+          "key": "canary:formula/wisp/defense-1-1",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_red"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/wisp/defense-2",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "heal",
+      "damage_type": "healing",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/wisp/defense-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_green"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:effect/wisp/defense-3",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "duration_ms": 3000,
+      "condition": {
+        "type": "invisible",
+        "lifetime": "fixed_duration"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/magic_blue"
+      }
+    }
+  ],
+  "formulas": [
+    {
+      "identity": {
+        "key": "canary:formula/wisp/attack-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 0,
+        "maximum": 10
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/wisp/attack-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 3,
+        "maximum": 7
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/wisp/defense-1-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "speed_modifier",
+      "speed": {
+        "minimum_multiplier": {
+          "numerator": 3,
+          "denominator": 5
+        },
+        "minimum_offset": 40,
+        "maximum_multiplier": {
+          "numerator": 6,
+          "denominator": 5
+        },
+        "maximum_offset": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/wisp/defense-2-1",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "range",
+      "magnitude": {
+        "minimum": 15,
+        "maximum": 25
+      }
+    }
+  ],
+  "documents": [],
+  "items": [
+    {
+      "identity": {
+        "key": "canary:item/6323",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "elemental ashes",
+        "asset_binding": "canary.appearance:object/6323"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": false,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 10000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/6324",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 38
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/6324",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "elemental ashes",
+        "asset_binding": "canary.appearance:object/6324"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/6325",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 38
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/6325",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "elemental ashes",
+        "asset_binding": "canary.appearance:object/6325"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "transform",
+        "stop_duration": false,
+        "duration_ms": 300000,
+        "decay_target": {
+          "family": "Item",
+          "key": "canary:item/6326",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "container": {
+        "capacity": 38
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:item/6326",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "name": "elemental ashes",
+        "asset_binding": "canary.appearance:object/6326"
+      },
+      "classification": {
+        "is_corpse": true
+      },
+      "physical": {
+        "weight_centioz": 0,
+        "movable": true,
+        "pickupable": false
+      },
+      "collision": {
+        "block_walk": false,
+        "block_projectiles": false,
+        "block_pathfinding": false
+      },
+      "temporal": {
+        "decay_action": "remove",
+        "stop_duration": false,
+        "duration_ms": 60000
+      }
+    }
+  ],
+  "loot_tables": []
+}

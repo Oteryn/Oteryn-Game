@@ -1,0 +1,285 @@
+{
+  "sources": [
+    {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 69,
+      "source_field": "attacks[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/0",
+      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 70,
+      "source_field": "attacks[2].name=sudden death rune",
+      "kind": "script",
+      "status": "unresolved_semantics",
+      "resolution": "Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 71,
+      "source_field": "attacks[3]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 72,
+      "source_field": "attacks[4]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/2",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 73,
+      "source_field": "attacks[5]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/3",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 74,
+      "source_field": "attacks[6]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/4",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 75,
+      "source_field": "attacks[7].name=ice strike",
+      "kind": "script",
+      "status": "unresolved_semantics",
+      "resolution": "Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 82,
+      "source_field": "defenses[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/0",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 53,
+      "source_field": "flags.familiar",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/summoning/familiar",
+      "resolution": "The monster file only flags the familiar; the profile comes from data/scripts/spells/familiar/<vocation>_familiar.lua (vocation, mana) and data/libs/functions/player.lua CreateFamiliarSpell: duration = 60 * familiarTime / 2 s with config default familiarTime=30 -> 900000 ms."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 61,
+      "source_field": "voices",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "Interval/chance without any voice entry; the engine has nothing to say, so no voices section."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 35,
+      "source_field": "flags.pass_through",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/pass_through",
+      "resolution": "Oteryn-native movement field with no Canary counterpart. Owner decision D5: imported monsters without a source counterpart default to pass_through=false."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 35,
+      "source_field": "flags.canWalk/canTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/movement/can_walk",
+      "resolution": "Canary has no canWalk/canTarget flags (Crystal-only); the Canary engine always allows both, so true."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 6,
+      "source_field": "outfit.lookType",
+      "kind": "field",
+      "status": "unresolved_semantics",
+      "resolution": "Source outfit has no lookType (lookType 0 placeholder). Familiar looks are chosen per player in data/XML/familiars.xml (e.g. Skullfrost 991 or quest Snowbash 1365 for knights); needs a native decision."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 4,
+      "source_field": "description",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/inspection/description",
+      "resolution": "Original source text, unchanged."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 16,
+      "source_field": "health",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/initial_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 17,
+      "source_field": "maxHealth",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/max_health",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 5,
+      "source_field": "experience",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/experience",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 20,
+      "source_field": "speed",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/speed",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 6,
+      "source_field": "outfit",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/asset_binding",
+      "resolution": "Declared source appearance binding, not an admitted asset."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 56,
+      "source_field": "light",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/presentation/light/level",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 35,
+      "source_field": "flags",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/flags",
+      "resolution": "Absent flags take monsters.hpp MonsterInfo defaults."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 23,
+      "source_field": "changeTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/change_target",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 28,
+      "source_field": "strategiesTarget",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/targeting/strategy_weights",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 85,
+      "source_field": "elements",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/resistances",
+      "resolution": "Zero entries omitted. register_monster_type.lua elements: values may be clipped by server config MIN/MAX_ELEMENTAL_RESISTANCE."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 98,
+      "source_field": "immunities",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/immunities",
+      "resolution": "Invisible condition immunity also sets sense_invisible."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 80,
+      "source_field": "defenses.armor",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/armor",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 79,
+      "source_field": "defenses.defense",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/creature/stats/defense",
+      "resolution": "Direct source value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
+      "source_line": 18,
+      "source_field": "race",
+      "kind": "dependency",
+      "status": "approved_omission",
+      "resolution": "Race \"undead\" leaves no death residue: creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    }
+  ]
+}

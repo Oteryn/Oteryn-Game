@@ -45,4 +45,11 @@ fence, session, authority or persisted-recovery evidence is touched.
 
 ## Acceptance and evidence
 
-Pending.
+- #938 task record archived as completed (merge `c72925d`).
+- Batch 2 (`samples/canary-47dfd51f-batch-2/`): 10/10 bundles validate, 7/10 manifests resolve;
+  the 3 blocked monsters need registered-spell, familiar-look and Encounter decisions.
+- Owner decisions D8 (per-stage bosstiary points) and D9 (boss = monster, mechanics in Encounter)
+  recorded; `verify_formal_schema.py` 173/173.
+- Creature events are classified only from their read script; batch 1 events re-verified as quest
+  counters. Batch 1 still resolves 10/10.
+- Wiki / 2026-07-28 comparison: pending.

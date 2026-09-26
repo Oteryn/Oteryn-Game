@@ -8,7 +8,7 @@
   "entries": [
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
       "source_line": 86,
       "source_field": "attacks[1]",
       "kind": "field",
@@ -18,8 +18,48 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 36,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 87,
+      "source_field": "attacks[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 94,
+      "source_field": "defenses[1]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/0",
+      "resolution": "monsters.cpp deserializeSpell speed: speedChange < -1000 clamps to -1000; >0 haste (non-aggressive), else paralyze; default duration 10000 ms; multiplier = 1 + speedChange/1000, formula vars (multiplier/2, 40, multiplier, 40)."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 95,
+      "source_field": "defenses[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/1",
+      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 96,
+      "source_field": "defenses[3]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/defenses/2",
+      "resolution": "monsters.cpp deserializeSpell outfit/invisible/drunk: default duration 10000 ms; outfit/invisible non-aggressive."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 35,
       "source_field": "corpse",
       "kind": "field",
       "status": "mapped",
@@ -28,28 +68,18 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
       "source_line": 82,
-      "source_field": "loot[2]",
-      "kind": "dependency",
-      "status": "mapped",
-      "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3607 \"cheese\" is a declared source-scoped reference, not an admitted canonical Item."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 81,
       "source_field": "loot[1]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/1",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item."
+      "destination": "/monster/loot/entries/0",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9604 \"moon backpack\" is a declared source-scoped reference, not an admitted canonical Item."
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 21,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 17,
       "source_field": "Bestiary",
       "kind": "field",
       "status": "mapped",
@@ -58,8 +88,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 49,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 48,
       "source_field": "flags.pass_through",
       "kind": "field",
       "status": "mapped",
@@ -68,8 +98,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 49,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 48,
       "source_field": "flags.canWalk/canTarget",
       "kind": "field",
       "status": "mapped",
@@ -78,7 +108,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
       "source_line": 4,
       "source_field": "description",
       "kind": "field",
@@ -88,8 +118,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 33,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 32,
       "source_field": "health",
       "kind": "field",
       "status": "mapped",
@@ -98,8 +128,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 34,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 33,
       "source_field": "maxHealth",
       "kind": "field",
       "status": "mapped",
@@ -108,7 +138,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
       "source_line": 5,
       "source_field": "experience",
       "kind": "field",
@@ -118,8 +148,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 37,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 36,
       "source_field": "speed",
       "kind": "field",
       "status": "mapped",
@@ -128,7 +158,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
       "source_line": 6,
       "source_field": "outfit",
       "kind": "field",
@@ -138,7 +168,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
       "source_line": 69,
       "source_field": "light",
       "kind": "field",
@@ -148,8 +178,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 49,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 48,
       "source_field": "flags",
       "kind": "field",
       "status": "mapped",
@@ -158,8 +188,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 40,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 39,
       "source_field": "changeTarget",
       "kind": "field",
       "status": "mapped",
@@ -168,8 +198,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 45,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 44,
       "source_field": "strategiesTarget",
       "kind": "field",
       "status": "mapped",
@@ -178,7 +208,7 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
       "source_line": 74,
       "source_field": "voices",
       "kind": "field",
@@ -188,8 +218,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 95,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 99,
       "source_field": "elements",
       "kind": "field",
       "status": "mapped",
@@ -198,8 +228,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 108,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 112,
       "source_field": "immunities",
       "kind": "field",
       "status": "mapped",
@@ -208,8 +238,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 91,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 92,
       "source_field": "defenses.armor",
       "kind": "field",
       "status": "mapped",
@@ -218,8 +248,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 90,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 91,
       "source_field": "defenses.defense",
       "kind": "field",
       "status": "mapped",
@@ -228,8 +258,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 92,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 93,
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "mapped",
@@ -238,18 +268,8 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 38,
-      "source_field": "manaCost",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/summoning/mana_cost",
-      "resolution": "Direct source value."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 20,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 16,
       "source_field": "raceId",
       "kind": "field",
       "status": "metadata_only",
@@ -257,22 +277,12 @@
     },
     {
       "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 35,
+      "source_file": "data-otservbr-global/monster/fey/wisp.lua",
+      "source_line": 34,
       "source_field": "race",
       "kind": "dependency",
-      "status": "mapped",
-      "destination": "/monster/creature/death_residue",
-      "resolution": "Race \"blood\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data-otservbr-global/monster/mammals/rat.lua",
-      "source_line": 16,
-      "source_field": "events=RationalRequestRatDeath",
-      "kind": "script",
       "status": "approved_omission",
-      "resolution": "data-otservbr-global/scripts/quests/the_rookie_guard/mission03_rational_request.lua increments the Rookie Guard mission 3 rat counter. Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction and are omitted from the monster bundle."
+      "resolution": "Race \"undead\" leaves no death residue: creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
     }
   ]
 }

@@ -65,13 +65,15 @@ cannot establish the precision of the original source token.
 
 ### Import decisions (owner, 2026-09-26)
 
-Recorded after the Canary test batch (`tools/content-schema/monster-authoring/samples/canary-47dfd51f/`).
+Recorded after the Canary test batches (`tools/content-schema/monster-authoring/samples/`).
 
 | # | Decision | Source basis |
 |---|---|---|
 | D5 | Imported monsters with no source counterpart set `behavior.movement.pass_through=false`. | Canary/Crystal have no pass-through monster flag. |
 | D6 | Creature event scripts that only feed quest/task progress (e.g. `RationalRequestRatDeath`) belong to Quest/Interaction and are recorded as `approved_omission` in the monster manifest. | The inspected events are task counters, not monster behaviour. |
 | D7 | `creature.death_residue` is `{item, fluid_type}`. Races `venom`/`blood`/`ink`/`chocolate`/`candy` map to splash Item 2886 with fluid `slime`/`blood`/`ink`/`chocolate`/`candy`; `undead`/`fire`/`energy` leave none, and the field is omitted. Summons drop no corpse or residue. | `creature.cpp` `Creature::dropCorpse`, identical in Canary `47dfd51f` and Crystal `be61cdd3`/`ac447fef`. One splash Item differs only by fluid, so an `ItemRef` alone could not express it; this replaces the proposal's `death_residue_item`. |
+| D8 | `bosstiary` stores `prowess/expertise/mastery_points` per stage instead of one `boss_points`. | Canary `io_bosstiary.hpp` `levelInfos` awards points per reached stage (bane 5/15/30, archfoe 10/30/60, nemesis 10/30/60). Found by the second Canary batch. |
+| D9 | A boss is a monster with the optional `bosstiary`, `reward_boss` and `reward_encounter`; arena, phases, timers, cooldowns, reward chest and combat-changing boss scripts belong to the referenced Encounter. | Canary/Crystal register bosses as ordinary monster types; the boss logic lives in quest scripts (e.g. Forgotten Knowledge `HealthForgotten`, boss-kill cooldowns). |
 
 ## 4. Carried semantics
 
@@ -111,7 +113,7 @@ parses today. Status per area:
 | `behavior.attacks[]`, `defenses[]` (`ability` refs) | `abilities: Vec<ProjectV2DefinitionRef>` | PARTIAL: v2 has refs only, no interval/chance schedule |
 | `bestiary.difficulty`, `occurrence`, `kill_thresholds`, `charm_points` | `ProjectV2BestiaryProfile` | MATCH |
 | `bestiary.class`, `taxonomy`, `stars`, `locations` | — | GAP |
-| `bosstiary.*` | `ProjectV2BosstiaryProfile` | MATCH |
+| `bosstiary.*` | `ProjectV2BosstiaryProfile` (single `boss_points`) | PARTIAL: v2 has one points value, D8 has three |
 | `summoning.familiar.duration_ms` | `familiar.duration_seconds` | MATCH via `/1000` (D3) |
 | `summoning.familiar.vocation`, `summon_ability`, `mana_cost`, `owner_speed_bonus` | `ProjectV2FamiliarProfile` | MATCH |
 | `loot.entries[].probability_percent` | `LootEntryDocument.probability_ppm` (`content/project.rs`); v2 has the `Loot` family but no Loot profile | MATCH via D1 |
@@ -133,7 +135,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 170 focused positive/negative cases
+python verify_formal_schema.py     # 173 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```

@@ -1,0 +1,645 @@
+{
+  "creature": {
+    "identity": {
+      "key": "canary:creature/the_enraged_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "display_name": "The Enraged Thorn Knight",
+    "inspection": {
+      "description": "the enraged Thorn Knight"
+    },
+    "stats": {
+      "max_health": 90000,
+      "initial_health": 90000,
+      "experience": 30000,
+      "speed": 175,
+      "armor": 60,
+      "defense": 60,
+      "critical_chance_percent": 0
+    },
+    "resistances": [
+      {
+        "damage_type": "death",
+        "reduction_percent": {
+          "numerator": -100,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": [
+        "invisible",
+        "paralyze"
+      ]
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": false,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": false,
+      "convinceable": false,
+      "is_familiar": false
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "canary:presentation/the_enraged_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "canary:behavior/the_enraged_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": [
+      {
+        "damage_type": "death",
+        "percent": {
+          "numerator": 100,
+          "denominator": 1
+        }
+      }
+    ],
+    "system_eligibility": {
+      "prey": true,
+      "exclusive_prey": false,
+      "forge": true,
+      "reward_boss": true
+    },
+    "spawn_eligibility": {
+      "period": "all",
+      "ignore_period_underground": false,
+      "blocked_by_nearby_players": false
+    },
+    "bosstiary": {
+      "category": "archfoe",
+      "prowess_kills": 5,
+      "expertise_kills": 20,
+      "mastery_kills": 60,
+      "prowess_points": 10,
+      "expertise_points": 30,
+      "mastery_points": 60
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "canary:item/111",
+      "revision": "canary-47dfd51f"
+    },
+    "death_residue": {
+      "item": {
+        "family": "Item",
+        "key": "canary:item/2886",
+        "revision": "canary-47dfd51f"
+      },
+      "fluid_type": "blood"
+    },
+    "loot": {
+      "family": "Loot",
+      "key": "canary:loot/the_enraged_thorn_knight",
+      "revision": "canary-47dfd51f"
+    }
+  },
+  "behavior": {
+    "identity": {
+      "key": "canary:behavior/the_enraged_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": true,
+      "field_permissions": {
+        "energy": true,
+        "fire": true,
+        "poison": true
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": true,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 90,
+      "flee_health": 15,
+      "change_target": {
+        "interval_ms": 5000,
+        "chance_percent": 0
+      },
+      "strategy_weights": {
+        "nearest": 70,
+        "damage": 10,
+        "health": 10,
+        "random": 10
+      }
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_enraged_thorn_knight/attack-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_enraged_thorn_knight/attack-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 12
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_enraged_thorn_knight/attack-3",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 12
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_enraged_thorn_knight/attack-4",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 12
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_enraged_thorn_knight/attack-5",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      }
+    ],
+    "defenses": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_enraged_thorn_knight/defense-1",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 20
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/the_enraged_thorn_knight/defense-2",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 1000,
+        "chance_percent": 12
+      }
+    ],
+    "event_bindings": [],
+    "voices": {
+      "interval_ms": 5000,
+      "chance_percent": 10,
+      "entries": [
+        {
+          "text": "You've killed my only friend!",
+          "mode": "say"
+        },
+        {
+          "text": "You will pay for this!",
+          "mode": "say"
+        },
+        {
+          "text": "NOOOOO!",
+          "mode": "yell"
+        }
+      ]
+    }
+  },
+  "presentation": {
+    "identity": {
+      "key": "canary:presentation/the_enraged_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "appearance": {
+      "asset_binding": "canary.appearance:outfit/512",
+      "palette_bindings": [
+        {
+          "slot": "head",
+          "palette_binding": "canary.appearance:palette/81"
+        },
+        {
+          "slot": "body",
+          "palette_binding": "canary.appearance:palette/121"
+        },
+        {
+          "slot": "legs",
+          "palette_binding": "canary.appearance:palette/121"
+        },
+        {
+          "slot": "feet",
+          "palette_binding": "canary.appearance:palette/121"
+        }
+      ],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  },
+  "loot": {
+    "identity": {
+      "key": "canary:loot/the_enraged_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    "algorithm": "IndependentBernoulli",
+    "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7453",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/24966",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/5014",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/9302",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/8052",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/24954",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.5,
+        "skip_later_same_item_after_success": true
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3436",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/5875",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/5884",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/20203",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 1,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3039",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 2.2,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3041",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3038",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3037",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/5887",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 2,
+        "probability_percent": 5.909,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/281",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 7,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3033",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 7.15,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/9057",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 7.35,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3030",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 7.36,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/16119",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 9.66,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/16120",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 9.66,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/16121",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 9.66,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3032",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 5,
+        "probability_percent": 9.66,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/6499",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14.46,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7439",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14.46,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7443",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 14.46,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7642",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 3,
+        "probability_percent": 18.25,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/7643",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 3,
+        "probability_percent": 19.5,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3295",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 20,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/238",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 3,
+        "probability_percent": 22.12,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3031",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 165,
+        "probability_percent": 50.32,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3035",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 30,
+        "probability_percent": 50.32,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/22721",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 100,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/22516",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 100,
+        "skip_later_same_item_after_success": false
+      }
+    ]
+  }
+}
