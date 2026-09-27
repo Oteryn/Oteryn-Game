@@ -22,6 +22,7 @@ Contract and decisions: [`docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.m
 | `spell_census.py` | Classifies every registered spell script that a Canary monster references (P1–P4, NOOP, MISSING) and counts its primitives. |
 | `samples/canary-47dfd51f*/` | The two 10-monster Canary test batches and their findings (`README.md`). |
 | `samples/wiki-population-2026-09-27.json` | `wiki_compare.py --population`: every convertible Canary monster against TibiaWiki at the 2026-09-27 target date (counts for all facts, rows only for differences, every loot chance trimmed; one monster per line). |
+| `samples/wiki-population-2026-07-28.json`, `samples/wiki-scenes-2026-07-28.json` | The same comparisons at the earlier 2026-07-28 cut, kept as the record of the admissions made before D33. |
 | `samples/wiki-scenes-2026-09-27.json` | Output of `wiki_scenes.py` (one monster per line; only unmatched abilities and differences listed). |
 | `samples/p4-behaviour-patterns-canary-47dfd51f.json` | Proposed D13 grouping of the registered spell scripts that still block monsters into shared parameterized native behaviours (model-assisted, with evidence lines). |
 | `samples/population-canary-47dfd51f.json` | Output of `population_census.py` (1,656 files). |

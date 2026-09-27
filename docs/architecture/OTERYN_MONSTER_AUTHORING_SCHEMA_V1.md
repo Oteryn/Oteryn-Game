@@ -395,8 +395,16 @@ paralysis immunity (86), `pushobjects` (65), health (65) and element modifiers (
 A Canary damage immunity counts as a 100% element modifier. Over 14,894 Canary loot entries: 7,004
 inside the 95% interval of the wiki estimate, 5,182 outside it, 2,212 not observed in the
 highest-version statistics block, 490 split over several Canary entries and 6 with invalid wiki
-counts. The Loot Statistics pages keep growing, so the move from the 2026-07-28 date changed the
-probabilities of 599 admitted Loot records; no other admitted record or profile changed.
+counts. Against the 2026-07-28 cut, 932 of the 3,621 cached pages have a newer revision at 2026-09-27. In
+wave A this changes 599 Loot records, mostly probabilities, because the Loot Statistics pages keep growing.
+It also changes 14 Creature profiles, each following a page revision from 2026-08-16 to 2026-09-24:
+- the experience of the five apparitions;
+- mitigation or element modifiers of Lion Knight, Minotaur Idol, Tremor Worm, Betrayed Wraith, Elephant,
+  Nighthunter, Retching Horror and Timira the Many-Headed;
+- a condition immunity of Latrivan.
+
+The 2026-07-28 comparisons (`wiki-population-2026-07-28.json`, `wiki-scenes-2026-07-28.json` and the batch's
+`wiki-2026-07-28.json`) stay as the record of the earlier admission.
 
 The converter adopts only DIFF rows (D15): health, experience, armor, mitigation, element
 modifiers, `pushable`, `pushobjects`, `senseinvis`, paralysis immunity, `illusionable`, flee health
