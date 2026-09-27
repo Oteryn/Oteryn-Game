@@ -4,13 +4,6 @@ on:
   push:
     branches:
       - agent/otv2-gameplay-server-seam-01
-  pull_request:
-    paths:
-      - .github/workflows/gameplay-server-seam.yml
-      - tools/qualification/wp5_s3b/run.sh
-      - apps/game-server/src/gameplay_transport/**
-      - apps/game-server/src/foundation/protocol.rs
-      - apps/game-server/src/durability/fresh_admission_composition.rs
   workflow_dispatch:
 
 permissions:

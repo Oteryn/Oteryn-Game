@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/npcs/definitions/",
-  "kind": "static_content",
-  "owner": "NPC",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "NPC identity/presentation/behavior references."
-}
+{"attached_source_bindings":2035,"family":"NPC","legacy_source":{"git_blob_sha":"90a80096f37e8c6e104311ce8e5912669695fed9","path":"content/world/definitions/declarations.json","schema":"OTERYN_WORLD_PROJECT_DECLARATIONS/v2"},"record_count":983,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/npcs/definitions/npcs-00000-00499.json","content/npcs/definitions/npcs-00500-00982.json"]}

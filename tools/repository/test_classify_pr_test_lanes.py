@@ -376,8 +376,14 @@ def test_aggregate():
     mandatory = ("SCOPE", "LANES", "GOVERNANCE", "DEPENDENCY_REVIEW", "CODEQL", "ROUTING_CONTRACT")
     rust = ("RUST_POLICY", "RUST_LINUX", "RUST_SUPPLY_CHAIN")
     conditional = ("RUST_WINDOWS", "ATLAS_FULLWORLD")
-    env = dict.fromkeys(mandatory + rust + conditional, "success")
-    env.update(RUST_REQUIRED="true", WINDOWS_REQUIRED="true", ATLAS_FULLWORLD_REQUIRED="true")
+    qualification = ("NODE_BOOT", "SERVER_SEAM")
+    env = dict.fromkeys(mandatory + rust + conditional + qualification, "success")
+    env.update(
+        RUST_REQUIRED="true",
+        WINDOWS_REQUIRED="true",
+        ATLAS_FULLWORLD_REQUIRED="true",
+        SERVER_QUALIFICATION_REQUIRED="true",
+    )
 
     def accepts(changes):
         with patch.dict(os.environ, dict(env, **changes)), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
@@ -395,9 +401,68 @@ def test_aggregate():
         "ATLAS_FULLWORLD_REQUIRED": "false",
     })
     assert not accepts({"RUST_REQUIRED": "false", "WINDOWS_REQUIRED": "true"})
+    # Physical server qualifications are required unless explicitly deselected.
+    for name in qualification:
+        assert not accepts({name: "failure"}), name
+        assert not accepts({name: "skipped"}), name
+        assert not accepts({name: "skipped", "SERVER_QUALIFICATION_REQUIRED": ""}), name
+        assert not accepts({name: "failure", "SERVER_QUALIFICATION_REQUIRED": "false"}), name
+    assert accepts(dict.fromkeys(qualification, "skipped") | {"SERVER_QUALIFICATION_REQUIRED": "false"})
     for name in mandatory:
         assert not accepts({name: "failure"}), name
     print("Aggregate PASS: selected lanes remain required and invalid routing combinations fail closed")
+
+
+def test_server_qualification(module):
+    def required(*paths, previous=None):
+        files = [{"filename": path} for path in paths]
+        if previous is not None:
+            files[0]["previous_filename"] = previous
+        return module.server_qualification_required(files, len(files))
+
+    for path in (
+        "apps/game-server/src/gameplay_transport/resume.rs",
+        "apps/game-server/src/durability/fresh_admission.rs",
+        "apps/game-server/src/foundation/protocol.rs",
+        "apps/game-server/src/node/serve.rs",
+        "apps/game-server/src/main.rs",
+        "apps/game-server/src/content/activation.rs",
+        "apps/game-server/src/content/project/native_entry.rs",
+        "apps/game-server/src/content/project/native_entry_room.json",
+        "apps/game-server/src/content/project/v2.rs",
+        "apps/game-server/src/content/project/v2/creature.rs",
+        "apps/game-server/migrations/0009_character_progression.sql",
+        "apps/game-server/Cargo.toml",
+        "Cargo.lock",
+        "vendor/tokio-1.53.1/src/lib.rs",
+        "tools/qualification/node_boot/run.sh",
+        "tools/qualification/wp5_s3a/compose.yml",
+        ".github/workflows/merge-gate.yml",
+    ):
+        assert required(path) is True, path
+    for path in (
+        "apps/game-server/src/combat.rs",
+        "apps/game-server/src/ability/mod.rs",
+        "apps/game-server/src/ai/mod.rs",
+        "apps/game-server/src/interaction/mod.rs",
+        "apps/game-server/src/content/cw2_b1_import.rs",
+        "apps/game-server/src/content/reference_playable.rs",
+        "apps/game-server/tests/durability_postgres.rs",
+        "apps/game-server/examples/materialize_content_world_project_v2.rs",
+        "apps/client/src/main.rs",
+        "docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+        "tools/content/quests.py",
+    ):
+        assert required(path) is False, path
+    assert required("docs/a.md", "apps/game-server/src/ai/mod.rs") is False
+    assert required("docs/a.md", previous="apps/game-server/src/durability/mod.rs") is True
+    # Fail closed on incomplete or malformed enumeration.
+    assert module.server_qualification_required([], 0) is True
+    assert module.server_qualification_required([{"filename": "docs/a.md"}], 2) is True
+    assert module.server_qualification_required([{"filename": "docs/a.md"}], 1, complete=False) is True
+    assert module.server_qualification_required([{"filename": "../x"}], 1) is True
+    assert module.server_qualification_required(["docs/a.md"], 1) is True
+    print("Server qualification PASS: boot/transport/durability paths select it, unrelated paths skip, malformed input fails closed")
 
 
 def test_cli_fallback(module):
@@ -417,6 +482,7 @@ def test_cli_fallback(module):
         wire = output.read_text(encoding="utf-8")
         assert "rust=true\n" in wire and "windows=true\n" in wire, wire
         assert "routing_health=degraded\n" in wire, wire
+        assert "server_qualification=true\n" in wire, wire
     print("CLI fallback PASS: malformed classifier inputs remain conservative FULL")
 
 
@@ -427,6 +493,7 @@ def main() -> int:
     test_candidate_modes(module)
     test_large_pr_fallback(module)
     test_aggregate()
+    test_server_qualification(module)
     test_cli_fallback(module)
     print("Exact-candidate PR routing regressions PASS")
     return 0

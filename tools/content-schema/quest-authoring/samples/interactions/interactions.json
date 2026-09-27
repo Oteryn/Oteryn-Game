@@ -265,10 +265,9 @@
                           ],
                           "otherwise": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 54
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "owner": "Presentation",
@@ -566,10 +565,9 @@
               ],
               "otherwise": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 37
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Presentation",
@@ -2946,7 +2944,7 @@
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "crystalserver:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
+              "progress": "canary:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
               "to": 1,
               "repeated": true
             },
@@ -3131,10 +3129,9 @@
                       "authoritative": false
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 21
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -3567,10 +3564,9 @@
           "repeated": true
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 14,
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item",
           "repeated": true
         }
       ],
@@ -4492,10 +4488,9 @@
           "source_line": 8
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 9
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item"
         }
       ],
       "anchors": [],
@@ -4817,10 +4812,9 @@
                       "authoritative": false
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 19
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -7854,10 +7848,9 @@
                       "anchor": "p3"
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 37
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -8242,15 +8235,7 @@
         "callback": "onDeath",
         "target_registrations": []
       },
-      "rules": [
-        {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 13,
-          "repeated": true
-        }
-      ],
+      "rules": [],
       "anchors": [],
       "unresolved": [
         {
@@ -8260,6 +8245,10 @@
         {
           "line": 11,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 13,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 7,
@@ -8917,10 +8906,9 @@
                               },
                               "then": [
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 18
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 }
                               ]
                             }
@@ -9341,10 +9329,9 @@
                       "transition": "canary:quest/children_of_the_revolution_quest#mission_3_zee_killing_fieldzz:action_1"
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 10
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -9417,10 +9404,9 @@
                       "transition": "canary:quest/children_of_the_revolution_quest#mission_4_zze_way_of_zztonezz:action_2"
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 11
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -10571,13 +10557,6 @@
                           ],
                           "otherwise": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 177,
-                              "repeated": true
-                            },
-                            {
                               "owner": "Movement",
                               "status": "blocked",
                               "reason": "no accepted movement owner contract (GAME-INTERACTION-01 §19.3)",
@@ -10658,13 +10637,6 @@
                           ],
                           "otherwise": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 224,
-                              "repeated": true
-                            },
-                            {
                               "owner": "Movement",
                               "status": "blocked",
                               "reason": "no accepted movement owner contract (GAME-INTERACTION-01 §19.3)",
@@ -10734,13 +10706,6 @@
                             }
                           ],
                           "otherwise": [
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 271,
-                              "repeated": true
-                            },
                             {
                               "owner": "Movement",
                               "status": "blocked",
@@ -10902,13 +10867,6 @@
                           ],
                           "otherwise": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 324,
-                              "repeated": true
-                            },
-                            {
                               "owner": "Movement",
                               "status": "blocked",
                               "reason": "no accepted movement owner contract (GAME-INTERACTION-01 §19.3)",
@@ -10978,13 +10936,6 @@
                             }
                           ],
                           "otherwise": [
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 369,
-                              "repeated": true
-                            },
                             {
                               "owner": "Movement",
                               "status": "blocked",
@@ -11130,13 +11081,6 @@
                               "owner": "WorldObject",
                               "status": "blocked",
                               "reason": "no accepted world-object state owner contract",
-                              "source_line": 457,
-                              "repeated": true
-                            },
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
                               "source_line": 464,
                               "repeated": true
                             },
@@ -11228,13 +11172,6 @@
                             }
                           ],
                           "otherwise": [
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 522,
-                              "repeated": true
-                            },
                             {
                               "owner": "WorldObject",
                               "status": "blocked",
@@ -11582,6 +11519,10 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
+          "line": 177,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
           "line": 172,
           "reason": "loop with its own control flow"
         },
@@ -11620,6 +11561,10 @@
         {
           "line": 221,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 224,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 219,
@@ -11666,6 +11611,10 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
+          "line": 271,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
           "line": 266,
           "reason": "loop with its own control flow"
         },
@@ -11696,6 +11645,10 @@
         {
           "line": 321,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 324,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 319,
@@ -11732,6 +11685,10 @@
         {
           "line": 366,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 369,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 364,
@@ -11814,6 +11771,10 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
+          "line": 457,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
           "line": 462,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -11856,6 +11817,10 @@
         {
           "line": 519,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 522,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 527,
@@ -12427,10 +12392,9 @@
                               ]
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 42
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "owner": "Presentation",
@@ -12453,10 +12417,9 @@
                               "value_source_line": 46
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 47
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "owner": "Presentation",
@@ -12837,22 +12800,15 @@
                       "to": 0
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 52
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "WorldObject",
                       "status": "blocked",
                       "reason": "no accepted world-object state owner contract",
                       "source_line": 54
-                    },
-                    {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 55
                     },
                     {
                       "owner": "Ability",
@@ -12925,6 +12881,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 55,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 65,
           "reason": "statement outside the transcribed vocabulary"
@@ -13082,15 +13042,7 @@
                                       "line": 30
                                     }
                                   },
-                                  "then": [
-                                    {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 37,
-                                      "repeated": true
-                                    }
-                                  ]
+                                  "then": []
                                 }
                               ]
                             }
@@ -13118,6 +13070,10 @@
         {
           "line": 33,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 37,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 31,
@@ -13167,13 +13123,6 @@
       },
       "rules": [
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 27,
-          "repeated": true
-        },
-        {
           "owner": "Ability",
           "effect": "summon",
           "creature": {
@@ -13193,13 +13142,6 @@
             "revision": "canary-47dfd51f+crystalserver-ff7ede59"
           },
           "anchor_source_line": 30,
-          "repeated": true
-        },
-        {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 35,
           "repeated": true
         },
         {
@@ -13225,13 +13167,6 @@
           "repeated": true
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 43,
-          "repeated": true
-        },
-        {
           "owner": "Ability",
           "effect": "summon",
           "creature": {
@@ -13254,13 +13189,6 @@
           "repeated": true
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 51,
-          "repeated": true
-        },
-        {
           "owner": "Ability",
           "effect": "summon",
           "creature": {
@@ -13280,13 +13208,6 @@
             "revision": "canary-47dfd51f+crystalserver-ff7ede59"
           },
           "anchor_source_line": 54,
-          "repeated": true
-        },
-        {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 59,
           "repeated": true
         },
         {
@@ -13314,6 +13235,26 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 27,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
+          "line": 35,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
+          "line": 43,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
+          "line": 51,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
+          "line": 59,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 17,
           "reason": "loop with its own control flow"
@@ -14105,12 +14046,6 @@
                               "owner": "WorldObject",
                               "status": "blocked",
                               "reason": "no accepted world-object state owner contract",
-                              "source_line": 36
-                            },
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
                               "source_line": 37
                             }
                           ]
@@ -14126,6 +14061,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 36,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 39,
           "reason": "statement outside the transcribed vocabulary"
@@ -17140,10 +17079,9 @@
                                       "authoritative": false
                                     },
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 425
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "object": "used_item"
                                     },
                                     {
                                       "branch": [
@@ -17270,10 +17208,9 @@
                                       "authoritative": false
                                     },
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 460
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "object": "used_item"
                                     },
                                     {
                                       "branch": [
@@ -17400,10 +17337,9 @@
                                       "authoritative": false
                                     },
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 495
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "object": "used_item"
                                     },
                                     {
                                       "branch": [
@@ -17682,10 +17618,9 @@
                               "authoritative": false
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 15
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             }
                           ]
                         }
@@ -17703,10 +17638,9 @@
                           "authoritative": false
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 26
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         }
                       ]
                     }
@@ -18466,12 +18400,6 @@
                       "owner": "Presentation",
                       "effect": "magic_effect",
                       "authoritative": false
-                    },
-                    {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 34
                     }
                   ]
                 },
@@ -18500,12 +18428,6 @@
                       "owner": "Presentation",
                       "effect": "magic_effect",
                       "authoritative": false
-                    },
-                    {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 58
                     }
                   ]
                 }
@@ -18529,6 +18451,10 @@
           "reason": "loop with its own control flow"
         },
         {
+          "line": 34,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
           "line": 37,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -18539,6 +18465,10 @@
         {
           "line": 36,
           "reason": "loop with its own control flow"
+        },
+        {
+          "line": 58,
+          "reason": "creature removal without an accepted owner"
         }
       ]
     },
@@ -18630,12 +18560,6 @@
                       "owner": "Presentation",
                       "effect": "magic_effect",
                       "authoritative": false
-                    },
-                    {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 34
                     }
                   ]
                 }
@@ -18657,6 +18581,10 @@
         {
           "line": 12,
           "reason": "loop with its own control flow"
+        },
+        {
+          "line": 34,
+          "reason": "creature removal without an accepted owner"
         }
       ]
     },
@@ -19599,10 +19527,14 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 19,
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/21469",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1,
                   "repeated": true
                 },
                 {
@@ -19619,10 +19551,9 @@
                   "repeated": true
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 23,
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item",
                   "repeated": true
                 },
                 {
@@ -20086,10 +20017,14 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 5
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/14165",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "Presentation",
@@ -20388,10 +20323,14 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 5
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/14162",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         },
                         {
                           "owner": "Item",
@@ -20565,10 +20504,14 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 5
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/14018",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         },
                         {
                           "owner": "Presentation",
@@ -21434,10 +21377,14 @@
                               ]
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 36
+                              "owner": "Item",
+                              "request": "consume",
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/9388",
+                                "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                              },
+                              "count": 1
                             },
                             {
                               "owner": "Movement",
@@ -22243,10 +22190,9 @@
                                               "authoritative": false
                                             },
                                             {
-                                              "owner": "WorldObject",
-                                              "status": "blocked",
-                                              "reason": "no accepted world-object state owner contract",
-                                              "source_line": 38
+                                              "owner": "Item",
+                                              "request": "consume",
+                                              "object": "used_item"
                                             }
                                           ]
                                         }
@@ -22317,10 +22263,9 @@
                                   "authoritative": false
                                 },
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 55
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 }
                               ]
                             }
@@ -23550,10 +23495,14 @@
                                       "to_anchor": "p1"
                                     },
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 13
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "canary:item/3595",
+                                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                      },
+                                      "count": 1
                                     }
                                   ]
                                 }
@@ -23782,10 +23731,9 @@
               "repeated": true
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 20,
+              "owner": "Item",
+              "request": "consume",
+              "object": "contact",
               "repeated": true
             }
           ]
@@ -25597,10 +25545,9 @@
                           "authoritative": false
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 36
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         }
                       ]
                     }
@@ -25922,10 +25869,9 @@
               ],
               "otherwise": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 100
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "contact"
                 },
                 {
                   "owner": "Presentation",
@@ -26893,10 +26839,9 @@
                                       "to": 1
                                     },
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 17
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "object": "used_item"
                                     }
                                   ]
                                 },
@@ -30318,10 +30263,9 @@
               "source_line": 10
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 11
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             }
           ]
         }
@@ -31158,10 +31102,9 @@
               "authoritative": false
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 56
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             }
           ]
         }
@@ -32825,13 +32768,6 @@
               "repeated": true
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 38,
-              "repeated": true
-            },
-            {
               "owner": "Presentation",
               "effect": "magic_effect",
               "authoritative": false,
@@ -32923,6 +32859,10 @@
         {
           "line": 21,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 38,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 39,
@@ -33325,12 +33265,6 @@
           ],
           "otherwise": [
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 8
-            },
-            {
               "owner": "Presentation",
               "effect": "magic_effect",
               "authoritative": false
@@ -33359,6 +33293,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 8,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 14,
           "reason": "delayed callback (addEvent) without a scheduler owner"
@@ -34254,12 +34192,6 @@
                           "authoritative": false
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 28
-                        },
-                        {
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/zamulosh_teleports",
@@ -34284,6 +34216,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 28,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 31,
           "reason": "loop with its own control flow"
@@ -35250,12 +35186,6 @@
           ],
           "otherwise": [
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 11
-            },
-            {
               "owner": "Presentation",
               "effect": "magic_effect",
               "authoritative": false
@@ -35307,7 +35237,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 11,
+          "reason": "creature removal without an accepted owner"
+        }
+      ]
     },
     {
       "identity": {
@@ -35873,10 +35808,9 @@
           ],
           "otherwise": [
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 8
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             },
             {
               "owner": "Quest",
@@ -36213,10 +36147,9 @@
               "source_line": 7
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 8
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             }
           ]
         }
@@ -36693,10 +36626,9 @@
               "source_line": 7
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 8
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             },
             {
               "owner": "Presentation",
@@ -36895,10 +36827,9 @@
                       "source_line": 422
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 424
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -38548,14 +38479,7 @@
                   "line": 41
                 }
               },
-              "then": [
-                {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 42
-                }
-              ]
+              "then": []
             }
           ]
         },
@@ -38606,6 +38530,10 @@
           "reason": "loop with its own control flow"
         },
         {
+          "line": 42,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
           "line": 43,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -38652,14 +38580,6 @@
                   },
                   "then": []
                 }
-              ],
-              "otherwise": [
-                {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 16
-                }
               ]
             }
           ]
@@ -38667,6 +38587,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 16,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 17,
           "reason": "statement outside the transcribed vocabulary"
@@ -40455,10 +40379,9 @@
                   "authoritative": false
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 82
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Presentation",
@@ -41002,10 +40925,9 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 18
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Quest",
@@ -41211,10 +41133,9 @@
                       "authoritative": false
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 89
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -42823,10 +42744,9 @@
                   "source_line": 4
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 5
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Presentation",
@@ -42960,10 +42880,9 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 38
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "WorldObject",
@@ -44267,7 +44186,7 @@
                                         {
                                           "owner": "Quest",
                                           "request": "set_progress",
-                                          "progress": "crystalserver:quest-progress/storage/14334",
+                                          "progress": "canary:quest-progress/storage/14334",
                                           "to": 1,
                                           "repeated": true
                                         },
@@ -44287,7 +44206,7 @@
                                         {
                                           "owner": "Quest",
                                           "request": "set_progress",
-                                          "progress": "crystalserver:quest-progress/storage/14335",
+                                          "progress": "canary:quest-progress/storage/14335",
                                           "to": 1,
                                           "repeated": true
                                         },
@@ -44307,7 +44226,7 @@
                                         {
                                           "owner": "Quest",
                                           "request": "set_progress",
-                                          "progress": "crystalserver:quest-progress/storage/14336",
+                                          "progress": "canary:quest-progress/storage/14336",
                                           "to": 1,
                                           "repeated": true
                                         },
@@ -46409,14 +46328,7 @@
                               "line": 30
                             }
                           },
-                          "then": [
-                            {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 31
-                            }
-                          ]
+                          "then": []
                         }
                       ]
                     }
@@ -46428,7 +46340,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 31,
+          "reason": "creature removal without an accepted owner"
+        }
+      ]
     },
     {
       "identity": {
@@ -46902,10 +46819,9 @@
               "value_source_line": 6
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 7
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             },
             {
               "owner": "Presentation",
@@ -48867,7 +48783,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u11_50/hidden_threats/quest_line",
-                      "to": 3
+                      "to": 3,
+                      "transition": "canary:quest/tibia_tales#hidden_threats:movement_1"
                     }
                   ]
                 }
@@ -49065,10 +48982,9 @@
                       "authoritative": false
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 20
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -49149,10 +49065,14 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 5
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8822",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         },
                         {
                           "owner": "WorldObject",
@@ -49235,10 +49155,9 @@
               "to": 0
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 7
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             },
             {
               "owner": "Presentation",
@@ -49318,10 +49237,9 @@
               "authoritative": false
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 25
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             },
             {
               "owner": "Presentation",
@@ -49360,10 +49278,14 @@
                       "transition": "canary:quest/in_service_of_yalahar_quest#mission_06_frightening_fuel:action_1"
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 31
+                      "owner": "Item",
+                      "request": "consume",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/8822",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "count": 1
                     }
                   ]
                 }
@@ -49517,10 +49439,9 @@
                           "to": 1
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 6
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -50239,10 +50160,14 @@
                       "to": 1
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 44
+                      "owner": "Item",
+                      "request": "consume",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/8775",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "count": 4
                     },
                     {
                       "owner": "Presentation",
@@ -50317,13 +50242,6 @@
           "effect": "magic_effect",
           "authoritative": false,
           "repeated": true
-        },
-        {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 28,
-          "repeated": true
         }
       ],
       "anchors": [],
@@ -50335,6 +50253,10 @@
         {
           "line": 20,
           "reason": "delayed callback (addEvent) without a scheduler owner"
+        },
+        {
+          "line": 28,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 24,
@@ -51553,10 +51475,9 @@
                   "repeated": true
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 28,
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item",
                   "repeated": true
                 },
                 {
@@ -52115,10 +52036,14 @@
                           "source_line": 6
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 7
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "crystalserver:item/31331",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         },
                         {
                           "owner": "Item",
@@ -53808,10 +53733,9 @@
                   "repeated": true
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 28,
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item",
                   "repeated": true
                 },
                 {
@@ -54322,10 +54246,14 @@
                           "source_line": 6
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 7
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/31331",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         },
                         {
                           "owner": "Item",
@@ -55755,10 +55683,14 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 9
+                      "owner": "Item",
+                      "request": "consume",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/7532",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "count": 1
                     },
                     {
                       "owner": "Quest",
@@ -56191,10 +56123,9 @@
           "repeated": true
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 67,
+          "owner": "Item",
+          "request": "consume",
+          "value_source_line": 67,
           "repeated": true
         },
         {
@@ -56719,10 +56650,9 @@
                       "source_line": 12
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 13
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -56789,10 +56719,9 @@
                   "source_line": 25
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 26
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 }
               ]
             }
@@ -57515,10 +57444,9 @@
       },
       "rules": [
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 9
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item"
         },
         {
           "owner": "WorldObject",
@@ -58213,10 +58141,9 @@
           "repeated": true
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 29,
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item",
           "repeated": true
         },
         {
@@ -58239,13 +58166,6 @@
           "repeated": true
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 47,
-          "repeated": true
-        },
-        {
           "owner": "Presentation",
           "effect": "message",
           "authoritative": false,
@@ -58265,6 +58185,10 @@
         {
           "line": 44,
           "reason": "delayed callback (addEvent) without a scheduler owner"
+        },
+        {
+          "line": 47,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 53,
@@ -58560,10 +58484,9 @@
                               },
                               "then": [
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 96
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 },
                                 {
                                   "owner": "Quest",
@@ -59212,10 +59135,14 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 8
+                      "owner": "Item",
+                      "request": "consume",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/9606",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "count": 1
                     },
                     {
                       "owner": "Quest",
@@ -59825,7 +59752,7 @@
                             "any": [
                               {
                                 "quest_stage": {
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                                   "op": ">=",
                                   "value": 8
                                 },
@@ -59833,7 +59760,7 @@
                               },
                               {
                                 "quest_stage": {
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/bone_flute",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/bone_flute",
                                   "op": "<",
                                   "value": 1
                                 },
@@ -59850,7 +59777,7 @@
                             {
                               "when": {
                                 "quest_stage": {
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                                   "op": "<",
                                   "value": 0
                                 },
@@ -59860,7 +59787,7 @@
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                                   "to": 0
                                 }
                               ]
@@ -59872,7 +59799,7 @@
                             {
                               "when": {
                                 "quest_stage": {
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                                   "op": "==",
                                   "value": 7
                                 },
@@ -59886,15 +59813,14 @@
                                   "source_line": 90
                                 },
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 91
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 },
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/monster_door",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/monster_door",
                                   "to": 1
                                 }
                               ]
@@ -59910,7 +59836,7 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                          "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                           "value_source_line": 95
                         },
                         {
@@ -59946,10 +59872,9 @@
                       "repeated": true
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 106
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 },
@@ -60206,10 +60131,9 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 157
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -60232,10 +60156,9 @@
                       "source_line": 162
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 163
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -60496,10 +60419,9 @@
                   "source_line": 61
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 62
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Presentation",
@@ -60553,10 +60475,9 @@
                       ],
                       "otherwise": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 77
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -60619,10 +60540,9 @@
                       "anchor_source_line": 89
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 90
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Quest",
@@ -60878,10 +60798,9 @@
                           "repeated": true
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 148
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -61317,10 +61236,9 @@
                       "source_line": 231
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 232
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -62454,10 +62372,9 @@
                                       "source_line": 77
                                     },
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 78
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "object": "used_item"
                                     }
                                   ]
                                 }
@@ -62491,10 +62408,9 @@
                               ]
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 101
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             }
                           ]
                         }
@@ -64204,13 +64120,6 @@
               "owner": "WorldObject",
               "status": "blocked",
               "reason": "no accepted world-object state owner contract",
-              "source_line": 58,
-              "repeated": true
-            },
-            {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
               "source_line": 67,
               "repeated": true
             },
@@ -64293,6 +64202,10 @@
         {
           "line": 56,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 58,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 63,
@@ -64583,10 +64496,9 @@
                           "authoritative": false
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 26
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         }
                       ]
                     }
@@ -64694,10 +64606,9 @@
                           "source_line": 84
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 86
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "WorldObject",
@@ -64721,10 +64632,9 @@
                           "source_line": 92
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 94
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "WorldObject",
@@ -64964,12 +64874,6 @@
                   "owner": "WorldObject",
                   "status": "blocked",
                   "reason": "no accepted world-object state owner contract",
-                  "source_line": 13
-                },
-                {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
                   "source_line": 14
                 }
               ]
@@ -64978,7 +64882,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 13,
+          "reason": "creature removal without an accepted owner"
+        }
+      ]
     },
     {
       "identity": {
@@ -65123,10 +65032,9 @@
                       "authoritative": false
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 14
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -65167,10 +65075,9 @@
           "source_line": 8
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 9
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item"
         }
       ],
       "anchors": [],
@@ -65278,10 +65185,9 @@
                       "transition": "canary:quest/secret_service_quest#mission_5_coldfinger:action_1"
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 9
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -65348,10 +65254,9 @@
                       "transition": "canary:quest/secret_service_quest#mission_3_rust_in_peace:action_1"
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 9
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "WorldObject",
@@ -65413,10 +65318,9 @@
               "source_line": 15
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 17
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             }
           ]
         }
@@ -66041,10 +65945,9 @@
               "source_line": 105
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 106
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             }
           ]
         }
@@ -66322,7 +66225,8 @@
                   "owner": "Quest",
                   "request": "set_progress",
                   "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/mission09",
-                  "to": 2
+                  "to": 2,
+                  "transition": "canary:quest/shadows_of_yalahar_quest#mission_09_researching_the_ritual:action_1"
                 },
                 {
                   "owner": "WorldObject",
@@ -66738,7 +66642,8 @@
                   "owner": "Quest",
                   "request": "set_progress",
                   "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/mission11",
-                  "to": 2
+                  "to": 2,
+                  "transition": "canary:quest/shadows_of_yalahar_quest#mission_11_take_a_shower:movement_1"
                 }
               ]
             }
@@ -67576,10 +67481,9 @@
                           "authoritative": false
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 966
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -68073,12 +67977,6 @@
                           "owner": "WorldObject",
                           "status": "blocked",
                           "reason": "no accepted world-object state owner contract",
-                          "source_line": 265
-                        },
-                        {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
                           "source_line": 266
                         },
                         {
@@ -68097,6 +67995,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 265,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 268,
           "reason": "statement outside the transcribed vocabulary"
@@ -68290,10 +68192,9 @@
               ],
               "otherwise": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 567
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Presentation",
@@ -68413,10 +68314,9 @@
                           "authoritative": false
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 860
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -68618,12 +68518,6 @@
                       "owner": "WorldObject",
                       "status": "blocked",
                       "reason": "no accepted world-object state owner contract",
-                      "source_line": 934
-                    },
-                    {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
                       "source_line": 935
                     }
                   ]
@@ -68638,6 +68532,10 @@
         {
           "line": 927,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 934,
+          "reason": "creature removal without an accepted owner"
         }
       ]
     },
@@ -69600,10 +69498,9 @@
                           "source_line": 85
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 86
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -69842,10 +69739,9 @@
                           ]
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 100
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -69958,10 +69854,9 @@
                           ],
                           "otherwise": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 70
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "branch": [
@@ -70214,10 +70109,9 @@
                           },
                           "then": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 29
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "owner": "Presentation",
@@ -70304,10 +70198,9 @@
                           },
                           "then": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 89
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "owner": "Presentation",
@@ -70710,10 +70603,9 @@
                   "repeated": true
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 32,
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item",
                   "repeated": true
                 },
                 {
@@ -70775,10 +70667,9 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 26
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -70868,10 +70759,9 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 15
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -72087,10 +71977,9 @@
                       ],
                       "otherwise": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 43
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Quest",
@@ -72126,7 +72015,8 @@
                                   "owner": "Quest",
                                   "request": "set_progress",
                                   "progress": "crystalserver:quest-progress/quest/u15_24/targuna/burning_heart/mission",
-                                  "to": 5
+                                  "to": 5,
+                                  "transition": "crystalserver:quest/targuna_quest#burning_heat:action_1"
                                 }
                               ]
                             }
@@ -72274,10 +72164,9 @@
                       "value_source_line": 75
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 76
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -72391,7 +72280,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "crystalserver:quest-progress/quest/u15_24/targuna/long_lost_treasure/mission",
-                      "to": 5
+                      "to": 5,
+                      "transition": "crystalserver:quest/targuna_quest#a_long_lost_treasure:action_1"
                     },
                     {
                       "owner": "Presentation",
@@ -72651,7 +72541,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "crystalserver:quest-progress/quest/u15_24/targuna/long_lost_treasure/mission",
-                          "to": 2
+                          "to": 2,
+                          "transition": "crystalserver:quest/targuna_quest#a_long_lost_treasure:movement_1"
                         }
                       ]
                     }
@@ -73075,7 +72966,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "crystalserver:quest-progress/quest/u15_24/targuna/ancient_enemy/mission",
-                          "to": 1
+                          "to": 1,
+                          "transition": "crystalserver:quest/targuna_quest#an_ancient_enemy:movement_1"
                         }
                       ]
                     }
@@ -74238,10 +74130,9 @@
               ],
               "otherwise": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 41
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "contact"
                 },
                 {
                   "owner": "Presentation",
@@ -76308,10 +76199,9 @@
                           "to": 1
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 56
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "WorldObject",
@@ -76723,7 +76613,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+                          "progress": "canary:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
                           "op": "==",
                           "value": 2
                         },
@@ -76745,14 +76635,13 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+                              "progress": "canary:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
                               "to": 3
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 19
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "owner": "Presentation",
@@ -76825,7 +76714,7 @@
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "crystalserver:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+                                  "progress": "canary:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
                                   "to": 2
                                 },
                                 {
@@ -76835,10 +76724,9 @@
                                   "source_line": 40
                                 },
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 42
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 }
                               ]
                             }
@@ -76875,10 +76763,9 @@
           "repeated": true
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 58,
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item",
           "repeated": true
         },
         {
@@ -76941,10 +76828,9 @@
                   "source_line": 68
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 69
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Presentation",
@@ -77016,10 +76902,9 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 39
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Item",
@@ -77489,10 +77374,9 @@
                               "to": 3
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 12
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "owner": "WorldObject",
@@ -77880,7 +77764,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/lake_word",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/lake_word",
                               "op": "<",
                               "value": 1
                             },
@@ -77892,7 +77776,7 @@
                                 {
                                   "when": {
                                     "quest_stage": {
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
                                       "op": "<",
                                       "value": 0
                                     },
@@ -77902,7 +77786,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
                                       "to": 0
                                     }
                                   ]
@@ -77912,13 +77796,13 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
                               "value_source_line": 20
                             },
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/lake_word",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/lake_word",
                               "to": 1
                             },
                             {
@@ -77985,7 +77869,7 @@
                       },
                       {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
                           "op": ">=",
                           "value": 4
                         },
@@ -77998,7 +77882,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
-                      "to": 3
+                      "to": 3,
+                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_1"
                     },
                     {
                       "owner": "Presentation",
@@ -78126,13 +78011,13 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/ward_stones/count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/ward_stones/count",
                               "value_source_line": 25
                             },
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/ward_stones/port_hope_stone",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/ward_stones/port_hope_stone",
                               "to": 1
                             },
                             {
@@ -78195,7 +78080,7 @@
             {
               "when": {
                 "quest_stage": {
-                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/mush_room",
+                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/mush_room",
                   "op": "==",
                   "value": 1
                 },
@@ -78203,21 +78088,25 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 5
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/30009",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "Quest",
                   "request": "set_progress",
-                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/mush_room",
+                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/mush_room",
                   "to": 2
                 },
                 {
                   "owner": "Quest",
                   "request": "set_progress",
-                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                   "value_source_line": 7
                 }
               ]
@@ -78264,14 +78153,14 @@
         {
           "owner": "Quest",
           "request": "set_progress",
-          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
           "to": 0,
           "repeated": true
         },
         {
           "owner": "Quest",
           "request": "set_progress",
-          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
           "value_source_line": 132,
           "repeated": true
         },
@@ -78323,7 +78212,7 @@
             {
               "when": {
                 "quest_stage": {
-                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
+                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
                   "op": "<",
                   "value": 1
                 },
@@ -78342,13 +78231,13 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
                           "to": 1
                         },
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                           "value_source_line": 13
                         },
                         {
@@ -78432,13 +78321,13 @@
               "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
               "to": 6,
-              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_1",
+              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_2",
               "repeated": true
             },
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/ward_stones/count",
+              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/ward_stones/count",
               "value_source_line": 83,
               "repeated": true
             },
@@ -78580,7 +78469,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar/last_boss_curse",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/last_boss_curse",
                               "op": "<",
                               "value": 1
                             },
@@ -78601,7 +78490,7 @@
                                         {
                                           "when": {
                                             "quest_stage": {
-                                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
+                                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
                                               "op": ">=",
                                               "value": 1
                                             },
@@ -78611,7 +78500,7 @@
                                             {
                                               "owner": "Quest",
                                               "request": "set_progress",
-                                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
+                                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
                                               "to": 0
                                             },
                                             {
@@ -78623,7 +78512,7 @@
                                             {
                                               "owner": "Quest",
                                               "request": "set_progress",
-                                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
+                                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
                                               "to": 1
                                             },
                                             {
@@ -78633,10 +78522,9 @@
                                               "source_line": 57
                                             },
                                             {
-                                              "owner": "WorldObject",
-                                              "status": "blocked",
-                                              "reason": "no accepted world-object state owner contract",
-                                              "source_line": 58
+                                              "owner": "Item",
+                                              "request": "consume",
+                                              "object": "used_item"
                                             },
                                             {
                                               "branch": [
@@ -78844,10 +78732,9 @@
           ],
           "otherwise": [
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 34,
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item",
               "repeated": true
             },
             {
@@ -78873,14 +78760,14 @@
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/idol_count",
+              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/idol_count",
               "value_source_line": 44,
               "repeated": true
             },
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
+              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
               "to": 1,
               "repeated": true
             },
@@ -78889,7 +78776,7 @@
               "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
               "to": 2,
-              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_2",
+              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_3",
               "repeated": true
             },
             {
@@ -78973,10 +78860,14 @@
                                   },
                                   "then": [
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 17
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "crystalserver:item/29351",
+                                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                      },
+                                      "count": 2
                                     },
                                     {
                                       "owner": "Presentation",
@@ -79036,7 +78927,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
                               "to": 1
                             },
                             {
@@ -79046,7 +78937,7 @@
                                     "all": [
                                       {
                                         "quest_stage": {
-                                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
                                           "op": "==",
                                           "value": 1
                                         },
@@ -79054,7 +78945,7 @@
                                       },
                                       {
                                         "quest_stage": {
-                                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+                                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
                                           "op": "==",
                                           "value": 1
                                         },
@@ -79062,7 +78953,7 @@
                                       },
                                       {
                                         "quest_stage": {
-                                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
+                                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
                                           "op": "==",
                                           "value": 1
                                         },
@@ -79076,7 +78967,7 @@
                                       "request": "set_progress",
                                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
                                       "to": 2,
-                                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_3"
+                                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_4"
                                     }
                                   ]
                                 }
@@ -79142,10 +79033,9 @@
                   "source_line": 12
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 13
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Item",
@@ -79168,10 +79058,9 @@
                   "source_line": 17
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 18
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Item",
@@ -79192,7 +79081,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "op": "<",
                           "value": 1
                         },
@@ -79200,10 +79089,9 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 23
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -79214,13 +79102,13 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "to": 1
                         },
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                           "value_source_line": 26
                         }
                       ]
@@ -79241,7 +79129,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "op": "==",
                           "value": 2
                         },
@@ -79285,7 +79173,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "op": "==",
                           "value": 1
                         },
@@ -79301,7 +79189,7 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "to": 2
                         }
                       ]
@@ -79371,7 +79259,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                               "op": "==",
                               "value": 6
                             },
@@ -79396,7 +79284,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                               "to": 7
                             },
                             {
@@ -79560,7 +79448,7 @@
         {
           "owner": "Quest",
           "request": "set_progress",
-          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
           "value_source_line": 114,
           "repeated": true
         },
@@ -79699,7 +79587,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/rose_bush",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/rose_bush",
                               "op": "<=",
                               "value": 1
                             },
@@ -79715,7 +79603,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/rose_bush",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/rose_bush",
                               "to": 2
                             },
                             {
@@ -79723,7 +79611,7 @@
                                 {
                                   "when": {
                                     "quest_stage": {
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                                       "op": "<",
                                       "value": 0
                                     },
@@ -79733,7 +79621,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                                       "to": 0
                                     }
                                   ]
@@ -79743,7 +79631,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                               "value_source_line": 21
                             },
                             {
@@ -79845,7 +79733,7 @@
                 {
                   "when": {
                     "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "op": "<",
                       "value": 0
                     },
@@ -79855,7 +79743,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "to": 0
                     }
                   ]
@@ -79877,7 +79765,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "value_source_line": 44,
                       "repeated": true
                     },
@@ -79897,7 +79785,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "to": 0,
                       "repeated": true
                     },
@@ -79923,7 +79811,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "to": 0,
                       "repeated": true
                     },
@@ -79932,6 +79820,7 @@
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
                       "to": 4,
+                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_5",
                       "repeated": true
                     }
                   ]
@@ -79987,7 +79876,7 @@
                 {
                   "when": {
                     "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
                       "op": "<",
                       "value": 0
                     },
@@ -79997,7 +79886,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
                       "to": 0
                     }
                   ]
@@ -80016,7 +79905,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
                       "value_source_line": 44,
                       "repeated": true
                     },
@@ -80034,16 +79923,15 @@
                       "repeated": true
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 47,
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item",
                       "repeated": true
                     },
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                       "value_source_line": 49,
                       "repeated": true
                     }
@@ -80681,12 +80569,6 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 13
-                    },
-                    {
                       "owner": "Ability",
                       "effect": "summon",
                       "creature": {
@@ -80732,6 +80614,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 13,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 17,
           "reason": "statement outside the transcribed vocabulary"
@@ -80975,7 +80861,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
                               "op": "<",
                               "value": 1
                             },
@@ -80994,7 +80880,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
                                       "to": 1
                                     },
                                     {
@@ -81015,7 +80901,7 @@
                                             "all": [
                                               {
                                                 "quest_stage": {
-                                                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
                                                   "op": "==",
                                                   "value": 1
                                                 },
@@ -81023,7 +80909,7 @@
                                               },
                                               {
                                                 "quest_stage": {
-                                                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+                                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
                                                   "op": "==",
                                                   "value": 1
                                                 },
@@ -81031,7 +80917,7 @@
                                               },
                                               {
                                                 "quest_stage": {
-                                                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
+                                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
                                                   "op": "==",
                                                   "value": 1
                                                 },
@@ -81300,7 +81186,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
-                      "to": 3
+                      "to": 3,
+                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_6"
                     },
                     {
                       "owner": "Presentation",
@@ -81505,10 +81392,14 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 5
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/30009",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "Quest",
@@ -81650,7 +81541,7 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                           "value_source_line": 13
                         },
                         {
@@ -81734,7 +81625,7 @@
               "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
               "to": 6,
-              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_4",
+              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_7",
               "repeated": true
             },
             {
@@ -81935,10 +81826,9 @@
                                               "source_line": 57
                                             },
                                             {
-                                              "owner": "WorldObject",
-                                              "status": "blocked",
-                                              "reason": "no accepted world-object state owner contract",
-                                              "source_line": 58
+                                              "owner": "Item",
+                                              "request": "consume",
+                                              "object": "used_item"
                                             },
                                             {
                                               "branch": [
@@ -82146,10 +82036,9 @@
           ],
           "otherwise": [
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 34,
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item",
               "repeated": true
             },
             {
@@ -82191,7 +82080,7 @@
               "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
               "to": 2,
-              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_5",
+              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_8",
               "repeated": true
             },
             {
@@ -82275,10 +82164,14 @@
                                   },
                                   "then": [
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 17
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "canary:item/29351",
+                                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                      },
+                                      "count": 2
                                     },
                                     {
                                       "owner": "Presentation",
@@ -82378,7 +82271,7 @@
                                       "request": "set_progress",
                                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
                                       "to": 2,
-                                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_6"
+                                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_9"
                                     }
                                   ]
                                 }
@@ -82444,10 +82337,9 @@
                   "source_line": 12
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 13
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Item",
@@ -82470,10 +82362,9 @@
                   "source_line": 17
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 18
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Item",
@@ -82502,10 +82393,9 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 23
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -83136,6 +83026,7 @@
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
                       "to": 4,
+                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_10",
                       "repeated": true
                     }
                   ]
@@ -83238,10 +83129,9 @@
                       "repeated": true
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 47,
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item",
                       "repeated": true
                     },
                     {
@@ -83935,12 +83825,6 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 13
-                    },
-                    {
                       "owner": "Ability",
                       "effect": "summon",
                       "creature": {
@@ -83986,6 +83870,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 13,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 18,
           "reason": "statement outside the transcribed vocabulary"
@@ -85373,10 +85261,14 @@
                   "to": 55
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 10
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/4840",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "Presentation",
@@ -85496,10 +85388,14 @@
                   "to": 55
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 19
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/4840",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "Presentation",
@@ -86269,10 +86165,9 @@
                                       "value_source_line": 34
                                     },
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 36
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "object": "used_item"
                                     }
                                   ]
                                 }
@@ -87006,12 +86901,6 @@
                               "source_line": 10
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 11
-                            },
-                            {
                               "owner": "Ability",
                               "effect": "summon",
                               "creature": {
@@ -87033,7 +86922,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 11,
+          "reason": "creature removal without an accepted owner"
+        }
+      ]
     },
     {
       "identity": {
@@ -87088,12 +86982,6 @@
                               "source_line": 10
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 11
-                            },
-                            {
                               "owner": "Ability",
                               "effect": "summon",
                               "creature": {
@@ -87127,7 +87015,12 @@
         }
       ],
       "anchors": [],
-      "unresolved": []
+      "unresolved": [
+        {
+          "line": 11,
+          "reason": "creature removal without an accepted owner"
+        }
+      ]
     },
     {
       "identity": {
@@ -87486,10 +87379,9 @@
                       "source_line": 9
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 10
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -87547,10 +87439,9 @@
                       "value_source_line": 17
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 18
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -87637,10 +87528,9 @@
                       "count": 1
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 10
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -87962,10 +87852,9 @@
                       "count": 3
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 11
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -88032,10 +87921,14 @@
                   "authoritative": false
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 7
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/19148",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 }
               ]
             }
@@ -88117,10 +88010,9 @@
                       "source_line": 10
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 11
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -88204,10 +88096,9 @@
                       "count": 1
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 12
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "WorldObject",
@@ -88291,10 +88182,9 @@
                       "source_line": 9
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 10
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -88498,10 +88388,9 @@
                       "source_line": 8
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 9
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "WorldObject",
@@ -88698,10 +88587,9 @@
                       "source_line": 17
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 18
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -88967,10 +88855,14 @@
                           "source_line": 7
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 8
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/18934",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         },
                         {
                           "owner": "Quest",
@@ -89219,10 +89111,9 @@
                       "source_line": 9
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 10
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -89300,10 +89191,9 @@
                       "source_line": 9
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 10
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     }
                   ]
                 }
@@ -91034,13 +90924,6 @@
               ],
               "otherwise": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 54,
-                  "repeated": true
-                },
-                {
                   "owner": "Movement",
                   "status": "blocked",
                   "reason": "no accepted movement owner contract (GAME-INTERACTION-01 §19.3)",
@@ -91075,6 +90958,10 @@
         {
           "line": 27,
           "reason": "function literal outside the transcribed vocabulary"
+        },
+        {
+          "line": 54,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 51,
@@ -91283,10 +91170,9 @@
                           ],
                           "otherwise": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 10
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             },
                             {
                               "owner": "Presentation",
@@ -91826,10 +91712,14 @@
                           "source_line": 18
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 19
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/7243",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         }
                       ]
                     }
@@ -92250,10 +92140,14 @@
                               "transition": "canary:quest/the_ice_islands_quest#nibelor_3_artful_sabotage:action_1"
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 21
+                              "owner": "Item",
+                              "request": "consume",
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/7253",
+                                "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                              },
+                              "count": 1
                             },
                             {
                               "branch": [
@@ -92374,10 +92268,9 @@
                               "source_line": 22
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 23
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             }
                           ]
                         },
@@ -93505,7 +93398,8 @@
                               "owner": "Quest",
                               "request": "set_progress",
                               "progress": "crystalserver:quest-progress/quest/u8_5/the_isle_of_evil/mission07",
-                              "to": 2
+                              "to": 2,
+                              "transition": "canary:quest/the_isle_of_evil_quest#mission_07_the_master_of_evil:action_1"
                             }
                           ]
                         }
@@ -93726,7 +93620,8 @@
                                   "owner": "Quest",
                                   "request": "set_progress",
                                   "progress": "crystalserver:quest-progress/quest/u8_5/the_isle_of_evil/mission04",
-                                  "to": 3
+                                  "to": 3,
+                                  "transition": "canary:quest/the_isle_of_evil_quest#mission_04_the_technomancer_s_machine:action_1"
                                 }
                               ]
                             }
@@ -94319,10 +94214,9 @@
                           "source_line": 36
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 37
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         }
                       ]
                     }
@@ -94828,6 +94722,7 @@
           "request": "set_progress",
           "progress": "canary:quest-progress/quest/u8_54/the_new_frontier/mission09_1",
           "to": 2,
+          "transition": "canary:quest/the_new_frontier_quest#mission_09_mortal_combat:creature_event_1",
           "repeated": true
         },
         {
@@ -95130,13 +95025,15 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u8_54/the_new_frontier/mission07_1",
-                      "to": 2
+                      "to": 2,
+                      "transition": "canary:quest/the_new_frontier_quest#mission_07_messengers_of_peace:movement_1"
                     },
                     {
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u8_54/the_new_frontier/mission08",
-                      "to": 1
+                      "to": 1,
+                      "transition": "canary:quest/the_new_frontier_quest#mission_08_an_offer_you_can_t_refuse:movement_1"
                     },
                     {
                       "owner": "Quest",
@@ -95216,7 +95113,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u8_54/the_new_frontier/mission01",
-                      "to": 2
+                      "to": 2,
+                      "transition": "canary:quest/the_new_frontier_quest#mission_01_new_land:movement_1"
                     },
                     {
                       "owner": "Quest",
@@ -95503,13 +95401,6 @@
                       "repeated": true
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 79,
-                      "repeated": true
-                    },
-                    {
                       "owner": "Ability",
                       "effect": "summon",
                       "creature": {
@@ -95641,6 +95532,10 @@
         {
           "line": 69,
           "reason": "loop with its own control flow"
+        },
+        {
+          "line": 79,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 77,
@@ -95809,13 +95704,6 @@
           ],
           "otherwise": [
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 17,
-              "repeated": true
-            },
-            {
               "owner": "Presentation",
               "effect": "message",
               "authoritative": false,
@@ -95839,6 +95727,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 17,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 15,
           "reason": "loop with its own control flow"
@@ -96178,13 +96070,6 @@
                           "repeated": true
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 87,
-                          "repeated": true
-                        },
-                        {
                           "owner": "Ability",
                           "effect": "summon",
                           "creature": {
@@ -96324,6 +96209,10 @@
           "reason": "loop with its own control flow"
         },
         {
+          "line": 87,
+          "reason": "creature removal without an accepted owner"
+        },
+        {
           "line": 85,
           "reason": "loop with its own control flow"
         },
@@ -96454,13 +96343,6 @@
           ],
           "otherwise": [
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 17,
-              "repeated": true
-            },
-            {
               "owner": "Presentation",
               "effect": "message",
               "authoritative": false,
@@ -96484,6 +96366,10 @@
       ],
       "anchors": [],
       "unresolved": [
+        {
+          "line": 17,
+          "reason": "creature removal without an accepted owner"
+        },
         {
           "line": 15,
           "reason": "loop with its own control flow"
@@ -98839,10 +98725,9 @@
                           },
                           "then": [
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 27
+                              "owner": "Item",
+                              "request": "consume",
+                              "object": "used_item"
                             }
                           ]
                         }
@@ -100497,10 +100382,9 @@
       },
       "rules": [
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 3
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item"
         },
         {
           "owner": "Presentation",
@@ -102727,10 +102611,14 @@
                           "value_source_line": 134
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 136
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/12724",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         }
                       ]
                     }
@@ -103739,10 +103627,14 @@
                   "transition": "canary:quest/the_rookie_guard_quest#mission_06_run_like_a_wolf:action_2"
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 208
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/12672",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "WorldObject",
@@ -105174,10 +105066,14 @@
                   "transition": "canary:quest/the_rookie_guard_quest#mission_11_sweet_poison:action_2"
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 61
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/12785",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "WorldObject",
@@ -105778,12 +105674,6 @@
                       "owner": "Presentation",
                       "effect": "magic_effect",
                       "authoritative": false
-                    },
-                    {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 606
                     }
                   ]
                 }
@@ -105797,6 +105687,10 @@
         {
           "line": 595,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 606,
+          "reason": "creature removal without an accepted owner"
         }
       ]
     },
@@ -106387,10 +106281,14 @@
                   "transition": "canary:quest/the_rookie_guard_quest#mission_12_into_the_fortress:action_4"
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 312
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/12784",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 }
               ]
             }
@@ -106820,10 +106718,9 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 9
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "WorldObject",
@@ -106983,10 +106880,9 @@
           "repeated": true
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 15,
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item",
           "repeated": true
         }
       ],
@@ -107292,10 +107188,9 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 7
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Quest",
@@ -107800,10 +107695,14 @@
                                           },
                                           "then": [
                                             {
-                                              "owner": "WorldObject",
-                                              "status": "blocked",
-                                              "reason": "no accepted world-object state owner contract",
-                                              "source_line": 23
+                                              "owner": "Item",
+                                              "request": "consume",
+                                              "item": {
+                                                "family": "Item",
+                                                "key": "canary:item/28707",
+                                                "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                              },
+                                              "count": 1
                                             }
                                           ]
                                         }
@@ -108869,10 +108768,9 @@
                               },
                               "then": [
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 7
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 },
                                 {
                                   "owner": "WorldObject",
@@ -108935,10 +108833,9 @@
                               },
                               "then": [
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 14
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 },
                                 {
                                   "owner": "WorldObject",
@@ -109195,10 +109092,9 @@
           "value_source_line": 5
         },
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 6
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item"
         }
       ],
       "anchors": [],
@@ -109498,7 +109394,8 @@
                                       "owner": "Quest",
                                       "request": "set_progress",
                                       "progress": "canary:quest-progress/quest/u11_80/the_secret_library/asuras/questline",
-                                      "to": 6
+                                      "to": 6,
+                                      "transition": "canary:quest/the_secret_library_quest#asuri_the_lament:movement_1"
                                     }
                                   ]
                                 }
@@ -110147,10 +110044,9 @@
                   "repeated": true
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 36,
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item",
                   "repeated": true
                 },
                 {
@@ -110328,10 +110224,9 @@
               "repeated": true
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 193,
+              "owner": "Item",
+              "request": "consume",
+              "object": "contact",
               "repeated": true
             },
             {
@@ -111257,10 +111152,9 @@
                   "source_line": 10
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 11
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "Presentation",
@@ -111358,10 +111252,9 @@
       },
       "rules": [
         {
-          "owner": "WorldObject",
-          "status": "blocked",
-          "reason": "no accepted world-object state owner contract",
-          "source_line": 8
+          "owner": "Item",
+          "request": "consume",
+          "object": "used_item"
         }
       ],
       "anchors": [],
@@ -111482,10 +111375,14 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 7
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/7934",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         },
                         {
                           "owner": "Presentation",
@@ -111562,10 +111459,14 @@
                   },
                   "then": [
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 18
+                      "owner": "Item",
+                      "request": "consume",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/7873",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "count": 1
                     },
                     {
                       "owner": "WorldObject",
@@ -112777,10 +112678,9 @@
                           "source_line": 7
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 8
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -112797,7 +112697,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                          "to": 3
+                          "to": 3,
+                          "transition": "canary:quest/threatened_dreams_quest#troubled_animals:action_1"
                         }
                       ]
                     }
@@ -113478,10 +113379,9 @@
                       "source_line": 10
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 11
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -113498,7 +113398,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                      "to": 9
+                      "to": 9,
+                      "transition": "canary:quest/threatened_dreams_quest#troubled_animals:action_2"
                     }
                   ]
                 }
@@ -113890,7 +113791,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                      "to": 7
+                      "to": 7,
+                      "transition": "canary:quest/threatened_dreams_quest#troubled_animals:movement_1"
                     }
                   ]
                 }
@@ -114008,7 +113910,8 @@
                                       "owner": "Quest",
                                       "request": "set_progress",
                                       "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                                      "to": 14
+                                      "to": 14,
+                                      "transition": "canary:quest/threatened_dreams_quest#troubled_animals:movement_2"
                                     }
                                   ]
                                 }
@@ -114198,7 +114101,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
                                       "to": 1
                                     }
                                   ]
@@ -114208,7 +114111,7 @@
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                  "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
                                   "value_source_line": 54
                                 }
                               ]
@@ -114275,28 +114178,44 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 5
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/24943",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 6
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/24944",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 7
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/24945",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 8
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "crystalserver:item/24946",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "Item",
@@ -114460,7 +114379,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
                                       "to": 5
                                     }
                                   ]
@@ -114669,10 +114588,9 @@
                           "source_line": 6
                         },
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 7
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         },
                         {
                           "owner": "Presentation",
@@ -114739,7 +114657,7 @@
                   },
                   {
                     "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
+                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
                       "op": "<",
                       "value": 1
                     },
@@ -114767,7 +114685,7 @@
                 {
                   "owner": "Quest",
                   "request": "set_progress",
-                  "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
+                  "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
                   "to": 1
                 }
               ]
@@ -114886,10 +114804,14 @@
                               "value_source_line": 21
                             },
                             {
-                              "owner": "WorldObject",
-                              "status": "blocked",
-                              "reason": "no accepted world-object state owner contract",
-                              "source_line": 22
+                              "owner": "Item",
+                              "request": "consume",
+                              "item": {
+                                "family": "Item",
+                                "key": "crystalserver:item/25302",
+                                "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                              },
+                              "count": 1
                             },
                             {
                               "owner": "Presentation",
@@ -115049,7 +114971,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
                                       "to": 5
                                     }
                                   ]
@@ -115315,7 +115237,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
                                       "to": 5
                                     }
                                   ]
@@ -115599,10 +115521,9 @@
                       "source_line": 8
                     },
                     {
-                      "owner": "WorldObject",
-                      "status": "blocked",
-                      "reason": "no accepted world-object state owner contract",
-                      "source_line": 9
+                      "owner": "Item",
+                      "request": "consume",
+                      "object": "used_item"
                     },
                     {
                       "owner": "Presentation",
@@ -116191,7 +116112,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
                               "op": "<",
                               "value": 5
                             },
@@ -116201,7 +116122,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
                               "value_source_line": 38
                             },
                             {
@@ -116230,7 +116151,7 @@
                                 {
                                   "when": {
                                     "quest_stage": {
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
                                       "op": "==",
                                       "value": 5
                                     },
@@ -116355,10 +116276,14 @@
               ]
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 10
+              "owner": "Item",
+              "request": "consume",
+              "item": {
+                "family": "Item",
+                "key": "canary:item/138",
+                "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+              },
+              "count": 1
             },
             {
               "owner": "Item",
@@ -116477,10 +116402,9 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 11
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "WorldObject",
@@ -116570,10 +116494,9 @@
                                   "source_line": 37
                                 },
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 38
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 },
                                 {
                                   "owner": "WorldObject",
@@ -116649,10 +116572,9 @@
                                       "source_line": 50
                                     },
                                     {
-                                      "owner": "WorldObject",
-                                      "status": "blocked",
-                                      "reason": "no accepted world-object state owner contract",
-                                      "source_line": 51
+                                      "owner": "Item",
+                                      "request": "consume",
+                                      "object": "used_item"
                                     }
                                   ]
                                 }
@@ -116826,10 +116748,9 @@
                                   "source_line": 18
                                 },
                                 {
-                                  "owner": "WorldObject",
-                                  "status": "blocked",
-                                  "reason": "no accepted world-object state owner contract",
-                                  "source_line": 20
+                                  "owner": "Item",
+                                  "request": "consume",
+                                  "object": "used_item"
                                 }
                               ]
                             }
@@ -117587,10 +117508,9 @@
                   "authoritative": false
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 13
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "WorldObject",
@@ -117764,10 +117684,9 @@
                   "source_line": 14
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 15
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 }
               ]
             }
@@ -117855,10 +117774,9 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 19
+                          "owner": "Item",
+                          "request": "consume",
+                          "object": "used_item"
                         }
                       ]
                     }
@@ -118494,10 +118412,9 @@
                   "source_line": 21
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 22
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "owner": "WorldObject",
@@ -118695,10 +118612,9 @@
                   "source_line": 40
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 41
+                  "owner": "Item",
+                  "request": "consume",
+                  "object": "used_item"
                 },
                 {
                   "branch": [
@@ -118835,10 +118751,14 @@
                       },
                       "then": [
                         {
-                          "owner": "WorldObject",
-                          "status": "blocked",
-                          "reason": "no accepted world-object state owner contract",
-                          "source_line": 12
+                          "owner": "Item",
+                          "request": "consume",
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/11364",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "count": 1
                         },
                         {
                           "owner": "Quest",
@@ -118971,22 +118891,34 @@
               },
               "then": [
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 4
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/11368",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 5
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/11369",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
-                  "owner": "WorldObject",
-                  "status": "blocked",
-                  "reason": "no accepted world-object state owner contract",
-                  "source_line": 6
+                  "owner": "Item",
+                  "request": "consume",
+                  "item": {
+                    "family": "Item",
+                    "key": "canary:item/11370",
+                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                  },
+                  "count": 1
                 },
                 {
                   "owner": "Item",
@@ -119231,10 +119163,9 @@
               "authoritative": false
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 10
+              "owner": "Item",
+              "request": "consume",
+              "object": "used_item"
             }
           ]
         }
@@ -119584,13 +119515,6 @@
               "to": 1
             },
             {
-              "owner": "WorldObject",
-              "status": "blocked",
-              "reason": "no accepted world-object state owner contract",
-              "source_line": 31,
-              "repeated": true
-            },
-            {
               "owner": "Presentation",
               "effect": "magic_effect",
               "authoritative": false,
@@ -119627,6 +119551,10 @@
         {
           "line": 27,
           "reason": "statement outside the transcribed vocabulary"
+        },
+        {
+          "line": 31,
+          "reason": "creature removal without an accepted owner"
         },
         {
           "line": 28,

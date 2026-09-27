@@ -72,8 +72,8 @@ const CANARY_BUNDLE_INDEX_SHA256: &str =
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
-    include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-pilot-staged.json");
-const NPC_STAGED_SHA256: &str = "aeea289f0e3abebc0db3388d402b61ba992de3e1063b7b0712cf4c4bbdda6f89";
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
+const NPC_STAGED_SHA256: &str = "9e46c99a1875338fb83468c517261751e08ec437ac097ebf994d1070436b8766";
 const NPC_STAGE_TOOL_SHA256: &str =
     "547378f64d9d266c42ce2b0aa32706b0259e4d6e268834e4b2c20a0e7f75b61c";
 const NPC_CANDIDATES_SHA256: &str =
@@ -84,10 +84,10 @@ const NPC_ITEM_MAP_SHA256: &str =
     "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a";
 const NPC_WIKI_REVISION: &str = "tibiawiki-npc-e8a040340f660365";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
-const NPC_COUNT: usize = 20;
-const NPC_RECORDS: usize = 40;
-const NPC_DECLARATIONS: usize = 26;
-const NPC_BINDINGS: usize = 44;
+const NPC_COUNT: usize = 983;
+const NPC_RECORDS: usize = 1966;
+const NPC_DECLARATIONS: usize = 1325;
+const NPC_BINDINGS: usize = 2035;
 const CREATURE_COUNT: usize = 1316;
 const CREATURE_RECORDS: usize = 18299;
 const CREATURE_PROFILES: usize = 17333;
@@ -1112,7 +1112,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
     let source = &packet["source"];
     let counts = &packet["counts"];
     if packet["schema"] != "OTERYN_NPC_ADMISSION_STAGED/v1"
-        || packet["wave"] != "pilot"
+        || packet["wave"] != "A"
         || source["canary_revision"] != CANARY_REVISION
         || source["crystal_revision"] != CRYSTAL_REVISION
         || source["candidates_sha256"] != NPC_CANDIDATES_SHA256
@@ -1167,7 +1167,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         return Err("staged NPC admission counts drifted".into());
     }
     let import = ImportBatch {
-        batch_id: "g4-npc-pilot-tibiawiki-r1".to_owned(),
+        batch_id: "g4-npc-wave-a-tibiawiki-r1".to_owned(),
         source_repository: "tibia.fandom.com".to_owned(),
         source_revision: NPC_WIKI_REVISION.to_owned(),
         source_artifact_sha256: NPC_WIKI_SNAPSHOT_SHA256.to_owned(),
@@ -1270,7 +1270,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-npc-pilot-r1".to_owned(),
+                project_revision: "g4-npc-wave-a-r1".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),

@@ -1,0 +1,40 @@
+# Official client assets — 15.30 (Summer Update 2026)
+
+`manifest.json` (schema `OTERYN_CLIENT_ASSET_MANIFEST/v1`) is a **checksum-only**
+inventory of the repository owner's local official Tibia client `assets` folder for
+target client version 15.30. It records, for every file in that folder: `name`,
+`bytes` and `sha256`, plus a whole-archive `archive_sha256`, `file_count` and
+`total_bytes`. It contains **no image data and no other proprietary file content** —
+only cryptographic digests and plain file metadata.
+
+The proprietary asset files themselves (sprites, `.dat`/`.spr`/`.bin` client
+resources, etc.) are **not** and must **never** be committed to this repository.
+
+## How it is produced
+
+Every file directly inside the owner's/operator's local Tibia client `assets`
+folder is hashed with SHA-256; `name`, `bytes` and `sha256` are recorded per file,
+sorted by `name`. The whole manifest is also digested (`archive_sha256`) against the
+exact byte-for-byte snapshot the owner packaged when generating it. Regenerating
+this file from an unmodified copy of the same assets folder must reproduce it
+byte-for-byte (`sort_keys`, compact separators, trailing newline).
+
+## What consumes it
+
+A future Content/World client-role asset compiler/loader reads the owner's or an
+operator's local `assets` folder and must verify every file against this manifest
+(matching `name`, `bytes` and `sha256`, and the aggregate `archive_sha256`) **before**
+building any atlas or other derived client resource from it. A checksum mismatch
+must fail closed rather than silently building from unverified or substituted
+input. What the owner packages with the Oteryn client from that verified input is
+outside this repository.
+
+## Known gap versus the pinned server engines
+
+Server-side Item data currently stays on Canary `47dfd51f` / Crystal `ff7ede5`
+(`CLIENT_VERSION` 1525 = 15.25). The 15.30 `appearances.dat` in this manifest
+(`appearances-2dfa943b….dat`) has 43,516 objects (max id 55117) versus Crystal
+15.25's 42,108 (max id 54266): **1,409 new object ids (52977..55117) and 1 removed**,
+none of which have engine server data yet. Filling those from TibiaWiki (BR/Fandom)
+is separate future work; see
+`docs/architecture/OTERYN_CLIENT_ASSET_VERSION_OWNER_DECISION_2026-09-27.md`.
