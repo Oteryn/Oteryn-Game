@@ -7,6 +7,8 @@
 - Owner selection: [#513 comment 5856056298](https://github.com/Oteryn/Oteryn-Game/issues/513#issuecomment-5856056298)
 - Architect options/common terms: [#513 comment 5855850428](https://github.com/Oteryn/Oteryn-Game/issues/513#issuecomment-5855850428)
 - Documentation allocation: [#162 comment 5856061315](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856061315)
+- Bounded clarification: [#513 comment 5856189816](https://github.com/Oteryn/Oteryn-Game/issues/513#issuecomment-5856189816)
+- AUTHORING repair authorization: [#162 comment 5856190661](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856190661)
 - Implementation, production collection and deployment authority: `NONE_BY_THIS_DECISION`
 
 ## Authority and problem
@@ -53,12 +55,23 @@ claim that 90 days is optimal or legally required.
 
 Logical profile: `DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1`.
 
-`ordinary_retention_ceiling=P90D` (90 days), rolling separately for each retained
-event from its authoritative event occurrence/commit timestamp under the owning
-implementation contract. Admission, delivery, retry, query, export, legal-hold
-release or a later TRANSFER must not restart or extend that original clock.
-MINT and TRANSFER each keep their own timestamp and ordinary expiry. This is not
-a global periodic retention cycle or a manual renewal policy.
+`ordinary_retention_ceiling=P90D` means exactly **7,776,000 elapsed seconds**.
+The sole persisted start instant is the immutable trusted-server wall timestamp
+in that audit event's ANL envelope, bound with the candidate before the first
+possibly ambiguous durable commit attempt and persisted atomically with the
+mandatory audit record and mutation.
+
+For each event, `start = event_timestamp` and
+`expiry = event_timestamp + 7,776,000 seconds`. Its ordinary lifetime is the
+half-open interval `[start, expiry)`; it is expired when `now >= expiry`, subject
+only to an authorized active hold. MINT and TRANSFER each keep their own immutable
+timestamp and expiry.
+
+Commit, delivery, admission, retry, reconciliation, read, export, hold release
+and later transactions never recompute or refresh start or expiry. The timestamp
+anchors retention age only; it is not event ordering, runtime ordering or fencing
+authority. No global periodic cycle, manual renewal or alternative commit-time
+anchor is selected.
 
 This is a separate logical item profile, not a serialized registry entry or an
 allocation of a registry identifier. A later authorized task must bind the
@@ -101,15 +114,21 @@ unrestricted browsing, bulk export or gameplay mutation.
 Authorized export is case-scoped and audited, with unrelated player-linked
 envelope/payload fields redacted. Export does not extend retention or create an
 indefinite investigative copy. Exported retained player-linked data remains
-subject to the applicable original expiry/explicit hold. This profile permits
+subject to original expiry/explicit hold and any separately accepted reviewed
+stricter legal/privacy supersession for its explicitly named retained scope, as
+limited below. Export does not evade earlier deletion or narrower export controls.
+This profile permits
 no public projection, ordinary metric labels containing restricted identities,
 unrestricted debugging, indefinite pseudonymous successor or separately derived
 analytics aggregate; a new purpose requires its own accepted profile.
 
 ## Expiry and bounded cleanup
 
-At ordinary expiry, delete the retained player-linked event envelope and payload,
-subject only to an active explicit audited case/legal hold. Do not replace
+At ordinary expiry (`now >= expiry`), delete the retained player-linked event
+envelope and payload, subject only to an active explicit audited case/legal hold.
+A separately accepted reviewed stricter legal/privacy supersession may require
+earlier deletion for its explicitly named retained scope under the limits below.
+Do not replace
 deletion with silent indefinite anonymized or pseudonymous retention.
 
 A later implementation must provide bounded automatic cleanup without gameplay
@@ -134,24 +153,34 @@ access, scope changes and release must be audited; hold scope must be bounded to
 the authorized case. No generic operational need silently becomes a hold.
 
 Cleanup must protect records under an active authorized hold. On release, return
-to the **original** ordinary expiry without resetting the clock: if it has passed,
-the records are eligible for the bounded deletion process immediately; otherwise
-only the original remaining lifetime applies. Hold never changes event semantics,
+to the **original** ordinary expiry without resetting the clock: if
+`now >= expiry`, the records are eligible for the bounded deletion process
+immediately; otherwise only the original remaining lifetime applies. Any
+separately accepted reviewed stricter legal/privacy supersession for those named
+retained records still applies and may require earlier deletion. It cannot bypass
+an active hold or durability obligation. Hold never changes event semantics,
 custody, identity, transaction authority or gameplay state.
 
 ## Immutable revision and rollout boundary
 
-Use positive, forward-only immutable logical profile revisions for future
-admissions. A changed purpose/duration/access policy requires explicit reviewed
-supersession and a new profile revision; newly admitted events bind the accepted
-revision. Already admitted events retain their original binding and original
-expiry. Payload bytes, EventId meaning and existing profile bindings are not
-rewritten to fit a successor.
+Use positive, forward-only immutable logical profile revisions. Ordinary rollout
+applies to future admissions: a changed purpose/duration/access policy requires
+explicit reviewed supersession and a new profile revision; newly admitted events
+bind that accepted revision. Already admitted events preserve their historical
+profile binding, EventId meaning, payload bytes and original expiry calculation.
 
-A future rollout or rollback must gate new admissions on the applicable accepted
-profile and must not erase existing bindings, lower privacy, refresh old expiry
-or silently re-admit events. Missing, conflicting or unresolved profile/access
-acceptance keeps production collection/projection closed under ANL-01.
+Only a **separately accepted, reviewed stricter legal/privacy supersession** may
+govern explicitly named already-retained records, including earlier expiry/deletion
+or narrower purpose/access/export. Such a migration does not rewrite historical
+event content or bindings. This record selects no concrete migration or future
+supersession.
+
+No revision or migration may silently extend expiry, broaden purpose/access/export,
+weaken privacy, resurrect deleted evidence or bypass an active hold or durability
+obligation. Ordinary rollout/rollback gates new admissions on the applicable
+accepted profile and cannot erase historical bindings, refresh expiry or silently
+re-admit events. Missing, conflicting or unresolved profile/access acceptance
+keeps production collection/projection closed under ANL-01.
 
 ## Replay and identity separation
 
@@ -176,17 +205,28 @@ retention cannot turn uncertainty into permission for a fresh transaction.
 
 These are required scenarios, not executed runtime proof supplied by this document:
 
-1. Each MINT/TRANSFER expires from its own authoritative occurrence/commit at the
-   P90D boundary; retries, later transfer, reads and exports do not refresh it.
+1. Each MINT/TRANSFER binds its own immutable ANL trusted-server wall timestamp
+   before possible commit ambiguity and persists it atomically with audit/mutation.
+   Expiry is exactly timestamp + 7,776,000 elapsed seconds: immediately before
+   expiry is inside `[start, expiry)`; equality and later instants are expired.
+   Commit/delivery/admission/retry/reconciliation/read/export/hold release/later
+   transactions never recompute or refresh it; it confers no ordering/fencing
+   authority.
 2. Authorized purpose/scoped readers succeed with audited access; unauthorized,
    unrelated-purpose and raw unrestricted export requests reject without downgrade.
-3. Case export redacts unrelated linkage and retains original expiry/hold rules.
+3. Case export redacts unrelated linkage and retains original expiry/hold rules
+   and any accepted stricter supersession's earlier deletion/narrower export controls.
 4. Ordinary expiry deletes player-linked envelope/payload; active hold prevents
-   deletion; hold release preserves original expiry, including already-expired cases.
+   deletion; release preserves original expiry and applicable stricter supersession,
+   including already-expired cases, without refreshing the clock or bypassing holds.
 5. Repeated bounded cleanup preserves transaction integrity, required evidence
    completeness, in-flight durability and active holds without server downtime.
-6. Missing/conflicting profile, privacy downgrade or mutable admitted binding
-   rejects collection; a new revision affects future admissions only.
+6. Missing/conflicting profile, privacy downgrade or mutable historical binding
+   rejects collection. Ordinary new revisions affect future admissions only.
+   A separately accepted reviewed stricter legal/privacy supersession affects only
+   explicitly named retained scope without changing historical binding/EventId/
+   payload. Unaccepted migration, expiry extension, broader purpose/access/export,
+   weaker privacy, resurrection and active-hold/durability bypass reject.
 7. Expiry before duplicate, ambiguous retry, lost TRANSFER acknowledgement and
    source replay preserves receipt/cause protection and identity non-reuse; none
    can remint, restore Ground, reassign identity or make a duplicate fresh.
