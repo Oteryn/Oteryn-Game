@@ -374,6 +374,180 @@ pub(crate) fn encode_liveness_probe(
     Ok(output)
 }
 
+// Composed by the first-control Server Seam child (M2, #822).
+#[allow(dead_code)]
+/// `CommandStatus` values of FND-02 `CommandResult`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub(crate) enum CommandStatus {
+    Accepted = 1,
+    Rejected = 2,
+}
+
+// Composed by the first-control Server Seam child (M2, #822).
+#[allow(dead_code)]
+/// One post-admission `ClientCommand` (FND-02): its command identity, registered type and the
+/// typed payload owned by that type. Expected revisions are validated and bounded but unused by
+/// the first registered command.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ClientCommandView<'a> {
+    pub(crate) command_id: u64,
+    pub(crate) command_type: u32,
+    pub(crate) payload: &'a [u8],
+}
+
+// Composed by the first-control Server Seam child (M2, #822).
+#[allow(dead_code)]
+fn server_frame(
+    message_type: MessageType,
+    generation: u64,
+    sequence: u64,
+    payload: &[u8],
+) -> Vec<u8> {
+    let mut output = Vec::with_capacity(payload.len() + 24);
+    push_scalar(&mut output, 1, message_type as u64);
+    push_scalar(&mut output, 2, generation);
+    push_scalar(&mut output, 3, sequence);
+    push_bytes(&mut output, 4, payload);
+    output
+}
+
+// Composed by the first-control Server Seam child (M2, #822).
+#[allow(dead_code)]
+/// Server-sequenced `CommandResult`. The typed payload is owned by the command type.
+pub(crate) fn encode_command_result(
+    connection_generation: u64,
+    server_sequence: u64,
+    command_id: u64,
+    status: CommandStatus,
+    payload: &[u8],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if connection_generation == 0 || server_sequence == 0 || command_id == 0 {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if payload.len() > MAX_COMMAND_RESULT_PAYLOAD_BYTES {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
+    let mut body = Vec::with_capacity(payload.len() + 16);
+    push_scalar(&mut body, 1, command_id);
+    push_scalar(&mut body, 2, status as u64);
+    push_bytes(&mut body, 5, payload);
+    Ok(server_frame(
+        MessageType::CommandResult,
+        connection_generation,
+        server_sequence,
+        &body,
+    ))
+}
+
+// Composed by the first-control Server Seam child (M2, #822).
+#[allow(dead_code)]
+/// Server-sequenced `StateDelta` from `base_revision` to `new_revision` of one domain.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn encode_state_delta(
+    connection_generation: u64,
+    server_sequence: u64,
+    domain_id: u32,
+    base_revision: u64,
+    new_revision: u64,
+    delta_type: u32,
+    payload: &[u8],
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    if connection_generation == 0
+        || server_sequence == 0
+        || domain_id == 0
+        || delta_type == 0
+        || new_revision <= base_revision
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if payload.len() > MAX_STATE_DELTA_PAYLOAD_BYTES {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
+    let mut body = Vec::with_capacity(payload.len() + 24);
+    push_scalar(&mut body, 1, u64::from(domain_id));
+    push_scalar(&mut body, 2, base_revision);
+    push_scalar(&mut body, 3, new_revision);
+    push_scalar(&mut body, 4, u64::from(delta_type));
+    push_bytes(&mut body, 5, payload);
+    Ok(server_frame(
+        MessageType::StateDelta,
+        connection_generation,
+        server_sequence,
+        &body,
+    ))
+}
+
+// Composed by the first-control Server Seam child (M2, #822).
+#[allow(dead_code)]
+/// One domain of a `SnapshotBody`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct DomainSnapshot<'a> {
+    pub(crate) domain_id: u32,
+    pub(crate) revision: u64,
+    pub(crate) snapshot_type: u32,
+    pub(crate) payload: &'a [u8],
+}
+
+// Composed by the first-control Server Seam child (M2, #822).
+#[allow(dead_code)]
+/// The three unsequenced frames of one single-chunk snapshot transfer (FND-02 §16):
+/// `SnapshotBegin`, `SnapshotChunk[0]` and `SnapshotCommit`. The body must fit one chunk.
+pub(crate) fn encode_single_chunk_snapshot(
+    connection_generation: u64,
+    snapshot_id: u64,
+    target_server_sequence: u64,
+    domains: &[DomainSnapshot<'_>],
+) -> Result<[Vec<u8>; 3], FoundationProtocolError> {
+    if connection_generation == 0 || snapshot_id == 0 || domains.is_empty() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    // The receiver's SnapshotBody validation refuses these; never emit them.
+    if domains.len() > MAX_STATE_DOMAINS_PER_SYNC {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
+    let mut body = Vec::new();
+    for (index, domain) in domains.iter().enumerate() {
+        if domain.domain_id == 0
+            || domain.snapshot_type == 0
+            || domains[..index]
+                .iter()
+                .any(|earlier| earlier.domain_id == domain.domain_id)
+        {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        let mut entry = Vec::with_capacity(domain.payload.len() + 24);
+        push_scalar(&mut entry, 1, u64::from(domain.domain_id));
+        push_scalar(&mut entry, 2, domain.revision);
+        push_scalar(&mut entry, 3, u64::from(domain.snapshot_type));
+        push_bytes(&mut entry, 4, domain.payload);
+        push_bytes(&mut body, 1, &entry);
+    }
+    if body.len() > MAX_SNAPSHOT_CHUNK_BYTES {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
+    let mut begin = Vec::new();
+    push_scalar(&mut begin, 1, snapshot_id);
+    push_scalar(&mut begin, 2, 1);
+    push_scalar(&mut begin, 3, body.len() as u64);
+    push_scalar(&mut begin, 4, target_server_sequence);
+    let mut chunk = Vec::with_capacity(body.len() + 16);
+    push_scalar(&mut chunk, 1, snapshot_id);
+    push_bytes(&mut chunk, 3, &body);
+    let mut commit = Vec::new();
+    push_scalar(&mut commit, 1, snapshot_id);
+    Ok([
+        server_frame(MessageType::SnapshotBegin, connection_generation, 0, &begin),
+        server_frame(MessageType::SnapshotChunk, connection_generation, 0, &chunk),
+        server_frame(
+            MessageType::SnapshotCommit,
+            connection_generation,
+            0,
+            &commit,
+        ),
+    ])
+}
+
 pub(crate) fn encode_protocol_error(
     error: FoundationProtocolError,
     generation: u64,
@@ -388,6 +562,56 @@ pub(crate) fn encode_protocol_error(
 }
 
 impl<'a> WireEnvelopeView<'a> {
+    /// A post-admission `ClientCommand` of the current connection generation.
+    #[allow(dead_code)]
+    pub(crate) fn client_command(
+        &self,
+        current_connection_generation: u64,
+    ) -> Result<ClientCommandView<'a>, FoundationProtocolError> {
+        self.validate(Direction::ClientToServer, true)?;
+        if self.message_type != MessageType::ClientCommand {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        if current_connection_generation == 0
+            || self.connection_generation != current_connection_generation
+        {
+            return Err(FoundationProtocolError::StaleConnectionGeneration);
+        }
+        let input = self.payload;
+        let mut cursor = 0usize;
+        let (mut command_id, mut command_type, mut payload) = (None, None, None);
+        while cursor < input.len() {
+            let key = read_varint(input, &mut cursor)?;
+            let field = decode_field_number(key)?;
+            let wire = (key & 7) as u8;
+            match field {
+                1 => read_singular_varint(input, &mut cursor, wire, &mut command_id)?,
+                2 => read_singular_varint(input, &mut cursor, wire, &mut command_type)?,
+                4 => read_singular_bytes(
+                    input,
+                    &mut cursor,
+                    wire,
+                    &mut payload,
+                    MAX_COMMAND_PAYLOAD_BYTES,
+                    FoundationProtocolError::PayloadLimitExceeded,
+                )?,
+                _ => skip_field(input, &mut cursor, wire)?,
+            }
+        }
+        let command_id = command_id.filter(|id| *id != 0);
+        let command_type = command_type
+            .and_then(|value| u32::try_from(value).ok())
+            .filter(|value| *value != 0);
+        match (command_id, command_type) {
+            (Some(command_id), Some(command_type)) => Ok(ClientCommandView {
+                command_id,
+                command_type,
+                payload: payload.unwrap_or(&[]),
+            }),
+            _ => Err(FoundationProtocolError::MalformedEnvelope),
+        }
+    }
+
     pub(crate) fn client_bootstrap(
         &self,
     ) -> Result<ClientBootstrapView<'_>, FoundationProtocolError> {
@@ -2778,6 +3002,140 @@ mod tests {
             NodeId::decode(&wrong_variant),
             Err(FoundationProtocolError::InvalidWireIdentifier)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn first_control_server_frames_pass_foundation_ingress_validation()
+    -> Result<(), FoundationProtocolError> {
+        let result = encode_command_result(3, 1, 7, CommandStatus::Accepted, &[0x08, 0x01])?;
+        let view = decode_wire_envelope(&result)?;
+        assert_eq!(view.message_type(), MessageType::CommandResult);
+        assert_eq!(
+            (view.connection_generation(), view.server_sequence()),
+            (3, 1)
+        );
+        view.validate(Direction::ServerToClient, true)?;
+
+        let delta = encode_state_delta(3, 2, 1, 1, 2, 1, &[0x0a, 0x00])?;
+        let view = decode_wire_envelope(&delta)?;
+        assert_eq!(view.message_type(), MessageType::StateDelta);
+        assert_eq!(view.server_sequence(), 2);
+        view.validate(Direction::ServerToClient, true)?;
+
+        let frames = encode_single_chunk_snapshot(
+            3,
+            1,
+            0,
+            &[DomainSnapshot {
+                domain_id: 1,
+                revision: 1,
+                snapshot_type: 1,
+                payload: &[0x0a, 0x00],
+            }],
+        )?;
+        let types: Vec<MessageType> = frames
+            .iter()
+            .map(|frame| decode_wire_envelope(frame).map(|view| view.message_type()))
+            .collect::<Result<_, _>>()?;
+        assert_eq!(
+            types,
+            [
+                MessageType::SnapshotBegin,
+                MessageType::SnapshotChunk,
+                MessageType::SnapshotCommit
+            ]
+        );
+        for frame in &frames {
+            let view = decode_wire_envelope(frame)?;
+            assert_eq!(
+                view.server_sequence(),
+                0,
+                "snapshot transfer is unsequenced"
+            );
+            view.validate(Direction::ServerToClient, true)?;
+        }
+        // The receiver assembles and commits the transfer (FND-02 §16).
+        let chunk_view = decode_wire_envelope(&frames[1])?;
+        let chunk_payload = chunk_view.payload();
+        let mut cursor = 0;
+        let mut data = None;
+        while cursor < chunk_payload.len() {
+            let key = read_varint(chunk_payload, &mut cursor)?;
+            match key {
+                0x1a => {
+                    data = Some(bounded_length_delimited(
+                        chunk_payload,
+                        &mut cursor,
+                        MAX_SNAPSHOT_CHUNK_BYTES,
+                        FoundationProtocolError::PayloadLimitExceeded,
+                    )?)
+                }
+                _ => skip_field(chunk_payload, &mut cursor, (key & 7) as u8)?,
+            }
+        }
+        let data = data.ok_or(FoundationProtocolError::MalformedEnvelope)?;
+        // The facade barrier also validates the committed SnapshotBody.
+        let mut barrier = super::super::snapshot_facade::SnapshotBarrier::new();
+        barrier.begin(1, 1, data.len() as u64, 0, 3)?;
+        barrier.chunk(1, 0, data, 3)?;
+        barrier.commit(1, 3)?;
+        let domain = DomainSnapshot {
+            domain_id: 1,
+            revision: 1,
+            snapshot_type: 1,
+            payload: &[0x0a, 0x00],
+        };
+        assert!(encode_single_chunk_snapshot(3, 2, 0, &[domain, domain]).is_err());
+        assert!(
+            encode_single_chunk_snapshot(3, 2, 0, &vec![domain; MAX_STATE_DOMAINS_PER_SYNC + 1])
+                .is_err()
+        );
+        // Invalid values refuse before any frame is built.
+        assert!(encode_command_result(0, 1, 7, CommandStatus::Accepted, &[]).is_err());
+        assert!(encode_command_result(3, 0, 7, CommandStatus::Accepted, &[]).is_err());
+        assert!(encode_state_delta(3, 2, 1, 2, 2, 1, &[]).is_err());
+        assert!(encode_state_delta(3, 2, 0, 1, 2, 1, &[]).is_err());
+        assert!(encode_single_chunk_snapshot(3, 0, 0, &[]).is_err());
+        Ok(())
+    }
+
+    fn client_command_frame(generation: u64, command_id: u64, command_type: u64) -> Vec<u8> {
+        let mut body = Vec::new();
+        push_scalar(&mut body, 1, command_id);
+        push_scalar(&mut body, 2, command_type);
+        push_bytes(&mut body, 4, &[0x08, 0x02]);
+        let mut frame = Vec::new();
+        push_scalar(&mut frame, 1, MessageType::ClientCommand as u64);
+        push_scalar(&mut frame, 2, generation);
+        push_bytes(&mut frame, 4, &body);
+        frame
+    }
+
+    #[test]
+    fn client_command_decodes_identity_type_and_payload() -> Result<(), FoundationProtocolError> {
+        let frame = client_command_frame(3, 1, 1);
+        let command = decode_wire_envelope(&frame)?.client_command(3)?;
+        assert_eq!(
+            command,
+            ClientCommandView {
+                command_id: 1,
+                command_type: 1,
+                payload: &[0x08, 0x02],
+            }
+        );
+        assert_eq!(
+            decode_wire_envelope(&frame)?.client_command(4),
+            Err(FoundationProtocolError::StaleConnectionGeneration)
+        );
+        for (id, command_type) in [(0, 1), (1, 0), (1, u64::from(u32::MAX) + 1)] {
+            let frame = client_command_frame(3, id, command_type);
+            assert_eq!(
+                decode_wire_envelope(&frame).and_then(|view| view.client_command(3)),
+                Err(FoundationProtocolError::MalformedEnvelope),
+                "{id} {command_type}"
+            );
+        }
         Ok(())
     }
 }
