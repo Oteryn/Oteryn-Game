@@ -4,15 +4,18 @@
 task_id: OTV2-20260927-dur03-one-item-audit-semantic-resolution-513
 title: Adopt the bounded DUR-03 one-item audit semantic resolution
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 513
 jira_story: KAN-12
 base_branch: main
 base_sha: 09555d0fd189df6ccb0fafc0a5ee3213a9ad2644
 branch: codex/dur03-one-item-audit-semantic-resolution-513
-pr: null
-owner: /root/dur03_supervising_architect under OTV2_WORK_DELIVERY_COORDINATOR
+pr: 971
+head_sha: b12d060aae326c0d478b8b04e08747c930fd614c
+final_head_sha: b12d060aae326c0d478b8b04e08747c930fd614c
+final_head_frozen_at: null
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -28,6 +31,7 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
+## Outcome
 ## Outcome
 
 Propose the narrow normative DUR-03 §39.1 addendum required before a successor
@@ -168,10 +172,13 @@ integration and lease release are pending Work. No ready/merged/canonical claim.
 ## Context checkpoint
 
 ```yaml
-last_progress: Prepared the bounded section 39.1 semantic addendum and authoring task record
-status: implementing
+last_progress: PR 971 merged; terminal DUR-03 semantic packet archived after lease release
+status: completed
 branch: codex/dur03-one-item-audit-semantic-resolution-513
-pr: null
+pr: 971
+head_sha: b12d060aae326c0d478b8b04e08747c930fd614c
+final_head_sha: b12d060aae326c0d478b8b04e08747c930fd614c
+final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -184,5 +191,16 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_exact_head: 0
 owner_action_required: null
 blocker: null
-next_action: Return the frozen two-path architecture candidate to Work for review and protected integration
+next_action: none for completed child; aggregate #513 and KAN-12 remain outside this archive
 ```
+
+
+## Completion
+
+`PROVEN`: [PR #971](https://github.com/Oteryn/Oteryn-Game/pull/971) merged exact head
+`b12d060aae326c0d478b8b04e08747c930fd614c` as protected merge commit
+`0b88fda1501b2ccb7e9828049fcd5760c15ff3f3` at `2026-09-27T10:33:05Z`.
+This terminal packet is archived after that integration; its original validation,
+review and evidence gaps above remain historical and are not refreshed by this move.
+The aggregate #513 / KAN-12 remains outside this child closeout. No original exact
+freeze timestamp is retained, so `final_head_frozen_at` remains `null`.

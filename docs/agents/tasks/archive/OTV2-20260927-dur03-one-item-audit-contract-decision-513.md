@@ -4,17 +4,17 @@
 task_id: OTV2-20260927-dur03-one-item-audit-contract-decision-513
 title: DUR-03 one-item typed audit and resource decision packet
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 513
 base_branch: main
 branch: codex/dur03-one-item-audit-contract-decision-513
-pr: null
+pr: 969
 base_sha: 76c2da68bde1928ab35e4e0f7828c675133cd297
-head_sha: null
-final_head_sha: null
+head_sha: 4fc5543766413d37649539bbddde5bcdbaf5c8f4
+final_head_sha: 4fc5543766413d37649539bbddde5bcdbaf5c8f4
 final_head_frozen_at: null
-owner: dur03_decision_packet_writer under Combat Stage-C control plane
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -29,6 +29,7 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
+## Outcome
 ## Outcome
 
 Provide a reviewable, nonbinding typed evidence recommendation and exact proposed
@@ -139,12 +140,12 @@ Prior resource evidence is preserved, not superseded as a runtime implementation
 ## Context checkpoint
 
 ```yaml
-last_progress: Authored two-file nonbinding decision and proposed evidence follow-on scope
-status: implementing
+last_progress: PR 969 merged; terminal DUR-03 decision packet archived after lease release
+status: completed
 branch: codex/dur03-one-item-audit-contract-decision-513
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: 4fc5543766413d37649539bbddde5bcdbaf5c8f4
+pr: 969
+final_head_sha: 4fc5543766413d37649539bbddde5bcdbaf5c8f4
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -161,5 +162,16 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Return focused authoring validation and the two-file packet to the active control plane
+next_action: none for completed child; aggregate #513 and KAN-12 remain outside this archive
 ```
+
+
+## Completion
+
+`PROVEN`: [PR #969](https://github.com/Oteryn/Oteryn-Game/pull/969) merged exact head
+`4fc5543766413d37649539bbddde5bcdbaf5c8f4` as protected merge commit
+`419a7cbc8539c9c98bd83d9220e331255e7e8f12` at `2026-09-27T09:59:02Z`.
+This terminal packet is archived after that integration; its original validation,
+review and evidence gaps above remain historical and are not refreshed by this move.
+The aggregate #513 / KAN-12 remains outside this child closeout. No original exact
+freeze timestamp is retained, so `final_head_frozen_at` remains `null`.
