@@ -6024,6 +6024,21 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
             assert!(CompleteReconnectAuthorizationV1::authorize(
                 &Owner { current: std::sync::Mutex::new(CompleteReconnectCurrentV1 { snapshot: CompleteReconnectSnapshotV1 { session: resumed, ..active }, prepared: None }), security },
                 identity, CompleteReconnectProofV1::V1Token(token), now).is_err());
+            // The resumed connection ends again: only its exact transport releases the
+            // session (never stranded ACTIVE), and a foreign transport changes nothing.
+            let resumed_id = lost.commit().game_session_id();
+            assert_eq!(
+                store.release_abandoned_session(resumed_id, account, authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x63; 16]))?).await?,
+                durability::fresh_admission::ExpiredLossReleaseV1::NotApplicable
+            );
+            assert!(matches!(
+                store.release_abandoned_session(resumed_id, account, candidate.transport_ref()).await?,
+                durability::fresh_admission::ExpiredLossReleaseV1::Released { .. }
+            ));
+            assert_eq!(store.current_session_at(resumed_id).await?.0.session_state(), GameSessionState::Terminal);
+            let rows = guards.load(&keys).await?;
+            assert!(matches!(rows[0].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Account { presence: None, .. })));
+            assert!(matches!(rows[1].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Character { holder: None, .. })));
             pool.close().await;
             Ok::<(), Box<dyn std::error::Error>>(())
         }.await;

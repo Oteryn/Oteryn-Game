@@ -4,8 +4,8 @@
 
 use crate::foundation::{
     AuthenticatedTransportRefV1, ChannelId, CharacterId, ExactActorRef, FoundationProtocolError,
-    GameSessionId, MessageType, WorldId, decode_wire_envelope, encode_protocol_error,
-    encode_server_accepted,
+    GameSessionId, MessageType, ServerResumeAcceptedValue, WorldId, decode_wire_envelope,
+    encode_protocol_error, encode_server_accepted, encode_server_resume_accepted,
 };
 use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
@@ -32,6 +32,15 @@ pub(crate) struct FreshAdmissionAttempt<'a> {
     pub(crate) admission_material: &'a [u8],
     pub(crate) game_session_id: GameSessionId,
     pub(crate) transport: AuthenticatedTransportRefV1,
+}
+
+/// One `ClientResume` attempt: the GameSession to resume, the untrusted reauthenticated
+/// recovery credential and the fresh candidate transport of this connection.
+pub(crate) struct ResumeAttempt<'a> {
+    pub(crate) game_session_id: GameSessionId,
+    pub(crate) recovery_material: &'a [u8],
+    pub(crate) transport: AuthenticatedTransportRefV1,
+    pub(crate) last_applied_server_sequence: u64,
 }
 
 /// Authority-committed admission: the only state that lets a transport claim a
@@ -94,6 +103,9 @@ pub(crate) enum ControlLossResult {
     Refused,
     /// The durable outcome could not be proven within the bounded reconciliation.
     Unknown,
+    /// The ended controller had resumed a lost session. A loss after a resume is not
+    /// recorded yet (FND-04B resumed history); the session is released instead.
+    ResumedHistory,
 }
 
 /// Outcome of the FND-04B §6 grace-expiry release of a recorded control loss.
@@ -143,6 +155,16 @@ pub(crate) trait FreshAdmissionAuthority {
         attempt: FreshAdmissionAttempt<'_>,
     ) -> impl Future<Output = Result<AdmittedSession, AdmissionRefusal>>;
 
+    /// FND-04B §20 same-session reauthenticated recovery of a lost GameSession. Only an
+    /// authority-committed switch returns the resumed session; the transport never infers
+    /// one from the attempt.
+    fn resume(
+        &self,
+        _attempt: ResumeAttempt<'_>,
+    ) -> impl Future<Output = Result<AdmittedSession, AdmissionRefusal>> {
+        async { Err(AdmissionRefusal::Unavailable) }
+    }
+
     /// The admitted actor's current own-actor observation for the initial snapshot, or `None`
     /// when this authority serves no gameplay (transport-only fixtures).
     fn observe(
@@ -169,6 +191,15 @@ pub(crate) trait FreshAdmissionAuthority {
         _wait: std::time::Duration,
     ) -> impl Future<Output = ControlLossResult> {
         async { ControlLossResult::NotApplicable }
+    }
+
+    /// Terminally release a resumed session whose recovered connection ended again, so it
+    /// never stays ACTIVE on a dead transport, and remove its Channel actor.
+    fn release_abandoned(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = GraceExpiryResult> {
+        async { GraceExpiryResult::NotApplicable }
     }
 
     /// Once the original grace deadline of the recorded loss passes without resumed
@@ -210,7 +241,7 @@ pub(crate) enum ConnectionEnd {
     ProtocolViolation(FoundationProtocolError),
     /// Admission refused by the owning authority; nothing was admitted.
     AdmissionRefused(AdmissionRefusal),
-    /// Resume is not served by this seam yet; nothing was admitted.
+    /// Resume was refused or could not be proven; nothing was resumed.
     ResumeUnavailable,
     /// Admitted, then closed after unsupported post-admission input.
     AdmittedThenClosed(AdmittedSession, FoundationProtocolError),
@@ -342,10 +373,36 @@ where
     let bootstrap = match envelope.message_type() {
         MessageType::ClientBootstrap => envelope.client_bootstrap(),
         MessageType::ClientResume => {
-            return Err(match envelope.client_resume() {
-                Ok(_) => ConnectionEnd::ResumeUnavailable,
-                Err(error) => reject(stream, error, 0).await,
-            });
+            let resume = match envelope.client_resume() {
+                Ok(resume) => resume,
+                Err(error) => return Err(reject(stream, error, 0).await),
+            };
+            let Some(transport) = identifiers.transport_ref() else {
+                return Err(ConnectionEnd::ResumeUnavailable);
+            };
+            let resumed = authority
+                .resume(ResumeAttempt {
+                    game_session_id: resume.game_session_id,
+                    recovery_material: resume.reconnect_material,
+                    transport,
+                    last_applied_server_sequence: resume.last_applied_server_sequence,
+                })
+                .await
+                .map_err(|_| ConnectionEnd::ResumeUnavailable)?;
+            let continuity = resumed.continuity;
+            let accepted = encode_server_resume_accepted(&ServerResumeAcceptedValue {
+                game_session_id: resumed.game_session_id,
+                connection_generation: continuity.connection_generation,
+                current_server_sequence: continuity.server_sequence,
+                next_command_id: continuity.next_command_id,
+                schema_revision: SERVER_SCHEMA_REVISION,
+                selected_capabilities: &[],
+            })
+            .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            write_frame(stream, &accepted)
+                .await
+                .map_err(|_| ConnectionEnd::AdmittedThenDisconnected(resumed))?;
+            return Ok(resumed);
         }
         _ => Err(FoundationProtocolError::MalformedEnvelope),
     };

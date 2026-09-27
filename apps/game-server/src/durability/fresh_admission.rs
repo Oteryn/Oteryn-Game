@@ -1860,6 +1860,41 @@ impl FreshAdmissionStore {
         if now < deadline {
             return Ok(ExpiredLossReleaseV1::NotExpired { deadline, now });
         }
+        self.release_current_claims(current, now, account_id).await
+    }
+
+    /// Terminal release of a resumed session whose recovered connection ended again. A loss
+    /// after a resume (resumed history) is not recorded yet, so the session is released
+    /// instead of being stranded ACTIVE on a dead transport: the player loses grace, never
+    /// the ability to enter again. Only the exact ended controller transport of a session
+    /// that was already lost once is released; a newer controller keeps its session.
+    pub async fn release_abandoned_session(
+        &self,
+        session: GameSessionId,
+        account_id: &str,
+        transport: AuthenticatedTransportRefV1,
+    ) -> Result<ExpiredLossReleaseV1> {
+        let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
+        if current.session_state() != GameSessionState::Active
+            || current.current_transport() != Some(transport)
+            || current.current_control_loss_epoch().is_none()
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        self.release_current_claims(current, now, account_id).await
+    }
+
+    /// Prepare the FND-04B terminal release of `current` from the current claim rows at the
+    /// durable time `now` and commit it through the exact fenced [`Self::release`].
+    async fn release_current_claims(
+        &self,
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        now: i64,
+        account_id: &str,
+    ) -> Result<ExpiredLossReleaseV1> {
         let keys = [
             AdmissionAuthorityGuardKeyV1::Account {
                 account_id: account_id.into(),
