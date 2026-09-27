@@ -23,17 +23,6 @@
       "items": 22531
     },
     {
-      "blocker": "delivery_task_decision_not_admitted",
-      "examples": [
-        "oteryn:item.registry.i00000023",
-        "oteryn:item.registry.i00000032",
-        "oteryn:item.registry.i00000033",
-        "oteryn:item.registry.i00000037",
-        "oteryn:item.registry.i00000038"
-      ],
-      "items": 11606
-    },
-    {
       "blocker": "sprite_atlas_not_admitted",
       "examples": [
         "oteryn:item.registry.i00000023",
@@ -142,6 +131,11 @@
         "oteryn:item.registry.i00000582"
       ],
       "items": 462
+    },
+    {
+      "blocker": "delivery_task_decision_not_admitted",
+      "examples": [],
+      "items": 236
     },
     {
       "blocker": "identity_not_in_b1_catalog",
@@ -442,7 +436,7 @@
       "items": 1
     }
   ],
-  "bundle_digest": "1a268533ae0f0936148cac4c465830faafa944c2afaee95b6a4aade2bac12c48",
+  "bundle_digest": "9e7f534b3b33ab8a7982d3642a19f770adc5671cea6d7ecc0021d63fd648b0d1",
   "by_profile": {
     "container": 2513,
     "container_equipment": 8,
@@ -468,9 +462,56 @@
     "weapon_melee": 562
   },
   "delivery_task": {
-    "member": 9,
-    "not_member": 11597,
-    "source": "canary_task_board_weekly_items"
+    "crystal_list": {
+      "entries": 436,
+      "in_items_xml_not_converted": 42,
+      "not_in_items_xml": [
+        49894,
+        49908,
+        51419,
+        51420,
+        51422,
+        51423,
+        51425,
+        51426,
+        51427,
+        51472,
+        51473,
+        51474,
+        51475,
+        51476,
+        51477,
+        51478,
+        51479,
+        51480,
+        51482,
+        51484,
+        51485,
+        51486,
+        52633,
+        52662,
+        52663,
+        52664,
+        52705,
+        52706,
+        52707,
+        52718,
+        52719,
+        52720
+      ],
+      "unique": 436
+    },
+    "decision": {
+      "eligible_false": 11244,
+      "eligible_true": 362,
+      "override": 0,
+      "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
+    },
+    "observation": {
+      "member": 9,
+      "not_member": 11597,
+      "source": "canary_task_board_weekly_items"
+    }
   },
   "field_coverage": {
     "absorbpercentall": {
@@ -1765,9 +1806,9 @@
   },
   "outcome": {
     "blocked": 9125,
+    "fully_resolved": 2481,
     "items": 37527,
-    "not_converted": 25921,
-    "pending_author_decision": 2481
+    "not_converted": 25921
   },
   "scope": "Every item id in this engine's pinned data/items/items.xml (fromid/toid ranges expanded); not a placed map object or instance.",
   "source": {

@@ -18,13 +18,20 @@ a semantic id takes its native key from `NATIVE_ITEM_BATCH` in
 disposition is not `ITEM_TYPED`/mapped is counted as routed to its owner, never a blocker;
 an `ITEM_TYPED` field this converter does not implement is `converter_missing:<field>`.
 
-Each engine reads only its own pinned Delivery Task pool (Canary: the `weeklyItems`
-table in `data/modules/scripts/taskboard/settings.lua`; Crystal: its existing delivery
-list). Pool membership is upstream evidence, not an Oteryn authoring decision: no
-admitted adoption rule exists yet, so a candidate bundle never carries
-`delivery_task_eligible`. The per-item report instead records a `delivery_task` block
-(`source`, `member`, `proposal`, `decision: "unresolved"`) and the caller is responsible
-for keeping that separate from the emitted Item.
+Each engine reads its own pinned Delivery Task pool as upstream observation only (Canary:
+the `weeklyItems` table in `data/modules/scripts/taskboard/settings.lua`; Crystal: its
+existing delivery list); pool membership never decides eligibility by itself. The final
+`delivery_task_eligible` boolean is the owner-approved authoring rule
+`ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` (see `RULE_ID`): an Item is eligible iff the Crystal
+id sharing its CW2 B1 allocator key is a member of the digest-pinned Crystal delivery list
+at `ff7ede593c69d4c658b382c97443e8155926924a`, unless `delivery-task-overrides.json`
+records an explicit per-Item exception. Crystal runs read that list as their own pool;
+Canary runs require a separate `--rule-source <crystal checkout>` to read the same pinned
+list, and refuse to run without it rather than silently deciding nothing is eligible. A
+converted Item that resolves a decision carries `delivery_task_eligible`; the per-item
+report keeps the upstream observation and the decision (`rule`, `basis`, `eligible`,
+optional `reason`) separate. An item with no CW2 B1 allocator key gets no decision at all
+and keeps the `delivery_task_decision_not_admitted` blocker.
 
 This is evidence tooling: it proves what the pinned engine sources say, not Game truth.
 """
@@ -82,6 +89,17 @@ DELIVERY_SOURCE_NAME = {
     "crystal": "crystal_delivery_list",
     "canary": "canary_task_board_weekly_items",
 }
+
+# --- Delivery Task adoption rule (owner-approved authoring decision) ---------------
+#
+# `RULE_ID` is the accepted Oteryn authoring rule: an Item is `delivery_task_eligible`
+# iff the Crystal id sharing its CW2 B1 allocator key is a member of the digest-pinned
+# Crystal delivery list at the revision named in the rule id. Both engines already share
+# one numeric id space through that allocator (see `build_identity_index`), so the same
+# `item_id` used to resolve identity is also the id looked up in the Crystal list.
+RULE_ID = "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
+DELIVERY_OVERRIDES_SCHEMA = "OTERYN_ITEM_DELIVERY_TASK_OVERRIDES/v1"
+DELIVERY_OVERRIDES_PATH = ROOT / "delivery-task-overrides.json"
 
 # Text artifacts are digested/parsed after CRLF->LF normalization (Git's canonical text
 # blob bytes), so an autocrlf=true checkout digests identically to an LF one. Every other
@@ -566,6 +584,87 @@ DELIVERY_POOL_PARSER = {
     "crystal": parse_crystal_delivery_ids,
     "canary": parse_canary_weekly_item_ids,
 }
+
+
+def load_delivery_overrides(path, valid_keys):
+    """Strictly parse and validate the per-item Delivery Task override file.
+
+    Returns `{item_key: {"eligible": bool, "reason": str}}`. Any unknown top-level or
+    per-entry key, wrong type, empty reason, mismatched `schema`/`rule`, or override key
+    that is not a known Item key (from the CW2 B1 allocator) is a hard error: an override
+    file is never partially trusted.
+    """
+    if not path.is_file():
+        raise SystemExit(f"missing delivery task overrides file: {path}")
+
+    def unique_object(pairs):
+        keys = [pair_key for pair_key, _value in pairs]
+        duplicates = sorted({k for k in keys if keys.count(k) > 1})
+        if duplicates:
+            raise SystemExit(f"duplicate JSON key(s) in {path}: {duplicates}")
+        return dict(pairs)
+
+    try:
+        payload = json.loads(
+            path.read_text(encoding="utf-8"), object_pairs_hook=unique_object
+        )
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"invalid JSON in delivery task overrides file {path}: {exc}")
+
+    if not isinstance(payload, dict):
+        raise SystemExit(f"delivery task overrides file {path} must be a JSON object")
+    allowed_top_keys = {"schema", "rule", "overrides"}
+    unknown_top = sorted(set(payload) - allowed_top_keys)
+    if unknown_top:
+        raise SystemExit(f"unknown top-level key(s) in {path}: {unknown_top}")
+    missing_top = sorted(allowed_top_keys - set(payload))
+    if missing_top:
+        raise SystemExit(f"missing required key(s) in {path}: {missing_top}")
+    if payload["schema"] != DELIVERY_OVERRIDES_SCHEMA:
+        raise SystemExit(
+            f"unexpected 'schema' in {path}: {payload['schema']!r} "
+            f"(expected {DELIVERY_OVERRIDES_SCHEMA!r})"
+        )
+    if payload["rule"] != RULE_ID:
+        raise SystemExit(
+            f"unexpected 'rule' in {path}: {payload['rule']!r} (expected {RULE_ID!r})"
+        )
+
+    overrides_raw = payload["overrides"]
+    if not isinstance(overrides_raw, dict):
+        raise SystemExit(f"'overrides' in {path} must be a JSON object")
+
+    allowed_entry_keys = {"eligible", "reason"}
+    overrides = {}
+    for key, entry in overrides_raw.items():
+        if not isinstance(key, str) or not key:
+            raise SystemExit(f"invalid override key in {path}: {key!r}")
+        if key not in valid_keys:
+            raise SystemExit(f"override in {path} targets unknown Item key: {key!r}")
+        if not isinstance(entry, dict):
+            raise SystemExit(f"override for {key!r} in {path} must be a JSON object")
+        unknown_entry = sorted(set(entry) - allowed_entry_keys)
+        if unknown_entry:
+            raise SystemExit(
+                f"unknown key(s) in override for {key!r} in {path}: {unknown_entry}"
+            )
+        missing_entry = sorted(allowed_entry_keys - set(entry))
+        if missing_entry:
+            raise SystemExit(
+                f"missing key(s) in override for {key!r} in {path}: {missing_entry}"
+            )
+        eligible = entry["eligible"]
+        if not isinstance(eligible, bool):
+            raise SystemExit(
+                f"override for {key!r} in {path}: 'eligible' must be a boolean"
+            )
+        reason = entry["reason"]
+        if not isinstance(reason, str) or not reason.strip():
+            raise SystemExit(
+                f"override for {key!r} in {path}: 'reason' must be a non-empty string"
+            )
+        overrides[key] = {"eligible": eligible, "reason": reason}
+    return overrides
 
 
 # --- field dispositions (crystal-field-dispositions.json / canary-...) -------------
@@ -1246,8 +1345,25 @@ def default_artifact_digests(profile, engine):
     return digests
 
 
-def load_engine_sources(engine, source_root, digests=None):
-    """digests overrides the pinned production SHA-256 map; used only by fixture tests."""
+def load_engine_sources(
+    engine,
+    source_root,
+    digests=None,
+    rule_source=None,
+    rule_source_digest=None,
+    overrides_path=None,
+):
+    """digests overrides the pinned production SHA-256 map; used only by fixture tests.
+
+    `rule_source` is the checkout the Delivery Task adoption rule reads its pinned
+    Crystal delivery list from. Crystal runs already read that exact file as their own
+    pool, so `rule_source` is ignored for `engine == "crystal"`. Canary runs have no
+    Crystal checkout of their own: `rule_source` is required, and a missing one is a hard
+    error rather than an empty (silently all-ineligible) rule. `rule_source_digest`
+    overrides the pinned production SHA-256 for that list; used only by fixture tests.
+    `overrides_path` overrides the committed `delivery-task-overrides.json`; used only by
+    fixture tests.
+    """
     config = ENGINES[engine]
     profile = config["profile"]
     artifact_digests = (
@@ -1268,6 +1384,36 @@ def load_engine_sources(engine, source_root, digests=None):
     )
     delivery_member_ids = DELIVERY_POOL_PARSER[engine](pool_bytes.decode("utf-8"))
 
+    if engine == "crystal":
+        # Crystal's own pinned pool file *is* the rule's Crystal delivery list.
+        crystal_list_text = pool_bytes.decode("utf-8")
+        crystal_list_ids = delivery_member_ids
+    else:
+        if rule_source is None:
+            raise SystemExit(
+                "--rule-source <crystal checkout> is required for canary: the "
+                f"{RULE_ID!r} Delivery Task rule is keyed by Crystal delivery-list "
+                "membership, which canary has no checkout of its own to read."
+            )
+        expected_digest = (
+            rule_source_digest
+            if rule_source_digest is not None
+            else DELIVERY_LIST_SHA256
+        )
+        rule_list_bytes, _rule_list_mode = read_verified_artifact(
+            Path(rule_source), DELIVERY_LIST_PATH, expected_digest
+        )
+        crystal_list_text = rule_list_bytes.decode("utf-8")
+        crystal_list_ids = parse_crystal_delivery_ids(crystal_list_text)
+    crystal_list_entries = len(re.findall(r"itemId\s*=\s*(\d+)", crystal_list_text))
+
+    identity_index = build_identity_index()
+    valid_keys = {key for key, _basis in identity_index.values()}
+    resolved_overrides_path = (
+        overrides_path if overrides_path is not None else DELIVERY_OVERRIDES_PATH
+    )
+    delivery_overrides = load_delivery_overrides(resolved_overrides_path, valid_keys)
+
     return {
         "engine": engine,
         "profile": profile,
@@ -1275,9 +1421,12 @@ def load_engine_sources(engine, source_root, digests=None):
         "revision": config["revision"],
         "items": load_items_xml(items_bytes.decode("utf-8")),
         "appearances": load_appearance_objects(appearances_bytes),
-        "identity_index": build_identity_index(),
+        "identity_index": identity_index,
         "delivery_member_ids": delivery_member_ids,
         "delivery_source": DELIVERY_SOURCE_NAME[engine],
+        "crystal_list_ids": crystal_list_ids,
+        "crystal_list_entries": crystal_list_entries,
+        "delivery_overrides": delivery_overrides,
         "disposition": load_disposition_catalog(profile),
         "artifact_digests": {
             "data/items/items.xml": {
@@ -1340,7 +1489,10 @@ def convert_item(sources, item_id):
 
     identity_entry = identity_index.get(item_id)
     if identity_entry is None:
+        # No CW2 B1 allocator key means no Crystal id to check the Delivery Task rule
+        # against: the decision stays not admitted rather than being guessed.
         blockers.append("identity_not_in_b1_catalog")
+        blockers.append("delivery_task_decision_not_admitted")
         return (
             None,
             None,
@@ -1400,17 +1552,34 @@ def convert_item(sources, item_id):
             "primary": primarytype or attrs.get("weapontype") or family_profile,
         },
     }
-    # No admitted Oteryn Delivery Task adoption rule exists yet: pool membership is
-    # upstream evidence, not an authoring decision, so the emitted Item never carries
-    # `delivery_task_eligible`. The report keeps that evidence separate and unresolved.
+    # `RULE_ID`: eligible iff the Crystal id sharing this Item's allocator key is a
+    # member of the pinned Crystal delivery list, unless a per-item override applies.
+    # This engine's own pool membership is kept as observation only; it never decides.
     is_pool_member = item_id in sources["delivery_member_ids"]
+    override = sources["delivery_overrides"].get(key)
+    if override is not None:
+        decision = {
+            "rule": RULE_ID,
+            "basis": "override",
+            "eligible": override["eligible"],
+            "reason": override["reason"],
+        }
+    else:
+        crystal_list_member = item_id in sources["crystal_list_ids"]
+        decision = {
+            "rule": RULE_ID,
+            "basis": (
+                "crystal_list_member"
+                if crystal_list_member
+                else "crystal_list_non_member"
+            ),
+            "eligible": crystal_list_member,
+        }
     delivery_task_report = {
-        "source": sources["delivery_source"],
-        "member": is_pool_member,
-        "proposal": is_pool_member,
-        "decision": "unresolved",
+        "observation": {"source": sources["delivery_source"], "member": is_pool_member},
+        "decision": decision,
     }
-    blockers.append("delivery_task_decision_not_admitted")
+    item["delivery_task_eligible"] = decision["eligible"]
 
     dependencies = {
         "definitions": [],
@@ -1744,8 +1913,26 @@ if __name__ == "__main__":
     parser.add_argument("--engine", choices=sorted(ENGINES), required=True)
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--id", type=int, required=True)
+    parser.add_argument(
+        "--rule-source",
+        type=Path,
+        help=(
+            "pinned Crystal checkout the Delivery Task rule reads its delivery list "
+            "from; required for --engine canary, ignored for --engine crystal"
+        ),
+    )
+    parser.add_argument(
+        "--overrides",
+        type=Path,
+        help="delivery-task-overrides.json to use instead of the committed one",
+    )
     cli_args = parser.parse_args()
-    cli_sources = load_engine_sources(cli_args.engine, cli_args.source)
+    cli_sources = load_engine_sources(
+        cli_args.engine,
+        cli_args.source,
+        rule_source=cli_args.rule_source,
+        overrides_path=cli_args.overrides,
+    )
     cli_item, cli_dependencies, cli_report = convert_item(cli_sources, cli_args.id)
     print(
         json.dumps(

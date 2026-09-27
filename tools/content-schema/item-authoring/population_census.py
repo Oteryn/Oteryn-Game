@@ -7,15 +7,17 @@ and writes one deterministic, size-bounded JSON summary (`samples/population-<en
 only counters, top blockers/validator errors (each capped at 5 example keys) and per-raw-
 field coverage.
 
-No admitted Delivery Task adoption rule exists yet, so the emitted bundle never carries
-`delivery_task_eligible`; each item's schema/semantic validation instead runs against a
-throwaway copy with that field set to the engine's own pool-membership proposal, so every
-other rule is still exercised without the bundle itself asserting an unresolved decision.
-Outcome counters: `blocked` covers any residual blocker other than
+The owner-approved `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` rule (`engine_items.RULE_ID`)
+decides `delivery_task_eligible` for every converted item with a CW2 B1 allocator key, so
+the emitted bundle now carries the real field and is validated as-is (no throwaway copy).
+A Canary run additionally requires `--rule-source <crystal checkout>` so the rule can read
+the pinned Crystal delivery list; `engine_items.load_engine_sources` refuses to run
+without it. Outcome counters: `blocked` covers any residual blocker other than
 `sprite_atlas_not_admitted`/`delivery_task_decision_not_admitted`; `pending_author_decision`
-covers items whose only residual blockers are those two; `fully_resolved` (no residual
-blocker but `sprite_atlas_not_admitted`) is therefore currently always 0, since every item
-carries the unresolved Delivery Task decision blocker.
+covers items whose only residual blockers are those two (in practice this is now only an
+item whose Delivery Task decision was for some reason not admitted, since the rule
+otherwise decides every keyed item); `fully_resolved` covers items with no residual
+blocker but `sprite_atlas_not_admitted`.
 
 `--self-check` runs fixed, engine-specific assertions (both engines are required, never
 skipped). `--check` regenerates the census in memory and diffs it against the committed
@@ -36,6 +38,7 @@ from engine_items import (
     ENGINES,
     IMPLEMENTED_FIELDS,
     ROUTED_STATUSES,
+    RULE_ID,
     convert_item,
     load_engine_sources,
 )
@@ -83,19 +86,20 @@ def field_coverage_table(disposition, field_items):
     return table
 
 
-def validate_with_delivery_proposal(item, dependencies, report):
-    """Validate a copy carrying the engine's own proposal, never the emitted bundle."""
-    candidate = dict(item)
-    candidate["delivery_task_eligible"] = report["delivery_task"]["proposal"]
-    return validate_item.validate(candidate, dependencies)
-
-
 def assert_ids_convert_and_validate(sources, item_ids):
+    """These ids are also the six committed real examples: the rule must decide the
+    same way as those examples' own `false` / `crystal_list_non_member` decision."""
     for item_id in item_ids:
         item, dependencies, report = convert_item(sources, item_id)
         assert item is not None, (item_id, report)
-        assert "delivery_task_eligible" not in item, item_id
-        errors, _warnings = validate_with_delivery_proposal(item, dependencies, report)
+        decision = report["delivery_task"]["decision"]
+        assert item["delivery_task_eligible"] == decision["eligible"], item_id
+        assert decision == {
+            "rule": RULE_ID,
+            "basis": "crystal_list_non_member",
+            "eligible": False,
+        }, (item_id, decision)
+        errors, _warnings = validate_item.validate(item, dependencies)
         assert not errors, (item_id, errors)
 
 
@@ -113,11 +117,22 @@ def self_check(sources, engine):
 
     if engine == "canary":
         _, _, member_report = convert_item(sources, CANARY_KNOWN_DELIVERY_MEMBER_ID)
-        assert member_report["delivery_task"]["member"] is True, member_report
+        observation = member_report["delivery_task"]["observation"]
+        assert observation["member"] is True, member_report
+        # The Canary Task Board pool is observation only: it never decides. This id is
+        # a Canary weeklyItems member but not a Crystal delivery-list member, so the
+        # rule's decision must still be `false` / `crystal_list_non_member`.
+        assert member_report["delivery_task"]["decision"] == {
+            "rule": RULE_ID,
+            "basis": "crystal_list_non_member",
+            "eligible": False,
+        }, member_report
         _, _, non_member_report = convert_item(
             sources, CANARY_KNOWN_DELIVERY_NON_MEMBER_ID
         )
-        assert non_member_report["delivery_task"]["member"] is False, non_member_report
+        assert non_member_report["delivery_task"]["observation"]["member"] is False, (
+            non_member_report
+        )
         assert_ids_convert_and_validate(sources, SELF_CHECK_IDS)
         print(
             json.dumps(
@@ -137,6 +152,12 @@ def self_check(sources, engine):
 
     if engine == "crystal":
         assert CRYSTAL_KNOWN_DELIVERY_MEMBER_ID in sources["delivery_member_ids"]
+        _, _, member_report = convert_item(sources, CRYSTAL_KNOWN_DELIVERY_MEMBER_ID)
+        assert member_report["delivery_task"]["decision"] == {
+            "rule": RULE_ID,
+            "basis": "crystal_list_member",
+            "eligible": True,
+        }, member_report
         assert_ids_convert_and_validate(sources, SELF_CHECK_IDS)
         print(
             json.dumps(
@@ -157,7 +178,10 @@ def build_census(sources, engine, bundles_dir=None):
     outcome = Counter()
     by_profile = Counter()
     identity_basis_counts = Counter()
-    delivery_counts = Counter()
+    delivery_observation_counts = Counter()
+    delivery_decision_counts = Counter()
+    delivery_override_items = 0
+    crystal_list_in_items_xml_not_converted = 0
     blocker_counts = Counter()
     blocker_examples = defaultdict(list)
     validator_error_counts = Counter()
@@ -177,6 +201,8 @@ def build_census(sources, engine, bundles_dir=None):
 
         if not report["converted"]:
             outcome["not_converted"] += 1
+            if item_id in sources["crystal_list_ids"]:
+                crystal_list_in_items_xml_not_converted += 1
             for blocker in report["blockers"]:
                 blocker_counts[blocker] += 1
                 if len(blocker_examples[blocker]) < 5 and report.get("key"):
@@ -184,8 +210,12 @@ def build_census(sources, engine, bundles_dir=None):
             continue
 
         key = report["key"]
-        delivery_counts[report["delivery_task"]["member"]] += 1
-        errors, _warnings = validate_with_delivery_proposal(item, dependencies, report)
+        delivery_task = report["delivery_task"]
+        delivery_observation_counts[delivery_task["observation"]["member"]] += 1
+        delivery_decision_counts[delivery_task["decision"]["eligible"]] += 1
+        if delivery_task["decision"]["basis"] == "override":
+            delivery_override_items += 1
+        errors, _warnings = validate_item.validate(item, dependencies)
         if errors:
             outcome["structure_invalid"] += 1
             for error in errors:
@@ -241,9 +271,25 @@ def build_census(sources, engine, bundles_dir=None):
         "by_profile": dict(sorted(by_profile.items())),
         "identity_basis": dict(sorted(identity_basis_counts.items())),
         "delivery_task": {
-            "source": sources["delivery_source"],
-            "member": delivery_counts[True],
-            "not_member": delivery_counts[False],
+            "observation": {
+                "source": sources["delivery_source"],
+                "member": delivery_observation_counts[True],
+                "not_member": delivery_observation_counts[False],
+            },
+            "decision": {
+                "rule": RULE_ID,
+                "eligible_true": delivery_decision_counts[True],
+                "eligible_false": delivery_decision_counts[False],
+                "override": delivery_override_items,
+            },
+            "crystal_list": {
+                "entries": sources["crystal_list_entries"],
+                "unique": len(sources["crystal_list_ids"]),
+                "not_in_items_xml": sorted(
+                    sources["crystal_list_ids"] - set(sources["items"])
+                ),
+                "in_items_xml_not_converted": crystal_list_in_items_xml_not_converted,
+            },
         },
         "blockers_by_item_count": [
             {"blocker": blocker, "items": count, "examples": blocker_examples[blocker]}
@@ -288,9 +334,27 @@ def main():
             "samples file; exits 1 on drift and never writes"
         ),
     )
+    parser.add_argument(
+        "--rule-source",
+        type=Path,
+        help=(
+            "pinned Crystal checkout the Delivery Task rule reads its delivery list "
+            "from; required for --engine canary, ignored for --engine crystal"
+        ),
+    )
+    parser.add_argument(
+        "--overrides",
+        type=Path,
+        help="delivery-task-overrides.json to use instead of the committed one",
+    )
     args = parser.parse_args()
 
-    sources = load_engine_sources(args.engine, args.source)
+    sources = load_engine_sources(
+        args.engine,
+        args.source,
+        rule_source=args.rule_source,
+        overrides_path=args.overrides,
+    )
     out_path = args.out or ROOT / "samples" / DEFAULT_SAMPLE_NAMES[args.engine]
 
     result, _bundles = build_census(sources, args.engine, bundles_dir=args.bundles)

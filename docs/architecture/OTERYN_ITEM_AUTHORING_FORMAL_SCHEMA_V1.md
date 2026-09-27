@@ -390,15 +390,22 @@ exact TibiaWiki binding exists. This is provenance for the census, not a G4 bind
 |---|---|---|
 | entries | 38,157 | 37,527 |
 | validator errors | 0 | 0 |
-| valid, pending only author decisions (sprite atlas, Delivery Task) | 2,521 | 2,481 |
+| valid, only the sprite atlas pending | 2,521 | 2,481 |
 | valid, other blockers | 9,465 | 9,125 |
 | no family profile (not converted) | 26,171 | 25,921 |
 
-Candidate bundles never carry `delivery_task_eligible`: the census records each
-engine's own pool as an observation (`crystal_delivery_list`, 382 members; Canary Task
-Board `weeklyItems`, 9 members) with the proposal and `decision: unresolved`, and every
-bundle keeps the `delivery_task_decision_not_admitted` blocker until an Oteryn adoption
-rule or per-item decision exists. Text artifacts are digested as Git blob bytes (CRLF
+`delivery_task_eligible` follows the owner-approved authoring rule
+`ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5`: an Item is eligible iff its allocator id is on the
+digest-pinned Crystal delivery list at `ff7ede5`, unless
+`tools/content-schema/item-authoring/delivery-task-overrides.json` records a per-Item
+exception with a reason (strictly validated, currently empty). Canary runs read that same
+list through a required `--rule-source` Crystal checkout. Each engine's own pool stays a
+separate observation and never decides: Canary Task Board `weeklyItems` has 9 converted
+members, and its id 3031 is a member there but ineligible under the rule. The list has 436
+unique ids. At Crystal, 382 are converted and eligible, 53 are in `items.xml` but have no
+family profile (mostly creature products), and 43848 is absent from `items.xml`. At Canary,
+362 are eligible. An entry with no allocator key gets no decision and keeps
+`delivery_task_decision_not_admitted`. Text artifacts are digested as Git blob bytes (CRLF
 normalized to LF); `appearances.dat` is digested raw, so LF and CRLF checkouts give
 identical censuses. `--check` fails on any drift from the committed census.
 

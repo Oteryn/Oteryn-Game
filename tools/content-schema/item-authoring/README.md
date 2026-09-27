@@ -27,9 +27,10 @@ Architecture and boundaries:
 | `templates/*.json` | Thirteen valid starting points for materially different authoring shapes. |
 | `validate_item.py` | Structural, semantic, exact-reference and import-readiness validation. |
 | `verify_formal_schema.py` | Focused positive/negative contract checks and deterministic fixtures. |
-| `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding, each engine's own Delivery Task pool evidence. Digest-verifies every input artifact first (text artifacts after CRLF->LF normalization, `appearances.dat` as exact raw bytes); a missing pinned artifact is a hard error. |
-| `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every bundle (including the Delivery Task field as a throwaway proposal, never emitted), and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage, Delivery Task counts). `--self-check` runs required engine-specific assertions for both engines; `--check` diffs an in-memory regeneration against the committed file instead of writing. |
-| `test_engine_items.py` | Fixture-checkout tests for `engine_items`/`population_census`: LF/CRLF digest portability, per-engine Delivery Task pool parsing and evidence/decision separation. Run with `python test_engine_items.py`. |
+| `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding, and the `delivery_task_eligible` decision from the `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` authoring rule. Digest-verifies every input artifact first (text artifacts after CRLF->LF normalization, `appearances.dat` as exact raw bytes); a missing pinned artifact is a hard error. |
+| `delivery-task-overrides.json` | Per-Item exceptions to the Delivery Task adoption rule (`{key: {eligible, reason}}`), strictly validated; starts empty. |
+| `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every emitted bundle (the real `delivery_task_eligible` decision, not a proposal), and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage, Delivery Task decision/observation/crystal-list counts). `--self-check` runs required engine-specific assertions for both engines; `--check` diffs an in-memory regeneration against the committed file instead of writing. |
+| `test_engine_items.py` | Fixture-checkout tests for `engine_items`/`population_census`: LF/CRLF digest portability, per-engine Delivery Task pool parsing, the Crystal-list adoption rule and its per-item overrides. Run with `python test_engine_items.py`. |
 | `samples/population-crystal-ff7ede5.json`, `samples/population-canary-47dfd51f.json` | Committed census outputs for the two pinned engine revisions. |
 
 The profiles are guidance inside one schema. Missing a common capability produces a
@@ -52,16 +53,16 @@ The whole-population census needs the pinned upstream checkouts and stays a loca
 
 Engine population census (pinned Crystal/Canary checkouts, digests verified before read
 on both LF and CRLF checkouts; Crystal also needs its existing delivery list, Canary
-needs the `weeklyItems` table in `data/modules/scripts/taskboard/settings.lua`; neither
-engine's Delivery Task pool evidence makes it into the emitted `delivery_task_eligible`
-field, which no candidate bundle carries):
+needs the `weeklyItems` table in `data/modules/scripts/taskboard/settings.lua`, plus a
+`--rule-source` Crystal checkout for the Delivery Task rule below):
 
 ```text
 python population_census.py --engine crystal --source /path/to/crystalserver --self-check
-python population_census.py --engine canary --source /path/to/canary --self-check
+python population_census.py --engine canary --source /path/to/canary --rule-source /path/to/crystalserver --self-check
 python population_census.py --engine crystal --source /path/to/crystalserver --check
-python population_census.py --engine canary --source /path/to/canary --check
+python population_census.py --engine canary --source /path/to/canary --rule-source /path/to/crystalserver --check
 python engine_items.py --engine crystal --source /path/to/crystalserver --id 3288
+python engine_items.py --engine canary --source /path/to/canary --rule-source /path/to/crystalserver --id 3031
 python test_engine_items.py
 ```
 
@@ -113,7 +114,50 @@ rotation, task assignment, delivery state, rewards or reset data. Those concerns
 with the future task/ruleset system, and this authoring field does not claim that a
 runtime consumer already exists. The six real-source examples currently use `false`
 as an explicit Oteryn author decision rather than presenting it as a Wiki-derived
-Global Tibia fact.
+Global Tibia fact; the converter's `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` rule (below)
+independently reaches the same `false` decision for all six.
+
+### Delivery Task eligibility rule
+
+`engine_items.convert_item` decides `delivery_task_eligible` for every converted Item
+under the owner-approved authoring rule `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5`
+(`engine_items.RULE_ID`): an Item is eligible iff the Crystal id sharing its CW2 B1
+allocator key is a member of the digest-pinned Crystal delivery list
+(`data/scripts/lib/task_board_delivery_items.lua`) at
+`ff7ede593c69d4c658b382c97443e8155926924a`, unless `delivery-task-overrides.json`
+records an explicit per-Item exception. This is an Oteryn authoring decision applied to
+Crystal-list evidence, not an engine fact.
+
+Both engines already share one numeric item-id space through the CW2 B1 allocator (the
+same `item_id` that resolves identity also resolves the rule), so a Crystal run reads the
+list as its own pinned Delivery Task pool and a Canary run reads it through a required
+`--rule-source <crystal checkout>` (see the CLI examples above); a Canary run started
+without one is a hard error, never a silent "nothing is eligible". Each engine's *own*
+Delivery Task pool (Crystal's delivery list; Canary's `weeklyItems` table) remains
+separate upstream *observation* and never decides eligibility by itself — a Canary item
+can be a `weeklyItems` member while the rule still finds it ineligible, because it is not
+a Crystal-list member. The per-item conversion report keeps both apart:
+
+```json
+"delivery_task": {
+  "observation": {"source": "canary_task_board_weekly_items", "member": true},
+  "decision": {
+    "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5",
+    "basis": "crystal_list_non_member",
+    "eligible": false
+  }
+}
+```
+
+`basis` is `crystal_list_member`, `crystal_list_non_member`, or `override` (with a
+`reason`) when `delivery-task-overrides.json` names that Item key. The overrides file is
+`{"schema": "OTERYN_ITEM_DELIVERY_TASK_OVERRIDES/v1", "rule": "<RULE_ID>", "overrides":
+{"<item key>": {"eligible": <bool>, "reason": "<non-empty string>"}}}`; it starts empty,
+is validated strictly (unknown keys, wrong types, or an override for an Item key the CW2
+B1 allocator never assigned all fail), and `--overrides <path>` on either CLI substitutes
+it for testing. An Item with no CW2 B1 allocator key gets no decision at all: it keeps
+the `identity_not_in_b1_catalog` and `delivery_task_decision_not_admitted` blockers and
+never converts, so it never carries `delivery_task_eligible`.
 
 The BR profile is pinned to stable source `424807`; the Fandom profile is pinned to
 historical revision `1035268` and its revision SHA-1. Per-capture SHA-256 remains a

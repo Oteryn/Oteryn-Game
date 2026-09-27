@@ -197,8 +197,9 @@ Accepted review repairs:
   proficiency crosswalk, evidence/route/extraction proofs) repaired in v3; 517daa6b
   review (leaf partition, crashes, date-time/digests, Canary bags.xml, unbound key)
   repaired in v4; audit `AUDIT_2026-09-27.md` of 56a39d15 (F-01..F-07: Delivery Task
-  evidence vs decision, CRLF digests, package CI, Ruff pin, census self-check) being
-  repaired on the PR head
+  evidence vs decision, CRLF digests, package CI, Ruff pin, census self-check) repaired;
+  owner adopted Delivery Task rule `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` with per-Item
+  overrides (2026-09-27)
 - verdict: implementation repaired; fresh exact-head final review remains pending
 
 ## PR and closeout
