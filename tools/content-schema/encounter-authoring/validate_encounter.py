@@ -126,6 +126,11 @@ def semantic(e, catalog):
                 need('anchor', action['anchor'], anchors, at)
                 if (action['operation'] == 'transform') != ('into' in action):
                     errors.append(f'{at}: map_item transform needs into, create/remove forbid it')
+                for field in ('destination', 'revert_destination'):
+                    if field in action:
+                        need('anchor', action[field], anchors, at)
+                if 'revert_destination' in action and 'revert_after_ms' not in action:
+                    errors.append(f'{at}: revert_destination needs revert_after_ms')
             if ak == 'counter':
                 need('counter', action['counter'], counters, at)
             if ak == 'flag':

@@ -84,6 +84,11 @@ case('map_item create forbids into', rule([{'kind': 'map_item', 'operation': 'cr
                                             'into': ref('Item', 'vortex'), 'anchor': 'exit'}]))
 case('timed map item accepted', rule([{'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'), 'anchor': 'exit',
                                        'revert_after_ms': 60000}]), True)
+case('teleporter with destinations accepted', rule([{'kind': 'map_item', 'operation': 'transform', 'item': ref('Item', 'vortex'),
+                                                    'into': ref('Item', 'vortex'), 'anchor': 'exit', 'destination': 'exit',
+                                                    'revert_after_ms': 60000, 'revert_destination': 'exit'}]), True)
+case('revert destination needs a revert time', rule([{'kind': 'map_item', 'operation': 'transform', 'item': ref('Item', 'vortex'),
+                                                      'into': ref('Item', 'vortex'), 'anchor': 'exit', 'revert_destination': 'exit'}]))
 case('remove needs exactly one target', rule([{'kind': 'remove', 'role': 'boss', 'all_in': 'arena'}]))
 case('spawn a new role accepted', rule([{'kind': 'spawn', 'creature': ref('Creature', 'add'), 'role': 'adds', 'count': 2,
                                          'at': {'random_in': 'arena'}, 'owner': 'none', 'health': 'full'}]), True)

@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 263,
-    "fully_resolved": 1387,
+    "blocked": 261,
+    "fully_resolved": 1389,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1050
+    "wiki_adopted_monsters": 1052
   },
   "wiki_adopted_rows": {
     "Loot2": 11595,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 198,
+      "monsters": 190,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -1508,6 +1508,7 @@
     "tame_terror_bird",
     "tanjis",
     "tarantula",
+    "tarbaz",
     "tarnished_spirit",
     "tazhadur",
     "teleskor",
@@ -1551,6 +1552,7 @@
     "the_imperor",
     "the_keeper",
     "the_last_lore_keeper",
+    "the_lord_of_the_lice",
     "the_many",
     "the_masked_marauder",
     "the_mutated_pumpkin",

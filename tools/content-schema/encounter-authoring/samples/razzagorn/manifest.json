@@ -1,0 +1,114 @@
+{
+  "encounter": "canary:encounter/razzagorn",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "AscendantBossesDeath": [
+      "canary:creature/razzagorn"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/ferumbras_ascension/bosses/razzagorn.lua",
+      "blob_sha1": "f95b0b6909333dc36748a112764e12b207203899"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "2c9515d9786c140168dd4af255961cf7ab3f6ac2"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Razzagorn is the razzagorn participant; its file registers AscendantBossesDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        97,
+        109,
+        110,
+        111,
+        112,
+        113,
+        26
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"Razzagorn\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets FerumbrasAscension.RazzagornTimer to now + 44 h and tells the player when the boss can be fought again.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "The teleporter item 1949 on the teleport position becomes 22761 with a thunder effect and leads to the Godbreaker; after 60 s revertTeleport turns it back into 1949 leading to (33319, 32318, 13).",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        27,
+        28
+      ],
+      "status": "mapped",
+      "resolution": "teleportPos and godbreakerPos become the exit_teleporter and godbreaker anchors (bound by the map project).",
+      "destination": "/encounter/anchors"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "razzagorn_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U10_90.FerumbrasAscension.RazzagornTimer",
+        "cooldown_seconds": 158400,
+        "message": "You have defeated <boss>. You can challenge this boss again in <cooldown>."
+      }
+    }
+  ]
+}

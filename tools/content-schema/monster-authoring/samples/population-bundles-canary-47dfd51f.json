@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1387,
+  "bundles": 1389,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -1176,6 +1176,7 @@
     {"monster":"tame_terror_bird","file":"birds/tame_terror_bird","sha256":"01438f40d10eeb1318136bf1564e464d94c03b72e61034e7bf80e1aa410c925e"},
     {"monster":"tanjis","file":"quests/liquid_black/tanjis","sha256":"498eda380299b25638ab755dfb5d728fa380e33aa8d05e207ede6ae1822a0fcf"},
     {"monster":"tarantula","file":"vermins/tarantula","sha256":"86dae4e63f3f285b3621fc4c1b352bfbe455ecded29a6e5707c0295a27cf7b62"},
+    {"monster":"tarbaz","file":"quests/ferumbras_ascension/bosses/tarbaz","sha256":"cda4ab15a5d8dee3eddfad51842215958f6fe0cbcc084ccb1e002091b77461ca"},
     {"monster":"tarnished_spirit","file":"undeads/tarnished_spirit","sha256":"28ed961ee2c2d2c3235b4ac8a19c5d20b797c6b01b865fc037420636b273de4a"},
     {"monster":"tazhadur","file":"quests/the_first_dragon/bosses/tazhadur","sha256":"23c5256523b51eff14cb53f5c1106592fcc318538cbb934ba2cd43d700c97705"},
     {"monster":"teleskor","file":"bosses/teleskor","sha256":"94e15abc72b134f0402efea76656789d0af6826a81964513bd6402922706bd2d"},
@@ -1219,6 +1220,7 @@
     {"monster":"the_imperor","file":"quests/pits_of_inferno/the_imperor","sha256":"662cdbad0b6d4469a77e34a08a2e0eba537ea5115205bc4d21425cec502adb18"},
     {"monster":"the_keeper","file":"quests/wrath_of_the_emperor/the_keeper","sha256":"3cf77fd69752c7ce633bc3ec9aaaefb0211c460e57b626b146a2587697a1f406"},
     {"monster":"the_last_lore_keeper","file":"quests/forgotten_knowledge/bosses/the_last_lore_keeper","sha256":"b517040a142ca7df50806f2465911957794a89b6e3e987e9286735d8d94394ed"},
+    {"monster":"the_lord_of_the_lice","file":"quests/ferumbras_ascension/bosses/the_lord_of_the_lice","sha256":"87cb74d216a32562726d76407bd53e224d7dadcbbd721669979162f9dec7f2d6"},
     {"monster":"the_many","file":"quests/killing_in_the_name_of/the_many","sha256":"059d4037a0f4f9dd6325d66d80975f61624737baa0a4e8c3607fc688a2e449fa"},
     {"monster":"the_masked_marauder","file":"quests/svargrond_arena/warlord/the_masked_marauder","sha256":"7c2bc7b64c42ca8d241ed75047142653a63e4152e8b20665276ef3e81cda6636"},
     {"monster":"the_mutated_pumpkin","file":"event_creatures/the_mutated_pumpkin","sha256":"487a7ac5bdf7017c2d134fb48d8edc341c525487a9770fb1f97113a8c0eb3e79"},

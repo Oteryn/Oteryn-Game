@@ -288,12 +288,73 @@ def forgotten_knowledge(build):
                 'effect in this event.')
 
 
+ASCENDANT_KILL = 'data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua'
+# boss, config first line, storage, cooldown hours, teleport position, godbreaker position
+ASCENDANT_BOSSES = [
+    ('The Lord of the Lice', 2, 'TheLordOfTheLiceTimer', 44, (33226, 31478, 12), (33237, 31477, 13)),
+    ('Tarbaz', 8, 'TarbazTimer', 44, (33460, 32853, 11), (33427, 32852, 13)),
+    ('Ragiaz', 14, 'RagiazTimer', 44, (33482, 32345, 13), (33466, 32392, 13)),
+    ('Plagirath', 20, 'PlagirathTimer', 44, (33174, 31511, 13), (33204, 31510, 13)),
+    ('Razzagorn', 26, 'RazzagornTimer', 44, (33413, 32467, 14), (33357, 32440, 13)),
+    ('Zamulosh', 32, 'ZamuloshTimer', 44, (33644, 32764, 11), (33678, 32758, 13)),
+    ('Mazoran', 38, 'MazoranTimer', 44, (33585, 32699, 14), (33614, 32679, 15)),
+    ('Shulgrax', 44, 'ShulgraxTimer', 44, (33486, 32796, 13), (33459, 32820, 14)),
+    ('Ferumbras Mortal Shell', 50, 'FerumbrasMortalShellTimer', 332, (33392, 31485, 14), (33388, 31414, 14))]
+
+
+def ascendant(build):
+    """AscendantBossesDeath: kill outcomes with cooldowns, and the boss-room teleporter that opens to the Godbreaker for one
+    minute. The Ferumbras Mortal Shell crystal reset (quest-wide storages and fixed crystal items) stays unresolved."""
+    event = 'AscendantBossesDeath'
+    for boss, line, storage, hours, teleport, godbreaker in ASCENDANT_BOSSES:
+        name = slug(boss)
+        item = build.get(name, f'Ferumbras Ascension: {boss}', 'instance_per_party')
+        role = name
+        build.participant(item, role, boss, event if boss != 'Ferumbras Mortal Shell' else None)
+        outcome = f'{role}_defeated'
+        item['encounter']['outcomes'].append(outcome)
+        anchors = item['encounter']['anchors']
+        anchors += [{'key': 'exit_teleporter', 'kind': 'point', 'description': f'Boss-room teleporter; Canary {teleport}.'},
+                    {'key': 'godbreaker', 'kind': 'point', 'description': f'Godbreaker destination; Canary {godbreaker}.'},
+                    {'key': 'ascendant_exit', 'kind': 'point', 'description': 'Default teleporter destination; Canary (33319, 32318, 13).'}]
+        closed, opened = ref('Item', 'canary:item/1949'), ref('Item', 'canary:item/22761')
+        build.define(item, closed)
+        build.define(item, opened)
+        path = build.rule(item, {
+            'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+            'actions': [{'kind': 'emit_outcome', 'outcome': outcome, 'credited': 'damage_contributors'},
+                        {'kind': 'map_item', 'operation': 'transform', 'item': closed, 'into': opened, 'anchor': 'exit_teleporter',
+                         'destination': 'godbreaker', 'effect': 'canary.appearance:effect/thunder', 'revert_after_ms': 60000,
+                         'revert_destination': 'ascendant_exit'}]})
+        build.entry(item, ASCENDANT_KILL, [97, 109, 110, 111, 112, 113, line], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss}".')
+        build.entry(item, ASCENDANT_KILL, [115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125], 'mapped', path + '/actions/0',
+                    f'onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets '
+                    f'FerumbrasAscension.{storage} to now + {hours} h and tells the player when the boss can be fought again.')
+        build.entry(item, ASCENDANT_KILL, [128, 129, 130, 131, 132, 133, 134, 135, 89, 90, 91, 92, 93, 94, 95], 'mapped',
+                    path + '/actions/1',
+                    'The teleporter item 1949 on the teleport position becomes 22761 with a thunder effect and leads to the '
+                    'Godbreaker; after 60 s revertTeleport turns it back into 1949 leading to (33319, 32318, 13).')
+        build.entry(item, ASCENDANT_KILL, [line + 1, line + 2], 'mapped', '/encounter/anchors',
+                    'teleportPos and godbreakerPos become the exit_teleporter and godbreaker anchors (bound by the map project).')
+        item['manifest']['outcome_evidence'].append({
+            'outcome': outcome, 'credited': 'damage_contributors',
+            'reward_domain': {'canary_storage': f'Storage.Quest.U10_90.FerumbrasAscension.{storage}', 'cooldown_seconds': hours * 3600,
+                              'message': 'You have defeated <boss>. You can challenge this boss again in <cooldown>.'}})
+    shell = build.items['ferumbras_mortal_shell']
+    build.entry(shell, ASCENDANT_KILL, list(range(58, 88)) + list(range(137, 148)), 'unresolved_semantics', None,
+                'Two minutes after the kill, for each damaging player, the eight Ferumbras crystals are reset: quest-wide global '
+                'storages and each player\'s storage go to 0 and crystal items 14961 on fixed tiles turn into 14955. This is '
+                'quest-wide state shared by all parties (D27 quest domain) acting on fixed map items; it needs a quest-domain '
+                'outcome contract first.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant):
         transcribe(build)
     print(json.dumps(build.write()))
 
