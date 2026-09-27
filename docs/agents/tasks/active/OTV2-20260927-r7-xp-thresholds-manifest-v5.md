@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/r7-xp-thresholds-manifest-v5
 issue: 483
-pr: null
+pr: 1019
 base_sha: 1a2f28ff67156462de78effb6003f9c4b19f301a
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: R7_XP_THRESHOLDS_MANIFEST_V5
 created_at: 2026-09-27T19:35:40Z
-updated_at: 2026-09-27T19:35:40Z
+updated_at: 2026-09-27T19:41:09Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
