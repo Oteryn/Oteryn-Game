@@ -53,9 +53,9 @@ or persisted-recovery evidence is touched.
 
 ## Acceptance and evidence
 
-- `samples/promotion-candidates-v1.json`: 985 candidates (53 with travel, 189 routes, 17 wiki-decided
+- `samples/promotion-candidates-v1.json`: 984 candidates (53 with travel, 189 routes, 17 wiki-decided
   facts); held: 91 unplaced, 32 single-source not on the wiki, 7 definition conflicts, 6 placement
-  conflicts, 2 key collisions; 67 routes left out (46 gated). Deterministic.
+  conflicts, 2 key collisions, 1 empty slug; 67 routes left out (46 gated). Deterministic.
 - `validate_promotion.py` passes on the sample; `test_promotion.py` and `test_npc_authoring.py` pass.
 
 ## Next action

@@ -4,61 +4,6 @@
    "arbitration": [],
    "identity": {
     "family": "NPC",
-    "key": "oteryn:npc.",
-    "revision": "definition-r1"
-   },
-   "left_out": [],
-   "movement": {
-    "floor_change": false,
-    "walk_interval_ms": 1500,
-    "walk_radius": 2
-   },
-   "name": "...",
-   "placements": [
-    {
-     "direction": "NORTH",
-     "position": {
-      "x": 33449,
-      "y": 32805,
-      "z": 11
-     },
-     "spawn_interval_s": 60,
-     "spawn_radius": 1
-    }
-   ],
-   "presentation": {
-    "outfit": {
-     "addons": 0,
-     "body": 0,
-     "feet": 0,
-     "head": 0,
-     "legs": 0,
-     "look_type": 294,
-     "mount": null
-    },
-    "speech_bubble": "NORMAL"
-   },
-   "profession": "normal",
-   "provenance": {
-    "canary": {
-     "key": "canary:npc/...",
-     "sha256": "bd2d15e5a2fc341a0e1676009eac3e08d1c745709de0826e6f98e6c6e9ba7fbe"
-    },
-    "crystal": {
-     "key": "crystal:npc/...",
-     "sha256": "6a167beaed12476682af973eeb1d72a480753aa56d63d688244c49ebb75a130a"
-    }
-   },
-   "travel_service": null,
-   "wiki": {
-    "pageid": 87060,
-    "revid": 1116920
-   }
-  },
-  {
-   "arbitration": [],
-   "identity": {
-    "family": "NPC",
     "key": "oteryn:npc.a_bearded_woman",
     "revision": "definition-r1"
    },
@@ -57525,6 +57470,15 @@
    }
   },
   {
+   "detail": null,
+   "name": "...",
+   "reason": "EMPTY_SLUG",
+   "sources": {
+    "canary": "canary:npc/...",
+    "crystal": "crystal:npc/..."
+   }
+  },
+  {
    "detail": "oteryn:npc.harlow",
    "name": "Harlow",
    "reason": "KEY_COLLISION",
@@ -58637,8 +58591,9 @@
  "snapshot_sha256": "e8a040340f66036578cf275a37cd799ed11edb6e44fbadac2ddc20bdb8a9fb6f",
  "totals": {
   "arbitrated_facts": 17,
-  "candidates": 985,
+  "candidates": 984,
   "held:DEFINITION_CONFLICT": 7,
+  "held:EMPTY_SLUG": 1,
   "held:KEY_COLLISION": 2,
   "held:NOT_LOADABLE": 6,
   "held:PLACEMENT_CONFLICT_NO_WIKI_POSITION": 1,

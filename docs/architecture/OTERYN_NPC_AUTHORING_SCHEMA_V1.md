@@ -191,12 +191,13 @@ Result at this revision (deterministic; snapshot SHA-256 recorded):
 
 | Outcome | NPCs |
 | --- | ---: |
-| candidates | 985 (53 with a travel service, 189 routes; 17 facts decided by the wiki) |
+| candidates | 984 (53 with a travel service, 189 routes; 17 facts decided by the wiki) |
 | held: unplaced in both sources | 91 |
 | held: single source, not on the wiki | 32 |
 | held: definition conflict (outfit/movement) | 7 |
 | held: placement conflict the wiki cannot decide | 6 |
 | held: key collision (`Harlow` and `Harlow` trade variant) | 2 |
+| held: no slug (the NPC named `...`) | 1 |
 | not loadable in either source | 6 |
 
 67 routes are left out of candidates: 46 gated by Lua predicates, 15 conflicts the wiki cannot decide,

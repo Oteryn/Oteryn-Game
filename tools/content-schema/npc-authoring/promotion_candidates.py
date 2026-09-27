@@ -17,7 +17,7 @@ Merge rules:
 - a gated route (LUA_PREDICATE) is left out and reported;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
-  Two NPCs with the same slug are both held (D4).
+  Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
 
 Usage: python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles \
          --snapshot out/fandom/fandom-npc-snapshot.json --out samples/promotion-candidates-v1.json
@@ -155,6 +155,8 @@ class Builder:
         if not placements:
             return self.hold(name, sources, 'UNPLACED')
         key_slug = slug(name)
+        if not key_slug:  # a punctuation-only name has no slug; it needs a hand-chosen key
+            return self.hold(name, sources, 'EMPTY_SLUG')
         travel = self.merge_routes(bundles, wiki, arbitration, left_out)
         record = {
             'identity': {'family': 'NPC', 'key': f'oteryn:npc.{key_slug}', 'revision': 'definition-r1'},
