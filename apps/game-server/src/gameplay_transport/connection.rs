@@ -47,6 +47,41 @@ pub(crate) struct AdmittedSession {
     /// #935 first-entry positioning of `runtime_actor`. Only a positioned actor
     /// may later become input-eligible.
     pub(crate) first_entry: FirstEntryOutcome,
+    /// The admitted controller: the exact authenticated transport and the account whose
+    /// presence the session holds. Transport-only fixtures omit it.
+    pub(crate) controller: Option<ControllerBinding>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ControllerBinding {
+    pub(crate) transport: AuthenticatedTransportRefV1,
+    pub(crate) account_id: [u8; 16],
+}
+
+/// Outcome of turning an ended admitted connection into durable control loss.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ControlLossResult {
+    /// No controller binding, or the session is no longer this controller's.
+    NotApplicable,
+    /// The durable GameSession is RECONNECTABLE and the Channel owner mirrors the epoch.
+    Recorded,
+    /// Current authority refused the loss; nothing changed.
+    Refused,
+    /// The durable outcome could not be proven within the bounded reconciliation.
+    Unknown,
+}
+
+/// Outcome of the FND-04B §6 grace-expiry release of a recorded control loss.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GraceExpiryResult {
+    /// No controller binding, or the session is no longer a reconnectable loss
+    /// (resumed, replaced or already released by another owner).
+    NotApplicable,
+    /// The durable session is TERMINAL, its claims are released and the Channel
+    /// actor is removed.
+    Released,
+    /// The outcome could not be proven within the bounded attempts.
+    Unknown,
 }
 
 /// Outcome of #935 first-entry positioning for one admitted session.
@@ -99,6 +134,25 @@ pub(crate) trait FreshAdmissionAuthority {
         _direction: StepDirection,
     ) -> impl Future<Output = StepOutcome> {
         async { StepOutcome::rejected() }
+    }
+
+    /// After `wait` without restored control, record authoritative unexpected control loss
+    /// for the ended admitted connection (`DISCONNECT-PROTECTION-V1` §§1, 4).
+    fn lose_control(
+        &self,
+        _admitted: AdmittedSession,
+        _wait: std::time::Duration,
+    ) -> impl Future<Output = ControlLossResult> {
+        async { ControlLossResult::NotApplicable }
+    }
+
+    /// Once the original grace deadline of the recorded loss passes without resumed
+    /// control, terminally release the session and remove its Channel actor (FND-04B §6).
+    fn expire_control_loss(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = GraceExpiryResult> {
+        async { GraceExpiryResult::NotApplicable }
     }
 }
 
@@ -622,6 +676,7 @@ mod tests {
                 channel_id: ChannelId::decode(&CHANNEL).expect("channel"),
                 runtime_actor: None,
                 first_entry: FirstEntryOutcome::NotApplicable,
+                controller: None,
             })
         }
     }
@@ -795,6 +850,7 @@ mod tests {
             channel_id,
             runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
             first_entry: FirstEntryOutcome::Positioned,
+            controller: None,
         };
         let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 21);
         for frame in client_frames {
@@ -851,6 +907,7 @@ mod tests {
             channel_id,
             runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
             first_entry: FirstEntryOutcome::Positioned,
+            controller: None,
         })
     }
 
@@ -1073,6 +1130,10 @@ mod tests {
         );
         assert_eq!(row("FND04B-LIVENESS-COMBAT-PROBE-MS"), Some(1_000));
         assert_eq!(row("FND04B-LIVENESS-COMBAT-MISSED"), Some(2));
+        assert_eq!(
+            row("FND04B-SAME-SESSION-GRACE-S"),
+            u64::try_from(super::super::SAME_SESSION_GRACE_SECONDS).ok()
+        );
         Ok(())
     }
 
@@ -1185,6 +1246,7 @@ mod tests {
                 channel_id: ChannelId::decode(&CHANNEL)?,
                 runtime_actor: None,
                 first_entry: FirstEntryOutcome::NotApplicable,
+                controller: None,
             };
             assert_eq!(end, ConnectionEnd::AdmittedThenDisconnected(admitted));
             assert_eq!(authority.calls.get(), 1);
