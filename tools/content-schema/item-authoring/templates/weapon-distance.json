@@ -27,7 +27,7 @@
     "groups": []
   },
   "weapon": {
-    "weapon_type": "distance",
+    "weapon_type": "distance_launcher",
     "ammunition_kind": "arrow",
     "attack_modifier": 1,
     "hit_chance_modifier_percent": {
@@ -42,3 +42,4 @@
     "marketable": true
   }
 }
+
