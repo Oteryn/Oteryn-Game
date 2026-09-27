@@ -1,0 +1,558 @@
+{
+  "schema": "OTERYN_ITEM_AUTHORING_WIKI_FIELD_DISPOSITIONS/candidate-3",
+  "source_profile": "tibiawiki_br_infobox_item_424807_v1",
+  "authority": "CURRENT_FIELD_CENSUS_REFERENCE_ONLY",
+  "source_url": "https://www.tibiawiki.com.br/index.php?stableid=424807&title=Predefini%C3%A7%C3%A3o%3AInfobox_Item",
+  "revision": "stableid:424807",
+  "source": "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json",
+  "attrib_promotion_prefixes": [
+    "/item/light/",
+    "/item/use/",
+    "/item/lifecycle/",
+    "/item/presentation/",
+    "/item/stack/",
+    "/item/equipment/",
+    "/item/readable/",
+    "/item/temporal/"
+  ],
+  "fields": [
+    {
+      "source_field": "GetValue",
+      "disposition": "TEMPLATE_CONTROL",
+      "canonical_path": null,
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "List",
+      "disposition": "TEMPLATE_CONTROL",
+      "canonical_path": null,
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "DropList",
+      "disposition": "TEMPLATE_CONTROL",
+      "canonical_path": null,
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "hidetemplate",
+      "disposition": "TEMPLATE_CONTROL",
+      "canonical_path": null,
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "name",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "identity.name",
+      "allowed_destinations": [
+        "/item/display_name"
+      ]
+    },
+    {
+      "source_field": "mana",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "use.mana_cost",
+      "allowed_destinations": [
+        "/item/use/mana_cost"
+      ]
+    },
+    {
+      "source_field": "skillboost",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "modifiers.skill_boost",
+      "allowed_destinations": [
+        "/item/modifiers/skill_boost"
+      ]
+    },
+    {
+      "source_field": "resist",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "protection.resistances",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ]
+    },
+    {
+      "source_field": "modificadores",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "modifiers.misc",
+      "allowed_destinations": [
+        "/item/modifiers"
+      ]
+    },
+    {
+      "source_field": "volume",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "container.capacity",
+      "allowed_destinations": [
+        "/item/container/capacity"
+      ]
+    },
+    {
+      "source_field": "armor",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "protection.armor",
+      "allowed_destinations": [
+        "/item/protection/armor"
+      ]
+    },
+    {
+      "source_field": "attack",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.attack",
+      "allowed_destinations": [
+        "/item/weapon/attack"
+      ]
+    },
+    {
+      "source_field": "elementattack",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.elemental_attack",
+      "allowed_destinations": [
+        "/item/weapon/elemental_attack"
+      ]
+    },
+    {
+      "source_field": "range",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.range_cells",
+      "allowed_destinations": [
+        "/item/weapon/range_cells"
+      ]
+    },
+    {
+      "source_field": "hit",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.hit_chance",
+      "allowed_destinations": [
+        "/item/weapon/hit_chance_percent"
+      ]
+    },
+    {
+      "source_field": "defense",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.defense",
+      "allowed_destinations": [
+        "/item/weapon/defense"
+      ]
+    },
+    {
+      "source_field": "defensemod",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.extra_defense",
+      "allowed_destinations": [
+        "/item/weapon/extra_defense"
+      ]
+    },
+    {
+      "source_field": "charges",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "charges.count",
+      "allowed_destinations": [
+        "/item/charges/count"
+      ]
+    },
+    {
+      "source_field": "mantra",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "modifiers.mantra",
+      "allowed_destinations": [
+        "/item/modifiers/mantra"
+      ]
+    },
+    {
+      "source_field": "vocrequired",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "requirements.vocations",
+      "allowed_destinations": [
+        "/item/requirements/vocations",
+        "/item/equipment/patterns/*/vocations"
+      ]
+    },
+    {
+      "source_field": "levelrequired",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "requirements.min_level",
+      "allowed_destinations": [
+        "/item/requirements/min_level",
+        "/item/equipment/patterns/*/min_level"
+      ]
+    },
+    {
+      "source_field": "augments",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.augments",
+      "allowed_destinations": [
+        "/item/proficiency/augments"
+      ]
+    },
+    {
+      "source_field": "imbuement",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "imbuement.slot_count",
+      "allowed_destinations": [
+        "/item/imbuement/slot_count"
+      ]
+    },
+    {
+      "source_field": "classificacao",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "forge.classification",
+      "allowed_destinations": [
+        "/item/forge/classification"
+      ]
+    },
+    {
+      "source_field": "weight",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "physical.weight",
+      "allowed_destinations": [
+        "/item/physical/weight",
+        "/item/presentation/display_weight"
+      ],
+      "source_value_router": "signed_weight"
+    },
+    {
+      "source_field": "elemental_bond",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "modifiers.elemental_bond",
+      "allowed_destinations": [
+        "/item/modifiers/elemental_bond"
+      ]
+    },
+    {
+      "source_field": "flavortext",
+      "disposition": "PRESENTATION_EDITOR",
+      "canonical_path": "presentation.flavor_text",
+      "allowed_destinations": [
+        "/item/presentation/flavor_text"
+      ]
+    },
+    {
+      "source_field": "attrib",
+      "disposition": "SOURCE_TEXT_PRESERVE_AND_PARSE",
+      "canonical_path": "source_observations.attributes_text",
+      "allowed_destinations": [
+        "/item/source_observations/attributes_text"
+      ]
+    },
+    {
+      "source_field": "hands",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "equipment.hands",
+      "allowed_destinations": [
+        "/item/equipment/hands",
+        "/item/equipment/patterns/*/hands"
+      ]
+    },
+    {
+      "source_field": "enchantable",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "lifecycle.enchantable",
+      "allowed_destinations": [
+        "/item/lifecycle/enchantable"
+      ]
+    },
+    {
+      "source_field": "enchanted",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "lifecycle.enchanted_variant",
+      "allowed_destinations": [
+        "/item/lifecycle/enchanted_variant"
+      ]
+    },
+    {
+      "source_field": "stackable",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "stack.stackable",
+      "allowed_destinations": [
+        "/item/stack/stackable"
+      ]
+    },
+    {
+      "source_field": "duration",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "temporal.duration",
+      "allowed_destinations": [
+        "/item/temporal/duration_ms"
+      ]
+    },
+    {
+      "source_field": "damagetype",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "use.damage_type",
+      "allowed_destinations": [
+        "/item/use/damage_type"
+      ]
+    },
+    {
+      "source_field": "damage",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "use.damage",
+      "allowed_destinations": [
+        "/item/use/damage"
+      ]
+    },
+    {
+      "source_field": "destructible",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "lifecycle.destructible",
+      "allowed_destinations": [
+        "/item/lifecycle/destructible"
+      ]
+    },
+    {
+      "source_field": "writable",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "readable.writable",
+      "allowed_destinations": [
+        "/item/readable/writable",
+        "/item/readable/write_policy"
+      ]
+    },
+    {
+      "source_field": "readable",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "readable.readable",
+      "allowed_destinations": [
+        "/item/readable/readable"
+      ]
+    },
+    {
+      "source_field": "edible",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "consumable.edible",
+      "allowed_destinations": [
+        "/item/consumable/edible"
+      ]
+    },
+    {
+      "source_field": "sounds",
+      "disposition": "PRESENTATION_EDITOR",
+      "canonical_path": "presentation.sounds",
+      "allowed_destinations": [
+        "/item/presentation/sounds"
+      ]
+    },
+    {
+      "source_field": "droppedby",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.loot.creatures",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "droppedRaidby",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.loot.raids",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "droppedEventby",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.loot.events",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "taskitem",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.delivery_tasks",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "implemented",
+      "disposition": "PROVENANCE",
+      "canonical_path": "provenance.implemented_version",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "removed",
+      "disposition": "PROVENANCE",
+      "canonical_path": "provenance.removed_version",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "mercado",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "trade.marketable",
+      "allowed_destinations": [
+        "/item/trade/marketable"
+      ]
+    },
+    {
+      "source_field": "notes",
+      "disposition": "PRESENTATION_EDITOR",
+      "canonical_path": "editor.notes",
+      "allowed_destinations": [
+        "/item/editor/notes"
+      ]
+    },
+    {
+      "source_field": "perk1",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[1]",
+      "allowed_destinations": [
+        "/item/proficiency/levels/*/perks/*"
+      ]
+    },
+    {
+      "source_field": "perk2",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[2]",
+      "allowed_destinations": [
+        "/item/proficiency/levels/*/perks/*"
+      ]
+    },
+    {
+      "source_field": "perk3",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[3]",
+      "allowed_destinations": [
+        "/item/proficiency/levels/*/perks/*"
+      ]
+    },
+    {
+      "source_field": "perk4",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[4]",
+      "allowed_destinations": [
+        "/item/proficiency/levels/*/perks/*"
+      ]
+    },
+    {
+      "source_field": "perk5",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[5]",
+      "allowed_destinations": [
+        "/item/proficiency/levels/*/perks/*"
+      ]
+    },
+    {
+      "source_field": "perk6",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[6]",
+      "allowed_destinations": [
+        "/item/proficiency/levels/*/perks/*"
+      ]
+    },
+    {
+      "source_field": "perk7",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "proficiency.perks[7]",
+      "allowed_destinations": [
+        "/item/proficiency/levels/*/perks/*"
+      ]
+    },
+    {
+      "source_field": "regenseconds",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "consumable.regeneration_seconds",
+      "allowed_destinations": [
+        "/item/consumable/regeneration_seconds"
+      ]
+    },
+    {
+      "source_field": "dromevalue",
+      "disposition": "EXTERNAL_DOMAIN",
+      "canonical_path": "economy.drome_points",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "htaskvalue",
+      "disposition": "EXTERNAL_DOMAIN",
+      "canonical_path": "economy.hunting_task_points",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "storevalue",
+      "disposition": "EXTERNAL_DOMAIN",
+      "canonical_path": "platform.store_tibia_coins",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "tournamentvalue",
+      "disposition": "EXTERNAL_DOMAIN",
+      "canonical_path": "legacy.tournament_coins",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "buyfrom",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.services.sold_by",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "sellto",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.services.bought_by",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "primarytype",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "taxonomy.primary",
+      "allowed_destinations": [
+        "/item/taxonomy/primary"
+      ]
+    },
+    {
+      "source_field": "secondarytype",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "taxonomy.secondary",
+      "allowed_destinations": [
+        "/item/taxonomy/secondary"
+      ]
+    },
+    {
+      "source_field": "tertiarytype",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "taxonomy.tertiary",
+      "allowed_destinations": [
+        "/item/taxonomy/tertiary"
+      ]
+    },
+    {
+      "source_field": "itemclass",
+      "disposition": "ITEM_AUTHORING",
+      "canonical_path": "taxonomy.item_class",
+      "allowed_destinations": [
+        "/item/taxonomy/item_class"
+      ]
+    },
+    {
+      "source_field": "type",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "weapon.weapon_type",
+      "allowed_destinations": [
+        "/item/weapon/weapon_type"
+      ]
+    },
+    {
+      "source_field": "writechars",
+      "disposition": "ITEM_TYPED",
+      "canonical_path": "readable.max_characters",
+      "allowed_destinations": [
+        "/item/readable/max_characters"
+      ]
+    },
+    {
+      "source_field": "value",
+      "disposition": "PRESENTATION_EDITOR",
+      "canonical_path": "editor.estimated_value",
+      "allowed_destinations": [
+        "/item/editor/estimated_value"
+      ]
+    },
+    {
+      "source_field": "npcvalue",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.services.npc_buys_for",
+      "allowed_destinations": []
+    },
+    {
+      "source_field": "npcprice",
+      "disposition": "RELATIONSHIP",
+      "canonical_path": "relationships.services.npc_sells_for",
+      "allowed_destinations": []
+    }
+  ]
+}

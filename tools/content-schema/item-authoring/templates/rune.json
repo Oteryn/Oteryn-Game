@@ -1,0 +1,44 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.rune",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Rune",
+  "family_profile": "rune",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "rune",
+    "primary": "rune",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "stack": {
+    "stackable": true,
+    "max_count": 100
+  },
+  "requirements": {
+    "min_level": 1,
+    "min_magic_level": 1,
+    "vocations": [],
+    "enforcement_mode": "on_use"
+  },
+  "charges": {
+    "count": 1,
+    "show_count": true
+  },
+  "use": {
+    "usable": true,
+    "use_with": true
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}

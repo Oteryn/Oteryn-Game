@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:item-import-readiness:candidate:4",
+  "title": "Oteryn Item import readiness candidate v4",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      },
+      "minItems": 1
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      },
+      "minItems": 1
+    }
+  },
+  "required": [
+    "sources",
+    "entries"
+  ],
+  "$defs": {
+    "sourceField": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_field": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "source_locator",
+        "source_field"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "git",
+            "wiki",
+            "web",
+            "local"
+          ]
+        },
+        "source_profile": {
+          "enum": [
+            "tibiawiki_br_infobox_item_424807_v1",
+            "tibia_fandom_merge_items_objects_1035268_v1",
+            "tibiawiki_br_real_item_pages_20260927_v1",
+            "tibia_fandom_real_item_pages_20260927_v1",
+            "canary_47dfd51_item_definition_v1",
+            "crystal_ff7ede5_item_definition_v1"
+          ]
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^https?://"
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1
+        },
+        "revision_sha1": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "page_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revision_timestamp": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "captured_at": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "digest_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "field_inventory": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/sourceField"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "kind",
+        "source_profile",
+        "revision",
+        "captured_at",
+        "digest_sha256",
+        "field_inventory"
+      ]
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "source_locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_value": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        },
+        "kind": {
+          "enum": [
+            "definition",
+            "presentation",
+            "relationship",
+            "provenance",
+            "editor",
+            "raw_text",
+            "external_domain",
+            "template_control",
+            "instance_state",
+            "world_object",
+            "terrain",
+            "source_defect"
+          ]
+        },
+        "status": {
+          "enum": [
+            "mapped",
+            "approved_omission",
+            "external_domain",
+            "reverse_relation",
+            "provenance_only",
+            "editor_only",
+            "pinned_no_effect",
+            "unsupported_source_field",
+            "unresolved_semantics",
+            "conflict"
+          ]
+        },
+        "destination": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^/(?:item|dependencies)(?:/.*)?$"
+        },
+        "promotions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^/item(?:/.*)?$"
+          },
+          "minItems": 0,
+          "uniqueItems": true
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "source_index",
+        "source_locator",
+        "source_field",
+        "kind",
+        "status",
+        "reason"
+      ]
+    }
+  }
+}

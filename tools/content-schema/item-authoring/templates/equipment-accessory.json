@@ -1,0 +1,36 @@
+{
+  "identity": {
+    "key": "oteryn:item.template.accessory",
+    "revision": "definition-r1"
+  },
+  "display_name": "Template Accessory",
+  "family_profile": "equipment_offhand",
+  "delivery_task_eligible": false,
+  "taxonomy": {
+    "item_class": "equipment",
+    "primary": "accessory",
+    "tags": []
+  },
+  "physical": {
+    "weight": {
+      "value": "1.00",
+      "unit": "oz"
+    },
+    "movable": true,
+    "pickupable": true
+  },
+  "equipment": {
+    "slot": "ring",
+    "hands": 0,
+    "reserved_slots": [],
+    "groups": []
+  },
+  "charges": {
+    "count": 1,
+    "show_count": true
+  },
+  "trade": {
+    "tradeable": true,
+    "marketable": true
+  }
+}

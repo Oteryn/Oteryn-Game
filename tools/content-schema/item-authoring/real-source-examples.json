@@ -1,0 +1,3308 @@
+{
+  "schema": "OTERYN_ITEM_AUTHORING_REAL_SOURCE_EXAMPLES/candidate-3",
+  "scope": "authoring examples and evidence only; not runtime import artifacts",
+  "examples": [
+    {
+      "slug": "magic-sword",
+      "item": {
+        "identity": {
+          "key": "oteryn:item.registry.i00003167",
+          "revision": "real-source-example-r1"
+        },
+        "display_name": "Magic Sword",
+        "family_profile": "weapon_melee",
+        "delivery_task_eligible": false,
+        "presentation": {
+          "appearance_binding": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.3288",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "taxonomy": {
+          "item_class": "weapon",
+          "primary": "sword"
+        },
+        "physical": {
+          "weight": {
+            "value": "42.00",
+            "unit": "oz"
+          },
+          "movable": true,
+          "pickupable": true
+        },
+        "requirements": {
+          "min_level": 80,
+          "enforcement_mode": "on_equip"
+        },
+        "equipment": {
+          "patterns": [
+            {
+              "pattern_id": 1,
+              "slot": "right_hand",
+              "hands": 1
+            },
+            {
+              "pattern_id": 2,
+              "slot": "left_hand",
+              "hands": 1
+            }
+          ]
+        },
+        "weapon": {
+          "weapon_type": "sword",
+          "attack": 48,
+          "defense": 35,
+          "extra_defense": 3,
+          "consumption_mode": "none"
+        },
+        "stack": {
+          "stackable": false,
+          "max_count": 1
+        },
+        "imbuement": {
+          "slot_count": 2
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
+        "proficiency": {
+          "profile_binding": {
+            "family": "Proficiency",
+            "key": "oteryn:proficiency.weapon.sword.magic-sword",
+            "revision": "definition-r1"
+          },
+          "levels": [
+            {
+              "level": 1,
+              "selection_count": 1,
+              "perks": [
+                {
+                  "selection_slot": 1,
+                  "key": "sword_skill_auto_attack_extra_damage",
+                  "target": {
+                    "kind": "skill_scaled_auto_attack",
+                    "skill": "sword"
+                  },
+                  "value": {
+                    "kind": "rational_percent",
+                    "value": {
+                      "numerator": 7,
+                      "denominator": 1
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "level": 2,
+              "selection_count": 1,
+              "perks": [
+                {
+                  "selection_slot": 1,
+                  "key": "intense_wound_cleansing_cooldown",
+                  "target": {
+                    "kind": "ability",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.intense-wound-cleansing",
+                      "revision": "definition-r1"
+                    }
+                  },
+                  "value": {
+                    "kind": "signed_milliseconds",
+                    "value": -30000
+                  }
+                },
+                {
+                  "selection_slot": 2,
+                  "key": "weapon_shield_modifier",
+                  "target": {
+                    "kind": "weapon_shield_modifier"
+                  },
+                  "value": {
+                    "kind": "signed_points",
+                    "value": 1
+                  }
+                },
+                {
+                  "selection_slot": 3,
+                  "key": "sword_skill_spell_healing",
+                  "target": {
+                    "kind": "skill_scaled_spell_healing",
+                    "skill": "sword"
+                  },
+                  "value": {
+                    "kind": "rational_percent",
+                    "value": {
+                      "numerator": 10,
+                      "denominator": 1
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "level": 3,
+              "selection_count": 1,
+              "perks": [
+                {
+                  "selection_slot": 1,
+                  "key": "berserk_life_leech",
+                  "target": {
+                    "kind": "ability",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.berserk",
+                      "revision": "definition-r1"
+                    }
+                  },
+                  "value": {
+                    "kind": "rational_percent",
+                    "value": {
+                      "numerator": 10,
+                      "denominator": 1
+                    }
+                  }
+                },
+                {
+                  "selection_slot": 2,
+                  "key": "berserk_mana_leech",
+                  "target": {
+                    "kind": "ability",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.berserk",
+                      "revision": "definition-r1"
+                    }
+                  },
+                  "value": {
+                    "kind": "rational_percent",
+                    "value": {
+                      "numerator": 5,
+                      "denominator": 1
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "trade": {
+          "marketable": true,
+          "market_category": "swords"
+        }
+      },
+      "dependencies": {
+        "definitions": [
+          {
+            "family": "Proficiency",
+            "key": "oteryn:proficiency.weapon.sword.magic-sword",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.intense-wound-cleansing",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.berserk",
+            "revision": "definition-r1"
+          }
+        ],
+        "assets": [],
+        "presentations": [
+          {
+            "identity": {
+              "family": "Presentation",
+              "key": "oteryn:presentation.crystal.item.3288",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+            },
+            "source": {
+              "source_profile": "crystal_ff7ede5_item_definition_v1",
+              "repository": "zimbadev/crystalserver",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+              "path": "data/items/appearances.dat",
+              "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+            },
+            "appearance_id": 3288,
+            "frame_groups": [
+              {
+                "kind": "object_initial",
+                "source_group_id": 2,
+                "geometry": {
+                  "pattern_width": 1,
+                  "pattern_height": 1,
+                  "pattern_depth": 1,
+                  "layers": 1,
+                  "phase_count": 1,
+                  "is_opaque": false
+                },
+                "sprite_ids": [
+                  196366
+                ]
+              }
+            ]
+          }
+        ],
+        "proficiency_crosswalks": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/proficiencies.json",
+            "digest_sha256": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22",
+            "external_id": "238",
+            "source_version": 3,
+            "target": {
+              "family": "Proficiency",
+              "key": "oteryn:proficiency.weapon.sword.magic-sword",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/json/proficiencies.json",
+            "digest_sha256": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22",
+            "external_id": "238",
+            "source_version": 3,
+            "target": {
+              "family": "Proficiency",
+              "key": "oteryn:proficiency.weapon.sword.magic-sword",
+              "revision": "definition-r1"
+            }
+          }
+        ]
+      },
+      "evidence": {
+        "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
+        "item_key": "oteryn:item.registry.i00003167",
+        "source_identity": {
+          "identity_namespace": "client/appearance_id",
+          "external_id": "3288",
+          "target": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.3288",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "engine_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+            "item_id": 3288,
+            "appearance_id": 3288,
+            "sprite_ids": [
+              196366
+            ]
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            "item_id": 3288,
+            "appearance_id": 3288,
+            "sprite_ids": [
+              196366
+            ]
+          }
+        ],
+        "definition_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/items.xml",
+            "digest_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+            "source_locator": "item[@id='3288']"
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/items.xml",
+            "digest_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+            "source_locator": "item[@id='3288']"
+          }
+        ],
+        "wiki_sources": [
+          {
+            "source_id": "br",
+            "page_id": 5810,
+            "title": "Magic Sword",
+            "url": "https://www.tibiawiki.com.br/index.php?title=Magic_Sword&oldid=436743",
+            "revision": "436743",
+            "revision_timestamp": "2026-06-16T15:36:49Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "fa042e6cac18e57d36b535cfd6cac46bfc644b92",
+            "content_sha256": "31bc9a48ea263fa02e1e85a82316e9810ae0602183ef52c7da217508da3535a9",
+            "raw_fields": [
+              "attack",
+              "buyfrom",
+              "classificacao",
+              "defense",
+              "defensemod",
+              "droppedby",
+              "enchantable",
+              "flavortext",
+              "hands",
+              "imbuement",
+              "itemclass",
+              "levelrequired",
+              "max_tier",
+              "name",
+              "notes",
+              "npcprice",
+              "npcvalue",
+              "perk1",
+              "perk2",
+              "perk3",
+              "primarytype",
+              "sellto",
+              "stackable",
+              "type",
+              "value",
+              "weight"
+            ]
+          },
+          {
+            "source_id": "fandom",
+            "page_id": 1402,
+            "title": "Magic Sword",
+            "url": "https://tibia.fandom.com/index.php?title=Magic_Sword&oldid=1147223",
+            "revision": "1147223",
+            "revision_timestamp": "2025-12-08T14:27:08Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "518be1259d3c036b0cf40ea0074f754855fa478e",
+            "content_sha256": "c4800c24eed0114d308946603be6c89c8f6a2c8727173e9d14cdc57e40525c5b",
+            "raw_fields": [
+              "actualname",
+              "article",
+              "attack",
+              "buyfrom",
+              "defense",
+              "defensemod",
+              "droppedby",
+              "enchantable",
+              "flavortext",
+              "hands",
+              "history",
+              "imbueslots",
+              "immobile",
+              "implemented",
+              "itemid",
+              "levelrequired",
+              "marketable",
+              "name",
+              "notes",
+              "npcprice",
+              "npcvalue",
+              "objectclass",
+              "pickupable",
+              "plural",
+              "primarytype",
+              "sellto",
+              "slot",
+              "stackable",
+              "upgradeclass",
+              "usable",
+              "value",
+              "walkable",
+              "weapontype",
+              "weight"
+            ]
+          }
+        ],
+        "source_observations": {
+          "br": {
+            "levelrequired": "80",
+            "hands": "Uma",
+            "type": "Espada",
+            "attack": "48",
+            "defense": "35",
+            "defensemod": "+3",
+            "imbuement": "2",
+            "classificacao": "2",
+            "max_tier": "2",
+            "weight": "42.00"
+          },
+          "fandom": {
+            "name": "Magic Sword",
+            "itemid": "3288",
+            "objectclass": "Weapons",
+            "primarytype": "Sword Weapons",
+            "slot": "Weapon Hand",
+            "immobile": "no",
+            "pickupable": "yes",
+            "levelrequired": "80",
+            "hands": "One",
+            "weapontype": "Sword",
+            "attack": "48",
+            "defense": "35",
+            "defensemod": "+3",
+            "imbueslots": "2",
+            "upgradeclass": "2",
+            "weight": "42.00",
+            "stackable": "no",
+            "marketable": "yes"
+          },
+          "engine_items_xml": {
+            "primarytype": "sword weapons",
+            "weaponType": "sword",
+            "attack": "48",
+            "extradef": "3",
+            "defense": "35",
+            "weight": "4200",
+            "imbuementslot": "2",
+            "level": "80",
+            "slot": "hand"
+          },
+          "engine_appearance": {
+            "market.category": 20
+          },
+          "canary_appearance": {
+            "proficiency.proficiency_id": 238
+          },
+          "crystal_appearance": {
+            "proficiency.proficiency_id": 238
+          }
+        },
+        "field_evidence": [
+          {
+            "destination": "/item/display_name",
+            "route_destination": "/item/display_name",
+            "normalized_value": "Magic Sword",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "name",
+                "catalog_field": "name",
+                "raw_value": "Magic Sword"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/item_class",
+            "route_destination": "/item/taxonomy/item_class",
+            "normalized_value": "weapon",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "objectclass",
+                "catalog_field": "objectclass",
+                "raw_value": "Weapons"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/primary",
+            "route_destination": "/item/taxonomy/primary",
+            "normalized_value": "sword",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "Sword Weapons"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "sword weapons"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/weight/value",
+            "route_destination": "/item/physical/weight",
+            "normalized_value": "42.00",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "42.00"
+              },
+              {
+                "source": "fandom",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "42.00"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "4200"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/movable",
+            "route_destination": "/item/physical/movable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "immobile",
+                "catalog_field": "immobile",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/pickupable",
+            "route_destination": "/item/physical/pickupable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "pickupable",
+                "catalog_field": "pickupable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/requirements/min_level",
+            "route_destination": "/item/requirements/min_level",
+            "normalized_value": 80,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "levelrequired",
+                "catalog_field": "levelrequired",
+                "raw_value": "80"
+              },
+              {
+                "source": "fandom",
+                "field": "levelrequired",
+                "catalog_field": "levelrequired",
+                "raw_value": "80"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "level",
+                "catalog_field": "level",
+                "raw_value": "80"
+              }
+            ]
+          },
+          {
+            "destination": "/item/equipment/patterns/0/hands",
+            "route_destination": "/item/equipment/patterns/0/hands",
+            "normalized_value": 1,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "hands",
+                "catalog_field": "hands",
+                "raw_value": "Uma"
+              },
+              {
+                "source": "fandom",
+                "field": "hands",
+                "catalog_field": "hands",
+                "raw_value": "One"
+              }
+            ]
+          },
+          {
+            "destination": "/item/equipment/patterns/1/hands",
+            "route_destination": "/item/equipment/patterns/1/hands",
+            "normalized_value": 1,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "hands",
+                "catalog_field": "hands",
+                "raw_value": "Uma"
+              },
+              {
+                "source": "fandom",
+                "field": "hands",
+                "catalog_field": "hands",
+                "raw_value": "One"
+              }
+            ]
+          },
+          {
+            "destination": "/item/weapon/weapon_type",
+            "route_destination": "/item/weapon/weapon_type",
+            "normalized_value": "sword",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "type",
+                "catalog_field": "type",
+                "raw_value": "Espada"
+              },
+              {
+                "source": "fandom",
+                "field": "weapontype",
+                "catalog_field": "weapontype",
+                "raw_value": "Sword"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "weaponType",
+                "catalog_field": "weapontype",
+                "raw_value": "sword"
+              }
+            ]
+          },
+          {
+            "destination": "/item/weapon/attack",
+            "route_destination": "/item/weapon/attack",
+            "normalized_value": 48,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "attack",
+                "catalog_field": "attack",
+                "raw_value": "48"
+              },
+              {
+                "source": "fandom",
+                "field": "attack",
+                "catalog_field": "attack",
+                "raw_value": "48"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "attack",
+                "catalog_field": "attack",
+                "raw_value": "48"
+              }
+            ]
+          },
+          {
+            "destination": "/item/weapon/defense",
+            "route_destination": "/item/weapon/defense",
+            "normalized_value": 35,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "defense",
+                "catalog_field": "defense",
+                "raw_value": "35"
+              },
+              {
+                "source": "fandom",
+                "field": "defense",
+                "catalog_field": "defense",
+                "raw_value": "35"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "defense",
+                "catalog_field": "defense",
+                "raw_value": "35"
+              }
+            ]
+          },
+          {
+            "destination": "/item/weapon/extra_defense",
+            "route_destination": "/item/weapon/extra_defense",
+            "normalized_value": 3,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "defensemod",
+                "catalog_field": "defensemod",
+                "raw_value": "+3"
+              },
+              {
+                "source": "fandom",
+                "field": "defensemod",
+                "catalog_field": "defensemod",
+                "raw_value": "+3"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "extradef",
+                "catalog_field": "extradef",
+                "raw_value": "3"
+              }
+            ]
+          },
+          {
+            "destination": "/item/stack/stackable",
+            "route_destination": "/item/stack/stackable",
+            "normalized_value": false,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "stackable",
+                "catalog_field": "stackable",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/imbuement/slot_count",
+            "route_destination": "/item/imbuement/slot_count",
+            "normalized_value": 2,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "imbuement",
+                "catalog_field": "imbuement",
+                "raw_value": "2"
+              },
+              {
+                "source": "fandom",
+                "field": "imbueslots",
+                "catalog_field": "imbueslots",
+                "raw_value": "2"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "imbuementslot",
+                "catalog_field": "imbuementslot",
+                "raw_value": "2"
+              }
+            ]
+          },
+          {
+            "destination": "/item/forge/classification",
+            "route_destination": "/item/forge/classification",
+            "normalized_value": 2,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "classificacao",
+                "catalog_field": "classificacao",
+                "raw_value": "2"
+              },
+              {
+                "source": "fandom",
+                "field": "upgradeclass",
+                "catalog_field": "upgradeclass",
+                "raw_value": "2"
+              }
+            ]
+          },
+          {
+            "destination": "/item/forge/max_tier",
+            "route_destination": "/item/forge/max_tier",
+            "normalized_value": 2,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "max_tier",
+                "catalog_field": "max_tier",
+                "raw_value": "2"
+              }
+            ]
+          },
+          {
+            "destination": "/item/trade/marketable",
+            "route_destination": "/item/trade/marketable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "marketable",
+                "catalog_field": "marketable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/trade/market_category",
+            "route_destination": "/item/trade/market_category",
+            "normalized_value": "swords",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "engine_appearance",
+                "field": "market.category",
+                "catalog_field": "market.category",
+                "raw_value": 20
+              }
+            ]
+          }
+        ],
+        "non_source_defaults": [
+          {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
+            "destination": "/item/family_profile",
+            "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
+          },
+          {
+            "destination": "/item/physical/weight/unit",
+            "state": "SOURCE_WEIGHT_UNIT_NORMALIZATION"
+          },
+          {
+            "destination": "/item/requirements/enforcement_mode",
+            "state": "PROFILE_ENFORCEMENT_NORMALIZATION"
+          },
+          {
+            "destination": "/item/equipment/patterns/0/pattern_id",
+            "state": "AUTHORING_PATTERN_ID"
+          },
+          {
+            "destination": "/item/equipment/patterns/0/slot",
+            "state": "ENGINE_NORMALIZATION_FROM_AMBIGUOUS_SLOT_HAND"
+          },
+          {
+            "destination": "/item/equipment/patterns/1/pattern_id",
+            "state": "AUTHORING_PATTERN_ID"
+          },
+          {
+            "destination": "/item/equipment/patterns/1/slot",
+            "state": "ENGINE_NORMALIZATION_FROM_SLOT_HAND"
+          },
+          {
+            "destination": "/item/weapon/consumption_mode",
+            "state": "PROFILE_DEFAULT_NO_CONSUMPTION"
+          },
+          {
+            "destination": "/item/stack/max_count",
+            "state": "SCHEMA_NORMALIZATION_FROM_STACKABLE_FALSE"
+          }
+        ],
+        "readiness": {
+          "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
+          "blockers": [
+            "sprite_atlas_not_admitted",
+            "runtime_lowering_not_implemented"
+          ],
+          "non_claims": [
+            "not_runtime_imported",
+            "not_gameplay_parity_proven",
+            "not_renderable_without_matching_sprite_atlas"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "demon-armor",
+      "item": {
+        "identity": {
+          "key": "oteryn:item.registry.i00003256",
+          "revision": "real-source-example-r1"
+        },
+        "display_name": "Demon Armor",
+        "family_profile": "equipment_armor",
+        "delivery_task_eligible": false,
+        "presentation": {
+          "appearance_binding": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.3388",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "taxonomy": {
+          "item_class": "equipment",
+          "primary": "armor"
+        },
+        "physical": {
+          "weight": {
+            "value": "80.00",
+            "unit": "oz"
+          },
+          "movable": true,
+          "pickupable": true
+        },
+        "equipment": {
+          "slot": "armor",
+          "hands": 0
+        },
+        "protection": {
+          "armor": 16
+        },
+        "stack": {
+          "stackable": false,
+          "max_count": 1
+        },
+        "imbuement": {
+          "slot_count": 2
+        },
+        "forge": {
+          "classification": 2,
+          "max_tier": 2
+        },
+        "trade": {
+          "marketable": true
+        }
+      },
+      "dependencies": {
+        "definitions": [],
+        "assets": [],
+        "presentations": [
+          {
+            "identity": {
+              "family": "Presentation",
+              "key": "oteryn:presentation.crystal.item.3388",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+            },
+            "source": {
+              "source_profile": "crystal_ff7ede5_item_definition_v1",
+              "repository": "zimbadev/crystalserver",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+              "path": "data/items/appearances.dat",
+              "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+            },
+            "appearance_id": 3388,
+            "frame_groups": [
+              {
+                "kind": "object_initial",
+                "source_group_id": 2,
+                "geometry": {
+                  "pattern_width": 1,
+                  "pattern_height": 1,
+                  "pattern_depth": 1,
+                  "layers": 1,
+                  "phase_count": 1,
+                  "is_opaque": false
+                },
+                "sprite_ids": [
+                  196476
+                ]
+              }
+            ]
+          }
+        ],
+        "proficiency_crosswalks": []
+      },
+      "evidence": {
+        "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
+        "item_key": "oteryn:item.registry.i00003256",
+        "source_identity": {
+          "identity_namespace": "client/appearance_id",
+          "external_id": "3388",
+          "target": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.3388",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "engine_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+            "item_id": 3388,
+            "appearance_id": 3388,
+            "sprite_ids": [
+              196476
+            ]
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            "item_id": 3388,
+            "appearance_id": 3388,
+            "sprite_ids": [
+              196476
+            ]
+          }
+        ],
+        "definition_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/items.xml",
+            "digest_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+            "source_locator": "item[@id='3388']"
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/items.xml",
+            "digest_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+            "source_locator": "item[@id='3388']"
+          }
+        ],
+        "wiki_sources": [
+          {
+            "source_id": "br",
+            "page_id": 6527,
+            "title": "Demon Armor",
+            "url": "https://www.tibiawiki.com.br/index.php?title=Demon_Armor&oldid=379817",
+            "revision": "379817",
+            "revision_timestamp": "2022-12-18T19:26:13Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "1aafcabfd8fd058c16d5f6a07250641518a021a7",
+            "content_sha256": "c5254032ea340db36ec8564515df8f01500d1a748c7a61a8061dbd85f6dc3029",
+            "raw_fields": [
+              "armor",
+              "buyfrom",
+              "classificacao",
+              "imbuement",
+              "itemclass",
+              "max_tier",
+              "name",
+              "notes",
+              "npcprice",
+              "npcvalue",
+              "primarytype",
+              "sellto",
+              "stackable",
+              "value",
+              "weight"
+            ]
+          },
+          {
+            "source_id": "fandom",
+            "page_id": 1619,
+            "title": "Demon Armor",
+            "url": "https://tibia.fandom.com/index.php?title=Demon_Armor&oldid=1147324",
+            "revision": "1147324",
+            "revision_timestamp": "2025-12-08T14:29:11Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "abc09722ed0519f1b9c3cf8ee3033c0b158e3cea",
+            "content_sha256": "b8036ddc56b00e2c3986d2b85975fd705fcdc023e8c935bce2debec28b5c9f6e",
+            "raw_fields": [
+              "actualname",
+              "armor",
+              "article",
+              "buyfrom",
+              "droppedby",
+              "imbueslots",
+              "immobile",
+              "implemented",
+              "itemid",
+              "marketable",
+              "name",
+              "notes",
+              "npcprice",
+              "npcvalue",
+              "objectclass",
+              "pickupable",
+              "plural",
+              "primarytype",
+              "sellto",
+              "slot",
+              "stackable",
+              "upgradeclass",
+              "value",
+              "walkable",
+              "weight"
+            ]
+          }
+        ],
+        "source_observations": {
+          "br": {
+            "armor": "16",
+            "imbuement": "2",
+            "classificacao": "2",
+            "max_tier": "2",
+            "weight": "80.00"
+          },
+          "fandom": {
+            "name": "Demon Armor",
+            "itemid": "3388",
+            "objectclass": "Body Equipment",
+            "primarytype": "Armors",
+            "slot": "Body",
+            "immobile": "no",
+            "pickupable": "yes",
+            "imbueslots": "2",
+            "upgradeclass": "2",
+            "armor": "16",
+            "weight": "80.00",
+            "stackable": "no",
+            "marketable": "yes"
+          },
+          "engine_items_xml": {
+            "primarytype": "armors",
+            "armor": "16",
+            "weight": "8000",
+            "imbuementslot": "2",
+            "slot": "armor"
+          }
+        },
+        "field_evidence": [
+          {
+            "destination": "/item/display_name",
+            "route_destination": "/item/display_name",
+            "normalized_value": "Demon Armor",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "name",
+                "catalog_field": "name",
+                "raw_value": "Demon Armor"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/item_class",
+            "route_destination": "/item/taxonomy/item_class",
+            "normalized_value": "equipment",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "objectclass",
+                "catalog_field": "objectclass",
+                "raw_value": "Body Equipment"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/primary",
+            "route_destination": "/item/taxonomy/primary",
+            "normalized_value": "armor",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "Armors"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "armors"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/weight/value",
+            "route_destination": "/item/physical/weight",
+            "normalized_value": "80.00",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "80.00"
+              },
+              {
+                "source": "fandom",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "80.00"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "8000"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/movable",
+            "route_destination": "/item/physical/movable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "immobile",
+                "catalog_field": "immobile",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/pickupable",
+            "route_destination": "/item/physical/pickupable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "pickupable",
+                "catalog_field": "pickupable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/equipment/slot",
+            "route_destination": "/item/equipment/slot",
+            "normalized_value": "armor",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "slot",
+                "catalog_field": "slot",
+                "raw_value": "Body"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "slot",
+                "catalog_field": "slot",
+                "raw_value": "armor"
+              }
+            ]
+          },
+          {
+            "destination": "/item/protection/armor",
+            "route_destination": "/item/protection/armor",
+            "normalized_value": 16,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "armor",
+                "catalog_field": "armor",
+                "raw_value": "16"
+              },
+              {
+                "source": "fandom",
+                "field": "armor",
+                "catalog_field": "armor",
+                "raw_value": "16"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "armor",
+                "catalog_field": "armor",
+                "raw_value": "16"
+              }
+            ]
+          },
+          {
+            "destination": "/item/stack/stackable",
+            "route_destination": "/item/stack/stackable",
+            "normalized_value": false,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "stackable",
+                "catalog_field": "stackable",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/imbuement/slot_count",
+            "route_destination": "/item/imbuement/slot_count",
+            "normalized_value": 2,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "imbuement",
+                "catalog_field": "imbuement",
+                "raw_value": "2"
+              },
+              {
+                "source": "fandom",
+                "field": "imbueslots",
+                "catalog_field": "imbueslots",
+                "raw_value": "2"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "imbuementslot",
+                "catalog_field": "imbuementslot",
+                "raw_value": "2"
+              }
+            ]
+          },
+          {
+            "destination": "/item/forge/classification",
+            "route_destination": "/item/forge/classification",
+            "normalized_value": 2,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "classificacao",
+                "catalog_field": "classificacao",
+                "raw_value": "2"
+              },
+              {
+                "source": "fandom",
+                "field": "upgradeclass",
+                "catalog_field": "upgradeclass",
+                "raw_value": "2"
+              }
+            ]
+          },
+          {
+            "destination": "/item/forge/max_tier",
+            "route_destination": "/item/forge/max_tier",
+            "normalized_value": 2,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "max_tier",
+                "catalog_field": "max_tier",
+                "raw_value": "2"
+              }
+            ]
+          },
+          {
+            "destination": "/item/trade/marketable",
+            "route_destination": "/item/trade/marketable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "marketable",
+                "catalog_field": "marketable",
+                "raw_value": "yes"
+              }
+            ]
+          }
+        ],
+        "non_source_defaults": [
+          {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
+            "destination": "/item/family_profile",
+            "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
+          },
+          {
+            "destination": "/item/physical/weight/unit",
+            "state": "SOURCE_WEIGHT_UNIT_NORMALIZATION"
+          },
+          {
+            "destination": "/item/equipment/hands",
+            "state": "SCHEMA_NORMALIZATION_FOR_NON_HAND_SLOT"
+          },
+          {
+            "destination": "/item/stack/max_count",
+            "state": "SCHEMA_NORMALIZATION_FROM_STACKABLE_FALSE"
+          }
+        ],
+        "readiness": {
+          "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
+          "blockers": [
+            "sprite_atlas_not_admitted",
+            "runtime_lowering_not_implemented"
+          ],
+          "non_claims": [
+            "not_runtime_imported",
+            "not_gameplay_parity_proven",
+            "not_renderable_without_matching_sprite_atlas"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "backpack",
+      "item": {
+        "identity": {
+          "key": "oteryn:item.registry.i00002752",
+          "revision": "real-source-example-r1"
+        },
+        "display_name": "Backpack",
+        "family_profile": "container",
+        "delivery_task_eligible": false,
+        "presentation": {
+          "appearance_binding": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.2854",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "taxonomy": {
+          "item_class": "container",
+          "primary": "container",
+          "secondary": "backpack"
+        },
+        "physical": {
+          "weight": {
+            "value": "18.00",
+            "unit": "oz"
+          },
+          "movable": true,
+          "pickupable": true
+        },
+        "stack": {
+          "stackable": false,
+          "max_count": 1
+        },
+        "container": {
+          "capacity": 20,
+          "content_kind": "items"
+        },
+        "imbuement": {
+          "slot_count": 1
+        },
+        "trade": {
+          "marketable": true
+        }
+      },
+      "dependencies": {
+        "definitions": [],
+        "assets": [],
+        "presentations": [
+          {
+            "identity": {
+              "family": "Presentation",
+              "key": "oteryn:presentation.crystal.item.2854",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+            },
+            "source": {
+              "source_profile": "crystal_ff7ede5_item_definition_v1",
+              "repository": "zimbadev/crystalserver",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+              "path": "data/items/appearances.dat",
+              "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+            },
+            "appearance_id": 2854,
+            "frame_groups": [
+              {
+                "kind": "object_initial",
+                "source_group_id": 2,
+                "geometry": {
+                  "pattern_width": 1,
+                  "pattern_height": 1,
+                  "pattern_depth": 1,
+                  "layers": 1,
+                  "phase_count": 1,
+                  "is_opaque": false
+                },
+                "sprite_ids": [
+                  195739
+                ]
+              }
+            ]
+          }
+        ],
+        "proficiency_crosswalks": []
+      },
+      "evidence": {
+        "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
+        "item_key": "oteryn:item.registry.i00002752",
+        "source_identity": {
+          "identity_namespace": "client/appearance_id",
+          "external_id": "2854",
+          "target": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.2854",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "engine_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+            "item_id": 2854,
+            "appearance_id": 2854,
+            "sprite_ids": [
+              195739
+            ]
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            "item_id": 2854,
+            "appearance_id": 2854,
+            "sprite_ids": [
+              195739
+            ]
+          }
+        ],
+        "definition_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/items.xml",
+            "digest_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+            "source_locator": "item[@id='2854']"
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/items.xml",
+            "digest_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+            "source_locator": "item[@id='2854']"
+          }
+        ],
+        "wiki_sources": [
+          {
+            "source_id": "br",
+            "page_id": 7109,
+            "title": "Backpack",
+            "url": "https://www.tibiawiki.com.br/index.php?title=Backpack&oldid=432220",
+            "revision": "432220",
+            "revision_timestamp": "2026-01-27T00:35:10Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "f74a5e4c2bea507c5c2c766f311323073324b521",
+            "content_sha256": "75816d7708357163fc7b007641fa9e703f1a5c6d7dc3fb14df26dc9f3d12b19d",
+            "raw_fields": [
+              "buyfrom",
+              "droppedby",
+              "imbuement",
+              "implemented",
+              "itemclass",
+              "name",
+              "notes",
+              "npcprice",
+              "npcvalue",
+              "primarytype",
+              "sellto",
+              "stackable",
+              "volume",
+              "weight"
+            ]
+          },
+          {
+            "source_id": "fandom",
+            "page_id": 1591,
+            "title": "Backpack",
+            "url": "https://tibia.fandom.com/index.php?title=Backpack&oldid=1147105",
+            "revision": "1147105",
+            "revision_timestamp": "2025-12-08T14:20:09Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "c7057ac6b95e3b63ea1e5b832ca1836dde9ecb2c",
+            "content_sha256": "1c564f86bf3ddfc848499bd2bab637de01708594180a3c8403911755b8c567f0",
+            "raw_fields": [
+              "actualname",
+              "article",
+              "buyfrom",
+              "droppedby",
+              "history",
+              "imbueslots",
+              "immobile",
+              "implemented",
+              "itemid",
+              "marketable",
+              "name",
+              "notes",
+              "npcprice",
+              "npcpricerook",
+              "npcvalue",
+              "npcvaluerook",
+              "objectclass",
+              "pickupable",
+              "primarytype",
+              "secondarytype",
+              "sellto",
+              "slot",
+              "stackable",
+              "usable",
+              "value",
+              "volume",
+              "walkable",
+              "weight"
+            ]
+          }
+        ],
+        "source_observations": {
+          "br": {
+            "primarytype": "Recipientes",
+            "volume": "20",
+            "imbuement": "1",
+            "weight": "18.00"
+          },
+          "fandom": {
+            "name": "Backpack",
+            "itemid": "2854",
+            "primarytype": "Containers",
+            "secondarytype": "Backpacks",
+            "slot": "Container",
+            "volume": "20",
+            "immobile": "no",
+            "pickupable": "yes",
+            "imbueslots": "1",
+            "weight": "18.00",
+            "stackable": "no",
+            "marketable": "yes"
+          },
+          "engine_items_xml": {
+            "primarytype": "containers",
+            "containersize": "20",
+            "weight": "1800",
+            "imbuementslot": "1"
+          }
+        },
+        "field_evidence": [
+          {
+            "destination": "/item/display_name",
+            "route_destination": "/item/display_name",
+            "normalized_value": "Backpack",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "name",
+                "catalog_field": "name",
+                "raw_value": "Backpack"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/primary",
+            "route_destination": "/item/taxonomy/primary",
+            "normalized_value": "container",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "Recipientes"
+              },
+              {
+                "source": "fandom",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "Containers"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "containers"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/secondary",
+            "route_destination": "/item/taxonomy/secondary",
+            "normalized_value": "backpack",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "secondarytype",
+                "catalog_field": "secondarytype",
+                "raw_value": "Backpacks"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/weight/value",
+            "route_destination": "/item/physical/weight",
+            "normalized_value": "18.00",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "18.00"
+              },
+              {
+                "source": "fandom",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "18.00"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "1800"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/movable",
+            "route_destination": "/item/physical/movable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "immobile",
+                "catalog_field": "immobile",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/pickupable",
+            "route_destination": "/item/physical/pickupable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "pickupable",
+                "catalog_field": "pickupable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/stack/stackable",
+            "route_destination": "/item/stack/stackable",
+            "normalized_value": false,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "stackable",
+                "catalog_field": "stackable",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/container/capacity",
+            "route_destination": "/item/container/capacity",
+            "normalized_value": 20,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "volume",
+                "catalog_field": "volume",
+                "raw_value": "20"
+              },
+              {
+                "source": "fandom",
+                "field": "volume",
+                "catalog_field": "volume",
+                "raw_value": "20"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "containersize",
+                "catalog_field": "containersize",
+                "raw_value": "20"
+              }
+            ]
+          },
+          {
+            "destination": "/item/imbuement/slot_count",
+            "route_destination": "/item/imbuement/slot_count",
+            "normalized_value": 1,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "imbuement",
+                "catalog_field": "imbuement",
+                "raw_value": "1"
+              },
+              {
+                "source": "fandom",
+                "field": "imbueslots",
+                "catalog_field": "imbueslots",
+                "raw_value": "1"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "imbuementslot",
+                "catalog_field": "imbuementslot",
+                "raw_value": "1"
+              }
+            ]
+          },
+          {
+            "destination": "/item/trade/marketable",
+            "route_destination": "/item/trade/marketable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "marketable",
+                "catalog_field": "marketable",
+                "raw_value": "yes"
+              }
+            ]
+          }
+        ],
+        "non_source_defaults": [
+          {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
+            "destination": "/item/family_profile",
+            "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
+          },
+          {
+            "destination": "/item/taxonomy/item_class",
+            "state": "AUTHOR_SELECTED_FROM_CONTAINER_CAPABILITY"
+          },
+          {
+            "destination": "/item/physical/weight/unit",
+            "state": "SOURCE_WEIGHT_UNIT_NORMALIZATION"
+          },
+          {
+            "destination": "/item/container/content_kind",
+            "state": "NORMALIZATION_FROM_CONTAINER_TAXONOMY"
+          },
+          {
+            "destination": "/item/stack/max_count",
+            "state": "SCHEMA_NORMALIZATION_FROM_STACKABLE_FALSE"
+          }
+        ],
+        "readiness": {
+          "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
+          "blockers": [
+            "sprite_atlas_not_admitted",
+            "runtime_lowering_not_implemented"
+          ],
+          "non_claims": [
+            "not_runtime_imported",
+            "not_gameplay_parity_proven",
+            "not_renderable_without_matching_sprite_atlas"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "red-apple",
+      "item": {
+        "identity": {
+          "key": "oteryn:item.registry.i00003447",
+          "revision": "real-source-example-r1"
+        },
+        "display_name": "Red Apple",
+        "family_profile": "food",
+        "delivery_task_eligible": false,
+        "presentation": {
+          "appearance_binding": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.3585",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "taxonomy": {
+          "item_class": "consumable",
+          "primary": "food"
+        },
+        "physical": {
+          "weight": {
+            "value": "1.50",
+            "unit": "oz"
+          },
+          "movable": true,
+          "pickupable": true
+        },
+        "stack": {
+          "stackable": true,
+          "max_count": 100
+        },
+        "consumable": {
+          "edible": true,
+          "regeneration_seconds": 72,
+          "consume_count": 1
+        },
+        "use": {
+          "usable": true,
+          "use_with": false
+        },
+        "trade": {
+          "marketable": true
+        }
+      },
+      "dependencies": {
+        "definitions": [],
+        "assets": [],
+        "presentations": [
+          {
+            "identity": {
+              "family": "Presentation",
+              "key": "oteryn:presentation.crystal.item.3585",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+            },
+            "source": {
+              "source_profile": "crystal_ff7ede5_item_definition_v1",
+              "repository": "zimbadev/crystalserver",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+              "path": "data/items/appearances.dat",
+              "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+            },
+            "appearance_id": 3585,
+            "frame_groups": [
+              {
+                "kind": "object_initial",
+                "source_group_id": 2,
+                "geometry": {
+                  "pattern_width": 4,
+                  "pattern_height": 2,
+                  "pattern_depth": 1,
+                  "layers": 1,
+                  "phase_count": 1,
+                  "is_opaque": false
+                },
+                "sprite_ids": [
+                  196798,
+                  196799,
+                  196800,
+                  196801,
+                  196802,
+                  196803,
+                  196803,
+                  196803
+                ]
+              }
+            ]
+          }
+        ],
+        "proficiency_crosswalks": []
+      },
+      "evidence": {
+        "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
+        "item_key": "oteryn:item.registry.i00003447",
+        "source_identity": {
+          "identity_namespace": "client/appearance_id",
+          "external_id": "3585",
+          "target": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.3585",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "engine_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+            "item_id": 3585,
+            "appearance_id": 3585,
+            "sprite_ids": [
+              196798,
+              196799,
+              196800,
+              196801,
+              196802,
+              196803,
+              196803,
+              196803
+            ]
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            "item_id": 3585,
+            "appearance_id": 3585,
+            "sprite_ids": [
+              196798,
+              196799,
+              196800,
+              196801,
+              196802,
+              196803,
+              196803,
+              196803
+            ]
+          }
+        ],
+        "definition_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/items.xml",
+            "digest_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+            "source_locator": "item[@id='3585']"
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/items.xml",
+            "digest_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+            "source_locator": "item[@id='3585']"
+          }
+        ],
+        "wiki_sources": [
+          {
+            "source_id": "br",
+            "page_id": 8230,
+            "title": "Red Apple",
+            "url": "https://www.tibiawiki.com.br/index.php?title=Red_Apple&oldid=381934",
+            "revision": "381934",
+            "revision_timestamp": "2022-12-18T20:00:31Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "974d6697071e73c455e505edab05f8d54e30f4d7",
+            "content_sha256": "f0f46d71956b08626126d519778ea6aa510d2f56978540758729f166c5bde656",
+            "raw_fields": [
+              "buyfrom",
+              "droppedby",
+              "droppedEventby",
+              "edible",
+              "flavortext",
+              "itemclass",
+              "name",
+              "notes",
+              "npcprice",
+              "npcvalue",
+              "primarytype",
+              "regenseconds",
+              "secondarytype",
+              "sellto",
+              "sounds",
+              "stackable",
+              "value",
+              "weight"
+            ]
+          },
+          {
+            "source_id": "fandom",
+            "page_id": 1250,
+            "title": "Red Apple",
+            "url": "https://tibia.fandom.com/index.php?title=Red_Apple&oldid=1200917",
+            "revision": "1200917",
+            "revision_timestamp": "2026-08-16T17:40:11Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "b1da8f370a728b95088e32900d8c9805a51c36d7",
+            "content_sha256": "ae2cbafd3e7835d91b3c6a19e72a573b4bcd82922cd082f7e4a8d6e376aae05a",
+            "raw_fields": [
+              "actualname",
+              "article",
+              "buyfrom",
+              "consumable",
+              "droppedby",
+              "immobile",
+              "implemented",
+              "itemid",
+              "marketable",
+              "name",
+              "notes",
+              "npcprice",
+              "npcpricerook",
+              "npcvalue",
+              "npcvaluerook",
+              "objectclass",
+              "pickupable",
+              "plural",
+              "primarytype",
+              "regenseconds",
+              "sellto",
+              "sounds",
+              "stackable",
+              "usable",
+              "value",
+              "walkable",
+              "weight"
+            ]
+          }
+        ],
+        "source_observations": {
+          "br": {
+            "edible": "sim",
+            "regenseconds": "72",
+            "stackable": "sim",
+            "weight": "1.50",
+            "sounds": "Yum."
+          },
+          "fandom": {
+            "name": "Red Apple",
+            "itemid": "3585",
+            "objectclass": "Plants, Animal Products, Food and Drink",
+            "primarytype": "Food",
+            "immobile": "no",
+            "pickupable": "yes",
+            "usable": "yes",
+            "weight": "1.50",
+            "stackable": "yes",
+            "consumable": "yes",
+            "regenseconds": "72",
+            "marketable": "yes"
+          },
+          "engine_items_xml": {
+            "primarytype": "food",
+            "weight": "150"
+          }
+        },
+        "field_evidence": [
+          {
+            "destination": "/item/display_name",
+            "route_destination": "/item/display_name",
+            "normalized_value": "Red Apple",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "name",
+                "catalog_field": "name",
+                "raw_value": "Red Apple"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/primary",
+            "route_destination": "/item/taxonomy/primary",
+            "normalized_value": "food",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "Food"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "food"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/weight/value",
+            "route_destination": "/item/physical/weight",
+            "normalized_value": "1.50",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "1.50"
+              },
+              {
+                "source": "fandom",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "1.50"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "150"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/movable",
+            "route_destination": "/item/physical/movable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "immobile",
+                "catalog_field": "immobile",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/pickupable",
+            "route_destination": "/item/physical/pickupable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "pickupable",
+                "catalog_field": "pickupable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/stack/stackable",
+            "route_destination": "/item/stack/stackable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "stackable",
+                "catalog_field": "stackable",
+                "raw_value": "sim"
+              },
+              {
+                "source": "fandom",
+                "field": "stackable",
+                "catalog_field": "stackable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/consumable/edible",
+            "route_destination": "/item/consumable/edible",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "edible",
+                "catalog_field": "edible",
+                "raw_value": "sim"
+              }
+            ]
+          },
+          {
+            "destination": "/item/consumable/regeneration_seconds",
+            "route_destination": "/item/consumable/regeneration_seconds",
+            "normalized_value": 72,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "regenseconds",
+                "catalog_field": "regenseconds",
+                "raw_value": "72"
+              },
+              {
+                "source": "fandom",
+                "field": "regenseconds",
+                "catalog_field": "regenseconds",
+                "raw_value": "72"
+              }
+            ]
+          },
+          {
+            "destination": "/item/use/usable",
+            "route_destination": "/item/use/usable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "usable",
+                "catalog_field": "usable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/trade/marketable",
+            "route_destination": "/item/trade/marketable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "marketable",
+                "catalog_field": "marketable",
+                "raw_value": "yes"
+              }
+            ]
+          }
+        ],
+        "non_source_defaults": [
+          {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
+            "destination": "/item/family_profile",
+            "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
+          },
+          {
+            "destination": "/item/taxonomy/item_class",
+            "state": "AUTHOR_SELECTED_FROM_FOOD_CAPABILITY"
+          },
+          {
+            "destination": "/item/physical/weight/unit",
+            "state": "SOURCE_WEIGHT_UNIT_NORMALIZATION"
+          },
+          {
+            "destination": "/item/consumable/consume_count",
+            "state": "PROFILE_DEFAULT_NOT_SOURCE_VERIFIED"
+          },
+          {
+            "destination": "/item/stack/max_count",
+            "state": "PROFILE_DEFAULT_NOT_SOURCE_VERIFIED"
+          },
+          {
+            "destination": "/item/use/use_with",
+            "state": "NORMALIZATION_FROM_SINGLE_TARGET_CONSUMPTION"
+          }
+        ],
+        "readiness": {
+          "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
+          "blockers": [
+            "sprite_atlas_not_admitted",
+            "runtime_lowering_not_implemented",
+            "yum_sound_asset_not_admitted"
+          ],
+          "non_claims": [
+            "not_runtime_imported",
+            "not_gameplay_parity_proven",
+            "not_renderable_without_matching_sprite_atlas"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "sudden-death-rune",
+      "item": {
+        "identity": {
+          "key": "oteryn:item.consumable.sudden_death_rune",
+          "revision": "real-source-example-r1"
+        },
+        "display_name": "Sudden Death Rune",
+        "family_profile": "rune",
+        "delivery_task_eligible": false,
+        "presentation": {
+          "appearance_binding": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.3155",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "taxonomy": {
+          "item_class": "rune",
+          "primary": "attack",
+          "secondary": "attack"
+        },
+        "physical": {
+          "weight": {
+            "value": "0.70",
+            "unit": "oz"
+          },
+          "movable": true,
+          "pickupable": true
+        },
+        "stack": {
+          "stackable": true,
+          "max_count": 100
+        },
+        "charges": {
+          "count": 3
+        },
+        "requirements": {
+          "min_level": 45,
+          "min_magic_level": 15,
+          "premium_only": false,
+          "enforcement_mode": "on_use"
+        },
+        "trade": {
+          "marketable": true
+        }
+      },
+      "dependencies": {
+        "definitions": [],
+        "assets": [],
+        "presentations": [
+          {
+            "identity": {
+              "family": "Presentation",
+              "key": "oteryn:presentation.crystal.item.3155",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+            },
+            "source": {
+              "source_profile": "crystal_ff7ede5_item_definition_v1",
+              "repository": "zimbadev/crystalserver",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+              "path": "data/items/appearances.dat",
+              "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+            },
+            "appearance_id": 3155,
+            "frame_groups": [
+              {
+                "kind": "object_initial",
+                "source_group_id": 2,
+                "geometry": {
+                  "pattern_width": 1,
+                  "pattern_height": 1,
+                  "pattern_depth": 1,
+                  "layers": 1,
+                  "phase_count": 1,
+                  "is_opaque": false
+                },
+                "sprite_ids": [
+                  196224
+                ]
+              }
+            ]
+          }
+        ],
+        "proficiency_crosswalks": []
+      },
+      "evidence": {
+        "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
+        "item_key": "oteryn:item.consumable.sudden_death_rune",
+        "source_identity": {
+          "identity_namespace": "client/appearance_id",
+          "external_id": "3155",
+          "target": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.3155",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "engine_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+            "item_id": 3155,
+            "appearance_id": 3155,
+            "sprite_ids": [
+              196224
+            ]
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            "item_id": 3155,
+            "appearance_id": 3155,
+            "sprite_ids": [
+              196224
+            ]
+          }
+        ],
+        "definition_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/items.xml",
+            "digest_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+            "source_locator": "item[@id='3155']"
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/items.xml",
+            "digest_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+            "source_locator": "item[@id='3155']"
+          }
+        ],
+        "wiki_sources": [
+          {
+            "source_id": "br",
+            "page_id": 10250,
+            "title": "Sudden Death Rune",
+            "url": "https://www.tibiawiki.com.br/index.php?title=Sudden_Death_Rune&oldid=435712",
+            "revision": "435712",
+            "revision_timestamp": "2026-06-03T03:41:42Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "e3dbb273bb387789a1c7b53d0a061c2c0fa8b569",
+            "content_sha256": "7bae31e2dbd4eb80969b98e411397603faffdc06dd56647f950eff24a5ba5a25",
+            "raw_fields": [
+              "buyfrom",
+              "cooldowngrupo",
+              "cooldownproprio",
+              "damagetype",
+              "droppedby",
+              "droppedRaidby",
+              "effect",
+              "history",
+              "levelrequired",
+              "makelvl",
+              "makemana",
+              "makeqty",
+              "makevoc",
+              "mlrequired",
+              "name",
+              "notes",
+              "npcprice",
+              "premium",
+              "soul",
+              "storevalue",
+              "Subclass",
+              "weight",
+              "words"
+            ]
+          },
+          {
+            "source_id": "fandom",
+            "page_id": 2216,
+            "title": "Sudden Death Rune",
+            "url": "https://tibia.fandom.com/index.php?title=Sudden_Death_Rune&oldid=1189790",
+            "revision": "1189790",
+            "revision_timestamp": "2026-06-16T20:15:20Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "a596bff1fe50fbc5e11998029f4fe1294f61cdb4",
+            "content_sha256": "15e969af7af151448d23c126e9c0e7a73ec2b0de4b61b4c3a3cfb547b0fe648e",
+            "raw_fields": [
+              "actualname",
+              "article",
+              "basepower",
+              "buyfrom",
+              "damagetype",
+              "droppedby",
+              "history",
+              "immobile",
+              "implemented",
+              "itemid",
+              "levelrequired",
+              "marketable",
+              "mlrequired",
+              "name",
+              "notes",
+              "npcprice",
+              "npcvalue",
+              "objectclass",
+              "pickupable",
+              "plural",
+              "primarytype",
+              "sellto",
+              "stackable",
+              "storevalue",
+              "usable",
+              "value",
+              "vocrequired",
+              "walkable",
+              "weight",
+              "words"
+            ]
+          }
+        ],
+        "source_observations": {
+          "br": {
+            "Subclass": "Ataque",
+            "damagetype": "Death",
+            "premium": "não",
+            "mlrequired": "15",
+            "levelrequired": "45",
+            "makeqty": "3",
+            "weight": "0.70"
+          },
+          "fandom": {
+            "name": "Sudden Death Rune",
+            "itemid": "3155",
+            "objectclass": "Runes",
+            "primarytype": "Attack Runes",
+            "immobile": "no",
+            "pickupable": "yes",
+            "levelrequired": "45",
+            "mlrequired": "15",
+            "weight": "0.70",
+            "stackable": "yes",
+            "marketable": "yes",
+            "basepower": "150"
+          },
+          "engine_items_xml": {
+            "primarytype": "attack runes",
+            "type": "rune",
+            "runespellname": "adori gran mort",
+            "charges": "3",
+            "weight": "70"
+          }
+        },
+        "field_evidence": [
+          {
+            "destination": "/item/display_name",
+            "route_destination": "/item/display_name",
+            "normalized_value": "Sudden Death Rune",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "name",
+                "catalog_field": "name",
+                "raw_value": "Sudden Death Rune"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/item_class",
+            "route_destination": "/item/taxonomy/item_class",
+            "normalized_value": "rune",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "objectclass",
+                "catalog_field": "objectclass",
+                "raw_value": "Runes"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "type",
+                "catalog_field": "type",
+                "raw_value": "rune"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/primary",
+            "route_destination": "/item/taxonomy/primary",
+            "normalized_value": "attack",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "Attack Runes"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "primarytype",
+                "catalog_field": "primarytype",
+                "raw_value": "attack runes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/taxonomy/secondary",
+            "route_destination": "/item/taxonomy/secondary",
+            "normalized_value": "attack",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "Subclass",
+                "catalog_field": "Subclass",
+                "raw_value": "Ataque"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/weight/value",
+            "route_destination": "/item/physical/weight",
+            "normalized_value": "0.70",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "0.70"
+              },
+              {
+                "source": "fandom",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "0.70"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "70"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/movable",
+            "route_destination": "/item/physical/movable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "immobile",
+                "catalog_field": "immobile",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/pickupable",
+            "route_destination": "/item/physical/pickupable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "pickupable",
+                "catalog_field": "pickupable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/stack/stackable",
+            "route_destination": "/item/stack/stackable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "stackable",
+                "catalog_field": "stackable",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/charges/count",
+            "route_destination": "/item/charges/count",
+            "normalized_value": 3,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "engine_items_xml",
+                "field": "charges",
+                "catalog_field": "charges",
+                "raw_value": "3"
+              }
+            ]
+          },
+          {
+            "destination": "/item/requirements/min_level",
+            "route_destination": "/item/requirements/min_level",
+            "normalized_value": 45,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "levelrequired",
+                "catalog_field": "levelrequired",
+                "raw_value": "45"
+              },
+              {
+                "source": "fandom",
+                "field": "levelrequired",
+                "catalog_field": "levelrequired",
+                "raw_value": "45"
+              }
+            ]
+          },
+          {
+            "destination": "/item/requirements/min_magic_level",
+            "route_destination": "/item/requirements/min_magic_level",
+            "normalized_value": 15,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "mlrequired",
+                "catalog_field": "mlrequired",
+                "raw_value": "15"
+              },
+              {
+                "source": "fandom",
+                "field": "mlrequired",
+                "catalog_field": "mlrequired",
+                "raw_value": "15"
+              }
+            ]
+          },
+          {
+            "destination": "/item/requirements/premium_only",
+            "route_destination": "/item/requirements/premium_only",
+            "normalized_value": false,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "premium",
+                "catalog_field": "premium",
+                "raw_value": "não"
+              }
+            ]
+          },
+          {
+            "destination": "/item/trade/marketable",
+            "route_destination": "/item/trade/marketable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "marketable",
+                "catalog_field": "marketable",
+                "raw_value": "yes"
+              }
+            ]
+          }
+        ],
+        "non_source_defaults": [
+          {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
+            "destination": "/item/family_profile",
+            "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
+          },
+          {
+            "destination": "/item/physical/weight/unit",
+            "state": "SOURCE_WEIGHT_UNIT_NORMALIZATION"
+          },
+          {
+            "destination": "/item/stack/max_count",
+            "state": "PROFILE_DEFAULT_NOT_SOURCE_VERIFIED"
+          },
+          {
+            "destination": "/item/requirements/enforcement_mode",
+            "state": "PROFILE_ENFORCEMENT_NORMALIZATION"
+          }
+        ],
+        "readiness": {
+          "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
+          "blockers": [
+            "sprite_atlas_not_admitted",
+            "runtime_lowering_not_implemented",
+            "ability_binding_not_admitted",
+            "combat_formula_not_admitted"
+          ],
+          "non_claims": [
+            "not_runtime_imported",
+            "not_gameplay_parity_proven",
+            "not_renderable_without_matching_sprite_atlas"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "vial",
+      "item": {
+        "identity": {
+          "key": "oteryn:item.registry.i00002771",
+          "revision": "real-source-example-r1"
+        },
+        "display_name": "Vial",
+        "family_profile": "fluid",
+        "delivery_task_eligible": false,
+        "presentation": {
+          "appearance_binding": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.2874",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "taxonomy": {
+          "item_class": "fluid_container",
+          "primary": "vial"
+        },
+        "physical": {
+          "weight": {
+            "value": "1.80",
+            "unit": "oz"
+          },
+          "movable": true,
+          "pickupable": true
+        },
+        "stack": {
+          "stackable": false,
+          "max_count": 1
+        },
+        "fluid": {
+          "role": "container"
+        },
+        "trade": {
+          "marketable": true
+        }
+      },
+      "dependencies": {
+        "definitions": [],
+        "assets": [],
+        "presentations": [
+          {
+            "identity": {
+              "family": "Presentation",
+              "key": "oteryn:presentation.crystal.item.2874",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+            },
+            "source": {
+              "source_profile": "crystal_ff7ede5_item_definition_v1",
+              "repository": "zimbadev/crystalserver",
+              "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+              "path": "data/items/appearances.dat",
+              "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+            },
+            "appearance_id": 2874,
+            "frame_groups": [
+              {
+                "kind": "object_initial",
+                "source_group_id": 2,
+                "geometry": {
+                  "pattern_width": 4,
+                  "pattern_height": 3,
+                  "pattern_depth": 1,
+                  "layers": 1,
+                  "phase_count": 1,
+                  "is_opaque": false
+                },
+                "sprite_ids": [
+                  192686,
+                  192711,
+                  195768,
+                  195769,
+                  192677,
+                  195770,
+                  195771,
+                  195772,
+                  195773,
+                  195774,
+                  195775,
+                  193294
+                ]
+              }
+            ]
+          }
+        ],
+        "proficiency_crosswalks": []
+      },
+      "evidence": {
+        "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
+        "item_key": "oteryn:item.registry.i00002771",
+        "source_identity": {
+          "identity_namespace": "client/appearance_id",
+          "external_id": "2874",
+          "target": {
+            "family": "Presentation",
+            "key": "oteryn:presentation.crystal.item.2874",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+          }
+        },
+        "engine_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+            "item_id": 2874,
+            "appearance_id": 2874,
+            "sprite_ids": [
+              192686,
+              192711,
+              195768,
+              195769,
+              192677,
+              195770,
+              195771,
+              195772,
+              195773,
+              195774,
+              195775,
+              193294
+            ]
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/appearances.dat",
+            "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            "item_id": 2874,
+            "appearance_id": 2874,
+            "sprite_ids": [
+              192686,
+              192711,
+              195768,
+              195769,
+              192677,
+              195770,
+              195771,
+              195772,
+              195773,
+              195774,
+              195775,
+              193294
+            ]
+          }
+        ],
+        "definition_sources": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/items.xml",
+            "digest_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+            "source_locator": "item[@id='2874']"
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/items/items.xml",
+            "digest_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+            "source_locator": "item[@id='2874']"
+          }
+        ],
+        "wiki_sources": [
+          {
+            "source_id": "br",
+            "page_id": 7288,
+            "title": "Vial",
+            "url": "https://www.tibiawiki.com.br/index.php?title=Vial&oldid=382884",
+            "revision": "382884",
+            "revision_timestamp": "2022-12-18T20:16:04Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "2caba430cecd7be590e2fd88f3adcd1e0af92229",
+            "content_sha256": "b1390d881313a0b17b1c5ccff510fb001de926130244031f6bf9137aaeb20dbe",
+            "raw_fields": [
+              "attrib",
+              "buyfrom",
+              "droppedby",
+              "itemclass",
+              "name",
+              "notes",
+              "npcprice",
+              "npcvalue",
+              "primarytype",
+              "sellto",
+              "stackable",
+              "value",
+              "weight"
+            ]
+          },
+          {
+            "source_id": "fandom",
+            "page_id": 2725,
+            "title": "Vial",
+            "url": "https://tibia.fandom.com/index.php?title=Vial&oldid=1098584",
+            "revision": "1098584",
+            "revision_timestamp": "2025-04-10T13:29:32Z",
+            "captured_at": "2026-09-27T07:08:47.439Z",
+            "revision_sha1": "7d45c4734e713967ae7195c24dd1d6646b311db8",
+            "content_sha256": "833c0ab7bf1c13678e90e184d8e8034b5558ff3fe01cc34a2259e62d3eafaae4",
+            "raw_fields": [
+              "actualname",
+              "article",
+              "buyfrom",
+              "droppedby",
+              "holdsliquid",
+              "immobile",
+              "implemented",
+              "itemid",
+              "marketable",
+              "name",
+              "notes",
+              "npcprice",
+              "npcpricerook",
+              "npcvalue",
+              "npcvaluerook",
+              "objectclass",
+              "pickupable",
+              "plural",
+              "primarytype",
+              "sellto",
+              "stackable",
+              "usable",
+              "value",
+              "walkable",
+              "weight"
+            ]
+          }
+        ],
+        "source_observations": {
+          "br": {
+            "primarytype": "Recipientes Líquidos",
+            "attrib": "Carrega líquido.",
+            "weight": "1.80"
+          },
+          "fandom": {
+            "name": "Vial",
+            "itemid": "2874",
+            "objectclass": "Household Items",
+            "primarytype": "Fluid Containers",
+            "immobile": "no",
+            "pickupable": "yes",
+            "holdsliquid": "yes",
+            "weight": "1.80",
+            "stackable": "no",
+            "marketable": "yes"
+          },
+          "engine_items_xml": {
+            "primarytype": "fluid containers",
+            "allowpickUpAble": "1",
+            "weight": "180"
+          }
+        },
+        "field_evidence": [
+          {
+            "destination": "/item/display_name",
+            "route_destination": "/item/display_name",
+            "normalized_value": "Vial",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "name",
+                "catalog_field": "name",
+                "raw_value": "Vial"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/weight/value",
+            "route_destination": "/item/physical/weight",
+            "normalized_value": "1.80",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "br",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "1.80"
+              },
+              {
+                "source": "fandom",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "1.80"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "weight",
+                "catalog_field": "weight",
+                "raw_value": "180"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/movable",
+            "route_destination": "/item/physical/movable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "immobile",
+                "catalog_field": "immobile",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/physical/pickupable",
+            "route_destination": "/item/physical/pickupable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "pickupable",
+                "catalog_field": "pickupable",
+                "raw_value": "yes"
+              },
+              {
+                "source": "engine_items_xml",
+                "field": "allowpickUpAble",
+                "catalog_field": "allowpickupable",
+                "raw_value": "1"
+              }
+            ]
+          },
+          {
+            "destination": "/item/stack/stackable",
+            "route_destination": "/item/stack/stackable",
+            "normalized_value": false,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "stackable",
+                "catalog_field": "stackable",
+                "raw_value": "no"
+              }
+            ]
+          },
+          {
+            "destination": "/item/fluid/role",
+            "route_destination": "/item/fluid/role",
+            "normalized_value": "container",
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "holdsliquid",
+                "catalog_field": "holdsliquid",
+                "raw_value": "yes"
+              }
+            ]
+          },
+          {
+            "destination": "/item/trade/marketable",
+            "route_destination": "/item/trade/marketable",
+            "normalized_value": true,
+            "normalization": "typed normalization from pinned source observations",
+            "observations": [
+              {
+                "source": "fandom",
+                "field": "marketable",
+                "catalog_field": "marketable",
+                "raw_value": "yes"
+              }
+            ]
+          }
+        ],
+        "non_source_defaults": [
+          {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
+            "destination": "/item/family_profile",
+            "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
+          },
+          {
+            "destination": "/item/taxonomy/item_class",
+            "state": "AUTHOR_SELECTED_FROM_FLUID_CAPABILITY"
+          },
+          {
+            "destination": "/item/taxonomy/primary",
+            "state": "AUTHOR_SELECTED_CANONICAL_KIND"
+          },
+          {
+            "destination": "/item/physical/weight/unit",
+            "state": "SOURCE_WEIGHT_UNIT_NORMALIZATION"
+          },
+          {
+            "destination": "/item/stack/max_count",
+            "state": "SCHEMA_NORMALIZATION_FROM_STACKABLE_FALSE"
+          }
+        ],
+        "readiness": {
+          "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
+          "blockers": [
+            "sprite_atlas_not_admitted",
+            "runtime_lowering_not_implemented",
+            "fluid_interaction_binding_not_admitted"
+          ],
+          "non_claims": [
+            "not_runtime_imported",
+            "not_gameplay_parity_proven",
+            "not_renderable_without_matching_sprite_atlas"
+          ]
+        }
+      }
+    }
+  ]
+}
