@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-forgotten-knowledge-fights
 title: Forgotten Knowledge fight encounters (tenth encounter slice)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1012
 jira: KAN-16
 base_sha: 420bdf0d4a0940e1417eab8b352ed65b62420c28
 head_sha: null
