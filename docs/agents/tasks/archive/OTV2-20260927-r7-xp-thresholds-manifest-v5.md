@@ -4,24 +4,25 @@
 task_id: OTV2-20260927-r7-xp-thresholds-manifest-v5
 title: Register bounded R7 experience thresholds in Reference manifest revision 5
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/r7-xp-thresholds-manifest-v5
 issue: 483
 pr: 1019
 base_sha: 1a2f28ff67156462de78effb6003f9c4b19f301a
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 44ec39e03cfe5f67f52bff2853e8853323105aac
+final_head_sha: 44ec39e03cfe5f67f52bff2853e8853323105aac
+final_head_frozen_at: 2026-09-27T20:05:30Z
+completed_at: 2026-09-27T20:35:45Z
 owner: R7_XP_THRESHOLDS_MANIFEST_V5
 created_at: 2026-09-27T19:35:40Z
-updated_at: 2026-09-27T19:58:44Z
+updated_at: 2026-09-27T20:36:25Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
   - docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md
-  - docs/agents/tasks/active/OTV2-20260927-r7-xp-thresholds-manifest-v5.md
+  - docs/agents/tasks/archive/OTV2-20260927-r7-xp-thresholds-manifest-v5.md
 public_contracts:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
 depends_on:
@@ -63,9 +64,9 @@ Advance the protected Reference evidence/parity registry exactly once from manif
 - [x] No death-loss, awarded-kill-XP, bonus, modifier, ordering, delevel or rounding assertion is introduced.
 - [x] Pinned SourceMeta metaschema/instance validation, JSON parse, semantic invariants, LF/no-CR checks and diff checks pass locally.
 - [x] Exact successor head/tree and exact three-path delta are frozen by live GitHub readback.
-- [ ] Fresh GPT-6 Luna whole-diff review reports zero unresolved P0/P1/P2/P3 findings.
-- [ ] Exact-head hosted CI and governed Merge Queue integration complete.
-- [ ] Protected `main` readback proves the exact manifest/source/task blobs.
+- [x] Fresh GPT-6 Luna whole-diff review reports zero unresolved P0/P1/P2/P3 findings.
+- [x] Exact-head hosted CI and governed Merge Queue integration complete.
+- [x] Protected `main` readback proves the exact manifest/source/task blobs.
 
 ## Excluded scope
 
@@ -82,7 +83,7 @@ Schema mutation/versioning; Runtime, Combat, Server Seam, Movement, native-room,
 - Described the pinned Fandom revision as formula evidence; direct substitution yields both values, while its dynamic table module remains unpinned and unused for the numeric derivation.
 - Inspected exact Canary and CrystalServer player implementations. Their matching cumulative-XP formula is useful as a future fixture hypothesis but grants no Global or Oteryn authority.
 - Inspected the protected Character XP commit seam: it accepts a caller-supplied finite progression policy and does not itself pin these numeric thresholds, so `NOT_STARTED` is the truthful manifest state.
-- The exact candidate containing this packet is bound by live branch/PR readback and the lifecycle freeze comment after publication; this packet intentionally does not self-assert its own commit ID.
+- The integrated source candidate is bound by live branch/PR readback and the lifecycle freeze comment. This archive-only successor does not self-assert its own commit ID; its exact qualification remains on the live PR/check surface.
 
 ## Validation
 
@@ -97,39 +98,78 @@ Schema mutation/versioning; Runtime, Combat, Server Seam, Movement, native-room,
 
 ### Component/integration
 
-- Repository Agent Governance, Architecture Semantic Audit and Merge Gate must qualify the exact frozen PR head. Every successor generation requires a new freeze and fresh qualification.
+- Repository Agent Governance, Architecture Semantic Audit and Merge Gate qualified the exact frozen PR head; the governed merge-group aggregate then qualified the integration candidate.
 
 ### E2E
 
 - `NOT_APPLICABLE`: documentation/evidence registry only; no runnable product behavior changes.
 
+## Exact-head CI
+
+- source head/tree: `44ec39e03cfe5f67f52bff2853e8853323105aac` / `d2a6f13131d1a5964b91af2f78b2e3617b2ef52a`
+- freeze record: #162 comment `5859380072`, clarified by comment `5859407461`
+- PR Merge Gate: run `36346951487`, `SUCCESS`
+- canonical PR aggregate: `game-gate` job `108700522291`, `SUCCESS`
+- ready-state Architecture Semantic Audit: run `36347856530`, `SUCCESS`
+- Agent Governance, merge-authority audit, routing, supply chain, exact-head Rust workspace, PostgreSQL E2E and required aggregate checks all passed for the frozen source head.
+
+## Self-review
+
+- exact source head: `44ec39e03cfe5f67f52bff2853e8853323105aac`
+- method/reviewer: whole diff against the R7 allocation, manifest owner pin, schema-v1 contract, source field dispositions and exact remote blob readback
+- material findings closed before final freeze: canonical PR binding; stale lifecycle checkpoint; target-continuity wording; post-target official-table separation; Fandom dynamic-module overreach; renderer-dependent OTS URL line fragments
+- verdict: `PASS`; final exact-head review reported no remaining P0/P1/P2/P3 findings
+
 ## Independent review
 
 - required: `YES`
-- method: fresh GPT-6 Luna whole-diff evidence, provenance, classification and lifecycle review on the exact frozen successor head
-- status: pending exact-head publication
+- exact source head/tree: `44ec39e03cfe5f67f52bff2853e8853323105aac` / `d2a6f13131d1a5964b91af2f78b2e3617b2ef52a`
+- method/auditor: three fresh GPT-6 Luna whole-diff reviews covering evidence/provenance, schema/semantics and lifecycle/metadata, consolidated in PR #1019 comment `5859414630`
+- findings: P0=0, P1=0, P2=0, P3=0; unresolved material review threads=0
+- verdict: `PASS`
+
+## PR and closeout
+
+- changed-file review: exactly the three allocated R7 evidence/task paths, 459 additions / 1 deletion; no Combat, Server Seam, Movement, native-room, loot-runtime, DUR-03, protocol, client, SQL, persistence or production path
+- governed Merge Queue request: Oteryn/Oteryn#196 comment `5859522647`
+- executor run: `36347906911`; receipt/readback UUID `68c488c4-8544-414a-9fe6-9b71191b158b`, sequence `1 -> 2`, same PR/head/base action confirmed
+- merge-group head/run: `d7b9e10940236ba7e71a56308a1d8fee201555eb` / `36347940826`
+- merge-group aggregate: `game-gate` job `108702660814`, `SUCCESS`
+- merged PR #1019: `2026-09-27T20:35:45Z`, merge commit `d7b9e10940236ba7e71a56308a1d8fee201555eb`
+- protected `main` readback: commit `d7b9e10940236ba7e71a56308a1d8fee201555eb`, tree `c375be267497322b7cb2d57376714c4414f8cc13`
+- protected blob readback: manifest `225555f528786c96705bc6fdce3c90a23bf435bf`; source packet `51357e01299e970ff6b35351641fe2aa2b8a87fc`; source task packet `a2af342501009757eef81fba950b8e25f9738818`
+- source integration record: #162 comment `5859611201`
+- ownership release: complete when this archive-only lifecycle move is protected-integrated and read back
 
 ## Context checkpoint
 
 ```yaml
-last_progress: candidate content complete; the exact published successor is bound by the live #162 freeze record created after publication, and exact-head review plus hosted gates follow that external record
-status: validating
+last_progress: PR #1019 passed exact-head review and CI, entered governed Merge Queue, passed the real merge-group gate, and was read back byte-exact on protected main
+status: completed
 branch: codex/r7-xp-thresholds-manifest-v5
-head_sha: null
+head_sha: 44ec39e03cfe5f67f52bff2853e8853323105aac
 pr: 1019
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: 44ec39e03cfe5f67f52bff2853e8853323105aac
+final_head_frozen_at: 2026-09-27T20:05:30Z
 ci_trigger_source: live_github_pr_events
-ci_check_generation: exact_successor_head_from_external_freeze_record
-ci_checks_for_current_head: in_progress
-runner_assignment_state: assigned
-terminal_ci_checks_for_current_generation: in_progress
+ci_check_generation: exact_source_head_and_merge_group
+ci_checks_for_current_head: success
+ci_run_ids:
+  - 36346951487
+  - 36347856530
+  - 36347940826
+ci_job_ids:
+  - 108700522291
+  - 108702660814
+runner_assignment_state: completed
+terminal_ci_wait_started_at: 2026-09-27T20:08:55Z
+terminal_ci_checks_for_current_generation: success
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: complete fresh exact-head independent review and hosted gates; any material repair requires an explicit return to AUTHORING and a new external freeze record
+next_action: none
 ```
