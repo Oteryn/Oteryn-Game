@@ -71,6 +71,19 @@ pub(crate) enum ControlLossResult {
     Unknown,
 }
 
+/// Outcome of the FND-04B §6 grace-expiry release of a recorded control loss.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum GraceExpiryResult {
+    /// No controller binding, or the session is no longer a reconnectable loss
+    /// (resumed, replaced or already released by another owner).
+    NotApplicable,
+    /// The durable session is TERMINAL, its claims are released and the Channel
+    /// actor is removed.
+    Released,
+    /// The outcome could not be proven within the bounded attempts.
+    Unknown,
+}
+
 /// Outcome of #935 first-entry positioning for one admitted session.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum FirstEntryOutcome {
@@ -131,6 +144,15 @@ pub(crate) trait FreshAdmissionAuthority {
         _wait: std::time::Duration,
     ) -> impl Future<Output = ControlLossResult> {
         async { ControlLossResult::NotApplicable }
+    }
+
+    /// Once the original grace deadline of the recorded loss passes without resumed
+    /// control, terminally release the session and remove its Channel actor (FND-04B §6).
+    fn expire_control_loss(
+        &self,
+        _admitted: AdmittedSession,
+    ) -> impl Future<Output = GraceExpiryResult> {
+        async { GraceExpiryResult::NotApplicable }
     }
 }
 

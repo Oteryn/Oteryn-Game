@@ -101,10 +101,17 @@ class Parser:
             if text == 'nil':
                 return None
             parts = [text]
-            while self.peek()[1] == '.' and self.peek(1)[0] == 'name':
-                self.next()
-                parts.append(self.next()[1])
-            return {'expr': '.'.join(parts), 'line': line}
+            while True:
+                if self.peek()[1] == '.' and self.peek(1)[0] == 'name':
+                    self.next()
+                    parts.append(self.next()[1])
+                elif self.peek()[1] == '[' and self.peek(1)[0] == 'number' and self.peek(2)[1] == ']':
+                    # an indexed storage such as `Mission07[1]`
+                    self.next()
+                    parts[-1] += f'[{self.next()[1]}]'
+                    self.next()
+                else:
+                    return {'expr': '.'.join(parts), 'line': line}
         raise LuaError(f'line {line}: unsupported value {text!r}')
 
     @staticmethod

@@ -130,7 +130,7 @@ The first composed owner records a fresh-origin loss in these cases:
 
 The loss decision revalidates claim ownership (presence and lease holder), not the byte identity of the claim rows. An independent owner re-observation that leaves ownership unchanged, such as a Platform security refresh, does not block loss. Loss removes control and grants nothing. Because account security and character eligibility are not loss conditions, every later resume or re-entry MUST revalidate them as current (§§12–13, item 10).
 
-The loss is timed on the durable owner's clock, the same clock that samples the final decision. The original deadline is fixed at that decision. The actor stays present and uncontrolled in its Channel. Expiry release and positive resume are separate children.
+The loss is timed on the durable owner's clock, the same clock that samples the final decision. The original deadline is fixed at that decision. The actor stays present and uncontrolled in its Channel. Once the deadline passes on the durable clock without resumed control, the owner terminally releases the session. The release is prepared from the current claim rows and committed through the exact fenced lifecycle release. Only after that TERMINAL fact does the Channel remove the exact actor, so the character may be admitted again. Positive resume is a separate child.
 
 ## 7. Exact 4-second defensive PvE protection
 
@@ -367,6 +367,16 @@ Uses same PREPARE/COMMIT state machine with recovery grant replacing missing rec
 COMMIT additionally revalidates recovery JWT time, exact credential/trust state, key/profile evidence source age/order/current decision, Platform-security source age/order/generation/state, RecoveryGrantNonce, each independent revision, AccountId->CharacterId first and CharacterId->WorldId second.
 
 RecoveryGrantNonce is consumed only with successful authority switch.
+
+Implementation note (#822 PR 5a): for a session whose loss is recorded by the owning-loss receipt, same-session reauthenticated recovery uses the typed complete-reconnect durability format, not the legacy reconnect journal. Under the admission relation locks, the adapter binds each PREPARE and COMMIT to:
+
+- the exact durable original loss;
+- the exact current session;
+- current claim ownership;
+- the ready runtime owner;
+- the retained budget reconstructed from its immutable receipts.
+
+PREPARE reserves the candidate transport. COMMIT consumes the RecoveryGrantNonce and switches the same GameSession to the candidate connection. The legacy continuity row never holds protection continuity; the complete-reconnect effect carries it.
 
 ## 21. Grace expiry and post-grace existing-actor recovery
 

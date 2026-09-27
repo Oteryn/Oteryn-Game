@@ -20,7 +20,8 @@
  "method": [
   "name match of the wiki title against quest-log quests and missions, Storage.Quest keys and quest script, world and monster directories of each server",
   "unmatched titles searched by hand and by an assisting agent in chest/door/container tables, NPC dialogues and scripts; the assisting verdicts were re-checked and 16 corrected",
-  "IMPLEMENTED: a dedicated implementation exists; PARTIAL: pieces only (storage stub, outfit item, reward line); ABSENT: nothing specific found in Lua sources (a map-only container in world.otbm is not searched)"
+  "IMPLEMENTED: a dedicated implementation exists; PARTIAL: pieces only (storage stub, outfit item, reward line); ABSENT: nothing specific found in Lua sources (a map-only container in world.otbm is not searched)",
+  "evidence keeps source locations only; quoted source text is removed (LICENSE-ASSETS.md reserves narrative text)"
  ],
  "tibiawiki_br": "not captured: www.tibiawiki.com.br answers the capture host with a Cloudflare challenge (HTTP 403)",
  "quests": [
@@ -901,10 +902,10 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "startup/tables/chest.lua \"-- Dark armor quest\" (canary:490, crystal:789)"
+     "startup/tables/chest.lua […] (canary:490, crystal:789)"
     ],
     "crystalserver": [
-     "startup/tables/chest.lua \"-- Dark armor quest\" (canary:490, crystal:789)"
+     "startup/tables/chest.lua […] (canary:490, crystal:789)"
     ]
    }
   },
@@ -1393,7 +1394,7 @@
    "crystalserver": "PARTIAL",
    "evidence": {
     "canary": [
-     "data-otservbr-global/lib/core/quests/catalog/033_what_a_foolish_quest.lua:49 'Exchange the crates...'"
+     "data-otservbr-global/lib/core/quests/catalog/033_what_a_foolish_quest.lua:49 […]"
     ],
     "crystalserver": [
      "data-global/lib/core/quests.lua:3017-3074 djinn war lamp exchange missions implemented"
@@ -1478,7 +1479,7 @@
    "evidence": {
     "canary": [],
     "crystalserver": [
-     "data/scripts/lib/register_achievements.lua:577 'Feral Trapper' achievement text (task-board hunting achievement, unrelated outfit-quest mechanic)"
+     "data/scripts/lib/register_achievements.lua:577 […] achievement text (task-board hunting achievement, unrelated outfit-quest mechanic)"
     ]
    }
   },
@@ -1899,7 +1900,7 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "data-otservbr-global/npc/hugo.lua:86-95 '30 heaven blossoms' fetch dialogue"
+     "data-otservbr-global/npc/hugo.lua:86-95 […] fetch dialogue"
     ],
     "crystalserver": [
      "data-global/npc/hugo.lua:84-93 same dialogue"
@@ -2044,7 +2045,7 @@
    "evidence": {
     "canary": [],
     "crystalserver": [
-     "data-global/npc/leonora.lua:13 '-- Leonora: Illuminator outfit (female = 1861), no addons.'"
+     "data-global/npc/leonora.lua:13 […]"
     ]
    }
   },
@@ -2137,7 +2138,7 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "data-otservbr-global/lib/core/quests/catalog/022_the_ice_islands_quest.lua:102 'travel by Dog Sleds to Inukaya'"
+     "data-otservbr-global/lib/core/quests/catalog/022_the_ice_islands_quest.lua:102 […]"
     ],
     "crystalserver": [
      "data-global/lib/core/storages.lua:886 Inukaya = 41271"
@@ -2197,7 +2198,7 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua:67 'Bring Ajax in Northport 100 Iron Ore.'"
+     "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua:67 […]"
     ],
     "crystalserver": [
      "data-global/lib/core/quests.lua:2189 same Ajax fetch mission"
@@ -2661,7 +2662,7 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua:244 'Bring Lugri the Medusa shield!'"
+     "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua:244 […]"
     ],
     "crystalserver": [
      "data-global/lib/core/quests.lua:2366 same Lugri mission"
@@ -2960,7 +2961,7 @@
      "data-otservbr-global/lib/core/quests/catalog/012_outfit_and_addon_quests.lua storageId NorsemanOutfit"
     ],
     "crystalserver": [
-     "data-global/lib/core/quests.lua:2325-2326 name='Norseman Outfit Quest', storageId=NorsemanOutfit"
+     "data-global/lib/core/quests.lua:2325-2326 name= […], storageId=NorsemanOutfit"
     ]
    }
   },
@@ -3129,10 +3130,10 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "npc/al_dee.lua \"-- Pick quest\""
+     "npc/al_dee.lua […]"
     ],
     "crystalserver": [
-     "npc/al_dee.lua \"-- Pick quest\""
+     "npc/al_dee.lua […]"
     ]
    }
   },
@@ -3801,7 +3802,7 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "data-otservbr-global/npc/sinatuki.lua:1-54 dedicated NPC with 'Chuqua' keyword dialogue"
+     "data-otservbr-global/npc/sinatuki.lua:1-54 dedicated NPC with […] keyword dialogue"
     ],
     "crystalserver": [
      "data-global/npc/sinatuki.lua:1-52 same"
@@ -3877,7 +3878,7 @@
    "crystalserver": "PARTIAL",
    "evidence": {
     "canary": [
-     "data-otservbr-global/npc/hyacinth.lua:109 'Here you go - two small health potions...'"
+     "data-otservbr-global/npc/hyacinth.lua:109 […]"
     ],
     "crystalserver": [
      "data-global/npc/hyacinth.lua:107 same dialogue"
@@ -3969,10 +3970,10 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "startup/tables/chest.lua \"-- Spike Sword Quest\""
+     "startup/tables/chest.lua […]"
     ],
     "crystalserver": [
-     "startup/tables/chest.lua \"-- Spike Sword Quest\""
+     "startup/tables/chest.lua […]"
     ]
    }
   },
@@ -4650,7 +4651,7 @@
    "evidence": {
     "canary": [],
     "crystalserver": [
-     "data/scripts/lib/register_achievements.lua:575 [572] 'Bastard' achievement: 'The Order of the Stag will remember your deeds.' (Winter Update 2025)"
+     "data/scripts/lib/register_achievements.lua:575 [572] […] achievement: […] (Winter Update 2025)"
     ]
    }
   },
@@ -4752,7 +4753,7 @@
    "evidence": {
     "canary": [],
     "crystalserver": [
-     "data-global/monster/winter_update_2025/quests/bonelords_phylactery.lua, fatal_bug.lua, bosses/bone_overlord.lua etc — 'crypt rune' loot drops"
+     "data-global/monster/winter_update_2025/quests/bonelords_phylactery.lua, fatal_bug.lua, bosses/bone_overlord.lua etc — […] loot drops"
     ]
    }
   },
@@ -5196,7 +5197,7 @@
      "data-otservbr-global/startup/tables/chest.lua:573 -- Troll cave quest (questName trollcave1)"
     ],
     "crystalserver": [
-     "data-global/lib/core/quests.lua:5666 'You got the log book back from the troll caves...'"
+     "data-global/lib/core/quests.lua:5666 […]"
     ]
    }
   },
@@ -5225,7 +5226,7 @@
    "crystalserver": "IMPLEMENTED",
    "evidence": {
     "canary": [
-     "data-otservbr-global/lib/core/quests/catalog/018_the_beginning.lua:74-75 'passed the bridge to Rookgaard...'"
+     "data-otservbr-global/lib/core/quests/catalog/018_the_beginning.lua:74-75 […]"
     ],
     "crystalserver": [
      "data-global/lib/core/storages.lua:298 Tutorial = 52276"
@@ -5521,10 +5522,10 @@
    "crystalserver": "PARTIAL",
    "evidence": {
     "canary": [
-     "data-otservbr-global/lib/core/quests/catalog/010_in_service_of_yalahar.lua:170 'you will receive Yal...' (faction-completion reward)"
+     "data-otservbr-global/lib/core/quests/catalog/010_in_service_of_yalahar.lua:170 […] (faction-completion reward)"
     ],
     "crystalserver": [
-     "data-global/lib/core/quests.lua:924 same 'Report back to whichever principal...you will receive Yal...' line"
+     "data-global/lib/core/quests.lua:924 same […] line"
     ]
    }
   }

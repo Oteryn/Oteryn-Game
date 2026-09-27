@@ -32,6 +32,23 @@ REVISION = 'canary-47dfd51f+crystalserver-ff7ede59'
 # A storage expression that is not a storage key: Canary uid 6093 stores `keyAction` (an undefined global).
 INVALID_MARKERS = {'keyAction'}
 STOP = {'the', 'a', 'an', 'of', 'quest', 'quests', 's', 'and', 'in', 'to'}
+FANDOM = 'https://tibia.fandom.com/wiki/'
+# Conflicts decided by the reference-date wiki (D25): position -> server whose value stands, with the evidence.
+WIKI_DECISIONS = {
+    (32551, 32652, 10): ('crystalserver', 'The Thieves Guild Quest spoiler: the chest behind the quest door holds the '
+                         'Stolen Golden Goblet', [('The_Thieves_Guild_Quest/Spoiler', 1086330), ('Stolen_Golden_Goblet', 1115203)]),
+}
+# The wiki confirms a cooldown that the servers' data sets but their script ignores.
+COOLDOWN_EVIDENCE = [('Brass-Shod_Chest', 1200697, 'Falcon Bastion chests can be opened once every 24h')]
+
+
+PLACEHOLDER = re.compile(r'%[-0-9.]*[dsif]|\|[A-Z_]+\|')
+
+
+def text_ref(text):
+    """Narrative text is reserved content (LICENSE-ASSETS.md): only its digest, length and placeholders are kept."""
+    return {'sha256': hashlib.sha256(text.encode('utf-8')).hexdigest(), 'length': len(text),
+            'placeholders': sorted(set(PLACEHOLDER.findall(text)))}
 
 
 def ref(family, key):
@@ -114,7 +131,7 @@ def placement(entry):
     if entry['text']:
         text = entry['text']
         reward['written_text'] = {'item': ref('Item', f'{namespace}:item/{text["itemId"]}') if text.get('itemId') else None,
-                                  'text': text['text'].strip('\n')}
+                                  'text_ref': text_ref(text['text'].strip('\n'))}
     result = {'position': dict(zip('xyz', entry['position'])),
               'appearance': ref('Item', f'{namespace}:item/{value["itemId"]}') if value.get('itemId') else None,
               'reward': reward}
@@ -137,6 +154,12 @@ def repeat(entries):
     if not hours:
         return {'kind': 'once'}
     return {'kind': 'cooldown', 'hours': max(hours)}
+
+
+def quest_key(wiki):
+    """One identity per wiki quest across slices: the Canary namespace when Canary implements the quest at all."""
+    namespace = 'canary' if wiki.get('canary') in ('IMPLEMENTED', 'PARTIAL') else 'crystalserver'
+    return f'{namespace}:quest/{slug(wiki["title"])}'
 
 
 def joined(text):
@@ -209,6 +232,11 @@ def build(repos, coverage):
                 status = 'conflict'
                 resolution = 'servers disagree on ' + ', '.join(fields) + '; ' + '; '.join(
                     f'{n}: ' + json.dumps({f: comparable(pair[n]).get(f) for f in fields}) for n in pair)
+                if position in WIKI_DECISIONS:
+                    winner, reason, pages = WIKI_DECISIONS[position]
+                    primary, status = pair[winner], 'mapped'
+                    resolution += f'; the wiki decides for {winner} (D25): {reason} (' + ', '.join(
+                        f'{FANDOM}{title}?oldid={revid}' for title, revid in pages) + ')'
         if len(pair) == 2 and primary is pair['canary'] and (pair['crystalserver']['text'] or {}).get('itemId'):
             # CrystalServer names the reward item that carries a written text; Canary stamps every item
             primary = dict(primary, text=pair['crystalserver']['text'])
@@ -242,11 +270,11 @@ def build(repos, coverage):
         if wiki and basis == 'section':
             # the file's section headers do not always cover the entries below them (outlaw camp keys sit
             # under the Katana Quest header), so a section-only match is kept for review, not as a link
-            candidate = ref('Quest', f'{namespace}:quest/{slug(wiki["title"])}')
+            candidate = ref('Quest', quest_key(wiki))
         elif wiki:
-            quest_key = f'{namespace}:quest/{slug(wiki["title"])}'
-            quest = ref('Quest', quest_key)
-            entry = quests.setdefault(quest_key, {'identity': {'key': quest_key, 'revision': REVISION},
+            key_of_quest = quest_key(wiki)
+            quest = ref('Quest', key_of_quest)
+            entry = quests.setdefault(key_of_quest, {'identity': {'key': key_of_quest, 'revision': REVISION},
                                                   'display_name': wiki['title'], 'kind': 'reward_only',
                                                   'shown_in_quest_log': wiki['in_quest_log'],
                                                   'wiki': {k: wiki[k] for k in ('title', 'pageid', 'revid')},
@@ -262,7 +290,9 @@ def build(repos, coverage):
                  'placements': [placement(m[1]) for m in members]}
         if timed:
             claim['source_divergence'] = ('The source data sets `time` in hours but the shared script only honours '
-                                          '`timerStorage`, so both servers hand this reward out once. The intent is kept.')
+                                          '`timerStorage`, so both servers hand this reward out once. The wiki confirms '
+                                          'the cooldown: ' + '; '.join(f'{text} ({FANDOM}{title}?oldid={revid})'
+                                                                       for title, revid, text in COOLDOWN_EVIDENCE) + '.')
         claims.append(claim)
         for position, primary, pair, sources, status, resolution in members:
             manifest_entries.append({'position': list(position), 'sources': sources, 'status': status,

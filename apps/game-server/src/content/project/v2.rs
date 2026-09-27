@@ -3,6 +3,9 @@
 
 use super::*;
 
+mod creature;
+pub use creature::*;
+
 pub const WORLD_PROJECT_V2_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2";
 pub const WORLD_PROJECT_V2_ROOT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_ROOT/v2";
 pub const WORLD_PROJECT_V2_MANIFEST_SCHEMA: &str = "OTERYN_WORLD_PROJECT_MANIFEST/v2";
@@ -637,6 +640,9 @@ pub struct ProjectV2CreatureAuthoring {
     pub bosstiary: Option<ProjectV2BosstiaryProfile>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub familiar: Option<ProjectV2FamiliarProfile>,
+    /// Admission §5: the rest of the monster authoring creature section.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<ProjectV2CreatureDetails>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -670,6 +676,9 @@ pub struct ProjectV2AbilityAuthoring {
     pub acquisition_interactions: Vec<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub augments: Vec<ProjectV2AugmentBinding>,
+    /// Admission §5: geometry and authored effect order of a creature ability.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<ProjectV2AbilityDetails>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -779,6 +788,11 @@ pub enum ProjectV2AuthoringProfileData {
     House(ProjectV2HouseAuthoring),
     Encounter(ProjectV2EncounterAuthoring),
     WorldObject(ProjectV2WorldObjectAuthoring),
+    Behavior(ProjectV2BehaviorAuthoring),
+    Presentation(ProjectV2PresentationAuthoring),
+    Effect(ProjectV2EffectAuthoring),
+    Formula(ProjectV2FormulaAuthoring),
+    Loot(ProjectV2LootAuthoring),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -800,6 +814,9 @@ impl ProjectV2AuthoringProfile {
                 if let Some(bestiary) = &mut profile.bestiary {
                     bestiary.kill_thresholds.sort();
                 }
+                if let Some(details) = &mut profile.details {
+                    details.canonicalize();
+                }
                 profile
                     .fields
                     .sort_by(|left, right| left.field_path.cmp(&right.field_path));
@@ -812,6 +829,9 @@ impl ProjectV2AuthoringProfile {
                     .sort_by(|left, right| left.key.cmp(&right.key));
                 for augment in &mut profile.augments {
                     augment.canonicalize();
+                }
+                if let Some(details) = &mut profile.details {
+                    details.canonicalize();
                 }
                 profile
                     .fields
@@ -846,6 +866,10 @@ impl ProjectV2AuthoringProfile {
                     .fields
                     .sort_by(|left, right| left.field_path.cmp(&right.field_path));
             }
+            ProjectV2AuthoringProfileData::Behavior(profile) => profile.canonicalize(),
+            ProjectV2AuthoringProfileData::Presentation(profile) => profile.canonicalize(),
+            ProjectV2AuthoringProfileData::Effect(profile) => profile.canonicalize(),
+            ProjectV2AuthoringProfileData::Formula(_) | ProjectV2AuthoringProfileData::Loot(_) => {}
         }
     }
 }
@@ -1770,6 +1794,18 @@ fn validate_v2_declaration(
     Ok(())
 }
 
+fn require_target(
+    profile: &ProjectV2AuthoringProfile,
+    family: ProjectV2Family,
+) -> Result<(), ProjectError> {
+    if profile.target.family != family {
+        return Err(ProjectError::InvalidProject(
+            "v2 authoring profile target family mismatch",
+        ));
+    }
+    Ok(())
+}
+
 fn validate_v2_authoring_profile(
     profile: &ProjectV2AuthoringProfile,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
@@ -1880,6 +1916,9 @@ fn validate_v2_authoring_profile(
                     ));
                 }
             }
+            if let Some(details) = &value.details {
+                validate_creature_details(details, require_ref, limits)?;
+            }
             validate_v2_candidate_fields(&value.fields)?;
         }
         ProjectV2AuthoringProfileData::Ability(value) => {
@@ -1929,6 +1968,9 @@ fn validate_v2_authoring_profile(
             }
             for augment in &value.augments {
                 validate_v2_augment(augment, require_ref, limits)?;
+            }
+            if let Some(details) = &value.details {
+                validate_ability_details(details, require_ref, limits)?;
             }
             validate_v2_candidate_fields(&value.fields)?;
         }
@@ -2068,6 +2110,26 @@ fn validate_v2_authoring_profile(
             }
             validate_v2_candidate_fields(&value.fields)?;
         }
+        ProjectV2AuthoringProfileData::Behavior(value) => {
+            require_target(profile, ProjectV2Family::Behavior)?;
+            validate_behavior(value, require_ref, limits)?;
+        }
+        ProjectV2AuthoringProfileData::Presentation(value) => {
+            require_target(profile, ProjectV2Family::Presentation)?;
+            validate_presentation(value, limits)?;
+        }
+        ProjectV2AuthoringProfileData::Effect(value) => {
+            require_target(profile, ProjectV2Family::Effect)?;
+            validate_effect(value, require_ref, limits)?;
+        }
+        ProjectV2AuthoringProfileData::Formula(value) => {
+            require_target(profile, ProjectV2Family::Formula)?;
+            validate_formula(value)?;
+        }
+        ProjectV2AuthoringProfileData::Loot(value) => {
+            require_target(profile, ProjectV2Family::Loot)?;
+            validate_loot(value)?;
+        }
     }
     Ok(())
 }
@@ -2178,6 +2240,23 @@ fn validate_v2_state(
     }
     for profile in &state.authoring_profiles {
         validate_v2_authoring_profile(profile, &require_ref, limits)?;
+        if let ProjectV2AuthoringProfileData::Loot(loot) = &profile.data {
+            let entries = records.iter().find_map(|record| match record {
+                ProjectReferenceRecord::Loot {
+                    identity, entries, ..
+                } if identity.key == profile.target.key
+                    && identity.revision == profile.target.revision =>
+                {
+                    Some(entries.len())
+                }
+                _ => None,
+            });
+            if entries != Some(loot.entries.len()) {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Loot details must align with the entries of their Loot record",
+                ));
+            }
+        }
     }
 
     limits.check(

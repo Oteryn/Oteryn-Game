@@ -2432,6 +2432,71 @@
     },
     {
       "identity": {
+        "key": "canary:quest/shadows_of_yalahar_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Shadows of Yalahar Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Shadows of Yalahar Quest",
+        "pageid": 37117,
+        "revid": 843939
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/bloodkiss_flower",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/dark_essence",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/deep_crystal",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/golem_blueprint",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/golem_head",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/old_power_core",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/shadow_orb",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/stabilizer",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/worm_queen_tooth",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "75"
+      }
+    },
+    {
+      "identity": {
         "key": "canary:quest/shaman_treasure_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
@@ -2849,6 +2914,11 @@
         "revid": 1188871
       },
       "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/quest/u8_2/the_inquisition_quest/reward_room_text",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
         {
           "family": "RewardClaim",
           "key": "canary:reward-claim/quest/u8_2/the_inquisition_quest/witches_grimoire",
@@ -3702,71 +3772,6 @@
     },
     {
       "identity": {
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-      },
-      "display_name": "Shadows of Yalahar Quest",
-      "kind": "reward_only",
-      "shown_in_quest_log": true,
-      "wiki": {
-        "title": "Shadows of Yalahar Quest",
-        "pageid": 37117,
-        "revid": 843939
-      },
-      "claims": [
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/bloodkiss_flower",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/dark_essence",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/deep_crystal",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/golem_blueprint",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/golem_head",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/old_power_core",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/shadow_orb",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/stabilizer",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        },
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/kv/worm_queen_tooth",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        }
-      ],
-      "requirements_from_wiki": {
-        "premium": "yes",
-        "lvl": "75"
-      }
-    },
-    {
-      "identity": {
         "key": "crystalserver:quest/targuna_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
@@ -3793,31 +3798,6 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "10 / 12"
-      }
-    },
-    {
-      "identity": {
-        "key": "crystalserver:quest/the_inquisition_quest",
-        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-      },
-      "display_name": "The Inquisition Quest",
-      "kind": "reward_only",
-      "shown_in_quest_log": true,
-      "wiki": {
-        "title": "The Inquisition Quest",
-        "pageid": 25383,
-        "revid": 1188871
-      },
-      "claims": [
-        {
-          "family": "RewardClaim",
-          "key": "crystalserver:reward-claim/quest/u8_2/the_inquisition_quest/reward_room_text",
-          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-        }
-      ],
-      "requirements_from_wiki": {
-        "premium": "yes",
-        "lvl": "100"
       }
     }
   ]
