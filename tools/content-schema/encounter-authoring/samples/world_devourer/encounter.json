@@ -322,6 +322,54 @@
           "all_in": "arena"
         }
       ]
+    },
+    {
+      "key": "disruption_charges",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "disruption"
+      },
+      "delay_ms": {
+        "min": 12000,
+        "max": 13000
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "disruption",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/charged_disruption",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "charged_disruption_charges",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "charged_disruption"
+      },
+      "delay_ms": {
+        "min": 18000,
+        "max": 19000
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "charged_disruption",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/overcharged_disruption",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
     }
   ],
   "outcomes": [

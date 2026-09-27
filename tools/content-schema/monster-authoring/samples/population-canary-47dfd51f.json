@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 139,
-    "fully_resolved": 1511,
+    "blocked": 133,
+    "fully_resolved": 1517,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1106
+    "wiki_adopted_monsters": 1108
   },
   "wiki_adopted_rows": {
     "Loot2": 12862,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 61,
+      "monsters": 55,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -501,6 +501,7 @@
     "chakoya_toolshaper",
     "chakoya_tribewarden",
     "chakoya_windcaller",
+    "charged_disruption",
     "charged_energy_elemental",
     "charger",
     "chasm_spawn",
@@ -543,6 +544,7 @@
     "countess_sorrow",
     "courage_leech",
     "crab",
+    "crackler",
     "crape_man",
     "crawler",
     "crazed_beggar",
@@ -639,6 +641,7 @@
     "demon_skeleton",
     "demon_slave",
     "demon_summoner",
+    "depolarized_crackler",
     "depowered_minotaur",
     "despair",
     "desperate_soul",
@@ -649,6 +652,7 @@
     "dharalion",
     "diabolic_imp",
     "diamond_servant",
+    "diamond_servant_replica",
     "diblis_the_fair",
     "dipthrah",
     "dire_penguin",
@@ -658,6 +662,7 @@
     "diseased_dan",
     "diseased_fred",
     "disgusting_ooze",
+    "disruption",
     "distorted_phantom",
     "doctor_perhaps",
     "dog",
@@ -884,6 +889,7 @@
     "goblin_scavenger",
     "goggle_cake",
     "golden_servant",
+    "golden_servant_replica",
     "goldhanded_cultist",
     "golgordan",
     "gore_horn",

@@ -1387,6 +1387,88 @@ def eleventh_slice(build):
 
 
 
+def heart_minion_forms(build):
+    """DisruptionTransform, ChargedDisruptionTransform, CracklerTransform and DepolarizedTransform: minions that change form
+    after a number of thinks, or while the crackler room is polarized."""
+    item = build.items['world_devourer']
+    for minion, following, event, script, seconds, lines in (
+            ('Disruption', 'Charged Disruption', 'DisruptionTransform', 'creaturescripts_disruption_transform.lua', 12,
+             [1, 2, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 30]),
+            ('Charged Disruption', 'Overcharged Disruption', 'ChargedDisruptionTransform',
+             'creaturescripts_charged_disruption_transform.lua', 18,
+             [1, 2, 4, 5, 6, 7, 9, 10, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 30])):
+        role = slug(minion)
+        build.participant(item, role, minion, event)
+        build.define(item, creature(following))
+        path = build.rule(item, {'key': f'{role}_charges', 'trigger': {'kind': 'creature_spawned', 'role': role},
+                                 'delay_ms': {'min': seconds * 1000, 'max': seconds * 1000 + 1000}, 'conditions': [],
+                                 'actions': [{'kind': 'transform', 'role': role, 'into': creature(following), 'health': 'full'}]})
+        build.entry(item, HEART + script, lines, 'mapped', path,
+                    f'onThink counts the thinks of each {minion.lower()} (one per second); the first think records 1 and at '
+                    f'{seconds} a fresh {following.lower()} replaces it on its tile. The first think falls within the first second, '
+                    f'so the change comes {seconds}-{seconds + 1} s after the {minion.lower()} appears.')
+
+    # Cracklers: the room's polarization is read on every think.
+    item = build.get('heart_cracklers', 'Heart of Destruction: crackler room', 'instance_per_party')
+    state = item['encounter']['state']
+    state['flags'].append({'name': 'room_polarized', 'initial': False})
+    state['timers'].append({'name': 'crackler_think', 'duration_ms': 1000, 'repeat': True})
+    lever = HEART + 'actions_cracklers_lever.lua'
+    build.entry(item, lever, [125], 'mapped', '/encounter/state/flags/0',
+                'The lever and every new vortex pattern clear cracklerTransform. movements_vortex_crackler.lua sets it while '
+                'players hold all four vortex tiles of the current pattern and clears it when one steps off; that stepped-on '
+                'mechanic is transcribed with the room (D31 adds no stepped-on trigger yet).')
+    path = build.rule(item, {'key': 'crackler_think_starts', 'trigger': {'kind': 'encounter_started'}, 'conditions': [],
+                             'actions': [{'kind': 'timer', 'timer': 'crackler_think', 'operation': 'start'}]})
+    build.entry(item, lever, [125], 'mapped', path, 'Creature thinks run once per second for the whole fight.')
+    for minion, following, event, script, value, lines in (
+            ('Crackler', 'Depolarized Crackler', 'CracklerTransform', 'creaturescripts_crackler_transform.lua', True,
+             [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 16]),
+            ('Depolarized Crackler', 'Crackler', 'DepolarizedTransform', 'creaturescripts_depolarized_transform.lua', False,
+             [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15])):
+        role = slug(minion)
+        build.participant(item, role, minion, event)
+        build.define(item, creature(following))
+        path = build.rule(item, {'key': f'{role}_turns', 'trigger': {'kind': 'timer_elapsed', 'timer': 'crackler_think'},
+                                 'conditions': [{'kind': 'flag', 'flag': 'room_polarized', 'value': value}],
+                                 'actions': [{'kind': 'transform', 'role': role, 'into': creature(following), 'health': 'keep_absolute'}]})
+        build.entry(item, HEART + script, lines, 'mapped', path,
+                    f'onThink: while cracklerTransform is {str(value).lower()}, every {minion.lower()} is replaced on its tile by a '
+                    f'{following.lower()} with the same health.')
+
+
+def replica_servants(build):
+    """ReplicaServantDeath: each golden or diamond servant replica counts for the world and for its top damage dealer."""
+    path_ = FORGOTTEN + 'creaturescripts_replica_servants.lua'
+    item = build.get('replica_servants', 'Forgotten Knowledge: servant replicas', 'channel_shared')
+    for servant, storage, counter, config in (('Golden Servant Replica', 'GoldenServant', 'GoldenServantCounter', [2, 3, 4, 5]),
+                                               ('Diamond Servant Replica', 'DiamondServant', 'DiamondServantCounter', [6, 7, 8, 9])):
+        role = slug(servant)
+        outcome = f'{role}_defeated'
+        build.participant(item, role, servant, 'ReplicaServantDeath')
+        item['encounter']['outcomes'].append(outcome)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'emit_outcome', 'outcome': outcome, 'credited': 'damage_contributors'}]})
+        build.entry(item, path_, [1, 10, 11, 12, 13, 14, 15, 16, 37, 38, 40] + config, 'mapped', path + '/trigger',
+                    f'onDeath of a {servant.lower()}.')
+        build.entry(item, path_, [18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36], 'mapped',
+                    path + '/actions/0',
+                    f'The quest domain raises the world count ForgottenKnowledge.{storage}, opens the teleport (item 10840, action '
+                    '26665) on (32815, 32870, 13) once both world counts reach 5, and raises '
+                    f'ForgottenKnowledge.{counter} of the top damage dealer (D27).')
+        item['manifest']['outcome_evidence'].append({
+            'outcome': outcome, 'credited': 'damage_contributors',
+            'quest_domain': {'world_counter': f'Storage.Quest.U11_02.ForgottenKnowledge.{storage}',
+                             'player_counter': f'Storage.Quest.U11_02.ForgottenKnowledge.{counter}',
+                             'player': 'the top damage contributor (Canary mostDamageKiller)',
+                             'teleport': 'item 10840 with action id 26665 on Canary (32815, 32870, 13) once GoldenServant and '
+                                         'DiamondServant both reach 5'}})
+    build.entry(item, path_, [17, 19], 'approved_omission', None,
+                'The guard compares the storage key, not its value, with 0, so it never runs; the world count starts at 0 in the '
+                'quest domain.')
+
+
+
 def small_boss_events(build):
     """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
     glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
@@ -2202,7 +2284,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants):
         transcribe(build)
     print(json.dumps(build.write()))
 
