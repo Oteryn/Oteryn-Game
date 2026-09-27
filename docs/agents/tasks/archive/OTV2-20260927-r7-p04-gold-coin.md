@@ -227,3 +227,59 @@ owner_action_required: null
 blocker: null
 next_action: stage the exact allocated delta, commit, publish and freeze one remote candidate
 ```
+
+## Terminal lifecycle closeout — 2026-09-27
+
+This section supersedes the historical implementing/pending metadata and checkpoint
+above. The complete delivery record remains verbatim as historical evidence; this
+archive is not an active dispatch surface.
+
+`PROVEN`: [PR #987](https://github.com/Oteryn/Oteryn-Game/pull/987) merged through
+the native Merge Queue at `2026-09-27T14:04:29Z`. Its exact frozen delivery head
+is `95c626decbc31e7f3452d2155294ff14dd2bc65e`, with sole parent
+`ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c` and tree
+`e1c9027a8a7abfef5e7fac94055e9926d647c46b`. The queue receipt is
+`4d61b7a4-ca26-458c-a0de-bf7119534ecf`.
+
+The real [merge_group run 36324043168](https://github.com/Oteryn/Oteryn-Game/actions/runs/36324043168)
+completed successfully at head `d8567a3a17ec274a4db447540ec5917e99305648`, including aggregate
+[game-gate job 108634728473](https://github.com/Oteryn/Oteryn-Game/actions/runs/36324043168/job/108634728473).
+PR merge-commit readback and protected `main` both bound that exact SHA. Protected
+`main` then advanced normally to `2478da0ca0772e194af3086a6348aea183fb24d1`,
+whose direct parent is the P04 merge commit; all 21 P04-owned changed paths remain
+byte-identical to the frozen candidate. Queue acceptance alone is not used as
+integration proof.
+
+`PROVEN`: all 24 final PR checks completed without failure, and the independent
+exact-head GPT-6 Luna review reported no material finding. The review repeated the
+16 importer tests, 3 repository-package tests, migration validator and unit test,
+canonical materializer, allocation-digest assertion and `git diff --check` in an
+isolated LF checkout. [Review evidence](https://github.com/Oteryn/Oteryn-Game/pull/987#issuecomment-5856468730)
+is bound to the frozen delivery SHA.
+
+The post-merge push [Agent governance run 36324606367](https://github.com/Oteryn/Oteryn-Game/actions/runs/36324606367)
+failed on terminal active packets for already-merged PRs #986 and #982. Its diagnostic
+did not name this P04 packet or a P04 code/content failure; #982 was subsequently
+archived by #988. This inherited repository-health observation is preserved rather
+than misreported as a clean post-merge push, but it does not supersede the successful
+candidate checks, real merge-group `game-gate` or protected-main content readback.
+
+The delivery task status is `completed` for R7 P04 only. It establishes the stable
+Reference Content identity `oteryn:item.currency.gold_coin@definition-r1` as a
+materializable `StackCapable` carrier with typed semantics still unknown. It does
+not activate runtime currency behavior, MINT/TRANSFER, durable custody, a stack
+maximum, economy rules, playable behavior or Global parity. Aggregate #162 and
+Jira KAN-12 remain active for P03, P02 and P05–P14.
+
+[#162 closeout allocation 5856571688](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856571688)
+allocates branch `codex/r7-p04-gold-coin-closeout` from protected
+`main@2478da0ca0772e194af3086a6348aea183fb24d1` to exactly this same-name
+active-to-archive movement. The allocation also releases the 22 implementation
+paths after protected-main readback. This lifecycle-only closeout changes no
+executable component, generated content, source evidence, schema, Jira state or
+runtime behavior.
+
+The closeout movement itself remains pending its own normal exact-head validation
+and protected integration. Its branch, candidate and queue evidence are external
+to these immutable pre-commit bytes; no self-referential closeout SHA is invented.
+Ownership of these two lifecycle paths is released only after that integration.
