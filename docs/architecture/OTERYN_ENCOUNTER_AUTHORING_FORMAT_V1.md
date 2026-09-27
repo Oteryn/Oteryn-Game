@@ -1,7 +1,7 @@
 # Oteryn Encounter Authoring Format v1
 
 - Date: 2026-09-27
-- DecisionStatus: CANDIDATE (D20 draft; owner decisions D26-D28 recorded in §10; the vocabulary is
+- DecisionStatus: CANDIDATE (D20 draft; owner decisions D26-D29 recorded in §10; the vocabulary is
   implemented offline before any runtime work)
 - DeliveryStatus: OPEN (design draft only)
 - ImplementationStatus: NOT_STARTED
@@ -96,7 +96,9 @@ Encounter
 |---|---|
 | `creature_died(role)` | `onDeath` |
 | `lethal_damage(role)` - may `prevent_death` | `onPrepareDeath` |
-| `health_crossed(role, percent, downward)` | `onThink`/`onHealthChange` health checks |
+| `health_crossed(role, percent or absolute health, downward)` | `onThink`/`onHealthChange` health checks; the percent may be fractional (D29) |
+| `creature_spawned(role)` | `mType.onSpawn` (D29) |
+| `ability_cast(role, AbilityRef)` | a monster spell script with fight effects (D29) |
 | `damage_taken(role, source: player/any)` | `onHealthChange` per hit |
 | `damage_accumulated(role, amount)` | `onHealthChange` damage counters |
 | `timer_elapsed(timer)` | `addEvent` delays, `onThink` countdowns |
@@ -108,12 +110,14 @@ Encounter
 ## 5. Conditions
 
 `chance_percent`, `counter_compare(counter, op, value)`, `flag(name, value)`,
-`creature_present(role, anchor or radius, present/absent)`, `in_anchor(role or killer, anchor)`,
+`creature_present(role, anchor or near(role, radius), present/absent)`, `in_anchor(role or killer, anchor)`,
 `killer_is_player`, `has_master(role, value)` (Canary skips summoned copies of a boss),
-`health_percent(role, op, value)`,
+`health_percent(role, op, value)` (fractional allowed),
 `attacker_wears(ItemRef)` (the Asura counter items), `killer_progress(quest key, op, value)` - a
 read-only view of the killer's quest progress published by the quest domain (the Soul War taints);
-the encounter never writes it.
+the encounter never writes it. `world_state(key, op, value)` (D29) is the same read-only view of a
+value another domain publishes for the world or channel (a quest stage, a world counter, an item
+buff such as the cobra flask).
 
 ## 6. Actions
 
@@ -122,13 +126,14 @@ the encounter never writes it.
 | `spawn` | role or CreatureRef, count, at (`death_position`, anchor, `random_in(anchor)`, offset), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent) |
 | `remove` | role, or `all_in(anchor)` (monsters only; players are never removed) |
 | `transform` | role -> next stage, CreatureRef or `random_of` several CreatureRefs (uniform); health `keep_percent`/`keep_absolute`/`full` |
-| `heal` | role, amount or `full` |
+| `heal` | role, amount, range or `full` |
+| `damage` | subject, amount or range, damage type (D29) |
 | `prevent_death` | only after `lethal_damage` |
-| `damage_modifier` | role, multiplier (0 = immune), damage types, sources, duration or until reset |
+| `damage_modifier` | role, multiplier (0 = immune), damage types, sources, duration or until reset; `component: primary` limits it to the primary part of a hit (D29) |
 | `reflect_damage` | role, percent, damage types |
-| `convert_damage_to_heal` | role, damage types |
+| `convert_damage_to_heal` | role, damage types, optional `component` |
 | `teleport` | role or `players_in(anchor)`, to anchor |
-| `map_item` | create/transform/remove ItemRef at an anchor or `at: death_position` (death and lethal damage triggers), `revert_after_ms`; a teleporter carries `destination` and optionally `revert_destination` anchors; a revert restores the original item with its original attributes unless `revert_destination` overrides the destination; optional `effect` |
+| `map_item` | create/transform/remove ItemRef at an anchor or `at: death_position` (death and lethal damage triggers), `revert_after_ms`; a teleporter carries `destination` and optionally `revert_destination` anchors; a revert restores the original item with its original attributes unless `revert_destination` overrides the destination; optional `effect`; optional `interaction`: the key of interaction-domain content that defines what the item does when used or stepped on (D29) |
 | `counter` / `flag` / `timer` | set, add, start, stop |
 | `set_phase` | next or named phase (phase changes are triggers too: `phase_entered(name)`) |
 | `cast` | AbilityRef at a role or anchor (death explosions) |
@@ -173,8 +178,14 @@ the encounter never writes it.
    rule run in order. `prevent_death` is valid only in a `lethal_damage` rule. A rule with
    `delay_ms` is scheduled once per trigger occurrence (like Canary `addEvent`): its conditions are
    evaluated and its actions run `delay_ms` later, and `death_position` is the position of that death.
-3. Randomness (`chance_percent`, random positions) is drawn by the encounter instance, so a fight
-   can be audited and replayed from its seed.
+   In a rule triggered by one creature (a death, lethal damage, damage, health, spawn or cast
+   trigger), `transform`, `prevent_death`, `heal`, `damage`, `damage_modifier` and `say` naming the
+   trigger's role act on that creature; `remove` of a role removes every creature of the role. A
+   delayed action on a creature that no longer exists does nothing. `creature_spawned` fires when a
+   creature of the role appears: placed by the map or a lever, spawned, or transformed into the role.
+3. Randomness (`chance_percent`, random positions, `random_of`, `{min, max}` ranges for spawn
+   counts, heal and damage amounts, rule delays and timer durations) is drawn uniformly by the
+   encounter instance, so a fight can be audited and replayed from its seed.
 4. Health carried by `transform`/`spawn` is explicit (`keep_percent`, `keep_absolute`, `full`,
    percent); nothing is implied.
 5. Anchors are typed (point or area) and must all be bound by the map project before admission;
@@ -189,6 +200,7 @@ the encounter never writes it.
 | D26 | Encounters are instanced per party by default (a separate copy of the arena for each party), unlike Canary's one shared arena; `channel_shared` is an explicit opt-in per encounter. | Owner request 2026-09-27; `WorldId + InstanceId` in FND-ID-01; "Instanced dungeon" in the scope matrix. |
 | D27 | Encounters only emit named outcomes. Boss cooldowns, reward eligibility and reward rooms are consumed by the reward domain; quest steps by the quest domain. | Owner delegated the choice; the scope matrix already assigns boss reward eligibility to the reward domain. |
 | D28 | §4-6 plus phases is the v1 vocabulary under the rules of §9. Work starts with `FourthTaintBossesPrepareDeath` (15 Soul War hunting monsters, a `channel_shared` zone rule with a read-only quest-progress condition), then the largest death events. | Owner delegated the choice; the source shows the event is a zone rule, not a boss fight. |
+| D29 | Vocabulary extensions: `creature_spawned` and `ability_cast` triggers; the `world_state` read-only condition; fractional or absolute health thresholds; `creature_present` near a role; `{min, max}` ranges; a `damage` action; `component: primary`; `map_item.interaction`. Acting on whatever stands on a fixed tile is not added: each case names its role from wiki or map evidence. Scripted movement is deferred. State shared by all parties belongs to the quest domain, which the encounter reads through `world_state`. | Owner accepted the proposal ("kontynuuj tak jak uważasz za optymalne", 2026-09-27). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
@@ -246,3 +258,15 @@ A fourth slice:
 
 50 encounters validate, 45 manifests resolve fully, `verify_encounter_schema.py` 45/45; the census rises
 from 1,427 to 1,442.
+
+A fifth slice uses the D29 vocabulary:
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `UrmahlulluChanges` | 1 | 4 | Canary changes forms at thresholds of one 512000-health scale and reverts a form after 60 s. The wiki gives each form its own health and describes five consecutive kills, so each form becomes the next on its lethal hit (D15, D25). |
+| `dreamCourtsDeath` (Alptramun) | 1 | 5 | Unmastered dream deaths raise the dream counter in bands of nine; Alptramun's death resets it. The escalation spell that reads the counter is never cast by any Canary monster; the wiki says killed summons are replaced by stronger ones without numbers, so that ability stays unresolved. |
+| `mType.onSpawn` (Splinters of Madness) | 1 | 2 | Each stage grows into the next after 120 s (`creature_spawned` + `delay_ms`). Canary never lets a grown splinter grow again; the wiki says they do (D25). The mighty splinter's absorption into the boss stays unresolved. |
+
+Inline callbacks covered by an encounter manifest are relocated by the monster converter like events.
+52 encounters validate, 46 manifests resolve fully, `verify_encounter_schema.py` 63/63; the census rises
+from 1,453 to 1,463.

@@ -38,6 +38,13 @@ NAME = {'type': 'string', 'pattern': r'^[a-z][a-z0-9_]*$'}
 TEXT = {'type': 'string', 'minLength': 1}
 BOOL = {'type': 'boolean'}
 OP = enum('==', '!=', '<', '<=', '>', '>=')
+PERCENT = {'type': 'number', 'exclusiveMinimum': 0, 'exclusiveMaximum': 100}
+COMPONENT = enum('all', 'primary')  # D29: both parts of a hit (default) or only its primary damage
+
+
+def amount(minimum):
+    """A fixed integer or a range {min, max} drawn uniformly by the encounter instance (D29)."""
+    return {'oneOf': [integer(minimum), obj({'min': integer(minimum), 'max': integer(minimum)}, ('min', 'max'))]}
 
 
 def kinded(kind, properties=None, required=()):
@@ -59,7 +66,9 @@ d = {
 d['trigger'] = {'oneOf': [
     kinded('creature_died', {'role': NAME}, ('role',)),
     kinded('lethal_damage', {'role': NAME}, ('role',)),
-    kinded('health_crossed', {'role': NAME, 'percent': integer(1, 99)}, ('role', 'percent')),
+    kinded('health_crossed', {'role': NAME, 'percent': PERCENT, 'health': integer(1)}, ('role',)),
+    kinded('creature_spawned', {'role': NAME}, ('role',)),
+    kinded('ability_cast', {'role': NAME, 'ability': use('AbilityRef')}, ('role', 'ability')),
     kinded('damage_taken', {'role': NAME, 'source': enum('player', 'any')}, ('role', 'source')),
     kinded('damage_accumulated', {'role': NAME, 'amount': integer(1)}, ('role', 'amount')),
     kinded('timer_elapsed', {'timer': NAME}, ('timer',)),
@@ -73,35 +82,39 @@ d['condition'] = {'oneOf': [
     kinded('chance_percent', {'value': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 100}}, ('value',)),
     kinded('counter_compare', {'counter': NAME, 'op': OP, 'value': {'type': 'integer'}}, ('counter', 'op', 'value')),
     kinded('flag', {'flag': NAME, 'value': BOOL}, ('flag', 'value')),
-    kinded('creature_present', {'role': NAME, 'anchor': NAME, 'present': BOOL}, ('role', 'anchor', 'present')),
+    kinded('creature_present', {'role': NAME, 'anchor': NAME, 'near': obj({'role': NAME, 'radius': integer(0)}, ('role', 'radius')),
+                                 'present': BOOL}, ('role', 'present')),
+    kinded('world_state', {'state': KEY, 'op': OP, 'value': {'type': ['integer', 'boolean']}}, ('state', 'op', 'value')),
     kinded('in_anchor', {'subject': use('subject'), 'anchor': NAME}, ('subject', 'anchor')),
     kinded('killer_is_player'),
     kinded('has_master', {'role': NAME, 'value': BOOL}, ('role', 'value')),
-    kinded('health_percent', {'role': NAME, 'op': OP, 'value': integer(0, 100)}, ('role', 'op', 'value')),
+    kinded('health_percent', {'role': NAME, 'op': OP, 'value': {'type': 'number', 'minimum': 0, 'maximum': 100}},
+           ('role', 'op', 'value')),
     kinded('attacker_wears', {'item': use('ItemRef'), 'wears': BOOL}, ('item', 'wears')),
     kinded('killer_progress', {'progress': KEY, 'op': OP, 'value': {'type': ['integer', 'boolean']}},
            ('progress', 'op', 'value'))]}
 
 d['action'] = {'oneOf': [
-    kinded('spawn', {'creature': use('CreatureRef'), 'role': NAME, 'count': integer(1), 'at': use('position'),
+    kinded('spawn', {'creature': use('CreatureRef'), 'role': NAME, 'count': amount(1), 'at': use('position'),
                      'owner': enum('none', 'subject', 'death_master'), 'health': use('health')},
            ('creature', 'count', 'at', 'owner', 'health')),
     kinded('remove', {'role': NAME, 'all_in': NAME}, ()),
     kinded('transform', {'role': NAME, 'into': {'oneOf': [use('CreatureRef'), obj({'next_stage': const(True)}, ('next_stage',)),
                                                            obj({'random_of': array(use('CreatureRef'), 2, True)}, ('random_of',))]},
                          'health': use('health')}, ('role', 'into', 'health')),
-    kinded('heal', {'subject': use('subject'), 'amount': {'oneOf': [const('full'), integer(1)]}}, ('subject', 'amount')),
+    kinded('heal', {'subject': use('subject'), 'amount': {'oneOf': [const('full'), amount(1)]}}, ('subject', 'amount')),
+    kinded('damage', {'subject': use('subject'), 'amount': amount(1), 'damage_type': NAME}, ('subject', 'amount', 'damage_type')),
     kinded('prevent_death', {'role': NAME}, ('role',)),
-    kinded('damage_modifier', {'role': NAME, 'multiplier_percent': integer(0), 'damage_types': array(NAME, 0, True),
+    kinded('damage_modifier', {'role': NAME, 'multiplier_percent': integer(0), 'damage_types': array(NAME, 0, True), 'component': COMPONENT,
                                'sources': enum('player', 'any'), 'until': enum('this_hit', 'reset', 'timer'), 'timer': NAME},
            ('role', 'multiplier_percent', 'sources', 'until')),
     kinded('reflect_damage', {'role': NAME, 'percent': integer(1, 100), 'damage_types': array(NAME, 0, True)}, ('role', 'percent')),
-    kinded('convert_damage_to_heal', {'role': NAME, 'damage_types': array(NAME, 0, True)}, ('role',)),
+    kinded('convert_damage_to_heal', {'role': NAME, 'damage_types': array(NAME, 0, True), 'component': COMPONENT}, ('role',)),
     kinded('teleport', {'who': {'oneOf': [obj({'role': NAME}, ('role',)), obj({'players_in': NAME}, ('players_in',))]},
                         'to': NAME}, ('who', 'to')),
     kinded('map_item', {'operation': enum('create', 'transform', 'remove'), 'item': use('ItemRef'), 'into': use('ItemRef'),
                         'anchor': NAME, 'at': const('death_position'), 'revert_after_ms': integer(1), 'destination': NAME,
-                        'revert_destination': NAME, 'effect': TEXT}, ('operation', 'item')),
+                        'revert_destination': NAME, 'effect': TEXT, 'interaction': KEY}, ('operation', 'item')),
     kinded('counter', {'counter': NAME, 'operation': enum('set', 'add'), 'value': {'type': 'integer'}}, ('counter', 'operation', 'value')),
     kinded('flag', {'flag': NAME, 'value': BOOL}, ('flag', 'value')),
     kinded('timer', {'timer': NAME, 'operation': enum('start', 'stop')}, ('timer', 'operation')),
@@ -112,7 +125,7 @@ d['action'] = {'oneOf': [
     kinded('emit_outcome', {'outcome': NAME, 'credited': enum('damage_contributors', 'killer', 'players_in_anchor'),
                             'anchor': NAME}, ('outcome', 'credited'))]}
 
-d['rule'] = obj({'key': NAME, 'trigger': use('trigger'), 'delay_ms': integer(1), 'conditions': array(use('condition')),
+d['rule'] = obj({'key': NAME, 'trigger': use('trigger'), 'delay_ms': amount(1), 'conditions': array(use('condition')),
                  'actions': array(use('action'), 1)}, ('key', 'trigger', 'conditions', 'actions'))
 
 schema = obj({
@@ -124,14 +137,14 @@ schema = obj({
     'phases': array(NAME, 0, True),
     'state': obj({'counters': array(obj({'name': NAME, 'initial': {'type': 'integer'}}, ('name', 'initial'))),
                   'flags': array(obj({'name': NAME, 'initial': BOOL}, ('name', 'initial'))),
-                  'timers': array(obj({'name': NAME, 'duration_ms': integer(1), 'repeat': BOOL}, ('name', 'duration_ms', 'repeat')))},
+                  'timers': array(obj({'name': NAME, 'duration_ms': amount(1), 'repeat': BOOL}, ('name', 'duration_ms', 'repeat')))},
                  ('counters', 'flags', 'timers')),
     'rules': array(use('rule'), 1),
     'outcomes': array(NAME, 0, True),
     'reset_after_ms': integer(1)},
     ('identity', 'display_name', 'scope', 'participants', 'anchors', 'phases', 'state', 'rules', 'outcomes'),
     **{'$schema': 'https://json-schema.org/draft/2020-12/schema', '$id': 'oteryn:encounter-authoring/v1', '$defs': d,
-       'description': 'Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D28).'})
+       'description': 'Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D29).'})
 
 
 if __name__ == '__main__':

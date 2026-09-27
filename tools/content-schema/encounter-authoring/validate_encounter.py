@@ -26,8 +26,20 @@ def refs(value):
             yield from refs(child)
 
 
+def ranges(value, where=''):
+    """Every {'min', 'max'} range inside a document, with its JSON path."""
+    if isinstance(value, dict):
+        if set(value) == {'min', 'max'}:
+            yield where, value
+        for key, child in value.items():
+            yield from ranges(child, f'{where}/{key}')
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from ranges(child, f'{where}/{index}')
+
+
 def semantic(e, catalog):
-    errors = []
+    errors = [f'{where}: range min exceeds max' for where, r in ranges(e) if r['min'] > r['max']]
     roles = [p['role'] for p in e['participants']]
     anchors = {a['key']: a['kind'] for a in e['anchors']}
     counters = [c['name'] for c in e['state']['counters']]
@@ -69,6 +81,8 @@ def semantic(e, catalog):
         kind = trigger['kind']
         if 'role' in trigger:
             need('role', trigger['role'], known_roles, where + '/trigger')
+        if kind == 'health_crossed' and ('percent' in trigger) == ('health' in trigger):
+            errors.append(f'{where}/trigger: health_crossed takes exactly one of percent and health')
         if kind == 'timer_elapsed':
             need('timer', trigger['timer'], timers, where + '/trigger')
         if kind == 'counter_reached':
@@ -88,7 +102,12 @@ def semantic(e, catalog):
                 need('flag', condition['flag'], flags, at)
             elif ck == 'creature_present':
                 need('role', condition['role'], known_roles, at)
-                need_area(condition['anchor'], at)
+                if ('anchor' in condition) == ('near' in condition):
+                    errors.append(f'{at}: creature_present takes exactly one of anchor and near')
+                if 'anchor' in condition:
+                    need_area(condition['anchor'], at)
+                if 'near' in condition:
+                    need('role', condition['near']['role'], known_roles, at)
             elif ck == 'in_anchor':
                 subject(condition['subject'], at, trigger)
                 need_area(condition['anchor'], at)

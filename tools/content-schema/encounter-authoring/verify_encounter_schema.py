@@ -27,7 +27,7 @@ def fixture():
                    'actions': [{'kind': 'emit_outcome', 'outcome': 'victory', 'credited': 'damage_contributors'},
                                {'kind': 'teleport', 'who': {'players_in': 'arena'}, 'to': 'exit'}]}],
         'outcomes': ['victory'], 'reset_after_ms': 300000}
-    catalog = {'definitions': [ref('Creature', 'boss'), ref('Creature', 'add'), ref('Item', 'vortex')]}
+    catalog = {'definitions': [ref('Creature', 'boss'), ref('Creature', 'add'), ref('Item', 'vortex'), ref('Ability', 'summon')]}
     return encounter, catalog
 
 
@@ -117,6 +117,30 @@ case('spawn owned by the dying master accepted', rule([{'kind': 'spawn', 'creatu
                                                       trigger={'kind': 'creature_died', 'role': 'boss'}), True)
 case('death_master outside a death trigger', rule([{'kind': 'spawn', 'creature': ref('Creature', 'add'), 'count': 1, 'at': {'anchor': 'exit'},
                                                     'owner': 'death_master', 'health': 'full'}]))
+case('spawn trigger accepted', rule(trigger={'kind': 'creature_spawned', 'role': 'boss'}), True)
+case('spawn trigger for an unknown role', rule(trigger={'kind': 'creature_spawned', 'role': 'ghost'}))
+case('ability cast trigger accepted', rule(trigger={'kind': 'ability_cast', 'role': 'boss', 'ability': ref('Ability', 'summon')}), True)
+case('world state condition accepted', rule(conditions=[{'kind': 'world_state', 'state': 'oteryn:world/flask', 'op': '==', 'value': True}]),
+     True)
+case('fractional health threshold accepted', rule(trigger={'kind': 'health_crossed', 'role': 'boss', 'percent': 78.125}), True)
+case('absolute health threshold accepted', rule(trigger={'kind': 'health_crossed', 'role': 'boss', 'health': 400000}), True)
+case('health threshold needs one form', rule(trigger={'kind': 'health_crossed', 'role': 'boss', 'percent': 50, 'health': 1000}))
+case('health threshold needs a form', rule(trigger={'kind': 'health_crossed', 'role': 'boss'}))
+case('radius presence accepted', rule(conditions=[{'kind': 'creature_present', 'role': 'boss', 'near': {'role': 'boss', 'radius': 7},
+                                                   'present': False}]), True)
+case('presence needs one place', rule(conditions=[{'kind': 'creature_present', 'role': 'boss', 'present': False}]))
+case('presence takes one place', rule(conditions=[{'kind': 'creature_present', 'role': 'boss', 'anchor': 'arena',
+                                                   'near': {'role': 'boss', 'radius': 7}, 'present': False}]))
+case('ranged spawn count accepted', rule([{'kind': 'spawn', 'creature': ref('Creature', 'add'), 'count': {'min': 1, 'max': 3},
+                                           'at': {'anchor': 'exit'}, 'owner': 'none', 'health': 'full'}]), True)
+case('inverted range rejected', rule([{'kind': 'heal', 'subject': {'role': 'boss'}, 'amount': {'min': 500, 'max': 100}}]))
+case('ranged delay accepted', lambda e, c: e['rules'][1].update(delay_ms={'min': 10000, 'max': 20000}), True)
+case('damage action accepted', rule([{'kind': 'damage', 'subject': {'role': 'boss'}, 'amount': 4500, 'damage_type': 'ice'}]), True)
+case('damage action needs a type', rule([{'kind': 'damage', 'subject': {'role': 'boss'}, 'amount': 4500}]))
+case('primary-only modifier accepted', rule([{'kind': 'damage_modifier', 'role': 'boss', 'multiplier_percent': 200, 'sources': 'any',
+                                              'until': 'this_hit', 'component': 'primary'}]), True)
+case('map item interaction accepted', rule([{'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'), 'anchor': 'exit',
+                                             'interaction': 'canary:interaction/5580'}]), True)
 case('chance above 100 rejected', rule(conditions=[{'kind': 'chance_percent', 'value': 150}]))
 case('duplicate rule key', lambda e, c: e['rules'].append(copy.deepcopy(e['rules'][0])))
 

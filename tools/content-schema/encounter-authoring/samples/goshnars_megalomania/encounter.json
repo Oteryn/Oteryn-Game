@@ -1,0 +1,92 @@
+{
+  "identity": {
+    "key": "canary:encounter/goshnars_megalomania",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Soul War: Goshnar's Megalomania",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "lesser_splinter_of_madness",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/lesser_splinter_of_madness",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "greater_splinter_of_madness",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/greater_splinter_of_madness",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "mighty_splinter_of_madness",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mighty_splinter_of_madness",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "lesser_splinter_of_madness_grows",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "lesser_splinter_of_madness"
+      },
+      "delay_ms": 120000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "lesser_splinter_of_madness",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/greater_splinter_of_madness",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "greater_splinter_of_madness_grows",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "greater_splinter_of_madness"
+      },
+      "delay_ms": 120000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "greater_splinter_of_madness",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/mighty_splinter_of_madness",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}
