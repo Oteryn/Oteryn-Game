@@ -1194,6 +1194,9 @@
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
             },
+            "at": {
+              "const": "death_position"
+            },
             "revert_after_ms": {
               "type": "integer",
               "minimum": 1
@@ -1214,8 +1217,7 @@
           "required": [
             "kind",
             "operation",
-            "item",
-            "anchor"
+            "item"
           ]
         },
         {

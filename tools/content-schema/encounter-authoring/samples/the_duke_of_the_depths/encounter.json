@@ -1,0 +1,74 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_duke_of_the_depths",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dangerous Depth: The Duke of the Depths",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_duke_of_the_depths",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_duke_of_the_depths",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33719, 32302, 15)."
+    },
+    {
+      "key": "reward_destination",
+      "kind": "point",
+      "description": "Destination while open; Canary (33691, 32301, 15)."
+    },
+    {
+      "key": "warzone_exit",
+      "kind": "point",
+      "description": "Destination after the revert; Canary (33275, 32318, 15)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_duke_of_the_depths_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_duke_of_the_depths"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "reward_destination",
+          "revert_after_ms": 1200000,
+          "revert_destination": "warzone_exit"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

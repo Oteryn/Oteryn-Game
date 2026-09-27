@@ -89,6 +89,14 @@ case('teleporter with destinations accepted', rule([{'kind': 'map_item', 'operat
                                                     'revert_after_ms': 60000, 'revert_destination': 'exit'}]), True)
 case('revert destination needs a revert time', rule([{'kind': 'map_item', 'operation': 'transform', 'item': ref('Item', 'vortex'),
                                                       'into': ref('Item', 'vortex'), 'anchor': 'exit', 'revert_destination': 'exit'}]))
+case('map_item needs a place', rule([{'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex')}]))
+case('map_item takes one place', rule([{'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'), 'anchor': 'exit',
+                                        'at': 'death_position'}]))
+case('map_item death position outside a death trigger', rule([{'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'),
+                                                                'at': 'death_position'}]))
+case('map_item at the death position accepted', rule([{'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'),
+                                                       'at': 'death_position', 'destination': 'exit', 'revert_after_ms': 120000}],
+                                                     trigger={'kind': 'creature_died', 'role': 'boss'}), True)
 case('remove needs exactly one target', rule([{'kind': 'remove', 'role': 'boss', 'all_in': 'arena'}]))
 case('spawn a new role accepted', rule([{'kind': 'spawn', 'creature': ref('Creature', 'add'), 'role': 'adds', 'count': 2,
                                          'at': {'random_in': 'arena'}, 'owner': 'none', 'health': 'full'}]), True)

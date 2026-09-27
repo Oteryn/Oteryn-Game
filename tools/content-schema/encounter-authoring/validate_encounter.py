@@ -123,7 +123,12 @@ def semantic(e, catalog):
                 else:
                     need('role', action['who']['role'], known_roles, at)
             if ak == 'map_item':
-                need('anchor', action['anchor'], anchors, at)
+                if ('anchor' in action) == ('at' in action):
+                    errors.append(f'{at}: map_item takes exactly one of anchor and at')
+                if 'anchor' in action:
+                    need('anchor', action['anchor'], anchors, at)
+                if 'at' in action and kind not in ('creature_died', 'lethal_damage'):
+                    errors.append(f'{at}: a death position exists only for death and lethal damage triggers')
                 if (action['operation'] == 'transform') != ('into' in action):
                     errors.append(f'{at}: map_item transform needs into, create/remove forbid it')
                 for field in ('destination', 'revert_destination'):

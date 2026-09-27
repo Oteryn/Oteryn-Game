@@ -599,12 +599,152 @@ def ghulosh(build):
                 'The teleport magic effect on the spawn tile every 2 s before the book returns is cosmetic.')
 
 
+DEPTHS = 'data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua'
+# boss, config line, teleport position, destination, destination after the revert
+DEPTH_BOSSES = [
+    ('The Count of the Core', 2, (33681, 32340, 15), (33682, 32315, 15), (33324, 32111, 15)),
+    ('The Duke of the Depths', 3, (33719, 32302, 15), (33691, 32301, 15), (33275, 32318, 15)),
+    ('The Baron from Below', 4, (33650, 32312, 15), (33668, 32301, 15), (33462, 32267, 15))]
+
+
+def dangerous_depth(build):
+    """DepthWarzoneBossDeath: a warzone boss opens its room teleporter for 20 minutes."""
+    event = 'DepthWarzoneBossDeath'
+    closed, opened = ref('Item', 'canary:item/1949'), ref('Item', 'canary:item/22761')
+    for boss, line, teleport, destination, back in DEPTH_BOSSES:
+        role = slug(boss)
+        item = build.get(role, f'Dangerous Depth: {boss}', 'instance_per_party')
+        build.participant(item, role, boss, event)
+        item['encounter']['anchors'] += [
+            {'key': 'exit_teleporter', 'kind': 'point', 'description': f'Boss-room teleporter; Canary {teleport}.'},
+            {'key': 'reward_destination', 'kind': 'point', 'description': f'Destination while open; Canary {destination}.'},
+            {'key': 'warzone_exit', 'kind': 'point', 'description': f'Destination after the revert; Canary {back}.'}]
+        build.define(item, closed)
+        build.define(item, opened)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'map_item', 'operation': 'transform', 'item': closed, 'into': opened,
+                                              'anchor': 'exit_teleporter', 'destination': 'reward_destination',
+                                              'revert_after_ms': 20 * 60 * 1000, 'revert_destination': 'warzone_exit'}]})
+        build.entry(item, DEPTHS, [15, 16, 17, 18, 19, 20, line], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss.lower()}".')
+        build.entry(item, DEPTHS, [22, 23, 24, 25, 26, 7, 8, 9, 10, 11, 12, 13, line], 'mapped', path + '/actions/0',
+                    f'Teleporter 1949 on {teleport} becomes 22761 leading to {destination}; after 20 minutes revert turns it '
+                    f'back into 1949 leading to {back}.')
+        build.entry(item, DEPTHS, [line], 'mapped', '/encounter/anchors',
+                    'teleportPosition, toPosition and toPositionBack become the three point anchors.')
+
+
+RATHLETON = 'data-otservbr-global/scripts/quests/hero_of_rathleton/'
+RATHLETON_KILL = RATHLETON + 'creaturescripts_bosses_kill.lua'
+GLOOTH_HORROR = RATHLETON + 'creaturescripts_glooth_horror.lua'
+GLOOTH_STAGES = [('Feeble Glooth Horror', 2, 'Weakened Glooth Horror'), ('Weakened Glooth Horror', 3, 'Glooth Horror'),
+                 ('Glooth Horror', 4, 'Strong Glooth Horror'), ('Strong Glooth Horror', 5, 'Empowered Glooth Horror')]
+# boss, encounter, config lines, teleporter, destination while open, running flag script
+RATHLETON_BOSSES = [
+    ('Deep Terror', 'deep_terror', [2, 3, 4, 5, 6], (33749, 31952, 14), (33740, 31940, 15), 'movements_deep_terror.lua'),
+    ('Empowered Glooth Horror', 'glooth_horror', [7, 8, 9, 10, 11], (33545, 31955, 15), (33534, 31955, 15),
+     'movements_glooth_horror.lua'),
+    ('Professor Maxxen', 'professor_maxxen', [12, 13, 14, 15, 16], (33718, 32047, 15), (33707, 32107, 15),
+     'actions_machines_professor_maxxen.lua')]
+
+
+def hero_of_rathleton(build):
+    """GloothHorror and RathletonBossDeath: the glooth horror splits in two at each stage (the Canary script is broken,
+    the wiki decides), and each boss opens its room teleporter for two minutes."""
+    item = build.get('glooth_horror', 'Hero of Rathleton: Glooth Horror', 'instance_per_party')
+    for stage, line, next_stage in GLOOTH_STAGES:
+        role = slug(stage)
+        build.participant(item, role, stage, 'GloothHorror')
+        path = build.rule(item, {'key': f'{role}_splits', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'spawn', 'creature': creature(next_stage), 'role': slug(next_stage),
+                                              'count': 2, 'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+        build.entry(item, GLOOTH_HORROR, [8, 9, 10, 11, 12, 19, line], 'mapped', path + '/trigger', f'onDeath of "{stage}".')
+        build.entry(item, GLOOTH_HORROR, [13, 14, 15, 16, 17, 18, line], 'mapped', path + '/actions/0',
+                    f'Canary defect: Game.createMonster("{next_stage}", targetMonster:getPosition(), true, true) twice reads '
+                    'the undefined global targetMonster, so the script errors and nothing spawns. The reference-date wiki '
+                    f'("When slain, the {stage} will turn into 2 {next_stage}s"; 16 Empowered Glooth Horrors in total) decides '
+                    '(D25): two of the next stage appear where it died. The teleport effect on each is cosmetic.')
+    build.participant(item, 'empowered_glooth_horror', 'Empowered Glooth Horror', 'GloothHorror')
+    build.entry(item, GLOOTH_HORROR, [1, 2, 3, 4, 5, 6, 11, 12], 'approved_omission', None,
+                'The Empowered Glooth Horror is the last stage and has no config row: its death has no effect in this event.')
+    item['encounter']['anchors'].append({'key': 'horror_arena', 'kind': 'area',
+                                         'description': 'Tiles within 13 of Canary (33555, 31956, 15) on that floor.'})
+
+    event = 'RathletonBossDeath'
+    closed, opened = ref('Item', 'canary:item/1949'), ref('Item', 'canary:item/22761')
+    for boss, name, lines, teleport, destination, running in RATHLETON_BOSSES:
+        role = slug(boss)
+        item = build.get(name, f'Hero of Rathleton: {boss}', 'instance_per_party')
+        build.participant(item, role, boss, event)
+        item['encounter']['anchors'] += [
+            {'key': 'exit_teleporter', 'kind': 'point', 'description': f'Boss-room teleporter; Canary {teleport}.'},
+            {'key': 'next_destination', 'kind': 'point', 'description': f'Destination while open; Canary {destination}.'}]
+        build.define(item, closed)
+        build.define(item, opened)
+        conditions = []
+        if boss == 'Empowered Glooth Horror':
+            conditions = [{'kind': 'creature_present', 'role': slug(stage), 'anchor': 'horror_arena', 'present': False}
+                          for stage in [s for s, _, _ in GLOOTH_STAGES] + [boss]]
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role},
+                                 'conditions': conditions,
+                                 'actions': [{'kind': 'map_item', 'operation': 'transform', 'item': closed, 'into': opened,
+                                              'anchor': 'exit_teleporter', 'destination': 'next_destination',
+                                              'revert_after_ms': 2 * 60 * 1000}]})
+        build.entry(item, RATHLETON_KILL, [48, 49, 50, 51, 52, 53] + lines[:2], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss.lower()}".')
+        if conditions:
+            build.entry(item, RATHLETON_KILL, list(range(19, 39)) + [54, 55, 56, 57, 58], 'mapped', path + '/conditions',
+                        'checkHorror: nothing happens while a living glooth horror of any stage is within 13 tiles of '
+                        '(33555, 31956, 15) on that floor (the horror_arena anchor); the dying one has 0 health and does not '
+                        'count.')
+        build.entry(item, RATHLETON_KILL, [40, 41, 42, 43, 44, 45, 46, 60, 61, 62, 63, 65, 66, 67, 68, 69, 71, 72] + lines[1:3],
+                    'mapped', path + '/actions/0',
+                    f'Teleporter 1949 on {teleport} becomes 22761 leading to {destination}; after 2 minutes revertTeleport '
+                    'turns it back into 1949 with the destination it had before (oldPos): the revert restores the original '
+                    'item and its attributes.')
+        build.entry(item, RATHLETON_KILL, [70], 'approved_omission', None,
+                    'The thunder effect on the boss position is cosmetic.')
+        build.entry(item, RATHLETON_KILL, [73] + lines[3:4], 'approved_omission', None,
+                    f'Game.setStorageValue(<running flag>, 0) frees the shared arena that {running} locks; an instance per '
+                    'party (D26) replaces the lock.')
+
+
+AZERUS = 'data-otservbr-global/scripts/quests/in_service_of_yalahar/creaturescritps_azerus_kill.lua'
+
+
+def azerus(build):
+    """AzerusDeath: Azerus leaves a two-minute teleporter where he dies and the arena is cleared of monsters."""
+    event = 'AzerusDeath'
+    item = build.get('azerus', 'In Service of Yalahar: Azerus', 'instance_per_party')
+    for name in ('Azerus', 'Azerus2'):
+        build.participant(item, 'azerus', name, event)
+    teleporter = ref('Item', 'canary:item/1949')
+    build.define(item, teleporter)
+    item['encounter']['anchors'] += [
+        {'key': 'azerus_escape', 'kind': 'point', 'description': 'Teleporter destination; Canary (32780, 31168, 14).'},
+        {'key': 'arena', 'kind': 'area', 'description': 'Tiles within 10 of Canary (32783, 31166, 10) on that floor.'}]
+    text = 'Azerus ran into teleporter! It will disappear in 2 minutes. Enter it!'
+    path = build.rule(item, {'key': 'azerus_death', 'trigger': {'kind': 'creature_died', 'role': 'azerus'}, 'conditions': [],
+                             'actions': [{'kind': 'map_item', 'operation': 'create', 'item': teleporter, 'at': 'death_position',
+                                          'destination': 'azerus_escape', 'revert_after_ms': 2 * 60 * 1000},
+                                         {'kind': 'say', 'subject': {'role': 'azerus'}, 'text': text, 'mode': 'say'},
+                                         {'kind': 'remove', 'all_in': 'arena'}]})
+    build.entry(item, AZERUS, [9, 10, 11], 'mapped', path + '/trigger', 'onDeath of Azerus (both registering monster types).')
+    build.entry(item, AZERUS, [1, 2, 3, 4, 6, 7, 13, 14, 15, 16, 17, 19, 20], 'mapped', path + '/actions/0',
+                'A teleporter 1949 leading to (32780, 31168, 14) is created on the death position and removed after 2 minutes.')
+    build.entry(item, AZERUS, [5, 12], 'approved_omission', None, 'Teleport and poff effects on that tile are cosmetic.')
+    build.entry(item, AZERUS, [18], 'mapped', path + '/actions/1', 'creature:say(text, TALKTYPE_MONSTER_SAY) at the death position.')
+    build.entry(item, AZERUS, [22, 23, 24, 25, 26, 28, 29, 30], 'mapped', path + '/actions/2',
+                'Every monster within 10 tiles of (32783, 31166, 10) on that floor is removed (players stay).')
+    build.entry(item, AZERUS, [27], 'approved_omission', None, 'The poff effect on each removed monster is cosmetic.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus):
         transcribe(build)
     print(json.dumps(build.write()))
 
