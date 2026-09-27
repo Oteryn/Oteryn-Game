@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-npc-authoring-schema-v1
 title: NPC authoring schema v1, Canary/Crystal converter, source diff, Fandom comparison and readiness census
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
@@ -12,8 +12,8 @@ issue: 162
 pr: 975
 jira: KAN-16
 base_sha: a822326c9cf4607100e58bbc3673748f3fa299bb
-head_sha: null
-final_head_sha: null
+head_sha: 91472e3a3832f3425ca5bfbf14b4e9b97bd1816c
+final_head_sha: 91472e3a3832f3425ca5bfbf14b4e9b97bd1816c
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-27
@@ -70,3 +70,17 @@ fence, session, authority or persisted-recovery evidence is touched.
 
 Owner review of the schema doc and open decisions O1–O7; a later task promotes the
 `STATIC_COMPLETE` / `STATIC_SERVICES` population into `content/` once O1, O2 and O5 are decided.
+
+## Postmerge closeout
+
+`PROVEN`: [PR #975](https://github.com/Oteryn/Oteryn-Game/pull/975) merged
+`91472e3a3832f3425ca5bfbf14b4e9b97bd1816c` as
+`f31c0d65be86bafe924a0706cf821ca767305516` at `2026-09-27T11:10:55Z`.
+[Reconciliation allocation](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5855464134)
+confirms the prior lease is terminal/released and allocates this separate archive move.
+The bounded schema/converter delivery is completed; earlier acceptance results, source
+provenance and owned paths remain historical evidence. O1–O7, the O1/O2/O5 promotion
+conditions and TibiaWiki BR access gap remain unresolved; `content/` promotion stays
+unallocated. The Next action above is future product work, not an active lease here.
+`final_head_sha` identifies the merged PR head; its original freeze timestamp is
+`UNKNOWN` and stays null. No new review, MQ, E2E or runtime qualification is claimed.

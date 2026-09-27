@@ -4,14 +4,14 @@
 task_id: OTV2-20260927-dur03-one-item-audit-offline-measurement-513
 title: Offline closed one-item candidate audit schema and measurement
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/dur03-one-item-audit-offline-measurement-513
-pr: null
+pr: 977
 base_sha: a822326c9cf4607100e58bbc3673748f3fa299bb
-head_sha: null
-final_head_sha: null
+head_sha: b6b24f9cbd2ab01d6dfd0690f08ef81f3e8b50b4
+final_head_sha: b6b24f9cbd2ab01d6dfd0690f08ef81f3e8b50b4
 final_head_frozen_at: null
 owner: /root/dur03_offline_writer
 created_at: 2026-09-27
@@ -38,6 +38,11 @@ external_repositories: []
 ```
 
 ## Outcome and authority
+
+The following authoring, acceptance, validation and excluded-scope sections retain
+the original prepublication snapshot. Their future-tense publication statements,
+unchecked hosted-qualification item and no-PR observation are historical; the
+terminal Context checkpoint and Postmerge closeout below supersede lifecycle state.
 
 `PROVEN`: this authoring delta adds an explicitly unregistered candidate IDL for
 the protected closed MINT/TRANSFER aggregate and private matching prost structs
@@ -145,12 +150,12 @@ is authorized. Candidate measurements cannot close aggregate Jira acceptance.
 ## Context checkpoint
 
 ```yaml
-last_progress: bounded five-path authoring delta and focused offline evidence prepared
-status: implementing
+last_progress: PR 977 merged and bounded offline child archived after prior lease release
+status: completed
 branch: codex/dur03-one-item-audit-offline-measurement-513
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: b6b24f9cbd2ab01d6dfd0690f08ef81f3e8b50b4
+pr: 977
+final_head_sha: b6b24f9cbd2ab01d6dfd0690f08ef81f3e8b50b4
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -167,9 +172,29 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish one expected-head API-native candidate then freeze and verify exact live head externally
+next_action: none for completed offline child; aggregate 513 and KAN-12 remain open
 ```
 
 This record is intentionally truthful before its containing candidate exists.
 It cannot contain its own SHA. The final exact publication/freeze evidence must
 be returned to the control plane without a follow-up checkpoint commit.
+
+## Postmerge closeout
+
+`PROVEN`: [PR #977](https://github.com/Oteryn/Oteryn-Game/pull/977) merged
+`b6b24f9cbd2ab01d6dfd0690f08ef81f3e8b50b4` as
+`bf01ec81ba5d2db68d50c65f0949af6e55a0aaa4` at `2026-09-27T11:27:46Z`.
+[Reconciliation allocation](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5855464134)
+confirms the prior lease is terminal/released and allocates this separate archive move.
+The bounded NONPRODUCTION_OFFLINE_CANDIDATE_SCHEMA_MEASUREMENT child is completed;
+aggregate Issue #513 and KAN-12 remain open. Candidate measurements cannot close
+their aggregate acceptance. All production exclusions and production audit
+`EVIDENCE_GAP`/nulls above remain in force; no event registration, production schema
+admission, runtime activation, PostgreSQL atomicity/restart or Reference parity
+is established by archival.
+
+`final_head_sha` identifies the merged PR head. Its original freeze timestamp is
+`UNKNOWN` and stays null; retained CI counters and null run fields above are the
+authoring snapshot, not new CI evidence. This closeout does not reconstruct an
+independent-review verdict, MQ run or E2E result. Historical substantive evidence
+and original owned paths are preserved; no new qualification result is claimed.

@@ -4,7 +4,7 @@
 task_id: OTV2-20260926-monster-wiki-adoption-spell-census
 title: Adopt reference-date wiki values and census Canary monster spell scripts
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,12 +12,12 @@ issue: 162
 pr: 947
 jira: KAN-16
 base_sha: bbfdfdbfb92edae587fc1ec4c556ab1bf20b16b8
-head_sha: null
-final_head_sha: null
+head_sha: 17b3521196689c2be5d47f32f294e5b7ed9e58e2
+final_head_sha: 17b3521196689c2be5d47f32f294e5b7ed9e58e2
 final_head_frozen_at: null
 owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
 created_at: 2026-09-26
-updated_at: 2026-09-26
+updated_at: 2026-09-27
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260926-monster-wiki-adoption-spell-census.md
@@ -60,3 +60,15 @@ fence, session, authority or persisted-recovery evidence is touched.
 - `spell_census.py` over 1,656 Canary monster files: 274 referenced spells, P1 15 / P2 166 /
   P3 48 / P4 44 / NOOP 1 / MISSING 0. Owner decisions D10–D14 recorded in the architecture
   document §3 and §8.
+
+## Postmerge closeout
+
+`PROVEN`: [PR #947](https://github.com/Oteryn/Oteryn-Game/pull/947) merged
+`17b3521196689c2be5d47f32f294e5b7ed9e58e2` as
+`e9d437f5a3bc7b4e48eb47d992564e2956aa86c0` at `2026-09-26T20:59:48Z`.
+[Reconciliation allocation](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5855464134)
+confirms the prior lease is terminal/released and allocates this separate archive move.
+The bounded delivery is completed; earlier acceptance results, source provenance and
+owned paths remain historical evidence. Product/runtime implementation stays unallocated.
+`final_head_sha` identifies the merged PR head; its original freeze timestamp is
+`UNKNOWN` and stays null. No new review, MQ, E2E or runtime qualification is claimed.
