@@ -305,6 +305,10 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             store.commit(&request).await?;
             let FreshReconciliation::Committed(initial) = store.reconcile(request.operation()).await? else { return Err("missing fresh session".into()); };
             let session = initial.current_session;
+            // Loss is timed on the database clock sampled with the session.
+            let (timed, clock) = store.current_session_at(session.commit().game_session_id()).await?;
+            assert_eq!(timed, session);
+            assert!((now..=now + 5).contains(&clock));
             let source = std::sync::Arc::new(LossSource(std::sync::Mutex::new(ControlLossObservationV1 {
                 source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
                 decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,

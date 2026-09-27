@@ -695,7 +695,9 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         controller: ControllerBinding,
     ) -> ControlLossResult {
         let store = FreshAdmissionStore::from_root(self.root.clone());
-        let Ok(session) = store.current_session(game_session_id).await else {
+        // Loss is timed on the durable owner's clock, the same clock that
+        // samples the final decision time.
+        let Ok((session, now)) = store.current_session_at(game_session_id).await else {
             return ControlLossResult::Unknown;
         };
         // Only this controller's still-ACTIVE, never-lost session: a replaced, released or
@@ -708,9 +710,6 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return ControlLossResult::NotApplicable;
         }
-        let Some(now) = unix_seconds() else {
-            return ControlLossResult::Unknown;
-        };
         let Some(grace_deadline) = now.checked_add(SAME_SESSION_GRACE_SECONDS) else {
             return ControlLossResult::Unknown;
         };

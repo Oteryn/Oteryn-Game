@@ -65,3 +65,14 @@ Excluded:
 - protection during loss;
 - the logout block;
 - resumed-history loss.
+
+## Independent review (head 997ae211)
+
+1. **Mixed clocks (fixed).** The observation was timed on the host clock and the final decision on the database clock. A faster host could get a loss permanently refused and a shorter grace. Now `current_session_at` samples the database clock in the same fenced pass as the session, and the Postgres test binds it.
+2. **Final resolve returns the captured observation (accepted).** The durable session, claim-ownership and runtime-guard checks are re-read under the relation locks. The actor is removed only by grace-expiry release (4b), which owns re-reading the actor.
+3. **Security/eligibility are not loss conditions (contract).** FND-04B §6 now requires every resume or re-entry to revalidate both as current.
+4. **The loss wait holds a connection slot for the detection window; a shutdown cancels an unfinished decision (accepted, bounded).** The durable transaction stays atomic, and restart recovery of undecided losses is a later child.
+5. **Low findings (accepted).**
+   - A server-closed protocol violation is treated as loss because a crash is also network loss (owner decision).
+   - Restoring control during the window arrives with PR 5.
+   - Refused/Unknown observability is left to the observability child.
