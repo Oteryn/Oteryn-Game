@@ -27,6 +27,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import canary_batch as cb
+import spell_scripts as ss
 
 ROOT = Path(__file__).resolve().parent
 SCRIPT_DIRS = ('data/scripts', 'data-otservbr-global/scripts')
@@ -88,52 +89,12 @@ def run_script(path):
     return objects, None
 
 
-def cast_body(text):
-    match = re.search(r'function\s+[\w.:]*onCastSpell\s*\([^)]*\)(.*?)\nend\b', text, re.S)
-    return re.sub(r'\s+', ' ', match.group(1)).strip() if match else None
-
-
-EXECUTE = r'return (\w+):execute\((?:creature|cid), (?:var|variant)\)'
-RANDOM_PICK = (r'return \w+\[math\.random\([^)]*\)\]:execute\((?:creature|cid), (?:var|variant)\)',
-               r'local (\w+) = \w+\[math\.random\([^)]*\)\] return \1:execute\((?:creature|cid), (?:var|variant)\)')
-PLAYER_ONLY = r'local player = creature:getPlayer\(\) if not (?:creature or not )?player then return false end'
-
-
-GUARD = r'^if not creature then return(?: false)? end '
-VOICE = r'^creature:say\("[^"]*", TALKTYPE_MONSTER_(?:SAY|YELL)\) '
-LUA_CALLBACKS = ('CALLBACK_PARAM_TARGETCREATURE', 'CALLBACK_PARAM_TARGETTILE', 'CALLBACK_PARAM_CHAINPICKER')
-
-
 def classify(text, objects, error, shared):
     if error or objects is None:
         return 'P4', ['load_error: ' + (error or '')]
-    body = cast_body(text) or ''
-    if shared and re.match(PLAYER_ONLY, body):
-        return 'NOOP', ['script returns false for a non-player caster: ' + body[:120]]
-    reasons = []
-    body = re.sub(GUARD, '', body)
-    if re.match(VOICE, body):
-        body = re.sub(VOICE, '', body)
-        reasons.append('cast voice line before the combat')
-    callbacks = sorted({args[0].lstrip('@') for o in objects if o['kind'] == 'Combat'
-                        for method, args in o['calls'] if method == 'setCallback' and args} & set(LUA_CALLBACKS))
-    tier = None
-    final = re.search(EXECUTE + r'$', body)
-    if shared and final:
-        prefix = body[:final.start()]
-        if not prefix or re.search(r'getPlayer\(\)|familiar\(\)', prefix):
-            tier = 'P1'
-            if prefix:
-                reasons.append('player/familiar-only branches ignored for a monster caster')
-    if tier is None and re.fullmatch(EXECUTE, body):
-        tier = 'P2'
-    if tier is None and any(re.fullmatch(pattern, body) for pattern in RANDOM_PICK):
-        tier = 'P3'
-    if tier is None:
-        return 'P4', ['onCastSpell: ' + body[:160]]
-    if callbacks:
-        return 'P4', reasons + ['per-target Lua combat callback: ' + ', '.join(callbacks)]
-    return tier, reasons
+    callbacks = {args[0].lstrip('@') for o in objects if o['kind'] == 'Combat'
+                 for method, args in o['calls'] if method == 'setCallback' and args}
+    return ss.body_tier(text, shared, callbacks)
 
 
 def primitives(objects):

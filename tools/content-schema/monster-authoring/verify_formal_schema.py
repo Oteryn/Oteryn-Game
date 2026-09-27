@@ -165,6 +165,55 @@ if __name__=='__main__':
     case('condition damage requires tick interval',lambda m,d,c:(condition(m,d,c),d['effects'][-1]['condition']['damage_over_time'].pop('tick_interval_ms')))
     case('create item operation resolves',lambda m,d,c:d['effects'].append({'identity':ident('field'),'operation':'create_item','created_item':ref('Item','coin')}),True)
     case('transform needs duration and target',lambda m,d,c:d['effects'].append({'identity':ident('outfit'),'operation':'appearance_transform'}))
+    def spell_area(area):
+        def mutate(m,d,c):
+            d['abilities'][0].update(kind='spell',area=area)
+        return mutate
+    case('area matrix accepted (D12)',spell_area({'matrix':{'north':['.x.','xCx','.x.'],'diagonal':['xx.','xC.','...']}}),True)
+    case('area matrix needs exactly one centre',spell_area({'matrix':{'north':['xCx','.C.']}}))
+    case('area matrix rows must be rectangular',spell_area({'matrix':{'north':['xCx','x']}}))
+    case('area matrix excludes radius',spell_area({'matrix':{'north':['C']},'radius_tiles':2}))
+    case('area matrix cell alphabet',spell_area({'matrix':{'north':['1C1']}}))
+    def dot(damage_over_time):
+        def mutate(m,d,c):
+            d['effects'].append({'identity':ident('dot'),'operation':'condition',
+                'condition':{'type':'energy','lifetime':'damage_schedule','damage_over_time':damage_over_time}})
+            d['abilities'][0]['effects'].append(ref('Effect','dot'))
+        return mutate
+    fixed={'tick_profile':'fixed','first_tick':'after_interval','fixed_ticks':[{'count':8,'interval_ms':10000,'amount':25}]}
+    case('fixed-tick DoT accepted (D12)',dot(fixed),True)
+    case('fixed-tick DoT forbids total range',dot({**fixed,'total_damage_range':{'minimum':1,'maximum':2}}))
+    case('decreasing DoT forbids fixed ticks',dot({'tick_profile':'decreasing','first_tick':'immediate','fixed_ticks':fixed['fixed_ticks'],
+        'total_damage_range':{'minimum':1,'maximum':2},'tick_interval_ms':2000,'initial_tick':{'mode':'automatic'}}))
+    def attributes(modifiers):
+        def mutate(m,d,c):
+            d['effects'].append({'identity':ident('weak'),'operation':'condition','duration_ms':8000,
+                'condition':{'type':'attributes','lifetime':'fixed_duration','attribute_modifiers':modifiers}})
+            d['abilities'][0]['effects'].append(ref('Effect','weak'))
+        return mutate
+    case('attribute modifiers accepted (D12)',attributes([{'attribute':'skill_shield','mode':'percent_of_base','value':40}]),True)
+    case('attribute modifier mode is closed',attributes([{'attribute':'skill_shield','mode':'multiply','value':40}]))
+    def variants(nested=False,with_effects=False):
+        def mutate(m,d,c):
+            base=d['abilities'][0]
+            for n in (1,2):
+                variant={**base,'identity':ident(f'melee-{n}')}
+                if nested:variant={k:v for k,v in variant.items() if k!='effects'}|{'variants':[ref('Ability','melee'),ref('Ability','melee')]}
+                d['abilities'].append(variant)
+            d['abilities'][0]={k:v for k,v in base.items() if with_effects or k!='effects'}|{'variants':[ref('Ability','melee-1'),ref('Ability','melee-2')]}
+        return mutate
+    case('ability variants accepted (D12)',variants(),True)
+    case('ability variants exclude effects',variants(with_effects=True))
+    case('ability variant cannot nest variants',variants(nested=True))
+    def caster(magnitude):
+        def mutate(m,d,c):
+            d['formulas'][0]={'identity':d['formulas'][0]['identity'],'kind':'caster_magnitude'}
+            if magnitude:m['behavior']['attacks'][0]['magnitude']=magnitude
+        return mutate
+    case('caster magnitude with schedule magnitude (D11)',caster({'minimum':100,'maximum':210}),True)
+    case('caster magnitude requires schedule magnitude',caster(None))
+    case('schedule magnitude minimum must not exceed maximum',caster({'minimum':300,'maximum':210}))
+    case('chain targeting accepted (D12)',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False}),True)
     case('any local Item may be the corpse (D17)',set_value(['d','items',0,'classification','is_corpse'],False),True)
     case('change_target interval 0 disables timed changes',
         lambda m,d,c:m['behavior']['targeting'].__setitem__('change_target',{'interval_ms':0,'chance_percent':8}),True)

@@ -82,7 +82,10 @@ d['creature']=obj({
                             'blocked_by_nearby_players':use('bool')},('period','ignore_period_underground','blocked_by_nearby_players')),
     'reward_encounter':use('EncounterRef')},
     ('identity','display_name','inspection','stats','resistances','immunities','flags','summoning','presentation','behavior','damage_reflection','healing_from_damage'))
-d['schedule']=obj({'ability':use('AbilityRef'),'interval_ms':use('ms'),'chance_percent':use('percent')},('ability','interval_ms','chance_percent'))
+d['schedule']=obj({'ability':use('AbilityRef'),'interval_ms':use('ms'),'chance_percent':use('percent'),
+    'magnitude':obj({'minimum':integer(),'maximum':integer()},('minimum','maximum'),
+                    description='D11: this monster\'s damage/heal magnitude for effects whose formula is caster_magnitude.'),
+    'range_tiles':integer(description='D11: this monster\'s cast range for the shared Ability.')},('ability','interval_ms','chance_percent'))
 d['voices']=obj({'interval_ms':use('ms'),'chance_percent':use('percent'),
     'entries':array(obj({'text':text(),'mode':enum('say','yell')},('text','mode')),1)},('interval_ms','chance_percent','entries'))
 d['behavior']=obj({
@@ -128,25 +131,43 @@ d['lootEntry']=obj({'item':use('ItemRef'),'min_count':integer(),'max_count':inte
 d['loot']=obj({'identity':use('identity'),'algorithm':enum('IndependentBernoulli'),
     'entries':array(use('lootEntry'))},('identity','algorithm','entries'),
     description='Only the source-supported independent base table is in this schema. Other native algorithms retain their own accepted contracts.')
-d['area']=obj({'length_tiles':integer(1),'spread_tiles':integer(),'radius_tiles':integer()},oneOf=[
-    {'required':['length_tiles','spread_tiles'],**forbid('radius_tiles')},
-    {'required':['radius_tiles'],**forbid('length_tiles','spread_tiles')}])
+d['areaMatrix']=array(text(pattern=r'^[.xcC]+$'),1,
+    description="Rows of cells: '.' not hit, 'x' hit, 'c' centre not hit, 'C' centre hit; rectangular, exactly one centre.")
+d['area']=obj({'length_tiles':integer(1),'spread_tiles':integer(),'radius_tiles':integer(),
+    'matrix':obj({'north':use('areaMatrix'),'diagonal':use('areaMatrix')},('north',),
+        description='D12: authored facing north (diagonal: facing north-west) and rotated to the direction from the centre to '
+                    'the target (combat.cpp AreaCombat::getArea); tiles need a clear line of sight from the caster.')},oneOf=[
+    {'required':['length_tiles','spread_tiles'],**forbid('radius_tiles','matrix')},
+    {'required':['radius_tiles'],**forbid('length_tiles','spread_tiles','matrix')},
+    {'required':['matrix'],**forbid('length_tiles','spread_tiles','radius_tiles')}])
 d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range_tiles':integer(),'needs_target':use('bool'),'needs_direction':use('bool'),
-    'area':use('area'),'effects':array(use('EffectRef'),1),'audio':obj({'cast_cue':text(),'impact_cue':text()})},
-    ('identity','kind','range_tiles','needs_target','needs_direction','effects'),
+    'area':use('area'),'effects':array(use('EffectRef'),1),'audio':obj({'cast_cue':text(),'impact_cue':text()}),
+    'variants':array(use('AbilityRef'),2,description='D12: each cast runs one variant picked uniformly; variants have no variants.'),
+    'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding')},
+                ('max_targets','range_tiles','backtracking'),description='D12: the effect jumps between up to max_targets creatures.')},
+    ('identity','kind','range_tiles','needs_target','needs_direction'),
+    oneOf=[{'required':['effects'],**forbid('variants')},{'required':['variants'],**forbid('effects','area','chain')}],
     description='For area casts, center precedence is required target position, facing-adjacent position when needs_direction, then caster position. Native execution and no-area target selection require separate qualification.')
 d['initialTick']=obj({'mode':enum('automatic','fixed'),'amount':integer(1)},('mode',),allOf=[
     {'if':{'properties':{'mode':{'const':'fixed'}},'required':['mode']},'then':{'required':['amount']},'else':forbid('amount')}])
 d['damageOverTime']=obj({
+    'fixed_ticks':array(obj({'count':integer(1),'interval_ms':use('ms'),'amount':integer(1)},('count','interval_ms','amount')),1,
+        description='D12: explicit ticks in order (Condition:addDamage rounds, time, value).'),
     'total_damage_range':obj({'minimum':integer(0,description='0 is allowed: the total is drawn uniformly from the range and a '
                                                                'zero draw means the condition does not start (condition.cpp ConditionDamage::init).'),
                               'maximum':integer(1)},('minimum','maximum')),
     'tick_interval_ms':use('ms'),'initial_tick':use('initialTick'),
-    'tick_profile':enum('decreasing'),'first_tick':enum('after_interval')},
-    ('total_damage_range','tick_interval_ms','initial_tick','tick_profile','first_tick'),
+    'tick_profile':enum('decreasing','fixed'),'first_tick':enum('after_interval','immediate')},
+    ('tick_profile','first_tick'),allOf=[
+    {'if':{'properties':{'tick_profile':{'const':'fixed'}},'required':['tick_profile']},
+     'then':{'required':['fixed_ticks'],**forbid('total_damage_range','tick_interval_ms','initial_tick')},
+     'else':{'required':['total_damage_range','tick_interval_ms','initial_tick'],**forbid('fixed_ticks')}}],
     description='Nominal source damage budget, not per-tick magnitude or a promise of exact summed damage. Native schedule parity requires separate qualification.')
 d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration','damage_schedule'),
-    'damage_over_time':use('damageOverTime'),'speed_formula':use('FormulaRef')},('type','lifetime'),allOf=[
+    'damage_over_time':use('damageOverTime'),'speed_formula':use('FormulaRef'),
+    'attribute_modifiers':array(obj({'attribute':text(pattern=r'^[a-z][a-z0-9_]*$'),'mode':enum('percent_of_base','add'),
+        'value':{'type':'integer'}},('attribute','mode','value')),1,
+        description='D12: percent_of_base sets the attribute to value% of its base; add adds value.')},('type','lifetime'),allOf=[
     {'if':{'properties':{'lifetime':{'const':'damage_schedule'}},'required':['lifetime']},
      'then':{'required':['damage_over_time'],**forbid('speed_formula')},'else':forbid('damage_over_time')}])
 d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only'),
@@ -169,7 +190,7 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
      'then':{'required':['created_item']},'else':forbid('created_item')},
     {'if':{'properties':{'operation':{'const':'presentation_only'}},'required':['operation']},
      'then':{'required':['presentation'],'properties':{'presentation':{'minProperties':1}},**forbid('duration_ms')}}])
-d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_skill','speed_modifier'),
+d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_skill','speed_modifier','caster_magnitude'),
     'magnitude':obj({'minimum':integer(),'maximum':integer()},('minimum','maximum')),
     'melee':obj({'attack':integer(),'skill':integer()},('attack','skill')),
     'speed':obj({'minimum_multiplier':use('nonnegativeRatio'),'minimum_offset':{'type':'integer'},
@@ -177,7 +198,9 @@ d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_s
         ('minimum_multiplier','minimum_offset','maximum_multiplier','maximum_offset'))},('identity','kind'),allOf=[
     {'if':{'properties':{'kind':{'const':'range'}},'required':['kind']},'then':{'required':['magnitude'],**forbid('melee','speed')}},
     {'if':{'properties':{'kind':{'const':'melee_attack_skill'}},'required':['kind']},'then':{'required':['melee'],**forbid('magnitude','speed')}},
-    {'if':{'properties':{'kind':{'const':'speed_modifier'}},'required':['kind']},'then':{'required':['speed'],**forbid('magnitude','melee')}}])
+    {'if':{'properties':{'kind':{'const':'speed_modifier'}},'required':['kind']},'then':{'required':['speed'],**forbid('magnitude','melee')}},
+    {'if':{'properties':{'kind':{'const':'caster_magnitude'}},'required':['kind']},'then':forbid('magnitude','melee','speed')}],
+    description='caster_magnitude (D11): the magnitude comes from the casting monster\'s schedule entry (Monster::getCombatValues).')
 d['document']=obj({'identity':use('identity'),
     'document_type':enum('Book','Letter','Note','Diary','Report','Scroll','Parchment','Tablet','Inscription','Notice','Other'),
     'title':text(),'author':text(),'language':text(pattern=r'^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$'),

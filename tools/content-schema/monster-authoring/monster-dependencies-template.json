@@ -12,7 +12,15 @@
       "area": {
         "length_tiles": null,
         "spread_tiles": null,
-        "radius_tiles": null
+        "radius_tiles": null,
+        "matrix": {
+          "north": [
+            null
+          ],
+          "diagonal": [
+            null
+          ]
+        }
       },
       "effects": [
         {
@@ -24,6 +32,19 @@
       "audio": {
         "cast_cue": null,
         "impact_cue": null
+      },
+      "variants": [
+        {
+          "family": null,
+          "key": null,
+          "revision": null
+        }
+      ],
+      "chain": {
+        "max_targets": null,
+        "range_tiles": null,
+        "backtracking": null,
+        "chain_asset_binding": null
       }
     }
   ],
@@ -45,6 +66,13 @@
         "type": null,
         "lifetime": null,
         "damage_over_time": {
+          "fixed_ticks": [
+            {
+              "count": null,
+              "interval_ms": null,
+              "amount": null
+            }
+          ],
           "total_damage_range": {
             "minimum": null,
             "maximum": null
@@ -61,7 +89,14 @@
           "family": null,
           "key": null,
           "revision": null
-        }
+        },
+        "attribute_modifiers": [
+          {
+            "attribute": null,
+            "mode": null,
+            "value": null
+          }
+        ]
       },
       "appearance_transform": {
         "creature": {
