@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: R7_XP_THRESHOLDS_MANIFEST_V5
 created_at: 2026-09-27T19:35:40Z
-updated_at: 2026-09-27T19:41:09Z
+updated_at: 2026-09-27T19:54:18Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
@@ -62,7 +62,7 @@ Advance the protected Reference evidence/parity registry exactly once from manif
 - [x] Canary and CrystalServer are pinned at exact commits/blobs and retained only as `OTS_HYPOTHESIS_ONLY`.
 - [x] No death-loss, awarded-kill-XP, bonus, modifier, ordering, delevel or rounding assertion is introduced.
 - [x] Pinned SourceMeta metaschema/instance validation, JSON parse, semantic invariants, LF/no-CR checks and diff checks pass locally.
-- [ ] Exact successor head/tree and exact three-path delta are frozen by live GitHub readback.
+- [x] Exact successor head/tree and exact three-path delta are frozen by live GitHub readback.
 - [ ] Fresh GPT-6 Luna whole-diff review reports zero unresolved P0/P1/P2/P3 findings.
 - [ ] Exact-head hosted CI and governed Merge Queue integration complete.
 - [ ] Protected `main` readback proves the exact manifest/source/task blobs.
@@ -75,9 +75,11 @@ Schema mutation/versioning; Runtime, Combat, Server Seam, Movement, native-room,
 
 - Generated revision 5 from the exact protected revision-4 JSON and preserved its first eleven case objects plus first four history objects structurally.
 - Added `character.progression.experience_threshold.level_7.v1` at `2,600` with `MEDIUM_HIGH` confidence.
-- Added `character.progression.experience_threshold.level_8.v1` at `4,200` with `HIGH` confidence because an official pre-target auction, a target-near pinned community revision and the current official table agree.
+- Added `character.progression.experience_threshold.level_8.v1` at `4,200` with `HIGH` confidence because an official pre-target auction, a target-near pinned community revision and an older pinned community formula agree.
 - Added `character.progression.level_xp_span.level_7.v1` at `1,600` as exact subtraction with `MEDIUM_HIGH` confidence inherited from both inputs.
 - Kept all three cases fail-closed at `DERIVED`; exact target-boundary primary capture remains unavailable.
+- Retained the post-target official table only as a current-state observation in the source packet and excluded it from all three cases' target sources and confidence basis because continuity from the immutable target is unproven.
+- Described the pinned Fandom revision as formula evidence; direct substitution yields both values, while its dynamic table module remains unpinned and unused for the numeric derivation.
 - Inspected exact Canary and CrystalServer player implementations. Their matching cumulative-XP formula is useful as a future fixture hypothesis but grants no Global or Oteryn authority.
 - Inspected the protected Character XP commit seam: it accepts a caller-supplied finite progression policy and does not itself pin these numeric thresholds, so `NOT_STARTED` is the truthful manifest state.
 - The exact candidate containing this packet is bound by live branch/PR readback and the lifecycle freeze comment after publication; this packet intentionally does not self-assert its own commit ID.
@@ -110,18 +112,18 @@ Schema mutation/versioning; Runtime, Combat, Server Seam, Movement, native-room,
 ## Context checkpoint
 
 ```yaml
-last_progress: exact revision-5 candidate generated and locally qualified from protected revision 4
+last_progress: exact successor published and externally frozen by #162 comment 5859208184; exact-head review and hosted gates are in progress
 status: validating
 branch: codex/r7-xp-thresholds-manifest-v5
 head_sha: null
-pr: null
+pr: 1019
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: pending_live_github_pr_events
-ci_check_generation: pending_exact_successor_head
-ci_checks_for_current_head: pending
-runner_assignment_state: not_started
-terminal_ci_checks_for_current_generation: pending
+ci_trigger_source: live_github_pr_events
+ci_check_generation: exact_successor_head_from_external_freeze_record
+ci_checks_for_current_head: in_progress
+runner_assignment_state: assigned
+terminal_ci_checks_for_current_generation: in_progress
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
@@ -129,5 +131,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish exact three-path successor, freeze live head, run fresh independent review and hosted gates
+next_action: complete fresh exact-head independent review and hosted gates; any material repair requires an explicit return to AUTHORING and a new external freeze record
 ```
