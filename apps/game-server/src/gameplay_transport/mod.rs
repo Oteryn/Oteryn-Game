@@ -9,14 +9,18 @@ mod tcp_tls;
 
 use crate::domain;
 use crate::durability::DurabilityRoot;
-use crate::durability::admission_authority_guards::GuardPublicationDisposition;
+use crate::durability::admission_authority_guards::{
+    AdmissionGuardStore, GuardPublicationDisposition,
+};
 use crate::durability::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority,
 };
 use crate::durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
 use crate::durability::fresh_admission_composition::FreshAdmissionSubject;
 use crate::durability::runtime_scope_assignment::{AssignmentState, NodeIncarnationProof};
-use crate::foundation::admission_authority_publication::FreshAdmissionClaimTransitionV1;
+use crate::foundation::admission_authority_publication::{
+    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1, FreshAdmissionClaimTransitionV1,
+};
 use crate::foundation::fnd04_verifier::{
     FreshDurabilityCurrentAuthorityV1, FreshDurabilityTrustContext, fresh_grant_signing_key_id,
     verify_fresh_grant_durability_v1,
@@ -28,12 +32,13 @@ use crate::foundation::fresh_admission_durability::{
 };
 use crate::foundation::{
     AuthenticatedTransportRefV1, CarrierError, ChannelId, ChannelRuntimeV1,
+    CharacterWorldEligibilityClaimV1, ExactActorRef, FirstEntryPosition,
     GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, PlayerActorReservation,
-    RuntimeScopeRefV1, WorldId,
+    RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 use connection::{
-    AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FreshAdmissionAttempt,
-    FreshAdmissionAuthority, admit_frame, hold_admitted,
+    AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FirstEntryOutcome,
+    FreshAdmissionAttempt, FreshAdmissionAuthority, admit_frame, hold_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -483,11 +488,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
             .commit_fresh_session(reservation)
             .map_err(|_| Unavailable)?;
+        // #935: only after both COMMITs, revalidate current authority and let
+        // the Channel owner write the first-entry position. A failure here
+        // writes nothing and fabricates no rollback: the committed actor stays
+        // unpositioned and is not input-eligible.
+        let first_entry = self
+            .initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
+            .await;
         Ok(AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
             channel_id: self.channel_id,
             runtime_actor: Some(actor),
+            first_entry,
         })
     }
 }
@@ -512,6 +525,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         game_session_id: GameSessionId,
     ) -> Result<PlayerActorReservation, AdmissionRefusal> {
         use AdmissionRefusal::{Rejected, Unavailable};
+        self.reserve_precondition().await?;
+        self.runtime
+            .lock()
+            .await
+            .reserve_fresh_session(game_session_id)
+            .map_err(|error| match error {
+                CarrierError::CapacityExceeded => Rejected,
+                _ => Unavailable,
+            })
+    }
+
+    /// The current assignment still names this node incarnation and matches
+    /// the exact committed assignment this runtime was composed from.
+    async fn reserve_precondition(&self) -> Result<(), AdmissionRefusal> {
+        use AdmissionRefusal::{Rejected, Unavailable};
         let scope = RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
         let assignment = self
             .root
@@ -535,14 +563,58 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(Rejected);
         }
-        self.runtime
-            .lock()
+        Ok(())
+    }
+
+    /// Immediately before the position write, resolve independently current
+    /// authority (#935): the current GameSession, the current Character guard
+    /// (owner, World, eligibility, lease generation and holder) and the current
+    /// assignment of this runtime. The immutable request supplies only the
+    /// expected values those current reads are compared against.
+    async fn initialize_first_entry(
+        &self,
+        request: &FreshAdmissionCommitRequestV1,
+        game_session_id: GameSessionId,
+        transport: AuthenticatedTransportRefV1,
+        actor: ExactActorRef,
+    ) -> FirstEntryOutcome {
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let current = match store.reconcile(request.operation()).await {
+            Ok(FreshReconciliation::Committed(snapshot)) => snapshot.current_session,
+            Ok(_) => return FirstEntryOutcome::RefusedStaleAuthority,
+            Err(_) => return FirstEntryOutcome::RefusedUnavailable,
+        };
+        let key = AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id());
+        let character = match AdmissionGuardStore::from_root(self.root.clone())
+            .load(&[key])
             .await
-            .reserve_fresh_session(game_session_id)
-            .map_err(|error| match error {
-                CarrierError::CapacityExceeded => Rejected,
-                _ => Unavailable,
-            })
+        {
+            Ok(rows) => rows.into_iter().next().flatten().map(|row| row.state),
+            Err(_) => return FirstEntryOutcome::RefusedUnavailable,
+        };
+        match self.reserve_precondition().await {
+            Ok(()) => {}
+            Err(AdmissionRefusal::Unavailable) => return FirstEntryOutcome::RefusedUnavailable,
+            Err(_) => return FirstEntryOutcome::RefusedStaleAuthority,
+        }
+        // One Channel-owner lock covers the binding comparison and the write.
+        let mut runtime = self.runtime.lock().await;
+        let expected = FirstEntryExpectation {
+            game_session_id,
+            transport,
+            world_id: self.world_id,
+            channel_id: self.channel_id,
+            account_id: &request.binding().account_id,
+            scope_generation: runtime.binding().scope_generation(),
+        };
+        if !first_entry_authority_is_current(&expected, current, character.as_ref()) {
+            return FirstEntryOutcome::RefusedStaleAuthority;
+        }
+        match runtime.initialize_first_entry_position(actor) {
+            Ok(FirstEntryPosition::Initialized(_)) => FirstEntryOutcome::Positioned,
+            Ok(FirstEntryPosition::Reconciled(_)) => FirstEntryOutcome::Reconciled,
+            Err(_) => FirstEntryOutcome::RefusedByChannel,
+        }
     }
 
     async fn rollback_runtime_player(
@@ -598,6 +670,59 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         }
         ReconciliationDisposition::Unknown
     }
+}
+
+/// The values a first-entry write expects; each is compared with a current read.
+#[derive(Clone, Copy)]
+struct FirstEntryExpectation<'a> {
+    game_session_id: GameSessionId,
+    transport: AuthenticatedTransportRefV1,
+    world_id: WorldId,
+    channel_id: ChannelId,
+    account_id: &'a str,
+    scope_generation: ScopeOwnershipGeneration,
+}
+
+/// #935 current-authority test for the first-entry position write. Every
+/// changed, stale or missing binding refuses: session ownership, the
+/// committed World/Channel, current Character/World eligibility (absent means
+/// no longer eligible), the session's Character lease, the runtime scope and
+/// ownership generation, and the current Character guard's owner account,
+/// World, eligibility, lease generation and holder.
+fn first_entry_authority_is_current(
+    expected: &FirstEntryExpectation<'_>,
+    current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    character: Option<&AdmissionAuthorityGuardStateV1>,
+) -> bool {
+    let commit = current.commit();
+    let lease = current.current_character_lease();
+    let session = owns_fresh_session(current, expected.game_session_id, expected.transport)
+        && commit.world_id() == expected.world_id
+        && commit.channel_id() == expected.channel_id
+        && current.current_character_world_eligibility()
+            == Some(CharacterWorldEligibilityClaimV1::new(
+                commit.character_id(),
+                expected.world_id,
+            ))
+        && lease.character_id() == commit.character_id()
+        && lease.generation() == commit.character_lease_generation()
+        && current.current_runtime_scope()
+            == RuntimeScopeRefV1::channel(expected.world_id, expected.channel_id)
+        && current.current_scope_generation() == expected.scope_generation;
+    let guard = matches!(
+        character,
+        Some(AdmissionAuthorityGuardStateV1::Character {
+            account_id,
+            world_id,
+            eligible: true,
+            lease_generation,
+            holder,
+        }) if account_id == expected.account_id
+            && *world_id == expected.world_id
+            && *lease_generation == commit.character_lease_generation()
+            && *holder == Some(expected.game_session_id)
+    );
+    session && guard
 }
 
 /// The reconciled current session is still the untouched fresh admission bound
@@ -713,6 +838,7 @@ mod tests {
                 channel_id: crate::foundation::ChannelId::decode(&CHARACTER)
                     .map_err(|_| AdmissionRefusal::Unavailable)?,
                 runtime_actor: None,
+                first_entry: FirstEntryOutcome::NotApplicable,
             })
         }
     }
@@ -1109,6 +1235,156 @@ mod tests {
         assert!(!owns_fresh_session(lost, session, 9));
         let terminal = snapshot(GameSessionState::Terminal, 1, None);
         assert!(!owns_fresh_session(terminal, session, 9));
+    }
+
+    /// #935 no-write matrix: each independently changed binding alone refuses
+    /// the first-entry write while every other binding stays valid.
+    #[test]
+    fn first_entry_refuses_every_single_changed_current_binding() {
+        use crate::foundation::{
+            CharacterLease, ConnectionGeneration, FreshAdmissionCommit, FreshAdmissionFacts,
+        };
+        let session = GameSessionId::decode(&uuid_v7(0x31)).expect("session");
+        let other_session = GameSessionId::decode(&uuid_v7(0x32)).expect("session");
+        let character = CharacterId::decode(&CHARACTER).expect("character");
+        let world = WorldId::decode(&uuid_v7(0x33)).expect("world");
+        let other_world = WorldId::decode(&uuid_v7(0x35)).expect("world");
+        let channel = ChannelId::decode(&uuid_v7(0x34)).expect("channel");
+        let transport = AuthenticatedTransportRefV1::decode(&[9; 16]).expect("transport");
+        let facts =
+            FreshAdmissionFacts::new([7; 32], character, world, channel, 3, 5).expect("facts");
+        let commit = FreshAdmissionCommit::from_facts(session, facts, transport).expect("commit");
+        let scope = RuntimeScopeRefV1::channel(world, channel);
+        let generation = |value| ScopeOwnershipGeneration::new(value).expect("scope");
+        let snapshot = |state, lease, eligibility, scope_generation| {
+            GameSessionAuthoritySnapshot::from_current_facts(
+                commit,
+                state,
+                ConnectionGeneration::new(1).expect("generation"),
+                Some(transport),
+                CharacterLease::new(character, lease).expect("lease"),
+                eligibility,
+                scope,
+                generation(scope_generation),
+            )
+            .expect("snapshot")
+        };
+        let eligible = Some(CharacterWorldEligibilityClaimV1::new(character, world));
+        let valid = snapshot(GameSessionState::Active, 3, eligible, 5);
+        let guard = |account: &str, guard_world, eligible, lease, holder| {
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id: account.to_owned(),
+                world_id: guard_world,
+                eligible,
+                lease_generation: lease,
+                holder,
+            }
+        };
+        let valid_guard = guard("account-1", world, true, 3, Some(session));
+        let expected = FirstEntryExpectation {
+            game_session_id: session,
+            transport,
+            world_id: world,
+            channel_id: channel,
+            account_id: "account-1",
+            scope_generation: generation(5),
+        };
+        assert!(first_entry_authority_is_current(
+            &expected,
+            valid,
+            Some(&valid_guard)
+        ));
+
+        // Session-side changes.
+        for (label, current) in [
+            (
+                "not active",
+                snapshot(GameSessionState::Reconnectable, 3, eligible, 5),
+            ),
+            ("ineligible", snapshot(GameSessionState::Active, 3, None, 5)),
+            ("lease", snapshot(GameSessionState::Active, 4, eligible, 5)),
+            (
+                "scope generation",
+                snapshot(GameSessionState::Active, 3, eligible, 6),
+            ),
+        ] {
+            assert!(
+                !first_entry_authority_is_current(&expected, current, Some(&valid_guard)),
+                "{label}"
+            );
+        }
+        // Current Character guard changes.
+        for (label, changed) in [
+            ("owner", guard("account-2", world, true, 3, Some(session))),
+            (
+                "guard world",
+                guard("account-1", other_world, true, 3, Some(session)),
+            ),
+            (
+                "guard ineligible",
+                guard("account-1", world, false, 3, Some(session)),
+            ),
+            (
+                "guard lease",
+                guard("account-1", world, true, 4, Some(session)),
+            ),
+            (
+                "holder",
+                guard("account-1", world, true, 3, Some(other_session)),
+            ),
+            ("no holder", guard("account-1", world, true, 3, None)),
+        ] {
+            assert!(
+                !first_entry_authority_is_current(&expected, valid, Some(&changed)),
+                "{label}"
+            );
+        }
+        assert!(!first_entry_authority_is_current(&expected, valid, None));
+        // Expectation-side changes (another socket, World, Channel or runtime).
+        let other_channel = ChannelId::decode(&uuid_v7(0x36)).expect("channel");
+        let other_transport = AuthenticatedTransportRefV1::decode(&[8; 16]).expect("transport");
+        for (label, changed) in [
+            (
+                "session",
+                FirstEntryExpectation {
+                    game_session_id: other_session,
+                    ..expected
+                },
+            ),
+            (
+                "transport",
+                FirstEntryExpectation {
+                    transport: other_transport,
+                    ..expected
+                },
+            ),
+            (
+                "world",
+                FirstEntryExpectation {
+                    world_id: other_world,
+                    ..expected
+                },
+            ),
+            (
+                "channel",
+                FirstEntryExpectation {
+                    channel_id: other_channel,
+                    ..expected
+                },
+            ),
+            (
+                "runtime generation",
+                FirstEntryExpectation {
+                    scope_generation: generation(4),
+                    ..expected
+                },
+            ),
+        ] {
+            assert!(
+                !first_entry_authority_is_current(&changed, valid, Some(&valid_guard)),
+                "{label}"
+            );
+        }
     }
 
     #[test]
