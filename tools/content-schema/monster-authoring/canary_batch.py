@@ -68,6 +68,11 @@ RULES = {
     'primal_pack_beast': 'data-otservbr-global/lib/quests/the_primal_ordeal.lua RegisterPrimalPackBeast registers a separate '
                          'type "<name> (Primal)" (named Primal Pack Beast, 0 experience, no loot, 70% health, no Bestiary, no '
                          'corpse) and leaves this type unchanged; the derived Primal type is not generated here',
+    'reward_on_appear': ('The template `if monster:getType():isRewardBoss() then monster:setReward(true) end` repeats the reward '
+                         'registration that data/scripts/lib/register_monster_type.lua lines 199-204 already attach to onSpawn for '
+                         'every rewardBoss type (reward_boss is mapped from the flags), and does nothing for other types. Reward '
+                         'tracking belongs to the reward domain (D27); re-running it on every appearance, which resets the '
+                         'GlobalBosses contribution table (data/libs/functions/monster.lua lines 154-169), is not reproduced'),
     'nil_zero': 'src/lua/functions/lua_functions_loader.hpp getNumber reads nil with lua_tonumber as 0',
     'dispel': 'src/creatures/combat/combat.cpp CombatDispelFunc removes every condition of COMBAT_PARAM_DISPEL type from '
               'each target after the health change (or on a combat without damage)',
@@ -133,6 +138,9 @@ if EVENT_CENSUS.exists():
         if _event['event'] not in EVENTS:
             EVENTS[_event['event']] = (_event['kind'] if _event['confidence'] == 'high' else 'low_confidence',
                                        _event['script'] or '(no registering script)', _event['effect'].rstrip('.'))
+REWARD_ON_APPEAR = re.compile(r'^mType\.onAppear\s*=\s*function\s*\(monster,\s*creature\)\s*\n'
+                              r'\s*if monster:getType\(\):isRewardBoss\(\) then\s*\n'
+                              r'\s*monster:setReward\(true\)\s*\n\s*end\s*\nend\s*$', re.M)
 ENCOUNTER_OMISSION = 'Owner decision D9: boss encounter bookkeeping belongs to the Encounter definition, not the monster bundle.'
 RACE_RESIDUE = {'venom': 'slime', 'blood': 'blood', 'ink': 'ink', 'chocolate': 'chocolate', 'candy': 'candy',
                 'undead': None, 'fire': None, 'energy': None}
@@ -769,8 +777,15 @@ class Converter:
                 row(f'events={event}', 'unresolved_semantics', 'script', line=line_of(r'^monster\.events'),
                     resolution='Registered creature event whose script has not been verified.')
         for callback in sorted(callbacks):
-            row(f'mType.{callback}', 'unresolved_semantics', 'script', line=line_of(r'mType\.' + callback),
-                resolution='Inline Lua callback; needs an explicit native behaviour resolution.')
+            line = line_of(r'mType\.' + callback)
+            if re.search(r'^mType\.' + callback + r'\s*=\s*function\s*\([^)]*\)\s*end\s*$', text, re.M):
+                row(f'mType.{callback}', 'approved_omission', 'script', line=line,
+                    resolution='Inline Lua callback with an empty body (`function(...) end`): no effect.')
+            elif callback == 'onAppear' and REWARD_ON_APPEAR.search(text):
+                row(f'mType.{callback}', 'approved_omission', 'script', line=line, resolution=RULES['reward_on_appear'])
+            else:
+                row(f'mType.{callback}', 'unresolved_semantics', 'script', line=line,
+                    resolution='Inline Lua callback; needs an explicit native behaviour resolution.')
 
         sources = [{'repository': REPOSITORY, 'revision': REVISION}]
         self.adopt_wiki(s, monster, rows, sources, definitions, line_of)
