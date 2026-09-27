@@ -194,7 +194,8 @@ def top_level_fields(text, start):
 
 
 def infobox(text, template):
-    match = re.search(r'\{\{\s*' + re.escape(template) + r'\s*[|}]', text, re.IGNORECASE)
+    name = re.escape(template).replace(r'\ ', '[ _]')  # MediaWiki treats '_' and ' ' alike
+    match = re.search(r'\{\{\s*' + name + r'\s*[|}]', text, re.IGNORECASE)
     return top_level_fields(text, match.start()) if match else {}
 
 
@@ -263,12 +264,13 @@ def plain(value):
 
 
 def wiki_number(value):
-    text = plain(value).replace(',', '')
+    text = re.sub(r'(?<=\d)[ ,.](?=\d{3}\b)', '', plain(value))
+    text = re.sub(r'\s*\(.*\)$', '', text)  # "1400 (a note)" is 1400
     return int(text) if re.fullmatch(r'\d+', text) else None
 
 
 def wiki_seconds_ms(value):
-    text = plain(value)
+    text = re.sub(r'(?<=\d) (?=\d{3}\b)', '', plain(value))
     if re.fullmatch(r'\d+(?:\.\d+)?', text):
         return int(round(float(text) * 1000))
     return None
@@ -346,7 +348,7 @@ def compare_spell(record, wiki, stats):
                       value if raw is not None else (0 if field == 'soul' else None), raw is None or value is not None)
     raw = fields.get('premium')
     compare_field(stats, rows, 'premium', bool(reg.get('isPremium', False)),
-                  None if raw is None else plain(raw).lower() == 'yes', True)
+                  None if raw is None else plain(raw).lower() in ('yes', 'sim'), True)
     raw = fields.get('cooldown')
     value = wiki_seconds_ms(raw) if raw is not None else None
     compare_field(stats, rows, 'cooldown_ms', reg.get('cooldown'), value, raw is None or value is not None)
@@ -398,6 +400,78 @@ def compare_damage_type(stats, rows, record, raw):
     compare_field(stats, rows, 'damage_type', types[0] if len(types) == 1 else (types or None), wiki)
 
 
+# TibiaWiki BR field names (Infobox_Spell, Infobox_Runas) -> the Fandom names used by compare().
+BR_SPELL_FIELDS = {'name': 'name', 'words': 'words', 'expLvl': 'levelrequired', 'mana': 'mana', 'soul': 'soul',
+                   'premium': 'premium', 'cooldownproprio': 'cooldown', 'cooldowngrupo': 'cooldowngroup',
+                   'voc': 'voc', 'basePower': 'basepower', 'damagetype': 'damagetype', 'spellrange': 'spellrange',
+                   'implemented': 'implemented', 'wheelSpellType': 'wheelspell', 'spellcost': 'spellcost'}
+BR_RUNE_FIELDS = {'name': 'name', 'levelrequired': 'levelrequired', 'mlrequired': 'mlrequired',
+                  'vocrequired': 'vocrequired', 'basePower': 'basepower', 'damagetype': 'damagetype',
+                  'implemented': 'implemented'}
+BR_CONJURE_FIELDS = {'words': 'words', 'makelvl': 'levelrequired', 'makemana': 'mana', 'soul': 'soul',
+                     'makeqty': 'amount', 'makevoc': 'voc', 'premium': 'premium', 'cooldownproprio': 'cooldown',
+                     'cooldowngrupo': 'cooldowngroup'}
+BR_GROUP = {'ataque': 'Attack', 'cura': 'Healing', 'suporte': 'Support', 'suprimento': 'Supply', 'summon': 'Summon',
+            'stance': 'Stance', 'party': 'Party', 'focus': 'Focus'}
+# BR page categories that are not Tibia cooldown groups: conjuring ("Suprimento"), familiars, party and
+# stance spells are all in the Support cooldown group; a stance keeps "Stance" as its secondary group.
+BR_PRIMARY_GROUP = {'Supply': 'Support', 'Summon': 'Support', 'Party': 'Support', 'Stance': 'Support'}
+BR_YES_NO = {'sim': 'yes', 'não': 'no', 'nao': 'no'}
+BR_DAMAGE = {'físico': 'Physical', 'fisico': 'Physical'}
+
+
+def br_value(key, value):
+    value = value.strip()
+    if key == 'premium':
+        return BR_YES_NO.get(plain(value).lower(), value)
+    if key == 'damagetype':
+        return BR_DAMAGE.get(plain(value).lower(), value)
+    return value
+
+
+def br_facts(all_fields_doc):
+    """Canonical facts (Fandom field names) from a `facts --wiki br --all-fields` capture; prose dropped.
+
+    One Infobox_Runas page describes both the rune item (level, magic level) and the conjuring spell
+    (make* fields); it yields a rune row keyed by name and an `Infobox Spell` row of type Rune."""
+    pages = []
+    for page in all_fields_doc['pages']:
+        base = {k: page[k] for k in ('title', 'page_id', 'revision_id', 'timestamp', 'content_sha256') if k in page}
+        boxes = {name.replace('_', ' '): fields for name, fields in page.get('infoboxes', {}).items()}
+        if 'Infobox Spell' in boxes:
+            raw = boxes['Infobox Spell']
+            fields = {to: br_value(to, raw[k]) for k, to in BR_SPELL_FIELDS.items() if raw.get(k)}
+            groups = [BR_GROUP.get(g.strip().lower(), g.strip())
+                      for g in plain(raw.get('subclass', '')).split(',') if g.strip()]
+            if groups and groups[0] == 'Stance' and len(groups) == 1:
+                groups.append('Stance')
+            if groups:
+                fields['subclass'] = BR_PRIMARY_GROUP.get(groups[0], groups[0])
+            if len(groups) > 1:
+                fields['secondarygroup'] = groups[1]
+            pages.append({**base, 'template': 'Infobox Spell', 'fields': fields})
+        if 'Infobox Runas' in boxes:
+            raw = boxes['Infobox Runas']
+            rune = {to: br_value(to, raw[k]) for k, to in BR_RUNE_FIELDS.items() if raw.get(k)}
+            pages.append({**base, 'template': 'Infobox Object', 'fields': rune})
+            conjure = {to: br_value(to, raw[k]) for k, to in BR_CONJURE_FIELDS.items() if raw.get(k)}
+            conjure.update(type='Rune', name=raw.get('name', page['title']))
+            pages.append({**base, 'template': 'Infobox Spell', 'fields': conjure, 'from_rune_page': True})
+    formulae = [p for p in all_fields_doc['pages'] if 'level_curve' in p]
+    return {'schema': 'OTERYN_SPELL_WIKI_FACTS/v1', 'wiki': 'br', 'api': all_fields_doc['api'],
+            'license': 'TibiaWiki BR, CC BY-SA; only short allowlisted infobox facts with page and revision ids '
+                       'are recorded, never article prose.',
+            'target_cut': all_fields_doc['target_cut'], 'cut_rule': all_fields_doc['cut_rule'],
+            'field_mapping': {'Infobox_Spell': BR_SPELL_FIELDS, 'Infobox_Runas rune': BR_RUNE_FIELDS,
+                              'Infobox_Runas conjuring spell': BR_CONJURE_FIELDS, 'subclass': BR_GROUP},
+            'pages': formulae + pages}
+
+
+def rune_key(fields):
+    item = wiki_number(fields.get('itemid', ''))
+    return item if item is not None else plain(fields.get('name', '')).lower()
+
+
 def compare(facts_doc, census):
     spell_pages = [p for p in facts_doc['pages'] if p.get('template') == 'Infobox Spell']
     by_words, by_name = {}, {}
@@ -409,9 +483,9 @@ def compare(facts_doc, census):
     rune_pages = {}
     for page in facts_doc['pages']:
         if page.get('template') == 'Infobox Object':
-            item = wiki_number(page['fields'].get('itemid', ''))
-            if item is not None:
-                rune_pages.setdefault(item, page)
+            key = rune_key(page['fields'])
+            if key not in ('', None):
+                rune_pages.setdefault(key, page)
     result = {}
     for source in ('canary', 'crystal'):
         stats = {}
@@ -423,7 +497,7 @@ def compare(facts_doc, census):
                                   'reason': 'monster-only registration (unspeakable words)'})
                 continue
             if record['spell_type'] == 'rune':
-                page = rune_pages.get(reg.get('runeId'))
+                page = rune_pages.get(reg.get('runeId')) or rune_pages.get(str(record['name']).lower())
                 if page is None:
                     unmatched.append({'name': record['name'], 'spell_type': 'rune', 'rune_item_id': reg.get('runeId')})
                     continue
@@ -453,6 +527,79 @@ def compare(facts_doc, census):
     return result
 
 
+CROSSWALK_FIELDS = ('levelrequired', 'mana', 'soul', 'premium', 'cooldown', 'cooldowngroup', 'basepower', 'voc',
+                    'subclass', 'secondarygroup', 'damagetype', 'amount')
+CROSSWALK_RUNE_FIELDS = ('levelrequired', 'mlrequired', 'basepower', 'damagetype')
+
+
+def crosswalk_value(field, value):
+    if value is None:
+        return None
+    if field == 'voc':
+        return wiki_vocations(value) or None
+    if field in ('cooldown', 'cooldowngroup'):
+        ms = wiki_seconds_ms(value)
+        return ms if ms is not None else plain(value)
+    if field in ('levelrequired', 'mana', 'soul', 'basepower', 'amount', 'mlrequired'):
+        number = wiki_number(value)
+        if number is not None:
+            return number
+    text = plain(value).lower().rstrip('.')
+    if text in ('var', 'varies'):
+        return 'varies'
+    return BR_YES_NO.get(text, text)
+
+
+def join_words(left, right):
+    """left key -> right key: equal words, or right words plus the parameter the left appends."""
+    pairs = {k: k for k in left if k in right}
+    for key in left:
+        if key not in pairs:
+            prefix = [r for r in right if key.startswith(r + ' ') and r not in pairs.values()]
+            if len(prefix) == 1:
+                pairs[key] = prefix[0]
+    return pairs
+
+
+def crosswalk(fandom, br):
+    """BR <-> Fandom per-field agreement (S3: a disagreement stays CONFLICT for the owner)."""
+    def spells(doc):
+        return {words_key(p['fields'].get('words', '')): p for p in doc['pages']
+                if p.get('template') == 'Infobox Spell' and words_key(p['fields'].get('words', ''))}
+
+    def runes(doc):
+        return {plain(p['fields'].get('name', p['title'])).lower(): p for p in doc['pages']
+                if p.get('template') == 'Infobox Object'}
+    out = {}
+    for label, left, right, fields in (('spells', spells(fandom), spells(br), CROSSWALK_FIELDS),
+                                       ('runes', runes(fandom), runes(br), CROSSWALK_RUNE_FIELDS)):
+        counts, rows = {}, []
+        pairs = join_words(left, right) if label == 'spells' else {k: k for k in left if k in right}
+        for key in sorted(pairs):
+            diff = {}
+            for field in fields:
+                a = crosswalk_value(field, left[key]['fields'].get(field))
+                b = crosswalk_value(field, right[pairs[key]]['fields'].get(field))
+                bucket = counts.setdefault(field, Counter())
+                if a is None and b is None:
+                    continue
+                if a is None or b is None:
+                    bucket['only_' + ('br' if a is None else 'fandom')] += 1
+                elif a == b:
+                    bucket['agree'] += 1
+                else:
+                    bucket['conflict'] += 1
+                    diff[field] = {'fandom': a, 'br': b}
+            if diff:
+                rows.append({'key': key, 'fandom_title': left[key]['title'], 'br_title': right[pairs[key]]['title'],
+                             'fandom_revision_id': left[key].get('revision_id'),
+                             'br_revision_id': right[pairs[key]].get('revision_id'), 'conflicts': diff})
+        out[label] = {'joined': len(pairs), 'only_fandom': sorted(set(left) - set(pairs)),
+                      'only_br': sorted(set(right) - set(pairs.values())),
+                      'field_counts': {k: dict(v) for k, v in sorted(counts.items())}, 'conflicts': rows}
+    return out
+
+
 def self_test():
     text = ('{{Infobox Spell|List={{{1|}}}\n| name = Light Healing\n| words = exura\n| premium = no\n| mana = 20\n'
             '| levelrequired = 8\n| cooldown = 1\n| cooldowngroup = 1\n| voc = [[Paladin]]s, [[Druid]]s, [[Sorcerer]]s, '
@@ -479,13 +626,30 @@ def self_test():
     assert not words_match({'words': 'exura sio'}, 'exura sio name')
     boxes = all_infoboxes('{{Infobox Spell|name=Cura Leve|palavras=exura}}\n{{Infobox Item|itemid=3155}}')
     assert boxes == {'Infobox Spell': {'name': 'Cura Leve', 'palavras': 'exura'}, 'Infobox Item': {'itemid': '3155'}}, boxes
+    br = br_facts({'api': 'x', 'target_cut': 'd', 'cut_rule': 'r', 'pages': [
+        {'title': 'Ice Strike', 'infoboxes': {'Infobox_Spell': {'name': 'Ice Strike', 'words': 'exori frigo',
+         'expLvl': '8', 'premium': 'sim', 'subclass': 'Ataque, Focus', 'cooldownproprio': '2', 'effect': 'prose'}}},
+        {'title': 'Sudden Death Rune', 'infoboxes': {'Infobox_Runas': {'name': 'Sudden Death Rune', 'words':
+         'adori gran mort', 'levelrequired': '45', 'mlrequired': '15', 'makelvl': '45', 'makeqty': '3'}}}]})
+    spell, rune, conjure = br['pages']
+    assert spell['fields'] == {'name': 'Ice Strike', 'words': 'exori frigo', 'levelrequired': '8', 'premium': 'yes',
+                               'cooldown': '2', 'subclass': 'Attack', 'secondarygroup': 'Focus'}, spell
+    assert rune['template'] == 'Infobox Object' and rune_key(rune['fields']) == 'sudden death rune', rune
+    assert conjure['fields']['amount'] == '3' and conjure['fields']['levelrequired'] == '45', conjure
+    assert infobox('{{Infobox_Spell|words=exura}}', 'Infobox Spell') == {'words': 'exura'}
+    assert wiki_number('1 800') == 1800 and wiki_number('1400 (a note)') == 1400 and wiki_number('12,5') is None
+    assert wiki_seconds_ms('1 800') == 1800000
+    assert crosswalk_value('mana', 'Varies.') == crosswalk_value('mana', 'var.') == 'varies'
+    assert join_words({'exura sio name': 1, 'exura': 2}, {'exura sio': 1, 'exura': 2}) == {'exura': 'exura', 'exura sio name': 'exura sio'}
     print('wiki_spells self-test: ok')
     return 0
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument('command', choices=('fetch', 'facts', 'compare', 'self-test'))
+    parser.add_argument('command', choices=('fetch', 'facts', 'br-facts', 'compare', 'crosswalk', 'self-test'))
+    parser.add_argument('--artifact', type=Path, help='br-facts: the facts --wiki br --all-fields capture')
+    parser.add_argument('--br-facts', type=Path, help='crosswalk: canonical BR facts (with --facts for Fandom)')
     parser.add_argument('--cache', type=Path)
     parser.add_argument('--facts', type=Path)
     parser.add_argument('--census', type=Path)
@@ -506,7 +670,23 @@ def main(argv=None):
         document = facts(snapshot, args.all_fields)
         write_lines(args.out, document, 'pages')
         return 0
+    if args.command == 'br-facts':
+        document = br_facts(json.loads(args.artifact.read_text(encoding='utf-8')))
+        write_lines(args.out, document, 'pages')
+        return 0
     facts_doc = json.loads(args.facts.read_text(encoding='utf-8'))
+    if args.command == 'crosswalk':
+        br = json.loads(args.br_facts.read_text(encoding='utf-8'))
+        result = crosswalk(facts_doc, br)
+        document = {'schema': 'OTERYN_SPELL_WIKI_CROSSWALK/v1', 'fandom_cut': facts_doc['target_cut'],
+                    'br_cut': br['target_cut'], 'note': 'conflicts stay CONFLICT for the owner (S3)'}
+        for label, value in result.items():
+            document[label + '_summary'] = {k: v for k, v in value.items() if k != 'conflicts'}
+            document[label + '_conflicts'] = value['conflicts']
+        write_lines(args.out, document, None)
+        print(json.dumps({k: {'joined': v['joined'], 'only_fandom': len(v['only_fandom']), 'only_br': len(v['only_br']),
+                              'field_counts': v['field_counts']} for k, v in result.items()}, indent=1))
+        return 0
     census = json.loads(args.census.read_text(encoding='utf-8'))
     result = compare(facts_doc, census)
     document = {'schema': 'OTERYN_SPELL_WIKI_COMPARE/v1', 'license': LICENSE_NOTE, 'target_cut': facts_doc['target_cut'],

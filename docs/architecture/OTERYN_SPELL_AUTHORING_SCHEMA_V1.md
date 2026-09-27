@@ -121,7 +121,7 @@ and 55 rune item pages (`Category:Runes`), each at its last revision on or befor
 | words | 187 / 1 | 203 / 0 |
 | vocations (base vocations) | 185 / 0 | 197 / 3 |
 | level | 214 / 10 | 226 / 13 |
-| mana | 171 / 11 | 185 / 12 |
+| mana | 172 / 11 | 186 / 12 |
 | soul | 187 / 1 | 202 / 1 |
 | premium | 156 / 32 | 162 / 41 |
 | cooldown | 174 / 14 | 181 / 22 |
@@ -136,6 +136,46 @@ few conjuring spells whose wiki page name differs. 14 wiki spell pages have no C
 `Mentor Other` (removed by Crystal). Under S3/S4 the differences are adopted from the wiki, for
 example base power 155 instead of Crystal's 170 for the great beams, Spirit Mend 250 instead of 220,
 the familiar summon cooldown of 30 minutes (both sources register 0), and the premium flags.
+
+### 4.1 TibiaWiki BR, as of 2026-09-27
+
+Captured on a hosted runner (`.github/workflows/spell-wiki-capture.yml`, run 36355786702, artifact
+`spell-wiki-br-ee6e961…`, SHA-256 `dabc861f…e939`): 186 `Infobox_Spell` pages and 36 `Infobox_Runas`
+pages. `samples/wiki-spell-facts-br-2026-09-27.json` keeps the mapped short facts with revision ids
+(`wiki_spells.py br-facts`, field mapping in the file): `expLvl` → level, `cooldownproprio` /
+`cooldowngrupo` → own / group cooldown, `subclass` "Ataque, Focus" → primary and secondary group,
+`premium` sim/não; an `Infobox_Runas` page describes both the rune (level, magic level) and its
+conjuring spell (`makelvl`, `makemana`, `makeqty`, `makevoc`). BR categories that are not cooldown
+groups (Suprimento, Summon, Party, Stance) map to the Support group. BR has no `Fórmulas` level curve
+(page last edited 2011); the curve stays the Fandom `Formulae` one.
+
+| field (match / diff), `samples/wiki-spell-compare-br-2026-09-27.json` | Canary | Crystal |
+|---|---:|---:|
+| words | 189 / 1 | 205 / 0 |
+| vocations | 185 / 5 | 197 / 8 |
+| level | 203 / 17 | 218 / 17 |
+| mana | 168 / 17 | 183 / 17 |
+| premium | 158 / 32 | 164 / 41 |
+| cooldown | 170 / 20 | 177 / 28 |
+| primary group cooldown | 183 / 7 | 200 / 5 |
+| base power | – | 82 / 10 |
+
+### 4.2 BR ↔ Fandom crosswalk (S3 conflicts)
+
+`samples/wiki-spell-crosswalk-fandom-br-2026-09-27.json`: 206 spells joined by words (the Fandom words
+may carry the parameter) and 32 runes by name. The wikis agree on almost everything: premium 204 / 1,
+vocations 201 / 1, group cooldown 200 / 5, mana 200 / 6, level 196 / 10, cooldown 194 / 10, base power
+89 / 3; rune level and magic level 32 / 0. The conflicts are the owner's S3 list, for example:
+
+- knight healing after 15.25 (Wound Cleansing, Fair and Intense Wound Cleansing, Bruise Bane): BR has
+  the 2 s cooldown and higher mana, Fandom the older values; `Mystic Repulse` base power BR 85 /
+  Fandom 72 (BR matches the 2026 vocation adjustment);
+- healing runes (Cure Poison, Intense and Ultimate Healing Rune): cooldown and group cooldown BR 1 s /
+  Fandom 2 s; `Paralyse` cooldown BR 6 s / Fandom 2 s;
+- Wheel revelation spells (Divine Grenade, Ice/Terra Burst, Executioner's Throw, Spiritual Outburst,
+  Divine Empowerment): level BR 1 / Fandom 300;
+- secondary groups of auras and virtues (BR stance / virtude / focus, Fandom crippling / stance);
+- deprecated spells (Force Strike, Ultimate Explosion).
 
 ## 5. Decisions
 
@@ -207,7 +247,7 @@ of spells a new character actually uses.
 | Phase | Result | Scope | Exit evidence |
 |---|---|---|---|
 | **P0** (this change) | Schema candidate, census, Fandom comparison, plan | `tools/content-schema/spell-authoring/`, this document | validator + 37 cases green; census and compare regenerate |
-| **P1** Reference data | TibiaWiki BR capture of the current spell and rune pages, BR ↔ Fandom ↔ Canary ↔ Crystal crosswalk; owner decisions S1, S2, S6–S10 | `.github/workflows/spell-wiki-capture.yml` (BR answers 403 here), `wiki_spells.py --wiki br` | every player spell has a per-field disposition: MATCH, adopted wiki value, CONFLICT or UNKNOWN |
+| **P1** Reference data | Done for capture and crosswalk (§4.1, §4.2); remaining: owner resolution of the BR ↔ Fandom conflicts and decisions S1, S2, S6–S10 | `.github/workflows/spell-wiki-capture.yml` (BR answers 403 here), `wiki_spells.py --wiki br` | every player spell has a per-field disposition: MATCH, adopted wiki value, CONFLICT or UNKNOWN |
 | **P2** Converter and readiness | `convert_spells.py`: census of both sources → Spell bundles + dependencies + manifests for `plain_combat` (declarative), `conjure` and runes, field by field under S4 with S3 wiki adoption; `population_census.py` for spells | `tools/content-schema/spell-authoring/` | all declarative spells validate and resolve; blockers grouped by pattern (§3), like monster §9 |
 | **P3** First castable slice (runtime) | A character casts the starter set: Light Healing (`exura`), Intense Healing (`exura gran`), Ice Strike and Energy Strike (shared with monsters), Haste (`utani hur`), Sudden Death rune + its conjuring spell, Great Fireball rune (area) | v2 GAP fields for this set; content compiler; server: words → cast intent, requirement checks (vocation, level, mana, soul, premium), cooldown and group cooldown state, `player_expression` evaluator and `level_base_damage_healing`, rune use-with and charges, conjure; reuse the ability engine (`apps/game-server/src/ability/`) for effects and commit | Rust unit + integration tests per rule; reference evidence per spell (`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json`); `game-gate` green |
 | **P4** Bulk declarative spells | All remaining `plain_combat` spells and runes by vocation, conditions (haste, paralyse, magic shield, utito) and areas | content population through the P2 converter; runtime only for missing Effect operations | readiness census: declarative spells admitted |

@@ -19,6 +19,9 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json` | Output of `spell_census.py` (one spell per line). |
 | `samples/wiki-spell-facts-fandom-2026-09-27.json` | Output of `wiki_spells.py facts`: page id, revision id, wikitext SHA-256, allowlisted infobox values and the `Formulae` level curve. |
 | `samples/wiki-spell-compare-fandom-2026-09-27.json` | Output of `wiki_spells.py compare`: per-field counts and difference rows. |
+| `samples/wiki-spell-facts-br-2026-09-27.json` | `wiki_spells.py br-facts` over the hosted-runner BR capture: mapped short facts with revision ids. |
+| `samples/wiki-spell-compare-br-2026-09-27.json` | `wiki_spells.py compare` of the census with TibiaWiki BR. |
+| `samples/wiki-spell-crosswalk-fandom-br-2026-09-27.json` | `wiki_spells.py crosswalk`: BR ↔ Fandom per-field agreement and conflicts (S3). |
 
 ```text
 pip install -r requirements.txt
@@ -35,6 +38,12 @@ python wiki_spells.py facts --cache <dir> --out samples/wiki-spell-facts-fandom-
 python wiki_spells.py compare --facts samples/wiki-spell-facts-fandom-2026-09-27.json \
     --census samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json \
     --out samples/wiki-spell-compare-fandom-2026-09-27.json
+# BR: download the spell-wiki-br-<sha> artifact of spell-wiki-capture.yml, then
+python wiki_spells.py br-facts --artifact wiki-spell-infoboxes-br.json --out samples/wiki-spell-facts-br-2026-09-27.json
+python wiki_spells.py compare --facts samples/wiki-spell-facts-br-2026-09-27.json \
+    --census samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json --out samples/wiki-spell-compare-br-2026-09-27.json
+python wiki_spells.py crosswalk --facts samples/wiki-spell-facts-fandom-2026-09-27.json \
+    --br-facts samples/wiki-spell-facts-br-2026-09-27.json --out samples/wiki-spell-crosswalk-fandom-br-2026-09-27.json
 ```
 
 TibiaWiki BR (`tibiawiki.com.br`) answers HTTP 403 (Cloudflare) from the build container, as for
