@@ -70,9 +70,12 @@ admission waits for. Items stay identity
 records; no Item field is added (`sold_by`/`bought_by` stay forbidden).
 
 **Provenance.** Each NPC gets source identity bindings to `oteryn:source.canary` (added by the creature
-admission) and/or `oteryn:source.crystalserver` with namespace `<source>/npc-type` and the source file
-stem as external id, disposition `EXACT`. Where the wiki decided a fact (D6), a binding records the
-TibiaWiki page id and revision. The candidate report records the snapshot and Item map digests.
+admission) and/or `oteryn:source.crystalserver` (added by the Item family; the same Crystal revision)
+with namespace `canary/npc-file` or `crystalserver/npc-file` and the source file stem as external id,
+disposition `EXACT`. Where the wiki decided a fact or confirmed a single-source NPC (D6), a
+`mediawiki/page_id` binding records the TibiaWiki page under the source `oteryn:source.tibiawiki`,
+revision `tibiawiki-npc-<first 16 hex of the snapshot SHA-256>`, with its own import batch. The
+candidate report records the snapshot and Item map digests.
 
 ## 4. Records
 
@@ -124,6 +127,11 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    Done in `OTV2-20260927-npc-admission-presentation-behavior`.
 3. Writer and pilot: about 20 NPCs through v2 load and validation, including a travel NPC, a shop with a
    non-gold currency, count and sub-type offers, and a single-source NPC decided by the wiki.
+   Done in `OTV2-20260927-npc-admission-pilot`: `tools/content-migration/npc_admission_stage.py` stages the
+   candidates (`--pilot` for the 20 NPCs); `materialize_content_world_project_v2` pins the staged file.
+   Travel destinations use the project coordinate frame. Travel discounts (the postman) stay in the
+   candidates. The one NPC whose sources declare no walk configuration is deferred rather than given the
+   engine default.
 4. Wave A in bulk (984 NPCs) and regeneration of the content tree with the NPC and Service families.
 5. Later: placements after World admission; dialogue after Oteryn-authored text; held NPCs, offers and
    routes as their blockers close.

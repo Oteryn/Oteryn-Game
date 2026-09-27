@@ -71,6 +71,23 @@ const CANARY_BUNDLE_INDEX_SHA256: &str =
     "73495f76e0ab4f731e7605f31b9a7816e9fdce0b55410b3e583059d216a9501d";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
+const NPC_STAGED: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-pilot-staged.json");
+const NPC_STAGED_SHA256: &str = "6080bae04da7046957d711c648e13ed317405ce83666c44b859a068c3f83b82e";
+const NPC_STAGE_TOOL_SHA256: &str =
+    "54a5c26b49d0466672df7f5238c7d37753204baf6b7215bfcf59a88c0e239711";
+const NPC_CANDIDATES_SHA256: &str =
+    "a45b016e050f21eab69972ca2c17f90b632713ec866657b930ef9103d4663e63";
+const NPC_WIKI_SNAPSHOT_SHA256: &str =
+    "e8a040340f66036578cf275a37cd799ed11edb6e44fbadac2ddc20bdb8a9fb6f";
+const NPC_ITEM_MAP_SHA256: &str =
+    "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a";
+const NPC_WIKI_REVISION: &str = "tibiawiki-npc-e8a040340f660365";
+const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
+const NPC_COUNT: usize = 20;
+const NPC_RECORDS: usize = 40;
+const NPC_DECLARATIONS: usize = 26;
+const NPC_BINDINGS: usize = 44;
 const CREATURE_COUNT: usize = 1315;
 const CREATURE_RECORDS: usize = 18280;
 const CREATURE_PROFILES: usize = 17315;
@@ -85,8 +102,8 @@ fn limits() -> ProjectEvidenceLimits {
         max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES,
         max_locator_bytes: 160,
         max_locator_segments: 8,
-        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS,
-        max_import_records: 5,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
+        max_import_records: 6,
         max_reimport_states: 1,
     }
 }
@@ -1078,6 +1095,108 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     })
 }
 
+struct NpcPopulation {
+    import: ImportBatch,
+    source: ProjectV2Source,
+    records: Vec<ProjectReferenceRecord>,
+    declarations: Vec<ProjectV2Declaration>,
+    profiles: Vec<ProjectV2AuthoringProfile>,
+    bindings: Vec<ProjectV2SourceIdentityBinding>,
+}
+
+fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
+    if hex_sha256(NPC_STAGED) != NPC_STAGED_SHA256 {
+        return Err("staged NPC admission input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(NPC_STAGED)?;
+    let source = &packet["source"];
+    let counts = &packet["counts"];
+    if packet["schema"] != "OTERYN_NPC_ADMISSION_STAGED/v1"
+        || packet["wave"] != "pilot"
+        || source["canary_revision"] != CANARY_REVISION
+        || source["crystal_revision"] != CRYSTAL_REVISION
+        || source["candidates_sha256"] != NPC_CANDIDATES_SHA256
+        || source["item_map_sha256"] != NPC_ITEM_MAP_SHA256
+        || source["wiki_snapshot_sha256"] != NPC_WIKI_SNAPSHOT_SHA256
+        || source["wiki_revision"] != NPC_WIKI_REVISION
+        || counts["npcs"] != NPC_COUNT
+        || counts["records"] != NPC_RECORDS
+        || counts["declarations"] != NPC_DECLARATIONS
+        || counts["bindings"] != NPC_BINDINGS
+    {
+        return Err("staged NPC admission source identity drifted".into());
+    }
+    let records: Vec<ProjectReferenceRecord> = serde_json::from_value(packet["records"].clone())?;
+    let declarations: Vec<ProjectV2Declaration> =
+        serde_json::from_value(packet["declarations"].clone())?;
+    let profiles: Vec<ProjectV2AuthoringProfile> =
+        serde_json::from_value(packet["authoring_profiles"].clone())?;
+    let bindings: Vec<ProjectV2SourceIdentityBinding> =
+        serde_json::from_value(packet["source_identity_bindings"].clone())?;
+    let npcs = declarations
+        .iter()
+        .filter(|declaration| matches!(declaration, ProjectV2Declaration::Npc { .. }))
+        .count();
+    if records.len() != NPC_RECORDS
+        || profiles.len() != NPC_RECORDS
+        || declarations.len() != NPC_DECLARATIONS
+        || npcs != NPC_COUNT
+        || bindings.len() != NPC_BINDINGS
+        || bindings.iter().any(|binding| {
+            binding.target.family != ProjectV2Family::Npc
+                || !matches!(
+                    (
+                        binding.source_key.as_str(),
+                        binding.source_revision.as_str(),
+                        binding.identity_namespace.as_str()
+                    ),
+                    ("oteryn:source.canary", CANARY_REVISION, "canary/npc-file")
+                        | (
+                            "oteryn:source.crystalserver",
+                            CRYSTAL_REVISION,
+                            "crystalserver/npc-file"
+                        )
+                        | (
+                            "oteryn:source.tibiawiki",
+                            NPC_WIKI_REVISION,
+                            "mediawiki/page_id"
+                        )
+                )
+        })
+    {
+        return Err("staged NPC admission counts drifted".into());
+    }
+    let import = ImportBatch {
+        batch_id: "g4-npc-pilot-tibiawiki-r1".to_owned(),
+        source_repository: "tibia.fandom.com".to_owned(),
+        source_revision: NPC_WIKI_REVISION.to_owned(),
+        source_artifact_sha256: NPC_WIKI_SNAPSHOT_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_NPC_FANDOM_SNAPSHOT/v1".to_owned(),
+        importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
+        mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "npc-admission-r1".to_owned(),
+        mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: import.batch_id.clone(),
+        revision: import.source_revision.clone(),
+        sha256: import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
+    Ok(NpcPopulation {
+        import,
+        source,
+        records,
+        declarations,
+        profiles,
+        bindings,
+    })
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
     let promoted = protected_r7_p04_gold_coin_item_family_import(
@@ -1131,15 +1250,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         import: creature_import,
         source: creature_source,
         records: creature_records,
-        profiles: authoring_profiles,
+        profiles: mut authoring_profiles,
         bindings: creature_bindings,
     } = populate_creatures()?;
     records.extend(creature_records);
     bindings.extend(creature_bindings);
+    let NpcPopulation {
+        import: npc_import,
+        source: npc_source,
+        records: npc_records,
+        declarations: npc_declarations,
+        profiles: npc_profiles,
+        bindings: npc_bindings,
+    } = populate_npcs()?;
+    records.extend(npc_records);
+    declarations.extend(npc_declarations);
+    authoring_profiles.extend(npc_profiles);
+    bindings.extend(npc_bindings);
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-creature-wave-a-r1".to_owned(),
+                project_revision: "g4-npc-pilot-r1".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
@@ -1152,6 +1283,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     wave1_import,
                     mount_import,
                     creature_import,
+                    npc_import,
                 ],
                 metadata: Vec::new(),
             },
@@ -1162,6 +1294,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     wave1_source,
                     mount_source,
                     creature_source,
+                    npc_source,
                 ],
                 declarations,
                 source_identity_bindings: bindings,
@@ -1178,7 +1311,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())
