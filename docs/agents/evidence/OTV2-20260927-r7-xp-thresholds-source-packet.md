@@ -17,9 +17,9 @@ The immutable target remains the Global Tibia production-observable state immedi
 - response length: `684258` bytes
 - response SHA-256: `80d454985452607cf5aa004cb5e050831baad3efcb88158302f3bab24fecd321`
 - response validators: no `ETag` and no `Last-Modified`; `Cache-Control: no-store`
-- admitted observation: the current official table lists level 7 at `2,600` cumulative experience and level 8 at `4,200` cumulative experience
-- disposition: `CLEARED`, post-target official observation
-- ceiling: this capture establishes the current official values. Without a target-boundary response validator or a 2026-07-28 capture, it does not prove uninterrupted continuity through the target cut.
+- current-state observation: the current official table lists level 7 at `2,600` cumulative experience and level 8 at `4,200` cumulative experience
+- disposition: `CLEARED`, post-target official observation retained outside target-supporting case sources
+- ceiling: this capture establishes only the current official values. Without evidenced continuity from the 2026-07-28 boundary, manifest contract section 6 prohibits using it to support the immutable target. It is therefore excluded from every new case's `target.sources` and confidence basis.
 
 ## s2-official-level-8-auction
 
@@ -57,9 +57,9 @@ The immutable target remains the Global Tibia production-observable state immedi
 - revision timestamp: `2023-09-15T00:13:19Z`
 - MediaWiki revision SHA-1: `215beba01255525fced93bd9e1cadd7387ec1670`
 - verification route: MediaWiki revision API plus pinned wikitext
-- admitted observation: the pinned revision lists level 7 at `2,600` and level 8 at `4,200`
+- admitted observation: the pinned wikitext contains the cumulative-XP formula `50x^3/3 - 100x^2 + 850x/3 - 200`; direct substitution yields `2,600` for `x=7` and `4,200` for `x=8`
 - disposition: `CLEARED`, historical community corroboration
-- ceiling: age and community authorship prevent promotion to primary or exact target-cut evidence.
+- ceiling: the wikitext also invokes dynamic `Module:ExpTable`, whose revision was not separately pinned. The numeric claims here derive directly from the explicit pinned formula and do not depend on the module output. Age and community authorship prevent promotion to primary or exact target-cut evidence.
 
 ## s5-ots-hypothesis-inventory
 
@@ -76,8 +76,8 @@ Both repository revisions post-date the target. Agreement between two OTS implem
 
 | field | proposed value | classification | confidence | evidence ceiling |
 |---|---:|---|---|---|
-| `XPThreshold(7)` | `2,600` | `DERIVED` | `MEDIUM_HIGH` | target-near and historical community revisions agree with the post-target official table; no exact primary target-boundary capture |
-| `XPThreshold(8)` | `4,200` | `DERIVED` | `HIGH` | official pre-target auction plus target-near community revision and current official table agree; exact boundary continuity remains unproven |
+| `XPThreshold(7)` | `2,600` | `DERIVED` | `MEDIUM_HIGH` | target-near pinned table and older pinned formula agree; current official table is excluded from target support; no exact primary target-boundary capture |
+| `XPThreshold(8)` | `4,200` | `DERIVED` | `HIGH` | official pre-target auction plus target-near pinned table and older pinned formula agree; current official table is excluded from target support; exact boundary continuity remains unproven |
 | `LevelXPSpan(7)` | `1,600` | `DERIVED` | `MEDIUM_HIGH` | exact subtraction `4,200 - 2,600`; inherits the continuity ceiling of both threshold inputs |
 
 The arithmetic span is a table interval. It is not a death-loss percentage, a `160 XP` death penalty, awarded kill XP, a low-level bonus, an order-of-operations rule, a delevel rule, or a rounding rule.
