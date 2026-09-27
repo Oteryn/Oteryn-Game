@@ -19,7 +19,14 @@ Merge rules:
   - an NPC neither source places, whose wiki page has a position, is promoted with that one
     wiki-origin placement (direction/spawn_interval_s/spawn_radius unknown, so null; marked
     `"origin": "wiki"`); arbitration records `{"fact": "placements", "rule": "WIKI_POSITION",
-    "chosen": "wiki"}`. Still no wiki position (or no wiki page) stays held UNPLACED;
+    "chosen": "wiki"}`. A wiki page with no position either (e.g. a seasonal/roaming NPC such as
+    Santa Claus, city "Varies") still admits the definition, with an empty `placements` list and
+    `{"fact": "placements", "rule": "WIKI_CONFIRMED", "chosen": "wiki"}`. No wiki page at all
+    stays held UNPLACED. The same two fallbacks resolve a placement conflict between two sources
+    (PLACEMENT_CONFLICT_WIKI_UNDECIDED / PLACEMENT_CONFLICT_NO_WIKI_POSITION) once a wiki page is
+    matched: the wiki position, when it has one, wins outright over both disagreeing sources
+    (WIKI_POSITION); with no wiki position either, the wiki still confirms the NPC (WIKI_CONFIRMED,
+    empty placements). A conflict with no wiki page at all still stays held;
   - wiki NPC lookup matches on normalised title, `name` or `actualname` (the wiki infobox's
     in-game name, e.g. "Omniphant (NPC)"'s actualname "Omniphant"), title taking precedence on a
     key claimed by more than one page;
@@ -31,6 +38,10 @@ Merge rules:
     edit -- insertion, deletion, substitution or adjacent transposition) also confirms it
     (`{"fact": "identity", "rule": "WIKI_SPELLING", "chosen": "wiki"}`). No match at all stays
     held SINGLE_SOURCE_NOT_ON_WIKI;
+  - a fixed, explicit `OWNER_REJECTED` table (owner decision 2026-09-27) holds a small set of
+    source-only NPCs that exist only in that OT server, not in Tibia (`canary:npc/canary` "Canary",
+    `crystal:npc/loot_buyer` "Loot Buyer"), before any wiki matching, so they are never promoted
+    by any rule above;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -53,10 +64,17 @@ SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 POSITION_RANK = {'MATCH': 0, 'NEAR': 1, 'MISMATCH': 2}
 LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
-WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING')  # kept in the output
+WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
+                           'WIKI_CONFIRMED')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
+# Owner decision 2026-09-27: these source-only NPCs exist only in that OT server, not in Tibia,
+# and are never promoted by any rule (wiki confirmation, base-name, spelling or otherwise).
+OWNER_REJECTED = {
+    'canary:npc/canary': 'server-only NPC, owner decision 2026-09-27',
+    'crystal:npc/loot_buyer': 'server-only NPC, owner decision 2026-09-27',
+}
 
 
 def slug(name):
@@ -320,6 +338,9 @@ class Builder:
     def candidate(self, bundles):
         name = next(b['definition']['name'] for b in bundles.values())
         sources = {s: b['key'] for s, b in bundles.items()}
+        rejected = next((OWNER_REJECTED[b['key']] for b in bundles.values() if b['key'] in OWNER_REJECTED), None)
+        if rejected is not None:
+            return self.hold(name, sources, 'OWNER_REJECTED', rejected)
         name_norm = normalize_name(name)
         wiki = self.wiki.get(name_norm)
         arbitration, left_out = [], []
@@ -339,14 +360,31 @@ class Builder:
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))
         placements, problem = self.merge_placements(bundles, wiki, arbitration)
-        if problem:
-            return self.hold(name, sources, problem)
-        if not placements:
-            fallback = wiki_position_placement(wiki)
-            if fallback is None:
-                return self.hold(name, sources, 'UNPLACED')
-            placements = [fallback]
+        if problem == 'PLACEMENT_CONFLICT_WIKI_UNDECIDED':
+            # D6/D8: both sources disagree with each other and with the wiki; the wiki position
+            # wins outright over either source (merge_placements only returns this problem when
+            # wiki['position'] is set, so the fallback always succeeds here).
+            placements = [wiki_position_placement(wiki)]
             arbitration.append({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'})
+        elif problem == 'PLACEMENT_CONFLICT_NO_WIKI_POSITION' and wiki is not None:
+            # D8 WIKI_CONFIRMED: the sources conflict and the wiki has no position either, but the
+            # wiki still confirms the NPC exists; the definition is admitted with no placements.
+            placements = []
+            arbitration.append({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'})
+        elif problem:
+            return self.hold(name, sources, problem)
+        elif not placements:
+            fallback = wiki_position_placement(wiki)
+            if fallback is not None:
+                placements = [fallback]
+                arbitration.append({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'})
+            elif wiki is not None:
+                # D8 WIKI_CONFIRMED: a wiki page exists (e.g. a seasonal/roaming NPC with no fixed
+                # position) but has no position to promote either; the definition is still admitted,
+                # with no placements at all.
+                arbitration.append({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'})
+            else:
+                return self.hold(name, sources, 'UNPLACED')
         key_slug = slug(name)
         if not key_slug:  # a punctuation-only name has no slug; it needs a hand-chosen key
             return self.hold(name, sources, 'EMPTY_SLUG')

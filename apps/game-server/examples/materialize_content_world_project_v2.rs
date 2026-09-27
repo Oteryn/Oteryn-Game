@@ -73,21 +73,21 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "98ea6aff774570ef76000c1d278b2f20f6cb7c520a7cd8cd06d6721ea65fcfab";
+const NPC_STAGED_SHA256: &str = "b158d590eddcf27864d90390791031e45c9db54c03a2a17edb11b4668b40cddd";
 const NPC_STAGE_TOOL_SHA256: &str =
     "abb90fdddc38222e96f27b750655d7369757675ff99610668c5276ddb5ec9f3e";
 const NPC_CANDIDATES_SHA256: &str =
-    "99251533481199f6586552290f217aac6c7b4073f994467262043b1d42f36c7c";
+    "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
     "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42";
 const NPC_ITEM_MAP_SHA256: &str =
     "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a";
 const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
-const NPC_COUNT: usize = 1086;
-const NPC_RECORDS: usize = 2172;
-const NPC_DECLARATIONS: usize = 1447;
-const NPC_BINDINGS: usize = 2262;
+const NPC_COUNT: usize = 1093;
+const NPC_RECORDS: usize = 2186;
+const NPC_DECLARATIONS: usize = 1456;
+const NPC_BINDINGS: usize = 2281;
 const CREATURE_COUNT: usize = 1316;
 const CREATURE_RECORDS: usize = 18299;
 const CREATURE_PROFILES: usize = 17333;

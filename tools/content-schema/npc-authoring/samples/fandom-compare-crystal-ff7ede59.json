@@ -1,6 +1,6 @@
 {
  "api": "https://tibia.fandom.com/api.php",
- "generated_at": "2026-09-27T22:05:25Z",
+ "generated_at": "2026-09-27T22:30:10Z",
  "license": "TibiaWiki (Fandom), CC BY-SA; only compared facts (positions, travel and trade prices) are recorded, never article prose or dialogue.",
  "position_rule": "MATCH = exact placement; NEAR = same z, Chebyshev distance <= 3; else MISMATCH.",
  "schema": "OTERYN_NPC_FANDOM_COMPARE/v1",
@@ -19,7 +19,7 @@
  },
  "sources": {
   "crystal": {
-   "joined": 1017,
+   "joined": 1018,
    "npcs": [
     {
      "key": "crystal:npc/...",
@@ -6439,6 +6439,27 @@
        "wiki_price": 800
       }
      ]
+    },
+    {
+     "key": "crystal:npc/captain_dreadnought",
+     "name": "Captain Dreadnought",
+     "position": {
+      "chebyshev_distance": 1,
+      "source": {
+       "x": 32031,
+       "y": 31872,
+       "z": 6
+      },
+      "status": "NEAR",
+      "wiki": {
+       "x": 32031,
+       "y": 31873,
+       "z": 6
+      }
+     },
+     "trade_buy_issues": [],
+     "trade_sell_issues": [],
+     "travel_issues": []
     },
     {
      "key": "crystal:npc/captain_fearless",
@@ -40687,9 +40708,14 @@
     },
     {
      "key": "crystal:npc/towncryer",
-     "name": "towncryer",
+     "name": "Towncryer",
      "position": {
-      "status": "NO_PLACEMENT",
+      "source": {
+       "x": 32329,
+       "y": 32216,
+       "z": 7
+      },
+      "status": "MISMATCH",
       "wiki": {
        "x": 32322,
        "y": 32227,
@@ -44946,9 +44972,9 @@
    ],
    "position_totals": {
     "MATCH": 252,
-    "MISMATCH": 98,
-    "NEAR": 584,
-    "NO_PLACEMENT": 79,
+    "MISMATCH": 99,
+    "NEAR": 585,
+    "NO_PLACEMENT": 78,
     "NO_WIKI_POSITION": 4
    },
    "source_only": [
@@ -45031,10 +45057,6 @@
     {
      "key": "crystal:npc/buddel_tyrsung",
      "name": "Buddel (Tyrsung)"
-    },
-    {
-     "key": "crystal:npc/captain_dreadnought",
-     "name": "captain_dreadnought"
     },
     {
      "key": "crystal:npc/captain_haba_open_sea",
@@ -45361,7 +45383,7 @@
      "name": "Zurak (Arena)"
     }
    ],
-   "source_only_npcs": 102,
+   "source_only_npcs": 101,
    "trade_buy_totals": {
     "MATCH": 5192,
     "MISMATCH": 229,
@@ -45516,10 +45538,6 @@
     {
      "name": "Captain Corsarah",
      "title": "Captain Corsarah"
-    },
-    {
-     "name": "Captain Dreadnought",
-     "title": "Captain Dreadnought"
     },
     {
      "name": "Casper",
@@ -46302,7 +46320,7 @@
      "title": "Zofia Bolter"
     }
    ],
-   "wiki_only_npcs": 230
+   "wiki_only_npcs": 229
   }
  }
 }

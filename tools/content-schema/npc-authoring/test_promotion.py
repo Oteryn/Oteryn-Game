@@ -29,11 +29,16 @@ def make_builder(npcs):
     return promotion_candidates.Builder({'npcs': npcs, 'trade': {}}, {'records': []})
 
 
-def make_bundle(name, source='crystal', sha='0' * 64):
+def make_bundle(name, source='crystal', sha='0' * 64, placements=()):
     return {'key': f'{source}:npc/{promotion_candidates.slug(name)}', 'status': 'RESOLVED',
-            'source': {'sha256': sha}, 'placements': [], 'services': {'travel': [], 'trade': None},
+            'source': {'sha256': sha}, 'placements': list(placements), 'services': {'travel': [], 'trade': None},
             'definition': {'name': name, 'profession': 'None',
                             'presentation': {'outfit': {}, 'speech_bubble': None}, 'movement': None}}
+
+
+def make_placement(x, y, z, direction='NORTH', interval=60, radius=0):
+    return {'position': {'x': x, 'y': y, 'z': z}, 'direction': direction,
+            'spawn_interval_s': interval, 'spawn_radius': radius}
 
 
 class PromotionValidatorTests(unittest.TestCase):
@@ -296,6 +301,95 @@ class PromotionValidatorTests(unittest.TestCase):
         errs = validate_promotion.errors(report)
         self.assertTrue(any('wiki-origin placement present without a WIKI_POSITION arbitration row' in e
                              for e in errs))
+
+    # -- D8 WIKI_CONFIRMED: wiki-page-but-no-position NPCs, and conflict resolution ------------
+
+    def test_wiki_confirmed_promotes_unplaced_npc_with_no_wiki_position(self):
+        report = load_sample()
+        for name in ('Santa Claus', 'Messenger of Santa'):
+            candidate = find_candidate(report, name)
+            self.assertEqual(candidate['placements'], [])
+            self.assertIn({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'}, candidate['arbitration'])
+            self.assertIsNotNone(candidate['wiki'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_wiki_confirmed_with_a_placement_fails(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Santa Claus')
+        candidate['placements'] = [make_placement(1, 1, 1)]
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any("rule 'WIKI_CONFIRMED' requires an empty placements list" in e for e in errs))
+
+    def test_empty_placements_without_wiki_confirmed_fails(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Santa Claus')
+        candidate['arbitration'] = [a for a in candidate['arbitration'] if a['rule'] != 'WIKI_CONFIRMED']
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('no placements' in e for e in errs))
+
+    def test_placement_conflict_wiki_undecided_resolved_by_wiki_position(self):
+        report = load_sample()
+        for name in ('A Sleeping Dragon', 'Captain Haba', 'John', 'Uzon', 'Zirella'):
+            candidate = find_candidate(report, name)
+            self.assertEqual(len(candidate['provenance']), 2)
+            self.assertEqual(len(candidate['placements']), 1)
+            self.assertEqual(candidate['placements'][0]['origin'], 'wiki')
+            self.assertIn({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'}, candidate['arbitration'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_two_source_placement_conflict_wiki_undecided_synthetic(self):
+        # both sources disagree with each other and with the wiki (MISMATCH); the wiki wins outright
+        builder = make_builder([
+            {'pageid': 1, 'revid': 1, 'title': 'Foobar', 'name': 'Foobar', 'actualname': None,
+             'position': {'x': 100, 'y': 100, 'z': 7}},
+        ])
+        bundles = {'canary': make_bundle('Foobar', 'canary', placements=[make_placement(500, 500, 7)]),
+                   'crystal': make_bundle('Foobar', 'crystal', placements=[make_placement(600, 600, 7)])}
+        record = builder.candidate(bundles)
+        self.assertIsNotNone(record)
+        self.assertEqual(record['placements'], [{'position': {'x': 100, 'y': 100, 'z': 7}, 'direction': None,
+                                                   'spawn_interval_s': None, 'spawn_radius': None, 'origin': 'wiki'}])
+        self.assertIn({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'}, record['arbitration'])
+
+    def test_two_source_placement_conflict_no_wiki_position_synthetic(self):
+        # both sources disagree; the wiki page exists but has no position either -> WIKI_CONFIRMED
+        builder = make_builder([
+            {'pageid': 1, 'revid': 1, 'title': 'Bazqux', 'name': 'Bazqux', 'actualname': None, 'position': None},
+        ])
+        bundles = {'canary': make_bundle('Bazqux', 'canary', placements=[make_placement(500, 500, 7)]),
+                   'crystal': make_bundle('Bazqux', 'crystal', placements=[make_placement(600, 600, 7)])}
+        record = builder.candidate(bundles)
+        self.assertIsNotNone(record)
+        self.assertEqual(record['placements'], [])
+        self.assertIn({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'}, record['arbitration'])
+
+    def test_placement_conflict_with_no_wiki_page_still_held(self):
+        builder = make_builder([])
+        bundles = {'canary': make_bundle('Nowhereman', 'canary', placements=[make_placement(500, 500, 7)]),
+                   'crystal': make_bundle('Nowhereman', 'crystal', placements=[make_placement(600, 600, 7)])}
+        result = builder.candidate(bundles)
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'PLACEMENT_CONFLICT_NO_WIKI_POSITION')
+
+    # -- Owner decision 2026-09-27: reject server-only NPCs ------------------------------------
+
+    def test_owner_rejected_npcs_stay_held(self):
+        report = load_sample()
+        for name in ('Canary', 'Loot Buyer'):
+            held = find_held(report, name)
+            self.assertEqual(held['reason'], 'OWNER_REJECTED')
+            self.assertEqual(held['detail'], 'server-only NPC, owner decision 2026-09-27')
+        self.assertFalse({'Canary', 'Loot Buyer'} & {c['name'] for c in report['candidates']})
+
+    def test_owner_rejected_bypasses_wiki_matching(self):
+        # even with a matching wiki page available, the owner-rejected table wins outright
+        builder = make_builder([{'pageid': 1, 'title': 'Canary', 'name': 'Canary', 'actualname': None,
+                                  'position': {'x': 1, 'y': 1, 'z': 1}}])
+        result = builder.candidate({'canary': make_bundle('Canary', 'canary')})
+        self.assertIsNone(result)
+        held = builder.held[-1]
+        self.assertEqual(held['reason'], 'OWNER_REJECTED')
+        self.assertEqual(held['detail'], 'server-only NPC, owner decision 2026-09-27')
 
 
 if __name__ == '__main__':

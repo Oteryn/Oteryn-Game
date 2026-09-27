@@ -1883,6 +1883,63 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_POSITION"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.a_sleeping_dragon",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 0,
+    "walk_radius": 2
+   },
+   "name": "A Sleeping Dragon",
+   "placements": [
+    {
+     "direction": null,
+     "origin": "wiki",
+     "position": {
+      "x": 33243,
+      "y": 31219,
+      "z": 10
+     },
+     "spawn_interval_s": null,
+     "spawn_radius": null
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "item_look": 168
+    },
+    "speech_bubble": "SAILOR"
+   },
+   "profession": "sailor",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/a_sleeping_dragon",
+     "sha256": "db531f04f22f58f2f36b11a756aa7ae95a0d7921be462069683ee776527e7c8e"
+    },
+    "crystal": {
+     "key": "crystal:npc/a_sleeping_dragon",
+     "sha256": "58d58e2b0f81be49c29082555c6486175d81817a0f62d1c56f30bc0fc510385a"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 46813,
+    "revid": 1116739
+   }
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -29858,6 +29915,62 @@
    "arbitration": [],
    "identity": {
     "family": "NPC",
+    "key": "oteryn:npc.captain_dreadnought",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Captain Dreadnought",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 32031,
+      "y": 31872,
+      "z": 6
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 0,
+     "feet": 96,
+     "head": 96,
+     "legs": 78,
+     "look_type": 155,
+     "mount": null
+    },
+    "speech_bubble": "SAILOR"
+   },
+   "profession": "sailor",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/captain_dreadnought",
+     "sha256": "315d6dfc1735245371c0afafaba4c9828d5590e223d489f2af3b3de81d0effc7"
+    },
+    "crystal": {
+     "key": "crystal:npc/captain_dreadnought",
+     "sha256": "5071369fd2da43ba6de74dcf07aff717a5c6a94f31bc5d43f72a21b26ea24402"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 68624,
+    "revid": 851592
+   }
+  },
+  {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
     "key": "oteryn:npc.captain_fearless",
     "revision": "definition-r1"
    },
@@ -30282,6 +30395,69 @@
    "wiki": {
     "pageid": 67946,
     "revid": 1178802
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_POSITION"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.captain_haba",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Captain Haba",
+   "placements": [
+    {
+     "direction": null,
+     "origin": "wiki",
+     "position": {
+      "x": 32355,
+      "y": 31125,
+      "z": 6
+     },
+     "spawn_interval_s": null,
+     "spawn_radius": null
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 0,
+     "feet": 0,
+     "head": 0,
+     "legs": 0,
+     "look_type": 98,
+     "mount": null
+    },
+    "speech_bubble": "SAILOR"
+   },
+   "profession": "sailor",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/captain_haba",
+     "sha256": "8acfee8b846b82fd69f4804fa4d15c428fc2021e43a0416ff6fecb9b39ade55e"
+    },
+    "crystal": {
+     "key": "crystal:npc/captain_haba",
+     "sha256": "8a2aba893a3611c7ab1741b24f8922b1fcf5b6c837b4702a673dd4e4e6317909"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 25509,
+    "revid": 1114589
    }
   },
   {
@@ -52708,335 +52884,6 @@
    "wiki": {
     "pageid": 31222,
     "revid": 1114712
-   }
-  },
-  {
-   "arbitration": [],
-   "identity": {
-    "family": "NPC",
-    "key": "oteryn:npc.enpa_deia_pema",
-    "revision": "definition-r1"
-   },
-   "left_out": [],
-   "movement": {
-    "floor_change": false,
-    "walk_interval_ms": 2000,
-    "walk_radius": 2
-   },
-   "name": "Enpa-Deia Pema",
-   "placements": [
-    {
-     "direction": "NORTH",
-     "position": {
-      "x": 33603,
-      "y": 31468,
-      "z": 7
-     },
-     "spawn_interval_s": 60,
-     "spawn_radius": 1
-    }
-   ],
-   "presentation": {
-    "outfit": {
-     "addons": 1,
-     "body": 0,
-     "feet": 81,
-     "head": 0,
-     "legs": 0,
-     "look_type": 1817,
-     "mount": null
-    },
-    "speech_bubble": null
-   },
-   "profession": null,
-   "provenance": {
-    "crystal": {
-     "key": "crystal:npc/enpa_deia_pema",
-     "sha256": "d5f803179e213a87af296d1ecf8bcdbc33f5e4a299c0ece6c78242abb1c2c6a5"
-    }
-   },
-   "trade_service": {
-    "currency": null,
-    "identity": {
-     "family": "Service",
-     "key": "oteryn:service.trade.enpa_deia_pema",
-     "revision": "definition-r1"
-    },
-    "offers": [
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037531",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50166,
-      "sub_type": null,
-      "unit_price": 250
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037536",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50171,
-      "sub_type": null,
-      "unit_price": 500
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037552",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50195,
-      "sub_type": null,
-      "unit_price": 1000
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037580",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50257,
-      "sub_type": null,
-      "unit_price": 450
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037589",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50267,
-      "sub_type": null,
-      "unit_price": 8000
-     },
-     {
-      "count": null,
-      "direction": "BuyFromPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037589",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50267,
-      "sub_type": null,
-      "unit_price": 80
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037590",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50268,
-      "sub_type": null,
-      "unit_price": 150000
-     },
-     {
-      "count": null,
-      "direction": "BuyFromPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037590",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50268,
-      "sub_type": null,
-      "unit_price": 150
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037591",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50269,
-      "sub_type": null,
-      "unit_price": 40000
-     },
-     {
-      "count": null,
-      "direction": "BuyFromPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037591",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50269,
-      "sub_type": null,
-      "unit_price": 400
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037593",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50271,
-      "sub_type": null,
-      "unit_price": 20000
-     },
-     {
-      "count": null,
-      "direction": "BuyFromPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037593",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50271,
-      "sub_type": null,
-      "unit_price": 200
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037594",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50272,
-      "sub_type": null,
-      "unit_price": 100000
-     },
-     {
-      "count": null,
-      "direction": "BuyFromPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037594",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50272,
-      "sub_type": null,
-      "unit_price": 100
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037595",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50273,
-      "sub_type": null,
-      "unit_price": 50000
-     },
-     {
-      "count": null,
-      "direction": "BuyFromPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037595",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50273,
-      "sub_type": null,
-      "unit_price": 500
-     },
-     {
-      "count": null,
-      "direction": "SellToPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037596",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50274,
-      "sub_type": null,
-      "unit_price": 70000
-     },
-     {
-      "count": null,
-      "direction": "BuyFromPlayer",
-      "item": {
-       "family": "Item",
-       "key": "oteryn:item.registry.i00037596",
-       "revision": "definition-r1"
-      },
-      "source_item_id": 50274,
-      "sub_type": null,
-      "unit_price": 700
-     }
-    ]
-   },
-   "travel_service": null,
-   "wiki": {
-    "pageid": 108054,
-    "revid": 1171457
-   }
-  },
-  {
-   "arbitration": [],
-   "identity": {
-    "family": "NPC",
-    "key": "oteryn:npc.enpa_rudra",
-    "revision": "definition-r1"
-   },
-   "left_out": [],
-   "movement": {
-    "floor_change": false,
-    "walk_interval_ms": 2000,
-    "walk_radius": 2
-   },
-   "name": "Enpa Rudra",
-   "placements": [
-    {
-     "direction": "NORTH",
-     "position": {
-      "x": 33605,
-      "y": 31444,
-      "z": 6
-     },
-     "spawn_interval_s": 60,
-     "spawn_radius": 1
-    }
-   ],
-   "presentation": {
-    "outfit": {
-     "addons": 3,
-     "body": 0,
-     "feet": 81,
-     "head": 0,
-     "legs": 0,
-     "look_type": 1816,
-     "mount": null
-    },
-    "speech_bubble": null
-   },
-   "profession": null,
-   "provenance": {
-    "crystal": {
-     "key": "crystal:npc/enpa_rudra",
-     "sha256": "a1940cb7ce8259faca7936a061dc313e996220e43a0bd5a0351c38826120459e"
-    }
-   },
-   "trade_service": null,
-   "travel_service": null,
-   "wiki": {
-    "pageid": 108310,
-    "revid": 1171613
    }
   },
   {
@@ -100985,6 +100832,198 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_POSITION"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.john",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "John",
+   "placements": [
+    {
+     "direction": null,
+     "origin": "wiki",
+     "position": {
+      "x": 32138,
+      "y": 32904,
+      "z": 7
+     },
+     "spawn_interval_s": null,
+     "spawn_radius": null
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 68,
+     "feet": 114,
+     "head": 58,
+     "legs": 38,
+     "look_type": 128,
+     "mount": null
+    },
+    "speech_bubble": "TRADE"
+   },
+   "profession": "trader",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/john",
+     "sha256": "bfda84ae0062769c4c459fa46b623c5a5056c45cf28d19ff5a7f17b2489d0a17"
+    },
+    "crystal": {
+     "key": "crystal:npc/john",
+     "sha256": "104b394dff4703e2a53ccab27d5f32b25918178559599bfaab8e96d38411d040"
+    }
+   },
+   "trade_service": {
+    "currency": null,
+    "identity": {
+     "family": "Service",
+     "key": "oteryn:service.trade.john",
+     "revision": "definition-r1"
+    },
+    "offers": [
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00002762",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 2864,
+      "sub_type": null,
+      "unit_price": 10
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00002769",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 2872,
+      "sub_type": null,
+      "unit_price": 30
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00002814",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 2920,
+      "sub_type": null,
+      "unit_price": 5
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00002893",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 3003,
+      "sub_type": null,
+      "unit_price": 100
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00003320",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 3456,
+      "sub_type": null,
+      "unit_price": 100
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00003321",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 3457,
+      "sub_type": null,
+      "unit_price": 100
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00003347",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 3483,
+      "sub_type": null,
+      "unit_price": 300
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.material.worm",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 3492,
+      "sub_type": null,
+      "unit_price": 2
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00004934",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 5090,
+      "sub_type": null,
+      "unit_price": 1000
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00005929",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6092,
+      "sub_type": null,
+      "unit_price": 500
+     }
+    ]
+   },
+   "travel_service": null,
+   "wiki": {
+    "pageid": 8552,
+    "revid": 908549
+   }
+  },
+  {
+   "arbitration": [
+    {
      "chosen": "canary",
      "fact": "placements",
      "rule": "WIKI_ARBITER"
@@ -116741,6 +116780,210 @@
    "wiki": {
     "pageid": 78553,
     "revid": 1140667
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_CONFIRMED"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.messenger_of_santa",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Messenger of Santa",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 99,
+     "feet": 117,
+     "head": 39,
+     "legs": 60,
+     "look_type": 159,
+     "mount": null
+    },
+    "speech_bubble": "TRADE"
+   },
+   "profession": "trader",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/messenger_of_santa",
+     "sha256": "eb98a2e9ab43320c58058ac6737be92e717a2795a27726806de16aba92e7be3c"
+    },
+    "crystal": {
+     "key": "crystal:npc/messenger_of_santa",
+     "sha256": "cb91c928e0d5dfd8dbf4cd327667a2456be8bcc57461e226cde3af36260939b1"
+    }
+   },
+   "trade_service": {
+    "currency": null,
+    "identity": {
+     "family": "Service",
+     "key": "oteryn:service.trade.messenger_of_santa",
+     "revision": "definition-r1"
+    },
+    "offers": [
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00009989",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 10208,
+      "sub_type": null,
+      "unit_price": 50
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006221",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6387,
+      "sub_type": null,
+      "unit_price": 10
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006322",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6488,
+      "sub_type": null,
+      "unit_price": 40
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006335",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6501,
+      "sub_type": null,
+      "unit_price": 45
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006336",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6502,
+      "sub_type": null,
+      "unit_price": 25
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006337",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6503,
+      "sub_type": null,
+      "unit_price": 25
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006338",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6504,
+      "sub_type": null,
+      "unit_price": 25
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006339",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6505,
+      "sub_type": null,
+      "unit_price": 20
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006340",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6506,
+      "sub_type": null,
+      "unit_price": 70
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006341",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6507,
+      "sub_type": null,
+      "unit_price": 60
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006342",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6508,
+      "sub_type": null,
+      "unit_price": 80
+     },
+     {
+      "count": null,
+      "direction": "SellToPlayer",
+      "item": {
+       "family": "Item",
+       "key": "oteryn:item.registry.i00006343",
+       "revision": "definition-r1"
+      },
+      "source_item_id": 6509,
+      "sub_type": null,
+      "unit_price": 20
+     }
+    ]
+   },
+   "travel_service": null,
+   "wiki": {
+    "pageid": 62185,
+    "revid": 909052
    }
   },
   {
@@ -155891,6 +156134,57 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_CONFIRMED"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.santa_claus",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Santa Claus",
+   "placements": [],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 112,
+     "feet": 95,
+     "head": 0,
+     "legs": 93,
+     "look_type": 160,
+     "mount": null
+    },
+    "speech_bubble": "TRADE"
+   },
+   "profession": "trader",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/santa_claus",
+     "sha256": "1acaaab3f6b05ba0918e3641addd5f919080a59f055da093d825dccffbb2ff1c"
+    },
+    "crystal": {
+     "key": "crystal:npc/santa_claus",
+     "sha256": "16f900a55116b6298044c4105b2f1550f9b91c797aefc56f201d60f61596c06c"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 4372,
+    "revid": 1162768
+   }
+  },
+  {
+   "arbitration": [
+    {
      "chosen": "canary",
      "fact": "placements",
      "rule": "WIKI_ARBITER"
@@ -177009,6 +177303,62 @@
    "arbitration": [],
    "identity": {
     "family": "NPC",
+    "key": "oteryn:npc.towncryer",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Towncryer",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 32329,
+      "y": 32216,
+      "z": 7
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 1,
+     "body": 86,
+     "feet": 114,
+     "head": 95,
+     "legs": 10,
+     "look_type": 131,
+     "mount": null
+    },
+    "speech_bubble": "NORMAL"
+   },
+   "profession": "normal",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/towncryer",
+     "sha256": "a2c88a64ec3557c35d472a7609181fb1e638b58876a455b5efe4ac517e4592b4"
+    },
+    "crystal": {
+     "key": "crystal:npc/towncryer",
+     "sha256": "ce723261a2359839ec78aaf27798cf14622651ce2eb37fedac329e4ad8d674bb"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 30608,
+    "revid": 926804
+   }
+  },
+  {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
     "key": "oteryn:npc.trimegis",
     "revision": "definition-r1"
    },
@@ -183262,6 +183612,174 @@
    "wiki": {
     "pageid": 3420,
     "revid": 1113953
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_POSITION"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.uzon",
+    "revision": "definition-r1"
+   },
+   "left_out": [
+    {
+     "fact": "travel.eclipse",
+     "reason": "GATED_ROUTE"
+    },
+    {
+     "fact": "travel.farmine",
+     "reason": "GATED_ROUTE"
+    },
+    {
+     "fact": "travel.zao",
+     "reason": "GATED_ROUTE"
+    }
+   ],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Uzon",
+   "placements": [
+    {
+     "direction": null,
+     "origin": "wiki",
+     "position": {
+      "x": 32537,
+      "y": 31836,
+      "z": 4
+     },
+     "spawn_interval_s": null,
+     "spawn_radius": null
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 4,
+     "feet": 95,
+     "head": 95,
+     "legs": 17,
+     "look_type": 130,
+     "mount": null
+    },
+    "speech_bubble": "SAILOR"
+   },
+   "profession": "sailor",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/uzon",
+     "sha256": "4512e7d3a7c1fac033dee9b370401f5746692c38a42f8a2924d0bddcbba53d06"
+    },
+    "crystal": {
+     "key": "crystal:npc/uzon",
+     "sha256": "825271d379876103e47f78413d0a8872b1ef10cd1e160b5367833237ba529268"
+    }
+   },
+   "trade_service": null,
+   "travel_service": {
+    "identity": {
+     "family": "Service",
+     "key": "oteryn:service.travel.uzon",
+     "revision": "definition-r1"
+    },
+    "routes": [
+     {
+      "destination": {
+       "x": 33270,
+       "y": 32441,
+       "z": 6
+      },
+      "destination_keyword": "darama",
+      "discount": "postman",
+      "min_level": null,
+      "premium": false,
+      "price": 60
+     },
+     {
+      "destination": {
+       "x": 33270,
+       "y": 32441,
+       "z": 6
+      },
+      "destination_keyword": "darashia",
+      "discount": "postman",
+      "min_level": null,
+      "premium": false,
+      "price": 60
+     },
+     {
+      "destination": {
+       "x": 33193,
+       "y": 31783,
+       "z": 3
+      },
+      "destination_keyword": "edron",
+      "discount": "postman",
+      "min_level": null,
+      "premium": false,
+      "price": 60
+     },
+     {
+      "destination": {
+       "x": 33957,
+       "y": 31515,
+       "z": 0
+      },
+      "destination_keyword": "issavi",
+      "discount": "postman",
+      "min_level": null,
+      "premium": false,
+      "price": 100
+     },
+     {
+      "destination": {
+       "x": 32588,
+       "y": 31942,
+       "z": 0
+      },
+      "destination_keyword": "kazor",
+      "discount": "postman",
+      "min_level": null,
+      "premium": false,
+      "price": 70
+     },
+     {
+      "destination": {
+       "x": 32588,
+       "y": 31942,
+       "z": 0
+      },
+      "destination_keyword": "kazordoon",
+      "discount": "postman",
+      "min_level": null,
+      "premium": false,
+      "price": 70
+     },
+     {
+      "destination": {
+       "x": 32253,
+       "y": 31097,
+       "z": 4
+      },
+      "destination_keyword": "svargrond",
+      "discount": "postman",
+      "min_level": null,
+      "premium": false,
+      "price": 60
+     }
+    ]
+   },
+   "wiki": {
+    "pageid": 4689,
+    "revid": 1114022
    }
   },
   {
@@ -208430,6 +208948,69 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_POSITION"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.zirella",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Zirella",
+   "placements": [
+    {
+     "direction": null,
+     "origin": "wiki",
+     "position": {
+      "x": 32059,
+      "y": 32269,
+      "z": 7
+     },
+     "spawn_interval_s": null,
+     "spawn_radius": null
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 2,
+     "body": 111,
+     "feet": 95,
+     "head": 57,
+     "legs": 67,
+     "look_type": 157,
+     "mount": null
+    },
+    "speech_bubble": "NORMAL"
+   },
+   "profession": "normal",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/zirella",
+     "sha256": "e0360a0512ebb7a6f0033511b34a76d60d26f51002b570506fdd27b7a7187654"
+    },
+    "crystal": {
+     "key": "crystal:npc/zirella",
+     "sha256": "d38ed72ad6088b832d09380ca10e79d0e3f8abd9c06bef34c9fa6308d1046380"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 25207,
+    "revid": 852297
+   }
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -209993,6 +210574,24 @@
    }
   },
   {
+   "detail": "outfit",
+   "name": "Enpa Rudra",
+   "reason": "DEFINITION_CONFLICT",
+   "sources": {
+    "canary": "canary:npc/enpa_rudra",
+    "crystal": "crystal:npc/enpa_rudra"
+   }
+  },
+  {
+   "detail": "outfit",
+   "name": "Enpa-Deia Pema",
+   "reason": "DEFINITION_CONFLICT",
+   "sources": {
+    "canary": "canary:npc/enpa-deia_pema",
+    "crystal": "crystal:npc/enpa_deia_pema"
+   }
+  },
+  {
    "detail": "movement",
    "name": "Flickering Soul",
    "reason": "DEFINITION_CONFLICT",
@@ -210074,65 +210673,28 @@
    }
   },
   {
+   "detail": "server-only NPC, owner decision 2026-09-27",
+   "name": "Canary",
+   "reason": "OWNER_REJECTED",
+   "sources": {
+    "canary": "canary:npc/canary"
+   }
+  },
+  {
+   "detail": "server-only NPC, owner decision 2026-09-27",
+   "name": "Loot Buyer",
+   "reason": "OWNER_REJECTED",
+   "sources": {
+    "crystal": "crystal:npc/loot_buyer"
+   }
+  },
+  {
    "detail": null,
    "name": "Captain Haba (Open Sea)",
    "reason": "PLACEMENT_CONFLICT_NO_WIKI_POSITION",
    "sources": {
     "canary": "canary:npc/captain_haba_open_sea",
     "crystal": "crystal:npc/captain_haba_open_sea"
-   }
-  },
-  {
-   "detail": null,
-   "name": "A Sleeping Dragon",
-   "reason": "PLACEMENT_CONFLICT_WIKI_UNDECIDED",
-   "sources": {
-    "canary": "canary:npc/a_sleeping_dragon",
-    "crystal": "crystal:npc/a_sleeping_dragon"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Captain Haba",
-   "reason": "PLACEMENT_CONFLICT_WIKI_UNDECIDED",
-   "sources": {
-    "canary": "canary:npc/captain_haba",
-    "crystal": "crystal:npc/captain_haba"
-   }
-  },
-  {
-   "detail": null,
-   "name": "John",
-   "reason": "PLACEMENT_CONFLICT_WIKI_UNDECIDED",
-   "sources": {
-    "canary": "canary:npc/john",
-    "crystal": "crystal:npc/john"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Uzon",
-   "reason": "PLACEMENT_CONFLICT_WIKI_UNDECIDED",
-   "sources": {
-    "canary": "canary:npc/uzon",
-    "crystal": "crystal:npc/uzon"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Zirella",
-   "reason": "PLACEMENT_CONFLICT_WIKI_UNDECIDED",
-   "sources": {
-    "canary": "canary:npc/zirella",
-    "crystal": "crystal:npc/zirella"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Canary",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "canary": "canary:npc/canary"
    }
   },
   {
@@ -210149,14 +210711,6 @@
    "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
    "sources": {
     "crystal": "crystal:npc/hardened_lion_archer"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Loot Buyer",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/loot_buyer"
    }
   },
   {
@@ -210271,29 +210825,11 @@
   },
   {
    "detail": null,
-   "name": "Messenger of Santa",
-   "reason": "UNPLACED",
-   "sources": {
-    "canary": "canary:npc/messenger_of_santa",
-    "crystal": "crystal:npc/messenger_of_santa"
-   }
-  },
-  {
-   "detail": null,
    "name": "Nymph Challenging",
    "reason": "UNPLACED",
    "sources": {
     "canary": "canary:npc/nymph_challenging",
     "crystal": "crystal:npc/nymph_challenging"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Santa Claus",
-   "reason": "UNPLACED",
-   "sources": {
-    "canary": "canary:npc/santa_claus",
-    "crystal": "crystal:npc/santa_claus"
    }
   }
  ],
@@ -210301,21 +210837,21 @@
  "schema": "OTERYN_NPC_PROMOTION_CANDIDATES/v1",
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
  "totals": {
-  "arbitrated_facts": 275,
-  "candidates": 1087,
-  "held:DEFINITION_CONFLICT": 7,
+  "arbitrated_facts": 282,
+  "candidates": 1094,
+  "held:DEFINITION_CONFLICT": 9,
   "held:EMPTY_SLUG": 1,
   "held:KEY_COLLISION": 2,
-  "held:NOT_LOADABLE": 6,
+  "held:NOT_LOADABLE": 3,
+  "held:OWNER_REJECTED": 2,
   "held:PLACEMENT_CONFLICT_NO_WIKI_POSITION": 1,
-  "held:PLACEMENT_CONFLICT_WIKI_UNDECIDED": 5,
-  "held:SINGLE_SOURCE_NOT_ON_WIKI": 11,
-  "held:UNPLACED": 9,
+  "held:SINGLE_SOURCE_NOT_ON_WIKI": 9,
+  "held:UNPLACED": 7,
   "left_out_offers": 219,
-  "left_out_routes": 65,
-  "offers": 11732,
-  "routes": 190,
-  "with_trade": 307,
-  "with_travel": 54
+  "left_out_routes": 68,
+  "offers": 11736,
+  "routes": 197,
+  "with_trade": 308,
+  "with_travel": 55
  }
 }

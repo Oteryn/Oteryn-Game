@@ -1,6 +1,6 @@
 {
  "api": "https://tibia.fandom.com/api.php",
- "generated_at": "2026-09-27T22:05:24Z",
+ "generated_at": "2026-09-27T22:30:10Z",
  "license": "TibiaWiki (Fandom), CC BY-SA; only compared facts (positions, travel and trade prices) are recorded, never article prose or dialogue.",
  "position_rule": "MATCH = exact placement; NEAR = same z, Chebyshev distance <= 3; else MISMATCH.",
  "schema": "OTERYN_NPC_FANDOM_COMPARE/v1",
@@ -19,7 +19,7 @@
  },
  "sources": {
   "canary": {
-   "joined": 955,
+   "joined": 958,
    "npcs": [
     {
      "key": "canary:npc/...",
@@ -5684,6 +5684,27 @@
      ]
     },
     {
+     "key": "canary:npc/captain_dreadnought",
+     "name": "Captain Dreadnought",
+     "position": {
+      "chebyshev_distance": 1,
+      "source": {
+       "x": 32031,
+       "y": 31872,
+       "z": 6
+      },
+      "status": "NEAR",
+      "wiki": {
+       "x": 32031,
+       "y": 31873,
+       "z": 6
+      }
+     },
+     "trade_buy_issues": [],
+     "trade_sell_issues": [],
+     "travel_issues": []
+    },
+    {
      "key": "canary:npc/captain_fearless",
      "name": "Captain Fearless",
      "position": {
@@ -11232,6 +11253,103 @@
        "x": 32584,
        "y": 31402,
        "z": 8
+      }
+     },
+     "trade_buy_issues": [],
+     "trade_sell_issues": [],
+     "travel_issues": []
+    },
+    {
+     "key": "canary:npc/enpa-deia_pema",
+     "name": "Enpa-Deia Pema",
+     "position": {
+      "status": "NO_PLACEMENT",
+      "wiki": {
+       "x": 33603,
+       "y": 31468,
+       "z": 7
+      }
+     },
+     "trade_buy_issues": [
+      {
+       "item": "jo staff",
+       "source_price": 500,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "legs of enlightenment",
+       "source_price": 40000,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "Sai of Enlightenment",
+       "status": "WIKI_ONLY",
+       "wiki_price": 100000
+      },
+      {
+       "item": "sais of enlightenment",
+       "source_price": 100000,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "Simple Jo Staff",
+       "source_price": 10,
+       "status": "SOURCE_ONLY"
+      }
+     ],
+     "trade_sell_issues": [
+      {
+       "item": "Boots of Enlightenment",
+       "source_price": 80,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "Coned Hat of Enlightenment",
+       "source_price": 700,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "Fists of Enlightenment",
+       "source_price": 200,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "legs of enlightenment",
+       "source_price": 400,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "Nunchaku of Enlightenment",
+       "source_price": 500,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "Robe of Enlightenment",
+       "source_price": 150,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "sais of enlightenment",
+       "source_price": 100,
+       "status": "SOURCE_ONLY"
+      },
+      {
+       "item": "Simple Jo Staff",
+       "status": "WIKI_ONLY",
+       "wiki_price": 10
+      }
+     ],
+     "travel_issues": []
+    },
+    {
+     "key": "canary:npc/enpa_rudra",
+     "name": "Enpa Rudra",
+     "position": {
+      "status": "NO_PLACEMENT",
+      "wiki": {
+       "x": 33604,
+       "y": 31447,
+       "z": 6
       }
      },
      "trade_buy_issues": [],
@@ -38131,9 +38249,14 @@
     },
     {
      "key": "canary:npc/towncryer",
-     "name": "towncryer",
+     "name": "Towncryer",
      "position": {
-      "status": "NO_PLACEMENT",
+      "source": {
+       "x": 32329,
+       "y": 32216,
+       "z": 7
+      },
+      "status": "MISMATCH",
       "wiki": {
        "x": 32322,
        "y": 32227,
@@ -42464,9 +42587,9 @@
    ],
    "position_totals": {
     "MATCH": 234,
-    "MISMATCH": 92,
-    "NEAR": 573,
-    "NO_PLACEMENT": 53,
+    "MISMATCH": 93,
+    "NEAR": 574,
+    "NO_PLACEMENT": 54,
     "NO_WIKI_POSITION": 3
    },
    "source_only": [
@@ -42551,10 +42674,6 @@
      "name": "Canary"
     },
     {
-     "key": "canary:npc/captain_dreadnought",
-     "name": "captain_dreadnought"
-    },
-    {
      "key": "canary:npc/captain_haba_open_sea",
      "name": "Captain Haba (Open Sea)"
     },
@@ -42613,14 +42732,6 @@
     {
      "key": "canary:npc/emberwing",
      "name": "Emberwing"
-    },
-    {
-     "key": "canary:npc/enpa-deia_pema",
-     "name": "enpa-deia_pema"
-    },
-    {
-     "key": "canary:npc/enpa_rudra",
-     "name": "enpa_rudra"
     },
     {
      "key": "canary:npc/ferryman_kamil_meluna",
@@ -42795,18 +42906,18 @@
      "name": "Zurak (Arena)"
     }
    ],
-   "source_only_npcs": 81,
+   "source_only_npcs": 78,
    "trade_buy_totals": {
-    "MATCH": 5089,
+    "MATCH": 5096,
     "MISMATCH": 229,
-    "SOURCE_ONLY": 1082,
-    "WIKI_ONLY": 1491
+    "SOURCE_ONLY": 1086,
+    "WIKI_ONLY": 1492
    },
    "trade_sell_totals": {
     "MATCH": 3905,
     "MISMATCH": 93,
-    "SOURCE_ONLY": 410,
-    "WIKI_ONLY": 967
+    "SOURCE_ONLY": 417,
+    "WIKI_ONLY": 968
    },
    "travel_totals": {
     "MATCH": 86,
@@ -43024,10 +43135,6 @@
      "title": "Captain Corsarah"
     },
     {
-     "name": "Captain Dreadnought",
-     "title": "Captain Dreadnought"
-    },
-    {
      "name": "Captain Indigo",
      "title": "Captain Indigo"
     },
@@ -43178,14 +43285,6 @@
     {
      "name": "Emilio",
      "title": "Emilio"
-    },
-    {
-     "name": "Enpa Rudra",
-     "title": "Enpa Rudra"
-    },
-    {
-     "name": "Enpa-Deia Pema",
-     "title": "Enpa-Deia Pema"
     },
     {
      "name": "Escaped Rascoohan",
@@ -43984,7 +44083,7 @@
      "title": "Zofia Bolter"
     }
    ],
-   "wiki_only_npcs": 292
+   "wiki_only_npcs": 289
   }
  }
 }
