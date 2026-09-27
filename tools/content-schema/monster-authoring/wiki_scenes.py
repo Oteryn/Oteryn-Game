@@ -1,4 +1,4 @@
-"""Compare TibiaWiki creature ability scenes with the Canary conversion at the 2026-07-28 cut.
+"""Compare TibiaWiki creature ability scenes with the Canary conversion at the 2026-09-27 cut.
 
 Evidence tooling only; nothing is adopted. A wiki `{{Ability|...|scene={{Scene|spell=SHAPE|effect=..|missile=..}}}}`
 names a shape of `Module:SceneBuilder/data` (a grid: 2 caster, 3 target, 1 hit tile) and effect/missile
@@ -20,7 +20,7 @@ import wiki_compare as wc
 
 ROOT = Path(__file__).resolve().parent
 SCENE_DATA = 'Module:SceneBuilder/data'
-OUT = ROOT / 'samples' / 'wiki-scenes-2026-07-28.json'
+OUT = ROOT / 'samples' / 'wiki-scenes-2026-09-27.json'
 ELEMENTS = {'physical': 'physical', 'fire': 'fire', 'earth': 'earth', 'poison': 'earth', 'energy': 'energy', 'ice': 'ice',
             'holy': 'holy', 'death': 'death', 'life drain': 'life_drain', 'lifedrain': 'life_drain', 'mana drain': 'mana_drain',
             'manadrain': 'mana_drain', 'drown': 'drowning', 'drowning': 'drowning', 'healing': 'healing'}
