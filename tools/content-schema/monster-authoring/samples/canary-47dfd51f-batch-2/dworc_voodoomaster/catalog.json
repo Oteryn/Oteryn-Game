@@ -1,0 +1,87 @@
+{
+  "definitions": [
+    {
+      "family": "Item",
+      "key": "canary:item/266",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/2920",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3002",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3031",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3058",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3114",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3115",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3116",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3299",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3361",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3403",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/chicken",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/105",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/green_rings",
+    "canary.appearance:effect/magic_blue",
+    "canary.appearance:effect/magic_red",
+    "canary.appearance:effect/teleport",
+    "canary.appearance:missile/energy",
+    "canary.appearance:missile/poison",
+    "canary.appearance:object/4369",
+    "canary.appearance:object/4370",
+    "canary.appearance:object/4371",
+    "canary.appearance:object/6055",
+    "canary.appearance:outfit/214"
+  ]
+}

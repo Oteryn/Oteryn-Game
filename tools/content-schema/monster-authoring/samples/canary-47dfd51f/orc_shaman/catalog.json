@@ -1,0 +1,79 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/snake",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/10196",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/11452",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/11478",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/11479",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23986",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/2824",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3031",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3072",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3277",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3358",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3597",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/magic_blue",
+    "canary.appearance:missile/energyball",
+    "canary.appearance:missile/fire",
+    "canary.appearance:object/4041",
+    "canary.appearance:object/4042",
+    "canary.appearance:object/4147",
+    "canary.appearance:object/5978",
+    "canary.appearance:outfit/6"
+  ]
+}

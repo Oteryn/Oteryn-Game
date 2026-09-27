@@ -1,0 +1,3143 @@
+{
+  "source": {
+    "repository": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+  },
+  "method": "Each creature event named in a monster file was classified by a model-assisted read of its registering script and same-file helpers; evidence_lines point at the decisive lines. Five omission-eligible classifications (BlackKnightDeath, SparkDeath, UglyMonsterDeath, RenegadeOrcDeath, InquisitionBossDeath) were re-read by hand and confirmed. Only high-confidence quest, encounter_bookkeeping and no_effect events are omitted by canary_batch.py; every other event stays unresolved.",
+  "kinds": {
+    "quest": "player/quest/task progress only (D6)",
+    "encounter_bookkeeping": "boss or encounter state for players or globals only (D9)",
+    "encounter_mechanic": "changes the fight or world (D9: Encounter)",
+    "monster_behavior": "generic monster behaviour (D13: native behaviour)",
+    "no_effect": "not registered, or no observable effect"
+  },
+  "events": [
+    {
+      "event": "AftershockTransform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_aftershock_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        29,
+        31,
+        34
+      ],
+      "effect": "Removes the creature and spawns 'Foreshock' plus 'Spark of Destruction' adds at a health-stage threshold.",
+      "monster_references": 1
+    },
+    {
+      "event": "AngryPlantDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_angry_plant.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5
+      ],
+      "effect": "Tags the corpse with a unique id so it can later be searched/interacted with for the quest.",
+      "monster_references": 1
+    },
+    {
+      "event": "AnomalyTransform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_anomaly_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        2,
+        6,
+        21,
+        24
+      ],
+      "effect": "Removes the boss and spawns adds plus a new Charged Anomaly at each health-percent threshold.",
+      "monster_references": 1
+    },
+    {
+      "event": "AscendantBossesDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        130,
+        132,
+        134,
+        143
+      ],
+      "effect": "Sets boss respawn cooldown, transforms/teleports a map teleporter item, and later reverts crystal items.",
+      "monster_references": 9
+    },
+    {
+      "event": "AstralGlyphDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        3
+      ],
+      "effect": "Spawns 'the last lore keeper' boss when the glyph dies.",
+      "monster_references": 1
+    },
+    {
+      "event": "AstralSource",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_source.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        9,
+        12,
+        21,
+        22,
+        28
+      ],
+      "effect": "Removes/teleports glyph creatures and transfers health between them, or heals itself when the glyph is inactive.",
+      "monster_references": 1
+    },
+    {
+      "event": "AsurasMechanic",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/creaturescripts_asuras_mechanic.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        45,
+        46
+      ],
+      "effect": "Nullifies all damage to specific Asura monsters unless the attacker wears the matching counter item.",
+      "monster_references": 3
+    },
+    {
+      "event": "azaram_health",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        55,
+        57,
+        60,
+        63,
+        65,
+        67
+      ],
+      "effect": "Tracks damage taken; at threshold teleports the boss, spawns its soul, and creates tainted soul splinters.",
+      "monster_references": 1
+    },
+    {
+      "event": "azaram_summon",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        82,
+        83,
+        94,
+        97
+      ],
+      "effect": "10% chance per hit to spawn a Condensed Sin monster at a random position within the boss room.",
+      "monster_references": 1
+    },
+    {
+      "event": "AzerusDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/in_service_of_yalahar/creaturescritps_azerus_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        13,
+        16,
+        20,
+        26,
+        28
+      ],
+      "effect": "Creates a timed teleport item on death and removes all nearby monsters in the arena.",
+      "monster_references": 2
+    },
+    {
+      "event": "BlackKnightDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/secret_service/creaturescripts_black_knight_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5,
+        6
+      ],
+      "effect": "Only advances a damaging player's secret service mission storage.",
+      "monster_references": 1
+    },
+    {
+      "event": "blood_death",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        90,
+        95,
+        96,
+        115
+      ],
+      "effect": "On death executes an area attack that damages nearby players and the Red Knight.",
+      "monster_references": 1
+    },
+    {
+      "event": "BoneCapsule",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_bone_capsule.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        9,
+        15,
+        16
+      ],
+      "effect": "Respawns a bone capsule monster, teleports the boss Ragiaz to it, and heals Ragiaz substantially.",
+      "monster_references": 1
+    },
+    {
+      "event": "BossesWarzoneDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/bigfoot_burden/creaturescripts_bosses_warzone.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        16,
+        17,
+        19,
+        22,
+        23
+      ],
+      "effect": "Advances warzone status and reward-chest storages, and a per-player boss-kill counter.",
+      "monster_references": 3
+    },
+    {
+      "event": "BossHealthCheck",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/actions_baeloc_nictros.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        99,
+        103,
+        104,
+        109,
+        114,
+        120,
+        122,
+        123
+      ],
+      "effect": "At 85% health each brother boss teleports away, locks/unlocks movement, and releases the other to fight.",
+      "monster_references": 2
+    },
+    {
+      "event": "BoundAstralPowerDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bound_astral_power.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        23,
+        24,
+        25
+      ],
+      "effect": "Spawns a replacement bound astral power monster and toggles a temporary glyph-power storage.",
+      "monster_references": 1
+    },
+    {
+      "event": "BragrumolDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/kilmaresh_quest/creaturescripts_bragrumol.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5,
+        6
+      ],
+      "effect": "Only advances a damaging player's Kilmaresh quest storage.",
+      "monster_references": 1
+    },
+    {
+      "event": "BrotherWormDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/feaster_of_souls/creaturescripts_brother_worm_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        17,
+        18
+      ],
+      "effect": "Finds a nearby 'the unwelcome' monster and instantly kills it by zeroing its health.",
+      "monster_references": 1
+    },
+    {
+      "event": "BurningChangeForm",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        592,
+        597,
+        598
+      ],
+      "effect": "Counts down a shared timer and transforms the monster's type through burning-hatred stages.",
+      "monster_references": 4
+    },
+    {
+      "event": "CarlinVortexDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5,
+        9
+      ],
+      "effect": "Creates a temporary teleport item at the corpse position and removes it a minute later.",
+      "monster_references": 3
+    },
+    {
+      "event": "ChargedAnomalyDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_charged_anomaly_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        20,
+        25,
+        27
+      ],
+      "effect": "On death spawns the Anomaly boss and removes a chunk of its health based on the current stage.",
+      "monster_references": 1
+    },
+    {
+      "event": "ChargedDisruptionTransform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_charged_disruption_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        17,
+        18,
+        19
+      ],
+      "effect": "After an exhaustion timer elapses, replaces the minion with an 'overcharged disruption' monster and removes it.",
+      "monster_references": 1
+    },
+    {
+      "event": "ChargerSpawn",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_charger_spawn.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        2,
+        22
+      ],
+      "effect": "Schedules and spawns a 'charger' monster at a random position after death.",
+      "monster_references": 1
+    },
+    {
+      "event": "ChargingOutDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_charging_out_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        6,
+        9
+      ],
+      "effect": "Spawns the Outburst boss with health carried over from its precursor once killed.",
+      "monster_references": 1
+    },
+    {
+      "event": "CloakOfTerrorHealthLoss",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        792,
+        796,
+        797
+      ],
+      "effect": "When a player damages it, drops a blood pool item onto the tile if none is present.",
+      "monster_references": 1
+    },
+    {
+      "event": "CorruptedSoul",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_corrupted_soul.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        17,
+        21,
+        23,
+        25
+      ],
+      "effect": "Creates or upgrades a vortex item on death, which is auto-removed again after 30 seconds.",
+      "monster_references": 1
+    },
+    {
+      "event": "count_vlarkorth_transform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_count_vlarkorth.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        68,
+        80,
+        82,
+        85
+      ],
+      "effect": "Tracks cumulative damage taken and, once a threshold is hit, summons class-specific dark monsters.",
+      "monster_references": 1
+    },
+    {
+      "event": "CracklerTransform",
+      "kind": "no_effect",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_crackler_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        7,
+        8,
+        9,
+        10
+      ],
+      "effect": "Guard compares the CreatureEvent object itself to true, which is always false in Lua, so the transform branch never runs.",
+      "monster_references": 1
+    },
+    {
+      "event": "CultsOfTibiaBossDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        27,
+        29,
+        36,
+        37
+      ],
+      "effect": "Mostly sets mission storages, but for one boss it spawns a new monster and removes others in an area.",
+      "monster_references": 8
+    },
+    {
+      "event": "DeathDragon",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_death_dragon.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        7,
+        15,
+        16
+      ],
+      "effect": "Respawns a new Death Dragon one second after death when the boss Ragiaz is nearby.",
+      "monster_references": 1
+    },
+    {
+      "event": "DeathPriestShargonDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dark_trails/creaturescripts_kill_death_priest_shargon.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        23,
+        25,
+        28,
+        36
+      ],
+      "effect": "Creates a timed teleporter item to a new area and advances a party quest storage on kill.",
+      "monster_references": 1
+    },
+    {
+      "event": "DeeplingBossDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/liquid_black/creaturescripts_deepling_boss_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        62,
+        64
+      ],
+      "effect": "Only updates player boss-progress access storages for the deepling bosses encounter.",
+      "monster_references": 3
+    },
+    {
+      "event": "DepolarizedDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_depolarized_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        29,
+        31,
+        32
+      ],
+      "effect": "Increments a global charge counter and, once at 10, grants nearby players boss-access storage and a message.",
+      "monster_references": 1
+    },
+    {
+      "event": "DepolarizedTransform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_depolarized_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        8,
+        9,
+        10
+      ],
+      "effect": "Transforms the creature into a Crackler monster, transferring its current health, then removes itself.",
+      "monster_references": 1
+    },
+    {
+      "event": "DepthWarzoneBossDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "effect": "Transforms a teleporter tile to lead to the boss room, reverting it after 20 minutes.",
+      "monster_references": 3
+    },
+    {
+      "event": "DestroyedPillar",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_destroyed_pillar.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        27,
+        29,
+        30
+      ],
+      "effect": "Destroying a pillar removes the adjacent creature and spawns a placeholder pillar plus that pillar's boss.",
+      "monster_references": 5
+    },
+    {
+      "event": "DiseasedTrioDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/in_service_of_yalahar/creaturescritps_diseased_trio_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        15,
+        16,
+        20
+      ],
+      "effect": "Sets per-player quest storage flags marking each Diseased boss as killed.",
+      "monster_references": 3
+    },
+    {
+      "event": "DisgustingOozeDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_disgusting_ooze_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        59,
+        61
+      ],
+      "effect": "On a 15% chance, spawns two more 'disgusting ooze' monsters with the same master, splitting it.",
+      "monster_references": 1
+    },
+    {
+      "event": "DisruptionTransform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_disruption_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        18,
+        19
+      ],
+      "effect": "After an exhaust timer elapses, removes the minion and spawns a Charged Disruption monster.",
+      "monster_references": 1
+    },
+    {
+      "event": "DistortedSource",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_distorted_source.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        5,
+        14,
+        15,
+        16
+      ],
+      "effect": "Heals itself at low health and teleports/transfers health with astral glyph creatures at high health.",
+      "monster_references": 1
+    },
+    {
+      "event": "DragonEggHealthChange",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_dragon_egg.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        60,
+        65,
+        68,
+        69
+      ],
+      "effect": "Converts healing into ice damage on the egg and, once fully healed, teleports/damages a linked boss.",
+      "monster_references": 1
+    },
+    {
+      "event": "DragonEggPrepareDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_dragon_egg.lua",
+      "handlers": [
+        "onPrepareDeath"
+      ],
+      "evidence_lines": [
+        50
+      ],
+      "effect": "Adds 1 health to the dragon egg just before it would die, preventing its death.",
+      "monster_references": 1
+    },
+    {
+      "event": "DragonEssenceDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_dragon_essence.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        8,
+        11
+      ],
+      "effect": "Removes linked Dragon Essence creatures and spawns The First Dragon boss.",
+      "monster_references": 1
+    },
+    {
+      "event": "dreamCourtsDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_dreamCourtsDeath.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        99,
+        100,
+        101,
+        110,
+        111,
+        113
+      ],
+      "effect": "Tracks boss-kill quest progress and timers, and spawns a plant attendant when plant abomination dies.",
+      "monster_references": 14
+    },
+    {
+      "event": "earl_osam_transform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_earl_osam.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        104,
+        108,
+        121,
+        122,
+        141
+      ],
+      "effect": "Sets cooldown storages, occasionally spawns a Frozen Soul, and once damaged enough teleports/locks the boss and spawns guarding spheres.",
+      "monster_references": 1
+    },
+    {
+      "event": "ElementalOverlordDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/elemental_spheres/creaturescripts_overlord_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        17,
+        18,
+        25,
+        26,
+        28
+      ],
+      "effect": "Resets a global boss-encounter storage, sets a player kill storage, and sends a chat message.",
+      "monster_references": 6
+    },
+    {
+      "event": "EnergizedRagingMageDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_energized_raging_mage_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        3,
+        7,
+        8,
+        11
+      ],
+      "effect": "Spawns a rewarded Raging Mage monster and resets a global storage counter once a threshold is met.",
+      "monster_references": 1
+    },
+    {
+      "event": "EnergyPrismDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        3,
+        10,
+        11
+      ],
+      "effect": "Stops a timer and teleports the Lloyd creature to a new position on the map.",
+      "monster_references": 4
+    },
+    {
+      "event": "EnergyPrismHealthChange",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_energy_prism.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        3,
+        4,
+        6,
+        7
+      ],
+      "effect": "Heals the energy prism back with addHealth(10000) whenever no blocking creature is on a guard tile.",
+      "monster_references": 4
+    },
+    {
+      "event": "EradicatorTransform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_eradicator_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        12,
+        16,
+        21,
+        24
+      ],
+      "effect": "Periodically removes the boss and respawns a stronger/weaker variant plus extra adds, keeping its HP.",
+      "monster_references": 2
+    },
+    {
+      "event": "EssenceOfMaliceSpawnsDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_essence_of_malice.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        23,
+        24
+      ],
+      "effect": "Spawns the Essence Of Malice boss once the last of five cult bosses is dead.",
+      "monster_references": 5
+    },
+    {
+      "event": "Evaporate",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_evaporate.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        33,
+        34,
+        41,
+        42,
+        43
+      ],
+      "effect": "Below 60% health, executes an area combat that heals/damages nearby specific monsters, then removes itself.",
+      "monster_references": 1
+    },
+    {
+      "event": "facelessHealth",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_facelessBane.lua",
+      "handlers": [
+        "onHealthChange",
+        "onThink"
+      ],
+      "evidence_lines": [
+        18,
+        19,
+        22,
+        23,
+        45,
+        50,
+        57
+      ],
+      "effect": "Full-heals the monster and spawns three summon monsters at low health, and negates/heals certain elemental damage types.",
+      "monster_references": 2
+    },
+    {
+      "event": "facelessThink",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_facelessBane.lua",
+      "handlers": [
+        "onHealthChange",
+        "onThink"
+      ],
+      "evidence_lines": [
+        18,
+        19,
+        23,
+        44,
+        49,
+        56
+      ],
+      "effect": "At low storage and health, fully heals and spawns three spectres; onHealthChange also blocks specific damage types per form.",
+      "monster_references": 1
+    },
+    {
+      "event": "FafnarMissionsDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/kilmaresh_quest/creaturescripts_fafnar.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        15,
+        17,
+        19,
+        20,
+        21
+      ],
+      "effect": "Increments a per-player kill counter storage and announces the running kill count via say.",
+      "monster_references": 2
+    },
+    {
+      "event": "FallenDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_fallen.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        12,
+        13
+      ],
+      "effect": "Sets the corpse's teleport destination and later removes a teleport item at that spot.",
+      "monster_references": 1
+    },
+    {
+      "event": "FeasterOfSoulsBossDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/feaster_of_souls/actions_bosses_killed.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        10,
+        15,
+        16
+      ],
+      "effect": "Only sets a per-player storage flag recording that a Feaster of Souls boss was killed.",
+      "monster_references": 4
+    },
+    {
+      "event": "feroxaDeath",
+      "kind": "no_effect",
+      "confidence": "high",
+      "script": "",
+      "handlers": [],
+      "evidence_lines": [],
+      "effect": "Event has no registrations, so no handler runs for this monster.",
+      "monster_references": 2
+    },
+    {
+      "event": "FeroxaTransform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grimvale/creaturescripts_feroxa_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        9,
+        10,
+        20,
+        21
+      ],
+      "effect": "Removes the boss and spawns its next transformation stage once HP drops below set thresholds.",
+      "monster_references": 2
+    },
+    {
+      "event": "FerumbrasEssenceImmortal",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_soul_splinter.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        16
+      ],
+      "effect": "Blocks all incoming damage and healing, making the creature immortal.",
+      "monster_references": 1
+    },
+    {
+      "event": "FerumbrasMortalShell",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_mortal_shell_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        10
+      ],
+      "effect": "Spawns the 'Ferumbras Mortal Shell' boss monster when 'destabilized ferumbras' dies.",
+      "monster_references": 1
+    },
+    {
+      "event": "FerumbrasSoulSplinterDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_soul_splinter.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        4
+      ],
+      "effect": "Spawns the Ferumbras Essence monster in place of the dead soul splinter.",
+      "monster_references": 1
+    },
+    {
+      "event": "fetter_death",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        217,
+        220,
+        221
+      ],
+      "effect": "On death decrements the linked boss's fetter counter and may transform it back to its normal type.",
+      "monster_references": 1
+    },
+    {
+      "event": "FirstDragonDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_first_dragon.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        26,
+        27,
+        29
+      ],
+      "effect": "Teleports nearby players out of the boss room and sets a quest storage flag.",
+      "monster_references": 1
+    },
+    {
+      "event": "ForeshockTransform",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_foreshock_transform.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        28,
+        29,
+        31,
+        33,
+        36
+      ],
+      "effect": "At health-percent thresholds replaces Foreshock with Aftershock plus four Spark of Destruction monsters.",
+      "monster_references": 1
+    },
+    {
+      "event": "ForgottenKnowledgeBossDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        37,
+        41,
+        42,
+        46
+      ],
+      "effect": "Sets boss cooldown storages, and on Melting Frozen Horror's death removes a monster and spawns a baby dragon.",
+      "monster_references": 10
+    },
+    {
+      "event": "FourthTaintBossesPrepareDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onPrepareDeath"
+      ],
+      "evidence_lines": [
+        72,
+        77,
+        78,
+        79
+      ],
+      "effect": "Gives the boss a 10% chance to fully heal to max HP just before it would die.",
+      "monster_references": 15
+    },
+    {
+      "event": "GazHaragothHeal",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        10,
+        11,
+        18
+      ],
+      "effect": "Heals the boss by 300000 HP once its health drops below 12.5%.",
+      "monster_references": 1
+    },
+    {
+      "event": "ghuloshDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_ghulosh.lua",
+      "handlers": [
+        "onDeath",
+        "onThink"
+      ],
+      "evidence_lines": [
+        33,
+        35,
+        61,
+        63
+      ],
+      "effect": "onThink transforms the boss into its next form at health thresholds; onDeath spawns the follow-up monster.",
+      "monster_references": 2
+    },
+    {
+      "event": "ghuloshThink",
+      "kind": "encounter_mechanic",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_ghulosh.lua",
+      "handlers": [
+        "onDeath",
+        "onThink"
+      ],
+      "evidence_lines": [
+        33,
+        35,
+        61,
+        63
+      ],
+      "effect": "On low health removes the boss and spawns its next stage; on related deaths spawns further chained monsters.",
+      "monster_references": 1
+    },
+    {
+      "event": "GloothHorror",
+      "kind": "encounter_mechanic",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/hero_of_rathleton/creaturescripts_glooth_horror.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        11,
+        12,
+        14,
+        15,
+        16
+      ],
+      "effect": "Intends to spawn two stronger Glooth Horror monsters on death, but references an undefined 'targetMonster' variable.",
+      "monster_references": 5
+    },
+    {
+      "event": "GlowingRubbishAmuletDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_glowing_rubbish_amulet.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        26,
+        29,
+        30
+      ],
+      "effect": "Tracks kill counters and swaps a worn quest amulet for its upgraded item at 10 kills.",
+      "monster_references": 3
+    },
+    {
+      "event": "GoblinLeaderDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/tower_defence_quest/creaturescripts_goblin_leader_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5,
+        6
+      ],
+      "effect": "Only advances a damaging player's tower defence quest storage.",
+      "monster_references": 1
+    },
+    {
+      "event": "gorzindelDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_gorzindel.lua",
+      "handlers": [
+        "onDeath",
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        30,
+        39,
+        43,
+        58,
+        59
+      ],
+      "effect": "Removes minions and spawns a portal/monster on certain deaths, and onHealthChange nullifies all incoming damage.",
+      "monster_references": 6
+    },
+    {
+      "event": "gorzindelHealth",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_gorzindel.lua",
+      "handlers": [
+        "onDeath",
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        38,
+        39,
+        43,
+        58,
+        59
+      ],
+      "effect": "On death spawns a portal item/monster puzzle piece and cleans up minions; onHealthChange blocks all damage.",
+      "monster_references": 1
+    },
+    {
+      "event": "Goshnar's-Malice",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        22,
+        23,
+        25,
+        26
+      ],
+      "effect": "Reflects 100% of physical/death damage taken back onto the attacking player.",
+      "monster_references": 1
+    },
+    {
+      "event": "GoshnarsCrueltyBuff",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        1073,
+        1074
+      ],
+      "effect": "Reduces incoming damage to Goshnar's Cruelty by a stored defense-drain percentage.",
+      "monster_references": 1
+    },
+    {
+      "event": "GoshnarsHatredBuff",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        629,
+        634,
+        639
+      ],
+      "effect": "Adds defense to the boss when hit and multiplies its outgoing damage by a hatred stat.",
+      "monster_references": 4
+    },
+    {
+      "event": "grave_danger_death",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_boss_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        66,
+        67,
+        70,
+        74
+      ],
+      "effect": "Sets per-player boss-kill storage flags and grants one achievement on a specific boss.",
+      "monster_references": 8
+    },
+    {
+      "event": "GreedMonsterDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        200,
+        201,
+        204
+      ],
+      "effect": "Increments a kill counter and respawns a new Goshnar's Greed monster via a helper function.",
+      "monster_references": 5
+    },
+    {
+      "event": "HazardousPhantomDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        324,
+        328,
+        330,
+        334
+      ],
+      "effect": "Only tracks a capped per-player kill counter and messages progress toward unlocking the boss room.",
+      "monster_references": 1
+    },
+    {
+      "event": "HealthForgotten",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_healthchange_forgotten.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        21
+      ],
+      "effect": "Doubles incoming damage to certain bosses unless a specific minion is currently nearby.",
+      "monster_references": 4
+    },
+    {
+      "event": "HeartBossDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        125,
+        128,
+        135,
+        136
+      ],
+      "effect": "Transforms a vortex item to open access and, for the final boss, clears the arena of monsters.",
+      "monster_references": 7
+    },
+    {
+      "event": "HeartMinionDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_heart_minion_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        8,
+        9,
+        11,
+        16,
+        19,
+        22
+      ],
+      "effect": "Decrements/increments global minion and boss-kill counters used to track encounter progress.",
+      "monster_references": 8
+    },
+    {
+      "event": "HuskyDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_ice_islands_quest/creaturescripts_husky_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        6
+      ],
+      "effect": "Only increments a per-player husky kill-count storage value.",
+      "monster_references": 1
+    },
+    {
+      "event": "iksupanBossesDeath",
+      "kind": "no_effect",
+      "confidence": "high",
+      "script": null,
+      "handlers": [],
+      "evidence_lines": [],
+      "effect": "Event has no registering script, so it is never triggered and has no observable behaviour.",
+      "monster_references": 1
+    },
+    {
+      "event": "InquisitionBossDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_boss.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        23,
+        26,
+        27,
+        29
+      ],
+      "effect": "Sets a global boss-room storage flag, tells players to use the teleporter, and resets it after 10 minutes.",
+      "monster_references": 7
+    },
+    {
+      "event": "izcandarThink",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_Izcandar.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        21,
+        22,
+        41,
+        43,
+        66,
+        69
+      ],
+      "effect": "Removes and respawns Izcandar as its winter/summer/banished form when it crosses zone boundaries.",
+      "monster_references": 3
+    },
+    {
+      "event": "KesarImmortal",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_order_of_lion/creatureevent-commander_kills.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        47
+      ],
+      "effect": "Nullifies all incoming damage, making Kesar immortal during this phase.",
+      "monster_references": 1
+    },
+    {
+      "event": "killingLibrary",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/creaturescripts_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        24,
+        28,
+        29,
+        32,
+        33,
+        36,
+        38
+      ],
+      "effect": "Only sets quest storages and grants achievements for library bosses killed; no fight or map effects.",
+      "monster_references": 8
+    },
+    {
+      "event": "LastExileDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        33,
+        36,
+        38
+      ],
+      "effect": "Increments a per-player exile-kill counter storage up to 20 when location/storage conditions are met.",
+      "monster_references": 1
+    },
+    {
+      "event": "LeidenHeal",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_leiden_heal.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        3,
+        4,
+        10
+      ],
+      "effect": "Converts player damage into healing, letting Leiden heal itself off players' hits.",
+      "monster_references": 1
+    },
+    {
+      "event": "LionCommanderDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_order_of_lion/creatureevent-commander_kills.lua",
+      "handlers": [
+        "onPrepareDeath"
+      ],
+      "evidence_lines": [
+        11,
+        12,
+        16,
+        17,
+        19,
+        20
+      ],
+      "effect": "Decrements a commander counter; once it reaches zero, removes remaining monsters and teleports players out.",
+      "monster_references": 1
+    },
+    {
+      "event": "LizardMagistratusDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/creaturescripts_lizard_magistratus_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        4,
+        5,
+        6
+      ],
+      "effect": "Increments a per-player mission kill counter up to 5.",
+      "monster_references": 1
+    },
+    {
+      "event": "LizardNobleDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/creaturescripts_lizard_noble_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        6
+      ],
+      "effect": "Only increments a per-player mission kill-count storage capped at 6.",
+      "monster_references": 1
+    },
+    {
+      "event": "LloydPrepareDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_lloyd_preparedeath.lua",
+      "handlers": [
+        "onPrepareDeath"
+      ],
+      "evidence_lines": [
+        42,
+        43,
+        48,
+        50
+      ],
+      "effect": "Prevents boss death by respawning a cosmic prism, teleporting Lloyd and restoring his health.",
+      "monster_references": 1
+    },
+    {
+      "event": "lokathmorDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_lokathmor.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        7,
+        8
+      ],
+      "effect": "Creates a quest paper item at the death position when the 'dark knowledge' form dies.",
+      "monster_references": 1
+    },
+    {
+      "event": "LowerSpikeDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/spike_tasks/creaturescripts_lower_spike_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        14,
+        15,
+        16,
+        17
+      ],
+      "effect": "Increments a per-player Drillworm kill counter and messages progress toward 7.",
+      "monster_references": 1
+    },
+    {
+      "event": "MagmaBubbleDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_primal_ordeal/creaturescripts_magma_bubble_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        17,
+        18,
+        19,
+        21,
+        22
+      ],
+      "effect": "Grants damaging players an outfit reward and a one-time boss-access storage flag.",
+      "monster_references": 1
+    },
+    {
+      "event": "magnor_death",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        195,
+        196
+      ],
+      "effect": "Spawns four 'Shard Of Magnor' add monsters sharing life with each other on Magnor's death.",
+      "monster_references": 1
+    },
+    {
+      "event": "MakeshiftHomeDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        71,
+        72
+      ],
+      "effect": "On death creates a searchable wooden trash item with an action id at the corpse.",
+      "monster_references": 1
+    },
+    {
+      "event": "mazzinorDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_mazzinor.lua",
+      "handlers": [
+        "onDeath",
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        9,
+        27,
+        28,
+        29
+      ],
+      "effect": "Creates a temporary vortex item when 'wild knowledge' dies, and onHealthChange fully negates damage and heals it back.",
+      "monster_references": 1
+    },
+    {
+      "event": "mazzinorHealth",
+      "kind": "encounter_mechanic",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_mazzinor.lua",
+      "handlers": [
+        "onDeath",
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        9,
+        27
+      ],
+      "effect": "Nullifies damage by healing back the amount taken, and on a related death creates a temporary vortex item.",
+      "monster_references": 1
+    },
+    {
+      "event": "MegalomaniaDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        1034,
+        1035,
+        1036
+      ],
+      "effect": "Only sets a per-player quest storage flag and sends a message when Goshnar's Megalomania is killed.",
+      "monster_references": 2
+    },
+    {
+      "event": "MeltingDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_melting_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        16,
+        17
+      ],
+      "effect": "Removes a linked creature and spawns a baby dragon at a fixed position on the boss's death.",
+      "monster_references": 1
+    },
+    {
+      "event": "MiddleSpikeDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/spike_tasks/creaturescripts_middle_spike_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        13,
+        14,
+        15,
+        16
+      ],
+      "effect": "Only increments a capped kill counter and messages the player of progress toward 7.",
+      "monster_references": 1
+    },
+    {
+      "event": "MinionGazDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/creaturescripts/monster/minion_gaz_haragoth_vortex.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        17,
+        19,
+        22
+      ],
+      "effect": "On death creates a timed vortex teleport item that is removed after 60 seconds.",
+      "monster_references": 1
+    },
+    {
+      "event": "MinotaurCultTaskDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_minotaur_task_count.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5,
+        6
+      ],
+      "effect": "Increments a player's minotaur task kill counter storage up to 50.",
+      "monster_references": 3
+    },
+    {
+      "event": "MirroredNightmareBossAccess",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        144,
+        150,
+        151
+      ],
+      "effect": "Only increments a per-player apparition kill counter later used to gate access to a boss.",
+      "monster_references": 5
+    },
+    {
+      "event": "MorrisGoblinDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dawnport/creaturescripts_goblin_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        4,
+        5,
+        6
+      ],
+      "effect": "Increments a per-player kill counter up to 20, with no other effect.",
+      "monster_references": 1
+    },
+    {
+      "event": "MorrisMinotaurDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dawnport/creaturescripts_minotaur_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        6
+      ],
+      "effect": "Only increments a per-player minotaur kill-count storage capped at 20.",
+      "monster_references": 1
+    },
+    {
+      "event": "MorrisTrollDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dawnport/creaturescripts_troll_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        4,
+        5,
+        6
+      ],
+      "effect": "Only increments a capped troll-kill quest counter for the party member.",
+      "monster_references": 1
+    },
+    {
+      "event": "MozradekDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/kilmaresh_quest/creaturescripts_mozradek.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5,
+        6
+      ],
+      "effect": "Advances a player's mission storage value from 1 to 2 on kill.",
+      "monster_references": 1
+    },
+    {
+      "event": "nargol_death",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        131,
+        134,
+        137
+      ],
+      "effect": "Spawns a Regenerating Mass, then swaps it for Nargol the Impaler after a 30s delay.",
+      "monster_references": 1
+    },
+    {
+      "event": "NecromancerServantDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_gravedigger_of_drefia/creaturescripts_necromancer_servant.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5,
+        6
+      ],
+      "effect": "Sets a mission-progress storage flag for the killing player.",
+      "monster_references": 1
+    },
+    {
+      "event": "NecromanticFocusDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        1017,
+        1018,
+        1019
+      ],
+      "effect": "Schedules a delayed call that increases the Megalomania boss's strength at that position.",
+      "monster_references": 1
+    },
+    {
+      "event": "NomadDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/thieves_guild/creaturescripts_nomad_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        4,
+        5
+      ],
+      "effect": "Only advances a party member's thieves guild mission storage on kill.",
+      "monster_references": 3
+    },
+    {
+      "event": "OrganicMatterDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_the_baron_from_below.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        65,
+        66
+      ],
+      "effect": "Spawns four Aggressive Matter monsters at the creature's death position.",
+      "monster_references": 1
+    },
+    {
+      "event": "OutburstCharge",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_outburst_charge.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        2,
+        3,
+        6,
+        23,
+        24,
+        25
+      ],
+      "effect": "At each health-percent stage, removes itself and spawns four Sparks of Destruction plus a new Charging Outburst.",
+      "monster_references": 1
+    },
+    {
+      "event": "OverchargeDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_overcharge_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        51,
+        54,
+        55
+      ],
+      "effect": "Increments a global charge counter and, once at 5, grants nearby players boss-access storage and a message.",
+      "monster_references": 1
+    },
+    {
+      "event": "paleWormDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/feaster_of_souls/creaturescripts_pale_worm_death.lua",
+      "handlers": [
+        "onPrepareDeath"
+      ],
+      "evidence_lines": [
+        14,
+        15,
+        16,
+        19
+      ],
+      "effect": "Grants a one-time reward outfit and an achievement to nearby players when the boss is about to die.",
+      "monster_references": 1
+    },
+    {
+      "event": "ParasiteDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/bigfoot_burden/creaturescripts_parasite.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        50,
+        51,
+        64,
+        20
+      ],
+      "effect": "Removes/creates wall crystal items, teleports players, removes other creatures, and schedules the warzone boss spawn.",
+      "monster_references": 1
+    },
+    {
+      "event": "PossessedTree",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_possessed_tree.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        9,
+        13
+      ],
+      "effect": "On death spawns a random unbound monster and respawns a new possessed tree after 60 seconds.",
+      "monster_references": 1
+    },
+    {
+      "event": "PythiusTheRottenDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_hidden_city_of_beregar/creaturescripts_pythius_the_rotten_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        6,
+        7
+      ],
+      "effect": "Teleports the killing player to a reward room when the boss dies.",
+      "monster_references": 1
+    },
+    {
+      "event": "QuaraLeadersDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/in_service_of_yalahar/quara_leader_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        16,
+        18,
+        19,
+        21
+      ],
+      "effect": "Only sets per-player quest/mission storage values and questline progress for the killer.",
+      "monster_references": 3
+    },
+    {
+      "event": "RagingMageDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_raging_mage_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        8,
+        9,
+        11,
+        13
+      ],
+      "effect": "Broadcasts messages and, after 5 minutes, removes a portal-collapse item from the tower floor.",
+      "monster_references": 1
+    },
+    {
+      "event": "RathletonBossDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        60,
+        69,
+        70,
+        71,
+        72
+      ],
+      "effect": "Transforms and redirects a teleport item to the next boss room, reverting it after 2 minutes.",
+      "monster_references": 3
+    },
+    {
+      "event": "RationalRequestRatDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_rookie_guard/mission03_rational_request.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        9,
+        12
+      ],
+      "effect": "Increments a mission rat-kill counter for the player, capped at 5.",
+      "monster_references": 1
+    },
+    {
+      "event": "RatmiralBlackwhiskersDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/a_pirates_tail/creaturescripts_ratmiral_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        13,
+        14,
+        15
+      ],
+      "effect": "Grants damaging players an outfit reward and a congratulatory message; no fight or map changes.",
+      "monster_references": 1
+    },
+    {
+      "event": "RenegadeOrcDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/an_uneasy_alliance/creaturescripts_renegade_orc_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        5,
+        6
+      ],
+      "effect": "Sets a player quest-door access storage flag; no world or fight changes.",
+      "monster_references": 1
+    },
+    {
+      "event": "ReplicaServantDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_replica_servants.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        20,
+        23,
+        24
+      ],
+      "effect": "Tracks kill counters and creates a teleport item once enough replicas of both types are dead.",
+      "monster_references": 2
+    },
+    {
+      "event": "rewar_the_bloody",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        241,
+        243,
+        252,
+        257
+      ],
+      "effect": "Tracks accumulated damage and, past a threshold, spawns Fetter monsters and transforms the boss into an invulnerable form.",
+      "monster_references": 2
+    },
+    {
+      "event": "RiftInvaderDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_rift_invader_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        21,
+        31,
+        38,
+        42,
+        56
+      ],
+      "effect": "Respawns itself, may shatter a crystal into Ferumbras soul splinters, and spawns/removes a vortex item.",
+      "monster_references": 1
+    },
+    {
+      "event": "RoshamuulKillsDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/roshamuul_quest/creaturescripts_lower_roshamuul.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        14
+      ],
+      "effect": "Only increments a per-player kill-counter storage for lower Roshamuul monsters.",
+      "monster_references": 2
+    },
+    {
+      "event": "RottenBloodBakragoreDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        36,
+        38,
+        39,
+        43
+      ],
+      "effect": "Marks the boss defeated per player, resets a taint counter, and grants a one-time reward outfit.",
+      "monster_references": 1
+    },
+    {
+      "event": "RottenBloodBossDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        10,
+        11,
+        12,
+        13,
+        14
+      ],
+      "effect": "Tracks per-boss kill cooldowns and a taint counter in player key-value storage; no fight/map changes.",
+      "monster_references": 4
+    },
+    {
+      "event": "RuptureHeal",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_rupture_heal.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "effect": "While resonance is active, player damage instead heals Rupture for a random amount.",
+      "monster_references": 1
+    },
+    {
+      "event": "RuptureResonance",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_rupture_resonance.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        2,
+        6,
+        31,
+        32
+      ],
+      "effect": "Spawns a wave of adds and advances the boss's resonance stage at each health-percent threshold.",
+      "monster_references": 1
+    },
+    {
+      "event": "scarlettHealth",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_scarlett.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        127,
+        130
+      ],
+      "effect": "Cuts damage to near-zero unless frozen, then schedules a delayed AoE damage burst on the boss.",
+      "monster_references": 1
+    },
+    {
+      "event": "scarlettThink",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_scarlett.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        106,
+        86,
+        87,
+        88
+      ],
+      "effect": "When mirrors are aligned, locks Scarlett's movement and flips global flags enabling her death/transform sequence.",
+      "monster_references": 1
+    },
+    {
+      "event": "SecretLibraryBossDeath",
+      "kind": "no_effect",
+      "confidence": "high",
+      "script": "",
+      "handlers": [],
+      "evidence_lines": [],
+      "effect": "Event has no registrations, so no handler runs for this monster.",
+      "monster_references": 1
+    },
+    {
+      "event": "shard_death",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        146,
+        158,
+        175,
+        176
+      ],
+      "effect": "Executes an area combat dealing life-drain damage to nearby players when the shard dies.",
+      "monster_references": 1
+    },
+    {
+      "event": "ShardOfCorruptionDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_new_frontier/creaturescripts_shard_of_corruption_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        8,
+        9
+      ],
+      "effect": "Only advances a per-player questline storage value from 11 to 12.",
+      "monster_references": 1
+    },
+    {
+      "event": "ShocksDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_shocks_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        17,
+        20,
+        24
+      ],
+      "effect": "Spawns the next-stage monster (Aftershock/Realityquake) plus extra Spark of Destruction adds on death.",
+      "monster_references": 2
+    },
+    {
+      "event": "SnailSlimeDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_snail_slime_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        64,
+        20
+      ],
+      "effect": "Executes a fire-damage combat area on death that changes health of a nearby 'the count of the core' target.",
+      "monster_references": 1
+    },
+    {
+      "event": "SnailSlimeThink",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_snail_slime_kill.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        40,
+        50,
+        51,
+        52
+      ],
+      "effect": "Spawns extra Snail Slime add monsters once the boss's health drops to half.",
+      "monster_references": 1
+    },
+    {
+      "event": "SomewhatBeatableDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_somewhat_beatable.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        9,
+        10,
+        13,
+        14,
+        15
+      ],
+      "effect": "Advances a nearby player's storage and, once it reaches 5, spawns six dragon essence monsters.",
+      "monster_references": 1
+    },
+    {
+      "event": "soul_heal",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_lord_azaram.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        120,
+        121,
+        124,
+        126
+      ],
+      "effect": "After enough player healing, teleports the creature and the boss and removes tainted-soul adds.",
+      "monster_references": 1
+    },
+    {
+      "event": "SoulCageDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        60
+      ],
+      "effect": "Schedules a respawn of the Soul Cage monster shortly after it dies.",
+      "monster_references": 1
+    },
+    {
+      "event": "SoulCageHealthChange",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        40,
+        41,
+        43,
+        44
+      ],
+      "effect": "Reflects 10% of damage taken back onto the attacking player.",
+      "monster_references": 1
+    },
+    {
+      "event": "SoulcatcherSummon",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_soulcatcher_summon.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        4,
+        6,
+        7
+      ],
+      "effect": "15% chance per hit to spawn a Corrupted Soul monster once Soulcatcher's health drops below 50000.",
+      "monster_references": 1
+    },
+    {
+      "event": "SoulWarAspectOfPowerDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        902,
+        906,
+        907,
+        910,
+        911
+      ],
+      "effect": "Increments a boss death counter and respawns a new Aspect of Power monster with a random outfit.",
+      "monster_references": 1
+    },
+    {
+      "event": "SoulWarBossesDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        99,
+        106,
+        108
+      ],
+      "effect": "Marks a mini-boss defeated in per-player quest storage and grants the next taint stage.",
+      "monster_references": 5
+    },
+    {
+      "event": "SparkDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_spark_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        13,
+        14,
+        29,
+        30
+      ],
+      "effect": "Counts spark deaths and, once 10 are reached, grants nearby players a boss-access storage flag.",
+      "monster_references": 1
+    },
+    {
+      "event": "sphere_death",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_earl_osam.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        154,
+        155,
+        156,
+        157
+      ],
+      "effect": "Decrements the boss's active-sphere counter and unlocks the boss's movement once all spheres are destroyed.",
+      "monster_references": 1
+    },
+    {
+      "event": "Splash",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_splash.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        11,
+        13
+      ],
+      "effect": "Spawns a 'liquor spirit' monster and fully heals the boss back to max health when below 85% HP.",
+      "monster_references": 1
+    },
+    {
+      "event": "TentacleDeep",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/hero_of_rathleton/creaturescripts_tentacle.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        26,
+        7,
+        13
+      ],
+      "effect": "Schedules a check that respawns a tentacle add or spawns the 'Deep Terror' boss monster.",
+      "monster_references": 1
+    },
+    {
+      "event": "TentuglysHeadDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/a_pirates_tail/creaturescripts_a_pirates_tail_bosses.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        9,
+        10
+      ],
+      "effect": "Grants damaging players a quest storage flag and a mount; no fight/world change.",
+      "monster_references": 1
+    },
+    {
+      "event": "TheBaronFromBelowThink",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_the_baron_from_below.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        8,
+        10,
+        11,
+        36,
+        40
+      ],
+      "effect": "After a delay, transforms the boss, teleports it, and spawns/removes organic-matter add monsters.",
+      "monster_references": 1
+    },
+    {
+      "event": "TheFirstDragonDragonTaskDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_kill_dragon.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        7
+      ],
+      "effect": "Only increments a per-player dragon-kill counter storage capped at 200.",
+      "monster_references": 1
+    },
+    {
+      "event": "TheGreatDragonHuntDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_great_dragon_hunt_quest/creaturescripts_the_great_dragon_hunt.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        23,
+        24
+      ],
+      "effect": "Only increments a party quest storage counter for dragons killed in the hunt zone.",
+      "monster_references": 2
+    },
+    {
+      "event": "TheKeeperDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/creaturescripts_keeper_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        3
+      ],
+      "effect": "Only resets a global mission storage value to 0.",
+      "monster_references": 1
+    },
+    {
+      "event": "ThePrimalMenaceDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        12,
+        16
+      ],
+      "effect": "Sets a boss-kill storage flag and levels up the player's hazard progression via an external hazard system.",
+      "monster_references": 1
+    },
+    {
+      "event": "ThePrimeOrdealBossDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/primal_ordeal_quest/bosses_killed.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        12,
+        13
+      ],
+      "effect": "Only sets a one-time player storage flag marking that boss as killed.",
+      "monster_references": 2
+    },
+    {
+      "event": "TheRavagerDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dark_trails/creaturescripts_kill_the_ravager.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        12,
+        13,
+        15,
+        18,
+        19,
+        22
+      ],
+      "effect": "Creates and configures a new teleport item to the next area, auto-removing it after 5 minutes, plus a mission flag.",
+      "monster_references": 1
+    },
+    {
+      "event": "TheShattererDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_the_shatterer_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        97,
+        99,
+        100,
+        101,
+        103,
+        104
+      ],
+      "effect": "Repositions the boss teleporter, respawns broken chain items, and resets levers and quest storages.",
+      "monster_references": 1
+    },
+    {
+      "event": "TheWelterEgg",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/creaturescripts/monster/the_welter_egg.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        10,
+        11
+      ],
+      "effect": "After a delay removes the egg and spawns a 'spawn of the welter' monster in its place.",
+      "monster_references": 1
+    },
+    {
+      "event": "ThornKnightDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_thorn_knight_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        15,
+        16,
+        20
+      ],
+      "effect": "Spawns the next-stage thorn knight (and a mount) in place of the one that just died.",
+      "monster_references": 2
+    },
+    {
+      "event": "ThreatenedDreamsNightmareMonstersDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/threatened_dreams/nightmare_monsters_kills.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        15,
+        16,
+        20,
+        22,
+        24
+      ],
+      "effect": "Increments per-player mission kill counters for three specific nightmare monsters.",
+      "monster_references": 3
+    },
+    {
+      "event": "TireczDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_new_frontier/creaturescripts_tirecz_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        9,
+        12,
+        23,
+        24
+      ],
+      "effect": "Teleports the winning player out with a reward message and clears/teleports everyone from the arena.",
+      "monster_references": 1
+    },
+    {
+      "event": "TwentyYearsACookBossDeath",
+      "kind": "no_effect",
+      "confidence": "high",
+      "script": null,
+      "handlers": [],
+      "evidence_lines": [],
+      "effect": "Event has no registering script, so it has no observable effect.",
+      "monster_references": 1
+    },
+    {
+      "event": "UglyMonsterCleanup",
+      "kind": "no_effect",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        49,
+        50,
+        51,
+        52
+      ],
+      "effect": "Only removes an entry from a local in-memory tracking table; no observable game-state change.",
+      "monster_references": 2
+    },
+    {
+      "event": "UglyMonsterDeath",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        60,
+        61,
+        63
+      ],
+      "effect": "Cancels the monster's pending despawn timer and resets a global spawn-lock storage flag.",
+      "monster_references": 1
+    },
+    {
+      "event": "UglyMonsterDrop",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        70,
+        71,
+        73,
+        75,
+        77,
+        78
+      ],
+      "effect": "Rare chance on damage drops one of several random loot items at the monster's position.",
+      "monster_references": 1
+    },
+    {
+      "event": "UglyMonsterSpawn",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        27,
+        28,
+        29,
+        31,
+        32,
+        33
+      ],
+      "effect": "Random chance on damage spawns an Ugly Monster, which is auto-removed after 60 seconds.",
+      "monster_references": 2
+    },
+    {
+      "event": "UngreezDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_inquisition_quest/creaturescripts_inquisition_ungreez.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        7,
+        9,
+        10
+      ],
+      "effect": "Advances the player's inquisition questline storage values on kill.",
+      "monster_references": 1
+    },
+    {
+      "event": "UpperSpikeDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/spike_tasks/creaturescripts_upper_spike_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        15,
+        16
+      ],
+      "effect": "Increments a player's task kill counter toward 7 Demon Skeletons in a set area.",
+      "monster_references": 1
+    },
+    {
+      "event": "UrmahlulluChanges",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/kilmaresh_quest/creaturescripts_urmahlullu_change.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        56,
+        57,
+        82,
+        87
+      ],
+      "effect": "Removes the creature and spawns its next transformation-stage monster when health drops below a threshold.",
+      "monster_references": 4
+    },
+    {
+      "event": "UsurperCommanderDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/the_order_of_lion/creatureevent-commander_kills.lua",
+      "handlers": [
+        "onPrepareDeath"
+      ],
+      "evidence_lines": [
+        34,
+        36,
+        37
+      ],
+      "effect": "Decrements a global commander counter and, on the last one, spawns the 'Kesar' and 'Drume' boss monsters.",
+      "monster_references": 1
+    },
+    {
+      "event": "VersperothDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/bigfoot_burden/creaturescripts_versperoth_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        21,
+        28,
+        35,
+        36
+      ],
+      "effect": "Sets battle-state storage, replaces a teleport item, and schedules delayed boss respawn/room-reset events.",
+      "monster_references": 1
+    },
+    {
+      "event": "WarzoneWormDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        59
+      ],
+      "effect": "Only increments a per-player kill-counter storage for a warzone organisms task.",
+      "monster_references": 2
+    },
+    {
+      "event": "WhiteDeerDeath",
+      "kind": "monster_behavior",
+      "confidence": "high",
+      "script": "data/scripts/creaturescripts/monster/white_deer_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        14,
+        16,
+        17,
+        20
+      ],
+      "effect": "On its own death the deer randomly spawns an enraged or desperate deer variant of itself.",
+      "monster_references": 1
+    },
+    {
+      "event": "WhiteDeerScoutsDeath",
+      "kind": "monster_behavior",
+      "confidence": "high",
+      "script": "data/scripts/creaturescripts/monster/white_deer_scouts.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        9,
+        10,
+        12,
+        13,
+        18
+      ],
+      "effect": "10% chance to spawn two Elf Scout monsters and say a line when the deer dies; generic non-quest behavior.",
+      "monster_references": 1
+    },
+    {
+      "event": "WigglerDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/bigfoot_burden/creaturescripts_wiggler_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        4,
+        6
+      ],
+      "effect": "Increments a player's extermination mission kill counter, capped at 10.",
+      "monster_references": 1
+    },
+    {
+      "event": "WormlingDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/feaster_of_souls/creaturescripts_wormling_death.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        14,
+        19,
+        26
+      ],
+      "effect": "On death detonates an area attack that damages any player standing on the tile.",
+      "monster_references": 1
+    },
+    {
+      "event": "WrathOfTheEmperorBossDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/creaturescripts_bosses_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        27,
+        28,
+        29,
+        30,
+        31,
+        32
+      ],
+      "effect": "Resets a boss storage and transforms a map item (lever/door) at a fixed position into another item id.",
+      "monster_references": 4
+    },
+    {
+      "event": "Wyda",
+      "kind": "no_effect",
+      "confidence": "high",
+      "script": "",
+      "handlers": [],
+      "evidence_lines": [],
+      "effect": "Event has no registrations, so no handler runs for this monster.",
+      "monster_references": 1
+    },
+    {
+      "event": "XogixathDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/kilmaresh_quest/creaturescripts_xogixath.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        6
+      ],
+      "effect": "Only advances a per-player quest storage stage value.",
+      "monster_references": 1
+    },
+    {
+      "event": "YielothaxDeath",
+      "kind": "quest",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/raging_mage_tower/creaturescripts_yielothax_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        3
+      ],
+      "effect": "Increments a global kill-counter storage value; nothing else happens.",
+      "monster_references": 1
+    },
+    {
+      "event": "ZalamonDeath",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/wrath_of_the_emperor/creaturescripts_zalamon_kill.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        17,
+        38
+      ],
+      "effect": "Spawns the boss's next transformation-form monster when the current form dies.",
+      "monster_references": 4
+    },
+    {
+      "event": "ZamuloshClone",
+      "kind": "encounter_mechanic",
+      "confidence": "low",
+      "script": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_zamulosh_clone.lua",
+      "handlers": [
+        "onThink"
+      ],
+      "evidence_lines": [
+        11,
+        14,
+        15
+      ],
+      "effect": "Attaches the clone creature as a summon to a full-health boss spectator found nearby.",
+      "monster_references": 1
+    },
+    {
+      "event": "zelos_damage",
+      "kind": "encounter_mechanic",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+      "handlers": [
+        "onHealthChange"
+      ],
+      "evidence_lines": [
+        42,
+        45
+      ],
+      "effect": "Reduces incoming damage to King Zelos based on a stored resistance counter, scaling toward near-immunity.",
+      "monster_references": 1
+    },
+    {
+      "event": "zelos_init",
+      "kind": "encounter_bookkeeping",
+      "confidence": "high",
+      "script": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+      "handlers": [
+        "onDeath"
+      ],
+      "evidence_lines": [
+        64,
+        73,
+        78
+      ],
+      "effect": "Once all King Zelos's escort knights are dead, records elapsed fight time on a boss storage value.",
+      "monster_references": 1
+    }
+  ]
+}

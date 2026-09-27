@@ -1,0 +1,39 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/frenzy",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/disruption",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/charged_disruption",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/overcharged_disruption",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_hunger",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_destruction",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_rage",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

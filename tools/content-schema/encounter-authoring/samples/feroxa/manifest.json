@@ -1,0 +1,117 @@
+{
+  "encounter": "canary:encounter/feroxa",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "FeroxaTransform": [
+      "canary:creature/feroxa",
+      "canary:creature/feroxa2"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_curse_spreads/feroxa.lua",
+      "blob_sha1": "6e3c56f2c87445d8b9689925bb5f6d066a91fd90"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_curse_spreads/feroxa2.lua",
+      "blob_sha1": "4c66688dbd4bd1fd43979e1f79959b277b9eeb68"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/grimvale/creaturescripts_feroxa_transform.lua",
+      "blob_sha1": "ac7cd6f2b0f630e2df933e6602dc7f5bf311028d"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        61
+      ],
+      "status": "mapped",
+      "resolution": "Feroxa is the feroxa participant; its file registers FeroxaTransform.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        57
+      ],
+      "status": "mapped",
+      "resolution": "Feroxa2 is the feroxa2 participant; its file registers FeroxaTransform.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        12
+      ],
+      "status": "mapped",
+      "resolution": "onThink of a creature named \"Feroxa\" with 100000 maximum health: at 50000 health or less, 50%.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        9,
+        10,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "Feroxa is removed and Feroxa2 (displayed as \"Feroxa\", 50000 health) is created in its place with full health.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        13,
+        14,
+        23,
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Feroxa2 carries the display name \"Feroxa\" and 50000 maximum health, so this branch runs: at 25000 or less, 50%.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22
+      ],
+      "status": "mapped",
+      "resolution": "Feroxa3 or Feroxa4, picked uniformly, replaces it with full health.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        8,
+        15
+      ],
+      "status": "approved_omission",
+      "resolution": "The poff effect is cosmetic."
+    }
+  ],
+  "outcome_evidence": []
+}

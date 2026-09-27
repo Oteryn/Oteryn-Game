@@ -1,0 +1,3436 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:monster-authoring:candidate:1",
+  "title": "Monster authoring schema candidate v1 — structural validation",
+  "description": "CANDIDATE authoring schema (docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md). Not a WorldProject/v2 contract or runtime activation; semantic rules live in validate_monster.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "creature": {
+      "$ref": "#/$defs/creature"
+    },
+    "behavior": {
+      "$ref": "#/$defs/behavior"
+    },
+    "presentation": {
+      "$ref": "#/$defs/presentation"
+    },
+    "loot": {
+      "$ref": "#/$defs/loot"
+    }
+  },
+  "required": [
+    "creature",
+    "behavior",
+    "presentation"
+  ],
+  "$defs": {
+    "key": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z0-9_.-]+:[a-z0-9_.:/-]+$",
+      "maxLength": 512,
+      "description": "Namespaced authoring key. Native ProductionKey validation still applies at integration."
+    },
+    "revision": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9_.:-]+$",
+      "maxLength": 512
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "key",
+        "revision"
+      ]
+    },
+    "CreatureRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Creature"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "PresentationRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Presentation"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "BehaviorRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Behavior"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "LootRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Loot"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "AbilityRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Ability"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "EffectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Effect"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "FormulaRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Formula"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "ItemRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Item"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "DocumentRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Document"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "InteractionRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Interaction"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "EncounterRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Encounter"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "bool": {
+      "type": "boolean"
+    },
+    "percent": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Percent 0..100; 0.19 means 0.19%. At most 4 decimal places (0.0001% = 1 ppm), enforced by validate_monster.py so that binary-float JSON Schema validators accept valid values. Native ppm = percent * 10000, which must be an exact integer."
+    },
+    "ms": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Positive duration/interval in milliseconds; no implicit source-unit conversion."
+    },
+    "ratio": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer"
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "description": "Exact rational number in lowest terms (gcd(|numerator|, denominator) = 1, so zero is 0/1), matching WorldProject/v2 validate_v2_ratio. Percent values represent percentage points, not fractions of one."
+    },
+    "nonnegativePercent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "description": "Exact rational number in lowest terms (gcd(|numerator|, denominator) = 1, so zero is 0/1), matching WorldProject/v2 validate_v2_ratio. Percent values represent percentage points, not fractions of one."
+    },
+    "nonnegativeRatio": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "numerator": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "denominator": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "numerator",
+        "denominator"
+      ],
+      "description": "Exact nonnegative dimensionless ratio."
+    },
+    "damageType": {
+      "enum": [
+        "physical",
+        "energy",
+        "earth",
+        "fire",
+        "life_drain",
+        "mana_drain",
+        "drowning",
+        "ice",
+        "holy",
+        "death",
+        "agony",
+        "neutral",
+        "healing"
+      ]
+    },
+    "conditionType": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "Canonical condition key; source aliases require an explicit import mapping."
+    },
+    "resistance": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "damage_type": {
+          "$ref": "#/$defs/damageType"
+        },
+        "reduction_percent": {
+          "$ref": "#/$defs/ratio"
+        }
+      },
+      "required": [
+        "damage_type",
+        "reduction_percent"
+      ]
+    },
+    "damageResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "damage_type": {
+          "$ref": "#/$defs/damageType"
+        },
+        "percent": {
+          "$ref": "#/$defs/nonnegativePercent"
+        }
+      },
+      "required": [
+        "damage_type",
+        "percent"
+      ]
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_health": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "initial_health": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "experience": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "speed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "armor": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "defense": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "mitigation_percent": {
+          "$ref": "#/$defs/nonnegativePercent"
+        },
+        "critical_chance_percent": {
+          "$ref": "#/$defs/percent"
+        }
+      },
+      "required": [
+        "max_health",
+        "initial_health",
+        "experience",
+        "speed",
+        "armor",
+        "defense",
+        "critical_chance_percent"
+      ]
+    },
+    "familiar": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "vocation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "summon_ability": {
+          "$ref": "#/$defs/AbilityRef"
+        },
+        "duration_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "mana_cost": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "owner_speed_bonus": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "vocation",
+        "summon_ability",
+        "duration_ms",
+        "mana_cost"
+      ]
+    },
+    "summoning": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summonable": {
+          "$ref": "#/$defs/bool"
+        },
+        "mana_cost": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "convinceable": {
+          "$ref": "#/$defs/bool"
+        },
+        "is_familiar": {
+          "$ref": "#/$defs/bool"
+        },
+        "familiar": {
+          "$ref": "#/$defs/familiar"
+        }
+      },
+      "required": [
+        "summonable",
+        "convinceable",
+        "is_familiar"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "properties": {
+                  "summonable": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "summonable"
+                ]
+              },
+              {
+                "properties": {
+                  "convinceable": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "convinceable"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "required": [
+              "mana_cost"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "mana_cost"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "is_familiar": {
+                "const": true
+              }
+            },
+            "required": [
+              "is_familiar"
+            ]
+          },
+          "then": {
+            "required": [
+              "familiar"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "familiar"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "bestiary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "type": "string",
+          "minLength": 1
+        },
+        "taxonomy": {
+          "type": "string",
+          "minLength": 1
+        },
+        "difficulty": {
+          "type": "string",
+          "minLength": 1
+        },
+        "occurrence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stars": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        },
+        "locations": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Original editorial location text, not world spawn coordinates."
+        },
+        "kill_thresholds": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "charm_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        }
+      },
+      "required": [
+        "class",
+        "taxonomy",
+        "difficulty",
+        "occurrence",
+        "kill_thresholds",
+        "charm_points"
+      ]
+    },
+    "bosstiary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "category": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prowess_kills": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "expertise_kills": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mastery_kills": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "prowess_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "expertise_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "mastery_points": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        }
+      },
+      "required": [
+        "category",
+        "prowess_kills",
+        "expertise_kills",
+        "mastery_kills",
+        "prowess_points",
+        "expertise_points",
+        "mastery_points"
+      ],
+      "description": "Boss points are awarded per reached stage (io_bosstiary.hpp levelInfos), not once per boss."
+    },
+    "creature": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name_forms": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "article": {
+              "type": "string",
+              "minLength": 0
+            },
+            "plural": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "inspection": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "description": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "description"
+          ]
+        },
+        "stats": {
+          "$ref": "#/$defs/stats"
+        },
+        "resistances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/resistance"
+          },
+          "minItems": 0
+        },
+        "immunities": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "damage_types": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/damageType"
+              },
+              "minItems": 0,
+              "uniqueItems": true
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/conditionType"
+              },
+              "minItems": 0,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "damage_types",
+            "conditions"
+          ]
+        },
+        "flags": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "attackable": {
+              "$ref": "#/$defs/bool"
+            },
+            "illusionable": {
+              "$ref": "#/$defs/bool"
+            },
+            "health_hidden": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "attackable",
+            "illusionable",
+            "health_hidden"
+          ]
+        },
+        "summoning": {
+          "$ref": "#/$defs/summoning"
+        },
+        "bestiary": {
+          "$ref": "#/$defs/bestiary"
+        },
+        "bosstiary": {
+          "$ref": "#/$defs/bosstiary"
+        },
+        "corpse_item": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "soul_core_item": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "death_residue": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "item": {
+              "$ref": "#/$defs/ItemRef"
+            },
+            "fluid_type": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "item"
+          ],
+          "description": "Item placed on death beside the corpse; fluid_type distinguishes one splash Item filled with blood, slime, etc. Omit when the race leaves none."
+        },
+        "encyclopedia": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "description_document": {
+              "$ref": "#/$defs/DocumentRef"
+            }
+          },
+          "required": [
+            "description_document"
+          ]
+        },
+        "presentation": {
+          "$ref": "#/$defs/PresentationRef"
+        },
+        "behavior": {
+          "$ref": "#/$defs/BehaviorRef"
+        },
+        "loot": {
+          "$ref": "#/$defs/LootRef"
+        },
+        "damage_reflection": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/damageResponse"
+          },
+          "minItems": 0
+        },
+        "healing_from_damage": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/damageResponse"
+          },
+          "minItems": 0
+        },
+        "system_eligibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "prey": {
+              "$ref": "#/$defs/bool"
+            },
+            "exclusive_prey": {
+              "$ref": "#/$defs/bool"
+            },
+            "forge": {
+              "$ref": "#/$defs/bool"
+            },
+            "reward_boss": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "prey",
+            "exclusive_prey",
+            "forge",
+            "reward_boss"
+          ]
+        },
+        "spawn_eligibility": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "period": {
+              "enum": [
+                "all",
+                "day",
+                "night"
+              ]
+            },
+            "ignore_period_underground": {
+              "$ref": "#/$defs/bool"
+            },
+            "blocked_by_nearby_players": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "period",
+            "ignore_period_underground",
+            "blocked_by_nearby_players"
+          ]
+        },
+        "reward_encounter": {
+          "$ref": "#/$defs/EncounterRef"
+        }
+      },
+      "required": [
+        "identity",
+        "display_name",
+        "inspection",
+        "stats",
+        "resistances",
+        "immunities",
+        "flags",
+        "summoning",
+        "presentation",
+        "behavior",
+        "damage_reflection",
+        "healing_from_damage"
+      ]
+    },
+    "schedule": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ability": {
+          "$ref": "#/$defs/AbilityRef"
+        },
+        "interval_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "chance_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "magnitude": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maximum": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "description": "D11: this monster's damage/heal magnitude for effects whose formula is caster_magnitude."
+        },
+        "range_tiles": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "D11: this monster's cast range for the shared Ability."
+        }
+      },
+      "required": [
+        "ability",
+        "interval_ms",
+        "chance_percent"
+      ]
+    },
+    "voices": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "interval_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "chance_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "mode": {
+                "enum": [
+                  "say",
+                  "yell"
+                ]
+              }
+            },
+            "required": [
+              "text",
+              "mode"
+            ]
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "interval_ms",
+        "chance_percent",
+        "entries"
+      ]
+    },
+    "behavior": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "movement": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "can_walk": {
+              "$ref": "#/$defs/bool"
+            },
+            "pass_through": {
+              "$ref": "#/$defs/bool"
+            },
+            "pushable": {
+              "$ref": "#/$defs/bool"
+            },
+            "push_items": {
+              "$ref": "#/$defs/bool"
+            },
+            "push_creatures": {
+              "$ref": "#/$defs/bool"
+            },
+            "field_permissions": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "energy": {
+                  "$ref": "#/$defs/bool"
+                },
+                "fire": {
+                  "$ref": "#/$defs/bool"
+                },
+                "poison": {
+                  "$ref": "#/$defs/bool"
+                }
+              },
+              "required": [
+                "energy",
+                "fire",
+                "poison"
+              ]
+            }
+          },
+          "required": [
+            "can_walk",
+            "pass_through",
+            "pushable",
+            "push_items",
+            "push_creatures",
+            "field_permissions"
+          ]
+        },
+        "targeting": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hostile": {
+              "$ref": "#/$defs/bool"
+            },
+            "can_target": {
+              "$ref": "#/$defs/bool"
+            },
+            "sense_invisible": {
+              "$ref": "#/$defs/bool"
+            },
+            "target_distance_tiles": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "static_attack_chance_percent": {
+              "$ref": "#/$defs/percent"
+            },
+            "change_target": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "interval_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "0 disables timed target changes; a nonzero chance still lets the monster switch to an opponent that blocks its path to the current target."
+                },
+                "chance_percent": {
+                  "$ref": "#/$defs/percent"
+                }
+              },
+              "required": [
+                "interval_ms",
+                "chance_percent"
+              ]
+            },
+            "strategy_weights": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "nearest": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "damage": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "health": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "random": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "nearest",
+                "damage",
+                "health",
+                "random"
+              ]
+            },
+            "flee_health": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "hostile",
+            "can_target",
+            "sense_invisible",
+            "target_distance_tiles",
+            "static_attack_chance_percent",
+            "flee_health"
+          ]
+        },
+        "attacks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/schedule"
+          },
+          "minItems": 0
+        },
+        "defenses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/schedule"
+          },
+          "minItems": 0
+        },
+        "voices": {
+          "$ref": "#/$defs/voices"
+        },
+        "summons": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_summons": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "creature": {
+                    "$ref": "#/$defs/CreatureRef"
+                  },
+                  "interval_ms": {
+                    "$ref": "#/$defs/ms"
+                  },
+                  "chance_percent": {
+                    "$ref": "#/$defs/percent"
+                  },
+                  "count": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "creature",
+                  "interval_ms",
+                  "chance_percent",
+                  "count"
+                ]
+              },
+              "minItems": 1
+            }
+          },
+          "required": [
+            "max_summons",
+            "entries"
+          ]
+        },
+        "periodic_audio": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "interval_ms": {
+              "$ref": "#/$defs/ms"
+            },
+            "chance_percent": {
+              "$ref": "#/$defs/percent"
+            },
+            "cue_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "interval_ms",
+            "chance_percent",
+            "cue_ids"
+          ]
+        },
+        "faction_and_preferences": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "faction": {
+              "type": "string",
+              "minLength": 1
+            },
+            "enemy_factions": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 0,
+              "uniqueItems": true
+            },
+            "prefer_player": {
+              "$ref": "#/$defs/bool"
+            },
+            "prefer_master": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "faction",
+            "enemy_factions",
+            "prefer_player",
+            "prefer_master"
+          ]
+        },
+        "event_bindings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "event": {
+                "enum": [
+                  "think",
+                  "appear",
+                  "disappear",
+                  "move",
+                  "say",
+                  "attacked_by_player",
+                  "spawn",
+                  "death",
+                  "drop_loot"
+                ]
+              },
+              "interaction": {
+                "$ref": "#/$defs/InteractionRef"
+              }
+            },
+            "required": [
+              "event",
+              "interaction"
+            ]
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "identity",
+        "movement",
+        "targeting",
+        "attacks",
+        "defenses",
+        "event_bindings"
+      ]
+    },
+    "assetBinding": {
+      "$ref": "#/$defs/key"
+    },
+    "presentation": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "appearance": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "asset_binding": {
+              "$ref": "#/$defs/assetBinding"
+            },
+            "selection": {
+              "enum": [
+                "owner_familiar_look",
+                "invisible"
+              ],
+              "description": "D16: owner_familiar_look shows the familiar look selected by the owner; asset_binding is the default look for a character without a selection. D24: invisible means the creature has no appearance at all (Canary lookType 0 without lookTypeEx) and forbids asset_binding."
+            },
+            "palette_bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "slot": {
+                    "enum": [
+                      "head",
+                      "body",
+                      "legs",
+                      "feet",
+                      "mount_head",
+                      "mount_body",
+                      "mount_legs",
+                      "mount_feet"
+                    ]
+                  },
+                  "palette_binding": {
+                    "$ref": "#/$defs/assetBinding"
+                  }
+                },
+                "required": [
+                  "slot",
+                  "palette_binding"
+                ]
+              },
+              "minItems": 0
+            },
+            "attachment_bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "slot": {
+                    "enum": [
+                      "addon",
+                      "mount",
+                      "familiar",
+                      "wing"
+                    ]
+                  },
+                  "asset_binding": {
+                    "$ref": "#/$defs/assetBinding"
+                  }
+                },
+                "required": [
+                  "slot",
+                  "asset_binding"
+                ]
+              },
+              "minItems": 0
+            },
+            "visual_effect_bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "slot": {
+                    "enum": [
+                      "aura",
+                      "effect",
+                      "shader"
+                    ]
+                  },
+                  "asset_binding": {
+                    "$ref": "#/$defs/assetBinding"
+                  }
+                },
+                "required": [
+                  "slot",
+                  "asset_binding"
+                ]
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "palette_bindings",
+            "attachment_bindings",
+            "visual_effect_bindings"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "selection": {
+                    "const": "invisible"
+                  }
+                },
+                "required": [
+                  "selection"
+                ]
+              },
+              "then": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "asset_binding"
+                      ]
+                    }
+                  ]
+                },
+                "properties": {
+                  "palette_bindings": {
+                    "maxItems": 0
+                  },
+                  "attachment_bindings": {
+                    "maxItems": 0
+                  }
+                }
+              },
+              "else": {
+                "required": [
+                  "asset_binding"
+                ]
+              }
+            }
+          ]
+        },
+        "light": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "level": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 255
+            },
+            "color_binding": {
+              "$ref": "#/$defs/assetBinding"
+            }
+          },
+          "required": [
+            "level"
+          ]
+        },
+        "audio": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "event_bindings": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "event": {
+                    "enum": [
+                      "cast",
+                      "impact",
+                      "death",
+                      "periodic"
+                    ]
+                  },
+                  "cue_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "asset_binding": {
+                    "$ref": "#/$defs/assetBinding"
+                  }
+                },
+                "required": [
+                  "event",
+                  "cue_id",
+                  "asset_binding"
+                ]
+              },
+              "minItems": 0
+            }
+          },
+          "required": [
+            "event_bindings"
+          ]
+        },
+        "variant_label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status_marker": {
+          "enum": [
+            "none",
+            "yellow",
+            "green",
+            "white",
+            "red",
+            "black",
+            "orange"
+          ]
+        }
+      },
+      "required": [
+        "identity",
+        "appearance",
+        "light",
+        "audio"
+      ]
+    },
+    "lootEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "min_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "max_count": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "probability_percent": {
+          "$ref": "#/$defs/percent"
+        },
+        "skip_later_same_item_after_success": {
+          "type": "boolean",
+          "description": "On a successful positive-quantity drop, suppress later entries with the same exact Item identity in this ordered table invocation. Zero quantity does not suppress; nested/separate calls have separate scope."
+        },
+        "instance_attributes": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "charges": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "fluid_type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "text": {
+              "type": "string",
+              "minLength": 0
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "article": {
+              "type": "string",
+              "minLength": 0
+            },
+            "attack": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "defense": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "extra_defense": {
+              "type": "integer"
+            },
+            "armor": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "shoot_range_tiles": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "hit_chance_percent": {
+              "type": "integer",
+              "minimum": -100,
+              "maximum": 100
+            },
+            "interaction": {
+              "$ref": "#/$defs/InteractionRef"
+            }
+          },
+          "required": [],
+          "oneOf": [
+            {
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "fluid_type"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "required": [
+                "fluid_type"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "charges"
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "contents_loot": {
+          "$ref": "#/$defs/LootRef"
+        }
+      },
+      "required": [
+        "item",
+        "min_count",
+        "max_count",
+        "probability_percent",
+        "skip_later_same_item_after_success"
+      ]
+    },
+    "loot": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "algorithm": {
+          "enum": [
+            "IndependentBernoulli"
+          ]
+        },
+        "entries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/lootEntry"
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "identity",
+        "algorithm",
+        "entries"
+      ],
+      "description": "Only the source-supported independent base table is in this schema. Other native algorithms retain their own accepted contracts."
+    },
+    "areaMatrix": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[.xcC]+$"
+      },
+      "minItems": 1,
+      "description": "Rows of cells: '.' not hit, 'x' hit, 'c' centre not hit, 'C' centre hit; rectangular, exactly one centre."
+    },
+    "area": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "length_tiles": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "spread_tiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "radius_tiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "matrix": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "north": {
+              "$ref": "#/$defs/areaMatrix"
+            },
+            "diagonal": {
+              "$ref": "#/$defs/areaMatrix"
+            }
+          },
+          "required": [
+            "north"
+          ],
+          "description": "D12: authored facing north (diagonal: facing north-west) and rotated to the direction from the centre to the target (combat.cpp AreaCombat::getArea); tiles need a clear line of sight from the caster."
+        }
+      },
+      "required": [],
+      "oneOf": [
+        {
+          "required": [
+            "length_tiles",
+            "spread_tiles"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "radius_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "matrix"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "radius_tiles"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "length_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "spread_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "matrix"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "matrix"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "length_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "spread_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "radius_tiles"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "ability": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "kind": {
+          "enum": [
+            "melee",
+            "spell"
+          ]
+        },
+        "range_tiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "needs_target": {
+          "$ref": "#/$defs/bool"
+        },
+        "needs_direction": {
+          "$ref": "#/$defs/bool"
+        },
+        "area": {
+          "$ref": "#/$defs/area"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/EffectRef"
+          },
+          "minItems": 1
+        },
+        "audio": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cast_cue": {
+              "type": "string",
+              "minLength": 1
+            },
+            "impact_cue": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AbilityRef"
+          },
+          "minItems": 2,
+          "description": "D12: each cast runs one variant picked uniformly; variants have no variants."
+        },
+        "path_requirement": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_search_tiles": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "clear_sight": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "max_search_tiles",
+            "clear_sight"
+          ],
+          "description": "D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight when clear_sight); without one the cast fails and nothing happens."
+        },
+        "chain": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_targets": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "range_tiles": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "backtracking": {
+              "$ref": "#/$defs/bool"
+            },
+            "chain_asset_binding": {
+              "$ref": "#/$defs/assetBinding"
+            }
+          },
+          "required": [
+            "max_targets",
+            "range_tiles",
+            "backtracking"
+          ],
+          "description": "D12: the effect jumps between up to max_targets creatures."
+        }
+      },
+      "required": [
+        "identity",
+        "kind",
+        "range_tiles",
+        "needs_target",
+        "needs_direction"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "effects"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "variants"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "variants"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "effects"
+                ]
+              },
+              {
+                "required": [
+                  "area"
+                ]
+              },
+              {
+                "required": [
+                  "chain"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "description": "For area casts, center precedence is required target position, facing-adjacent position when needs_direction, then caster position. Native execution and no-area target selection require separate qualification."
+    },
+    "initialTick": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "automatic",
+            "fixed"
+          ]
+        },
+        "amount": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "mode": {
+                "const": "fixed"
+              }
+            },
+            "required": [
+              "mode"
+            ]
+          },
+          "then": {
+            "required": [
+              "amount"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "amount"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "damageOverTime": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fixed_ticks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "interval_ms": {
+                "$ref": "#/$defs/ms"
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "count",
+              "interval_ms",
+              "amount"
+            ]
+          },
+          "minItems": 1,
+          "description": "D12: explicit ticks in order (Condition:addDamage rounds, time, value)."
+        },
+        "total_damage_range": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "0 is allowed: the total is drawn uniformly from the range and a zero draw means the condition does not start (condition.cpp ConditionDamage::init)."
+            },
+            "maximum": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "minimum",
+            "maximum"
+          ]
+        },
+        "tick_interval_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "initial_tick": {
+          "$ref": "#/$defs/initialTick"
+        },
+        "geometric": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base_range": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "minimum": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "maximum": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "minimum",
+                "maximum"
+              ]
+            },
+            "factor": {
+              "$ref": "#/$defs/ratio"
+            },
+            "tick_counts": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "tick_interval_ms": {
+              "$ref": "#/$defs/ms"
+            }
+          },
+          "required": [
+            "base_range",
+            "factor",
+            "tick_counts",
+            "tick_interval_ms"
+          ],
+          "description": "D21: each cast draws an integer base uniformly from base_range and a tick count uniformly from tick_counts; tick k (from 0) deals the base multiplied k times by factor in double precision, truncated toward zero."
+        },
+        "tick_profile": {
+          "enum": [
+            "decreasing",
+            "fixed",
+            "geometric"
+          ]
+        },
+        "first_tick": {
+          "enum": [
+            "after_interval",
+            "immediate"
+          ]
+        }
+      },
+      "required": [
+        "tick_profile",
+        "first_tick"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tick_profile": {
+                "const": "fixed"
+              }
+            },
+            "required": [
+              "tick_profile"
+            ]
+          },
+          "then": {
+            "required": [
+              "fixed_ticks"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "total_damage_range"
+                  ]
+                },
+                {
+                  "required": [
+                    "tick_interval_ms"
+                  ]
+                },
+                {
+                  "required": [
+                    "initial_tick"
+                  ]
+                },
+                {
+                  "required": [
+                    "geometric"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tick_profile": {
+                "const": "geometric"
+              }
+            },
+            "required": [
+              "tick_profile"
+            ]
+          },
+          "then": {
+            "required": [
+              "geometric"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "total_damage_range"
+                  ]
+                },
+                {
+                  "required": [
+                    "tick_interval_ms"
+                  ]
+                },
+                {
+                  "required": [
+                    "initial_tick"
+                  ]
+                },
+                {
+                  "required": [
+                    "fixed_ticks"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tick_profile": {
+                "const": "decreasing"
+              }
+            },
+            "required": [
+              "tick_profile"
+            ]
+          },
+          "then": {
+            "required": [
+              "total_damage_range",
+              "tick_interval_ms",
+              "initial_tick"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "fixed_ticks"
+                  ]
+                },
+                {
+                  "required": [
+                    "geometric"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "description": "Nominal source damage budget, not per-tick magnitude or a promise of exact summed damage. Native schedule parity requires separate qualification."
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/conditionType"
+        },
+        "lifetime": {
+          "enum": [
+            "fixed_duration",
+            "damage_schedule"
+          ]
+        },
+        "damage_over_time": {
+          "$ref": "#/$defs/damageOverTime"
+        },
+        "speed_formula": {
+          "$ref": "#/$defs/FormulaRef"
+        },
+        "attribute_modifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "attribute": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "mode": {
+                "enum": [
+                  "percent_of_base",
+                  "add"
+                ]
+              },
+              "value": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "attribute",
+              "mode",
+              "value"
+            ]
+          },
+          "minItems": 1,
+          "description": "D12: percent_of_base sets the attribute to value% of its base; add adds value."
+        }
+      },
+      "required": [
+        "type",
+        "lifetime"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "lifetime": {
+                "const": "damage_schedule"
+              }
+            },
+            "required": [
+              "lifetime"
+            ]
+          },
+          "then": {
+            "required": [
+              "damage_over_time"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "speed_formula"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "damage_over_time"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "operation": {
+          "enum": [
+            "damage",
+            "heal",
+            "condition",
+            "appearance_transform",
+            "create_item",
+            "presentation_only",
+            "remove_condition",
+            "remove_items",
+            "summon_creature"
+          ]
+        },
+        "damage_type": {
+          "$ref": "#/$defs/damageType"
+        },
+        "formula": {
+          "$ref": "#/$defs/FormulaRef"
+        },
+        "duration_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "condition": {
+          "$ref": "#/$defs/condition"
+        },
+        "mitigated_by": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "armor",
+              "shield"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Target defences that reduce this damage (Canary/Crystal blockedByArmor/blockedByShield); absent means neither. The reduction formula itself is a world combat rule."
+        },
+        "appearance_transform": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "creature": {
+              "$ref": "#/$defs/CreatureRef"
+            },
+            "item": {
+              "$ref": "#/$defs/ItemRef"
+            }
+          },
+          "required": [],
+          "oneOf": [
+            {
+              "required": [
+                "creature"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "item"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "required": [
+                "item"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "creature"
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "created_item": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "affects": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "masterless_monsters",
+                "non_player_side",
+                "player_side",
+                "named_creatures"
+              ]
+            },
+            "creatures": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/CreatureRef"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "top_creature_only": {
+              "$ref": "#/$defs/bool"
+            },
+            "excludes_caster_name": {
+              "$ref": "#/$defs/bool"
+            },
+            "includes_caster": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "kind",
+            "top_creature_only",
+            "excludes_caster_name",
+            "includes_caster"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "named_creatures"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "creatures"
+                ]
+              },
+              "else": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "creatures"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "description": "D18: which creatures in the ability area this damage/heal reaches instead of the combat targets. masterless_monsters = monsters without a master; non_player_side = neither a player nor a player-owned summon; player_side = a player or a player-owned summon; named_creatures = those creatures. top_creature_only: only the top creature of each tile; excludes_caster_name: not creatures named like the caster; includes_caster: the caster is affected when it stands in the area."
+        },
+        "removed_items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ItemRef"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "selection": {
+              "enum": [
+                "first_listed_per_tile",
+                "top_item_first_tile"
+              ]
+            }
+          },
+          "required": [
+            "items",
+            "selection"
+          ],
+          "description": "D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops."
+        },
+        "summon": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "creatures": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/CreatureRef"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "count_mode": {
+              "enum": [
+                "fill_to_limit",
+                "fixed"
+              ]
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "only_below_summons": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "owned": {
+              "$ref": "#/$defs/bool"
+            },
+            "max_offset_tiles": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "creatures",
+            "count_mode",
+            "count",
+            "only_below_summons",
+            "owned",
+            "max_offset_tiles"
+          ],
+          "description": "D18: summon_creature. Nothing is created unless the caster has fewer than only_below_summons summons; then fill_to_limit creates count minus current summons, fixed creates count. Each creature is picked uniformly from creatures and requested at the caster position offset by up to max_offset_tiles per axis; owned makes the caster its master."
+        },
+        "removed_condition": {
+          "$ref": "#/$defs/conditionType",
+          "description": "remove_condition: every condition of this type on the target ends (Canary/Crystal COMBAT_PARAM_DISPEL, Creature::removeCombatCondition)."
+        },
+        "presentation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "impact_asset_binding": {
+              "$ref": "#/$defs/assetBinding"
+            },
+            "projectile_asset_binding": {
+              "$ref": "#/$defs/assetBinding"
+            },
+            "path_asset_binding": {
+              "$ref": "#/$defs/assetBinding",
+              "description": "D18: shown on every tile of the walking path from the caster to the target before the effect applies."
+            }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "identity",
+        "operation"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "enum": [
+                  "damage",
+                  "heal"
+                ]
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "formula",
+              "damage_type"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "condition"
+                  ]
+                },
+                {
+                  "required": [
+                    "appearance_transform"
+                  ]
+                },
+                {
+                  "required": [
+                    "created_item"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "formula"
+                  ]
+                },
+                {
+                  "required": [
+                    "damage_type"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "condition"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "condition"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "appearance_transform"
+                  ]
+                },
+                {
+                  "required": [
+                    "created_item"
+                  ]
+                }
+              ]
+            },
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "condition": {
+                      "properties": {
+                        "lifetime": {
+                          "const": "damage_schedule"
+                        }
+                      }
+                    }
+                  }
+                },
+                "then": {
+                  "not": {
+                    "anyOf": [
+                      {
+                        "required": [
+                          "duration_ms"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "else": {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              }
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "condition"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "appearance_transform"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "appearance_transform",
+              "duration_ms"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "created_item"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "appearance_transform"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "create_item"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "created_item"
+            ]
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "created_item"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "presentation_only"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "presentation"
+            ],
+            "properties": {
+              "presentation": {
+                "minProperties": 1
+              }
+            },
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "damage"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {},
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "mitigated_by"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "enum": [
+                  "damage",
+                  "heal"
+                ]
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {},
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "affects"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "remove_items"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "removed_items"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "removed_items"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "summon_creature"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "summon"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "summon"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "remove_condition"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "removed_condition"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "removed_condition"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "formula": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "kind": {
+          "enum": [
+            "range",
+            "melee_attack_skill",
+            "speed_modifier",
+            "caster_magnitude"
+          ]
+        },
+        "magnitude": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maximum": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "minimum",
+            "maximum"
+          ]
+        },
+        "melee": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "attack": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "skill": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "attack",
+            "skill"
+          ]
+        },
+        "speed": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minimum_multiplier": {
+              "$ref": "#/$defs/nonnegativeRatio"
+            },
+            "minimum_offset": {
+              "type": "integer"
+            },
+            "maximum_multiplier": {
+              "$ref": "#/$defs/nonnegativeRatio"
+            },
+            "maximum_offset": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "minimum_multiplier",
+            "minimum_offset",
+            "maximum_multiplier",
+            "maximum_offset"
+          ]
+        }
+      },
+      "required": [
+        "identity",
+        "kind"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "range"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "magnitude"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "melee"
+                  ]
+                },
+                {
+                  "required": [
+                    "speed"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "melee_attack_skill"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "melee"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "magnitude"
+                  ]
+                },
+                {
+                  "required": [
+                    "speed"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "speed_modifier"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "required": [
+              "speed"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "magnitude"
+                  ]
+                },
+                {
+                  "required": [
+                    "melee"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "caster_magnitude"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "magnitude"
+                  ]
+                },
+                {
+                  "required": [
+                    "melee"
+                  ]
+                },
+                {
+                  "required": [
+                    "speed"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ],
+      "description": "caster_magnitude (D11): the magnitude comes from the casting monster's schedule entry (Monster::getCombatValues)."
+    },
+    "document": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "document_type": {
+          "enum": [
+            "Book",
+            "Letter",
+            "Note",
+            "Diary",
+            "Report",
+            "Scroll",
+            "Parchment",
+            "Tablet",
+            "Inscription",
+            "Notice",
+            "Other"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 1
+        }
+      },
+      "required": [
+        "identity",
+        "document_type",
+        "title",
+        "language",
+        "content"
+      ],
+      "description": "Original paragraphs; no translation, correction, or paraphrase during import. Partial source text remains blocked in the import manifest."
+    },
+    "temporal": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "duration_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "decay_action": {
+          "enum": [
+            "none",
+            "transform",
+            "remove"
+          ]
+        },
+        "decay_target": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "stop_duration": {
+          "$ref": "#/$defs/bool"
+        }
+      },
+      "required": [
+        "decay_action",
+        "stop_duration"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "decay_action": {
+                "const": "transform"
+              }
+            },
+            "required": [
+              "decay_action"
+            ]
+          },
+          "then": {
+            "required": [
+              "duration_ms",
+              "decay_target"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "decay_action": {
+                "const": "remove"
+              }
+            },
+            "required": [
+              "decay_action"
+            ]
+          },
+          "then": {
+            "required": [
+              "duration_ms"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "decay_target"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "decay_action": {
+                "const": "none"
+              }
+            },
+            "required": [
+              "decay_action"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
+                  ]
+                },
+                {
+                  "required": [
+                    "decay_target"
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "presentation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "article": {
+              "type": "string",
+              "minLength": 0
+            },
+            "description": {
+              "type": "string",
+              "minLength": 1
+            },
+            "asset_binding": {
+              "$ref": "#/$defs/assetBinding"
+            }
+          },
+          "required": [
+            "name",
+            "asset_binding"
+          ]
+        },
+        "classification": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "is_corpse": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "is_corpse"
+          ]
+        },
+        "physical": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "weight_centioz": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4294967295,
+              "description": "Proposal authoring unit: 0.01 oz. Not inferred from absent XML attributes."
+            },
+            "movable": {
+              "$ref": "#/$defs/bool"
+            },
+            "pickupable": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "weight_centioz",
+            "movable",
+            "pickupable"
+          ]
+        },
+        "collision": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "block_walk": {
+              "$ref": "#/$defs/bool"
+            },
+            "block_projectiles": {
+              "$ref": "#/$defs/bool"
+            },
+            "block_pathfinding": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "block_walk",
+            "block_projectiles",
+            "block_pathfinding"
+          ]
+        },
+        "container": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "capacity": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "capacity"
+          ]
+        },
+        "temporal": {
+          "$ref": "#/$defs/temporal"
+        },
+        "fluid": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fluid_type": {
+              "type": "string",
+              "minLength": 1
+            },
+            "fluid_source": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "identity",
+        "presentation",
+        "classification",
+        "physical",
+        "collision",
+        "temporal"
+      ],
+      "description": "Verification projection of canonical Item capabilities. Not an independent Item truth authority or full native Item serialization. ItemRef must resolve to the canonical Item catalogue before runtime admission."
+    }
+  }
+}

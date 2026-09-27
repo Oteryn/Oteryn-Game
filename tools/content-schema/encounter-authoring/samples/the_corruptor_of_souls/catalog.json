@@ -1,0 +1,19 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_source_of_corruption",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_corruptor_of_souls",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/zarcorix_of_yalahar",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

@@ -1,0 +1,381 @@
+{
+  "encounter": "canary:encounter/soul_war_taint_zones",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "FourthTaintBossesPrepareDeath": [
+      "canary:creature/mirror_image",
+      "canary:creature/bony_sea_devil",
+      "canary:creature/brachiodemon",
+      "canary:creature/branchy_crawler",
+      "canary:creature/capricious_phantom",
+      "canary:creature/distorted_phantom",
+      "canary:creature/cloak_of_terror",
+      "canary:creature/courage_leech",
+      "canary:creature/vibrant_phantom",
+      "canary:creature/infernal_demon",
+      "canary:creature/infernal_phantom",
+      "canary:creature/many_faces",
+      "canary:creature/mould_phantom",
+      "canary:creature/rotten_golem",
+      "canary:creature/turbulent_elemental"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/mirror_image.lua",
+      "blob_sha1": "f2979ff97df7145f99d948616672a2663d8b54fd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/bony_sea_devil.lua",
+      "blob_sha1": "d6e4bcfcafe29b5f73251d86305d64b406cc915d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/brachiodemon.lua",
+      "blob_sha1": "a76c9f40ee96911f7c07fc574ce0fe4b6efb7d75"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/branchy_crawler.lua",
+      "blob_sha1": "f5dccd47eb5f43a8d62ae3e7a95e3964b113f2ca"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/capricious_phantom.lua",
+      "blob_sha1": "0b3bf5b8572587e984fbcbccdb482e01b2f2713c"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/distorted_phantom.lua",
+      "blob_sha1": "3f28aac16b9a44ba947f395737a1b78f5e95fea5"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/furious_crater/cloak_of_terror.lua",
+      "blob_sha1": "ff25ab1f058c2f514dccb273b0ac135a148ed510"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/furious_crater/courage_leech.lua",
+      "blob_sha1": "615e463784123c4a2b162074d2279233b4343781"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/furious_crater/vibrant_phantom.lua",
+      "blob_sha1": "ae4c60df095aba39eff120cdc412de8ffcb3fc4f"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/infernal_demon.lua",
+      "blob_sha1": "0ec107c192ff1ad82b9f55516d5a7e748ceae2c8"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/infernal_phantom.lua",
+      "blob_sha1": "82b7fd2090aa95a0b2f77e6fe4452f60664d23bd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/many_faces.lua",
+      "blob_sha1": "f60b999dbce5ad947e0c14d4132d0587e55de2c8"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/mould_phantom.lua",
+      "blob_sha1": "1af17c877fa6ab550c4510a62378e5626a53df24"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/rotten_golem.lua",
+      "blob_sha1": "f5d5808b05c14e6f94b060509a79ea7642de9d21"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/soul_war/normal_monsters/turbulent_elemental.lua",
+      "blob_sha1": "6d7804f2207b14ef597a4b664c5b9e6d2198cbdc"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+      "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/lib/quests/soul_war.lua",
+      "blob_sha1": "f551347bd4fb09d47ca1ec5a868812a5147fac48"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Mirror Image is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Bony Sea Devil is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Brachiodemon is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Branchy Crawler is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Capricious Phantom is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Distorted Phantom is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Cloak of Terror is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Courage Leech is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Vibrant Phantom is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 9,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Infernal Demon is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Infernal Phantom is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 11,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Many Faces is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 12,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Mould Phantom is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 13,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Rotten Golem is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 14,
+      "source_lines": [
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Turbulent Elemental is the hunting_monster participant; its file registers FourthTaintBossesPrepareDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        65,
+        67
+      ],
+      "status": "mapped",
+      "resolution": "CreatureEvent(\"FourthTaintBossesPrepareDeath\") onPrepareDeath: the lethal-damage trigger (game.cpp combatChangeHealth runs PREPAREDEATH events when realDamage >= health).",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        68,
+        69,
+        70
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect unless the killer is a player.",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        72
+      ],
+      "status": "mapped",
+      "resolution": "creature:getHealth() - realDamage < 1 repeats the lethal-damage condition of the trigger.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        73
+      ],
+      "status": "mapped",
+      "resolution": "killer:getTaintNameByNumber(4): the killer holds the fourth Soul War taint, a quest KV flag (soul_war.lua Player:getTaintNameByNumber) that the quest domain publishes read-only (D27).",
+      "destination": "/encounter/rules/0/conditions/1"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        74,
+        75
+      ],
+      "status": "mapped",
+      "resolution": "killer:getSoulWarZoneMonster() ~= nil: the killing player stands in one of the zones of SoulWarQuest.areaZones.monsters (soul_war.lua Player:getSoulWarZoneMonster).",
+      "destination": "/encounter/rules/0/conditions/2"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        76,
+        77
+      ],
+      "status": "mapped",
+      "resolution": "math.random(1, 10) == 1: a 10% chance.",
+      "destination": "/encounter/rules/0/conditions/3"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        78
+      ],
+      "status": "mapped",
+      "resolution": "creature:say(...) with the default talk type (say).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        79
+      ],
+      "status": "mapped",
+      "resolution": "creature:addHealth(creature:getMaxHealth()) heals to full. game.cpp then still drains the lethal hit capped at the health before the heal, so the creature survives.",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 16,
+      "source_lines": [
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238,
+        239,
+        240,
+        241,
+        242
+      ],
+      "status": "mapped",
+      "resolution": "SoulWarQuest.areaZones.monsters lists the zones whose union is the anchor area.",
+      "destination": "/encounter/anchors/0"
+    }
+  ],
+  "outcome_evidence": []
+}

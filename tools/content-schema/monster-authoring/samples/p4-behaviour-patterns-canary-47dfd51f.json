@@ -1,0 +1,2471 @@
+{
+  "source": {
+    "repository": "opentibiabr/canary",
+    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+  },
+  "classification": "Model-assisted read of each registered spell script that still blocks a monster (custom logic, P4, or a combat parameter without an authoring field), with evidence lines; four findings re-read by hand (gorerilla small ring, metal gargoyle curse, icicle heal, gaz'haragoth summon). Proposal for D13 shared parameterized native behaviours; not accepted design.",
+  "monster_references": "per spell, the number of converted monsters whose manifest it blocks; a monster can count under several spells",
+  "patterns": [
+    {
+      "id": "conditional_summon",
+      "mechanism": "On cast, checks a summon-count cap (via getSummons(), a global counter, or a live spectator scan) and spawns N instances of a fixed monster type near the caster, at a random position in a fixed box, or at a fixed position list, usually assigning master ownership.",
+      "spells": [
+        "bullwark summon",
+        "destruction summon",
+        "devourer summon",
+        "feroxa summon",
+        "gaz'haragoth summon",
+        "generator",
+        "glooth anemone summon",
+        "glooth-generator summon",
+        "hirintror summon",
+        "hunger summon",
+        "lisa summon",
+        "omrafir summon",
+        "plagirath summon",
+        "rage summon",
+        "razzagorn summon",
+        "salamander trainer summon",
+        "shulgrax summon",
+        "soulcatcher summon",
+        "tenebris summon",
+        "the imperor summon",
+        "the welter summon2",
+        "thorn summon",
+        "white pale summon"
+      ],
+      "monster_references": 28,
+      "parameter_keys": [
+        "cap",
+        "cap_check",
+        "cap_source",
+        "cap_var",
+        "count_per_cast",
+        "counts",
+        "delay_ms",
+        "effect",
+        "per_cast_count",
+        "position",
+        "position_fixed_choice",
+        "position_offset",
+        "position_offset_axes",
+        "position_random_in_box",
+        "retrigger_delay_ms",
+        "say",
+        "self_remove_after_spawn",
+        "set_master",
+        "set_summon_call",
+        "summon",
+        "summon_choice",
+        "summons",
+        "target_count",
+        "trigger_condition"
+      ]
+    },
+    {
+      "id": "heal_allies_in_area",
+      "mechanism": "An area or fixed-position combat/tile scan identifies allied creatures (monsters not owned by a player master, or specific named monsters) and adds positive health to them, sometimes also healing the caster itself.",
+      "spells": [
+        "aggressivelavawave",
+        "emberbeastarea",
+        "emberbeasthur",
+        "frozen minion beam",
+        "frozen minion heal",
+        "frozen minion wave",
+        "heal brain head",
+        "heal malice",
+        "heal monster",
+        "heal monster 9x9",
+        "minotaur cult prophet mass healing",
+        "plagirath heal",
+        "spawn of the welter heal",
+        "unchained fire beam"
+      ],
+      "monster_references": 19,
+      "parameter_keys": [
+        "amount_max",
+        "amount_min",
+        "area",
+        "damage_type_for_players",
+        "dispel",
+        "dual_mode",
+        "effect",
+        "effect_distance",
+        "heal_amount",
+        "heal_max",
+        "heal_min",
+        "name",
+        "names",
+        "position",
+        "selection",
+        "self_heal"
+      ]
+    },
+    {
+      "id": "plain_combat_unsupported_schema",
+      "mechanism": "A plain, non-branching Combat script (no bespoke onCastSpell logic) blocked purely because the authoring schema has no field yet for a specific combat parameter (e.g. COMBAT_PARAM_BLOCKARMOR, COMBAT_PARAM_DISPEL), damage type (e.g. COMBAT_LIFEDRAINDAMAGE), or area constant (a symbolic area name that isn't a literal 0-3 matrix) that the script uses.",
+      "spells": [
+        "berserk",
+        "djinn cancel invisibility",
+        "explosion rune",
+        "gorerilla small ring",
+        "ice crystal bomb",
+        "plaguesmith wave",
+        "souleater wave",
+        "soulsnatcher-lifedrain-beam",
+        "ultimate healing"
+      ],
+      "monster_references": 16,
+      "parameter_keys": [
+        "area",
+        "damage_type",
+        "dispel_condition",
+        "effect",
+        "formula_callback",
+        "missing",
+        "missing_area",
+        "missing_damage_type"
+      ]
+    },
+    {
+      "id": "delayed_telegraphed_nuke",
+      "mechanism": "The caster announces (say) and/or applies a windup guard, waits a fixed delay (addEvent), then executes a large area or targeted hit computed either via a damage formula or manually per-creature (optionally vocation-filtered for players, with distance falloff/crit or direction-based area selection), sometimes followed by self-removal or a side-effect (heal master, spawn adds).",
+      "spells": [
+        "doctor marrow explosion",
+        "energy pulse explosion",
+        "eruption of destruction explosion",
+        "gaz'haragoth death",
+        "omrafir beam",
+        "plagirath bog",
+        "sapling explode",
+        "tenebris ultimate"
+      ],
+      "monster_references": 8,
+      "parameter_keys": [
+        "area",
+        "area_by_direction",
+        "crit_chance_percent",
+        "crit_multiplier",
+        "damage_max",
+        "damage_min",
+        "damage_type",
+        "delay_ms",
+        "distance_falloff",
+        "effect",
+        "guard_condition",
+        "marker",
+        "monsters_always_hit",
+        "pre_windup_effect",
+        "range_check",
+        "say",
+        "say_end",
+        "say_start",
+        "self_remove",
+        "side_effects",
+        "trigger_mode",
+        "vocation_filter_players"
+      ]
+    },
+    {
+      "id": "area_damage_named_target",
+      "mechanism": "An area/tile/beam combat scan applies damage specifically to creatures whose name matches a fixed roster (and, in some variants, a smaller generic amount to any player caught in the blast).",
+      "spells": [
+        "freed soul spell",
+        "greedy eye beam",
+        "icicle heal",
+        "ravennouslavalurkertarget",
+        "ravennouslavalurkerwave",
+        "remorseless wave",
+        "source of corruption wave"
+      ],
+      "monster_references": 8,
+      "parameter_keys": [
+        "area",
+        "cooldown_ms",
+        "damage_fixed",
+        "damage_max",
+        "damage_min",
+        "damage_type",
+        "effect",
+        "extra_effect",
+        "named_damage_max",
+        "named_damage_min",
+        "named_monster",
+        "names",
+        "player_damage_max",
+        "player_damage_min"
+      ]
+    },
+    {
+      "id": "heal_self_conditional",
+      "mechanism": "The caster heals itself (a random amount, sometimes after a windup delay) when a trigger condition is met -- own health below a percent threshold, or consuming/removing a named ally spawn -- guarded by a one-shot regeneration condition so it cannot re-trigger immediately.",
+      "spells": [
+        "glooth fairy healing",
+        "lisa heal",
+        "omrafir healing 2",
+        "the welter heal",
+        "tyrn heal"
+      ],
+      "monster_references": 5,
+      "parameter_keys": [
+        "ally_names",
+        "delay_ms",
+        "effect_ally",
+        "effect_self",
+        "extra_gate",
+        "guard_condition",
+        "heal_amount",
+        "heal_max",
+        "heal_min",
+        "health_below_percent",
+        "name_gate",
+        "say",
+        "say_end",
+        "say_start",
+        "scan_radius",
+        "trigger"
+      ]
+    },
+    {
+      "id": "path_trail_missile",
+      "mechanism": "Computes a tile path from caster to the targeted creature, sends a magic effect along each path tile for a visual 'chain' trail, then executes a single-target combat hit against that one target.",
+      "spells": [
+        "singlecloudchain",
+        "singledeathchain",
+        "singleicechain"
+      ],
+      "monster_references": 17,
+      "parameter_keys": [
+        "damage_type",
+        "effect",
+        "path_max_steps"
+      ]
+    },
+    {
+      "id": "boss_form_swap",
+      "mechanism": "Teleports the caster to a fixed position occupied by a mirrored/other instance of itself (or a linked capsule creature), synchronizes health between the two, and swaps back after a fixed delay.",
+      "spells": [
+        "ragiaz transform",
+        "time guardian",
+        "time guardiann"
+      ],
+      "monster_references": 3,
+      "parameter_keys": [
+        "effect",
+        "heal_self",
+        "health_sync",
+        "mirror_names",
+        "mirror_positions",
+        "revert_delay_ms",
+        "say",
+        "swap_with_creature_at",
+        "teleport_to",
+        "z_gate"
+      ]
+    },
+    {
+      "id": "boss_escape_utility",
+      "mechanism": "A simple self-targeted repositioning or defensive buff for a boss at hardcoded map coordinates: teleport self, or grant self invisibility, with no target interaction.",
+      "spells": [
+        "maxxenteleport",
+        "zamulosh invisible",
+        "zamulosh tp"
+      ],
+      "monster_references": 3,
+      "parameter_keys": [
+        "action",
+        "duration_ms",
+        "effect",
+        "effect_after",
+        "effect_before",
+        "name_gate",
+        "position",
+        "position_random_in_box",
+        "scan_region_box"
+      ]
+    },
+    {
+      "id": "map_or_quest_specific",
+      "mechanism": "Bespoke encounter logic tied to fixed map positions, quest storage values, or global/world state (teleporting players, spawning quest-specific companions, gating on z-level) that does not reduce to any of the other shared mechanisms.",
+      "spells": [
+        "outburst explode",
+        "spider queen wrap",
+        "time guardian lost time"
+      ],
+      "monster_references": 4,
+      "parameter_keys": [
+        "area",
+        "damage_type",
+        "global_storage_read",
+        "global_storage_write",
+        "name_to_summon",
+        "named_monster",
+        "outfit_lookType",
+        "outfit_ticks",
+        "paralyze_formula",
+        "paralyze_ticks",
+        "position_offset",
+        "quest_storage",
+        "spawn",
+        "spawn_position",
+        "teleport_delay_ms",
+        "teleport_named_monster_to",
+        "teleport_players_to",
+        "teleport_to",
+        "z_gate"
+      ]
+    },
+    {
+      "id": "remove_magic_walls",
+      "mechanism": "Scans tiles in a radius around the caster for wall/growth-type items (by fixed or symbolic item id) and removes matches, playing an effect.",
+      "spells": [
+        "anomaly break",
+        "destroy magic walls"
+      ],
+      "monster_references": 20,
+      "parameter_keys": [
+        "cooldown_ms",
+        "effect",
+        "item_ids",
+        "radius",
+        "remove_all_matches"
+      ]
+    },
+    {
+      "id": "chain_bounce",
+      "mechanism": "Combat sets CALLBACK_PARAM_CHAINVALUE/CALLBACK_PARAM_CHAINPICKER so damage actually bounces between qualifying targets a bounded number of times (real multi-target chain, not just a visual trail).",
+      "spells": [
+        "podzillaphyschain",
+        "poison chain"
+      ],
+      "monster_references": 5,
+      "parameter_keys": [
+        "chain_backtrack",
+        "chain_target_filter",
+        "chain_value_max",
+        "chain_value_min",
+        "damage_type",
+        "effect"
+      ]
+    },
+    {
+      "id": "escalating_dot_curse",
+      "mechanism": "Pre-builds a table of Combat objects, each carrying a CONDITION_CURSED with a staircase of damage ticks that grow by a fixed multiplier (1.2x) every ~4s, and executes one entry chosen at cast time.",
+      "spells": [
+        "ghastly dragon curse",
+        "metal gargoyle curse"
+      ],
+      "monster_references": 6,
+      "parameter_keys": [
+        "base_damage",
+        "base_damage_range",
+        "condition",
+        "damage_type",
+        "delayed",
+        "multiplier",
+        "num_ticks",
+        "tick_interval_ms",
+        "variants_per_level"
+      ]
+    },
+    {
+      "id": "multi_combat_sequence",
+      "mechanism": "A single cast executes two or more independently-shaped Combat objects (different damage types/areas/formulas) together, layering multiple simultaneous attacks from one spell.",
+      "spells": [
+        "rotthingshaper",
+        "rotthingwave"
+      ],
+      "monster_references": 2,
+      "parameter_keys": [
+        "combats"
+      ]
+    },
+    {
+      "id": "skill_or_attribute_debuff",
+      "mechanism": "A per-tile combat callback scans all creatures on each hit tile and applies a vocation-specific CONDITION_ATTRIBUTES (skill%/magic%/defense% reduction) for a fixed duration, with severity picked from a range table at cast time.",
+      "spells": [
+        "lisa skill reducer",
+        "walker skill reducer"
+      ],
+      "monster_references": 2,
+      "parameter_keys": [
+        "area",
+        "duration_ms",
+        "effect",
+        "severity_range",
+        "vocation_map"
+      ]
+    },
+    {
+      "id": "temporary_ground_transform",
+      "mechanism": "Transforms one or more ground tiles to a hazard/visual item id for a fixed window, then reverts them (directly or via a stored position table) after a delay.",
+      "spells": [
+        "charge vortex",
+        "mazoran fire"
+      ],
+      "monster_references": 2,
+      "parameter_keys": [
+        "action_id",
+        "embedded_summon",
+        "positions_fixed_choice",
+        "region_box",
+        "revert_delay_ms",
+        "revert_to",
+        "revert_uses_fixed_item_table",
+        "transform_to"
+      ]
+    },
+    {
+      "id": "fear",
+      "mechanism": "After a short windup delay, applies a CONDITION_FEARED to the target for a fixed duration.",
+      "spells": [
+        "soulwars fear"
+      ],
+      "monster_references": 4,
+      "parameter_keys": [
+        "condition",
+        "delay_ms",
+        "effect_cast",
+        "effect_hit",
+        "ticks_ms"
+      ]
+    },
+    {
+      "id": "taunt_challenge",
+      "mechanism": "Thin per-target combat callback wrapping the existing engine helper doChallengeCreature to force target aggro for a fixed duration.",
+      "spells": [
+        "summon challenge"
+      ],
+      "monster_references": 2,
+      "parameter_keys": [
+        "area",
+        "effect",
+        "engine_call",
+        "taunt_duration_ms"
+      ]
+    },
+    {
+      "id": "periodic_area_scheduled",
+      "mechanism": "A single cast schedules a sequence of independent area-combat waves via addEvent at increasing delays and areas, so the hit expands over time from one trigger.",
+      "spells": [
+        "foamsplash"
+      ],
+      "monster_references": 1,
+      "parameter_keys": [
+        "damage_type",
+        "effect",
+        "waves"
+      ]
+    }
+  ],
+  "spells": [
+    {
+      "spell": "freed soul spell",
+      "script": "data-otservbr-global/scripts/spells/monster/freed_soul_spell.lua",
+      "monsters": 1,
+      "pattern": "area_damage_named_target",
+      "parameters": {
+        "named_monster": "the souldespoiler",
+        "named_damage_min": 500,
+        "named_damage_max": 2000,
+        "area": "custom(7x7 diamond)",
+        "damage_type": "COMBAT_ENERGYDAMAGE",
+        "effect": "CONST_ME_PURPLEENERGY"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/freed_soul_spell.lua:15-32"
+      ],
+      "notes": "no generic player branch (unlike remorseless wave / source of corruption wave which share this callback shape): only the named monster takes damage."
+    },
+    {
+      "spell": "greedy eye beam",
+      "script": "data-otservbr-global/scripts/quests/soul_war/spell-eye_beam.lua",
+      "monsters": 1,
+      "pattern": "area_damage_named_target",
+      "parameters": {
+        "names": [
+          "Poor Soul"
+        ],
+        "area": "custom(1x3 line beam)",
+        "damage_fixed": 1000,
+        "damage_type": "COMBAT_DROWNDAMAGE",
+        "effect": "CONST_ME_SMALLCLOUDS"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/quests/soul_war/spell-eye_beam.lua:11-22"
+      ]
+    },
+    {
+      "spell": "icicle heal",
+      "script": "data-otservbr-global/scripts/spells/monster/icicle_heal.lua",
+      "monsters": 1,
+      "pattern": "area_damage_named_target",
+      "parameters": {
+        "names": [
+          "dragon egg"
+        ],
+        "area": "AREA_CIRCLE3X3",
+        "damage_fixed": 100,
+        "extra_effect": "forces creature:setTarget('dragon egg') on nearby spectator match"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/icicle_heal.lua:7-18"
+      ],
+      "notes": "named 'icicle heal' but actually deals -100 damage (not healing) to matching 'dragon egg' targets; likely mis-named/legacy script."
+    },
+    {
+      "spell": "ravennouslavalurkertarget",
+      "script": "data-otservbr-global/scripts/spells/monster/ravennousLavaLurkerTarget.lua",
+      "monsters": 1,
+      "pattern": "area_damage_named_target",
+      "parameters": {
+        "names": [
+          "lost gnome",
+          "gnome pack crawler"
+        ],
+        "area": "custom(7x9 blob)",
+        "damage_min": 0,
+        "damage_max": 1000,
+        "damage_type": "COMBAT_FIREDAMAGE",
+        "effect": "CONST_ME_FIREATTACK",
+        "cooldown_ms": 2000
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/ravennousLavaLurkerTarget.lua:17-33"
+      ]
+    },
+    {
+      "spell": "ravennouslavalurkerwave",
+      "script": "data-otservbr-global/scripts/spells/monster/ravennousLavaLurkerWave.lua",
+      "monsters": 1,
+      "pattern": "area_damage_named_target",
+      "parameters": {
+        "names": [
+          "lost gnome",
+          "gnome pack crawler"
+        ],
+        "area": "custom(5x5 cross)",
+        "damage_min": 0,
+        "damage_max": 1000,
+        "damage_type": "COMBAT_FIREDAMAGE",
+        "effect": "CONST_ME_HITBYFIRE",
+        "cooldown_ms": 2000
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/ravennousLavaLurkerWave.lua:13-29"
+      ]
+    },
+    {
+      "spell": "remorseless wave",
+      "script": "data-otservbr-global/scripts/spells/monster/remorseless_wave.lua",
+      "monsters": 2,
+      "pattern": "area_damage_named_target",
+      "parameters": {
+        "player_damage_min": 0,
+        "player_damage_max": 600,
+        "named_monster": "stolen soul",
+        "named_damage_min": 700,
+        "named_damage_max": 1500,
+        "area": "custom(11x11 diamond)",
+        "damage_type": "COMBAT_DEATHDAMAGE",
+        "effect": "CONST_ME_BLACKSMOKE"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/remorseless_wave.lua:19-39"
+      ]
+    },
+    {
+      "spell": "source of corruption wave",
+      "script": "data-otservbr-global/scripts/spells/monster/source_of_corruption_wave.lua",
+      "monsters": 1,
+      "pattern": "area_damage_named_target",
+      "parameters": {
+        "player_damage_min": 0,
+        "player_damage_max": 600,
+        "named_monster": "stolen soul",
+        "named_damage_min": 700,
+        "named_damage_max": 1500,
+        "area": "custom(3x5 line)",
+        "damage_type": "COMBAT_ENERGYDAMAGE",
+        "effect": "CONST_ME_PURPLEENERGY"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/source_of_corruption_wave.lua:11-32"
+      ]
+    },
+    {
+      "spell": "maxxenteleport",
+      "script": "data-otservbr-global/scripts/spells/monster/maxxen_teleport.lua",
+      "monsters": 1,
+      "pattern": "boss_escape_utility",
+      "parameters": {
+        "action": "teleport_self",
+        "position_random_in_box": [
+          [
+            33704,
+            33718
+          ],
+          [
+            32040,
+            32053
+          ],
+          15
+        ],
+        "effect_before": "CONST_ME_POFF",
+        "effect_after": "CONST_ME_TELEPORT"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/maxxen_teleport.lua:3-7"
+      ]
+    },
+    {
+      "spell": "zamulosh invisible",
+      "script": "data-otservbr-global/scripts/spells/monster/zamulosh_invisible.lua",
+      "monsters": 1,
+      "pattern": "boss_escape_utility",
+      "parameters": {
+        "action": "invisible_self",
+        "duration_ms": 10000,
+        "name_gate": "zamulosh",
+        "scan_region_box": [
+          [
+            33634,
+            33654
+          ],
+          [
+            32749,
+            32765
+          ],
+          11
+        ],
+        "effect": "CONST_ME_TELEPORT"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/zamulosh_invisible.lua:1-24"
+      ],
+      "notes": "scans a fixed room region for a creature named 'zamulosh' rather than acting directly on `creature`; functionally a self-buff since only the boss occupies that room."
+    },
+    {
+      "spell": "zamulosh tp",
+      "script": "data-otservbr-global/scripts/spells/monster/zamulosh_tp.lua",
+      "monsters": 1,
+      "pattern": "boss_escape_utility",
+      "parameters": {
+        "action": "teleport_self",
+        "position": [
+          33644,
+          32757,
+          11
+        ],
+        "effect_before": "CONST_ME_POFF",
+        "effect_after": "CONST_ME_TELEPORT"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/zamulosh_tp.lua:3-7"
+      ]
+    },
+    {
+      "spell": "ragiaz transform",
+      "script": "data-otservbr-global/scripts/spells/monster/ragiaz_transform.lua",
+      "monsters": 1,
+      "pattern": "boss_form_swap",
+      "parameters": {
+        "z_gate": 13,
+        "teleport_to": [
+          33487,
+          32333,
+          14
+        ],
+        "heal_self": 1000,
+        "swap_with_creature_at": [
+          33485,
+          32333,
+          14
+        ],
+        "effect": 172,
+        "say": "Ragiaz encase himself in bones to regenerate."
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/ragiaz_transform.lua:4-14"
+      ]
+    },
+    {
+      "spell": "time guardian",
+      "script": "data-otservbr-global/scripts/spells/monster/time_guardian.lua",
+      "monsters": 1,
+      "pattern": "boss_form_swap",
+      "parameters": {
+        "z_gate": 14,
+        "mirror_positions": [
+          [
+            32980,
+            31664,
+            13
+          ],
+          [
+            32975,
+            31664,
+            13
+          ]
+        ],
+        "health_sync": "form:addHealth(-(form.hp-guardian.hp))",
+        "revert_delay_ms": 30000,
+        "mirror_names": [
+          "the freezing time guardian",
+          "the blazing time guardian"
+        ]
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/time_guardian.lua:2-52"
+      ]
+    },
+    {
+      "spell": "time guardiann",
+      "script": "data-otservbr-global/scripts/spells/monster/time_guardiann.lua",
+      "monsters": 1,
+      "pattern": "boss_form_swap",
+      "parameters": {
+        "z_gate": 14,
+        "mirror_positions": [
+          [
+            32810,
+            32664,
+            14
+          ],
+          [
+            32815,
+            32664,
+            14
+          ]
+        ],
+        "health_sync": "guardian:addHealth(-(guardian.hp-mirror.hp))",
+        "revert_delay_ms": 30000,
+        "mirror_names": [
+          "the blazing time guardian",
+          "the freezing time guardian"
+        ]
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/time_guardiann.lua:2-95"
+      ],
+      "notes": "near-duplicate of time_guardian.lua with swapped health-sync direction and a second fixed room; likely a copy-paste variant for the other guardian boss."
+    },
+    {
+      "spell": "podzillaphyschain",
+      "script": "data-otservbr-global/scripts/spells/monster/podzillaphys_chain.lua",
+      "monsters": 2,
+      "pattern": "chain_bounce",
+      "parameters": {
+        "damage_type": "COMBAT_PHYSICALDAMAGE",
+        "effect": "CONST_ME_ORANGE_ENERGY_SPARK",
+        "chain_value_min": 2,
+        "chain_value_max": 3,
+        "chain_backtrack": false,
+        "chain_target_filter": "players_outside_protection_zone"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/podzillaphys_chain.lua:4-8",
+        "data-otservbr-global/scripts/spells/monster/podzillaphys_chain.lua:10-18"
+      ]
+    },
+    {
+      "spell": "poison chain",
+      "script": "data-otservbr-global/scripts/spells/monster/poison_chain.lua",
+      "monsters": 3,
+      "pattern": "chain_bounce",
+      "parameters": {
+        "damage_type": "COMBAT_EARTHDAMAGE",
+        "effect": "CONST_ME_GREEN_ENERGY_SPARK",
+        "chain_value_min": 2,
+        "chain_value_max": 3,
+        "chain_backtrack": false,
+        "chain_target_filter": "players_outside_protection_zone"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/poison_chain.lua:4-8",
+        "data-otservbr-global/scripts/spells/monster/poison_chain.lua:10-18"
+      ]
+    },
+    {
+      "spell": "bullwark summon",
+      "script": "data-otservbr-global/scripts/spells/monster/bullwark_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Moohtant",
+        "cap": 4,
+        "position": "self",
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/bullwark_summon.lua:13-22"
+      ]
+    },
+    {
+      "spell": "destruction summon",
+      "script": "data-otservbr-global/scripts/spells/monster/destruction_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Disruption",
+        "cap": 3,
+        "cap_var": "global destructionSummon",
+        "position_offset": [
+          -1,
+          1
+        ],
+        "position_offset_axes": [
+          "x",
+          "y"
+        ],
+        "set_master": false,
+        "retrigger_delay_ms": 15000
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/destruction_summon.lua:16-27"
+      ],
+      "notes": "cap counter (destructionSummon) is a global declared outside this file; not defined in the script itself."
+    },
+    {
+      "spell": "devourer summon",
+      "script": "data-otservbr-global/scripts/spells/monster/devourer_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summons": [
+          "Greed",
+          "Frenzy",
+          "Disruption"
+        ],
+        "summon_choice": "random",
+        "cap": 3,
+        "cap_var": "global devourerSummon",
+        "position_offset": [
+          -1,
+          1
+        ],
+        "position_offset_axes": [
+          "x",
+          "y"
+        ],
+        "set_master": false
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/devourer_summon.lua:10-19"
+      ],
+      "notes": "cap counter (devourerSummon) is a global declared outside this file."
+    },
+    {
+      "spell": "feroxa summon",
+      "script": "data-otservbr-global/scripts/spells/monster/feroxa_summon.lua",
+      "monsters": 5,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Werewolf",
+        "cap": 10,
+        "per_cast_count": 10,
+        "position_offset": [
+          -3,
+          3
+        ],
+        "position_offset_axes": [
+          "x",
+          "y"
+        ],
+        "effect": "CONST_ME_TELEPORT",
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/feroxa_summon.lua:35-46"
+      ]
+    },
+    {
+      "spell": "gaz'haragoth summon",
+      "script": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Minion of Gaz'haragoth",
+        "cap": "GazVariables.MaxSummons (7)",
+        "target_count": "GazVariables.MinionsNow (2, +1 per extra proc at 25% chance)",
+        "position": "self",
+        "set_summon_call": "setSummon(sum)",
+        "say": "Minions! Follow my call!"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/data-otservbr-global/scripts/spells/monster/gaz_functions.lua",
+        "data-otservbr-global/scripts/spells/monster/gaz'haragoth_summon.lua:6-42"
+      ],
+      "notes": "reads/writes a shared global table GazVariables loaded via dofile('gaz_functions.lua'); MinionsNow escalates over the fight. `monster:setSummon(sum)` references an undefined global `sum` -- likely a bug (probably meant setMaster(creature))."
+    },
+    {
+      "spell": "generator",
+      "script": "data-otservbr-global/scripts/spells/monster/generator.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "glooth-generator",
+        "count_per_cast": 1,
+        "position_fixed_choice": [
+          [
+            33708,
+            32042,
+            15
+          ],
+          [
+            33714,
+            32042,
+            15
+          ],
+          [
+            33708,
+            32051,
+            15
+          ],
+          [
+            33714,
+            32051,
+            15
+          ]
+        ],
+        "say": "THE GLOOTH GENERATOR CHARGES UP FOR A LETHAL EXPLOSION!"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/generator.lua:1-14"
+      ],
+      "notes": "spawns at one of 4 hardcoded room positions, not caster-relative."
+    },
+    {
+      "spell": "glooth anemone summon",
+      "script": "data-otservbr-global/scripts/spells/monster/glooth_anemone_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Glooth Blob",
+        "cap": 1,
+        "position": "self",
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/glooth_anemone_summon.lua:12-22"
+      ]
+    },
+    {
+      "spell": "glooth-generator summon",
+      "script": "data-otservbr-global/scripts/spells/monster/glooth-generator_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Energy Pulse",
+        "count_per_cast": 1,
+        "delay_ms": 14000,
+        "position": "self",
+        "self_remove_after_spawn": true,
+        "say": "The fully charged generator explodes in a blast!"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/glooth-generator_summon.lua:4-13"
+      ],
+      "notes": "delayed self-destruct relay: spawns Energy Pulse (see energy_pulse_explosion / delayed_telegraphed_nuke) then removes itself; no combat/damage of its own."
+    },
+    {
+      "spell": "hirintror summon",
+      "script": "data-otservbr-global/scripts/spells/monster/hirintror_summon.lua",
+      "monsters": 2,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Ice Golem",
+        "cap": 2,
+        "position": "self",
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/hirintror_summon.lua:13-22"
+      ]
+    },
+    {
+      "spell": "hunger summon",
+      "script": "data-otservbr-global/scripts/spells/monster/hunger_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Greed",
+        "cap": 3,
+        "cap_var": "global hungerSummon",
+        "position_offset": [
+          -1,
+          1
+        ],
+        "position_offset_axes": [
+          "x",
+          "y"
+        ],
+        "set_master": false,
+        "retrigger_delay_ms": 15000
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/hunger_summon.lua:16-27"
+      ],
+      "notes": "cap counter (hungerSummon) is a global declared outside this file."
+    },
+    {
+      "spell": "lisa summon",
+      "script": "data-otservbr-global/scripts/spells/monster/lisa_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Glooth Anemone2",
+        "cap": 4,
+        "position": "self",
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/lisa_summon.lua:11-21"
+      ]
+    },
+    {
+      "spell": "omrafir summon",
+      "script": "data-otservbr-global/scripts/spells/monster/omrafir_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Flame Of Omrafir",
+        "cap": 4,
+        "position_offset": [
+          -2,
+          2
+        ],
+        "position_offset_axes": [
+          "x",
+          "y"
+        ],
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/omrafir_summon.lua:12-22"
+      ]
+    },
+    {
+      "spell": "plagirath summon",
+      "script": "data-otservbr-global/scripts/spells/monster/plagirath_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Disgusting Ooze",
+        "cap": 4,
+        "position_random_in_box": [
+          [
+            33163,
+            33180
+          ],
+          [
+            31497,
+            31506
+          ],
+          13
+        ],
+        "set_master": true
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/plagirath_summon.lua:3-15"
+      ],
+      "notes": "spawn box is a fixed room bounding box, not caster-relative."
+    },
+    {
+      "spell": "rage summon",
+      "script": "data-otservbr-global/scripts/spells/monster/rage_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Frenzy",
+        "cap": 3,
+        "cap_var": "global rageSummon",
+        "position_offset": [
+          -1,
+          1
+        ],
+        "position_offset_axes": [
+          "x",
+          "y"
+        ],
+        "set_master": false
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/rage_summon.lua:10-16"
+      ],
+      "notes": "cap counter (rageSummon) is a global declared outside this file; no re-trigger delay lock unlike hunger/destruction summon."
+    },
+    {
+      "spell": "razzagorn summon",
+      "script": "data-otservbr-global/scripts/spells/monster/razzagorn_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Demon",
+        "count_per_cast": 4,
+        "cap": null,
+        "position_random_in_box": [
+          [
+            33416,
+            33431
+          ],
+          [
+            32460,
+            32474
+          ],
+          14
+        ],
+        "set_master": false
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/razzagorn_summon.lua:3-9"
+      ],
+      "notes": "no getSummons() cap and no setMaster: unbounded independent hostile spawns every cast, unlike the capped/mastered variants."
+    },
+    {
+      "spell": "salamander trainer summon",
+      "script": "data-otservbr-global/scripts/spells/monster/salamander_trainer_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Troll-trained Salamander",
+        "cap": 1,
+        "position": "self",
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/salamander_trainer_summon.lua:12-20"
+      ]
+    },
+    {
+      "spell": "shulgrax summon",
+      "script": "data-otservbr-global/scripts/spells/monster/shulgrax_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summons": [
+          "Sin Devourer",
+          "Damned Soul"
+        ],
+        "cap_check": "getSummons()<8 (checked once for both waves)",
+        "counts": {
+          "Sin Devourer": 4,
+          "Damned Soul": 4
+        },
+        "position_random_in_box": [
+          [
+            33478,
+            33491
+          ],
+          [
+            32781,
+            32793
+          ],
+          13
+        ],
+        "set_master": {
+          "Sin Devourer": true,
+          "Damned Soul": false
+        }
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/shulgrax_summon.lua:4-20"
+      ],
+      "notes": "Damned Soul summons are never mastered (loose count, no setMaster call) unlike Sin Devourer."
+    },
+    {
+      "spell": "soulcatcher summon",
+      "script": "data-otservbr-global/scripts/spells/monster/soulcatcher_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "corrupted soul",
+        "count_per_cast": 1,
+        "cap": null,
+        "trigger_condition": [
+          "CONDITION_POISON",
+          "CONDITION_BLEEDING"
+        ],
+        "position_offset": {
+          "y": -1
+        },
+        "set_master": false,
+        "effect": "CONST_ME_TELEPORT"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/soulcatcher_summon.lua:4-11"
+      ],
+      "notes": "trigger is the caster's own condition state (poisoned/bleeding), not a summon-count cap."
+    },
+    {
+      "spell": "tenebris summon",
+      "script": "data-otservbr-global/scripts/spells/monster/tenebris_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "shadow fiend",
+        "count_per_cast": 1,
+        "cap": null,
+        "position_random_in_box": [
+          [
+            32906,
+            32918
+          ],
+          [
+            31594,
+            31604
+          ],
+          14
+        ],
+        "set_master": false,
+        "say": "The shadow fiend revives!"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/tenebris_summon.lua:8-13"
+      ]
+    },
+    {
+      "spell": "the imperor summon",
+      "script": "data-otservbr-global/scripts/spells/monster/the_imperor_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Diabolic Imp",
+        "cap": 2,
+        "position": "self",
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/the_imperor_summon.lua:12-22"
+      ]
+    },
+    {
+      "spell": "the welter summon2",
+      "script": "data-otservbr-global/scripts/spells/monster/the_welter_summon2.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Egg",
+        "cap": 10,
+        "cap_source": "spectator scan for names 'Egg' or 'Spawn Of The Welter' in 50-tile radius",
+        "position": "self",
+        "effect": "CONST_ME_GREEN_RINGS"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/the_welter_summon2.lua:4-19"
+      ],
+      "notes": "cap check counts live named creatures via Game.getSpectators instead of creature:getSummons(); no setMaster call."
+    },
+    {
+      "spell": "thorn summon",
+      "script": "data-otservbr-global/scripts/spells/monster/thorn_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "thorn minion",
+        "count_per_cast": 1,
+        "cap": null,
+        "position_offset": [
+          -3,
+          3
+        ],
+        "position_offset_axes": [
+          "x",
+          "y"
+        ],
+        "set_master": false
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/thorn_summon.lua:8-13"
+      ]
+    },
+    {
+      "spell": "white pale summon",
+      "script": "data-otservbr-global/scripts/spells/monster/white_pale_summon.lua",
+      "monsters": 1,
+      "pattern": "conditional_summon",
+      "parameters": {
+        "summon": "Carrion Worm",
+        "cap": 2,
+        "position": "self",
+        "set_master": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/white_pale_summon.lua:28-36"
+      ]
+    },
+    {
+      "spell": "doctor marrow explosion",
+      "script": "data-otservbr-global/scripts/spells/monster/doctor_marrow_explosion.lua",
+      "monsters": 1,
+      "pattern": "delayed_telegraphed_nuke",
+      "parameters": {
+        "trigger_mode": "target_position",
+        "delay_ms": 4000,
+        "damage_min": -7000,
+        "damage_max": -3500,
+        "distance_falloff": "actualDamage = damage / 2^distance",
+        "crit_chance_percent": 10,
+        "crit_multiplier": 1.5,
+        "damage_type": "COMBAT_EARTHDAMAGE",
+        "area": "AREA_CIRCLE6X6",
+        "pre_windup_effect": "paralyze all player spectators in 6-tile radius every 100ms for 4s"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/doctor_marrow_explosion.lua:53-87"
+      ]
+    },
+    {
+      "spell": "energy pulse explosion",
+      "script": "data-otservbr-global/scripts/spells/monster/energy_pulse_explosion.lua",
+      "monsters": 1,
+      "pattern": "delayed_telegraphed_nuke",
+      "parameters": {
+        "trigger_mode": "self_position",
+        "delay_ms": 0,
+        "damage_type": "COMBAT_ENERGYDAMAGE",
+        "area": "custom(13x13 diamond)",
+        "effect": "CONST_ME_ENERGYAREA",
+        "self_remove": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/energy_pulse_explosion.lua:26-28"
+      ],
+      "notes": "no windup/delay at all: combat:execute and creature:remove() happen in the same statement."
+    },
+    {
+      "spell": "eruption of destruction explosion",
+      "script": "data-otservbr-global/scripts/spells/monster/eruption_of_destruction_explosion.lua",
+      "monsters": 1,
+      "pattern": "delayed_telegraphed_nuke",
+      "parameters": {
+        "trigger_mode": "self_position",
+        "delay_ms": 7000,
+        "damage_min": 4000,
+        "damage_max": 6000,
+        "damage_type": "COMBAT_FIREDAMAGE",
+        "vocation_filter_players": true,
+        "monsters_always_hit": true,
+        "area": "custom(13x13 diamond)",
+        "effect": "CONST_ME_FIREAREA",
+        "side_effects": [
+          "heal master +20000..30000",
+          "spawn 1x demon",
+          "self remove"
+        ]
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/eruption_of_destruction_explosion.lua:69-88"
+      ]
+    },
+    {
+      "spell": "gaz'haragoth death",
+      "script": "data-otservbr-global/scripts/spells/monster/gaz'haragoth_death.lua",
+      "monsters": 1,
+      "pattern": "delayed_telegraphed_nuke",
+      "parameters": {
+        "trigger_mode": "self_position",
+        "delay_ms": 5000,
+        "damage_min": 30000,
+        "damage_max": 30000,
+        "damage_type": "COMBAT_ENERGYDAMAGE",
+        "vocation_filter_players": true,
+        "monsters_always_hit": true,
+        "area": "custom(13x13 diamond)",
+        "effect": "CONST_ME_PURPLEENERGY",
+        "say": "Gaz'haragoth calls down: DEATH AND DOOM!"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/gaz'haragoth_death.lua:68-83"
+      ]
+    },
+    {
+      "spell": "omrafir beam",
+      "script": "data-otservbr-global/scripts/spells/monster/omrafir_beam.lua",
+      "monsters": 1,
+      "pattern": "delayed_telegraphed_nuke",
+      "parameters": {
+        "trigger_mode": "direction_beam",
+        "delay_ms": 4000,
+        "damage_min": -10000,
+        "damage_max": -7000,
+        "damage_type": "COMBAT_FIREDAMAGE",
+        "area_by_direction": "4 preset line/beam matrices keyed by creature:getDirection()",
+        "effect": "CONST_ME_FIREAREA",
+        "guard_condition": "CONDITION_REGENERATION subid 88888 (prevents re-trigger)",
+        "say_start": "OMRAFIR INHALES DEEPLY!",
+        "say_end": "OMRAFIR BREATHES INFERNAL FIRE"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/omrafir_beam.lua:105-129"
+      ]
+    },
+    {
+      "spell": "plagirath bog",
+      "script": "data-otservbr-global/scripts/spells/monster/plagirath_bog.lua",
+      "monsters": 1,
+      "pattern": "delayed_telegraphed_nuke",
+      "parameters": {
+        "trigger_mode": "target_position",
+        "delay_ms": 10000,
+        "damage_min": -1500,
+        "damage_max": -1500,
+        "damage_type": "COMBAT_EARTHDAMAGE",
+        "range_check": "must be within 20 tiles and creature still alive",
+        "area": "custom(13x13 diamond)",
+        "marker": "CONDITION_OUTFIT lookType 299 on target for 10s"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/plagirath_bog.lua:33-58"
+      ]
+    },
+    {
+      "spell": "sapling explode",
+      "script": "data-otservbr-global/scripts/spells/monster/sapling_explode.lua",
+      "monsters": 1,
+      "pattern": "delayed_telegraphed_nuke",
+      "parameters": {
+        "trigger_mode": "self_position",
+        "delay_ms": 1,
+        "damage_type": "COMBAT_FIREDAMAGE",
+        "area": "AREA_CIRCLE3X3",
+        "effect": "CONST_ME_FIREAREA",
+        "self_remove": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/sapling_explode.lua:16-19"
+      ],
+      "notes": "delay is effectively 0 (addEvent at 1ms): immediate kamikaze explosion, not a real telegraphed windup like the other members of this pattern."
+    },
+    {
+      "spell": "tenebris ultimate",
+      "script": "data-otservbr-global/scripts/spells/monster/tenebris_ultimate.lua",
+      "monsters": 1,
+      "pattern": "delayed_telegraphed_nuke",
+      "parameters": {
+        "trigger_mode": "self_position",
+        "delay_ms": 4000,
+        "damage_min": 2200,
+        "damage_max": 2500,
+        "damage_type": "COMBAT_DEATHDAMAGE",
+        "vocation_filter_players": true,
+        "monsters_always_hit": true,
+        "area": "custom(15x15 diamond)",
+        "effect": "CONST_ME_MORTAREA",
+        "side_effects": [
+          "teleport all spectators + named boss 'lady tenebris' to fixed room center 32912,31599,14",
+          "lock boss movement (setMoveLocked) during windup"
+        ]
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/tenebris_ultimate.lua:63-94"
+      ]
+    },
+    {
+      "spell": "ghastly dragon curse",
+      "script": "data-otservbr-global/scripts/spells/monster/ghastly_dragon_curse.lua",
+      "monsters": 5,
+      "pattern": "escalating_dot_curse",
+      "parameters": {
+        "base_damage_range": [
+          40,
+          170
+        ],
+        "variants_per_level": 3,
+        "multiplier": 1.2,
+        "tick_interval_ms": 4000,
+        "damage_type": "COMBAT_DEATHDAMAGE",
+        "condition": "CONDITION_CURSED",
+        "delayed": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/ghastly_dragon_curse.lua:3-28",
+        "data-otservbr-global/scripts/spells/monster/ghastly_dragon_curse.lua:34"
+      ],
+      "notes": "393 pre-built Combat objects (131 base values x 3 variants); random.random() picks one at cast time."
+    },
+    {
+      "spell": "metal gargoyle curse",
+      "script": "data-otservbr-global/scripts/spells/monster/metal_gargoyle_curse.lua",
+      "monsters": 1,
+      "pattern": "escalating_dot_curse",
+      "parameters": {
+        "base_damage": 2.32,
+        "multiplier": 1.2,
+        "num_ticks": 24,
+        "tick_interval_ms": 4000,
+        "damage_type": "COMBAT_DEATHDAMAGE",
+        "condition": "CONDITION_CURSED",
+        "delayed": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/metal_gargoyle_curse.lua:3-19"
+      ],
+      "notes": "for loop `for i = 2.32, 2.32 do` runs exactly once (dead/degenerate range vs. ghastly dragon curse's real 40-170 staircase) -- likely an authoring bug, same mechanism otherwise."
+    },
+    {
+      "spell": "soulwars fear",
+      "script": "data-otservbr-global/scripts/spells/monster/soulwars_fear.lua",
+      "monsters": 4,
+      "pattern": "fear",
+      "parameters": {
+        "delay_ms": 2000,
+        "condition": "CONDITION_FEARED",
+        "ticks_ms": 3000,
+        "effect_cast": "CONST_ME_GHOST_SMOKE",
+        "effect_hit": "CONST_ME_BLUE_GHOST"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/soulwars_fear.lua:4-22"
+      ]
+    },
+    {
+      "spell": "aggressivelavawave",
+      "script": "data-otservbr-global/scripts/spells/monster/aggresive_lava_wave.lua",
+      "monsters": 4,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "named_monster_list",
+        "names": [
+          "the baron from below",
+          "the hungry baron from below",
+          "the duke of the depths",
+          "the fire empowered duke",
+          "fiery heart",
+          "aggressive lava"
+        ],
+        "area": "custom(5x5 cross)",
+        "heal_min": 0,
+        "heal_max": 650,
+        "effect": "CONST_ME_HITBYFIRE"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/aggresive_lava_wave.lua:13-35"
+      ]
+    },
+    {
+      "spell": "emberbeastarea",
+      "script": "data-otservbr-global/scripts/spells/monster/emberBeastArea.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "named_monster_list",
+        "names": [
+          "the count of the core"
+        ],
+        "area": "AREA_CIRCLE1X1(3x3)",
+        "heal_min": 0,
+        "heal_max": 1500,
+        "effect": "CONST_ME_EXPLOSIONHIT"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/emberBeastArea.lua:10-28"
+      ]
+    },
+    {
+      "spell": "emberbeasthur",
+      "script": "data-otservbr-global/scripts/spells/monster/emberBeastHur.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "named_monster_list",
+        "names": [
+          "the count of the core"
+        ],
+        "area": "custom(1x6 line beam)",
+        "heal_min": 0,
+        "heal_max": 1500,
+        "effect": "CONST_ME_EXPLOSIONHIT"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/emberBeastHur.lua:5-31"
+      ]
+    },
+    {
+      "spell": "frozen minion beam",
+      "script": "data-otservbr-global/scripts/spells/monster/frozen_minion_beam.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "monster_not_owned_by_player",
+        "dual_mode": "damage_players_heal_monsters",
+        "area": "AREA_BEAM7",
+        "amount_min": 200,
+        "amount_max": 700,
+        "damage_type_for_players": "COMBAT_ICEDAMAGE",
+        "effect": "CONST_ME_POFF"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/frozen_minion_beam.lua:6-18"
+      ]
+    },
+    {
+      "spell": "frozen minion heal",
+      "script": "data-otservbr-global/scripts/spells/monster/frozen_minion_heal.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "monster_not_owned_by_player",
+        "area": "AREA_CIRCLE2X2",
+        "heal_min": 100,
+        "heal_max": 200,
+        "effect": "CONST_ME_MAGIC_BLUE"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/frozen_minion_heal.lua:6-17"
+      ]
+    },
+    {
+      "spell": "frozen minion wave",
+      "script": "data-otservbr-global/scripts/spells/monster/frozen_minion_wave.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "monster_not_owned_by_player",
+        "dual_mode": "damage_players_heal_monsters",
+        "area": "custom(11x5 wave)",
+        "amount_min": 200,
+        "amount_max": 700,
+        "damage_type_for_players": "COMBAT_ICEDAMAGE",
+        "effect": "CONST_ME_POFF"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/frozen_minion_wave.lua:16-28"
+      ],
+      "notes": "same onTargetCreature body as frozen minion beam: enemy players take ice damage, unowned monsters are healed by the same roll."
+    },
+    {
+      "spell": "heal brain head",
+      "script": "data-otservbr-global/scripts/spells/monster/heal_brain_head.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "named_monster_at_fixed_position",
+        "name": "brain head",
+        "position": [
+          31954,
+          32325,
+          10
+        ],
+        "heal_min": 300,
+        "heal_max": 500,
+        "effect_distance": "CONST_ANI_HOLY",
+        "effect": "CONST_ME_MAGIC_BLUE"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/heal_brain_head.lua:2-18"
+      ],
+      "notes": "no Combat object at all: single hardcoded-position tile lookup, not an area/callback based heal like the rest of this pattern."
+    },
+    {
+      "spell": "heal malice",
+      "script": "data/scripts/spells/healing/heal_malice.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "named_monster_list",
+        "names": [
+          "Goshnar's Malice"
+        ],
+        "area": "AREA_CIRCLE3X3",
+        "heal_min": 15000,
+        "heal_max": 30000,
+        "effect": "CONST_ME_MAGIC_RED",
+        "dispel": "CONDITION_PARALYZE"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data/scripts/spells/healing/heal_malice.lua:1-9"
+      ],
+      "notes": "logs via logger.debug(...) on heal; target,target combat healing call looks like a copy/paste of a player-facing heal callback signature."
+    },
+    {
+      "spell": "heal monster",
+      "script": "data/scripts/spells/healing/heal_monsters.lua",
+      "monsters": 2,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "monster_not_owned_by_player",
+        "area": "AREA_CIRCLE3X3",
+        "heal_min": 100,
+        "heal_max": 300,
+        "effect": "CONST_ME_MAGIC_BLUE",
+        "dispel": "CONDITION_PARALYZE"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data/scripts/spells/healing/heal_monsters.lua:1-14"
+      ]
+    },
+    {
+      "spell": "heal monster 9x9",
+      "script": "data/scripts/spells/healing/heal_monsters_9x9.lua",
+      "monsters": 2,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "monster_not_owned_by_player",
+        "area": "AREA_CIRCLE6X6",
+        "heal_min": 0,
+        "heal_max": 1000,
+        "effect": "CONST_ME_MAGIC_BLUE",
+        "dispel": "CONDITION_PARALYZE"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data/scripts/spells/healing/heal_monsters_9x9.lua:1-14"
+      ]
+    },
+    {
+      "spell": "minotaur cult prophet mass healing",
+      "script": "data-otservbr-global/scripts/spells/monster/minotaur_cult_prophet_mass_healing.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "named_monster_list",
+        "names": [
+          "minotaur cult prophet",
+          "minotaur cult follower",
+          "minotaur cult zealot"
+        ],
+        "area": "AREA_CIRCLE3X3",
+        "heal_amount": "random(200,350) fixed per cast (same roll for all targets + self)",
+        "effect": "CONST_ME_MAGIC_GREEN",
+        "self_heal": true
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/minotaur_cult_prophet_mass_healing.lua:4-22",
+        "data-otservbr-global/scripts/spells/monster/minotaur_cult_prophet_mass_healing.lua:31"
+      ]
+    },
+    {
+      "spell": "plagirath heal",
+      "script": "data-otservbr-global/scripts/spells/monster/plagirath_heal.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "monster_not_owned_by_player",
+        "area": "custom(13x13 diamond)",
+        "heal_min": 300,
+        "heal_max": 700,
+        "effect": "CONST_ME_MAGIC_BLUE"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/plagirath_heal.lua:24-34"
+      ]
+    },
+    {
+      "spell": "spawn of the welter heal",
+      "script": "data-otservbr-global/scripts/spells/monster/spawn_of_the_welter_heal.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "monster_not_owned_by_player",
+        "area": "custom(13x13 diamond)",
+        "heal_min": 200,
+        "heal_max": 700,
+        "effect": "CONST_ME_MAGIC_GREEN"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/spawn_of_the_welter_heal.lua:24-34"
+      ]
+    },
+    {
+      "spell": "unchained fire beam",
+      "script": "data-otservbr-global/scripts/spells/monster/unchained_fire_beam.lua",
+      "monsters": 1,
+      "pattern": "heal_allies_in_area",
+      "parameters": {
+        "selection": "named_monster_list",
+        "names": [
+          "magma bubble"
+        ],
+        "area": "custom(1x8 line beam)",
+        "heal_min": 2000,
+        "heal_max": 5000,
+        "effect": "CONST_ME_FIREAREA"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/unchained_fire_beam.lua:20-29"
+      ]
+    },
+    {
+      "spell": "glooth fairy healing",
+      "script": "data-otservbr-global/scripts/spells/monster/glooth_fairy_healing.lua",
+      "monsters": 1,
+      "pattern": "heal_self_conditional",
+      "parameters": {
+        "health_below_percent": 10,
+        "heal_min": 7500,
+        "heal_max": 8000,
+        "delay_ms": 10000,
+        "guard_condition": "CONDITION_REGENERATION subid 88888"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/glooth_fairy_healing.lua:9-18"
+      ]
+    },
+    {
+      "spell": "lisa heal",
+      "script": "data-otservbr-global/scripts/spells/monster/lisa_heal.lua",
+      "monsters": 1,
+      "pattern": "heal_self_conditional",
+      "parameters": {
+        "health_below_percent": 7,
+        "heal_min": 18000,
+        "heal_max": 23000,
+        "delay_ms": 6000,
+        "guard_condition": "CONDITION_REGENERATION subid 88888",
+        "say_start": "Lisa takes a final breath before she's healing up!",
+        "say_end": "Lisa healed up!"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/lisa_heal.lua:1-19"
+      ]
+    },
+    {
+      "spell": "omrafir healing 2",
+      "script": "data-otservbr-global/scripts/spells/monster/omrafir_healing_2.lua",
+      "monsters": 1,
+      "pattern": "heal_self_conditional",
+      "parameters": {
+        "health_below_percent": 99.99,
+        "heal_min": 7500,
+        "heal_max": 9000,
+        "delay_ms": 0,
+        "extra_gate": "caster must stand on tile with item 1487/1492/1500 (fire)",
+        "name_gate": "Omrafir",
+        "say": "Omrafir gains new strength from the fire"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/omrafir_healing_2.lua:3-17"
+      ],
+      "notes": "gate gets checked by hardcoded creature name == 'Omrafir', so this only ever fires for one specific monster."
+    },
+    {
+      "spell": "the welter heal",
+      "script": "data-otservbr-global/scripts/spells/monster/the_welter_heal.lua",
+      "monsters": 1,
+      "pattern": "heal_self_conditional",
+      "parameters": {
+        "trigger": "consume_named_ally",
+        "ally_names": [
+          "Egg",
+          "Spawn of the Welter"
+        ],
+        "scan_radius": 10,
+        "heal_amount": 25000,
+        "effect_ally": [
+          "CONST_ME_HITBYPOISON",
+          "CONST_ME_DRAWBLOOD"
+        ],
+        "effect_self": "CONST_ME_MAGIC_BLUE",
+        "say": "<the welter devours his spawn and heals himself>"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/the_welter_heal.lua:6-24"
+      ],
+      "notes": "distinct trigger from the rest of this pattern: heals by finding and removing a named ally spawn rather than checking own health%."
+    },
+    {
+      "spell": "tyrn heal",
+      "script": "data-otservbr-global/scripts/spells/monster/tyrn_heal.lua",
+      "monsters": 1,
+      "pattern": "heal_self_conditional",
+      "parameters": {
+        "health_below_percent": 20,
+        "heal_min": 5000,
+        "heal_max": 7500,
+        "delay_ms": 0,
+        "guard_condition": "CONDITION_REGENERATION subid 88888, 15min ticks"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/tyrn_heal.lua:9-16"
+      ]
+    },
+    {
+      "spell": "outburst explode",
+      "script": "data-otservbr-global/scripts/spells/monster/outburst_explode.lua",
+      "monsters": 1,
+      "pattern": "map_or_quest_specific",
+      "parameters": {
+        "teleport_players_to": [
+          32234,
+          31280,
+          14
+        ],
+        "teleport_named_monster_to": [
+          32234,
+          31279,
+          14
+        ],
+        "named_monster": "Charging Outburst",
+        "spawn": "Outburst",
+        "spawn_position": [
+          32234,
+          31284,
+          14
+        ],
+        "global_storage_read": "GlobalStorage.HeartOfDestruction.OutburstHealth",
+        "global_storage_write": "GlobalStorage.HeartOfDestruction.OutburstChargingKilled = 1",
+        "area": "custom(13x13 diamond)",
+        "damage_type": "COMBAT_ENERGYDAMAGE"
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/outburst_explode.lua:1-64"
+      ]
+    },
+    {
+      "spell": "spider queen wrap",
+      "script": "data-otservbr-global/scripts/spells/monster/spider_queen_wrap.lua",
+      "monsters": 1,
+      "pattern": "map_or_quest_specific",
+      "parameters": {
+        "paralyze_formula": [
+          -0.3,
+          0,
+          -0.45,
+          0
+        ],
+        "paralyze_ticks": 30000,
+        "outfit_lookType": 422,
+        "outfit_ticks": 30000,
+        "quest_storage": "Storage.Quest.U9_1.TheRookieGuard.Mission05 = 4",
+        "teleport_delay_ms": 4500,
+        "teleport_to": [
+          32013,
+          32087,
+          10
+        ]
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/spider_queen_wrap.lua:14-35"
+      ]
+    },
+    {
+      "spell": "time guardian lost time",
+      "script": "data-otservbr-global/scripts/spells/monster/time_guardian_lost_time.lua",
+      "monsters": 2,
+      "pattern": "map_or_quest_specific",
+      "parameters": {
+        "z_gate": 15,
+        "name_to_summon": {
+          "the freezing time guardian": "lost time",
+          "the blazing time guardian": "time waster"
+        },
+        "position_offset": [
+          -2,
+          2
+        ]
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/time_guardian_lost_time.lua:4-13"
+      ]
+    },
+    {
+      "spell": "rotthingshaper",
+      "script": "data-otservbr-global/scripts/spells/monster/rotthing_shaper.lua",
+      "monsters": 1,
+      "pattern": "multi_combat_sequence",
+      "parameters": {
+        "combats": [
+          {
+            "damage_type": "COMBAT_EARTHDAMAGE",
+            "formula_min": 700,
+            "formula_max": 900,
+            "area": "custom(9x9 sparse)"
+          },
+          {
+            "damage_type": "COMBAT_PHYSICALDAMAGE",
+            "formula_min": 800,
+            "formula_max": 1000,
+            "area": "custom(11x11 sparse)"
+          }
+        ]
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/rotthing_shaper.lua:1-50"
+      ]
+    },
+    {
+      "spell": "rotthingwave",
+      "script": "data-otservbr-global/scripts/spells/monster/rotthing_wave.lua",
+      "monsters": 1,
+      "pattern": "multi_combat_sequence",
+      "parameters": {
+        "combats": [
+          {
+            "damage_type": "COMBAT_HOLYDAMAGE",
+            "formula_min": 700,
+            "formula_max": 900,
+            "area": "custom(1x7 line)"
+          },
+          {
+            "damage_type": "COMBAT_PHYSICALDAMAGE",
+            "formula_min": 800,
+            "formula_max": 1200,
+            "area": "custom(7x7 cone)"
+          }
+        ]
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/rotthing_wave.lua:1-45"
+      ]
+    },
+    {
+      "spell": "singlecloudchain",
+      "script": "data-otservbr-global/scripts/spells/monster/single_cloud_chain.lua",
+      "monsters": 9,
+      "pattern": "path_trail_missile",
+      "parameters": {
+        "damage_type": "COMBAT_ENERGYDAMAGE",
+        "effect": "CONST_ME_STORM",
+        "path_max_steps": 8
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/single_cloud_chain.lua:2-3",
+        "data-otservbr-global/scripts/spells/monster/single_cloud_chain.lua:12-21"
+      ]
+    },
+    {
+      "spell": "singledeathchain",
+      "script": "data-otservbr-global/scripts/spells/monster/single_death_chain.lua",
+      "monsters": 5,
+      "pattern": "path_trail_missile",
+      "parameters": {
+        "damage_type": "COMBAT_DEATHDAMAGE",
+        "effect": "CONST_ME_WHITE_ENERGY_SPARK",
+        "path_max_steps": 8
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/single_death_chain.lua:2-3",
+        "data-otservbr-global/scripts/spells/monster/single_death_chain.lua:12-21"
+      ]
+    },
+    {
+      "spell": "singleicechain",
+      "script": "data-otservbr-global/scripts/spells/monster/single_ice_chain.lua",
+      "monsters": 3,
+      "pattern": "path_trail_missile",
+      "parameters": {
+        "damage_type": "COMBAT_ICEDAMAGE",
+        "effect": "CONST_ME_BLUE_ENERGY_SPARK",
+        "path_max_steps": 8
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/single_ice_chain.lua:2-3",
+        "data-otservbr-global/scripts/spells/monster/single_ice_chain.lua:12-21"
+      ]
+    },
+    {
+      "spell": "foamsplash",
+      "script": "data-otservbr-global/scripts/spells/monster/foam_splash.lua",
+      "monsters": 1,
+      "pattern": "periodic_area_scheduled",
+      "parameters": {
+        "waves": [
+          {
+            "delay_ms": 1000,
+            "area": "custom(3x3 plus)"
+          },
+          {
+            "delay_ms": 2000,
+            "area": "custom(5x5 diamond)"
+          },
+          {
+            "delay_ms": 3000,
+            "area": "custom(9x9 diamond)"
+          }
+        ],
+        "damage_type": "COMBAT_ICEDAMAGE",
+        "effect": "CONST_ME_WATERSPLASH"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/foam_splash.lua:38-50"
+      ],
+      "notes": "three addEvent-scheduled combat waves of increasing radius fired in sequence from one cast."
+    },
+    {
+      "spell": "berserk",
+      "script": "data/scripts/spells/attack/berserk.lua",
+      "monsters": 5,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing": "COMBAT_PARAM_BLOCKARMOR",
+        "damage_type": "COMBAT_PHYSICALDAMAGE",
+        "area": "AREA_SQUARE1X1",
+        "formula_callback": "onGetFormulaValues (skill/attack based, standard weapon formula)"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data/scripts/spells/attack/berserk.lua:4",
+        "data/scripts/spells/attack/berserk.lua:8-15"
+      ]
+    },
+    {
+      "spell": "djinn cancel invisibility",
+      "script": "data-otservbr-global/scripts/spells/monster/djinn_cancel_invisibility.lua",
+      "monsters": 2,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing": "COMBAT_PARAM_DISPEL",
+        "dispel_condition": "CONDITION_INVISIBLE",
+        "area": "AREA_CIRCLE3X3"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/djinn_cancel_invisibility.lua:2"
+      ]
+    },
+    {
+      "spell": "explosion rune",
+      "script": "data/scripts/runes/explosion.lua",
+      "monsters": 1,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing": "COMBAT_PARAM_BLOCKARMOR",
+        "damage_type": "COMBAT_PHYSICALDAMAGE",
+        "area": "AREA_CIRCLE1X1",
+        "formula_callback": "onGetFormulaValues (level/magic level based)"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data/scripts/runes/explosion.lua:5"
+      ]
+    },
+    {
+      "spell": "gorerilla small ring",
+      "script": "data-otservbr-global/scripts/spells/monster/gorerilla_small_ring.lua",
+      "monsters": 1,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing_damage_type": "COMBAT_PHYSICALDAMAGEDAMAGE",
+        "area": "custom(9x9 ring)",
+        "effect": "CONST_ME_EXPLOSIONAREA"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/gorerilla_small_ring.lua:2"
+      ],
+      "notes": "'COMBAT_PHYSICALDAMAGEDAMAGE' is not a real engine constant (double 'DAMAGE') -- looks like a typo for COMBAT_PHYSICALDAMAGE; script likely silently deals 0 damage in Canary today."
+    },
+    {
+      "spell": "ice crystal bomb",
+      "script": "data-otservbr-global/scripts/spells/monster/ice_crystal_bomb.lua",
+      "monsters": 1,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing": "COMBAT_PARAM_BLOCKARMOR",
+        "damage_type": "COMBAT_ICEDAMAGE",
+        "area": "AREA_CIRCLE2X2",
+        "formula_callback": "onGetFormulaValues (skill/attack + level based)"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/ice_crystal_bomb.lua:5"
+      ]
+    },
+    {
+      "spell": "plaguesmith wave",
+      "script": "data-otservbr-global/scripts/spells/monster/plaguesmith_wave.lua",
+      "monsters": 1,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing_damage_type": "COMBAT_LIFEDRAINDAMAGE",
+        "area": "custom(11x5 wave)",
+        "effect": "CONST_ME_YELLOW_RINGS"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/plaguesmith_wave.lua:2"
+      ]
+    },
+    {
+      "spell": "souleater wave",
+      "script": "data-otservbr-global/scripts/spells/monster/souleater_wave.lua",
+      "monsters": 3,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing_damage_type": "COMBAT_LIFEDRAINDAMAGE",
+        "area": "custom(11x4 wave)",
+        "effect": "CONST_ME_SOUND_RED"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/souleater_wave.lua:2"
+      ]
+    },
+    {
+      "spell": "soulsnatcher-lifedrain-beam",
+      "script": "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua",
+      "monsters": 1,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing_area": "@CrossBeamArea3X2 (symbolic constant, not a literal 0-3 matrix)",
+        "damage_type": "COMBAT_PHYSICALDAMAGE",
+        "effect": "CONST_ME_HOLYDAMAGE"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/quests/soul_war/spell-soulsnatcher.lua:1-11"
+      ],
+      "notes": "file also registers 2 sibling spells (soulsnatcher-lifedrain-missile, soulsnatcher-manadrain-ball) using standard areas (AREA_CIRCLE3X3 etc.) that are not blocked; only this beam entry uses the unresolved custom area constant."
+    },
+    {
+      "spell": "ultimate healing",
+      "script": "data/scripts/spells/healing/ultimate_healing.lua",
+      "monsters": 1,
+      "pattern": "plain_combat_unsupported_schema",
+      "parameters": {
+        "missing": "COMBAT_PARAM_DISPEL",
+        "dispel_condition": "CONDITION_PARALYZE",
+        "formula_callback": "onGetFormulaValues (level/magic level based player heal)"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data/scripts/spells/healing/ultimate_healing.lua:4"
+      ],
+      "notes": "core player-facing spell (Ultimate Healing), not monster-specific; blocked purely by the same DISPEL schema gap."
+    },
+    {
+      "spell": "anomaly break",
+      "script": "data-otservbr-global/scripts/spells/monster/anomaly_break.lua",
+      "monsters": 15,
+      "pattern": "remove_magic_walls",
+      "parameters": {
+        "item_ids": [
+          2130,
+          2129
+        ],
+        "radius": 1,
+        "effect": 3,
+        "remove_all_matches": true
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/anomaly_break.lua:9-17"
+      ]
+    },
+    {
+      "spell": "destroy magic walls",
+      "script": "data-otservbr-global/scripts/spells/monster/destroy_magic_walls.lua",
+      "monsters": 5,
+      "pattern": "remove_magic_walls",
+      "parameters": {
+        "item_ids": [
+          "ITEM_MAGICWALL_SAFE",
+          "ITEM_MAGICWALL",
+          "ITEM_WILDGROWTH_SAFE",
+          "ITEM_WILDGROWTH"
+        ],
+        "radius": 2,
+        "effect": "CONST_ME_POFF",
+        "remove_all_matches": false,
+        "cooldown_ms": 2000
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/destroy_magic_walls.lua:12-24"
+      ]
+    },
+    {
+      "spell": "lisa skill reducer",
+      "script": "data-otservbr-global/scripts/spells/monster/lisa_skill_reducer.lua",
+      "monsters": 1,
+      "pattern": "skill_or_attribute_debuff",
+      "parameters": {
+        "severity_range": [
+          60,
+          75
+        ],
+        "duration_ms": 7000,
+        "area": "custom(9x9 diamond)",
+        "vocation_map": {
+          "SORCERER,DRUID": "CONDITION_PARAM_STAT_MAGICPOINTSPERCENT",
+          "PALADIN": "CONDITION_PARAM_SKILL_DISTANCEPERCENT+DEFENSEPERCENT",
+          "KNIGHT": "CONDITION_PARAM_SKILL_MELEEPERCENT+DEFENSEPERCENT"
+        },
+        "effect": "CONST_ME_SMALLPLANTS"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/lisa_skill_reducer.lua:3-34"
+      ]
+    },
+    {
+      "spell": "walker skill reducer",
+      "script": "data-otservbr-global/scripts/spells/monster/walker_skill_reducer.lua",
+      "monsters": 1,
+      "pattern": "skill_or_attribute_debuff",
+      "parameters": {
+        "severity_range": [
+          45,
+          60
+        ],
+        "duration_ms": 7000,
+        "area": "AREA_CIRCLE3X3",
+        "vocation_map": {
+          "SORCERER/DRUID(isMage)": "CONDITION_PARAM_STAT_MAGICPOINTSPERCENT",
+          "PALADIN": "CONDITION_PARAM_SKILL_DISTANCEPERCENT+DEFENSEPERCENT",
+          "KNIGHT": "CONDITION_PARAM_SKILL_MELEEPERCENT+DEFENSEPERCENT"
+        },
+        "effect": "CONST_ME_MAGIC_RED"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/walker_skill_reducer.lua:6-64"
+      ]
+    },
+    {
+      "spell": "summon challenge",
+      "script": "data-otservbr-global/scripts/spells/monster/summonchallenge.lua",
+      "monsters": 2,
+      "pattern": "taunt_challenge",
+      "parameters": {
+        "area": "AREA_CIRCLE2X2",
+        "engine_call": "doChallengeCreature(creature, target, 8000)",
+        "taunt_duration_ms": 8000,
+        "effect": "CONST_ME_MAGIC_BLUE"
+      },
+      "depends_on_world_state": false,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/summonchallenge.lua:5-9"
+      ],
+      "notes": "thin wrapper around the existing engine helper doChallengeCreature; the only 'custom logic' is the callback registration itself."
+    },
+    {
+      "spell": "charge vortex",
+      "script": "data-otservbr-global/scripts/spells/monster/charge_vortex.lua",
+      "monsters": 1,
+      "pattern": "temporary_ground_transform",
+      "parameters": {
+        "positions_fixed_choice": 11,
+        "transform_to": 22894,
+        "revert_to": 23049,
+        "revert_delay_ms": 10000
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/charge_vortex.lua:1-32"
+      ]
+    },
+    {
+      "spell": "mazoran fire",
+      "script": "data-otservbr-global/scripts/spells/monster/mazoran_fire.lua",
+      "monsters": 1,
+      "pattern": "temporary_ground_transform",
+      "parameters": {
+        "region_box": [
+          [
+            33572,
+            33598
+          ],
+          [
+            32679,
+            32701
+          ],
+          14
+        ],
+        "transform_to": 21494,
+        "action_id": 34200,
+        "revert_delay_ms": 5000,
+        "revert_uses_fixed_item_table": true,
+        "embedded_summon": {
+          "summon": "Rage of Mazoran",
+          "cap": 4,
+          "box": [
+            [
+              33576,
+              33593
+            ],
+            [
+              32684,
+              32695
+            ],
+            14
+          ]
+        }
+      },
+      "depends_on_world_state": true,
+      "evidence": [
+        "data-otservbr-global/scripts/spells/monster/mazoran_fire.lua:894-928",
+        "data-otservbr-global/scripts/spells/monster/mazoran_fire.lua:956-961"
+      ],
+      "notes": "also embeds a conditional_summon of 'Rage of Mazoran' x4 inside lavaGrounds(); revert step restores ~900 hardcoded item positions from the itemsRoom table."
+    }
+  ],
+  "unclassified": []
+}

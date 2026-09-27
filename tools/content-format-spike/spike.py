@@ -5,12 +5,15 @@ import argparse
 import copy
 import difflib
 import hashlib
+import importlib.util
 import json
 import os
 import platform
 import shutil
 import sqlite3
 import struct
+import subprocess
+import sys
 import tempfile
 import time
 import tracemalloc
@@ -962,6 +965,1306 @@ def _negative_evidence(root: Path) -> dict[str, bool]:
     return results
 
 
+D3_REAL_BATCH_PROFILE = "OTV2_CONTENT_WORLD_D3_REAL_BATCH/v1"
+D3_CARRIER_SCHEMA = 1
+D3_LOGICAL_INDEX_PROFILE = "OTV2_D3_SOURCE_CELL_INDEX/v1"
+D3_SOURCE_CLASSIFICATION = "MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY"
+D3_FRESH_SOURCE_PROFILE = "oteryn-crystalserver-fresh-source-generation-v2"
+D3_MEASUREMENT_CHUNK_SIZE = 32
+D3_COMPRESSIONS = {"none", "zlib"}
+D3_WINDOWS = (
+    ("newhaven", 32512, 32544, 32512, 32544, -7, "f-7-r1016-c1016"),
+    ("targuna", 31904, 31936, 31904, 31936, -7, "f-7-r997-c997"),
+)
+D3_SHARED_TOP_LEVEL_FIELDS = frozenset(
+    {"schema_version", "world_id", "critical_features", "provenance", "definitions", "cells"}
+)
+D3_PROVENANCE_FIELDS = frozenset(
+    {
+        "measurement_profile",
+        "classification",
+        "source_generation_profile_id",
+        "source_generation_profile_revision",
+        "source_repository",
+        "source_repository_sha",
+        "world_otbm_sha256",
+        "world_otbm_git_blob",
+        "world_otbm_bytes",
+        "asset_zip_sha256",
+        "asset_catalog_sha256",
+        "asset_appearance_sha256",
+        "parser_repository",
+        "parser_repository_sha",
+        "game_measurement_head",
+        "game_readonly_code",
+        "selection",
+    }
+)
+D3_IDENTITY_PROVENANCE_FIELDS = (
+    "measurement_profile",
+    "classification",
+    "source_generation_profile_id",
+    "source_generation_profile_revision",
+    "source_repository",
+    "source_repository_sha",
+    "world_otbm_sha256",
+    "world_otbm_git_blob",
+    "world_otbm_bytes",
+    "asset_zip_sha256",
+    "asset_catalog_sha256",
+    "asset_appearance_sha256",
+    "parser_repository",
+    "parser_repository_sha",
+)
+D3_DEFINITION_FIELDS = frozenset(
+    {"definition_kind", "appearance_source_id", "identity_disposition", "production_authority"}
+)
+D3_CELL_FIELDS = frozenset({"x", "y", "z", "source_placements"})
+D3_PLACEMENT_FIELDS = frozenset(
+    {
+        "source_occurrence_ref",
+        "appearance_source_id",
+        "source_role",
+        "source_presentation_order",
+        "identity_disposition",
+        "typed_definition_ref",
+        "placement_key",
+        "target_sensitive_fields",
+    }
+)
+
+
+def _load_module(name: str, path: Path) -> Any:
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise SpikeError(f"cannot load module: {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _git_output(root: Path, *args: str) -> str:
+    return subprocess.run(
+        ("git", "-C", str(root), *args),
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    ).stdout.strip()
+
+def _verify_d3_readonly_code(game_root: Path) -> dict[str, Any]:
+    game_root = game_root.resolve()
+    if Path(_git_output(game_root, "rev-parse", "--show-toplevel")).resolve() != game_root:
+        raise SpikeError("D3 Game root is not repository root")
+    relatives = (
+        "tools/game-atlas-fullworld-source/producer.py",
+        "tools/reference-world-corridor-census/content_source_batch.py",
+    )
+    status = _git_output(
+        game_root, "status", "--porcelain=v1", "--untracked-files=all", "--", *relatives
+    )
+    if status:
+        raise SpikeError("D3 read-only producer/batch paths are dirty")
+    result: dict[str, Any] = {"game_head": _git_output(game_root, "rev-parse", "HEAD"), "files": {}}
+    for relative in relatives:
+        working_blob = _git_output(game_root, "hash-object", "--", relative)
+        committed_blob = _git_output(game_root, "rev-parse", f"HEAD:{relative}")
+        if working_blob != committed_blob:
+            raise SpikeError(f"D3 read-only code blob mismatch: {relative}")
+        result["files"][relative] = {
+            "blob": committed_blob,
+            "last_commit": _git_output(game_root, "log", "-1", "--format=%H", "--", relative),
+        }
+    return result
+
+
+def _d3_inside_tile(producer: Any, tile: Any, window: tuple[Any, ...]) -> bool:
+    _name, xmin, xmax, ymin, ymax, floor, _shard = window
+    return (
+        xmin <= tile.position.x < xmax
+        and ymin <= tile.position.y < ymax
+        and producer.native_floor(tile) == floor
+    )
+
+def _collect_d3_tiles(producer: Any, runtime: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    selected: dict[str, list[dict[str, Any]]] = {row[0]: [] for row in D3_WINDOWS}
+    stream = {"map_header": 0, "tile": 0, "town": 0, "waypoint": 0}
+    for record in producer.iter_records(runtime, strict=True):
+        if producer.is_map_header(runtime, record):
+            stream["map_header"] += 1
+            continue
+        if producer.is_town(runtime, record):
+            stream["town"] += 1
+            continue
+        if producer.is_waypoint(runtime, record):
+            stream["waypoint"] += 1
+            continue
+        if not producer.is_tile(runtime, record):
+            continue
+        stream["tile"] += 1
+        for window in D3_WINDOWS:
+            if _d3_inside_tile(producer, record, window):
+                projected, _stats = producer.project_tile(runtime, record)
+                selected[window[0]].append(projected)
+                break
+    combined: list[dict[str, Any]] = []
+    window_evidence: list[dict[str, Any]] = []
+    for name, xmin, xmax, ymin, ymax, floor, shard in D3_WINDOWS:
+        rows = selected[name]
+        rows.sort(key=lambda row: (row["position"]["floor"], row["position"]["y"], row["position"]["x"]))
+        raw = b"".join(producer.canonical_tile_bytes(runtime, row) for row in rows)
+        window_evidence.append({
+            "name": name, "bounds": [xmin, xmax, ymin, ymax], "floor": floor,
+            "retained_shard": shard, "tile_records": len(rows),
+            "source_occurrences": sum(len(row.get("presentation", [])) for row in rows),
+            "ordered_stream_sha256": sha256(raw), "ordered_stream_bytes": len(raw),
+        })
+        combined.extend(rows)
+    if not combined:
+        raise SpikeError("D3 fixed windows produced no tile records")
+    return combined, {"stream_counts": stream, "windows": window_evidence}
+
+def _d3_source_summary(
+    producer: Any,
+    profile: Any,
+    code_provenance: dict[str, Any],
+) -> dict[str, Any]:
+    producer_rel = "tools/game-atlas-fullworld-source/producer.py"
+    return {
+        "classification": D3_SOURCE_CLASSIFICATION,
+        "phase_a_result": "PASS",
+        "phase_b_target_parity": "NOT_PERFORMED",
+        "producer": {
+            "api": producer.PRODUCER_API,
+            "code_commit": code_provenance["files"][producer_rel]["last_commit"],
+            "repository": "Oteryn/Oteryn-Game",
+        },
+        "source": {
+            "appearance_sha256": profile.asset_appearance_sha256,
+            "asset_zip_sha256": profile.asset_zip_sha256,
+            "catalog_sha256": profile.asset_catalog_sha256,
+            "legacy_revision": profile.parser_repository_sha,
+            "world_otbm_sha256": profile.world_otbm_sha256,
+        },
+    }
+
+
+def _d3_definition_key(appearance_source_id: int) -> str:
+    return f"source-appearance:{appearance_source_id}"
+
+
+def _d3_occurrence_sort_key(row: dict[str, Any]) -> tuple[bytes, str]:
+    return (
+        canonical_json(row.get("source_presentation_order")),
+        str(row.get("source_occurrence_ref", "")),
+    )
+
+def d3_fixture_from_typed_batch(
+    typed_batch: dict[str, Any],
+    *,
+    source_profile: dict[str, Any],
+    selection_evidence: dict[str, Any],
+    typed_batch_sha256: str,
+    typed_batch_bytes: int,
+) -> dict[str, Any]:
+    if typed_batch.get("production_authority") != "NONE":
+        raise SpikeError("D3 typed batch unexpectedly carries production authority")
+    if typed_batch.get("reference_parity_claim") != "NONE":
+        raise SpikeError("D3 typed batch unexpectedly carries Reference parity")
+    cells: dict[tuple[int, int, int], dict[str, Any]] = {}
+    definitions: dict[str, dict[str, Any]] = {}
+    deferred = typed_batch.get("deferred_requires_phase_b")
+    if not isinstance(deferred, list) or not deferred:
+        raise SpikeError("D3 typed batch lacks deferred target-sensitive fields")
+
+    def add_occurrence(source: dict[str, Any], *, disposition: str, typed_ref: Any, placement_key: Any) -> None:
+        pos = source.get("source_native_position")
+        if not isinstance(pos, dict):
+            raise SpikeError("D3 source occurrence lacks native source position")
+        key = (int(pos["x"]), int(pos["y"]), int(pos["floor"]))
+        cell = cells.setdefault(key, {"x": key[0], "y": key[1], "z": key[2], "source_placements": []})
+        appearance_id = int(source["appearance_source_id"])
+        def_key = _d3_definition_key(appearance_id)
+        definitions.setdefault(def_key, {
+            "definition_kind": "SOURCE_APPEARANCE_REFERENCE",
+            "appearance_source_id": appearance_id,
+            "identity_disposition": "SOURCE_ID_ONLY_NOT_CANONICAL",
+            "production_authority": "NONE",
+        })
+
+        cell["source_placements"].append({
+            "source_occurrence_ref": source["source_occurrence_ref"],
+            "appearance_source_id": appearance_id,
+            "source_role": source.get("source_role"),
+            "source_presentation_order": source.get("source_presentation_order"),
+            "identity_disposition": disposition,
+            "typed_definition_ref": typed_ref,
+            "placement_key": placement_key,
+            "target_sensitive_fields": {field: "DEFERRED_REQUIRES_PHASE_B" for field in deferred},
+        })
+
+    for row in typed_batch.get("unresolved_source_occurrences", []):
+        add_occurrence(row, disposition="UNRESOLVED_SOURCE_IDENTITY", typed_ref=None, placement_key=None)
+    for row in typed_batch.get("placements", []):
+        source = row.get("source_provenance")
+        if not isinstance(source, dict):
+            raise SpikeError("D3 bound placement lacks source provenance")
+        add_occurrence(
+            source,
+            disposition="EXPLICITLY_BOUND",
+            typed_ref=row.get("typed_definition_ref"),
+            placement_key=row.get("placement_key"),
+        )
+    fixture = {
+        "schema_version": 1,
+        "world_id": "d3-fresh-crystal-bounded-real-batch",
+        "critical_features": ["chunk-index-v1", "projection-v1"],
+        "provenance": {
+            "measurement_profile": D3_REAL_BATCH_PROFILE,
+            "classification": D3_SOURCE_CLASSIFICATION,
+            **source_profile,
+            "selection": selection_evidence,
+        },
+        "definitions": definitions,
+        "server_only": {
+            "typed_batch_schema": typed_batch.get("schema"),
+            "typed_batch_sha256": typed_batch_sha256,
+            "typed_batch_bytes": typed_batch_bytes,
+            "typed_batch_counts": typed_batch.get("counts"),
+            "deferred_requires_phase_b": deferred,
+            "production_authority": "NONE",
+            "reference_parity_claim": "NONE",
+        },
+        "cells": list(cells.values()),
+    }
+    return d3_normalize_fixture(fixture)
+
+def d3_normalize_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
+    normalized = copy.deepcopy(fixture)
+    cells = normalized.get("cells")
+    if not isinstance(cells, list):
+        raise SpikeError("D3 fixture cells must be a list")
+    for cell in cells:
+        placements = cell.get("source_placements")
+        if not isinstance(placements, list):
+            raise SpikeError("D3 fixture cell lacks source placements")
+        placements.sort(key=_d3_occurrence_sort_key)
+    cells.sort(key=lambda row: (row["z"], row["y"], row["x"]))
+    definitions = normalized.get("definitions")
+    if not isinstance(definitions, dict):
+        raise SpikeError("D3 definitions must be indexed object")
+    normalized["definitions"] = {key: definitions[key] for key in sorted(definitions)}
+    return normalized
+
+
+def validate_d3_fixture(fixture: dict[str, Any]) -> None:
+    fixture = d3_normalize_fixture(fixture)
+    validate_fixture(fixture)
+    allowed_top = D3_SHARED_TOP_LEVEL_FIELDS | {"server_only"}
+    if not D3_SHARED_TOP_LEVEL_FIELDS.issubset(fixture) or not set(fixture).issubset(allowed_top):
+        raise SpikeError("D3 fixture contains non-allowlisted top-level fields")
+
+    provenance = fixture.get("provenance")
+    if not isinstance(provenance, dict) or provenance.get("classification") != D3_SOURCE_CLASSIFICATION:
+        raise SpikeError("D3 source classification mismatch")
+    if provenance.get("measurement_profile") != D3_REAL_BATCH_PROFILE:
+        raise SpikeError("D3 measurement profile mismatch")
+    if not set(provenance).issubset(D3_PROVENANCE_FIELDS):
+        raise SpikeError("D3 provenance contains non-allowlisted fields")
+
+    server_only = fixture.get("server_only")
+    if server_only is not None:
+        if not isinstance(server_only, dict):
+            raise SpikeError("D3 server-only metadata must be an object")
+        if server_only.get("production_authority") != "NONE":
+            raise SpikeError("D3 server-only metadata carries production authority")
+        if server_only.get("reference_parity_claim") != "NONE":
+            raise SpikeError("D3 server-only metadata carries Reference parity")
+
+    definitions = fixture.get("definitions")
+    if not isinstance(definitions, dict):
+        raise SpikeError("D3 definitions must be an object")
+    for definition in definitions.values():
+        if not isinstance(definition, dict) or set(definition) != D3_DEFINITION_FIELDS:
+            raise SpikeError("D3 definition contains non-allowlisted fields")
+        if definition.get("identity_disposition") != "SOURCE_ID_ONLY_NOT_CANONICAL":
+            raise SpikeError("D3 source definition promoted canonical identity")
+        if definition.get("production_authority") != "NONE":
+            raise SpikeError("D3 source definition carries production authority")
+
+    seen: set[str] = set()
+    for cell in fixture["cells"]:
+        if set(cell) != D3_CELL_FIELDS:
+            raise SpikeError("D3 cell contains non-allowlisted fields")
+        for placement in cell["source_placements"]:
+            if not isinstance(placement, dict) or set(placement) != D3_PLACEMENT_FIELDS:
+                raise SpikeError("D3 placement contains non-allowlisted fields")
+            ref = placement.get("source_occurrence_ref")
+            if not isinstance(ref, str) or not ref or ref in seen:
+                raise SpikeError("D3 source occurrence identity is missing or duplicated")
+            seen.add(ref)
+            if not isinstance(placement.get("appearance_source_id"), int) or placement["appearance_source_id"] <= 0:
+                raise SpikeError("D3 appearance source ID must be positive")
+            disposition = placement.get("identity_disposition")
+            typed_ref = placement.get("typed_definition_ref")
+            placement_key = placement.get("placement_key")
+            if disposition == "UNRESOLVED_SOURCE_IDENTITY":
+                if typed_ref is not None or placement_key is not None:
+                    raise SpikeError("D3 unresolved source identity carries a target binding")
+            elif disposition == "EXPLICITLY_BOUND":
+                if not isinstance(typed_ref, dict) or not isinstance(placement_key, str) or not placement_key:
+                    raise SpikeError("D3 explicit source binding is incomplete")
+            else:
+                raise SpikeError("D3 source identity disposition is unsupported")
+            target_fields = placement.get("target_sensitive_fields")
+            if not isinstance(target_fields, dict) or not target_fields:
+                raise SpikeError("D3 placement lacks deferred target-sensitive fields")
+            if set(target_fields.values()) != {"DEFERRED_REQUIRES_PHASE_B"}:
+                raise SpikeError("D3 target-sensitive field was promoted")
+
+
+def d3_logical_identity(fixture: dict[str, Any]) -> str:
+    normalized = d3_normalize_fixture(fixture)
+    validate_d3_fixture(normalized)
+    provenance = normalized["provenance"]
+    identity_payload = {
+        "schema_version": normalized["schema_version"],
+        "world_id": normalized["world_id"],
+        "critical_features": normalized["critical_features"],
+        "provenance": {
+            key: provenance[key]
+            for key in D3_IDENTITY_PROVENANCE_FIELDS
+            if key in provenance
+        },
+        "definitions": normalized["definitions"],
+        "cells": normalized["cells"],
+    }
+    return sha256(canonical_json(identity_payload))
+
+
+def _d3_chunk_path(key: tuple[int, int, int]) -> str:
+    return f"chunks/z{key[2]}/c{key[0]}_{key[1]}.bin"
+
+
+def write_d3_carrier(
+    path: Path,
+    fixture: dict[str, Any],
+    chunk_size: int,
+    *,
+    compression: str,
+    projection: str,
+) -> None:
+    normalized = d3_normalize_fixture(fixture)
+    validate_d3_fixture(normalized)
+    if compression not in D3_COMPRESSIONS:
+        raise SpikeError("unsupported D3 compression")
+    if projection not in PROJECTION:
+        raise SpikeError("unsupported D3 projection")
+    if path.exists():
+        shutil.rmtree(path)
+    path.mkdir(parents=True)
+    chunks = chunk_payloads(normalized, chunk_size)
+    manifest = manifest_from_fixture(normalized, chunk_size, projection)
+    manifest.update({
+        "d3_carrier_schema": D3_CARRIER_SCHEMA,
+        "d3_profile": D3_REAL_BATCH_PROFILE,
+        "logical_index_profile": D3_LOGICAL_INDEX_PROFILE,
+        "logical_identity_sha256": d3_logical_identity(normalized),
+        "compression": compression,
+    })
+
+    entries: list[dict[str, Any]] = []
+    placement_index: dict[str, list[int]] = {}
+    for key, payload in sorted(chunks.items()):
+        raw = canonical_json(payload)
+        if len(raw) > MAX_CHUNK_RAW_BYTES:
+            raise SpikeError("D3 raw chunk byte limit exceeded")
+        stored = raw if compression == "none" else zlib.compress(raw, 6)
+        relative = _d3_chunk_path(key)
+        atomic_write(path / relative, stored)
+        entries.append({
+            "key": list(key),
+            "path": relative,
+            "sha256": sha256(stored),
+            "stored_bytes": len(stored),
+            "raw_bytes": len(raw),
+            "raw_sha256": sha256(raw),
+        })
+        for cell in payload["cells"]:
+            for placement in cell["source_placements"]:
+                ref = placement["source_occurrence_ref"]
+                if ref in placement_index:
+                    raise SpikeError("duplicate D3 placement index key")
+                placement_index[ref] = list(key)
+    manifest["chunks"] = entries
+    manifest["placement_index"] = {key: placement_index[key] for key in sorted(placement_index)}
+    manifest_bytes = canonical_json(manifest) + b"\n"
+    if len(manifest_bytes) > MAX_CHUNK_RAW_BYTES:
+        raise SpikeError("D3 manifest byte limit exceeded")
+    atomic_write(path / "manifest.json", manifest_bytes)
+    if artifact_size(path) > MAX_ARTIFACT_BYTES:
+        raise SpikeError("D3 carrier artifact byte limit exceeded")
+
+def read_d3_manifest(path: Path, *, expected_source_profile: str) -> dict[str, Any]:
+    manifest = read_json_manifest(path)
+    if manifest.get("d3_carrier_schema") != D3_CARRIER_SCHEMA:
+        raise SpikeError("unsupported D3 carrier version")
+    if manifest.get("d3_profile") != D3_REAL_BATCH_PROFILE:
+        raise SpikeError("wrong D3 carrier profile")
+    if manifest.get("logical_index_profile") != D3_LOGICAL_INDEX_PROFILE:
+        raise SpikeError("wrong D3 logical index profile")
+    compression = manifest.get("compression")
+    if compression not in D3_COMPRESSIONS:
+        raise SpikeError("unsupported D3 compression")
+    provenance = manifest.get("provenance")
+    if not isinstance(provenance, dict):
+        raise SpikeError("D3 manifest lacks provenance")
+    if provenance.get("source_generation_profile_id") != expected_source_profile:
+        raise SpikeError("D3 source generation profile mismatch")
+    placement_index = manifest.get("placement_index")
+    if not isinstance(placement_index, dict) or len(placement_index) > MAX_COLLECTION:
+        raise SpikeError("D3 placement index invalid")
+    for ref, key in placement_index.items():
+        if not isinstance(ref, str) or not ref:
+            raise SpikeError("D3 placement index key invalid")
+        if not isinstance(key, list) or len(key) != 3 or any(not isinstance(v, int) for v in key):
+            raise SpikeError("D3 placement index chunk key invalid")
+    return manifest
+
+
+def _d3_entry(manifest: dict[str, Any], key: tuple[int, int, int]) -> dict[str, Any]:
+    entry = next((row for row in manifest["chunks"] if tuple(row["key"]) == key), None)
+    if entry is None:
+        raise SpikeError("D3 chunk missing")
+    return entry
+
+def read_d3_chunk(
+    path: Path,
+    key: tuple[int, int, int],
+    *,
+    expected_source_profile: str,
+) -> dict[str, Any]:
+    manifest = read_d3_manifest(path, expected_source_profile=expected_source_profile)
+    entry = _d3_entry(manifest, key)
+    relative = entry["path"]
+    root = path.resolve()
+    chunk_path = (path / relative).resolve()
+    try:
+        chunk_path.relative_to(root)
+    except ValueError as exc:
+        raise SpikeError("D3 chunk path escapes carrier root") from exc
+    if not chunk_path.is_file() or chunk_path.stat().st_size != entry.get("stored_bytes"):
+        raise SpikeError("D3 stored chunk size mismatch")
+    stored = chunk_path.read_bytes()
+    if sha256(stored) != entry["sha256"]:
+        raise SpikeError("D3 stored chunk checksum mismatch")
+    raw_bytes = entry.get("raw_bytes")
+    raw_sha = entry.get("raw_sha256")
+    if not isinstance(raw_bytes, int) or raw_bytes < 0 or raw_bytes > MAX_CHUNK_RAW_BYTES:
+        raise SpikeError("D3 raw chunk size invalid")
+    if not isinstance(raw_sha, str) or len(raw_sha) != 64:
+        raise SpikeError("D3 raw chunk checksum invalid")
+    if manifest["compression"] == "none":
+        raw = stored
+        if len(raw) != raw_bytes:
+            raise SpikeError("D3 uncompressed raw-size mismatch")
+    else:
+        raw = bounded_decompress(stored, raw_bytes)
+    if sha256(raw) != raw_sha:
+        raise SpikeError("D3 raw chunk checksum mismatch")
+    payload = _decode_json(raw)
+    if not isinstance(payload, dict) or tuple(payload.get("chunk_key", [])) != key:
+        raise SpikeError("D3 chunk key mismatch")
+    return payload
+
+def read_d3_cell(
+    path: Path,
+    position: tuple[int, int, int],
+    *,
+    expected_source_profile: str,
+) -> dict[str, Any]:
+    manifest = read_d3_manifest(path, expected_source_profile=expected_source_profile)
+    x, y, z = position
+    chunk_size = int(manifest["chunk_size"])
+    payload = read_d3_chunk(
+        path,
+        (x // chunk_size, y // chunk_size, z),
+        expected_source_profile=expected_source_profile,
+    )
+    cell = next((row for row in payload["cells"] if (row["x"], row["y"], row["z"]) == position), None)
+    if cell is None:
+        raise SpikeError("D3 cell missing")
+    return cell
+
+
+def read_d3_placement(
+    path: Path,
+    source_occurrence_ref: str,
+    *,
+    expected_source_profile: str,
+) -> dict[str, Any]:
+    manifest = read_d3_manifest(path, expected_source_profile=expected_source_profile)
+    key = manifest["placement_index"].get(source_occurrence_ref)
+    if key is None:
+        raise SpikeError("D3 placement missing")
+    payload = read_d3_chunk(path, tuple(key), expected_source_profile=expected_source_profile)
+    for cell in payload["cells"]:
+        for placement in cell["source_placements"]:
+            if placement["source_occurrence_ref"] == source_occurrence_ref:
+                return placement
+    raise SpikeError("D3 placement index is stale")
+
+def read_d3_definition(
+    path: Path,
+    definition_key: str,
+    *,
+    expected_source_profile: str,
+) -> dict[str, Any]:
+    manifest = read_d3_manifest(path, expected_source_profile=expected_source_profile)
+    definitions = manifest.get("definitions")
+    if not isinstance(definitions, dict):
+        raise SpikeError("D3 definitions index invalid")
+    definition = definitions.get(definition_key)
+    if not isinstance(definition, dict):
+        raise SpikeError("D3 definition missing")
+    return definition
+
+
+def reconstruct_d3_fixture(path: Path, *, expected_source_profile: str) -> dict[str, Any]:
+    manifest = read_d3_manifest(path, expected_source_profile=expected_source_profile)
+    cells: list[dict[str, Any]] = []
+    for row in manifest["chunks"]:
+        payload = read_d3_chunk(
+            path, tuple(row["key"]), expected_source_profile=expected_source_profile
+        )
+        cells.extend(payload["cells"])
+    fixture = {
+        "schema_version": 1,
+        "world_id": manifest["world_id"],
+        "critical_features": manifest["critical_features"],
+        "provenance": manifest["provenance"],
+        "definitions": manifest["definitions"],
+        "cells": cells,
+    }
+    if "server_only" in manifest:
+        fixture["server_only"] = manifest["server_only"]
+    return d3_normalize_fixture(fixture)
+
+
+def d3_client_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
+    normalized = d3_normalize_fixture(fixture)
+    validate_d3_fixture(normalized)
+    return {
+        key: copy.deepcopy(normalized[key])
+        for key in (
+            "schema_version",
+            "world_id",
+            "critical_features",
+            "provenance",
+            "definitions",
+            "cells",
+        )
+    }
+
+def d3_index_signature(manifest: dict[str, Any]) -> str:
+    logical_entries = [
+        {
+            "key": row["key"],
+            "path": row["path"],
+            "raw_bytes": row["raw_bytes"],
+            "raw_sha256": row["raw_sha256"],
+        }
+        for row in manifest["chunks"]
+    ]
+    value = {
+        "chunks": logical_entries,
+        "placement_index": manifest["placement_index"],
+        "definition_keys": sorted(manifest["definitions"]),
+    }
+    return sha256(canonical_json(value))
+
+
+def _decoded_field_count(value: Any) -> int:
+    if isinstance(value, dict):
+        return len(value) + sum(_decoded_field_count(child) for child in value.values())
+    if isinstance(value, list):
+        return sum(_decoded_field_count(child) for child in value)
+    return 0
+
+
+def _d3_record_size_stats(fixture: dict[str, Any]) -> dict[str, int]:
+    cells = fixture["cells"]
+    placements = [
+        placement
+        for cell in cells
+        for placement in cell["source_placements"]
+    ]
+    definitions = list(fixture["definitions"].values())
+    return {
+        "max_source_cell_encoded_bytes": max(len(canonical_json(cell)) for cell in cells),
+        "max_source_placement_encoded_bytes": max(
+            len(canonical_json(placement)) for placement in placements
+        ),
+        "max_source_definition_encoded_bytes": max(
+            len(canonical_json(definition)) for definition in definitions
+        ),
+    }
+
+
+def _d3_changed_artifact_metrics(before: Path, after: Path) -> tuple[list[str], int]:
+    left = artifact_files(before)
+    right = artifact_files(after)
+    changed = [
+        name for name in sorted(set(left) | set(right))
+        if left.get(name) != right.get(name)
+    ]
+    return changed, sum(len(right.get(name, b"")) for name in changed)
+
+
+def _d3_mutated_fixture(fixture: dict[str, Any]) -> dict[str, Any]:
+    changed = d3_normalize_fixture(fixture)
+    candidates = [
+        placement
+        for cell in changed["cells"]
+        for placement in cell["source_placements"]
+    ]
+    if not candidates:
+        raise SpikeError("D3 update probe requires one source placement")
+    placement = candidates[len(candidates) // 2]
+    source_role = placement.get("source_role")
+    if not isinstance(source_role, str) or not source_role:
+        raise SpikeError("D3 update probe requires a source role")
+    placement["source_role"] = source_role + "|D3_UPDATE_PROBE"
+    return changed
+
+def _d3_corruption_rejected(
+    carrier: Path,
+    target_key: tuple[int, int, int],
+    root: Path,
+    *,
+    expected_source_profile: str,
+    mode: str,
+) -> bool:
+    damaged = root / f"negative-{mode}"
+    _copy_artifact(carrier, damaged)
+    manifest = read_d3_manifest(damaged, expected_source_profile=expected_source_profile)
+    entry = _d3_entry(manifest, target_key)
+    target = damaged / entry["path"]
+    raw = target.read_bytes()
+    if mode == "corrupt":
+        value = bytearray(raw)
+        value[-1] ^= 1
+        target.write_bytes(value)
+    elif mode == "truncate":
+        target.write_bytes(raw[:-1])
+    else:
+        raise SpikeError("unknown D3 negative mode")
+    try:
+        read_d3_chunk(damaged, target_key, expected_source_profile=expected_source_profile)
+    except SpikeError:
+        return True
+    return False
+
+
+def _d3_manifest_negative(
+    carrier: Path,
+    root: Path,
+    *,
+    expected_source_profile: str,
+    mutation: str,
+) -> bool:
+    damaged = root / f"manifest-negative-{mutation}"
+    _copy_artifact(carrier, damaged)
+    manifest_path = damaged / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    target_key: tuple[int, int, int] | None = None
+
+    if mutation == "profile":
+        manifest["provenance"]["source_generation_profile_id"] = "wrong-profile"
+    elif mutation == "version":
+        manifest["d3_carrier_schema"] = D3_CARRIER_SCHEMA + 1
+    elif mutation == "critical":
+        manifest["critical_features"] = sorted(set(manifest["critical_features"]) | {"unknown-critical"})
+    elif mutation == "placement-index":
+        first = next(iter(manifest["placement_index"]))
+        manifest["placement_index"][first] = ["bad"]
+    elif mutation == "raw-size":
+        first_entry = manifest["chunks"][0]
+        first_entry["raw_bytes"] = MAX_CHUNK_RAW_BYTES + 1
+        target_key = tuple(first_entry["key"])
+    else:
+        raise SpikeError("unknown D3 manifest negative")
+    manifest_path.write_bytes(canonical_json(manifest) + b"\n")
+    try:
+        if target_key is None:
+            read_d3_manifest(damaged, expected_source_profile=expected_source_profile)
+        else:
+            read_d3_chunk(
+                damaged,
+                target_key,
+                expected_source_profile=expected_source_profile,
+            )
+    except SpikeError:
+        return True
+    return False
+
+
+def _d3_carrier_stats(path: Path, manifest: dict[str, Any]) -> dict[str, Any]:
+    stored = sum(int(row["stored_bytes"]) for row in manifest["chunks"])
+    raw = sum(int(row["raw_bytes"]) for row in manifest["chunks"])
+    logical_index = canonical_json({
+        "chunks": [
+            {"key": row["key"], "path": row["path"], "raw_bytes": row["raw_bytes"], "raw_sha256": row["raw_sha256"]}
+            for row in manifest["chunks"]
+        ],
+        "placement_index": manifest["placement_index"],
+        "definition_keys": sorted(manifest["definitions"]),
+    })
+    return {
+        "artifact_bytes": artifact_size(path),
+        "manifest_bytes": (path / "manifest.json").stat().st_size,
+        "logical_index_bytes": len(logical_index),
+        "stored_chunk_bytes": stored,
+        "raw_chunk_bytes": raw,
+        "compression_ratio_raw_to_stored": round(raw / stored, 6) if stored else None,
+        "chunk_count": len(manifest["chunks"]),
+        "max_stored_chunk_bytes": max(int(row["stored_bytes"]) for row in manifest["chunks"]),
+        "max_raw_chunk_bytes": max(int(row["raw_bytes"]) for row in manifest["chunks"]),
+    }
+
+def _measure_d3_carrier(
+    root: Path,
+    fixture: dict[str, Any],
+    *,
+    compression: str,
+    expected_source_profile: str,
+    load_iterations: int,
+) -> dict[str, Any]:
+    label = "indexed-uncompressed-baseline" if compression == "none" else "indexed-zlib"
+    carrier_root = root / label
+    server_a = carrier_root / "server-a"
+    server_b = carrier_root / "server-b"
+    client = carrier_root / "client"
+    mutated = carrier_root / "mutated"
+    _value, build_ms, build_peak = _timed(
+        lambda: write_d3_carrier(
+            server_a,
+            fixture,
+            D3_MEASUREMENT_CHUNK_SIZE,
+            compression=compression,
+            projection="server",
+        )
+    )
+    write_d3_carrier(
+        server_b,
+        fixture,
+        D3_MEASUREMENT_CHUNK_SIZE,
+        compression=compression,
+        projection="server",
+    )
+    write_d3_carrier(
+        client,
+        d3_client_fixture(fixture),
+        D3_MEASUREMENT_CHUNK_SIZE,
+        compression=compression,
+        projection="client",
+    )
+    server_manifest = read_d3_manifest(
+        server_a, expected_source_profile=expected_source_profile
+    )
+    client_manifest = read_d3_manifest(
+        client, expected_source_profile=expected_source_profile
+    )
+
+    normalized = d3_normalize_fixture(fixture)
+    server_roundtrip = reconstruct_d3_fixture(
+        server_a, expected_source_profile=expected_source_profile
+    )
+    client_roundtrip = reconstruct_d3_fixture(
+        client, expected_source_profile=expected_source_profile
+    )
+    if canonical_json(server_roundtrip) != canonical_json(normalized):
+        raise SpikeError("D3 server carrier semantic round-trip mismatch")
+    expected_client = d3_client_fixture(normalized)
+    if canonical_json(client_roundtrip) != canonical_json(expected_client):
+        raise SpikeError("D3 client carrier semantic round-trip mismatch")
+
+    cells = normalized["cells"]
+    target_cell = cells[len(cells) // 2]
+    position = (target_cell["x"], target_cell["y"], target_cell["z"])
+    if not target_cell["source_placements"]:
+        target_cell = next(
+            (cell for cell in cells if cell["source_placements"]), None
+        )
+        if target_cell is None:
+            raise SpikeError("D3 random-access probe requires one source placement")
+        position = (target_cell["x"], target_cell["y"], target_cell["z"])
+    occurrence = target_cell["source_placements"][0]["source_occurrence_ref"]
+    definition_key = sorted(normalized["definitions"])[0]
+
+    cell_ms, cell_peak = _load_stats(
+        lambda: read_d3_cell(
+            server_a, position, expected_source_profile=expected_source_profile
+        ),
+        load_iterations,
+    )
+    placement_ms, placement_peak = _load_stats(
+        lambda: read_d3_placement(
+            server_a, occurrence, expected_source_profile=expected_source_profile
+        ),
+        load_iterations,
+    )
+
+    definition_ms, definition_peak = _load_stats(
+        lambda: read_d3_definition(
+            server_a, definition_key, expected_source_profile=expected_source_profile
+        ),
+        load_iterations,
+    )
+    changed_fixture = _d3_mutated_fixture(normalized)
+    write_d3_carrier(
+        mutated,
+        changed_fixture,
+        D3_MEASUREMENT_CHUNK_SIZE,
+        compression=compression,
+        projection="server",
+    )
+    changed_names, changed_bytes = _d3_changed_artifact_metrics(server_a, mutated)
+    target_key = (
+        position[0] // D3_MEASUREMENT_CHUNK_SIZE,
+        position[1] // D3_MEASUREMENT_CHUNK_SIZE,
+        position[2],
+    )
+    stats = _d3_carrier_stats(server_a, server_manifest)
+    aggregate_placements = sum(
+        len(cell["source_placements"]) for cell in normalized["cells"]
+    )
+    result = {
+        "carrier": label,
+        "compression": compression,
+        "compression_configuration": "none" if compression == "none" else "zlib level 6",
+        "chunk_size": D3_MEASUREMENT_CHUNK_SIZE,
+        **stats,
+        "artifact_sha256": artifact_digest(server_a),
+        "client_artifact_bytes": artifact_size(client),
+        "client_artifact_sha256": artifact_digest(client),
+        "logical_identity_sha256": server_manifest["logical_identity_sha256"],
+        "logical_index_signature": d3_index_signature(server_manifest),
+        "client_logical_index_signature": d3_index_signature(client_manifest),
+        "server_client_logical_index_equal": (
+            d3_index_signature(server_manifest) == d3_index_signature(client_manifest)
+        ),
+        "deterministic_repeat_exact_bytes": artifact_digest(server_a) == artifact_digest(server_b),
+        "source_model_encode_decode_equivalent": True,
+        "client_projection_equivalent": True,
+        "client_server_only_absent": "server_only" not in client_manifest,
+        "build_ms": round(build_ms, 3),
+        "build_peak_bytes": build_peak,
+        "median_cell_load_ms": round(cell_ms, 3),
+        "cell_load_peak_bytes": cell_peak,
+        "median_placement_load_ms": round(placement_ms, 3),
+        "placement_load_peak_bytes": placement_peak,
+        "median_definition_load_ms": round(definition_ms, 3),
+        "definition_load_peak_bytes": definition_peak,
+
+        "random_access_probe": {
+            "cell": list(position),
+            "source_occurrence_ref": occurrence,
+            "source_definition_key": definition_key,
+            "without_full_bundle_interpretation": True,
+        },
+        "changed_storage_units_after_one_source_placement_edit": changed_names,
+        "changed_storage_unit_count": len(changed_names),
+        "changed_manifest_index_units": int("manifest.json" in changed_names),
+        "rebuilt_or_patch_bytes_after_one_source_placement_edit": changed_bytes,
+        "corruption_rejected": _d3_corruption_rejected(
+            server_a,
+            target_key,
+            carrier_root,
+            expected_source_profile=expected_source_profile,
+            mode="corrupt",
+        ),
+        "truncation_rejected": _d3_corruption_rejected(
+            server_a,
+            target_key,
+            carrier_root,
+            expected_source_profile=expected_source_profile,
+            mode="truncate",
+        ),
+        "decoded_field_count": _decoded_field_count(normalized),
+        "cell_count": len(cells),
+        "source_definition_count": len(normalized["definitions"]),
+        "aggregate_source_placements": aggregate_placements,
+        "max_source_placements_per_cell": max(
+            len(cell["source_placements"]) for cell in cells
+        ),
+    }
+    if not all(
+        (
+            result["deterministic_repeat_exact_bytes"],
+            result["source_model_encode_decode_equivalent"],
+            result["client_projection_equivalent"],
+            result["client_server_only_absent"],
+            result["corruption_rejected"],
+            result["truncation_rejected"],
+        )
+    ):
+        raise SpikeError(f"D3 carrier qualification failed: {label}")
+    return result
+
+def _d3_ratio_negative() -> bool:
+    raw = b"A" * 4096
+    compressed = zlib.compress(raw, 9)
+    try:
+        bounded_decompress(
+            compressed,
+            len(raw),
+            max_raw_size=len(raw),
+            max_ratio=2.0,
+        )
+    except SpikeError:
+        return True
+    return False
+
+
+def run_d3_real_batch(
+    *,
+    game_root: Path,
+    legacy_root: Path,
+    map_path: Path,
+    asset_zip: Path,
+    assets_dir: Path,
+    source_generation_profile_id: str,
+    measurement_head: str,
+    work_dir: Path,
+    load_iterations: int,
+) -> dict[str, Any]:
+    if source_generation_profile_id != D3_FRESH_SOURCE_PROFILE:
+        raise SpikeError("D3 requires the exact admitted fresh source-generation profile")
+    if load_iterations < 1:
+        raise SpikeError("D3 load iterations must be positive")
+    code_provenance = _verify_d3_readonly_code(game_root)
+    if code_provenance["game_head"] != measurement_head:
+        raise SpikeError("D3 measurement head does not match checked-out Game head")
+
+    producer = _load_module(
+        "d3_exact_fullworld_producer",
+        game_root / "tools/game-atlas-fullworld-source/producer.py",
+    )
+    batch_module = _load_module(
+        "d3_exact_content_source_batch",
+        game_root / "tools/reference-world-corridor-census/content_source_batch.py",
+    )
+    profile = producer.source_generation_profile(source_generation_profile_id)
+    runtime = producer.load_runtime(
+        legacy_root=legacy_root,
+        map_path=map_path,
+        asset_zip=asset_zip,
+        assets_dir=assets_dir,
+        source_generation_profile_id=source_generation_profile_id,
+    )
+
+    tile_records, selection_evidence = _collect_d3_tiles(producer, runtime)
+    source_summary = _d3_source_summary(producer, profile, code_provenance)
+    typed_batch = batch_module.build_content_source_batch(
+        producer=producer,
+        tile_records=tile_records,
+        bindings={},
+        phase_a_summary=source_summary,
+        adapter_revision=measurement_head,
+    )
+    typed_bytes = batch_module.canonical_batch_bytes(typed_batch)
+    source_profile = {
+        "source_generation_profile_id": profile.profile_id,
+        "source_generation_profile_revision": profile.revision,
+        "source_repository": profile.source_repository,
+        "source_repository_sha": profile.source_repository_sha,
+        "world_otbm_sha256": profile.world_otbm_sha256,
+        "world_otbm_git_blob": profile.world_otbm_git_blob,
+        "world_otbm_bytes": profile.world_otbm_bytes,
+        "asset_zip_sha256": profile.asset_zip_sha256,
+        "asset_catalog_sha256": profile.asset_catalog_sha256,
+        "asset_appearance_sha256": profile.asset_appearance_sha256,
+        "parser_repository": profile.parser_repository,
+        "parser_repository_sha": profile.parser_repository_sha,
+        "game_measurement_head": measurement_head,
+        "game_readonly_code": code_provenance["files"],
+    }
+    fixture = d3_fixture_from_typed_batch(
+        typed_batch,
+        source_profile=source_profile,
+        selection_evidence=selection_evidence,
+        typed_batch_sha256=sha256(typed_bytes),
+        typed_batch_bytes=len(typed_bytes),
+    )
+    fixture_bytes = canonical_json(fixture)
+    logical_identity = d3_logical_identity(fixture)
+
+    reverse_batch = batch_module.build_content_source_batch(
+        producer=producer,
+        tile_records=list(reversed(tile_records)),
+        bindings={},
+        phase_a_summary=source_summary,
+        adapter_revision=measurement_head,
+    )
+    reverse_bytes = batch_module.canonical_batch_bytes(reverse_batch)
+    reverse_fixture = d3_fixture_from_typed_batch(
+        reverse_batch,
+        source_profile=source_profile,
+        selection_evidence=selection_evidence,
+        typed_batch_sha256=sha256(reverse_bytes),
+        typed_batch_bytes=len(reverse_bytes),
+    )
+
+    enumeration_independent = (
+        typed_bytes == reverse_bytes
+        and canonical_json(fixture) == canonical_json(reverse_fixture)
+        and logical_identity == d3_logical_identity(reverse_fixture)
+    )
+    if not enumeration_independent:
+        raise SpikeError("D3 identity changed under source enumeration reorder")
+
+    shard_variant = copy.deepcopy(fixture)
+    selection = shard_variant["provenance"].get("selection")
+    if not isinstance(selection, dict) or not isinstance(selection.get("windows"), list):
+        raise SpikeError("D3 source selection lacks shard evidence")
+    for window in selection["windows"]:
+        window["retained_shard"] = f"repartition-probe:{window['name']}"
+    source_shard_identity_stable = (
+        d3_logical_identity(shard_variant) == logical_identity
+    )
+    if not source_shard_identity_stable:
+        raise SpikeError("D3 logical identity changed under source shard metadata")
+
+    if work_dir.exists():
+        shutil.rmtree(work_dir)
+    work_dir.mkdir(parents=True)
+    measurements_root = work_dir / "carriers"
+    carriers = [
+        _measure_d3_carrier(
+            measurements_root,
+            fixture,
+            compression=compression,
+            expected_source_profile=source_generation_profile_id,
+            load_iterations=load_iterations,
+        )
+        for compression in ("none", "zlib")
+    ]
+    if carriers[0]["logical_index_signature"] != carriers[1]["logical_index_signature"]:
+        raise SpikeError("D3 carrier logical index differs by compression")
+
+    rechunk = work_dir / "rechunk-identity"
+    write_d3_carrier(
+        rechunk,
+        fixture,
+        16,
+        compression="none",
+        projection="server",
+    )
+    rechunk_manifest = read_d3_manifest(
+        rechunk, expected_source_profile=source_generation_profile_id
+    )
+    rechunk_identity_stable = rechunk_manifest["logical_identity_sha256"] == logical_identity
+    if not rechunk_identity_stable:
+        raise SpikeError("D3 logical identity changed under rechunking")
+
+    baseline_root = measurements_root / "indexed-uncompressed-baseline" / "server-a"
+    negatives = {
+        "wrong_source_profile_rejected": _d3_manifest_negative(
+            baseline_root, work_dir,
+            expected_source_profile=source_generation_profile_id, mutation="profile"
+        ),
+        "wrong_carrier_version_rejected": _d3_manifest_negative(
+            baseline_root, work_dir,
+            expected_source_profile=source_generation_profile_id, mutation="version"
+        ),
+        "unknown_critical_feature_rejected": _d3_manifest_negative(
+            baseline_root, work_dir,
+            expected_source_profile=source_generation_profile_id, mutation="critical"
+        ),
+        "malformed_placement_index_rejected": _d3_manifest_negative(
+            baseline_root, work_dir,
+            expected_source_profile=source_generation_profile_id, mutation="placement-index"
+        ),
+        "oversized_raw_chunk_rejected": _d3_manifest_negative(
+            baseline_root, work_dir,
+            expected_source_profile=source_generation_profile_id, mutation="raw-size"
+        ),
+        "decompression_ratio_rejected": _d3_ratio_negative(),
+    }
+    if not all(negatives.values()):
+        raise SpikeError("D3 negative-boundary qualification failed")
+
+    counts = typed_batch["counts"]
+    return {
+        "schema": "OTV2_CONTENT_WORLD_D3_REAL_BATCH_BUNDLE_MEASUREMENT/v1",
+        "spike_invariant": INVARIANT,
+        "measurement_head": measurement_head,
+        "environment": {
+            "python": platform.python_version(),
+            "zlib": zlib.ZLIB_VERSION,
+            "platform": platform.platform(),
+        },
+        "configuration": {
+            "load_iterations": load_iterations,
+            "measured_chunk_size": D3_MEASUREMENT_CHUNK_SIZE,
+            "measured_chunk_size_is_production_maximum": False,
+            "carrier_types": 2,
+            "compressions": ["none", "zlib level 6"],
+            "max_artifact_bytes": MAX_ARTIFACT_BYTES,
+            "max_chunk_raw_bytes": MAX_CHUNK_RAW_BYTES,
+            "max_decompression_ratio": MAX_DECOMPRESSION_RATIO,
+        },
+
+        "source_provenance": source_profile,
+        "source_selection": selection_evidence,
+        "typed_input": {
+            "schema": typed_batch["schema"],
+            "canonical_bytes": len(typed_bytes),
+            "canonical_sha256": sha256(typed_bytes),
+            "counts": counts,
+            "deferred_requires_phase_b": typed_batch["deferred_requires_phase_b"],
+            "production_authority": typed_batch["production_authority"],
+            "reference_parity_claim": typed_batch["reference_parity_claim"],
+        },
+        "logical_input": {
+            "canonical_bytes": len(fixture_bytes),
+            "canonical_sha256": sha256(fixture_bytes),
+            "logical_identity_sha256": logical_identity,
+            "source_cell_count": len(fixture["cells"]),
+            "source_definition_count": len(fixture["definitions"]),
+            "aggregate_source_placements": sum(
+                len(cell["source_placements"]) for cell in fixture["cells"]
+            ),
+            "max_source_placements_per_cell": max(
+                len(cell["source_placements"]) for cell in fixture["cells"]
+            ),
+            "decoded_field_count": _decoded_field_count(fixture),
+            **_d3_record_size_stats(fixture),
+        },
+        "determinism": {
+            "source_enumeration_order_independent": enumeration_independent,
+            "source_shard_identity_independent": source_shard_identity_stable,
+            "rechunk_identity_independent": rechunk_identity_stable,
+            "two_carriers_same_logical_index": (
+                carriers[0]["logical_index_signature"]
+                == carriers[1]["logical_index_signature"]
+            ),
+            "per_carrier_repeat_exact_bytes": all(
+                row["deterministic_repeat_exact_bytes"] for row in carriers
+            ),
+        },
+        "carriers": carriers,
+        "negative_evidence": negatives,
+        "classification": D3_SOURCE_CLASSIFICATION,
+        "production_authority": "NONE",
+        "reference_parity_claim": "NONE",
+        "registry_maxima_selected": False,
+        "owner_format_decision": "NOT_MADE",
+    }
+
+def render_d3_dossier(result: dict[str, Any], exact_head: str) -> str:
+    source = result["source_provenance"]
+    typed = result["typed_input"]
+    logical = result["logical_input"]
+    determinism = result["determinism"]
+    lines = [
+        "# Content/World D3 real-batch bundle measurement",
+        "",
+        f"- Exact Game measurement head: `{exact_head}`",
+        f"- Source: `{source['source_repository']}@{source['source_repository_sha']}`",
+        f"- Fresh source profile: `{source['source_generation_profile_id']}` revision `{source['source_generation_profile_revision']}`",
+        f"- world.otbm SHA-256: `{source['world_otbm_sha256']}`",
+        f"- Parser: `{source['parser_repository']}@{source['parser_repository_sha']}`",
+        f"- Classification: **{result['classification']}**",
+        f"- Spike invariant: **`{result['spike_invariant']}`**",
+        "- Authority: measurement evidence only; production authority and Reference parity remain NONE.",
+        "",
+        "## Fresh real input",
+        "",
+    ]
+    for window in result["source_selection"]["windows"]:
+        lines.append(
+            f"- {window['name']}: {window['tile_records']} source cells, "
+            f"{window['source_occurrences']} source occurrences, "
+            f"ordered stream SHA-256 `{window['ordered_stream_sha256']}`."
+        )
+    lines.extend([
+        f"- Typed CW2/pre-promotion batch: {typed['canonical_bytes']} bytes, SHA-256 `{typed['canonical_sha256']}`.",
+        f"- Typed counts: `{json.dumps(typed['counts'], sort_keys=True)}`.",
+        f"- D3 normalized logical input: {logical['canonical_bytes']} bytes, SHA-256 `{logical['canonical_sha256']}`.",
+        f"- Source cells: {logical['source_cell_count']}; source definitions: {logical['source_definition_count']}; source placements: {logical['aggregate_source_placements']}; max source placements/cell: {logical['max_source_placements_per_cell']}.",
+        f"- Encoded record maxima: cell {logical['max_source_cell_encoded_bytes']} B; placement {logical['max_source_placement_encoded_bytes']} B; source definition {logical['max_source_definition_encoded_bytes']} B.",
+        "",
+        "No canonical target identity, target coordinates, collision, order or footprint truth is inferred by this measurement. "
+        "When CW2 has no accepted SourceIdentityBinding, the carrier records the real source occurrence as unresolved and the appearance ID as source provenance only.",
+        "",
+        "## Two measured runtime carriers",
+        "",
+        "| Carrier | Compression | Artifact B | Raw chunk B | Stored chunk B | Ratio raw/stored | Build ms | Cell ms | Placement ms | Definition ms | Build peak B | Load peak B | Patch B | Changed units |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ])
+
+    for row in result["carriers"]:
+        load_peak = max(
+            row["cell_load_peak_bytes"],
+            row["placement_load_peak_bytes"],
+            row["definition_load_peak_bytes"],
+        )
+        lines.append(
+            f"| `{row['carrier']}` | {row['compression_configuration']} | {row['artifact_bytes']} | "
+            f"{row['raw_chunk_bytes']} | {row['stored_chunk_bytes']} | {row['compression_ratio_raw_to_stored']} | "
+            f"{row['build_ms']:.3f} | {row['median_cell_load_ms']:.3f} | "
+            f"{row['median_placement_load_ms']:.3f} | {row['median_definition_load_ms']:.3f} | "
+            f"{row['build_peak_bytes']} | {load_peak} | "
+            f"{row['rebuilt_or_patch_bytes_after_one_source_placement_edit']} | {row['changed_storage_unit_count']} |"
+        )
+    lines.extend([
+        "",
+        "Both carrier types use the same logical/index structure. The second changes only bounded payload compression to zlib level 6.",
+        "",
+        "## Determinism and locality",
+        "",
+        f"- Source enumeration reorder preserves the typed/logical batch: **{'PASS' if determinism['source_enumeration_order_independent'] else 'FAIL'}**.",
+        f"- Source-shard metadata does not alter logical identity: **{'PASS' if determinism['source_shard_identity_independent'] else 'FAIL'}**.",
+        f"- Rechunking preserves logical identity: **{'PASS' if determinism['rechunk_identity_independent'] else 'FAIL'}**.",
+        f"- Both physical carriers have the same logical index signature: **{'PASS' if determinism['two_carriers_same_logical_index'] else 'FAIL'}**.",
+        f"- Independent repeated builds are byte-identical per carrier: **{'PASS' if determinism['per_carrier_repeat_exact_bytes'] else 'FAIL'}**.",
+        "- Random-access probes resolve one source cell, one source occurrence and one source-definition reference by index without decoding every chunk.",
+        "- The one-record update probe mutates one source-role field only in scratch output; it measures physical rebuild locality and is not claimed as source or gameplay truth.",
+        "",
+        "## Fail-closed evidence",
+        "",
+    ])
+    for key, passed in sorted(result["negative_evidence"].items()):
+        lines.append(f"- {key}: **{'PASS' if passed else 'FAIL'}**")
+    for row in result["carriers"]:
+        lines.append(
+            f"- {row['carrier']}: corruption={'PASS' if row['corruption_rejected'] else 'FAIL'}, "
+            f"truncation={'PASS' if row['truncation_rejected'] else 'FAIL'}, "
+            f"server/client allowlist={'PASS' if row['client_projection_equivalent'] and row['client_server_only_absent'] else 'FAIL'}."
+        )
+
+    lines.extend([
+        "",
+        "## Boundary / disposition",
+        "",
+        "- The measured 32-cell chunk dimension is a bounded evidence configuration, not a production hard maximum.",
+        "- The 64 MiB spike artifact fence and 2 MiB raw-chunk fence are harness safety limits, not selected production resource maxima.",
+        "- zlib is the single mature compression candidate measured here; no serializer/compressor zoo was introduced.",
+        "- No Phase-B target parity was performed. All target-sensitive facts remain `DEFERRED_REQUIRES_PHASE_B`.",
+        "- No production registry, contract, runtime, client, CW2/CW3 implementation or source-profile file is changed.",
+        "- `SPIKE_RESULT != OWNER_FORMAT_DECISION`: this result does not select the permanent World Project/World Bundle format.",
+        "",
+        "## Result",
+        "",
+        "D3 now has reproducible physical-layout/resource evidence for the fresh exact CrystalServer source generation. "
+        "The evidence can inform a later owner/control-plane format decision, but it does not itself make that decision or grant CW4/production authority.",
+        "",
+    ])
+    return "\n".join(lines)
+
 def default_scales() -> list[tuple[int, int]]:
     return [(32, 32), (64, 32), (64, 64), (128, 32), (128, 64)]
 
@@ -1082,14 +2385,63 @@ def main() -> int:
     parser.add_argument("--dossier", type=Path)
     parser.add_argument("--base-sha")
     parser.add_argument("--iterations", type=int, default=9)
+    parser.add_argument("--d3-real-batch", action="store_true")
+    parser.add_argument("--game-root", type=Path)
+    parser.add_argument("--legacy-root", type=Path)
+    parser.add_argument("--map", dest="map_path", type=Path)
+    parser.add_argument("--asset-zip", type=Path)
+    parser.add_argument("--assets", type=Path)
+    parser.add_argument("--source-generation-profile-id")
+
     args = parser.parse_args()
     if args.dossier is not None and not args.base_sha:
         parser.error("--base-sha is required when --dossier is supplied")
+
+    if args.d3_real_batch:
+        if not args.base_sha:
+            parser.error("--base-sha is required for --d3-real-batch")
+        required = {
+            "--game-root": args.game_root,
+            "--legacy-root": args.legacy_root,
+            "--map": args.map_path,
+            "--asset-zip": args.asset_zip,
+            "--assets": args.assets,
+            "--source-generation-profile-id": args.source_generation_profile_id,
+        }
+        missing = [name for name, value in required.items() if value is None]
+        if missing:
+            parser.error("D3 real-batch mode requires " + ", ".join(missing))
+        result = run_d3_real_batch(
+            game_root=args.game_root,
+            legacy_root=args.legacy_root,
+            map_path=args.map_path,
+            asset_zip=args.asset_zip,
+            assets_dir=args.assets,
+            source_generation_profile_id=args.source_generation_profile_id,
+            measurement_head=args.base_sha,
+            work_dir=args.work_dir,
+            load_iterations=args.iterations,
+        )
+        write_results(args.results, result)
+        if args.dossier is not None:
+            dossier = render_d3_dossier(result, exact_head=args.base_sha)
+            atomic_write(
+                args.dossier, dossier.rstrip("\n").encode("utf-8") + b"\n"
+            )
+        print(INVARIANT)
+        print("carrier_types=2")
+        print(f"results={args.results}")
+        if args.dossier is not None:
+            print(f"dossier={args.dossier}")
+        return 0
+
     result = run_benchmarks(args.work_dir, default_scales(), args.iterations)
     write_results(args.results, result)
     if args.dossier is not None:
         dossier = render_dossier(result, exact_base_sha=args.base_sha)
-        atomic_write(args.dossier, dossier.rstrip("\n").encode("utf-8") + b"\n")
+        atomic_write(
+            args.dossier, dossier.rstrip("\n").encode("utf-8") + b"\n"
+        )
     print(f"{INVARIANT}")
     print(f"measurements={len(result['measurements'])}")
     print(f"results={args.results}")

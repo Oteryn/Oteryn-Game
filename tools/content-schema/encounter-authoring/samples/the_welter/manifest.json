@@ -1,0 +1,85 @@
+{
+  "encounter": "canary:encounter/the_welter",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "TheWelterEgg": [
+      "canary:creature/egg"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/raids/egg_the_welter.lua",
+      "blob_sha1": "f5783bf7ae64a6409e9182a168d0643d0de2f11b"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/creaturescripts/monster/the_welter_egg.lua",
+      "blob_sha1": "d2e5ff9e47cfe59941b094be3760878d59c62962"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        47
+      ],
+      "status": "mapped",
+      "resolution": "Egg is the egg participant; its file registers TheWelterEgg.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        3,
+        16,
+        17
+      ],
+      "status": "mapped",
+      "resolution": "onThink schedules the hatching 10 s after the egg's first think (monsters think every second, so within a second of appearing); later thinks schedule more, which find the egg gone.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "A Spawn of the Welter on the egg's tile (forced, no master).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        10
+      ],
+      "status": "mapped",
+      "resolution": "Only this egg is removed (D31).",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        9
+      ],
+      "status": "approved_omission",
+      "resolution": "The poison effect is cosmetic."
+    }
+  ],
+  "outcome_evidence": []
+}

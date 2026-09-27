@@ -26,6 +26,19 @@
         "docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md",
         "live GitHub Issue/PR/CI state"
       ]
+    },
+    {
+      "handover_id": "OTV2-20260917-content-world-design-chat-handoff",
+      "path": "docs/agents/evidence/OTV2-20260917-content-world-design-chat-handoff.md",
+      "status": "historical",
+      "authoritative": false,
+      "expiry_rule": "Expired for current-state authority as soon as any recorded branch, PR, head, ownership, blocker, or accepted programme state changes; always re-resolve from live GitHub and current main before continuation.",
+      "superseded_by": [
+        "docs/architecture/ADR-0005-native-world-format-and-oteryn-studio.md",
+        "docs/architecture/GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md",
+        "docs/architecture/OTERYN_FIRST_REFERENCE_NPC_SERVICE_BOUNDARY_2026-09-09.md",
+        "live GitHub Issue #504 / PR #641 / control-plane #162 / CI state"
+      ]
     }
   ]
 }

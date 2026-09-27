@@ -1,0 +1,170 @@
+name: Global Source Overlap
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/content-census/global_source_overlap.py
+      - tools/content-census/global_source_overlap_self_test.py
+      - tools/content-census/global_source_overlap_fetch_artifacts.py
+      - .github/workflows/global-source-overlap.yml
+      - docs/agents/evidence/OTV2-20260924-global-source-overlap.json
+      - docs/agents/tasks/active/OTV2-20260924-global-source-overlap.md
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: global-source-overlap-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  synthetic:
+    name: G2 / synthetic exact-ID checks
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: Run focused synthetic tests
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/global_source_overlap.py \
+            tools/content-census/global_source_overlap_self_test.py \
+            tools/content-census/global_source_overlap_fetch_artifacts.py
+          python tools/content-census/global_source_overlap_self_test.py
+
+  offline_merge:
+    name: G2 / pinned source artifacts
+    needs: synthetic
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+      - name: Fetch and verify pinned G1 and Item artifacts
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          python tools/content-census/global_source_overlap_fetch_artifacts.py \
+            "$RUNNER_TEMP/g2-source-overlap-inputs"
+      - name: Merge exact page IDs
+        run: |
+          set -euo pipefail
+          INPUT="$RUNNER_TEMP/g2-source-overlap-inputs"
+          OUTPUT="$RUNNER_TEMP/g2-source-overlap-output"
+          G1_ZIP_SHA="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["g1_archive_sha256"])' "$INPUT/verified-archive-digests.json")"
+          ITEM_ZIP_SHA="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["item_archive_sha256"])' "$INPUT/verified-archive-digests.json")"
+          G1_RUN="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["g1_run_id"])' "$INPUT/verified-archive-digests.json")"
+          G1_HEAD="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["g1_head_sha"])' "$INPUT/verified-archive-digests.json")"
+          ITEM_RUN="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["item_run_id"])' "$INPUT/verified-archive-digests.json")"
+          ITEM_HEAD="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["item_head_sha"])' "$INPUT/verified-archive-digests.json")"
+          python tools/content-census/global_source_overlap.py \
+            --g1 "$INPUT/g1-source-universe.json" \
+            --g1-manifest "$INPUT/g1-manifest.json" \
+            --item-crosswalk "$INPUT/item-crosswalk-first.json" \
+            --item-manifest "$INPUT/item-manifest-first.json" \
+            --g1-artifact-id 10798668295 \
+            --item-artifact-id 10778892407 \
+            --g1-archive-sha256 "$G1_ZIP_SHA" \
+            --item-archive-sha256 "$ITEM_ZIP_SHA" \
+            --g1-run-id "$G1_RUN" \
+            --g1-head-sha "$G1_HEAD" \
+            --item-run-id "$ITEM_RUN" \
+            --item-head-sha "$ITEM_HEAD" \
+            --out "$OUTPUT"
+          python - "$OUTPUT/manifest.json" <<'PY'
+          import json
+          import pathlib
+          import sys
+          manifest = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding="utf-8"))
+          assert manifest["schema"] == "OTERYN_GLOBAL_SOURCE_OVERLAP_MANIFEST/v1"
+          counts = manifest["counts"]
+          assert counts["g1_live_unique_pages"] == 9373
+          assert counts["protected_item_pages"] == 6918
+          assert 0 <= counts["exact_id_overlap_pages"] <= min(
+              counts["g1_live_unique_pages"], counts["protected_item_pages"]
+          )
+          assert counts["global_unique_pages"] == (
+              counts["g1_live_unique_pages"]
+              + counts["protected_item_pages"]
+              - counts["exact_id_overlap_pages"]
+          )
+          assert counts["cross_lane_title_divergence_pages"] == sum(
+              overlap["cross_lane_title_divergence"]
+              for overlap in json.loads(
+                  pathlib.Path(sys.argv[1]).with_name("global-source-universe.json").read_text(encoding="utf-8")
+              )["overlaps"]
+          )
+          assert manifest["input_digests"]["g1_run_id"] == "35977349690"
+          assert manifest["input_digests"]["g1_head_sha"] == (
+              "f1d7dbd6577b033c53545d8650ffba05aafc9480"
+          )
+          assert manifest["input_digests"]["protected_item_crosswalk_run_id"] == "35925860576"
+          assert manifest["input_digests"]["protected_item_crosswalk_head_sha"] == (
+              "61d051a13329c51ae04d8a011655e279664c334c"
+          )
+          assert manifest["input_digests"]["g1_archive_sha256"] == (
+              "bf08a2715891d138b5db4ed4be0a69034770315e8d67f3e83867f22b9afc9863"
+          )
+          assert manifest["input_digests"]["protected_item_crosswalk_archive_sha256"] == (
+              "834c10d3dfb24b8857ffd666046743c96ee4093e7e09ef170dcd477ffea91b43"
+          )
+          embedded = manifest["input_digests"]["protected_item_crosswalk_embedded_inputs"]
+          assert embedded["classification_crosswalk_sha256"] == (
+              "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
+          )
+          assert embedded["crystal_items_sha256"] == (
+              "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+          )
+          assert embedded["crystal_revision"] == "ff7ede593c69d4c658b382c97443e8155926924a"
+          assert embedded["wiki_first_census_stable_sha256"] == (
+              "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
+          )
+          assert manifest["invariants"]["semantic_promotion_performed"] is False
+          assert manifest["invariants"]["canonical_identity_selection_performed"] is False
+          print("GLOBAL_SOURCE_OVERLAP_MANIFEST_BEGIN")
+          print(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(",", ":")))
+          print("GLOBAL_SOURCE_OVERLAP_MANIFEST_END")
+          PY
+      - name: Upload G2 output corpus and compact manifest only
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: global-source-overlap-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/g2-source-overlap-output/global-source-universe.json
+            ${{ runner.temp }}/g2-source-overlap-output/manifest.json
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,96 @@
+{
+  "encounter": "canary:encounter/the_sandking",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {},
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/the_sandking.lua",
+      "blob_sha1": "ecddb810da0bd04634e4c6f64eb93394eb54b48e"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+      "blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "The Sandking is the the_sandking participant.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        12,
+        13,
+        19,
+        20,
+        21,
+        22,
+        23,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"the sandking\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        14,
+        15,
+        16,
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a creature with a master.",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        46,
+        47,
+        48,
+        49,
+        50,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage CultsOfTibia.Life.Mission to 8 when it is lower.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        7,
+        24,
+        25,
+        26
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "The credit needs the global \"sandking\" storage at least 5: the fight stage, set to 1 by actions_bosses_levers.lua line 481 and advanced by creaturescripts_sandking.lua. It is the stage counter of this encounter, but the rules that advance it are not transcribed yet.",
+      "destination": "/encounter/rules/0/conditions/1"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "the_sandking_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U11_40.CultsOfTibia.Life.Mission",
+        "raise_to_at_least": 8
+      }
+    }
+  ]
+}

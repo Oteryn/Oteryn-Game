@@ -1,0 +1,34 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_enraged_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/possessed_tree",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/unbound_blightwalker",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/unbound_demon",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/unbound_demon_outcast",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/unbound_defiler",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

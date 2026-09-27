@@ -335,6 +335,51 @@ classification: <status>
 
 A conflict in `loot_probability` must not contaminate an independently well-supported `hitpoints` field.
 
+## 6a. Full Content G4+ phase profile
+
+For canonical `Oteryn: full content population` (legacy compatibility invocation: `Oteryn: full content census`), G4+ uses a narrower phase policy than the generic Reference investigation flow. Protected census/crosswalk outputs are inputs to population; additional analysis-only work must directly unblock a named canonical population batch.
+
+During G4+:
+
+- use **TibiaWiki BR as the primary bulk working source** for current static/semi-static content;
+- use a second maintained structured Tibia encyclopedia/database as cross-check where available;
+- public official CipSoft/Tibia evidence may resolve an atomic conflict when it directly addresses the same claim;
+- **do not require authenticated Global Tibia/Cyclopedia observation** for ordinary G4 admission, crosswalk or canonical population;
+- **do not use Cyclopedia as the completeness denominator**, especially for Terrain, WorldObject, LocalObject, Transition, Presentation and map/environment content;
+- when structured sources remain unresolved, keep `UNKNOWN`/`CONFLICT` and continue legal path-disjoint work instead of escalating every static record to live Global browsing;
+- OTS/donors remain implementation/mechanics/hypothesis evidence and never override a newer current structured-wiki value for the same static field without stronger direct evidence.
+
+Authenticated Global/Cyclopedia inspection is intentionally deferred to a separate future terminal verifier after canonical population is mature. That verifier may compare player-visible facts and detect drift, but it is not a G4 blocker and requires separate explicit authority/session handling.
+
+For this Full Content phase, the working source order is:
+
+`TibiaWiki BR -> second structured cross-check -> public official evidence for exact conflicts -> preserve UNKNOWN/CONFLICT`.
+
+OTS/donors may assist throughout as hypotheses/implementation evidence. Live authenticated Global observation is deferred.
+
+## 6b. G4 external identity retention
+
+For Full Content G4+ crosswalks, external identifiers are evidence/provenance and must remain recoverable even when they are not canonical Oteryn identity.
+
+Apply `docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md`.
+
+Every persisted G4 source identity must be qualified by:
+
+- exact source key/provider;
+- exact source revision/snapshot;
+- identifier namespace/kind;
+- verbatim external ID.
+
+A naked numeric `id` is not portable evidence. The same number in TibiaWiki, Canary, Crystal or the client is not an identity match.
+
+Canonical Oteryn identity remains independent. Promote only exact/accepted source-to-target bindings; keep probable, ambiguous, conflict and no-match states in crosswalk evidence. Preserve source IDs even when a field value from that source is rejected.
+
+Rendering identity remains separate from gameplay definition identity: source server Item IDs may map to Item, while client appearance/sprite IDs normally map to Presentation/Asset evidence. Never mint an Item/Creature/WorldObject key from a client appearance ID.
+
+The minimum durable join key for later comparison is:
+
+`source key + source revision + identity namespace + external ID -> canonical Oteryn target`.
+
 ## 7. Bulk-data fast path
 
 For large static data families, use this efficient process:
@@ -354,6 +399,9 @@ field-level agreement/conflict table
         |
         +--> conflict / target-sensitive / behavior-sensitive
                 -> official CipSoft search and/or controlled Global observation
+                   (except Full Content G4+, where authenticated Global observation
+                    is deferred by section 6a and unresolved static fields remain
+                    UNKNOWN/CONFLICT)
 ```
 
 This avoids spending expensive black-box/primary-source research on thousands of mundane static fields while preserving honest evidence semantics.

@@ -1,0 +1,82 @@
+{
+  "identity": {
+    "key": "canary:encounter/mazoran",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Ferumbras Ascension: Mazoran",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "mazoran",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mazoran",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33585, 32699, 14)."
+    },
+    {
+      "key": "godbreaker",
+      "kind": "point",
+      "description": "Godbreaker destination; Canary (33614, 32679, 15)."
+    },
+    {
+      "key": "ascendant_exit",
+      "kind": "point",
+      "description": "Default teleporter destination; Canary (33319, 32318, 13)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "mazoran_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "mazoran"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "mazoran_defeated",
+          "credited": "damage_contributors"
+        },
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "godbreaker",
+          "effect": "canary.appearance:effect/thunder",
+          "revert_after_ms": 60000,
+          "revert_destination": "ascendant_exit"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "mazoran_defeated"
+  ]
+}

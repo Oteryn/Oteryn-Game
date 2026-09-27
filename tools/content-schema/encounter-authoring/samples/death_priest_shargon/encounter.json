@@ -1,0 +1,70 @@
+{
+  "identity": {
+    "key": "canary:encounter/death_priest_shargon",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dark Trails: Death Priest Shargon",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "death_priest_shargon",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/death_priest_shargon",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Canary (33487, 32101, 9)."
+    },
+    {
+      "key": "shargon_exit",
+      "kind": "point",
+      "description": "Canary (33489, 32088, 9)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "death_priest_shargon_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "death_priest_shargon"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "create",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "shargon_exit",
+          "revert_after_ms": 300000
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "death_priest_shargon_defeated",
+          "credited": "party"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "death_priest_shargon_defeated"
+  ]
+}

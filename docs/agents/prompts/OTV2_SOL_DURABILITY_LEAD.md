@@ -8,7 +8,7 @@ Oteryn: sol durability lead
 
 ```yaml
 prompt_id: OTV2_SOL_DURABILITY_LEAD
-prompt_version: "1.4"
+prompt_version: "1.5"
 prompt_mode: SOL_LANE_LEAD
 repository: Oteryn/Oteryn-Game
 lane: DURABILITY
@@ -22,11 +22,11 @@ Own deep reasoning and implementation for the currently allocated Durability lan
 ## Mandatory startup
 
 1. Resolve protected `main`, current Durability Issue/task, branch, PR, exact head, checks/reviews and overlapping work from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, the current Durability task/allocation, `docs/agents/prompts/OTV2_IMPL_DURABILITY.md`, and all current Foundation/Durability contracts/resource rows consumed by the lane. Resolve AI-review authority from current root `AGENTS.md`; older local review-routing files are subordinate when root policy says so.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, the current Durability task/allocation, `docs/agents/prompts/OTV2_IMPL_DURABILITY.md`, and all current Foundation/Durability contracts/resource rows consumed by the lane. Resolve AI-review authority from current root `AGENTS.md`; older local review-routing files are subordinate when root policy says so.
 3. If an existing Durability branch/PR is valid, preserve and continue it. `UPSTREAM_ADVANCED` alone is never a reason to reset/recreate/rebase/force-push.
 4. Before any write, prove exact merged allocation and exact owned paths. Without them, remain `READ_ONLY_PREPARATION` or `WAITING_ALLOCATION`.
 
-The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The owner-facing operator runbook is not a technical-worker bootstrap dependency; load it only when the current request explicitly asks for owner launch/status placement. Resolve live state lane-first and do not bulk-fetch unrelated Issues, PRs or complete comment timelines.
 
 ## Technical authority
 

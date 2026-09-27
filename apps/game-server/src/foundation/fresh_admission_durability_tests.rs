@@ -1601,6 +1601,80 @@ fn fresh_lifecycle_claim_preservation_and_release_bind_both_holders() -> TestRes
 }
 
 #[test]
+fn control_loss_claim_ownership_survives_owner_refresh_but_not_ownership_change() -> TestResult {
+    let mut source = Independent::new()?;
+    let flow = source.begin()?;
+    source.commit_sources(flow.operation())?;
+    let claims: Vec<_> = source.rows[..2]
+        .iter()
+        .cloned()
+        .collect::<Option<Vec<_>>>()
+        .ok_or("rows")?;
+    let account = &source.source.current.account_id;
+    let check = |rows: &[Option<AdmissionAuthorityPublicationChangeV1>]| {
+        validate_claim_ownership_v1(account, source.snapshot, source.snapshot, &claims, rows)
+    };
+    assert!(check(&source.rows[..2]).is_ok());
+    // A Platform security re-observation republishes the Account row with a
+    // new owner decision while presence stays with this session.
+    let mut refreshed = source.rows[..2].to_vec();
+    let row = refreshed[0].as_mut().ok_or("row")?;
+    row.source.decision_identity = "platform-refresh".into();
+    row.source.source_revision += 1;
+    row.publication_revision += 1;
+    if let AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state {
+        security.provenance.source_revision += 1;
+        security.provenance.decision_identity = "platform-refresh".into();
+    }
+    assert!(check(&refreshed).is_ok());
+    // The strict preserving check still treats the refresh as stale.
+    assert!(
+        validate_claim_preserving_session_v1(
+            account,
+            source.snapshot,
+            source.snapshot,
+            &claims,
+            &refreshed
+        )
+        .is_err()
+    );
+    for mutation in 0..5 {
+        let mut rows = source.rows[..2].to_vec();
+        match mutation {
+            0 => {
+                if let AdmissionAuthorityGuardStateV1::Account { presence, .. } =
+                    &mut rows[0].as_mut().ok_or("row")?.state
+                {
+                    *presence = Some((
+                        source.source.current.character_id,
+                        GameSessionId::decode(&id(10))?,
+                    ));
+                }
+            }
+            1 => {
+                if let AdmissionAuthorityGuardStateV1::Character { holder, .. } =
+                    &mut rows[1].as_mut().ok_or("row")?.state
+                {
+                    *holder = Some(GameSessionId::decode(&id(10))?);
+                }
+            }
+            2 => {
+                if let AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation, ..
+                } = &mut rows[1].as_mut().ok_or("row")?.state
+                {
+                    *lease_generation += 1;
+                }
+            }
+            3 => rows[1] = None,
+            _ => rows.swap(0, 1),
+        }
+        assert!(check(&rows).is_err(), "mutation {mutation}");
+    }
+    Ok(())
+}
+
+#[test]
 fn fresh_terminal_release_cannot_accept_lease_below_initial_floor() -> TestResult {
     let mut source = Independent::new()?;
     let flow = source.begin()?;

@@ -1,0 +1,183 @@
+{
+  "creature": {
+    "identity": {
+      "key": "oteryn:creature",
+      "revision": "r1"
+    },
+    "display_name": "Source Creature",
+    "inspection": {
+      "description": "a source creature"
+    },
+    "stats": {
+      "max_health": 260,
+      "initial_health": 260,
+      "experience": 150,
+      "speed": 95,
+      "armor": 17,
+      "defense": 20,
+      "critical_chance_percent": 0
+    },
+    "resistances": [
+      {
+        "damage_type": "energy",
+        "reduction_percent": {
+          "numerator": 25,
+          "denominator": 1
+        }
+      }
+    ],
+    "immunities": {
+      "damage_types": [],
+      "conditions": []
+    },
+    "flags": {
+      "attackable": true,
+      "illusionable": true,
+      "health_hidden": false
+    },
+    "summoning": {
+      "summonable": true,
+      "mana_cost": 490,
+      "convinceable": false,
+      "is_familiar": false
+    },
+    "bestiary": {
+      "class": "Giant",
+      "taxonomy": "giant",
+      "difficulty": "medium",
+      "occurrence": "common",
+      "kill_thresholds": [
+        25,
+        250,
+        500
+      ],
+      "charm_points": 15
+    },
+    "corpse_item": {
+      "family": "Item",
+      "key": "oteryn:body",
+      "revision": "r1"
+    },
+    "encyclopedia": {
+      "description_document": {
+        "family": "Document",
+        "key": "oteryn:lore",
+        "revision": "r1"
+      }
+    },
+    "presentation": {
+      "family": "Presentation",
+      "key": "oteryn:presentation",
+      "revision": "r1"
+    },
+    "behavior": {
+      "family": "Behavior",
+      "key": "oteryn:behavior",
+      "revision": "r1"
+    },
+    "loot": {
+      "family": "Loot",
+      "key": "oteryn:loot",
+      "revision": "r1"
+    },
+    "damage_reflection": [],
+    "healing_from_damage": []
+  },
+  "behavior": {
+    "identity": {
+      "key": "oteryn:behavior",
+      "revision": "r1"
+    },
+    "movement": {
+      "can_walk": true,
+      "pass_through": false,
+      "pushable": false,
+      "push_items": true,
+      "push_creatures": true,
+      "field_permissions": {
+        "energy": false,
+        "fire": false,
+        "poison": false
+      }
+    },
+    "targeting": {
+      "hostile": true,
+      "can_target": true,
+      "sense_invisible": false,
+      "target_distance_tiles": 1,
+      "static_attack_chance_percent": 90,
+      "change_target": {
+        "interval_ms": 4000,
+        "chance_percent": 10
+      },
+      "strategy_weights": {
+        "nearest": 70,
+        "damage": 30,
+        "health": 0,
+        "random": 0
+      },
+      "flee_health": 0
+    },
+    "attacks": [
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "oteryn:melee",
+          "revision": "r1"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 100
+      }
+    ],
+    "defenses": [],
+    "voices": {
+      "interval_ms": 5000,
+      "chance_percent": 10,
+      "entries": [
+        {
+          "text": "Source spelling stays unchanged!",
+          "mode": "say"
+        }
+      ]
+    },
+    "event_bindings": []
+  },
+  "presentation": {
+    "identity": {
+      "key": "oteryn:presentation",
+      "revision": "r1"
+    },
+    "appearance": {
+      "asset_binding": "oteryn:creature_sprite",
+      "palette_bindings": [],
+      "attachment_bindings": [],
+      "visual_effect_bindings": []
+    },
+    "light": {
+      "level": 0
+    },
+    "audio": {
+      "event_bindings": []
+    }
+  },
+  "loot": {
+    "identity": {
+      "key": "oteryn:loot",
+      "revision": "r1"
+    },
+    "algorithm": "IndependentBernoulli",
+    "entries": [
+      {
+        "item": {
+          "family": "Item",
+          "key": "oteryn:coin",
+          "revision": "r1"
+        },
+        "min_count": 1,
+        "max_count": 47,
+        "probability_percent": 82,
+        "skip_later_same_item_after_success": false
+      }
+    ]
+  }
+}

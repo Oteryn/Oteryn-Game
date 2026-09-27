@@ -46,10 +46,10 @@ Before mutation or worker integration:
 2. read `docs/agents/AGENTS.md`;
 3. read `docs/agents/MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md`;
 4. read `docs/agents/programs/OTERYN_V2_ARCHITECTURE_PARALLEL_WORK_ALLOCATION.md`;
-5. read `docs/agents/PROMPTING_STANDARD.md`, `ARCHITECTURE_DECISION_DISCIPLINE.md`, `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`, `ANTI_STALL_AND_EXECUTION_BUDGET.md` and applicable review policies;
+5. read `ARCHITECTURE_DECISION_DISCIPLINE.md`, `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md` and only operation-specific governance/review policy; load prompting/evaluation standards only when prompt/governance is itself being changed or audited;
 6. read `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`;
 7. read the current successor handoff and `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`;
-8. inspect live `main`, open PRs, worker issues/tasks/branches, reviews, CI and owned-path overlap;
+8. inspect live `main`, the exact allocated worker set under the current architecture task, and only PRs/issues/branches/reviews/CI needed to prove those workers plus material path overlap;
 9. read accepted ADR/contracts relevant to the worker PR under audit;
 10. classify drift, overlap and dependency changes before writing.
 
@@ -232,7 +232,7 @@ For an accepted worker PR require, on the final unchanged head:
 - no base drift/dependency hold;
 - no unapproved Codex/AI or authority use.
 
-Submit integration only through the authenticated bound META 3.1 native exact-head Merge Queue contract: REST `merge-async` with the exact qualified `sha` and explicit `merge_action="merge_queue"` after fresh repository/PR/`base=main`/head/auth/eligibility preflight. Treat HTTP `202` as acceptance only: preserve the exact returned async UUID and executor-owned receipt sequence, then require immediate same-target live readback bound to that UUID at a strictly greater executor sequence; wall-clock timestamps are freshness-only. Reconcile HTTP `200`/`409`. Queue admission is not terminal proof; require real `merge_group` `game-gate` SUCCESS and protected-main readback before lifecycle closeout. Direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, a default merge action, no-op/retrigger commits and ambiguous automated dequeue are forbidden substitutes. If the selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified candidate.
+Submit protected integration only after fresh repository/PR/`base=main`/head/auth/eligibility preflight and resolution of the current immutable bound META integration-capability router. Consume the router's current sealed decision and bound route-specific receipt/reconciliation contract without selecting or reclassifying a provider-local route in this prompt. Record `BLOCKED_CAPABILITY_UNAVAILABLE` only when that bound router returns the blocked state. Queue request or admission is not terminal proof; require real `merge_group` `game-gate` SUCCESS and protected-main readback before lifecycle closeout. Direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, a default merge action, no-op/retrigger commits and ambiguous automated dequeue remain forbidden substitutes.
 
 ## 13. Lifecycle closeout
 

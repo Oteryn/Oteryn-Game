@@ -1,0 +1,912 @@
+{
+  "schema": "OTERYN_FULL_CONTENT_STORAGE_STRUCTURE_AND_HIERARCHY_AUDIT/v1",
+  "status": "G0_COMPLETE_CANDIDATE",
+  "repository": "Oteryn/Oteryn-Game",
+  "base_main_sha": "c07240d50473b8697cbe10641028cd0e7eb2d1e4",
+  "as_of": "2026-09-23",
+  "task_id": "OTV2-20260923-full-content-storage-structure-audit",
+  "mode": "READ_ONLY_ANALYSIS_WITH_MINIMUM_TOOLING_STRUCTURE_REPAIR",
+  "scope_contract": {
+    "source_universe": "TibiaWiki/Cyclopedia materially reusable game-content surface",
+    "hard_exclusions": [
+      "Kalkulatory",
+      "Narzędzie do nasycania",
+      "Dostawca"
+    ],
+    "hard_exclusions_present_in_navigation_matrix": false,
+    "bulk_source_import_performed": false,
+    "item_census_restarted": false,
+    "identity_minting_performed": false,
+    "semantic_promotion_performed": false,
+    "project_v3_created": false
+  },
+  "verified_inputs": {
+    "worldproject_v2_code": {
+      "path": "apps/game-server/src/content/project/v2.rs",
+      "blob_sha": "e1b1488e3b27911add2b64891255f6942fe4ecfb"
+    },
+    "worldproject_v2_decision": {
+      "path": "docs/architecture/OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION.md",
+      "blob_sha": "b891e50a89aeed8bf80a39c251291f85cf5081eb"
+    },
+    "wiki_wide_coverage": {
+      "path": "docs/agents/evidence/OTV2-20260923-tibiawiki-worldproject-v2-coverage.json",
+      "blob_sha": "ddf6f1f142d64fb4ea70cc15ce701e35a7014478",
+      "summary": {
+        "domain_groups": 19,
+        "records": 49,
+        "unclassified": 0,
+        "material_missing_after_candidate": 0
+      }
+    },
+    "item_wiki_first": {
+      "pr": 803,
+      "merge_commit": "c07240d50473b8697cbe10641028cd0e7eb2d1e4",
+      "manifest": "docs/agents/evidence/OTV2-20260923-item-wiki-first-census.json",
+      "counts": {
+        "discovered_pages": 6918,
+        "fetched_pages": 6918,
+        "INFOBOX_ITEM": 5475,
+        "INFOBOX_ITEM_PARSE_ERROR": 7,
+        "NO_INFOBOX_ITEM": 1436,
+        "distinct_infobox_fields": 83
+      },
+      "stable_digest": "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
+    },
+    "item_lifecycle_closeout": {
+      "pr": 805,
+      "state": "OPEN_AT_G0_START",
+      "exact_head": "9eea0970a29a795fb98842e62a4729e47c974a4a",
+      "path_overlap": false
+    },
+    "real_batch_scale": {
+      "path": "docs/agents/evidence/OTV2-20260918-content-world-d3-real-batch-bundle-measurement.json",
+      "blob_sha": "a35d3014613f8f34a406bb66246dfacdff72833b",
+      "source_tile_stream_count": 18997668,
+      "measured_cells": 2048,
+      "measured_source_occurrences": 2463,
+      "measured_source_definitions": 183
+    },
+    "editable_format_spike": {
+      "path": "docs/agents/evidence/OTV2-20260824-content-format-spike-results.json",
+      "blob_sha": "733a81be5e691219057e31fb2242a0ce88ae8066",
+      "largest_measured_fixture_cells": 16384,
+      "chunked_json_tree_bytes_at_largest_fixture": 2272665
+    }
+  },
+  "canonical_v2_physical_layout": [
+    {
+      "role": "reference-records",
+      "path": "definitions/reference.json"
+    },
+    {
+      "role": "declarative-definitions",
+      "path": "definitions/declarations.json"
+    },
+    {
+      "role": "world-records",
+      "path": "worlds/world.json"
+    },
+    {
+      "role": "presentation-bindings",
+      "path": "presentations/bindings.json"
+    },
+    {
+      "role": "asset-records",
+      "path": "assets/catalog.json"
+    },
+    {
+      "role": "import-candidates",
+      "path": "provenance/imports.json"
+    },
+    {
+      "role": "provenance-records",
+      "path": "provenance/sources.json"
+    },
+    {
+      "role": "editor-records",
+      "path": "editor/author.json"
+    }
+  ],
+  "navigation_coverage": [
+    {
+      "surface": "Rzeczy",
+      "disposition": "DUPLICATE_OVERLAP",
+      "owners": [
+        "Item",
+        "Document",
+        "WorldObject",
+        "LocalObject",
+        "Presentation"
+      ],
+      "note": "source umbrella; never an Oteryn family"
+    },
+    {
+      "surface": "Bestiariusz",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Creature"
+      ],
+      "note": "static Bestiary facts are Creature authoring; player progress stays durable state"
+    },
+    {
+      "surface": "Uroki",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Charm"
+      ],
+      "note": "Charm static definitions"
+    },
+    {
+      "surface": "Mapa",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Terrain",
+        "WorldObject",
+        "Area",
+        "Transition",
+        "WorldPlacement",
+        "Presentation"
+      ],
+      "note": "definitions plus exact occurrences"
+    },
+    {
+      "surface": "Domy",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "House",
+        "Area",
+        "WorldPlacement"
+      ],
+      "note": "static house definition plus spatial placement"
+    },
+    {
+      "surface": "Ratusze",
+      "disposition": "DUPLICATE_OVERLAP",
+      "owners": [
+        "Area",
+        "WorldObject",
+        "NPC",
+        "Service"
+      ],
+      "note": "location/building/service overlap; no TownHall family"
+    },
+    {
+      "surface": "Bossiary",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Creature",
+        "Encounter"
+      ],
+      "note": "boss identity remains Creature; Bosstiary facts overlay Creature; encounters separate"
+    },
+    {
+      "surface": "Sklep",
+      "disposition": "DUPLICATE_OVERLAP",
+      "owners": [
+        "Item",
+        "Outfit",
+        "Mount",
+        "Presentation"
+      ],
+      "note": "reusable content maps to existing families; commercial/account facts remain external"
+    },
+    {
+      "surface": "Magiczne Archiwum",
+      "disposition": "DUPLICATE_OVERLAP",
+      "owners": [
+        "Ability",
+        "Effect",
+        "Formula",
+        "Item"
+      ],
+      "note": "spell/rune structured content reuses canonical execution families"
+    },
+    {
+      "surface": "Osiągnięcia",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Achievement"
+      ],
+      "note": "static source definition; unlock state external"
+    },
+    {
+      "surface": "Biblioteki",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Document",
+        "Area",
+        "WorldPlacement",
+        "WorldObject",
+        "Item"
+      ],
+      "note": "document identity separated from physical occurrence"
+    },
+    {
+      "surface": "Miasta",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Area"
+      ],
+      "note": "area hierarchy"
+    },
+    {
+      "surface": "Zabudowania",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Area",
+        "WorldObject",
+        "House",
+        "WorldPlacement"
+      ],
+      "note": "structural definitions plus placement"
+    },
+    {
+      "surface": "Stworzenia",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Creature"
+      ],
+      "note": "creature definitions"
+    },
+    {
+      "surface": "Tereny łowieckie",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Area",
+        "Creature",
+        "Encounter",
+        "WorldPlacement"
+      ],
+      "note": "area plus spawn/encounter occurrence evidence"
+    },
+    {
+      "surface": "Zaklęcia",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Ability",
+        "Effect",
+        "Formula"
+      ],
+      "note": "execution graph"
+    },
+    {
+      "surface": "Zmiany w Mini Świecie",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Encounter"
+      ],
+      "note": "MiniWorldChange encounter classification"
+    },
+    {
+      "surface": "Mocowania",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Mount"
+      ],
+      "note": "static mount definitions"
+    },
+    {
+      "surface": "NPC-e",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "NPC",
+        "Dialogue",
+        "Service",
+        "Interaction",
+        "WorldPlacement"
+      ],
+      "note": "identity plus behavior/service/location relations"
+    },
+    {
+      "surface": "Obiekty",
+      "disposition": "DUPLICATE_OVERLAP",
+      "owners": [
+        "Terrain",
+        "WorldObject",
+        "LocalObject",
+        "Item",
+        "Transition",
+        "Presentation",
+        "Asset"
+      ],
+      "note": "technical source object categories must not collapse semantic families"
+    },
+    {
+      "surface": "Stroje",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Outfit"
+      ],
+      "note": "static outfit definitions"
+    },
+    {
+      "surface": "Zadania",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Quest",
+        "Interaction",
+        "NPC",
+        "Area",
+        "Encounter"
+      ],
+      "note": "quest identity and typed relations"
+    },
+    {
+      "surface": "Runy",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Item",
+        "Ability",
+        "Interaction"
+      ],
+      "note": "no Rune family"
+    },
+    {
+      "surface": "Serwery",
+      "disposition": "SOURCE_NAVIGATION_ONLY",
+      "owners": [],
+      "note": "retain only actual reusable game-content evidence if discovered; server-list/tool metadata is not content"
+    },
+    {
+      "surface": "Codzienne zadania",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Quest",
+        "Interaction",
+        "Encounter"
+      ],
+      "note": "repeatability is static authoring; current cooldown/progress external"
+    },
+    {
+      "surface": "Tibiadrom",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Encounter",
+        "Creature",
+        "Area",
+        "Item",
+        "Achievement"
+      ],
+      "note": "arena encounters and reward relations"
+    },
+    {
+      "surface": "Aktualizacje",
+      "disposition": "PROVENANCE_ONLY",
+      "owners": [],
+      "note": "bounded change/revision evidence only"
+    },
+    {
+      "surface": "Zmiany świata",
+      "disposition": "MAPPED_TO_OTERYN_FAMILY",
+      "owners": [
+        "Encounter"
+      ],
+      "note": "WorldChange encounter classification"
+    },
+    {
+      "surface": "Zadania światowe",
+      "disposition": "RELATIONSHIP_SYSTEM",
+      "owners": [
+        "Quest",
+        "Encounter",
+        "Interaction"
+      ],
+      "note": "world quest definitions/encounters"
+    }
+  ],
+  "navigation_unresolved": 0,
+  "separation": {
+    "reusable_definitions": "definitions/reference.json + definitions/declarations.json",
+    "relationships": "typed references on canonical/reference records, declarative definitions and authoring profiles; presentation bindings in presentations/bindings.json",
+    "placements": "worlds/world.json ProjectV2Placement; stable placement key separate from definition identity",
+    "mutable_runtime_state": "outside WorldProject source; owned by ItemInstance/Character/ChannelRuntime/domain durability as applicable",
+    "provenance": "provenance/imports.json + provenance/sources.json",
+    "editor_metadata": "editor/author.json",
+    "evidence": "docs/agents/evidence/"
+  },
+  "family_matrix": [
+    {
+      "family": "Terrain",
+      "kind": "executable",
+      "definition_storage": "definitions/reference.json",
+      "relationship_storage": "typed reference/placement refs",
+      "placement_storage": "worlds/world.json",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/terrain",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "DEFER_PLACEMENT_SCALE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Presentation",
+      "kind": "executable",
+      "definition_storage": "definitions/reference.json",
+      "relationship_storage": "presentations/bindings.json",
+      "placement_storage": "via referenced placements",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/presentations",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "LocalObject",
+      "kind": "executable",
+      "definition_storage": "definitions/reference.json",
+      "relationship_storage": "existing transition/reference graph",
+      "placement_storage": "worlds/world.json",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/world-objects",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "DEFER_PLACEMENT_SCALE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Item",
+      "kind": "executable + source overlay",
+      "definition_storage": "definitions/reference.json + item_authoring in definitions/declarations.json",
+      "relationship_storage": "Item->Ability/Interaction/Document; Service offers/recipes",
+      "placement_storage": "worlds/world.json when placed",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/items",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE_DEFINITION_SCALE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Creature",
+      "kind": "executable + source overlay",
+      "definition_storage": "definitions/reference.json + authoring_profiles",
+      "relationship_storage": "Creature->Loot/Ability; Encounter/Area relations",
+      "placement_storage": "worlds/world.json / encounter relations",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/creatures",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE_DEFINITION_SCALE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Ability",
+      "kind": "executable + source overlay",
+      "definition_storage": "definitions/reference.json + authoring_profiles",
+      "relationship_storage": "Ability->Effect->Formula; acquisition relations",
+      "placement_storage": "not normally spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/abilities",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Effect",
+      "kind": "executable",
+      "definition_storage": "definitions/reference.json",
+      "relationship_storage": "Ability/Charm references",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/effects",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Formula",
+      "kind": "executable",
+      "definition_storage": "definitions/reference.json",
+      "relationship_storage": "Ability/Effect references",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/formulas",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Loot",
+      "kind": "executable",
+      "definition_storage": "definitions/reference.json",
+      "relationship_storage": "Creature->Loot->Item",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/loot",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Behavior",
+      "kind": "executable",
+      "definition_storage": "definitions/reference.json",
+      "relationship_storage": "NPC/Creature behavior refs",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/behaviors",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "WorldObject",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json + authoring_profiles",
+      "relationship_storage": "Area/Interaction/Transition/Document/Presentation refs",
+      "placement_storage": "worlds/world.json",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/world-objects",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "DEFER_PLACEMENT_SCALE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Area",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "parent Area; House/Encounter/placement refs",
+      "placement_storage": "worlds/world.json area association",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/areas",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Document",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "Item/WorldObject/placement bindings",
+      "placement_storage": "worlds/world.json optional document binding",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/documents",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Achievement",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "Interaction unlock refs; Quest rewards",
+      "placement_storage": "not normally spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/achievements",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Outfit",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "Presentation + acquisition Interaction refs",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/outfits",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Mount",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "Presentation/Item/Interaction refs",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/mounts",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Charm",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "Effect refs",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/charms",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "NPC",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "Presentation/Behavior/Dialogue/Service refs",
+      "placement_storage": "worlds/world.json",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/npcs",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "DEFER_PLACEMENT_SCALE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Dialogue",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "NPC relation",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/npcs",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Service",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "Item offers/recipes and NPC service refs",
+      "placement_storage": "not spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/npcs",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Interaction",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "Quest/Item/WorldObject/Encounter/acquisition refs",
+      "placement_storage": "may be bound through placement definition",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/interactions",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Quest",
+      "kind": "declarative + source overlay",
+      "definition_storage": "definitions/declarations.json + authoring_profiles",
+      "relationship_storage": "prerequisite/reward/Encounter/Interaction refs",
+      "placement_storage": "spatial relation through Area/NPC/Interaction",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/quests",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Transition",
+      "kind": "declarative",
+      "definition_storage": "definitions/declarations.json",
+      "relationship_storage": "WorldObject/Interaction destination evidence",
+      "placement_storage": "worlds/world.json occurrences",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/transitions",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "DEFER_PLACEMENT_SCALE",
+      "action": "KEEP"
+    },
+    {
+      "family": "House",
+      "kind": "declarative + source overlay",
+      "definition_storage": "definitions/declarations.json + authoring_profiles",
+      "relationship_storage": "Area/currency refs",
+      "placement_storage": "worlds/world.json",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/houses",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "DEFER_PLACEMENT_SCALE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Encounter",
+      "kind": "declarative + source overlay",
+      "definition_storage": "definitions/declarations.json + authoring_profiles",
+      "relationship_storage": "Creature/Area/Interaction/Quest relations",
+      "placement_storage": "world/area occurrence semantics without live state",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/encounters",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "Asset",
+      "kind": "asset record",
+      "definition_storage": "assets/catalog.json",
+      "relationship_storage": "Presentation->Asset in presentations/bindings.json",
+      "placement_storage": "not a placement identity",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/assets",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    },
+    {
+      "family": "WorldPlacement",
+      "kind": "occurrence",
+      "definition_storage": "worlds/world.json",
+      "relationship_storage": "definition/Area/Document/parent-placement refs",
+      "placement_storage": "worlds/world.json",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/placements",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "DEFER_UNTIL_MEASURED",
+      "action": "KEEP"
+    },
+    {
+      "family": "RelationshipGraph",
+      "kind": "relationship system",
+      "definition_storage": "owned typed fields across definition documents",
+      "relationship_storage": "typed family-specific refs; no universal fuzzy graph",
+      "placement_storage": "placement refs where spatial",
+      "evidence_storage": "docs/agents/evidence/",
+      "tooling_storage": "tools/content-census/relationships",
+      "tests_storage": "family-local focused synthetic tests beside collector/compiler",
+      "schema_status": "KEEP",
+      "scale_status": "ADEQUATE",
+      "action": "KEEP"
+    }
+  ],
+  "structural_findings": [
+    {
+      "id": "G0-01",
+      "area": "semantic families",
+      "disposition": "KEEP",
+      "finding": "Protected WorldProject/v2 already represents all required reusable definition families or explicit typed overlays without requiring duplicate V2 families.",
+      "required_change": false
+    },
+    {
+      "id": "G0-02",
+      "area": "definition_relationship_placement_separation",
+      "disposition": "KEEP",
+      "finding": "ProjectV2DefinitionRef and ProjectV2Placement keep definition identity distinct from stable placement identity; mutable runtime/durable state is explicitly excluded.",
+      "required_change": false
+    },
+    {
+      "id": "G0-03",
+      "area": "physical_v2_layout",
+      "disposition": "DEFER_UNTIL_MEASURED",
+      "finding": "The eight published v2 role locators are adequate for G1 definition/source census, but full-world scale of the single worlds/world.json document has not been measured with millions of placements. Existing format spikes are not a measurement of canonical v2 full-world serialization.",
+      "required_change": false,
+      "next_gate": "measure canonical v2 world document bytes/write/read/peak memory/diff locality before bulk world-placement reconciliation"
+    },
+    {
+      "id": "G0-04",
+      "area": "tooling_structure",
+      "disposition": "ADD_DIRECTORY",
+      "finding": "tools/reference-world-corridor-census/ has evolved far beyond its corridor README and is already a flat mixed-family script set. New G1+ tooling needs a family-oriented namespace; mass-moving protected predecessor scripts would create avoidable churn.",
+      "required_change": true,
+      "change": "add tools/content-census/ convention; preserve existing scripts in place"
+    },
+    {
+      "id": "G0-05",
+      "area": "evidence_storage",
+      "disposition": "KEEP",
+      "finding": "Compact manifests/digests under docs/agents/evidence plus CI/scratch full output matches the required provenance boundary.",
+      "required_change": false
+    },
+    {
+      "id": "G0-06",
+      "area": "schema_revision",
+      "disposition": "KEEP",
+      "finding": "No independently demonstrated representation gap requires ProjectV3, ItemV2, TerrainV2, CreatureV2, WorldObjectV2 or another versioned schema change.",
+      "required_change": false
+    }
+  ],
+  "scale_findings": {
+    "definition_scale": {
+      "status": "PROVEN_BOUNDED_FOR_CURRENT_ITEM_EVIDENCE",
+      "facts": [
+        "38,157 protected Item source identities exist in prior family-scale evidence",
+        "wiki-first source census contains 6,918 Item pages"
+      ],
+      "conclusion": "Definition/source-census scale does not require a schema split before G1."
+    },
+    "placement_scale": {
+      "status": "UNKNOWN_FOR_CANONICAL_V2_FULL_WORLD",
+      "facts": [
+        "real donor stream evidence contains 18,997,668 source tiles",
+        "measured real batch covers 2,048 cells and 2,463 source occurrences",
+        "largest synthetic editable chunked-json-tree fixture covers 16,384 cells at 2,272,665 bytes"
+      ],
+      "conclusion": "Do not infer safe full-world worlds/world.json scale from these partial measurements; measure canonical v2 before bulk placement import."
+    },
+    "physical_layout_action": "KEEP_FOR_G1_DEFINITION_CENSUS; DEFER FULL-WORLD PLACEMENT FORMAT CHANGE UNTIL MEASURED"
+  },
+  "tooling_target": {
+    "root": "tools/content-census/",
+    "migration_policy": "new tooling only; no cosmetic mass moves of tools/reference-world-corridor-census",
+    "family_directories_created_on_demand": true,
+    "conceptual_stages": [
+      "discovery",
+      "classification",
+      "crosswalk",
+      "verification",
+      "evidence",
+      "tests"
+    ],
+    "common_directory_rule": "create common/ only when a second consumer proves shared logic"
+  },
+  "next_slices": [
+    {
+      "order": 1,
+      "gate": "G1.0",
+      "name": "CONTENT_CENSUS_TOOLING_BOOTSTRAP",
+      "scope": "land first real family/common collector under tools/content-census using the convention; no mass migration"
+    },
+    {
+      "order": 2,
+      "gate": "G1",
+      "name": "FULL_CONTENT_SOURCE_DISCOVERY_AND_FAMILY_CENSUS",
+      "scope": "bounded source-universe-first discovery across all in-scope navigation/categories/templates/infoboxes/lists; explicit source shapes and family dispositions"
+    },
+    {
+      "order": 3,
+      "gate": "G2",
+      "name": "GLOBAL_SOURCE_OVERLAP_AND_DEDUPLICATION",
+      "scope": "deduplicate page/source identities and aliases before aggregate counts"
+    },
+    {
+      "order": 4,
+      "gate": "G3",
+      "name": "CONTENT_FAMILY_CLASSIFICATION_CLOSURE",
+      "scope": "close UNRESOLVED_FAMILY to zero or explicit blocker"
+    },
+    {
+      "order": 5,
+      "gate": "G4+",
+      "name": "PER_FAMILY_IDENTITY_CROSSWALKS",
+      "scope": "family-specific exact/probable/ambiguous/conflict/no-match/alias states"
+    },
+    {
+      "order": 6,
+      "gate": "PRE_WORLD_PLACEMENT_RECONCILIATION",
+      "name": "WORLDPROJECT_V2_FULLWORLD_SCALE_MEASUREMENT",
+      "scope": "measure canonical worlds/world.json with representative/full placement volume before any physical layout/version decision"
+    }
+  ],
+  "acceptance": {
+    "in_scope_navigation_inventoried": true,
+    "hard_exclusions_absent": true,
+    "every_surface_has_disposition": true,
+    "every_family_storage_identified": true,
+    "definition_relationship_placement_separation_verified": true,
+    "v2_scale_evaluated": true,
+    "tooling_evidence_test_structure_evaluated": true,
+    "representation_gaps_identified": true,
+    "unnecessary_schema_redesign_rejected": true,
+    "minimal_target_hierarchy_produced": true,
+    "next_slices_defined": true,
+    "bulk_source_corpus_imported": false
+  },
+  "g0_verdict": "READY_TO_PROCEED_TO_G1_AFTER_CANDIDATE_QUALIFICATION",
+  "unresolved_architecture_blockers": 0,
+  "unresolved_scale_questions": [
+    "canonical WorldProject/v2 full-world placement serialization/load/write/diff cost"
+  ],
+  "next_gate": "FULL_CONTENT_SOURCE_DISCOVERY_AND_FAMILY_CENSUS"
+}

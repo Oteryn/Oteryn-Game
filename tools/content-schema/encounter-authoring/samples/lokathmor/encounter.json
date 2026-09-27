@@ -1,0 +1,60 @@
+{
+  "identity": {
+    "key": "canary:encounter/lokathmor",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The Secret Library: Lokathmor",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "lokathmor",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/lokathmor",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "dark_knowledge",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/dark_knowledge",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "dark_knowledge_leaves_parchment",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "dark_knowledge"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "create",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/28488",
+            "revision": "canary-47dfd51f"
+          },
+          "at": "death_position"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

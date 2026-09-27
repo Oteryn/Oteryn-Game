@@ -1,0 +1,45 @@
+{
+  "schema": "OTERYN_FULL_CONTENT_TREE_MIGRATION_EVIDENCE/v1",
+  "status": "CANDIDATE_REFRESHED_CURRENT_MAIN_EXACT_ROUNDTRIP_REQUIRED",
+  "admission_main": "9728d30669a85579d333f826ebe7f812c76337ad",
+  "task": "OTV2-20260925-full-content-tree-migration-v1",
+  "pr": 905,
+  "generated": {
+    "item_records": 38157,
+    "item_shards": 77,
+    "mount_records": 252,
+    "mount_shards": 1,
+    "item_editor_entries": 165,
+    "mount_editor_entries": 252,
+    "item_source_bindings": 165,
+    "mount_source_bindings": 252
+  },
+  "invariants": {
+    "legacy_worldproject_mutated": false,
+    "runtime_switch_authorized": false,
+    "canonical_identity_reminted": false,
+    "source_numeric_identity_promoted": false,
+    "item_definition_payload": "EXACT_LEGACY_OBJECT_PRESERVED",
+    "mount_declaration_payload": "EXACT_LEGACY_OBJECT_PRESERVED"
+  },
+  "material_repair": {
+    "reason": "Initial validator compared attached source bindings in legacy list order even though successor attachment order is definition-local.",
+    "correction": "Compare editor/binding collections canonically while requiring each attached target to equal the containing definition identity.",
+    "reproducibility": "Migration tool now regenerates shards, imports, family indices, manifest, lock and project controls."
+  },
+  "upstream_reconciliation": {
+    "main": "9728d30669a85579d333f826ebe7f812c76337ad",
+    "new_declaration_family": "Outfit",
+    "outfit_records": 133,
+    "mount_records": 252,
+    "mount_payload_changed": false,
+    "migration_rule": "filter declarations by kind=Mount; do not consume Outfit rows",
+    "refreshed_legacy_blobs": {
+      "declarations": "eb087977c5bbfc0bbe404952f59177880c2d4636",
+      "editor": "b65fcf5c8029e866cc0a189a5d8309552176a695",
+      "imports": "80d705f12f25ef613434964d6236d4ae481fc550",
+      "reference": "0bdd32908effcde882ef24056241f5c494b32a3e",
+      "sources": "5fa3c45f9f1054bb025881ef7d0e5a757732fe84"
+    }
+  }
+}

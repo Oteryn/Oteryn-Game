@@ -5,10 +5,36 @@
 
 extern crate self as oteryn_game_server;
 
+#[allow(dead_code)]
+#[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
+mod ability;
+#[allow(
+    dead_code,
+    reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
+)]
+mod combat;
+
+pub mod character_bootstrap_intent;
+pub mod character_recovery_fence;
 pub mod content;
 pub mod domain;
 pub mod durability;
 pub mod foundation;
+mod gameplay_transport;
+#[allow(
+    dead_code,
+    reason = "unactivated local Movement proof awaits the separate production composition lease"
+)]
+mod movement;
+pub mod node;
+
+pub use gameplay_transport::{
+    FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,
+    serve_gameplay,
+};
+
+#[allow(dead_code)]
+pub(crate) mod world_runtime;
 
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]
@@ -575,3 +601,4 @@ mod v2_reconciled_prepared_budget_regression_tests {
 }
 
 pub mod admission_evidence;
+pub mod native_admission_source;

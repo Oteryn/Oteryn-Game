@@ -191,9 +191,9 @@ It remains `NOT_ACTIVE_CONDITIONAL` until all of the following are true:
 2. one genuinely independent exact-head HIGH-risk/deep review reports no unresolved actionable finding;
 3. a human owner explicitly authorizes repository integration of the then-current exact candidate; a generic instruction to continue useful work is not exact-candidate approval;
 4. immediately before submission, fresh target-bound live preflight verifies repository, this PR, `base=main`, exact qualified/frozen head, authorization and Merge Queue eligibility;
-5. submission follows the protected META 3.1 native route only: REST `merge-async`, exact qualified `sha`, explicit `merge_action="merge_queue"`;
+5. protected integration resolves the current immutable bound META capability router and uses freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, following the selected route-specific exact-head fencing/reconciliation contract;
 6. HTTP `202` is acceptance only: bind the exact returned UUID to a positive executor-owned monotonic receipt sequence, then require immediate same-target readback carrying the same UUID at a strictly greater executor sequence; reconcile HTTP `200`/`409` from live state;
-7. if the native operation is unavailable, integration state is exactly `BLOCKED_CAPABILITY_UNAVAILABLE`; preserve the candidate and use no forbidden substitute;
+7. if neither direct nor delegated integration capability is freshly proven, integration state is exactly `BLOCKED_CAPABILITY_UNAVAILABLE`; preserve the candidate and use no forbidden substitute;
 8. a real `merge_group` aggregate `game-gate` succeeds and protected-main readback proves this allocation present;
 9. Work fresh-reads current #356 head, current protected main and all overlapping rustls custody;
 10. the SAME #351/#356 worker or independent exact-current source proof still establishes the transcript-local seam as necessary;

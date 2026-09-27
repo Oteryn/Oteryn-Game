@@ -95,12 +95,12 @@ This HIGH-risk control-plane candidate cannot authorize or integrate itself. It 
 3. genuinely independent exact-head HIGH-risk review has P0/P1/P2=0 and review debt is clear;
 4. current human-owner authorization is bound to the exact reviewed candidate within the already-authorized WP3 completion programme;
 5. fresh target-bound preflight verifies repository, PR, `base=main`, exact head and eligibility;
-6. integration uses only META 3.1 native REST `merge-async` with exact `sha` and `merge_action="merge_queue"`;
+6. protected integration resolves the current immutable bound META capability router and uses freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, following the selected route-specific exact-head fencing/reconciliation contract;
 7. HTTP 202 receipt is bound to UUID plus later executor-sequence readback, and the real `merge_group` aggregate `game-gate` succeeds;
 8. protected `main` readback proves the exact amendment integrated;
 9. Work freshly verifies the SAME #351/#356 lineage and explicitly activates this amendment before material mutation.
 
-Direct merge, generic auto-merge, bypass, force/rebase/reset, protection changes and no-op retriggers are forbidden. If native exact-head Merge Queue is unavailable, preserve the candidate and return `BLOCKED_CAPABILITY_UNAVAILABLE`.
+Direct merge, generic auto-merge, bypass, force/rebase/reset, protection changes and no-op retriggers are forbidden. If neither direct nor delegated integration capability is freshly proven, preserve the candidate and return `BLOCKED_CAPABILITY_UNAVAILABLE`.
 
 After activation, this amendment is only a downstream lifetime bridge for the already-authorized #535/#538 outbound path. It grants no independent feature or worker.
 

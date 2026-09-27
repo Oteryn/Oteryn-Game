@@ -1,0 +1,95 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/ghost",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/ghoul",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/mummy",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/10320",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/11475",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/237",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/2886",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3031",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3079",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3311",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3324",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3448",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3574",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/3732",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/7456",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/8073",
+      "revision": "canary-47dfd51f"
+    }
+  ],
+  "assets": [
+    "canary.appearance:effect/magic_blue",
+    "canary.appearance:effect/poisonarea",
+    "canary.appearance:effect/smallclouds",
+    "canary.appearance:missile/death",
+    "canary.appearance:missile/poison",
+    "canary.appearance:object/18174",
+    "canary.appearance:object/18175",
+    "canary.appearance:object/18176",
+    "canary.appearance:outfit/9"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
+  "path": "content/items/definitions/",
+  "kind": "static_content",
+  "owner": "Item",
+  "repository": "Oteryn/Oteryn-Game",
+  "population_state": "POPULATED",
+  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
+  "notes": "Human-readable Item definitions; Item Master Schema v1 detail."
+}

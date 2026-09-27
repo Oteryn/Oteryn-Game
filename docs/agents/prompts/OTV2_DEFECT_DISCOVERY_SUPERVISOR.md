@@ -8,7 +8,7 @@ Oteryn: defect discovery supervisor
 
 ```yaml
 prompt_id: OTV2_DEFECT_DISCOVERY_SUPERVISOR
-prompt_version: "1.0"
+prompt_version: "1.1"
 prompt_mode: DEFECT_DISCOVERY_READ_ONLY_SUPERVISION
 repository: Oteryn/Oteryn-Game
 short_invocation: "Oteryn: defect discovery supervisor"
@@ -35,7 +35,7 @@ This role does not implement product fixes, does not become a second control pla
 
 ## Required work
 
-1. Refresh protected `main`, active control-plane profile, relevant Issues/PRs/tasks/allocations and path ownership.
+1. Refresh protected `main`, the Work control plane, the requested discovery target/P0-P3 gate, and only live Issues/PRs/tasks/allocations or path owners that can affect that target.
 2. Preserve the owner requirements already recorded on #162:
    - heavy discovery does not automatically run because an ordinary PR is opened, pushed, or enters Merge Queue;
    - manual exact-ref execution is first-class;

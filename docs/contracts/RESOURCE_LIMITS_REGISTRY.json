@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-09T11:29:31+00:00",
+  "updated_at": "2026-09-25T08:55:50+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -29,12 +29,23 @@
       "resource": "One post-TLS length-prefixed encoded WireEnvelope",
       "unit": "bytes",
       "hard_maximum": 1048576,
-      "configurable_range": {"minimum": 1048576, "maximum": 1048576},
+      "configurable_range": {
+        "minimum": 1048576,
+        "maximum": 1048576
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate uint32_be length before allocating or reading the frame payload; never reserve from an unchecked peer length.",
       "client_visible": true,
-      "boundary_tests": ["0-byte frame rejected", "1,048,576 bytes accepted when message-specific limits also permit", "1,048,577 rejected before payload allocation", "truncated frame rejected"],
-      "consumers": ["client transport", "server transport"],
+      "boundary_tests": [
+        "0-byte frame rejected",
+        "1,048,576 bytes accepted when message-specific limits also permit",
+        "1,048,577 rejected before payload allocation",
+        "truncated frame rejected"
+      ],
+      "consumers": [
+        "client transport",
+        "server transport"
+      ],
       "notes": "The four-byte prefix is excluded from payload_length."
     },
     {
@@ -43,12 +54,22 @@
       "resource": "Encoded ClientBootstrap or ClientResume protobuf payload",
       "unit": "bytes",
       "hard_maximum": 65536,
-      "configurable_range": {"minimum": 65536, "maximum": 65536},
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound total payload and nested byte fields before retaining or performing credential work.",
       "client_visible": true,
-      "boundary_tests": ["65,536 bytes accepted if all field limits pass", "65,537 rejected", "oversized unknown fields cannot bypass the total bound"],
-      "consumers": ["ClientBootstrap decoder", "ClientResume decoder"]
+      "boundary_tests": [
+        "65,536 bytes accepted if all field limits pass",
+        "65,537 rejected",
+        "oversized unknown fields cannot bypass the total bound"
+      ],
+      "consumers": [
+        "ClientBootstrap decoder",
+        "ClientResume decoder"
+      ]
     },
     {
       "id": "FND02-ADMISSION-MATERIAL-BYTES",
@@ -56,12 +77,20 @@
       "resource": "ClientBootstrap.admission_material",
       "unit": "bytes",
       "hard_maximum": 16384,
-      "configurable_range": {"minimum": 16384, "maximum": 16384},
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject peer-controlled length before copying or verification.",
       "client_visible": true,
-      "boundary_tests": ["16,384 accepted", "16,385 rejected before credential verification"],
-      "consumers": ["FND-04 admission consumer"],
+      "boundary_tests": [
+        "16,384 accepted",
+        "16,385 rejected before credential verification"
+      ],
+      "consumers": [
+        "FND-04 admission consumer"
+      ],
       "notes": "FND-04 may define a smaller semantic credential format, but FND-02 decoders remain required to safely reject/handle up to this hard wire maximum."
     },
     {
@@ -70,12 +99,20 @@
       "resource": "ClientResume.reconnect_material",
       "unit": "bytes",
       "hard_maximum": 16384,
-      "configurable_range": {"minimum": 16384, "maximum": 16384},
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject peer-controlled length before copying or verification.",
       "client_visible": true,
-      "boundary_tests": ["16,384 accepted", "16,385 rejected before reconnect verification"],
-      "consumers": ["FND-04 reconnect consumer"]
+      "boundary_tests": [
+        "16,384 accepted",
+        "16,385 rejected before reconnect verification"
+      ],
+      "consumers": [
+        "FND-04 reconnect consumer"
+      ]
     },
     {
       "id": "FND02-CLIENT-BUILD-ID-BYTES",
@@ -83,12 +120,21 @@
       "resource": "UTF-8 client_build_id",
       "unit": "UTF-8 bytes",
       "hard_maximum": 128,
-      "configurable_range": {"minimum": 128, "maximum": 128},
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
       "failure_category": "INVALID_INPUT",
       "allocation_impact": "Validate UTF-8 and byte length before retaining or logging.",
       "client_visible": true,
-      "boundary_tests": ["128-byte valid UTF-8 accepted", "129 bytes rejected", "invalid UTF-8 rejected"],
-      "consumers": ["bootstrap/resume diagnostics"]
+      "boundary_tests": [
+        "128-byte valid UTF-8 accepted",
+        "129 bytes rejected",
+        "invalid UTF-8 rejected"
+      ],
+      "consumers": [
+        "bootstrap/resume diagnostics"
+      ]
     },
     {
       "id": "FND02-CAPABILITY-COUNT",
@@ -96,12 +142,21 @@
       "resource": "supported_capability_id or selected_capability_id collection",
       "unit": "entries",
       "hard_maximum": 128,
-      "configurable_range": {"minimum": 128, "maximum": 128},
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound repeated field count before sorting, uniqueness checks or set intersection.",
       "client_visible": true,
-      "boundary_tests": ["128 sorted unique IDs accepted", "129 rejected", "duplicates or unsorted IDs rejected as INVALID_CAPABILITY_SET"],
-      "consumers": ["bootstrap/resume negotiation"],
+      "boundary_tests": [
+        "128 sorted unique IDs accepted",
+        "129 rejected",
+        "duplicates or unsorted IDs rejected as INVALID_CAPABILITY_SET"
+      ],
+      "consumers": [
+        "bootstrap/resume negotiation"
+      ],
       "notes": "Core v1 behavior is not capability-optional; this fixed decoder bound protects future additive extensions."
     },
     {
@@ -110,12 +165,20 @@
       "resource": "Foundation protobuf repeated field without a smaller named limit",
       "unit": "entries",
       "hard_maximum": 4096,
-      "configurable_range": {"minimum": 4096, "maximum": 4096},
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound collection growth before materializing peer-controlled repeated values.",
       "client_visible": true,
-      "boundary_tests": ["4,096 accepted where semantically valid", "4,097 rejected before unbounded collection growth"],
-      "consumers": ["all foundation protobuf decoders"]
+      "boundary_tests": [
+        "4,096 accepted where semantically valid",
+        "4,097 rejected before unbounded collection growth"
+      ],
+      "consumers": [
+        "all foundation protobuf decoders"
+      ]
     },
     {
       "id": "FND02-PROTOBUF-NESTING-DEPTH",
@@ -123,12 +186,20 @@
       "resource": "Decoded protobuf message nesting",
       "unit": "levels",
       "hard_maximum": 32,
-      "configurable_range": {"minimum": 32, "maximum": 32},
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Decoder must enforce recursion/nesting depth without stack or heap blowup.",
       "client_visible": false,
-      "boundary_tests": ["depth 32 accepted", "depth 33 rejected deterministically"],
-      "consumers": ["all foundation protobuf decoders"]
+      "boundary_tests": [
+        "depth 32 accepted",
+        "depth 33 rejected deterministically"
+      ],
+      "consumers": [
+        "all foundation protobuf decoders"
+      ]
     },
     {
       "id": "FND02-COMMAND-EXPECTED-REVISIONS",
@@ -136,12 +207,21 @@
       "resource": "ClientCommand.expected_revision",
       "unit": "entries",
       "hard_maximum": 64,
-      "configurable_range": {"minimum": 64, "maximum": 64},
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound revision vector before command normalization.",
       "client_visible": true,
-      "boundary_tests": ["64 unique revisions accepted", "65 rejected", "duplicate domain IDs rejected"],
-      "consumers": ["server command decoder"]
+      "boundary_tests": [
+        "64 unique revisions accepted",
+        "65 rejected",
+        "duplicate domain IDs rejected"
+      ],
+      "consumers": [
+        "server command decoder"
+      ]
     },
     {
       "id": "FND02-COMMAND-PAYLOAD-BYTES",
@@ -149,12 +229,20 @@
       "resource": "ClientCommand.payload",
       "unit": "bytes",
       "hard_maximum": 65536,
-      "configurable_range": {"minimum": 65536, "maximum": 65536},
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject before command-specific decode/allocation or domain mutation.",
       "client_visible": true,
-      "boundary_tests": ["65,536 accepted when the command-type limit permits", "65,537 rejected without domain mutation"],
-      "consumers": ["server command decoder"]
+      "boundary_tests": [
+        "65,536 accepted when the command-type limit permits",
+        "65,537 rejected without domain mutation"
+      ],
+      "consumers": [
+        "server command decoder"
+      ]
     },
     {
       "id": "FND02-COMMAND-RESULT-PAYLOAD-BYTES",
@@ -162,12 +250,20 @@
       "resource": "CommandResult.payload",
       "unit": "bytes",
       "hard_maximum": 65536,
-      "configurable_range": {"minimum": 65536, "maximum": 65536},
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound before result-specific decode/allocation.",
       "client_visible": true,
-      "boundary_tests": ["65,536 accepted when the command-type limit permits", "65,537 rejected"],
-      "consumers": ["client command-result decoder"]
+      "boundary_tests": [
+        "65,536 accepted when the command-type limit permits",
+        "65,537 rejected"
+      ],
+      "consumers": [
+        "client command-result decoder"
+      ]
     },
     {
       "id": "FND02-OUTSTANDING-COMMANDS",
@@ -175,12 +271,69 @@
       "resource": "Contiguous commands sent but not terminally acknowledged for one GameSession",
       "unit": "commands",
       "hard_maximum": 64,
-      "configurable_range": {"minimum": 64, "maximum": 64},
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Ingress accounting rejects excess new work before adding it to session/runtime queues.",
       "client_visible": true,
-      "boundary_tests": ["64 outstanding commands accepted subject to runtime capacity", "65th new command rejected with TOO_MANY_OUTSTANDING_COMMANDS", "retry of an already-counted CommandId does not consume another slot"],
-      "consumers": ["server session ingress"]
+      "boundary_tests": [
+        "64 outstanding commands accepted subject to runtime capacity",
+        "65th new command rejected with TOO_MANY_OUTSTANDING_COMMANDS",
+        "retry of an already-counted CommandId does not consume another slot"
+      ],
+      "consumers": [
+        "server session ingress"
+      ]
+    },
+    {
+      "id": "FND02-RETAINED-TERMINAL-RECORDS",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Foundation-owned retained terminal semantic records for one GameSession",
+      "unit": "records per GameSession",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Before gameplay mutation whose accepted semantics require replayable retained evidence, either admit the bounded terminal semantic record within the session limit or fail closed. Pending commands are not retention entries and cannot be evicted. A second simultaneously retained terminal record may exist only after deterministic eviction of an eligible terminal record; otherwise admission fails before mutation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 retained terminal semantic record is accepted",
+        "2 simultaneously retained terminal semantic records are never admitted",
+        "pending command state is never evicted to satisfy terminal-retention capacity",
+        "terminal eviction never lowers next_command_id or makes a CommandRef reservable again"
+      ],
+      "consumers": [
+        "server GameSession command lifecycle"
+      ],
+      "notes": "Current first-playable hard maximum established by protected #665 evidence; not derived from FND02 outstanding-command, NET03, fixture or TTL limits."
+    },
+    {
+      "id": "FND02-RETAINED-TERMINAL-CHARGED-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Aggregate charged bytes of Foundation-owned retained terminal semantic records for one GameSession",
+      "unit": "charged bytes per GameSession",
+      "hard_maximum": 3116,
+      "configurable_range": {
+        "minimum": 3116,
+        "maximum": 3116
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Compute the complete retained semantic-record charge with checked arithmetic before retaining it or performing gameplay mutation whose accepted semantics require replayability. Reject over-bound or overflowed admission before mutation. Charge every simultaneously owned retained component exactly once.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3116 charged bytes are accepted when every nested semantic bound passes",
+        "3117 charged bytes are rejected before gameplay mutation requiring replayability",
+        "checked charge arithmetic overflow is rejected",
+        "eviction preserves the ingress high-water mark and later duplicate lookup resolves expired rather than fresh"
+      ],
+      "consumers": [
+        "server GameSession command lifecycle"
+      ],
+      "notes": "Charged-byte authority is a deterministic semantic ownership envelope, not allocator RSS, Rust ABI size, wire payload size or persistence size. Protected #665 evidence establishes the current first-playable aggregate bound."
     },
     {
       "id": "FND02-STATE-DOMAINS-PER-SYNC",
@@ -188,12 +341,21 @@
       "resource": "State domains in one ResyncRequest or SnapshotBody",
       "unit": "entries",
       "hard_maximum": 256,
-      "configurable_range": {"minimum": 256, "maximum": 256},
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound domain vectors/maps before construction.",
       "client_visible": true,
-      "boundary_tests": ["256 unique domains accepted", "257 rejected", "duplicate domain IDs rejected"],
-      "consumers": ["client/server reconciliation"]
+      "boundary_tests": [
+        "256 unique domains accepted",
+        "257 rejected",
+        "duplicate domain IDs rejected"
+      ],
+      "consumers": [
+        "client/server reconciliation"
+      ]
     },
     {
       "id": "FND02-STATE-DELTA-PAYLOAD-BYTES",
@@ -201,12 +363,20 @@
       "resource": "StateDelta.payload",
       "unit": "bytes",
       "hard_maximum": 262144,
-      "configurable_range": {"minimum": 262144, "maximum": 262144},
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 262144
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject before domain-specific delta decode/allocation.",
       "client_visible": true,
-      "boundary_tests": ["262,144 accepted when the domain-specific limit permits", "262,145 rejected"],
-      "consumers": ["client state-delta decoder"]
+      "boundary_tests": [
+        "262,144 accepted when the domain-specific limit permits",
+        "262,145 rejected"
+      ],
+      "consumers": [
+        "client state-delta decoder"
+      ]
     },
     {
       "id": "FND02-SNAPSHOT-CHUNK-COUNT",
@@ -214,12 +384,21 @@
       "resource": "Chunks in one SnapshotBody transfer",
       "unit": "chunks",
       "hard_maximum": 256,
-      "configurable_range": {"minimum": 256, "maximum": 256},
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate SnapshotBegin before allocating chunk tracking structures.",
       "client_visible": true,
-      "boundary_tests": ["256 accepted", "257 rejected before assembler allocation", "chunk_index >= chunk_count rejected"],
-      "consumers": ["client snapshot assembler"]
+      "boundary_tests": [
+        "256 accepted",
+        "257 rejected before assembler allocation",
+        "chunk_index >= chunk_count rejected"
+      ],
+      "consumers": [
+        "client snapshot assembler"
+      ]
     },
     {
       "id": "FND02-SNAPSHOT-CHUNK-BYTES",
@@ -227,12 +406,20 @@
       "resource": "SnapshotChunk.data",
       "unit": "bytes",
       "hard_maximum": 524288,
-      "configurable_range": {"minimum": 524288, "maximum": 524288},
+      "configurable_range": {
+        "minimum": 524288,
+        "maximum": 524288
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate chunk length before retaining or copying.",
       "client_visible": true,
-      "boundary_tests": ["524,288 accepted", "524,289 rejected"],
-      "consumers": ["client snapshot assembler"]
+      "boundary_tests": [
+        "524,288 accepted",
+        "524,289 rejected"
+      ],
+      "consumers": [
+        "client snapshot assembler"
+      ]
     },
     {
       "id": "FND02-SNAPSHOT-ASSEMBLED-BYTES",
@@ -240,12 +427,21 @@
       "resource": "Complete encoded SnapshotBody before protobuf decode",
       "unit": "bytes",
       "hard_maximum": 16777216,
-      "configurable_range": {"minimum": 16777216, "maximum": 16777216},
+      "configurable_range": {
+        "minimum": 16777216,
+        "maximum": 16777216
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Track cumulative received bytes using checked arithmetic and abort before exceeding the bound.",
       "client_visible": true,
-      "boundary_tests": ["16,777,216 accepted", "16,777,217 cumulative bytes rejected", "integer overflow in cumulative accounting rejected"],
-      "consumers": ["client snapshot assembler"]
+      "boundary_tests": [
+        "16,777,216 accepted",
+        "16,777,217 cumulative bytes rejected",
+        "integer overflow in cumulative accounting rejected"
+      ],
+      "consumers": [
+        "client snapshot assembler"
+      ]
     },
     {
       "id": "ANL01-EVENT-ENVELOPE-BYTES",
@@ -253,11 +449,18 @@
       "resource": "One encoded game EventEnvelope including payload",
       "unit": "bytes",
       "hard_maximum": 262144,
-      "configurable_range": {"minimum": 1024, "maximum": 262144},
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 262144
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check encoded record length before retaining, decoding, batching or publishing; family-specific maxima may be lower.",
       "client_visible": false,
-      "boundary_tests": ["262,144-byte envelope accepted only when every nested limit passes", "262,145 rejected before retained allocation", "integer-overflow accounting rejected"]
+      "boundary_tests": [
+        "262,144-byte envelope accepted only when every nested limit passes",
+        "262,145 rejected before retained allocation",
+        "integer-overflow accounting rejected"
+      ]
     },
     {
       "id": "ANL01-EVENT-PAYLOAD-BYTES",
@@ -265,11 +468,18 @@
       "resource": "EventEnvelope.payload registered protobuf bytes",
       "unit": "bytes",
       "hard_maximum": 196608,
-      "configurable_range": {"minimum": 0, "maximum": 196608},
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 196608
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject payload length before family-specific decode or copy; total envelope limit also applies.",
       "client_visible": false,
-      "boundary_tests": ["196,608-byte payload accepted if total envelope remains within bound", "196,609 rejected", "payload cannot bypass total envelope bound"]
+      "boundary_tests": [
+        "196,608-byte payload accepted if total envelope remains within bound",
+        "196,609 rejected",
+        "payload cannot bypass total envelope bound"
+      ]
     },
     {
       "id": "ANL01-ENVELOPE-STRING-BYTES",
@@ -277,11 +487,18 @@
       "resource": "One retention profile, identity-domain, build or revision string in EventEnvelope",
       "unit": "UTF-8 bytes",
       "hard_maximum": 128,
-      "configurable_range": {"minimum": 1, "maximum": 128},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 128
+      },
       "failure_category": "INVALID_INPUT",
       "allocation_impact": "Validate per-string length and profile-specific ASCII grammar before retaining, indexing or logging.",
       "client_visible": false,
-      "boundary_tests": ["128-byte allowed canonical string accepted where field grammar permits", "129 bytes rejected", "invalid field grammar rejected"]
+      "boundary_tests": [
+        "128-byte allowed canonical string accepted where field grammar permits",
+        "129 bytes rejected",
+        "invalid field grammar rejected"
+      ]
     },
     {
       "id": "ANL01-PROTOBUF-NESTING-DEPTH",
@@ -289,11 +506,17 @@
       "resource": "Decoded event envelope and registered payload protobuf nesting",
       "unit": "levels",
       "hard_maximum": 32,
-      "configurable_range": {"minimum": 8, "maximum": 32},
+      "configurable_range": {
+        "minimum": 8,
+        "maximum": 32
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Decoder enforces recursion depth before stack/heap amplification.",
       "client_visible": false,
-      "boundary_tests": ["configured maximum accepted", "one level above configured/hard maximum rejected deterministically"]
+      "boundary_tests": [
+        "configured maximum accepted",
+        "one level above configured/hard maximum rejected deterministically"
+      ]
     },
     {
       "id": "ANL01-BEST-EFFORT-QUEUE-ENTRIES",
@@ -301,11 +524,18 @@
       "resource": "In-process queued best-effort gameplay telemetry events per collector",
       "unit": "events",
       "hard_maximum": 65536,
-      "configurable_range": {"minimum": 1, "maximum": 65536},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 65536
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reserve bounded collector accounting before enqueue. Overflow follows counted best-effort drop policy and never blocks authoritative gameplay on remote analytics storage.",
       "client_visible": false,
-      "boundary_tests": ["configured queue bound enforced", "next new best-effort event counted/dropped when full", "durable audit cannot be routed into this drop queue"]
+      "boundary_tests": [
+        "configured queue bound enforced",
+        "next new best-effort event counted/dropped when full",
+        "durable audit cannot be routed into this drop queue"
+      ]
     },
     {
       "id": "ANL01-BEST-EFFORT-QUEUE-BYTES",
@@ -313,11 +543,18 @@
       "resource": "Total retained encoded bytes in one in-process best-effort telemetry collector queue",
       "unit": "bytes",
       "hard_maximum": 67108864,
-      "configurable_range": {"minimum": 1048576, "maximum": 67108864},
+      "configurable_range": {
+        "minimum": 1048576,
+        "maximum": 67108864
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Checked cumulative byte accounting must reject/drop before queue growth exceeds the configured or absolute limit.",
       "client_visible": false,
-      "boundary_tests": ["64 MiB absolute ceiling never exceeded", "checked arithmetic overflow rejected", "byte ceiling may bind before entry ceiling"]
+      "boundary_tests": [
+        "64 MiB absolute ceiling never exceeded",
+        "checked arithmetic overflow rejected",
+        "byte ceiling may bind before entry ceiling"
+      ]
     },
     {
       "id": "ANL01-PUBLISH-BATCH-EVENTS",
@@ -325,11 +562,18 @@
       "resource": "Events in one publication/delivery batch",
       "unit": "events",
       "hard_maximum": 1024,
-      "configurable_range": {"minimum": 1, "maximum": 1024},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1024
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Split larger committed backlogs into bounded batches; never discard durable records to meet batch size.",
       "client_visible": false,
-      "boundary_tests": ["1,024 events accepted subject to byte bound", "1,025 requires split/reject of batch construction", "durable records remain recoverable after split"]
+      "boundary_tests": [
+        "1,024 events accepted subject to byte bound",
+        "1,025 requires split/reject of batch construction",
+        "durable records remain recoverable after split"
+      ]
     },
     {
       "id": "ANL01-PUBLISH-BATCH-BYTES",
@@ -337,11 +581,18 @@
       "resource": "Total encoded bytes in one publication/delivery batch",
       "unit": "bytes",
       "hard_maximum": 8388608,
-      "configurable_range": {"minimum": 262144, "maximum": 8388608},
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 8388608
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Use checked cumulative accounting and split before 8 MiB. Individual event maxima still apply.",
       "client_visible": false,
-      "boundary_tests": ["8 MiB batch accepted only if event-count limit passes", "one byte over requires split/reject before send", "integer overflow rejected"]
+      "boundary_tests": [
+        "8 MiB batch accepted only if event-count limit passes",
+        "one byte over requires split/reject before send",
+        "integer overflow rejected"
+      ]
     },
     {
       "id": "ANL01-QUARANTINE-BATCH-EVENTS",
@@ -349,11 +600,18 @@
       "resource": "Events materialized in one dead-letter/quarantine operator/reprocessing batch",
       "unit": "events",
       "hard_maximum": 4096,
-      "configurable_range": {"minimum": 1, "maximum": 4096},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4096
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound one in-memory/transfer batch. Durable quarantine storage itself is not deleted at this bound.",
       "client_visible": false,
-      "boundary_tests": ["4,096 materialized entries accepted subject to bytes", "4,097 split/paged", "paging does not discard durable quarantine evidence"]
+      "boundary_tests": [
+        "4,096 materialized entries accepted subject to bytes",
+        "4,097 split/paged",
+        "paging does not discard durable quarantine evidence"
+      ]
     },
     {
       "id": "ANL01-QUARANTINE-BATCH-BYTES",
@@ -361,11 +619,18 @@
       "resource": "Encoded bytes materialized in one dead-letter/quarantine batch",
       "unit": "bytes",
       "hard_maximum": 33554432,
-      "configurable_range": {"minimum": 262144, "maximum": 33554432},
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 33554432
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Page/split operator/reprocessing transfer before 32 MiB without deleting durable source evidence.",
       "client_visible": false,
-      "boundary_tests": ["32 MiB accepted subject to entry/event bounds", "one byte over split/paged", "source evidence remains recoverable"]
+      "boundary_tests": [
+        "32 MiB accepted subject to entry/event bounds",
+        "one byte over split/paged",
+        "source evidence remains recoverable"
+      ]
     },
     {
       "id": "ANL01-REPLAY-BATCH-EVENTS",
@@ -373,11 +638,18 @@
       "resource": "Events decoded/applied to a derived consumer in one replay batch",
       "unit": "events",
       "hard_maximum": 4096,
-      "configurable_range": {"minimum": 1, "maximum": 4096},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4096
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound replay work per batch and preserve checkpoint/cancellation between batches.",
       "client_visible": false,
-      "boundary_tests": ["4,096 events accepted subject to byte bound", "4,097 split into another batch", "batch replay never invokes gameplay mutation"]
+      "boundary_tests": [
+        "4,096 events accepted subject to byte bound",
+        "4,097 split into another batch",
+        "batch replay never invokes gameplay mutation"
+      ]
     },
     {
       "id": "ANL01-REPLAY-BATCH-BYTES",
@@ -385,11 +657,18 @@
       "resource": "Total encoded event bytes in one replay batch",
       "unit": "bytes",
       "hard_maximum": 33554432,
-      "configurable_range": {"minimum": 262144, "maximum": 33554432},
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 33554432
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Use checked byte accounting and split before 32 MiB.",
       "client_visible": false,
-      "boundary_tests": ["32 MiB accepted only with count/event limits", "one byte over split", "overflow rejected"]
+      "boundary_tests": [
+        "32 MiB accepted only with count/event limits",
+        "one byte over split",
+        "overflow rejected"
+      ]
     },
     {
       "id": "ANL01-REPLAY-WINDOW-EVENTS",
@@ -397,11 +676,18 @@
       "resource": "Maximum events requested in one bounded replay job/window before explicit continuation",
       "unit": "events",
       "hard_maximum": 100000,
-      "configurable_range": {"minimum": 1, "maximum": 100000},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 100000
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Larger rebuilds must be partitioned into explicit resumable windows; do not allocate tracking for an unbounded caller range.",
       "client_visible": false,
-      "boundary_tests": ["100,000-event window accepted as a bounded job", "100,001 requires partition/continuation", "cancellation/checkpoint works between windows"]
+      "boundary_tests": [
+        "100,000-event window accepted as a bounded job",
+        "100,001 requires partition/continuation",
+        "cancellation/checkpoint works between windows"
+      ]
     },
     {
       "id": "ANL01-QUERY-PAGE-ROWS",
@@ -409,11 +695,18 @@
       "resource": "Rows/events returned in one investigation/analytics query page",
       "unit": "rows",
       "hard_maximum": 10000,
-      "configurable_range": {"minimum": 1, "maximum": 10000},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 10000
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Require pagination/cursor before materializing a larger result set.",
       "client_visible": false,
-      "boundary_tests": ["10,000 rows accepted subject to byte/access policy", "10,001 requires pagination", "pagination preserves authorization/filter scope"]
+      "boundary_tests": [
+        "10,000 rows accepted subject to byte/access policy",
+        "10,001 requires pagination",
+        "pagination preserves authorization/filter scope"
+      ]
     },
     {
       "id": "ANL01-QUERY-RESULT-BYTES",
@@ -421,11 +714,18 @@
       "resource": "Encoded bytes returned/materialized in one analytics/investigation query page",
       "unit": "bytes",
       "hard_maximum": 67108864,
-      "configurable_range": {"minimum": 262144, "maximum": 67108864},
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 67108864
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Stream/page before 64 MiB and apply access/redaction before serialization.",
       "client_visible": false,
-      "boundary_tests": ["64 MiB accepted subject to row/access limits", "one byte over paged/rejected", "redaction cannot be bypassed by pagination"]
+      "boundary_tests": [
+        "64 MiB accepted subject to row/access limits",
+        "one byte over paged/rejected",
+        "redaction cannot be bypassed by pagination"
+      ]
     },
     {
       "id": "ANL01-EVIDENCE-PACKAGE-BYTES",
@@ -433,11 +733,18 @@
       "resource": "One generated investigation/export evidence package",
       "unit": "bytes",
       "hard_maximum": 268435456,
-      "configurable_range": {"minimum": 1048576, "maximum": 268435456},
+      "configurable_range": {
+        "minimum": 1048576,
+        "maximum": 268435456
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Package generation must stream/chunk or explicitly split before 256 MiB; privacy/export authorization is checked before inclusion.",
       "client_visible": false,
-      "boundary_tests": ["256 MiB maximum package generated only for authorized data", "one byte over requires split/new package", "split packages retain manifest/correlation without leaking unauthorized records"]
+      "boundary_tests": [
+        "256 MiB maximum package generated only for authorized data",
+        "one byte over requires split/new package",
+        "split packages retain manifest/correlation without leaking unauthorized records"
+      ]
     },
     {
       "id": "GAMECAT-V1-FILE-BYTES",
@@ -445,11 +752,18 @@
       "resource": "One native Game to Platform catalog input or output snapshot file",
       "unit": "bytes",
       "hard_maximum": 268435456,
-      "configurable_range": {"minimum": 268435456, "maximum": 268435456},
+      "configurable_range": {
+        "minimum": 268435456,
+        "maximum": 268435456
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Check file size before full read/JSON parse and check output bytes before publication.",
       "client_visible": false,
-      "boundary_tests": ["268,435,456-byte file may proceed to other validation", "268,435,457 rejected before JSON parse", "output over hard maximum rejected before final publication"]
+      "boundary_tests": [
+        "268,435,456-byte file may proceed to other validation",
+        "268,435,457 rejected before JSON parse",
+        "output over hard maximum rejected before final publication"
+      ]
     },
     {
       "id": "GAMECAT-V1-CAPABILITY-COUNT",
@@ -457,11 +771,17 @@
       "resource": "Capability manifest or required-capability collection entries",
       "unit": "entries",
       "hard_maximum": 256,
-      "configurable_range": {"minimum": 256, "maximum": 256},
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound capability collections before sorting, uniqueness and compatibility checks.",
       "client_visible": false,
-      "boundary_tests": ["256 entries accepted when semantically valid", "257 rejected before unbounded collection work"]
+      "boundary_tests": [
+        "256 entries accepted when semantically valid",
+        "257 rejected before unbounded collection work"
+      ]
     },
     {
       "id": "GAMECAT-V1-ENTITY-COUNT",
@@ -469,11 +789,17 @@
       "resource": "Entity records in one native catalog snapshot",
       "unit": "entries",
       "hard_maximum": 200000,
-      "configurable_range": {"minimum": 200000, "maximum": 200000},
+      "configurable_range": {
+        "minimum": 200000,
+        "maximum": 200000
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject entity count before uniqueness sorting or projection work exceeds the fixed v1 ceiling.",
       "client_visible": false,
-      "boundary_tests": ["200,000 entities accepted when otherwise valid", "200,001 rejected before unbounded entity processing"]
+      "boundary_tests": [
+        "200,000 entities accepted when otherwise valid",
+        "200,001 rejected before unbounded entity processing"
+      ]
     },
     {
       "id": "GAMECAT-V1-RELATION-COUNT",
@@ -481,11 +807,17 @@
       "resource": "Relation records in one native catalog snapshot",
       "unit": "entries",
       "hard_maximum": 1000000,
-      "configurable_range": {"minimum": 1000000, "maximum": 1000000},
+      "configurable_range": {
+        "minimum": 1000000,
+        "maximum": 1000000
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject relation count before endpoint validation or canonical sorting exceeds the fixed v1 ceiling.",
       "client_visible": false,
-      "boundary_tests": ["1,000,000 relations accepted when otherwise valid", "1,000,001 rejected before unbounded relation processing"]
+      "boundary_tests": [
+        "1,000,000 relations accepted when otherwise valid",
+        "1,000,001 rejected before unbounded relation processing"
+      ]
     },
     {
       "id": "GAMECAT-V1-TOMBSTONE-COUNT",
@@ -493,11 +825,17 @@
       "resource": "Authoritative tombstone records in one native catalog snapshot",
       "unit": "entries",
       "hard_maximum": 200000,
-      "configurable_range": {"minimum": 200000, "maximum": 200000},
+      "configurable_range": {
+        "minimum": 200000,
+        "maximum": 200000
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound tombstones before contradiction/completeness checks and canonical sorting.",
       "client_visible": false,
-      "boundary_tests": ["200,000 tombstones accepted only for complete supported capabilities", "200,001 rejected before tombstone processing"]
+      "boundary_tests": [
+        "200,000 tombstones accepted only for complete supported capabilities",
+        "200,001 rejected before tombstone processing"
+      ]
     },
     {
       "id": "GAMECAT-V1-STRING-BYTES",
@@ -505,11 +843,17 @@
       "resource": "One UTF-8 string or object key in the schema-v1 envelope/record data",
       "unit": "UTF-8 bytes",
       "hard_maximum": 2048,
-      "configurable_range": {"minimum": 2048, "maximum": 2048},
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Measure encoded UTF-8 bytes before retaining, sorting or emitting the string.",
       "client_visible": false,
-      "boundary_tests": ["2,048 UTF-8 bytes accepted where grammar permits", "2,049 UTF-8 bytes rejected"]
+      "boundary_tests": [
+        "2,048 UTF-8 bytes accepted where grammar permits",
+        "2,049 UTF-8 bytes rejected"
+      ]
     },
     {
       "id": "GAMECAT-V1-NESTING-DEPTH",
@@ -517,11 +861,17 @@
       "resource": "Nested JSON depth inside entity/relation data",
       "unit": "levels",
       "hard_maximum": 16,
-      "configurable_range": {"minimum": 16, "maximum": 16},
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject before recursion exceeds the fixed v1 semantic-data depth.",
       "client_visible": false,
-      "boundary_tests": ["depth 16 accepted", "depth 17 rejected deterministically"]
+      "boundary_tests": [
+        "depth 16 accepted",
+        "depth 17 rejected deterministically"
+      ]
     },
     {
       "id": "GAMECAT-V1-OBJECT-MEMBERS",
@@ -529,11 +879,17 @@
       "resource": "Members in one nested entity/relation data object",
       "unit": "members",
       "hard_maximum": 4096,
-      "configurable_range": {"minimum": 4096, "maximum": 4096},
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound object members before recursive validation and canonical serialization.",
       "client_visible": false,
-      "boundary_tests": ["4,096 members accepted when otherwise valid", "4,097 rejected before unbounded object work"]
+      "boundary_tests": [
+        "4,096 members accepted when otherwise valid",
+        "4,097 rejected before unbounded object work"
+      ]
     },
     {
       "id": "GAMECAT-V1-ARRAY-ENTRIES",
@@ -541,11 +897,17 @@
       "resource": "Entries in one nested entity/relation data array",
       "unit": "entries",
       "hard_maximum": 200000,
-      "configurable_range": {"minimum": 200000, "maximum": 200000},
+      "configurable_range": {
+        "minimum": 200000,
+        "maximum": 200000
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound nested arrays before recursive validation and canonical serialization.",
       "client_visible": false,
-      "boundary_tests": ["200,000 nested entries accepted when otherwise valid", "200,001 rejected before unbounded array work"]
+      "boundary_tests": [
+        "200,000 nested entries accepted when otherwise valid",
+        "200,001 rejected before unbounded array work"
+      ]
     },
     {
       "id": "ABILITY01-TARGET-CANDIDATES",
@@ -553,11 +915,18 @@
       "resource": "target candidates examined by one explicit resolution step",
       "unit": "candidate entities/positions",
       "hard_maximum": 2,
-      "configurable_range": {"minimum": 1, "maximum": 2},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "ABILITY01-RESOLVED-TARGETS",
@@ -565,11 +934,18 @@
       "resource": "resolved targets for one immediate ability occurrence",
       "unit": "targets",
       "hard_maximum": 2,
-      "configurable_range": {"minimum": 1, "maximum": 2},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "ABILITY01-EFFECT-PLAN-ENTRIES",
@@ -577,11 +953,18 @@
       "resource": "typed entries in one staged Effect Plan",
       "unit": "typed plan entries",
       "hard_maximum": 2,
-      "configurable_range": {"minimum": 1, "maximum": 2},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "ABILITY01-EFFECT-PLAN-BYTES",
@@ -589,11 +972,18 @@
       "resource": "retained encoded/in-memory bytes for one staged Effect Plan",
       "unit": "bytes",
       "hard_maximum": 4096,
-      "configurable_range": {"minimum": 1, "maximum": 4096},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4096
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "ABILITY01-CALC-STAGES",
@@ -601,11 +991,18 @@
       "resource": "typed calculation/contribution stages per occurrence",
       "unit": "stages",
       "hard_maximum": 8,
-      "configurable_range": {"minimum": 1, "maximum": 8},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 8
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "INTERACTION01-CASCADE-DEPTH",
@@ -613,11 +1010,18 @@
       "resource": "child ancestry levels per interaction root",
       "unit": "child ancestry levels",
       "hard_maximum": 2,
-      "configurable_range": {"minimum": 1, "maximum": 2},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "INTERACTION01-CHILD-FANOUT",
@@ -625,11 +1029,18 @@
       "resource": "immediate child occurrences per parent",
       "unit": "child occurrences",
       "hard_maximum": 8,
-      "configurable_range": {"minimum": 1, "maximum": 8},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 8
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "INTERACTION01-ROOT-WORK",
@@ -637,11 +1048,18 @@
       "resource": "total immediate descendant work per root",
       "unit": "descendant work units",
       "hard_maximum": 8,
-      "configurable_range": {"minimum": 1, "maximum": 8},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 8
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "INTERACTION01-TRIGGER-CANDIDATES",
@@ -649,11 +1067,18 @@
       "resource": "eligible trigger/edge candidates per source occurrence",
       "unit": "candidates",
       "hard_maximum": 16,
-      "configurable_range": {"minimum": 1, "maximum": 16},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 16
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "INTERACTION01-RETAINED-CHILD-LIFECYCLES",
@@ -661,11 +1086,18 @@
       "resource": "retained child lifecycle entries per root",
       "unit": "child lifecycle entries",
       "hard_maximum": 8,
-      "configurable_range": {"minimum": 1, "maximum": 8},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 8
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "AI01-ACTIVE-ACTORS",
@@ -673,11 +1105,18 @@
       "resource": "active AI actors per authoritative scope safety envelope",
       "unit": "actors",
       "hard_maximum": 256,
-      "configurable_range": {"minimum": 1, "maximum": 256},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 256
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": false,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "AI01-AUTHORED-UNITS",
@@ -685,11 +1124,18 @@
       "resource": "authored acquire-or-idle representation units",
       "unit": "authored units",
       "hard_maximum": 4,
-      "configurable_range": {"minimum": 1, "maximum": 4},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": false,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "AI01-EVALUATION-WORK",
@@ -697,11 +1143,18 @@
       "resource": "semantic AI evaluation work per resolution",
       "unit": "deterministic work units",
       "hard_maximum": 8,
-      "configurable_range": {"minimum": 1, "maximum": 8},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 8
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": false,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "AI01-PERCEPTION-CANDIDATES",
@@ -709,11 +1162,18 @@
       "resource": "perception/target candidates per decision",
       "unit": "candidates",
       "hard_maximum": 64,
-      "configurable_range": {"minimum": 1, "maximum": 64},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 64
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": false,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "AI01-PATH-REQUESTS-PER-ACTOR",
@@ -721,11 +1181,18 @@
       "resource": "queued/in-flight path requests per actor",
       "unit": "requests per actor",
       "hard_maximum": 2,
-      "configurable_range": {"minimum": 1, "maximum": 2},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 2
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": false,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "AI01-PATH-SEARCH-WORK",
@@ -733,11 +1200,18 @@
       "resource": "path-search nodes/work units per request",
       "unit": "nodes/work units",
       "hard_maximum": 1024,
-      "configurable_range": {"minimum": 1, "maximum": 1024},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1024
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": false,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "AI01-ROUTE-STEPS",
@@ -745,11 +1219,18 @@
       "resource": "route steps retained in one path proposal",
       "unit": "route steps",
       "hard_maximum": 128,
-      "configurable_range": {"minimum": 1, "maximum": 128},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 128
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": false,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "AI01-ROUTE-BYTES",
@@ -757,11 +1238,18 @@
       "resource": "aggregate retained route bytes in one path proposal",
       "unit": "bytes",
       "hard_maximum": 4096,
-      "configurable_range": {"minimum": 1, "maximum": 4096},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4096
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": false,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "NET03-PREADMISSION-CONNECTIONS",
@@ -769,11 +1257,18 @@
       "resource": "concurrent pre-admission TCP/TLS connections",
       "unit": "connections",
       "hard_maximum": 256,
-      "configurable_range": {"minimum": 1, "maximum": 256},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 256
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "NET03-HANDSHAKE-AUTH-WORK",
@@ -781,11 +1276,18 @@
       "resource": "concurrent TLS handshake/authentication work",
       "unit": "concurrent handshakes",
       "hard_maximum": 64,
-      "configurable_range": {"minimum": 1, "maximum": 64},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 64
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "NET03-OUTBOUND-QUEUE-ENTRIES",
@@ -793,11 +1295,18 @@
       "resource": "outbound queued entries per admitted session",
       "unit": "entries per session",
       "hard_maximum": 64,
-      "configurable_range": {"minimum": 1, "maximum": 64},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 64
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "NET03-OUTBOUND-QUEUE-BYTES",
@@ -805,11 +1314,18 @@
       "resource": "outbound queued bytes per admitted session",
       "unit": "bytes per session",
       "hard_maximum": 1048576,
-      "configurable_range": {"minimum": 1, "maximum": 1048576},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1048576
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "NET03-PENDING-WRITES",
@@ -817,11 +1333,18 @@
       "resource": "pending transport writes per session",
       "unit": "writes per session",
       "hard_maximum": 8,
-      "configurable_range": {"minimum": 1, "maximum": 8},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 8
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "NET03-DRAIN-TASKS",
@@ -829,11 +1352,18 @@
       "resource": "connection/task shutdown and drain work per batch",
       "unit": "tasks per drain batch",
       "hard_maximum": 256,
-      "configurable_range": {"minimum": 1, "maximum": 256},
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 256
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
       "client_visible": true,
-      "boundary_tests": ["hard maximum accepted", "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation", "checked arithmetic overflow rejected before allocation or partial mutation"]
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
     },
     {
       "id": "FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPOCH",
@@ -841,11 +1371,20 @@
       "resource": "distinct retained ReconnectAttemptRef identities for one open ControlLossEpoch of one GameSession",
       "unit": "attempts per open loss epoch per GameSession",
       "hard_maximum": 8,
-      "configurable_range": {"minimum": 8, "maximum": 8},
+      "configurable_range": {
+        "minimum": 8,
+        "maximum": 8
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject the ninth distinct attempt before persistent allocation or authority mutation; retry of the same ReconnectAttemptRef is idempotent and consumes no additional slot.",
       "client_visible": true,
-      "boundary_tests": ["8 distinct attempts accepted subject to ordinary reconnect eligibility", "9th distinct attempt rejected before allocation or authority mutation", "retry of the same ReconnectAttemptRef consumes no additional slot", "checked arithmetic overflow rejected fail-closed", "closed-epoch compaction preserves deterministic terminal lookup"]
+      "boundary_tests": [
+        "8 distinct attempts accepted subject to ordinary reconnect eligibility",
+        "9th distinct attempt rejected before allocation or authority mutation",
+        "retry of the same ReconnectAttemptRef consumes no additional slot",
+        "checked arithmetic overflow rejected fail-closed",
+        "closed-epoch compaction preserves deterministic terminal lookup"
+      ]
     },
     {
       "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
@@ -1062,7 +1601,7 @@
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 64,
       "id": "NSRC-JSON-NAME-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Root object only, no arrays or nested containers, unknown members rejected before materialization; raw whitespace/escapes also count against body cap. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Root object only, no arrays or nested containers, unknown members rejected before materialization; raw whitespace/escapes also count against body cap. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1\u201364 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Decoded member name",
       "unit": "ASCII bytes"
@@ -1082,7 +1621,7 @@
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 256,
       "id": "NSRC-JSON-STRING-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Root object only, no arrays or nested containers, unknown members rejected before materialization; raw whitespace/escapes also count against body cap. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Root object only, no arrays or nested containers, unknown members rejected before materialization; raw whitespace/escapes also count against body cap. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1\u201364 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "String unless smaller field rule applies",
       "unit": "decoded bytes"
@@ -1102,7 +1641,7 @@
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 128,
       "id": "NSRC-SOURCE-AUTHORITY-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1\u201364 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Authenticated exact service identity",
       "unit": "ASCII bytes"
@@ -1202,7 +1741,7 @@
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 128,
       "id": "NSRC-DESCRIPTOR-IDENTITY-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1\u201364 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Each client/service identity",
       "unit": "ASCII bytes"
@@ -1228,11 +1767,11 @@
       "unit": "bytes"
     },
     {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "allocation_impact": "Stock rustls owns finite native predecode backing. At the configured verifier boundary, use checked arithmetic to enforce the coupled limits of 4 peer certificates, 4,096 DER bytes per certificate and 16,384 aggregate peer-chain DER bytes before delegating or accepting trust; reject over-limit input as UNAVAILABLE without truncation.",
       "boundary_tests": [
-        "4 certificates accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "5 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+        "4 certificates accepted where semantically valid and every coupled peer-chain limit passes at the configured verifier boundary",
+        "5 certificates rejected as UNAVAILABLE at the configured verifier boundary before delegating or accepting trust, without truncation",
+        "Checked arithmetic overflow and violation of any coupled peer count, per-certificate or aggregate-chain limit rejected before delegating or accepting trust"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -1242,17 +1781,17 @@
       "failure_category": "UNAVAILABLE",
       "hard_maximum": 4,
       "id": "NSRC-TLS-PEER-CERTIFICATES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Stock rustls owns finite native predecode backing; Oteryn enforces coupled peer-chain limits at the configured verifier boundary before delegating or accepting trust. No network AIA/CRL or unbounded alternate-chain search. Exceeding the transport/PKI envelope makes the source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Peer chain",
       "unit": "certificates"
     },
     {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "allocation_impact": "Stock rustls owns finite native predecode backing. At the configured verifier boundary, use checked arithmetic to enforce the coupled limits of 4 peer certificates, 4,096 DER bytes per certificate and 16,384 aggregate peer-chain DER bytes before delegating or accepting trust; reject over-limit input as UNAVAILABLE without truncation.",
       "boundary_tests": [
-        "4096 DER bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "4097 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+        "4096 DER bytes accepted where semantically valid and every coupled peer-chain limit passes at the configured verifier boundary",
+        "4097 DER bytes rejected as UNAVAILABLE at the configured verifier boundary before delegating or accepting trust, without truncation",
+        "Checked arithmetic overflow and violation of any coupled peer count, per-certificate or aggregate-chain limit rejected before delegating or accepting trust"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -1262,17 +1801,17 @@
       "failure_category": "UNAVAILABLE",
       "hard_maximum": 4096,
       "id": "NSRC-TLS-PEER-CERTIFICATE-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Stock rustls owns finite native predecode backing; Oteryn enforces coupled peer-chain limits at the configured verifier boundary before delegating or accepting trust. No network AIA/CRL or unbounded alternate-chain search. Exceeding the transport/PKI envelope makes the source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Each peer certificate",
       "unit": "DER bytes"
     },
     {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "allocation_impact": "Stock rustls owns finite native predecode backing. At the configured verifier boundary, use checked arithmetic to enforce the coupled limits of 4 peer certificates, 4,096 DER bytes per certificate and 16,384 aggregate peer-chain DER bytes before delegating or accepting trust; reject over-limit input as UNAVAILABLE without truncation.",
       "boundary_tests": [
-        "16384 DER bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "16385 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+        "16384 DER bytes accepted where semantically valid and every coupled peer-chain limit passes at the configured verifier boundary",
+        "16385 DER bytes rejected as UNAVAILABLE at the configured verifier boundary before delegating or accepting trust, without truncation",
+        "Checked arithmetic overflow and violation of any coupled peer count, per-certificate or aggregate-chain limit rejected before delegating or accepting trust"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -1282,7 +1821,7 @@
       "failure_category": "UNAVAILABLE",
       "hard_maximum": 16384,
       "id": "NSRC-TLS-PEER-CHAIN-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Stock rustls owns finite native predecode backing; Oteryn enforces coupled peer-chain limits at the configured verifier boundary before delegating or accepting trust. No network AIA/CRL or unbounded alternate-chain search. Exceeding the transport/PKI envelope makes the source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Aggregate peer chain",
       "unit": "DER bytes"
@@ -1348,71 +1887,11 @@
       "unit": "DER bytes"
     },
     {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "allocation_impact": "A thin caller-owned bounded ingress adapter uses checked cumulative accounting across all inbound handshake reads and rejects an increment that would overflow or raise the total above 65,536 bytes before supplying any bytes from that increment to stock rustls. Native rustls per-message and backing limits separately protect library-owned memory.",
       "boundary_tests": [
-        "16 levels accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "17 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
-      "client_visible": false,
-      "configurable_range": {
-        "minimum": 16,
-        "maximum": 16
-      },
-      "failure_category": "UNAVAILABLE",
-      "hard_maximum": 16,
-      "id": "NSRC-TLS-DER-DEPTH",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
-      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
-      "resource": "DER nesting",
-      "unit": "levels"
-    },
-    {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
-      "boundary_tests": [
-        "512 elements accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "513 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
-      "client_visible": false,
-      "configurable_range": {
-        "minimum": 512,
-        "maximum": 512
-      },
-      "failure_category": "UNAVAILABLE",
-      "hard_maximum": 512,
-      "id": "NSRC-TLS-DER-ELEMENTS",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
-      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
-      "resource": "Parsed DER elements per certificate",
-      "unit": "elements"
-    },
-    {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
-      "boundary_tests": [
-        "4 verifications accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "5 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
-      ],
-      "client_visible": false,
-      "configurable_range": {
-        "minimum": 4,
-        "maximum": 4
-      },
-      "failure_category": "UNAVAILABLE",
-      "hard_maximum": 4,
-      "id": "NSRC-TLS-SIGNATURE-VERIFICATIONS",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
-      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
-      "resource": "Certificate signatures per handshake",
-      "unit": "verifications"
-    },
-    {
-      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
-      "boundary_tests": [
-        "65536 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
-        "65537 rejected before excess allocation, retention or effect",
-        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+        "65,536 cumulative inbound handshake bytes accepted where semantically valid and every coupled limit passes, including across multiple read segmentations",
+        "65,537 cumulative inbound handshake bytes rejected as UNAVAILABLE before any bytes from the over-limit increment are supplied to rustls",
+        "Checked-add overflow rejected before supplying the increment to rustls; native per-message/backing limits remain a separate library-owned-memory bound"
       ],
       "client_visible": false,
       "configurable_range": {
@@ -1422,7 +1901,7 @@
       "failure_category": "UNAVAILABLE",
       "hard_maximum": 65536,
       "id": "NSRC-TLS-HANDSHAKE-INBOUND-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. The caller-owned adapter enforces this cumulative bound before bytes enter stock rustls; proof of a native aggregate 65,536-byte rustls bound is not required. Native rustls per-message and backing limits remain separate. Exceeding the transport/PKI envelope makes the source unavailable. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Inbound handshake across all reads",
       "unit": "bytes"
@@ -1940,7 +2419,7 @@
       "failure_category": "INVALID_INPUT",
       "hard_maximum": 128,
       "id": "NASG-IDENTITY-BYTES",
-      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1\u201364 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "Each actor/source identity",
       "unit": "ASCII bytes"
@@ -2586,12 +3065,315 @@
       "unit": "executors"
     },
     {
+      "id": "DFR-PG-TLS-SERVER-NAME-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL TLS DNS server identity",
+      "unit": "ASCII bytes",
+      "hard_maximum": 253,
+      "configurable_range": {
+        "minimum": 253,
+        "maximum": 253
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate DNS presentation grammar and byte length from borrowed/already-bounded source before any retained String copy; checked aggregate configuration arithmetic and same-root I reservation must succeed before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "253-byte valid DNS presentation name accepted when every label is 1..63 octets and all coupled retained-config checks pass",
+        "254 bytes rejected as UNAVAILABLE before retained allocation or TLS-name parsing/copy",
+        "A 64-octet label and checked aggregate arithmetic overflow are rejected before retained allocation"
+      ],
+      "notes": "First-slice owner decision derived from RFC 1035's 255-octet DNS wire-name maximum: an uncompressed presentation name without the trailing root dot is at most 253 ASCII bytes. No ambient PGHOST/PGHOSTADDR fallback is authorized."
+    },
+    {
+      "id": "DFR-PG-DATABASE-NAME-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL database name",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 63,
+      "configurable_range": {
+        "minimum": 63,
+        "maximum": 63
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate UTF-8 byte length from borrowed/already-bounded source before any retained String copy; checked aggregate configuration arithmetic and same-root I reservation must succeed before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "63 UTF-8 bytes accepted when the name is otherwise valid and all coupled retained-config checks pass",
+        "64 UTF-8 bytes rejected as UNAVAILABLE before retained allocation or PgConnectOptions construction",
+        "No silent PostgreSQL identifier truncation is accepted"
+      ],
+      "notes": "First-slice product cap matches PostgreSQL 17's default max_identifier_length of 63 bytes. A server recompiled for a larger NAMEDATALEN does not widen this Oteryn profile."
+    },
+    {
+      "id": "DFR-PG-USERNAME-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL username/role name",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 63,
+      "configurable_range": {
+        "minimum": 63,
+        "maximum": 63
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate UTF-8 byte length from borrowed/already-bounded source before any retained String copy; checked aggregate configuration arithmetic and same-root I reservation must succeed before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "63 UTF-8 bytes accepted when the role name is otherwise valid and all coupled retained-config checks pass",
+        "64 UTF-8 bytes rejected as UNAVAILABLE before retained allocation or authentication setup",
+        "No silent PostgreSQL identifier truncation is accepted"
+      ],
+      "notes": "First-slice product cap matches PostgreSQL 17's default max_identifier_length of 63 bytes for identifiers. A server recompiled for a larger NAMEDATALEN does not widen this Oteryn profile."
+    },
+    {
+      "id": "DFR-PG-PASSWORD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL SCRAM password/secret material",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate non-empty UTF-8 byte length from borrowed/already-bounded secret input before any retained String copy, formatting or SCRAM setup; checked aggregate arithmetic and same-root I reservation must succeed before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1024 UTF-8 bytes accepted when the secret is otherwise valid and all coupled retained-config checks pass",
+        "1025 UTF-8 bytes rejected as UNAVAILABLE before retained allocation or SCRAM work",
+        "Checked aggregate arithmetic overflow is rejected without logging secret bytes"
+      ],
+      "notes": "This is an Oteryn first-slice product ceiling, not a claim that PostgreSQL universally limits passwords to 1024 bytes. PostgreSQL 17 SCRAM supplies no smaller password-length contract; existing protected Oteryn password ingress uses a 1024-unit string ceiling, while this DB boundary deliberately uses the stricter allocation unit UTF-8 bytes."
+    },
+    {
+      "id": "DFR-PG-ROOT-CA-PEM-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Retained explicit PostgreSQL root-CA PEM bundle",
+      "unit": "ASCII bytes",
+      "hard_maximum": 22768,
+      "configurable_range": {
+        "minimum": 22768,
+        "maximum": 22768
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reject raw input above 22768 bytes before PEM parsing or retained copy; inside the bounded input accept only 1..4 CERTIFICATE blocks, at most 4096 decoded DER bytes each and 16384 aggregate DER bytes, then reserve actual retained capacity against the same root I ledger before ownership.",
+      "client_visible": false,
+      "boundary_tests": [
+        "22768 raw ASCII bytes pass the generic pre-copy length boundary when the canonical certificate-bundle grammar and all nested/coupled limits also pass; semantic qualification uses an exact valid fixture when representable or the largest valid value at/below together with this exact length comparison",
+        "22769 raw bytes rejected as UNAVAILABLE before PEM parsing or retained allocation",
+        "A fifth certificate, 4097 decoded DER bytes for one certificate, 16385 aggregate DER bytes, malformed/noncanonical text, and checked arithmetic overflow are rejected fail-closed"
+      ],
+      "notes": "Owner decision adopts the protected Oteryn NSRC-TLS-CERTS conservative PKI envelope for this separate PostgreSQL trust input: 4 roots, 4096 DER bytes each. RFC 7468 generated base64 is 64 characters per line; 4096 DER bytes become 5464 base64 characters over 86 lines. Allowing LF or worst-case CRLF canonical text gives 5692 bytes per certificate and 22768 for four. No unrelated PEM text or ambient root-file discovery is admitted."
+    },
+    {
+      "id": "DFR-PG-RETAINED-CONFIG-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Aggregate variable input bytes retained by the explicit PostgreSQL root configuration",
+      "unit": "input bytes across tls_server_name + database + username + password + root_ca_pem",
+      "hard_maximum": 24171,
+      "configurable_range": {
+        "minimum": 24171,
+        "maximum": 24171
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Use checked addition over all five already-length-validated borrowed inputs and reject above 24171 before any retained copy/parse. This input bound creates no allowance: actual owned capacities, fixed config backing and allocator overhead are separately charged to the existing same-root I budget before allocation and for their full lifetime.",
+      "client_visible": false,
+      "boundary_tests": [
+        "24171 aggregate input bytes accepted only when every per-field maximum and semantic rule also passes",
+        "24172 aggregate input bytes rejected as UNAVAILABLE before any retained configuration copy",
+        "Checked-add overflow, any per-field overflow, or inability to reserve actual retained capacity in the existing root ledger rejects before partial root/config construction"
+      ],
+      "notes": "Exact arithmetic is 253 + 63 + 63 + 1024 + 22768 = 24171 input bytes. This is conjunctive with DFR-TOTAL-RESIDENT-BYTES=12582912 and does not change I + max(R,T) + Q + A <= 12 MiB or create a separate configuration budget."
+    },
+    {
+      "id": "DFR-PG-BACKEND-MESSAGE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "One PostgreSQL backend message on the first-slice production root profile, including type byte, four-byte PostgreSQL length field and body",
+      "unit": "total wire bytes",
+      "hard_maximum": 131207,
+      "configurable_range": {
+        "minimum": 131207,
+        "maximum": 131207
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Inspect the five-byte backend header first and reject any total above 131207 (announced PostgreSQL length above 131206; body above 131202) before reserve, growth or a read target derived from the peer length. Larger admitted messages than the 8192-byte reusable scratch require separately owned same-root R/T backing reserved before allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "131207 total wire bytes accepted only when the message-specific structural/profile checks and existing root funding also pass",
+        "131208 total wire bytes, announced length 131207, or any checked arithmetic overflow rejected as UNAVAILABLE immediately after the five-byte header and before peer-length-driven allocation/growth",
+        "Prepared/binary row-bearing qualification proves the bound is never applied to a simple/text DataRow path"
+      ],
+      "notes": "First-slice PostgreSQL-specific cap. The selected prepared/binary DataRow maximum is 1 type + 4 length + 2 field count + (32 * 4 field-length prefixes) + 131072 admitted row-value bytes = 131207. This is not DFR-SQL-RESULT-BYTES and does not reuse FND02-WIRE-FRAME-BYTES."
+    },
+    {
+      "id": "DFR-PG-DATA-ROW-FIELDS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Fields announced by one PostgreSQL DataRow on the first-slice production root profile",
+      "unit": "fields",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate peer count <=32 and complete DataRow body structure before Vec::with_capacity or retained range metadata allocation. The existing row/result byte guards and same-root R/T charge remain conjunctive.",
+      "client_visible": false,
+      "boundary_tests": [
+        "32 fields accepted when body structure, prepared/binary path, logical row/result limits and root funding all pass",
+        "33 fields rejected as UNAVAILABLE before DataRow vector allocation",
+        "NULL/mixed-value and malformed/truncated bodies prove count validation does not permit unchecked range/value retention"
+      ],
+      "notes": "Compatibility/safety ceiling for the selected first slice. The current composed WP3/WP4 corpus is below this maximum; protocol u16 width is not authority for a larger product cap."
+    },
+    {
+      "id": "DFR-PG-PARAMETER-DESCRIPTION-PARAMETERS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Parameter OIDs announced by one PostgreSQL ParameterDescription on the first-slice production root profile",
+      "unit": "parameters",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate peer count <=32 and exact body size 2 + 4*count before SmallVec::with_capacity or parameter metadata retention.",
+      "client_visible": false,
+      "boundary_tests": [
+        "32 parameters accepted when the complete body and built-in-only OID policy pass",
+        "33 parameters rejected as UNAVAILABLE before SmallVec allocation",
+        "Truncated, overlong or checked-arithmetic-invalid bodies rejected before retained parameter metadata"
+      ],
+      "notes": "Current composed WP3/WP4 SQL uses no more than 15 positional bind parameters; 32 is the owner-selected finite first-slice compatibility ceiling, not the PostgreSQL u16 protocol maximum."
+    },
+    {
+      "id": "DFR-PG-ROW-DESCRIPTION-FIELDS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Fields announced by one PostgreSQL RowDescription on the first-slice production root profile",
+      "unit": "fields",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate peer count <=32, all field-name byte limits and complete body structure before Vec::with_capacity, owned field-name String allocation or statement-metadata construction.",
+      "client_visible": false,
+      "boundary_tests": [
+        "32 fields accepted only when every name/profile/built-in-OID check and root funding also passes",
+        "33 fields rejected as UNAVAILABLE before RowDescription vector or String allocation",
+        "Malformed/truncated field bodies rejected before retained RowDescription or statement metadata"
+      ],
+      "notes": "The result-shape ceiling matches the admitted DataRow profile. It is a product compatibility limit, not an inference from protocol representation width."
+    },
+    {
+      "id": "DFR-PG-ROW-DESCRIPTION-FIELD-NAME-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "One RowDescription field name on the selected stock PostgreSQL 17.6 compatibility profile",
+      "unit": "UTF-8 bytes excluding NUL",
+      "hard_maximum": 63,
+      "configurable_range": {
+        "minimum": 63,
+        "maximum": 63
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Validate UTF-8 and byte length <=63 from the bounded message before creating an owned field-name String or statement-metadata name backing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "63 UTF-8 bytes accepted when the complete RowDescription and aggregate-name limits also pass",
+        "64 UTF-8 bytes rejected as UNAVAILABLE before owned field-name allocation",
+        "A PostgreSQL server reporting max_identifier_length above 63 is outside this first-slice compatibility profile and does not widen the limit"
+      ],
+      "notes": "Owner-selected stock PostgreSQL 17.6 compatibility ceiling. It is not a protocol-wide invariant; support for a build with larger NAMEDATALEN/max_identifier_length requires an explicit successor decision."
+    },
+    {
+      "id": "DFR-PG-ROW-DESCRIPTION-NAME-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Aggregate RowDescription field-name bytes on one first-slice result description",
+      "unit": "UTF-8 bytes excluding NULs",
+      "hard_maximum": 2016,
+      "configurable_range": {
+        "minimum": 2016,
+        "maximum": 2016
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Use checked addition while scanning already frame-bounded names and reject aggregate bytes above 2016 before any owned field-name String/vector/statement-metadata allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "2016 aggregate field-name bytes accepted only when field count <=32, each name <=63 and all other profile checks pass",
+        "2017 aggregate field-name bytes rejected as UNAVAILABLE before owned field-name allocation",
+        "Checked-add overflow or malformed NUL/UTF-8 structure rejected before retained metadata"
+      ],
+      "notes": "Derived first-slice maximum 32 fields * 63 UTF-8 bytes. This is conjunctive with, not additive to, the existing same-root R/T resident accounting."
+    },
+    {
+      "id": "DFR-PG-PARAMETER-STATUS-RAW-ENTRIES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Raw heap-backed ParameterStatus key/value entries retained by the first-slice production root profile",
+      "unit": "entries",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Do not allocate or retain a raw ParameterStatus map entry. Parse needed data from the already bounded message; only normalized server_version_num: Option<u32> may survive. Unknown/unneeded statuses are discarded.",
+      "client_visible": false,
+      "boundary_tests": [
+        "0 raw retained entries after configured PostgreSQL 17.6 startup/status processing",
+        "An attempted first raw retained entry is prevented before heap-backed key/value allocation; the unneeded status is discarded",
+        "Repeated unknown/unneeded ParameterStatus messages do not increase retained entry count"
+      ],
+      "notes": "This is a retention ceiling, not a ban on receiving PostgreSQL ParameterStatus messages. The raw message remains subject to DFR-PG-BACKEND-MESSAGE-BYTES."
+    },
+    {
+      "id": "DFR-PG-PARAMETER-STATUS-RAW-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Raw variable key/value bytes retained from ParameterStatus messages by the first-slice production root profile",
+      "unit": "retained raw bytes",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Retain no raw ParameterStatus name/value String backing. Parse server_version into the normalized numeric field inside the bounded received message, then release the raw message backing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "0 raw ParameterStatus variable bytes retained after a valid server_version status is normalized",
+        "1 byte of attempted raw retained status backing is prevented before retained String/map allocation",
+        "Repeated large-but-frame-valid unneeded statuses leave zero raw retained status bytes after each message"
+      ],
+      "notes": "The normalized Option<u32> server_version_num is fixed-size state and is not raw ParameterStatus variable backing."
+    },
+    {
+      "id": "DFR-PG-SOCKET-READ-SCRATCH-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_WP3_V2_SUPERSEDING_ARCHITECTURE_DECISION_2026-09-12.md",
+      "resource": "Reusable PostgreSQL socket read scratch retained by one first-slice production root connection",
+      "unit": "retained bytes",
+      "hard_maximum": 8192,
+      "configurable_range": {
+        "minimum": 8192,
+        "maximum": 8192
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Fund the fixed 8192-byte reusable read scratch in the existing same-root connection generation. Do not grow its retained capacity on the root profile; admitted larger messages use separately owned/charged backing after the backend-message header gate and release without inflating reusable scratch.",
+      "client_visible": false,
+      "boundary_tests": [
+        "8192 reusable read scratch bytes retained for the root-profile connection",
+        "8193 bytes of attempted reusable retained scratch growth is denied before growth; a larger admitted message instead uses separately funded bounded backing",
+        "After receiving and releasing a maximum admitted message, reusable read scratch remains 8192 bytes and temporary backing charge is final"
+      ],
+      "notes": "This preserves the pinned SQLx initial read scratch as the production retained boundary. The separate 8192-byte write scratch remains part of the existing source-visible >=16 KiB settled-connection lower bound and is not changed by this entry."
+    },
+    {
       "id": "FND04-GAMESESSION-USED-IDS-PER-CHARACTER",
       "owner_contract": "../architecture/reviews/OTERYN_GAME_SESSION_NONREUSE_AUTHORITY_DECISION_2026-09-07.md",
       "resource": "Permanently retained committed GameSessionId memberships for one CharacterId",
       "unit": "entries per CharacterId",
       "hard_maximum": 65536,
-      "configurable_range": {"minimum": 65536, "maximum": 65536},
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Under the same serialized durability decision, check complete membership, candidate absence, current membership revision and count before inserting any new membership or committing new-session authority. At the hard maximum reject the new-session operation before membership/session/claim/receipt authority effects. Exact replay of an already committed binding consumes no additional entry. Never evict membership to make room.",
       "client_visible": true,
@@ -3452,6 +4234,754 @@
         "8,433rd field cannot be materialized",
         "cumulative counter overflow rejected"
       ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-ITEM-RECORDS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Canonical Item records in each server or client-safe projection",
+      "unit": "records",
+      "hard_maximum": 38157,
+      "configurable_range": {
+        "minimum": 38157,
+        "maximum": 38157
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate exact identity/index/body cardinality before allocating record or index collections.",
+      "client_visible": true,
+      "boundary_tests": [
+        "38,157 unique native Item records accepted when all nested limits pass",
+        "38,156 or 38,158 records rejected before collection allocation",
+        "duplicate native identity rejected independently"
+      ],
+      "notes": "Protected identity closure; this profile performs no identity generation."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PRESENTATION-NAME-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "One known Item presentation name",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 46,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 46
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check declared byte length before copying or UTF-8 decoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "46-byte valid UTF-8 name accepted",
+        "47 bytes rejected before retention",
+        "invalid UTF-8 rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PRESENTATION-DESCRIPTION-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "One known Item presentation description",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 200,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 200
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check declared byte length before copying or UTF-8 decoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "200-byte valid UTF-8 description accepted",
+        "201 bytes rejected before retention",
+        "invalid UTF-8 rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PRESENTATION-ALIASES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Item presentation aliases in profile v1",
+      "unit": "entries",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Profile v1 admits no collection allocation; any entry retains explicit unsupported provenance and fails encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "empty collection accepted as EXPLICIT_UNSUPPORTED_IN_V1",
+        "first entry rejected without silent loss"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PRESENTATION-TAGS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Item presentation tags in profile v1",
+      "unit": "entries",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Profile v1 admits no collection allocation; any entry retains explicit unsupported provenance and fails encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "empty collection accepted as EXPLICIT_UNSUPPORTED_IN_V1",
+        "first entry rejected without silent loss"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-SERVER-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Present typed capability groups in one server-authoritative Item body",
+      "unit": "groups",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 16
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before group-vector allocation; reject duplicates, noncanonical order and unknown critical groups.",
+      "client_visible": false,
+      "boundary_tests": [
+        "16 known ordered unique groups accepted",
+        "17 groups rejected before allocation",
+        "duplicate, unsorted or unknown group rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CLIENT-GROUPS-PER-RECORD",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Present typed capability groups in one client-safe Item body",
+      "unit": "groups",
+      "hard_maximum": 11,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 11
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject group count before allocation and reject every server-only group through the projection allowlist.",
+      "client_visible": true,
+      "boundary_tests": [
+        "11 allowlisted ordered unique groups accepted",
+        "12 groups rejected before allocation",
+        "each server-only group rejected independently"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CAPABILITY-TRUTH-STATES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Classification capability truth states in one Item record",
+      "unit": "fixed typed states",
+      "hard_maximum": 24,
+      "configurable_range": {
+        "minimum": 24,
+        "maximum": 24
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Require the exact closed capability shape; never allocate from an encoded arbitrary count.",
+      "client_visible": true,
+      "boundary_tests": [
+        "exactly 24 truth states accepted",
+        "23-state truncation rejected",
+        "25th state rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-PATTERNS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Alternative complete Equipment patterns per Item",
+      "unit": "patterns",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before pattern allocation; canonicalize semantic content and reject semantic duplicates.",
+      "client_visible": true,
+      "boundary_tests": [
+        "2 distinct canonical patterns accepted",
+        "3rd pattern rejected before allocation",
+        "same semantic pattern under a different local ID rejected"
+      ],
+      "notes": "max(normalized 38,157-row candidate-corpus maximum 1, minimum non-singleton schema witness 2)."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-RESERVED-SLOTS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Additional reserved semantic slots per Equipment pattern",
+      "unit": "slots",
+      "hard_maximum": 9,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 9
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique slots and reject the primary slot.",
+      "client_visible": true,
+      "boundary_tests": [
+        "9 unique non-primary slots accepted",
+        "10th additional slot rejected",
+        "duplicate or primary-slot repetition rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-EXCLUSIVE-GROUPS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Mutually exclusive Equipment group memberships per pattern",
+      "unit": "memberships",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before key allocation; validate each inherited ProductionKey length/grammar then strict order and uniqueness.",
+      "client_visible": true,
+      "boundary_tests": [
+        "2 distinct ordered valid group keys accepted",
+        "3rd membership rejected before allocation",
+        "empty, malformed, duplicate or unsorted group key rejected"
+      ],
+      "notes": "G=max(complete explicit-membership census maximum 0, minimum non-singleton grammar witness 2); no gameplay group assertion."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-GROUP-KEY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "One Equipment mutually-exclusive semantic group key",
+      "unit": "ASCII bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check u16-declared length before copying; apply the inherited namespaced ProductionKey grammar before retention.",
+      "client_visible": true,
+      "boundary_tests": [
+        "512-byte valid namespaced key accepted",
+        "513 bytes rejected before retention",
+        "empty, malformed or non-production key rejected"
+      ],
+      "notes": "Reuses the existing canonical ProductionKey representation and ceiling; unrelated record-byte ceilings do not apply."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-EQUIPMENT-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Base-vocation allow-set entries per Equipment pattern",
+      "unit": "vocations",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 5
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed five-vocation domain.",
+      "client_visible": true,
+      "boundary_tests": [
+        "5 unique base vocations accepted",
+        "6th entry rejected before allocation",
+        "duplicate or unknown vocation rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-TRADE-VOCATIONS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Base-vocation entries in one TradeRestrictions record",
+      "unit": "vocations",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 5
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require sorted unique members from the closed five-vocation domain.",
+      "client_visible": false,
+      "boundary_tests": [
+        "5 unique base vocations accepted",
+        "6th entry rejected before allocation",
+        "duplicate or unknown vocation rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-WEAPON-ELEMENTS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Typed elemental entries in one Weapon record",
+      "unit": "entries",
+      "hard_maximum": 5,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 5
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; validate closed kinds, canonical order and uniqueness.",
+      "client_visible": true,
+      "boundary_tests": [
+        "5 unique typed elements accepted",
+        "6th entry rejected before allocation",
+        "duplicate, unsorted or unknown kind rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-PROTECTION-RESISTANCES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Typed resistance entries in one Protection record",
+      "unit": "entries",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; validate closed kinds, canonical order, uniqueness and rational parameters.",
+      "client_visible": true,
+      "boundary_tests": [
+        "12 unique typed resistances accepted",
+        "13th entry rejected before allocation",
+        "duplicate kind or zero denominator rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-SKILL-MODIFIERS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Typed SkillModifier definitions in one Item record",
+      "unit": "definitions",
+      "hard_maximum": 37,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 37
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; validate closed kinds, canonical order, uniqueness and typed parameters.",
+      "client_visible": true,
+      "boundary_tests": [
+        "37 unique typed modifiers accepted",
+        "38th modifier rejected before allocation",
+        "duplicate/unknown kind or invalid typed parameter rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-IMBUEMENT-SLOTS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Known gameplay imbuement slot count on one Item",
+      "unit": "slots",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate the scalar before retaining the Imbuement capability.",
+      "client_visible": true,
+      "boundary_tests": [
+        "slot count 3 accepted",
+        "slot count 4 rejected",
+        "known zero remains distinct from unknown/not-applicable"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-IMBUEMENT-ALLOWED-ENTRIES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Allowed imbuement family/tier entries per Item",
+      "unit": "entries",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require canonical unique family keys and accepted typed tiers.",
+      "client_visible": true,
+      "boundary_tests": [
+        "20 unique family/tier entries accepted",
+        "21st entry rejected before allocation",
+        "duplicate family or unknown tier rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-IMBUEMENT-EXCLUDED-FAMILIES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Excluded imbuement families per Item",
+      "unit": "entries",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before allocation; require canonical unique family keys.",
+      "client_visible": true,
+      "boundary_tests": [
+        "20 unique excluded families accepted",
+        "21st entry rejected before allocation",
+        "duplicate or unknown family rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CROSS-ITEM-TARGETS",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Typed cross-Item target values retained in one server Item record",
+      "unit": "target values",
+      "hard_maximum": 12,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 12
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use the protected native identity map; reject any extra target field or accepted dangling ordinal before retention.",
+      "client_visible": false,
+      "boundary_tests": [
+        "12 schema-defined target values accepted when each resolves or carries a non-known disposition",
+        "13th target field rejected",
+        "accepted dangling target rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-MANIFEST-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Reference Item artifact manifest section",
+      "unit": "bytes",
+      "hard_maximum": 7500,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 7500
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate section length and checked range before retaining or parsing manifest bytes.",
+      "client_visible": true,
+      "boundary_tests": [
+        "7,500-byte manifest accepted only when grammar and artifact total pass",
+        "7,501 bytes rejected before retention",
+        "offset plus length overflow rejected"
+      ],
+      "notes": "Preserves the existing Reference carrier maximum."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-INDEX-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Reference Item artifact index section",
+      "unit": "bytes",
+      "hard_maximum": 40789837,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 40789837
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate index section length before retention; bound every entry atom before allocation/copy.",
+      "client_visible": true,
+      "boundary_tests": [
+        "40,789,837-byte index accepted only with exactly 38,157 valid entries",
+        "40,789,838 bytes rejected before retention",
+        "entry/section arithmetic overflow rejected"
+      ],
+      "notes": "4 + 38,157 * (1 + 2 + 512 + 2 + 512 + 4 + 4 + 32)."
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-SERVER-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "One typed server-authoritative Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3555,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3555
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or field decode.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3,555-byte semantically valid record accepted",
+        "3,556 bytes rejected before record allocation",
+        "truncated record rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CLIENT-RECORD-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "One typed client-safe Item body record",
+      "unit": "bytes",
+      "hard_maximum": 3433,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 3433
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing, copying or allowlisted field decode.",
+      "client_visible": true,
+      "boundary_tests": [
+        "3,433-byte semantically valid client record accepted",
+        "3,434 bytes rejected before record allocation",
+        "server-only group rejected independently"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-SERVER-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Aggregate server Item body section",
+      "unit": "bytes",
+      "hard_maximum": 135648135,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 135648135
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication/addition before section allocation; enforce every nested record bound.",
+      "client_visible": false,
+      "boundary_tests": [
+        "135,648,135-byte body accepted only with 38,157 valid bounded records",
+        "135,648,136 bytes rejected before section allocation",
+        "aggregate arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CLIENT-BODY-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Aggregate client-safe Item body section",
+      "unit": "bytes",
+      "hard_maximum": 130992981,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 130992981
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked multiplication/addition before section allocation; enforce every nested client record bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "130,992,981-byte body accepted only with 38,157 valid bounded records",
+        "130,992,982 bytes rejected before section allocation",
+        "aggregate arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-SERVER-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "One full server-authoritative Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 176445672,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 176445672
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check total slice length before header parse or input-sized allocation; all nested section limits remain conjunctive.",
+      "client_visible": false,
+      "boundary_tests": [
+        "176,445,672-byte artifact accepted only when every nested limit passes",
+        "176,445,673 bytes rejected before parse/allocation",
+        "section range overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-CLIENT-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "One full client-safe Reference Item artifact",
+      "unit": "bytes",
+      "hard_maximum": 171790518,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 171790518
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check total slice length before header parse or input-sized allocation; all nested allowlist limits remain conjunctive.",
+      "client_visible": true,
+      "boundary_tests": [
+        "171,790,518-byte artifact accepted only when every nested limit passes",
+        "171,790,519 bytes rejected before parse/allocation",
+        "server-only section content rejected independently"
+      ]
+    },
+    {
+      "id": "DUR04-REFERENCE-ITEM-PROFILE-V1-GENERATION-PAIR-BYTES",
+      "owner_contract": "OTERYN_REFERENCE_ITEM_ARTIFACT_RESOURCE_PROFILE_V1.md",
+      "resource": "Combined encoded server and client-safe Reference Item artifacts in one generation",
+      "unit": "bytes",
+      "hard_maximum": 348236190,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 348236190
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked addition and validate both projection maxima before staging either artifact as a pair.",
+      "client_visible": false,
+      "boundary_tests": [
+        "348,236,190 cumulative bytes accepted only when both projection maxima pass",
+        "348,236,191 bytes rejected before pair staging",
+        "checked-add overflow rejects the generation without partial publication"
+      ]
+    },
+    {
+      "id": "MOVE-RL-03",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Attempted adjacent destination candidates in one isolated Movement local-step decision",
+      "unit": "candidate attempts per decision",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject attempted candidate 2 before any second Content static-cell lookup, actor compare-commit, or result publication; bound decision work without limiting EngineeringStaticCellIndex population.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one attempted adjacent destination candidate is permitted with the qualified static-cell and current-owner position checks",
+        "max+1=2: attempted candidate 2 fails as CAPACITY_EXCEEDED before a second Content lookup, actor compare-commit, or result publication; position and revision remain unchanged on rejection"
+      ],
+      "consumers": [
+        "isolated, unactivated production Movement local-step kernel"
+      ],
+      "notes": "Accepted by resource owner in #139 comment 5829651359 for the #889 ENGINE_READINESS proof, under the VSL-MOVE-01 owner baseline. This per-decision limit does not admit or activate the July-28 Reference data target (#483), certify Reference parity, bound the static-cell index population, or close other Movement resource rows."
+    },
+    {
+      "id": "MOVE-RL-02",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Movement step inputs applied for one actor in one Channel owner work cycle",
+      "unit": "step inputs per actor per work cycle",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one step input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one step input for an actor is applied in a work cycle",
+        "max+1=2: a second step input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+      ],
+      "consumers": [
+        "first connected Movement child: own-actor cardinal step (FIRST-CONTROL-WIRE-V1)"
+      ],
+      "notes": "Accepted by the resource owner in #139 comment 5853424970 (FIRST-CONTROLLED-STEP-LIMITS-V1). Speed and timing semantics are not decided; occupancy, visibility, relocation, Interaction and pathfinding rows are fail-closed exclusions in this child."
+    },
+    {
+      "id": "MOVE-RL-11",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Semantic entities in one WORLD_SPATIAL_VISIBILITY snapshot or delta",
+      "unit": "entities per snapshot or delta",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The first child carries only the session's own actor; a second entity is refused before encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: the own actor is carried in a snapshot or delta",
+        "max+1=2: a second entity cannot be encoded by the first-child payload schema"
+      ],
+      "consumers": [
+        "WORLD_SPATIAL_VISIBILITY state domain 1, delta type 1, snapshot type 1"
+      ],
+      "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
+    },
+    {
+      "id": "FND04B-LIVENESS-IDLE-PROBE-MS",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Out-of-combat LivenessProbe cadence of one admitted positioned connection",
+      "unit": "milliseconds",
+      "hard_maximum": 5000,
+      "configurable_range": {
+        "minimum": 5000,
+        "maximum": 5000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One outstanding probe per connection; one probe frame per cadence tick; no per-probe allocation beyond one frame.",
+      "client_visible": false,
+      "boundary_tests": [
+        "5000 ms: a probe is sent one cadence after the baseline snapshot and then every cadence",
+        "An answered probe resets the missed count; a late ack of an older probe restores nothing"
+      ],
+      "consumers": [
+        "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Out-of-combat loss is declared three cadences after the first unanswered probe (four after the baseline snapshot)."
+    },
+    {
+      "id": "FND04B-LIVENESS-IDLE-MISSED",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Consecutive unanswered out-of-combat probes that prove playable control lost",
+      "unit": "probes",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reaching the limit ends the admitted transport as control lost; no durable session mutation in this child.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=3: the third consecutive unanswered probe ends the transport as control lost at the next cadence",
+        "max-1=2 unanswered probes followed by an answered probe keep control"
+      ],
+      "consumers": [
+        "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss."
+    },
+    {
+      "id": "FND04B-LIVENESS-COMBAT-PROBE-MS",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "In-combat LivenessProbe cadence of one admitted positioned connection",
+      "unit": "milliseconds",
+      "hard_maximum": 1000,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One outstanding probe per connection; one probe frame per cadence tick.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1000 ms: in combat a probe is sent every cadence"
+      ],
+      "consumers": [
+        "combat state (not composed yet)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+    },
+    {
+      "id": "FND04B-LIVENESS-COMBAT-MISSED",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Consecutive unanswered in-combat probes that prove playable control lost",
+      "unit": "probes",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reaching the limit ends the admitted transport as control lost (about one 2 s combat tick).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: the second consecutive unanswered in-combat probe ends the transport as control lost"
+      ],
+      "consumers": [
+        "combat state (not composed yet)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+    },
+    {
+      "id": "FND04B-SAME-SESSION-GRACE-S",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Same-session grace from the authoritative ControlLossEpoch boundary to the original grace deadline",
+      "unit": "seconds",
+      "hard_maximum": 60,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One original grace deadline per loss epoch, fixed at the loss decision and never restarted or extended; a RECONNECTABLE session keeps its present, uncontrolled actor and its claims until the deadline.",
+      "client_visible": false,
+      "boundary_tests": [
+        "The committed loss records original_grace_deadline = decision time + 60 s",
+        "A replayed identical loss decision keeps the original deadline"
+      ],
+      "consumers": [
+        "gameplay_transport control-loss commit (OTV2-20260927-control-loss-lifecycle)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 \u00a74 (#822 comments 5854525644 and 5854565314); matches the Tibia 60 s logout block; to be measured and tuned before release. Expiry release and positive resume are later children."
     }
   ]
 }

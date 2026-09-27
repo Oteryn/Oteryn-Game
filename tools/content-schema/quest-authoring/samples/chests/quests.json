@@ -1,0 +1,3804 @@
+{
+  "quests": [
+    {
+      "identity": {
+        "key": "canary:quest/adorned_uh_rune_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Adorned UH Rune Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Adorned UH Rune Quest",
+        "pageid": 3798,
+        "revid": 1090686
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/adoreduh",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/alawar_s_vault_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Alawar's Vault Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Alawar's Vault Quest",
+        "pageid": 3281,
+        "revid": 683774
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/alawars_vault1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/alawars_vault2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/an_interest_in_botany_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "An Interest In Botany Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "An Interest In Botany Quest",
+        "pageid": 46758,
+        "revid": 844034
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_6/an_interest_in_botany/botany_almanach",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/barbarian_arena_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Barbarian Arena Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Barbarian Arena Quest",
+        "pageid": 17003,
+        "revid": 842181
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_greenhorn_bp",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_greenhorn_present",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_greenhorn_weapons",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_scrapper_bp",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_scrapper_present",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_scrapper_weapons",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_warlord_bp",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_warlord_present",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/barbarian_arena/reward_warlord_weapons",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/barbarian_axe_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Barbarian Axe Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Barbarian Axe Quest",
+        "pageid": 3784,
+        "revid": 683784
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/barbarianaxe1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/battle_axe_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Battle Axe Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Battle Axe Quest",
+        "pageid": 2830,
+        "revid": 683787
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/battleaxe",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/bear_room_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Bear Room Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Bear Room Quest",
+        "pageid": 3158,
+        "revid": 1044894
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/bear_chest1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id4601",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/behemoth_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Behemoth Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Behemoth Quest",
+        "pageid": 3785,
+        "revid": 886742
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/behemothquest2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/berserker_treasure_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Berserker Treasure Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Berserker Treasure Quest",
+        "pageid": 3786,
+        "revid": 683792
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u6_4/berserker_treasure/rewards/white_pearls",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/black_knight_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Black Knight Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Black Knight Quest",
+        "pageid": 3760,
+        "revid": 683795
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/blackknight1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/blackknight2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id5010",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "50"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/blood_herb_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Blood Herb Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Blood Herb Quest",
+        "pageid": 2730,
+        "revid": 1043409
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/bloodherb",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/captain_iglues_treasure_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Captain Iglues Treasure Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Captain Iglues Treasure Quest",
+        "pageid": 3215,
+        "revid": 1044895
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/captain_iglues",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/children_of_the_revolution_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Children of the Revolution Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Children of the Revolution Quest",
+        "pageid": 41842,
+        "revid": 683807
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/children_of_the_revolution/chest_tome_of_knowledge1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/children_of_the_revolution/chest_tome_of_knowledge2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/children_of_the_revolution/flask_of_extra_greasy_oil",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/circle_room_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Circle Room Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Circle Room Quest",
+        "pageid": 3269,
+        "revid": 683809
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/circleroom1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/circleroom2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "32"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/combat_knife_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Combat Knife Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Combat Knife Quest",
+        "pageid": 3178,
+        "revid": 1043837
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/combatknife",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/crusader_helmet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Crusader Helmet Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Crusader Helmet Quest",
+        "pageid": 3396,
+        "revid": 771195
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/crusaderhelmet",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "35"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/crystal_wand_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Crystal Wand Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Crystal Wand Quest",
+        "pageid": 3764,
+        "revid": 747235
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/crystalwand1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/crystalwand2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "60"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/cults_of_tibia_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Cults of Tibia Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Cults of Tibia Quest",
+        "pageid": 81510,
+        "revid": 1098561
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/petrified_scream_quest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "8"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/darashia_dragon_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Darashia Dragon Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Darashia Dragon Quest",
+        "pageid": 38458,
+        "revid": 843783
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_5/darashia_dragon",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "40"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/dark_armor_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Dark Armor Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dark Armor Quest",
+        "pageid": 3789,
+        "revid": 683817
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/darkarmor",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/dark_trails_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Dark Trails Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Dark Trails Quest",
+        "pageid": 67961,
+        "revid": 846469
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u10_50/dark_trails/reward05_gloth_and_belongings",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u10_50/dark_trails/reward10_gloth_and_belongings",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u10_50/dark_trails/reward_small_notebook",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "?"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/dawnport_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Dawnport Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Dawnport Quest",
+        "pageid": 68640,
+        "revid": 683819
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id0010",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u10_55/dawnport/torn_log_book",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "2 - 20"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/dead_archer_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Dead Archer Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dead Archer Quest",
+        "pageid": 2732,
+        "revid": 763982
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/deadarcher",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/deeper_fibula_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Deeper Fibula Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Deeper Fibula Quest",
+        "pageid": 3762,
+        "revid": 1043370
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/deeperfibula1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/deeperfibula2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/deeperfibula3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/deeperfibula4",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/deeperfibula5",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3980",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "50"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/demon_helmet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Demon Helmet Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Demon Helmet Quest",
+        "pageid": 3790,
+        "revid": 1090692
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u6_4/demon_helmet/rewards/demon_helmet",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u6_4/demon_helmet/rewards/demon_shield",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u6_4/demon_helmet/rewards/steel_boots",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "100"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/demona_ring_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Demona Ring Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Demona Ring Quest",
+        "pageid": 77627,
+        "revid": 764400
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/demonaring1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/demonaring2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "60"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/devil_helmet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Devil Helmet Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Devil Helmet Quest",
+        "pageid": 3763,
+        "revid": 1043480
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/devilhemet1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "30"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/double_hero_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Double Hero Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Double Hero Quest",
+        "pageid": 3834,
+        "revid": 1090694
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/doublehero1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/doublehero2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/doublet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Doublet Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Doublet Quest",
+        "pageid": 3553,
+        "revid": 683831
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/doublet",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/draconia_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Draconia Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Draconia Quest",
+        "pageid": 3286,
+        "revid": 683833
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/draconia1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/draconia2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "25"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/dragon_corpse_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Dragon Corpse Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dragon Corpse Quest",
+        "pageid": 2481,
+        "revid": 1044896
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/dragoncorpse",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/dragon_tower_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Dragon Tower Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dragon Tower Quest",
+        "pageid": 3765,
+        "revid": 683835
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_1/dragon_tower/rewards/backpack1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_1/dragon_tower/rewards/backpack2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/dreamer_s_challenge_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Dreamer's Challenge Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Dreamer's Challenge Quest",
+        "pageid": 12354,
+        "revid": 869211
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/dreamers_challenge/bplong_sword",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/dreamers_challenge/chest_book",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/dreamers_challenge/chests3_small_diamond",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/dreamers_challenge/chests_wine",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/druid_outfits_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Druid Outfits Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Druid Outfits Quest",
+        "pageid": 8780,
+        "revid": 795584
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_8/druid_outfits/wolf_tooth_chain",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/edron_goblin_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Edron Goblin Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Edron Goblin Quest",
+        "pageid": 2360,
+        "revid": 683840
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/edrongoblin1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/edrongoblin2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/elephant_tusk_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Elephant Tusk Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Elephant Tusk Quest",
+        "pageid": 3832,
+        "revid": 683843
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_5/elephant_tusk",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/emperor_s_cookies_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Emperor's Cookies Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Emperor's Cookies Quest",
+        "pageid": 3160,
+        "revid": 683845
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u6_1/emperors_cookies/rewards/cookies",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/explorer_brooch_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Explorer Brooch Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Explorer Brooch Quest",
+        "pageid": 5040,
+        "revid": 683847
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/explorerbrooch",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/fanfare_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Fanfare Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fanfare Quest",
+        "pageid": 2854,
+        "revid": 683848
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/fanfare",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/ferumbras_ascension_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Ferumbras' Ascension Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Ferumbras' Ascension Quest",
+        "pageid": 76901,
+        "revid": 1110095
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u10_90/ferumbras_ascension/stone_coffins_bones",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u10_90/ferumbras_ascension/the_rite_of_eternal_night",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u10_90/ferumbras_ascension/vampire_teeth",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "150"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/fire_axe_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Fire Axe Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fire Axe Quest",
+        "pageid": 3791,
+        "revid": 683850
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/fireaxe1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/fireaxe2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "60"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/fishing_box_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Fishing Box Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Fishing Box Quest",
+        "pageid": 17081,
+        "revid": 842263
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/fishing_box",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/forgotten_knowledge_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Forgotten Knowledge Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Forgotten Knowledge Quest",
+        "pageid": 79436,
+        "revid": 1083592
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ghostsilver_lantern_quest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/geomancer_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Geomancer Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Geomancer Quest",
+        "pageid": 3767,
+        "revid": 683859
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/geomancer",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/ghoul_room_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Ghoul Room Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Ghoul Room Quest",
+        "pageid": 3768,
+        "revid": 1043871
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ghoulroom1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ghoulroom2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/goblin_temple_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Goblin Temple Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Goblin Temple Quest",
+        "pageid": 3574,
+        "revid": 683865
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/goblintemple",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/goblintemple2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/griffin_shield_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Griffin Shield Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Griffin Shield Quest",
+        "pageid": 3769,
+        "revid": 841799
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/griffinshield1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/griffinshield2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/griffinshield3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "30"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/heaven_blossom_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Heaven Blossom Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Heaven Blossom Quest",
+        "pageid": 67099,
+        "revid": 765024
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/heavenblossom",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/hidden_threats_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Hidden Threats Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Hidden Threats Quest",
+        "pageid": 83384,
+        "revid": 849215
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_50/hidden_threats/rewards/key_fragment01",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_50/hidden_threats/rewards/key_fragment02",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_50/hidden_threats/rewards/metal_file",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/hunter_outfits_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Hunter Outfits Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Hunter Outfits Quest",
+        "pageid": 8571,
+        "revid": 740135
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_8/hunter_outfits/elane_crossbow",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/iron_hammer_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Iron Hammer Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Iron Hammer Quest",
+        "pageid": 3770,
+        "revid": 683884
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ironhamer",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/iron_helmet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Iron Helmet Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Iron Helmet Quest",
+        "pageid": 3771,
+        "revid": 747234
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ironhelmet",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/iron_ore_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Iron Ore Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Iron Ore Quest",
+        "pageid": 55906,
+        "revid": 683886
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ironore",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/isle_of_the_mists_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Isle of the Mists Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Isle of the Mists Quest",
+        "pageid": 7991,
+        "revid": 896855
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/isleofthemists",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/katana_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Katana Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Katana Quest",
+        "pageid": 3179,
+        "revid": 1044887
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/katanacorpse1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id4603",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/knight_outfits_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Knight Outfits Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Knight Outfits Quest",
+        "pageid": 8569,
+        "revid": 740136
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_8/knight_outfits/ramsays_helmet_chest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/koshei_the_deathless_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Koshei the Deathless Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Koshei the Deathless Quest",
+        "pageid": 20496,
+        "revid": 842829
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_amulet_part1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_amulet_part2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_amulet_part3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_amulet_part4",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_the_deathless_gold",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_the_deathless_legs",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/koshei_the_deathless/koshei_the_deathless_platinum",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "40"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/life_ring_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Life Ring Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Life Ring Quest",
+        "pageid": 2606,
+        "revid": 683899
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/lifering",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/lone_medusa_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Lone Medusa Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Lone Medusa Quest",
+        "pageid": 52501,
+        "revid": 843873
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_5/lone_medusa",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/longsword_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Longsword Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Longsword Quest",
+        "pageid": 3478,
+        "revid": 683904
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/longsword1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/longsword2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/longsword3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/mad_mage_room_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Mad Mage Room Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Mad Mage Room Quest",
+        "pageid": 3772,
+        "revid": 756290
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/madmageroom1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/madmageroom2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/madmageroom3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "40"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/minotaur_hell_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Minotaur Hell Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Minotaur Hell Quest",
+        "pageid": 3212,
+        "revid": 1044888
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/minohell1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/minotaur_leather_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Minotaur Leather Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Minotaur Leather Quest",
+        "pageid": 55520,
+        "revid": 683915
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/minotaurleatherquest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/mintwallin_cyclops_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Mintwallin Cyclops Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Mintwallin Cyclops Quest",
+        "pageid": 3773,
+        "revid": 683916
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/mintwallincyclops",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/naginata_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Naginata Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Naginata Quest",
+        "pageid": 3775,
+        "revid": 683917
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/naginata",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "40"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/nightmare_teddy_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Nightmare Teddy Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Nightmare Teddy Quest",
+        "pageid": 75515,
+        "revid": 847098
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/nightmare_teddy_quest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/noble_armor_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Noble Armor Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Noble Armor Quest",
+        "pageid": 3283,
+        "revid": 683921
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/noblearmor1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/noblearmor2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "35"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/orc_fortress_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Orc Fortress Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Orc Fortress Quest",
+        "pageid": 3777,
+        "revid": 683931
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/orcfortress1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/orcfortress2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/orcfortress3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "40"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/orc_shaman_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Orc Shaman Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Orc Shaman Quest",
+        "pageid": 3245,
+        "revid": 683932
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/orcshaman",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/oriental_outfits_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Oriental Outfits Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Oriental Outfits Quest",
+        "pageid": 8651,
+        "revid": 795588
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_8/oriental_outfits/coral_comb",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/ornamented_shield_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Ornamented Shield Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Ornamented Shield Quest",
+        "pageid": 3778,
+        "revid": 1043470
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ornamentedshield",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/pre_u6_0/ornamented_shield/rewards/ornamented_shield",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/panpipe_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Panpipe Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Panpipe Quest",
+        "pageid": 3779,
+        "revid": 683937
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/panpipe",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id4055",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/parchment_room_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Parchment Room Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Parchment Room Quest",
+        "pageid": 3794,
+        "revid": 1090710
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_2/parchment_room/bag",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/plate_armor_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Plate Armor Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Plate Armor Quest",
+        "pageid": 3795,
+        "revid": 898699
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/platearmor",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/poison_daggers_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Poison Daggers Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Poison Daggers Quest",
+        "pageid": 3796,
+        "revid": 683944
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/poisondaggers",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/power_bolts_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Power Bolts Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Power Bolts Quest",
+        "pageid": 3780,
+        "revid": 683945
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/powerbolt2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/power_ring_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Power Ring Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Power Ring Quest",
+        "pageid": 3282,
+        "revid": 683946
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/powerring1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/powerring2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/present_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Present Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Present Quest",
+        "pageid": 3214,
+        "revid": 1044890
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/present_box",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/purple_tome_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Purple Tome Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Purple Tome Quest",
+        "pageid": 24696,
+        "revid": 815922
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/purpletome1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/purpletome2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/purpletome3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "60"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/ring_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Ring Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Ring Quest",
+        "pageid": 21743,
+        "revid": 1090712
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ringquest1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/scale_armor_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Scale Armor Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Scale Armor Quest",
+        "pageid": 2753,
+        "revid": 683961
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/scalearmor",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/secret_service_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Secret Service Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Secret Service Quest",
+        "pageid": 20024,
+        "revid": 1096988
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/ahx17_l89",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/book",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/building_plans",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/family_signet_ring",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/intelligence_reports",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/lottery_ticket",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/magic_spellbook",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/poem_scroll",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/rotten_heart_of_tree",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/secret_service/suspicious_documents",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "50"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/serpentine_tower_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Serpentine Tower Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Serpentine Tower Quest",
+        "pageid": 11239,
+        "revid": 835790
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_3/serpentine_tower/white_pearl",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/shadows_of_yalahar_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Shadows of Yalahar Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Shadows of Yalahar Quest",
+        "pageid": 37117,
+        "revid": 843939
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/bloodkiss_flower",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/dark_essence",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/deep_crystal",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/golem_blueprint",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/golem_head",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/old_power_core",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/shadow_orb",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/stabilizer",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/worm_queen_tooth",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "75"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/shaman_treasure_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Shaman Treasure Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Shaman Treasure Quest",
+        "pageid": 3797,
+        "revid": 683967
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/shamantreasure",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/silver_amulet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Silver Amulet Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Silver Amulet Quest",
+        "pageid": 56020,
+        "revid": 1043983
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/silveramulet",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/silver_brooch_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Silver Brooch Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Silver Brooch Quest",
+        "pageid": 3781,
+        "revid": 683970
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/silverbrooch",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/six_rubies_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Six Rubies Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Six Rubies Quest",
+        "pageid": 5572,
+        "revid": 1040418
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/sixrubies",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/spike_sword_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Spike Sword Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Spike Sword Quest",
+        "pageid": 3157,
+        "revid": 683980
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/spikesword",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/stealth_ring_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Stealth Ring Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Stealth Ring Quest",
+        "pageid": 3230,
+        "revid": 683987
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/stealhring1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/steel_helmet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Steel Helmet Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Steel Helmet Quest",
+        "pageid": 4647,
+        "revid": 683989
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/steelhelmet1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/steelhelmet2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/steelhelmet3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/steelhelmet4",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/strong_potions_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Strong Potions Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Strong Potions Quest",
+        "pageid": 22477,
+        "revid": 1090714
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/strong_potions/reward",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_annihilator_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Annihilator Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "The Annihilator Quest",
+        "pageid": 2520,
+        "revid": 1090717
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_24/the_annihilator/reward",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "100"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_ape_city_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Ape City Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Ape City Quest",
+        "pageid": 5573,
+        "revid": 683999
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/old_parchment",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/whisper_moss",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_explorer_society_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Explorer Society Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Explorer Society Quest",
+        "pageid": 4954,
+        "revid": 725344
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/explorer_society/books/cyclops",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/explorer_society/books/hengis",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/explorer_society/giant_smith_hammer/gold_coin",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/explorer_society/giant_smith_hammer/hammer",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/explorer_society/giant_smith_hammer/talon",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/explorer_society/skull_of_ratha/bag1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_6/explorer_society/skull_of_ratha/bag2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_hidden_city_of_beregar_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Hidden City of Beregar Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Hidden City of Beregar Quest",
+        "pageid": 30690,
+        "revid": 843688
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_4/the_hidden_city_of_beregar/bpthe_undeath_stare",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_4/the_hidden_city_of_beregar/corpse_gold_ingot",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_4/the_hidden_city_of_beregar/corpse_rusted_armor",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_4/the_hidden_city_of_beregar/corpse_small_topazes",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_4/the_hidden_city_of_beregar/firewalker_boots",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_4/the_hidden_city_of_beregar/prison_cell_key",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0 (100 For The Firewalker Boots Part)"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_ice_islands_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Ice Islands Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Ice Islands Quest",
+        "pageid": 16660,
+        "revid": 1071550
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/the_ice_islands/formorgar_glacier_chest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/the_ice_islands/formorgar_glacier_skeleton",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_inquisition_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Inquisition Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Inquisition Quest",
+        "pageid": 25383,
+        "revid": 1188871
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/quest/u8_2/the_inquisition_quest/reward_room_text",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_2/the_inquisition_quest/witches_grimoire",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "100"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_new_frontier_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The New Frontier Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The New Frontier Quest",
+        "pageid": 41754,
+        "revid": 1058656
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/the_new_frontier/chest_tome_of_knowledge1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/the_new_frontier/chest_tome_of_knowledge2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/the_new_frontier/reward/gold_ingot",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/the_new_frontier/reward/pig_bank",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/the_new_frontier/reward/potions",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "77*(for the last mission only)"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_paradox_tower_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Paradox Tower Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Paradox Tower Quest",
+        "pageid": 3231,
+        "revid": 889277
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_24/the_paradox_tower/reward/egg",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_24/the_paradox_tower/reward/gold",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_24/the_paradox_tower/reward/talon",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_24/the_paradox_tower/reward/wand",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "30"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_pits_of_inferno_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Pits of Inferno Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Pits of Inferno Quest",
+        "pageid": 12220,
+        "revid": 1103332
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3700",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/chest_tible",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/corpse_book",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/corpse_pirate_bp",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/reward_chest_bp",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/reward_chest_frozen_starlight",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/reward_chest_platinum_coins",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/reward_chest_soft_boots",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/reward_chest_staff_avenger_arbalest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_9/the_pits_of_inferno/reward_chest_stuffed",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_queen_of_the_banshees_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Queen of the Banshees Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Queen of the Banshees Quest",
+        "pageid": 3216,
+        "revid": 1038207
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_2/the_queen_of_the_banshees/reward/boots_of_haste",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_2/the_queen_of_the_banshees/reward/giant_sword",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_2/the_queen_of_the_banshees/reward/platinum_coin",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_2/the_queen_of_the_banshees/reward/stealth_ring",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_2/the_queen_of_the_banshees/reward/stone_skin_amulet",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_2/the_queen_of_the_banshees/reward/tower_shield",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "60"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_secret_library_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Secret Library Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Secret Library Quest",
+        "pageid": 85333,
+        "revid": 848922
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id0909",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/black_skull",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/ebony_piece",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/eye_key",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/lotus_key",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/peacock_ballad",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/scribbled_notes",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/silver_chimes",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/skeleton_notes",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/asuras/strand_hair",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/falcon_bastion/chests_timer/coast",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/falcon_bastion/chests_timer/island",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/falcon_bastion/chests_timer/lower_bastion",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/falcon_bastion/chests_timer/shortcut",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/falcon_bastion/chests_timer/throne_hall",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/falcon_bastion/chests_timer/underground_bastion",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/mo_ta/bony_rod",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/mo_ta/broken_compass",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/mo_ta/sample_blood",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/small_islands/fishing",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/small_islands/hawser",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/small_islands/parchment",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/small_islands/sapphire",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_80/the_secret_library/small_islands/shovel",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "250"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_shattered_isles_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Shattered Isles Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Shattered Isles Quest",
+        "pageid": 8825,
+        "revid": 1006041
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_8/the_shattered_isles/dragahs_spellbook",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "20"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_thieves_guild_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Thieves Guild Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Thieves Guild Quest",
+        "pageid": 25436,
+        "revid": 1090720
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_2/the_thieves_guild_quest/compromising_letter",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_2/the_thieves_guild_quest/golden_goblet",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_2/the_thieves_guild_quest/reward_book",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_2/the_thieves_guild_quest/reward_end",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_2/the_thieves_guild_quest/reward_oasis",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/threatened_dreams_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Threatened Dreams Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Threatened Dreams Quest",
+        "pageid": 81362,
+        "revid": 1070008
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_40/threatened_dreams/mission01/poacher_chest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u11_40/threatened_dreams/mission02/dark_moon_mirror",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "30"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/throwing_star_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Throwing Star Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Throwing Star Quest",
+        "pageid": 4774,
+        "revid": 684041
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/throwingstar",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/time_ring_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Time Ring Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Time Ring Quest",
+        "pageid": 2731,
+        "revid": 684042
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/timering1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/timering2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/timering3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/to_blind_the_enemy_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "To Blind the Enemy Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "To Blind the Enemy Quest",
+        "pageid": 20031,
+        "revid": 1091434
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/to_blind_the_enemy/bp1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/to_blind_the_enemy/bp2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/to_blind_the_enemy/dwarven_shield",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/to_blind_the_enemy/morning_star",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/to_outfox_a_fox_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "To Outfox a Fox Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "To Outfox a Fox Quest",
+        "pageid": 20032,
+        "revid": 842943
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/to_outfox_afox_quest/mining_helmet",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/tomes_of_knowledge_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Tomes of Knowledge Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Tomes of Knowledge Quest",
+        "pageid": 42701,
+        "revid": 684047
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/tomes_of_knowledge/chest_tome_of_knowledge4",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_54/tomes_of_knowledge/top_tower",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/triangle_tower_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Triangle Tower Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Triangle Tower Quest",
+        "pageid": 3170,
+        "revid": 1090723
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/triangletower",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/troll_cave_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Troll Cave Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Troll Cave Quest",
+        "pageid": 2847,
+        "revid": 684054
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/trollcave1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/vampire_hunter_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Vampire Hunter Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Vampire Hunter Quest",
+        "pageid": 26840,
+        "revid": 843291
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_2/vampire_hunter_quest/blood_skull",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/vampire_shield_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Vampire Shield Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Vampire Shield Quest",
+        "pageid": 3799,
+        "revid": 1090729
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/vampireshield1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/vampireshield2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/vampireshield3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "70"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/waterfall_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Waterfall Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Waterfall Quest",
+        "pageid": 20657,
+        "revid": 842957
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/waterfall_quest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/wedding_ring_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Wedding Ring Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Wedding Ring Quest",
+        "pageid": 12743,
+        "revid": 1090731
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/weddingring1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/weddingring2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/what_a_foolish_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "What a Foolish Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "What a Foolish Quest",
+        "pageid": 19799,
+        "revid": 1094085
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/what_afoolish_quest/magical_watch",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "40*"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/wrath_of_the_emperor_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Wrath of the Emperor Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Wrath of the Emperor Quest",
+        "pageid": 46607,
+        "revid": 1103764
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_6/wrath_of_the_emperor/chest100_platinum_coins",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_6/wrath_of_the_emperor/chest_bag",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_6/wrath_of_the_emperor/chest_items",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "80 (Expertise door during mission 8)"
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/targuna_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Targuna Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "Targuna Quest",
+        "pageid": 110219,
+        "revid": 1172822
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/quest/u15_24/targuna/mana_potions_chest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/quest/u15_24/targuna/silver_amulet_chest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "10 / 12"
+      }
+    }
+  ]
+}

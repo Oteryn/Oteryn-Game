@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 import json
 import re
 import sys
@@ -15,6 +17,7 @@ CONTRACT_LOCK_PATH = ROOT / "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json"
 LIMITS_REGISTRY_PATH = ROOT / "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
 PROMPT_LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
 HANDOVER_LIFECYCLE_PATH = ROOT / "docs/agents/HANDOVER_LIFECYCLE.json"
+PROGRAM_LIFECYCLE_PATH = ROOT / "docs/agents/PROGRAM_LIFECYCLE.json"
 EXPECTED_REPOSITORY = "Oteryn/Oteryn-Game"
 
 
@@ -43,7 +46,7 @@ def validate_prompt_lifecycle(registry: dict, errors: list[str]) -> None:
     prompts_dir = ROOT / "docs/agents/prompts"
     actual = {
         path.relative_to(ROOT).as_posix()
-        for path in prompts_dir.glob("*.md")
+        for path in prompts_dir.rglob("*.md")
         if path.name != "README.md"
     }
     entries = registry.get("prompts", [])
@@ -163,25 +166,371 @@ def validate_handover_lifecycle(registry: dict, errors: list[str]) -> None:
         errors.append(f"handover lifecycle registry has unknown paths: {', '.join(extra)}")
 
 
-def validate_active_task_packets(errors: list[str]) -> None:
+def validate_program_lifecycle(registry: dict, errors: list[str]) -> None:
+    programs_dir = ROOT / "docs/agents/programs"
+    archive_dir = programs_dir / "archive"
+    actual = {
+        path.relative_to(ROOT).as_posix()
+        for path in archive_dir.rglob("*.md")
+        if path.name != "README.md"
+    } if archive_dir.is_dir() else set()
+
+    entries = registry.get("programs", [])
+    if not isinstance(entries, list):
+        errors.append("program lifecycle registry programs must be a list")
+        return
+
+    seen_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            errors.append(f"program lifecycle entry {index} must be an object")
+            continue
+        program_id = entry.get("program_id")
+        path = entry.get("path")
+        if not isinstance(program_id, str) or not program_id:
+            errors.append(f"program lifecycle entry {index} has invalid program_id")
+            continue
+        if program_id in seen_ids:
+            errors.append(f"duplicate program lifecycle id: {program_id}")
+        seen_ids.add(program_id)
+        if not isinstance(path, str) or not path:
+            errors.append(f"program {program_id} has invalid path")
+            continue
+        if path in seen_paths:
+            errors.append(f"duplicate program lifecycle path: {path}")
+        seen_paths.add(path)
+        if not path.startswith("docs/agents/programs/archive/"):
+            errors.append(f"historical program {program_id} must live under programs/archive")
+        if entry.get("status") != "historical":
+            errors.append(f"program {program_id} must have historical status")
+        if entry.get("authoritative") is not False:
+            errors.append(f"program {program_id} must be explicitly non-authoritative")
+        terminal_evidence = entry.get("terminal_evidence")
+        if not isinstance(terminal_evidence, list) or not terminal_evidence or not all(
+            isinstance(value, str) and value.strip() for value in terminal_evidence
+        ):
+            errors.append(f"program {program_id} must define terminal_evidence")
+        superseded_by = entry.get("superseded_by")
+        if not isinstance(superseded_by, list) or not superseded_by or not all(
+            isinstance(value, str) and value.strip() for value in superseded_by
+        ):
+            errors.append(f"program {program_id} must define superseded_by")
+
+    missing = sorted(actual - seen_paths)
+    extra = sorted(seen_paths - actual)
+    if missing:
+        errors.append(f"program lifecycle registry missing archived paths: {', '.join(missing)}")
+    if extra:
+        errors.append(f"program lifecycle registry has unknown archived paths: {', '.join(extra)}")
+
+    if programs_dir.is_dir() and archive_dir.is_dir():
+        current_names = {
+            path.name for path in programs_dir.glob("*.md") if path.name != "README.md"
+        }
+        archive_names = {
+            path.name for path in archive_dir.rglob("*.md") if path.name != "README.md"
+        }
+        for duplicate in sorted(current_names & archive_names):
+            errors.append(
+                f"program record exists in both current and archive: {duplicate}"
+            )
+
+
+def validate_active_task_packets(
+    errors: list[str],
+    task_statuses: object | None = None,
+    task_modes: object | None = None,
+    limits: object | None = None,
+) -> None:
     active_dir = ROOT / "docs/agents/tasks/active"
     if not active_dir.is_dir():
         return
+
+    default_statuses = {
+        "investigating",
+        "implementing",
+        "validating",
+        "ready",
+        "waiting",
+        "blocked",
+        "completed",
+    }
+    default_modes = {
+        "IMPLEMENT",
+        "AUDIT",
+        "CONTRACT",
+        "REPAIR",
+        "COORDINATE",
+        "MIGRATE",
+        "GOVERNANCE",
+        "BUILD",
+    }
+
+    if task_statuses is None:
+        allowed_statuses = default_statuses
+    elif isinstance(task_statuses, list) and task_statuses and all(
+        isinstance(value, str) and value for value in task_statuses
+    ):
+        allowed_statuses = set(task_statuses)
+    else:
+        errors.append("governance task_statuses must be a non-empty string list")
+        allowed_statuses = set()
+
+    if task_modes is None:
+        allowed_modes = default_modes
+    elif isinstance(task_modes, list) and task_modes and all(
+        isinstance(value, str) and value for value in task_modes
+    ):
+        allowed_modes = set(task_modes)
+    else:
+        errors.append("governance task_modes must be a non-empty string list")
+        allowed_modes = set()
+
+    max_characters = 12000
+    max_lines = 300
+    if limits is not None:
+        if not isinstance(limits, dict):
+            errors.append("active_task_limits must be an object")
+        else:
+            chars = limits.get("max_characters")
+            lines = limits.get("max_lines")
+            if not isinstance(chars, int) or chars <= 0:
+                errors.append("active_task_limits.max_characters must be a positive integer")
+            else:
+                max_characters = chars
+            if not isinstance(lines, int) or lines <= 0:
+                errors.append("active_task_limits.max_lines must be a positive integer")
+            else:
+                max_lines = lines
+
     terminal_statuses = {"completed", "closed", "merged", "terminal", "archived", "done"}
     for path in sorted(active_dir.glob("*.md")):
         if path.name == "README.md":
             continue
         relative = path.relative_to(ROOT).as_posix()
         text = path.read_text(encoding="utf-8")
+
+        if len(text) > max_characters or len(text.splitlines()) > max_lines:
+            errors.append(
+                f"active task packet {relative} exceeded bounded current-state size "
+                f"({len(text)} chars/{len(text.splitlines())} lines; "
+                f"max {max_characters}/{max_lines})"
+            )
+
         issue = re.search(r"(?m)^issue:\s*([1-9][0-9]*)\s*$", text)
         pr = re.search(r"(?m)^pr:\s*([1-9][0-9]*)\s*$", text)
         if issue is None and pr is None:
             errors.append(f"active task packet {relative} must name a positive issue or pr")
+
+        mode_match = re.search(r"(?m)^mode:\s*([^\n#]+?)\s*$", text)
+        if mode_match is None:
+            errors.append(f"active task packet {relative} must define mode")
+        else:
+            mode = mode_match.group(1).strip().strip('"\'')
+            if mode not in allowed_modes:
+                errors.append(f"active task packet {relative} has unsupported mode {mode}")
+
         status_match = re.search(r"(?m)^status:\s*([^\n#]+?)\s*$", text)
-        if status_match is not None:
+        if status_match is None:
+            errors.append(f"active task packet {relative} must define status")
+        else:
             status = status_match.group(1).strip().strip('"\'').lower()
+            if status not in allowed_statuses:
+                errors.append(f"active task packet {relative} has unsupported status {status}")
             if status in terminal_statuses:
                 errors.append(f"active task packet {relative} has terminal status {status}")
+            if status in {"validating", "ready"} and pr is None:
+                errors.append(
+                    f"active task packet {relative} with status {status} "
+                    "must bind a positive canonical pr"
+                )
+
+    archive_dir = ROOT / "docs/agents/tasks/archive"
+    if archive_dir.is_dir():
+        active_names = {
+            path.name for path in active_dir.glob("*.md") if path.name != "README.md"
+        }
+        archive_names = {
+            path.name for path in archive_dir.glob("*.md") if path.name != "README.md"
+        }
+        for duplicate in sorted(active_names & archive_names):
+            errors.append(
+                f"task packet exists in both active and archive: {duplicate}"
+            )
+
+
+def validate_active_task_live_state(
+    request: Callable[[str], object],
+    packet_paths: set[str] | None = None,
+) -> list[str]:
+    """Reject selected active packets whose canonical GitHub authority is terminal.
+
+    packet_paths=None validates the complete active set for protected-main
+    health. A concrete set validates only candidate-touched packets, so an
+    unrelated lifecycle transition cannot retroactively invalidate an immutable
+    PR head. The caller owns authentication and transport.
+    """
+    active_dir = ROOT / "docs/agents/tasks/active"
+    if not active_dir.is_dir():
+        return []
+
+    if packet_paths is not None:
+        invalid = sorted(
+            relative for relative in packet_paths
+            if not (
+                relative.startswith("docs/agents/tasks/active/")
+                and relative.endswith(".md")
+                and relative != "docs/agents/tasks/active/README.md"
+            )
+        )
+        if invalid:
+            raise ValueError(f"invalid active-task scope: {', '.join(invalid)}")
+
+    packets: list[tuple[str, int | None, int | None]] = []
+    references: set[tuple[str, int]] = set()
+    for path in sorted(active_dir.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        if packet_paths is not None and relative not in packet_paths:
+            continue
+        text = path.read_text(encoding="utf-8")
+        issue_match = re.search(r"(?m)^issue:\s*([1-9][0-9]*)\s*$", text)
+        pr_match = re.search(r"(?m)^pr:\s*([1-9][0-9]*)\s*$", text)
+        issue = int(issue_match.group(1)) if issue_match is not None else None
+        pr = int(pr_match.group(1)) if pr_match is not None else None
+        packets.append((relative, issue, pr))
+        if issue is not None:
+            references.add(("issues", issue))
+        if pr is not None:
+            references.add(("pulls", pr))
+
+    def fetch(reference: tuple[str, int]) -> tuple[tuple[str, int], object]:
+        kind, number = reference
+        return reference, request(
+            f"https://api.github.com/repos/{EXPECTED_REPOSITORY}/{kind}/{number}"
+        )
+
+    with ThreadPoolExecutor(max_workers=min(8, max(1, len(references)))) as executor:
+        payloads = dict(executor.map(fetch, sorted(references)))
+
+    errors: list[str] = []
+    for relative, issue, pr in packets:
+        pr_open = False
+        if pr is not None:
+            payload = payloads[("pulls", pr)]
+            if not isinstance(payload, dict) or payload.get("state") not in {"open", "closed"}:
+                raise ValueError(f"invalid GitHub pull response for #{pr}")
+            pr_open = payload["state"] == "open"
+            if not pr_open:
+                disposition = "merged" if payload.get("merged_at") is not None else "closed"
+                errors.append(
+                    f"active task packet {relative} names terminal canonical PR #{pr} ({disposition})"
+                )
+        if issue is not None:
+            payload = payloads[("issues", issue)]
+            if not isinstance(payload, dict) or payload.get("state") not in {"open", "closed"}:
+                raise ValueError(f"invalid GitHub issue response for #{issue}")
+            if payload["state"] == "closed" and not pr_open:
+                errors.append(
+                    f"active task packet {relative} names closed Issue #{issue} without an open canonical PR"
+                )
+    return errors
+
+def _markdown_section(text: str, heading: str) -> str:
+    marker = f"## {heading}\n"
+    start = text.find(marker)
+    if start < 0:
+        return ""
+    body_start = start + len(marker)
+    next_heading = text.find("\n## ", body_start)
+    return text[body_start:] if next_heading < 0 else text[body_start:next_heading]
+
+
+def validate_context_economy(errors: list[str]) -> None:
+    routing_path = ROOT / "docs/agents/CONTEXT_ROUTING.md"
+    routing = routing_path.read_text(encoding="utf-8") if routing_path.is_file() else ""
+    for fragment in (
+        "do not bulk-read complete Issue or PR comment timelines",
+        "do not read the complete `PROMPT_LIFECYCLE.json` to invoke one known alias",
+        "prompt evaluation is for prompt authoring/material changes/lifecycle evaluation",
+    ):
+        if fragment not in routing:
+            errors.append(f"context routing missing context-economy rule: {fragment}")
+
+    worker_prompts = (
+        "docs/agents/prompts/OTV2_SOL_DURABILITY_LEAD.md",
+        "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
+        "docs/agents/prompts/OTV2_SOL_CLIENT_QA_LEAD.md",
+        "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
+        "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
+    )
+    for relative in worker_prompts:
+        path = ROOT / relative
+        if not path.is_file():
+            errors.append(f"missing context-economy worker prompt: {relative}")
+            continue
+        startup = _markdown_section(path.read_text(encoding="utf-8"), "Mandatory startup")
+        if "OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md" in startup:
+            errors.append(f"{relative} must not load owner operator runbook in technical startup")
+
+    work_path = ROOT / "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md"
+    if work_path.is_file():
+        work = work_path.read_text(encoding="utf-8")
+        legacy = (
+            "fresh-read protected `main`, root/nearest `AGENTS.md`, META binding, "
+            "`PROMPT_LIFECYCLE.json`"
+        )
+        if legacy in work:
+            errors.append("Work coordinator reintroduced full-registry mandatory startup")
+
+    prompts_readme = ROOT / "docs/agents/prompts/README.md"
+    if prompts_readme.is_file() and "Before reuse, evaluate the selected prompt against" in prompts_readme.read_text(encoding="utf-8"):
+        errors.append("prompt README reintroduced per-invocation prompt evaluation")
+
+
+def validate_current_state_hygiene(errors: list[str]) -> None:
+    live_path = ROOT / "docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md"
+    if not live_path.is_file():
+        errors.append("missing current implementation allocation snapshot")
+    else:
+        live = live_path.read_text(encoding="utf-8")
+        if "CURRENT-STATE ROUTING ONLY" not in live:
+            errors.append("live allocations must declare current-state-only routing")
+        if len(live.splitlines()) > 180 or len(live) > 12000:
+            errors.append("live allocations exceeded bounded current-state size")
+        for legacy_heading in (
+            "## Completed allocation",
+            "## Historical completed allocation",
+            "## Prior Work allocation checkpoint",
+            "## Current Work checkpoint",
+            "## Prospective allocation",
+        ):
+            if legacy_heading in live:
+                errors.append(
+                    f"live allocations reintroduced historical ledger heading: {legacy_heading}"
+                )
+
+    work_task = ROOT / "docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md"
+    if not work_task.is_file():
+        errors.append("missing active Work delivery coordinator task")
+    else:
+        text = work_task.read_text(encoding="utf-8")
+        if len(text.splitlines()) > 180 or len(text) > 12000:
+            errors.append("active Work coordinator task exceeded bounded current-state size")
+        if text.count("## Context checkpoint") != 1:
+            errors.append("active Work coordinator task must contain exactly one Context checkpoint")
+        for legacy_heading in (
+            "## Current Work checkpoint",
+            "## Prior Work allocation checkpoint",
+            "## Current continuation and",
+            "## Current prospective",
+        ):
+            if legacy_heading in text:
+                errors.append(
+                    f"active Work coordinator task reintroduced historical ledger heading: {legacy_heading}"
+                )
 
 
 def main() -> int:
@@ -192,10 +541,19 @@ def main() -> int:
     limits_registry = load_json(LIMITS_REGISTRY_PATH, errors)
     prompt_lifecycle = load_json(PROMPT_LIFECYCLE_PATH, errors)
     handover_lifecycle = load_json(HANDOVER_LIFECYCLE_PATH, errors)
+    program_lifecycle = load_json(PROGRAM_LIFECYCLE_PATH, errors)
 
     validate_prompt_lifecycle(prompt_lifecycle, errors)
     validate_handover_lifecycle(handover_lifecycle, errors)
-    validate_active_task_packets(errors)
+    validate_program_lifecycle(program_lifecycle, errors)
+    validate_active_task_packets(
+        errors,
+        task_statuses=contract.get("task_statuses"),
+        task_modes=contract.get("task_modes"),
+        limits=contract.get("active_task_limits"),
+    )
+    validate_context_economy(errors)
+    validate_current_state_hygiene(errors)
 
     if contract.get("repository") != EXPECTED_REPOSITORY:
         errors.append("governance repository must be Oteryn/Oteryn-Game")

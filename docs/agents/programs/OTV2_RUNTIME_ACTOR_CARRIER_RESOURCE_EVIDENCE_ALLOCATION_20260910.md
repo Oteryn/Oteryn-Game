@@ -266,7 +266,7 @@ OWNER_FUNDED_REVIEW_AUTHORIZATION = NOT_INFERRED
 EXACT_CANDIDATE_MERGE_QUEUE_AUTHORIZATION = NOT_GRANTED_BY_THIS_DOCUMENT
 ```
 
-Do not invoke an owner-funded reviewer without separate applicable authorization. Do not direct-merge, use generic auto-merge, bypass protection, or use a no-op/retrigger commit. Integration must follow the bound native exact-head Merge Queue policy when the authorized capability is available, then require real `merge_group` `game-gate` success and protected-main readback.
+Do not invoke an owner-funded reviewer without separate applicable authorization. Do not direct-merge, use generic auto-merge, bypass protection, or use a no-op/retrigger commit. Protected integration must resolve the current immutable bound META integration-capability router: use freshly proven `DIRECT_CAPABLE` or `DELEGATED_CAPABLE`, and report `BLOCKED_CAPABILITY_UNAVAILABLE` only when neither route is proven. Then require real `merge_group` `game-gate` success and protected-main readback.
 
 ## Completion
 

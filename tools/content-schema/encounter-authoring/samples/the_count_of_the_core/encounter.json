@@ -1,0 +1,133 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_count_of_the_core",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dangerous Depth: The Count of the Core",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_count_of_the_core",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_count_of_the_core",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "snail_slime",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/snail_slime",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33681, 32340, 15)."
+    },
+    {
+      "key": "reward_destination",
+      "kind": "point",
+      "description": "Destination while open; Canary (33682, 32315, 15)."
+    },
+    {
+      "key": "warzone_exit",
+      "kind": "point",
+      "description": "Destination after the revert; Canary (33324, 32111, 15)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_count_of_the_core_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_count_of_the_core"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "reward_destination",
+          "revert_after_ms": 1200000,
+          "revert_destination": "warzone_exit"
+        }
+      ]
+    },
+    {
+      "key": "snail_slime_bursts",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "snail_slime"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "snail_slime"
+          },
+          "text": "!!",
+          "mode": "yell"
+        }
+      ]
+    },
+    {
+      "key": "snail_slime_feeds_the_count",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "snail_slime"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "the_count_of_the_core",
+          "near": {
+            "role": "snail_slime",
+            "radius": 2,
+            "shape": "circle"
+          },
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "the_count_of_the_core"
+          },
+          "amount": {
+            "min": 0,
+            "max": 2000
+          }
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

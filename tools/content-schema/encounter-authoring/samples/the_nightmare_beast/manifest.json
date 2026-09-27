@@ -1,0 +1,90 @@
+{
+  "encounter": "canary:encounter/the_nightmare_beast",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "dreamCourtsDeath": [
+      "canary:creature/the_nightmare_beast"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_dream_courts/bosses/the_nightmare_beast.lua",
+      "blob_sha1": "022077ff18d913e15453c1607fabe256733202b7"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_dreamCourtsDeath.lua",
+      "blob_sha1": "6dff8c6d7a217993f67965de7349ceffeb1cee2a"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "The Nightmare Beast is the the_nightmare_beast participant; its file registers dreamCourtsDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        92,
+        105
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the questlog boss \"The Nightmare Beast\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a non-monster or a creature with a master.",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        58,
+        64
+      ],
+      "status": "mapped",
+      "resolution": "Every player in creature:getDamageMap() is credited (D27): the quest domain raises Storage TheDreamCourts.WardStones.Questline by 1 while it is <= 2, and the reward domain sets the NightmareTimer cooldown to 20 hours.",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "the_nightmare_beast_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.WardStones.Questline",
+        "increment": 1,
+        "only_while_at_most": 2
+      },
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScarGlobal.NightmareTimer",
+        "cooldown_seconds": 72000
+      }
+    }
+  ]
+}

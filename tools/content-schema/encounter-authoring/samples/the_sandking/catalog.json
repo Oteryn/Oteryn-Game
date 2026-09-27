@@ -1,0 +1,9 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_sandking",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

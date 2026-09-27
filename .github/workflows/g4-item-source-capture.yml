@@ -1,0 +1,111 @@
+name: G4 Item Source Provenance Capture
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/content-census/g4_item_source_capture.py
+      - tools/content-census/g4_item_source_capture_self_test.py
+      - .github/workflows/g4-item-source-capture.yml
+      - docs/agents/tasks/active/OTV2-20260924-g4-item-source-provenance-pilot.md
+      - docs/agents/evidence/OTV2-20260924-g4-item-source-provenance-pilot.json
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g4-item-source-capture-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    name: G4 Item source provenance capture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Run synthetic capture tests
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/content-census/g4_item_source_capture.py tools/content-census/g4_item_source_capture_self_test.py
+          python tools/content-census/g4_item_source_capture_self_test.py
+
+      - name: Run protected wiki-first census
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-source-capture"
+          mkdir -p "$ROOT"
+          python tools/reference-world-corridor-census/item_wiki_first_census.py \
+            --cache-dir "$ROOT/wiki-cache" \
+            --output "$ROOT/census.json" \
+            --manifest-output "$ROOT/source-manifest.json"
+
+      - name: Transform and verify compact provenance rows
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-source-capture"
+          python tools/content-census/g4_item_source_capture.py \
+            --census "$ROOT/census.json" \
+            --source-manifest "$ROOT/source-manifest.json" \
+            --output "$ROOT/g4-item-source-capture.json" \
+            --manifest-output "$ROOT/g4-item-source-capture-manifest.json"
+          python - "$ROOT" <<'PY'
+          import hashlib
+          import json
+          import pathlib
+          import re
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          artifact_path = root / "g4-item-source-capture.json"
+          manifest_path = root / "g4-item-source-capture-manifest.json"
+          artifact = json.loads(artifact_path.read_text(encoding="utf-8"))
+          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          rows = artifact["rows"]
+          assert artifact["schema"] == "OTERYN_G4_ITEM_SOURCE_CAPTURE/v1"
+          assert manifest["schema"] == "OTERYN_G4_ITEM_SOURCE_CAPTURE_MANIFEST/v1"
+          assert len(rows) == artifact["source_page_count"] == manifest["captured_row_count"]
+          assert rows and len(rows) <= 20_000
+          assert len({row["external_id"] for row in rows}) == len(rows)
+          assert all(row["page_key"] == "mediawiki/tibiawiki.com.br/page_id/" + row["external_id"] for row in rows)
+          assert all(re.fullmatch(r"[0-9a-f]{64}", row["source_digest"]) for row in rows)
+          assert all(set(row) == set(manifest["row_schema_fields"]) for row in rows)
+          payload = (json.dumps(artifact, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+          rows_payload = (json.dumps(rows, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
+          assert hashlib.sha256(payload).hexdigest() == manifest["artifact"]["sha256"]
+          assert hashlib.sha256(rows_payload).hexdigest() == manifest["artifact"]["rows_sha256"]
+          assert manifest["source_census_page_count"] == len(rows)
+          assert manifest["invariants"]["canonical_identity_binding_performed"] is False
+          assert manifest["invariants"]["field_or_semantic_promotion_performed"] is False
+          assert manifest["invariants"]["second_wiki_corroboration"] == "UNKNOWN"
+          assert manifest["invariants"]["ots_identity_or_semantics"] == "HYPOTHESIS_ONLY"
+          print(f"G4 compact provenance validation: PASS rows={len(rows)} digest={manifest['artifact']['sha256']}")
+          print(json.dumps(manifest, ensure_ascii=False, sort_keys=True))
+          PY
+
+      - name: Upload compact capture and manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-item-source-capture-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/g4-item-source-capture/g4-item-source-capture.json
+            ${{ runner.temp }}/g4-item-source-capture/g4-item-source-capture-manifest.json
+          if-no-files-found: error
+          retention-days: 14

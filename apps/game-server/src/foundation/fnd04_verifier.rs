@@ -2328,6 +2328,18 @@ fn validate_fresh_signing(
     Ok(deadline)
 }
 
+/// Signing key id named by a fresh grant's protected header. The value is
+/// untrusted: it only selects the owner facts that full verification of the same
+/// token then checks.
+// Used by the gameplay seam; unused where Foundation is path-included.
+#[allow(dead_code)]
+pub(crate) fn fresh_grant_signing_key_id(token: &str) -> Option<String> {
+    let compact = parse_compact_jws(token).ok()?;
+    parse_protected_header(&compact)
+        .ok()
+        .map(|header| header.kid)
+}
+
 pub fn verify_fresh_grant_durability_v1(
     token: &str,
     now: i64,

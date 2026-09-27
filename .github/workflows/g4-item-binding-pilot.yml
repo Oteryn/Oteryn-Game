@@ -1,0 +1,166 @@
+name: G4 Item exact-binding pilot
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/content-census/g4_item_binding_pilot.py
+      - tools/content-census/g4_item_binding_pilot_self_test.py
+      - .github/workflows/g4-item-binding-pilot.yml
+      - docs/agents/tasks/active/OTV2-20260924-g4-item-binding-pilot.md
+      - docs/agents/evidence/OTV2-20260924-g4-item-binding-pilot.json
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: g4-item-binding-pilot-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pilot:
+    name: G4 Item source identity pilot
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Compile and run synthetic pilot tests
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/content-census/g4_item_binding_pilot.py tools/content-census/g4_item_binding_pilot_self_test.py
+          python tools/content-census/g4_item_binding_pilot_self_test.py
+
+      - name: Download and verify the exact #856 source artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-binding-pilot"
+          mkdir -p "$ROOT/capture"
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/Oteryn/Oteryn-Game/actions/artifacts/10829932700/zip" \
+            --output "$ROOT/source-capture.zip"
+          test "$(sha256sum "$ROOT/source-capture.zip" | awk '{print $1}')" = "b28f0e5939a669ffe38ee14dc9e57e1b958f0c6ddc89ad75cf99908582469b16"
+          test "$(unzip -Z1 "$ROOT/source-capture.zip" | sort | tr '\n' ' ')" = "g4-item-source-capture-manifest.json g4-item-source-capture.json "
+          unzip -q "$ROOT/source-capture.zip" -d "$ROOT/capture"
+          python - "$ROOT/capture" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          manifest = json.loads((root / 'g4-item-source-capture-manifest.json').read_text(encoding='utf-8'))
+          assert manifest['schema'] == 'OTERYN_G4_ITEM_SOURCE_CAPTURE_MANIFEST/v1'
+          assert manifest['source_capture_batch_id'] == 'tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a'
+          assert manifest['captured_row_count'] == 6918
+          print('exact #856 source artifact metadata: PASS')
+          PY
+
+      - name: Install pinned Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Reproduce protected 38,157-Item identity map and crosswalk
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-binding-pilot"
+          cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk_self_test.py --native-map "$ROOT/native-map.json"
+          python tools/reference-world-corridor-census/item_classification_crosswalk.py \
+            --game-root . \
+            --native-map "$ROOT/native-map.json" \
+            --output "$ROOT/crosswalk.json" \
+            --manifest-output "$ROOT/crosswalk-manifest.json"
+          test "$(sha256sum "$ROOT/crosswalk.json" | awk '{print $1}')" = "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
+
+      - name: Recompute protected current-source partition
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-binding-pilot"
+          python tools/reference-world-corridor-census/item_current_source_tibiawiki_self_test.py
+          python tools/reference-world-corridor-census/item_current_source_tibiawiki.py \
+            --game-root . \
+            --classification-crosswalk "$ROOT/crosswalk.json" \
+            --cache-dir "$ROOT/current-source-cache" \
+            --output "$ROOT/current-source.json" \
+            --manifest-output "$ROOT/current-source-manifest.json"
+          python - "$ROOT/current-source-manifest.json" docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json <<'PY'
+          import json, pathlib, sys
+          current = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
+          protected = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))
+          assert current['schema'] == protected['schema']
+          assert current['collector'] == protected['collector']
+          assert current['counts'] == protected['counts']
+          assert protected['full_output']['stable_without_retrieval_timestamp_sha256'] == '34a906252a2644ea70fdbbe9c52c6f142ea21c8955b40ffb4c4aa2032f130c29'
+          assert current['counts']['records'] == 38157
+          assert current['counts']['dispositions']['WIKI_MATCHED'] == 22
+          print('protected current-source partition: PASS')
+          PY
+
+      - name: Compile compact exact-binding evidence
+        run: |
+          set -euo pipefail
+          ROOT="$RUNNER_TEMP/g4-item-binding-pilot"
+          python tools/content-census/g4_item_binding_pilot.py \
+            --source-capture "$ROOT/capture/g4-item-source-capture.json" \
+            --source-manifest "$ROOT/capture/g4-item-source-capture-manifest.json" \
+            --current-source "$ROOT/current-source.json" \
+            --current-source-manifest "$ROOT/current-source-manifest.json" \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --crosswalk "$ROOT/crosswalk.json" \
+            --output "$ROOT/g4-item-binding-pilot.json" \
+            --manifest-output "$ROOT/g4-item-binding-pilot-manifest.json"
+          python - "$ROOT/g4-item-binding-pilot.json" "$ROOT/g4-item-binding-pilot-manifest.json" <<'PY'
+          import json, pathlib, sys
+          evidence = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
+          manifest = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))
+          assert len(evidence['rows']) == 22
+          assert len(evidence['typed_binding_candidates']) <= 1
+          assert all(row['status'] in {'EXACT','ACCEPTED_ALIAS','PROBABLE_MATCH','AMBIGUOUS','CONFLICT','NO_MATCH','UNRESOLVED_SOURCE_SHAPE'} for row in evidence['rows'])
+          required_tuple = {'source','source_role','source_namespace','external_id','page_key','title','revision_id','revision_timestamp','source_digest'}
+          assert all(required_tuple <= set(row) for row in evidence['rows'])
+          assert all(row['source_namespace'] == 'mediawiki/tibiawiki.com.br' and row['page_key'] == 'mediawiki/tibiawiki.com.br/page_id/' + row['external_id'] for row in evidence['rows'])
+          assert all(row['status'] == 'EXACT' for row in evidence['rows'] if row['selected_for_pilot'])
+          carrier_fields = {'source_key','source_revision','identity_namespace','external_id','target','disposition'}
+          assert all(set(row) == carrier_fields for row in evidence['typed_binding_candidates'])
+          assert all(row['disposition'] in {'EXACT','ACCEPTED_ALIAS'} for row in evidence['typed_binding_candidates'])
+          assert all(row['source_key'] == 'oteryn:source.tibiawiki' for row in evidence['typed_binding_candidates'])
+          assert all(row['source_revision'] == evidence['source_capture']['batch_id'] for row in evidence['typed_binding_candidates'])
+          assert all(set(row['target']) == {'family','key','revision'} and row['target']['family'] == 'Item' for row in evidence['typed_binding_candidates'])
+          if evidence['status'] == 'REVALIDATION_REQUIRED_ZERO_BINDING_CANDIDATES':
+              assert len(evidence['typed_binding_candidates']) == 0
+              assert all(row['status'] == 'UNRESOLVED_SOURCE_SHAPE' and 'STABLE_OUTPUT_DRIFT' in row['reason'] for row in evidence['rows'])
+              assert manifest['revalidation_required'] is True
+          else:
+              assert evidence['status'] == 'CANDIDATE_EVIDENCE_ONLY_NO_REPO_POPULATION'
+          assert evidence['invariants']['project_v2_source_population'] is False
+          assert evidence['invariants']['gameplay_field_promotion'] is False
+          print('G4 Item exact-binding candidate validation: PASS')
+          print(json.dumps(manifest, ensure_ascii=False, sort_keys=True, separators=(',', ':')))
+          PY
+
+      - name: Upload compact crosswalk evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: g4-item-binding-pilot-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            ${{ runner.temp }}/g4-item-binding-pilot/g4-item-binding-pilot.json
+            ${{ runner.temp }}/g4-item-binding-pilot/g4-item-binding-pilot-manifest.json
+          if-no-files-found: error
+          retention-days: 14

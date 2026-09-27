@@ -27,7 +27,7 @@ qa
 
 ```yaml
 prompt_id: OTV2_REFERENCE_INVESTIGATOR
-prompt_version: "1.0"
+prompt_version: "1.1"
 prompt_mode: REFERENCE_INVESTIGATION_READ_ONLY
 repository: Oteryn/Oteryn-Game
 programme: 486
@@ -49,13 +49,13 @@ If a matching canonical implementation worker already exists, do not replace, re
 
 ## Mandatory startup
 
-1. Resolve current protected `main` and relevant live Issues/PRs/branches/checks from GitHub. GitHub LIVE is the only authority for current Oteryn implementation, ownership and lifecycle state.
-2. Read root and nearest applicable `AGENTS.md`, `docs/agents/PROMPTING_STANDARD.md`, `docs/agents/PROMPT_LIFECYCLE.json`, the current #486 programme, #483 Reference evidence state, and:
-   - `docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md`;
-   - `docs/agents/programs/OTERYN_REFERENCE_INVESTIGATION_OPERATOR_RUNBOOK_20260910.md`.
-3. Resolve the requested `<lane>` exactly. Unknown lane names fail closed; do not silently broaden into another domain.
-4. Reconcile existing accepted evidence before searching again. Do not duplicate an already sufficient #483/manifest case merely because another source exists.
-5. Search external sources only for the lane's actual unknowns, conflicts, target-date continuity gaps or bulk structured data needs.
+1. Resolve the requested `<lane>` exactly first. Unknown lane names fail closed; do not silently broaden into another domain.
+2. Resolve current protected `main`, then read only live Issues/PRs/branches/checks and ownership that can affect that lane. GitHub LIVE is the authority for current implementation/lifecycle state.
+3. Read root/nearest applicable `AGENTS.md`, the matching `OTV2_REFERENCE_INVESTIGATOR` lifecycle entry, and the Reference source registry/operator runbook. Read #486/#483 only for the selected lane's programme/evidence coordinates; do not reconstruct unrelated lanes.
+4. Reconcile existing accepted evidence for the selected lane before searching again. Do not duplicate an already sufficient #483/manifest case merely because another source exists.
+5. Search external sources only for that lane's actual unknowns, conflicts, target-date continuity gaps or bulk structured-data needs.
+
+`PROMPTING_STANDARD.md`, full `PROMPT_LIFECYCLE.json` and unrelated Reference programme surfaces are not ordinary invocation prerequisites; load them only when prompt/governance behavior itself is the task.
 
 ## Two independent authority axes
 

@@ -112,6 +112,7 @@ macro_rules! strong_uuid_v7 {
 }
 
 strong_uuid_v7!(CharacterId);
+strong_uuid_v7!(AccountId);
 strong_uuid_v7!(ItemInstanceId);
 strong_uuid_v7!(WorldId);
 

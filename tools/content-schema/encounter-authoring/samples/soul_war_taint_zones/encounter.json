@@ -1,0 +1,152 @@
+{
+  "identity": {
+    "key": "canary:encounter/soul_war_taint_zones",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Soul War hunting zones: fourth taint lethal heal",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "hunting_monster",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mirror_image",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/bony_sea_devil",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/brachiodemon",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/branchy_crawler",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/capricious_phantom",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/distorted_phantom",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/cloak_of_terror",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/courage_leech",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/vibrant_phantom",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/infernal_demon",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/infernal_phantom",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/many_faces",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/mould_phantom",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/rotten_golem",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/turbulent_elemental",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "soul_war_taint_zones",
+      "kind": "area",
+      "description": "The eleven Canary zones of SoulWarQuest.areaZones.monsters (five hunting grounds and six Goshnar boss rooms); to be bound by the map project."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "fourth_taint_lethal_heal",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "hunting_monster"
+      },
+      "conditions": [
+        {
+          "kind": "killer_is_player"
+        },
+        {
+          "kind": "killer_progress",
+          "progress": "canary:quest-progress/soul_war_taint_4",
+          "op": "==",
+          "value": true
+        },
+        {
+          "kind": "in_anchor",
+          "subject": {
+            "killer": true
+          },
+          "anchor": "soul_war_taint_zones"
+        },
+        {
+          "kind": "chance_percent",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "hunting_monster"
+          },
+          "text": "Health restored by the mystic powers of Zarganash!",
+          "mode": "say"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "hunting_monster"
+          },
+          "amount": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}
