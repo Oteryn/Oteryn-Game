@@ -7,7 +7,7 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | File | Purpose |
 |---|---|
 | `lua_tables.py` | Reads Lua table constructors (and their comments) without a Lua interpreter. |
-| `ots_doors.py` | Transcribes the quest, key and level doors of both servers (`door_quest.lua`, `door_key.lua`, `door_level.lua`), joined by map position, into gates linked to the chest claims and keys. |
+| `ots_doors.py` | Transcribes the quest, key and level doors of both servers (`door_quest.lua`, `door_key.lua`, `door_level.lua`), joined by map position, into gates linked to the chest claims and keys, plus the `QuestDoorUnique` doors each opened by their own dedicated script (the Dawnport vocation doors, the Katana Quest lever door). |
 | `ots_questlog.py` | Transcribes the quest logs of both servers into storyline quests with staged missions (D34) and their transitions (D35), joined by quest and mission name; writes the whole quest catalogue and the progress tracks with per-server transition sources. |
 | `lua_writers.py` | Finds every storage write in the Lua sources and reads it as a candidate transition (D35): owner, callback, effect, `from` stage through its if-block, script registrations. |
 | `lua_blocks.py` | Splits a Lua callback body into if/elseif/else branches, loops and statements (early `return` makes the rest an implicit `else`). |

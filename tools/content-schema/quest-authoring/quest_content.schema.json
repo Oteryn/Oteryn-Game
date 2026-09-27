@@ -87,7 +87,7 @@
       }
     },
     "gate": {
-      "description": "A door that lets a character pass while its condition holds (per_character_pass), or a door that a matching key locks and unlocks for everyone (shared_lock).",
+      "description": "A door that lets a character pass while its condition holds (per_character_pass), or a door that is locked or unlocked for everyone by a matching key or a paired lever (shared_lock).",
       "type": "object", "additionalProperties": false,
       "required": ["identity", "label", "quest", "quest_link_basis", "condition", "state", "placements"],
       "properties": {
@@ -106,7 +106,13 @@
             {"type": "object", "additionalProperties": false, "required": ["kind", "key_binding", "key_from_claims"],
              "properties": {"kind": {"const": "door_key"},
                             "key_binding": {"type": "string", "pattern": "^[a-z0-9_-]+:door-key/[0-9]+$"},
-                            "key_from_claims": {"type": "array", "items": {"$ref": "#/$defs/ref"}}}}
+                            "key_from_claims": {"type": "array", "items": {"$ref": "#/$defs/ref"}}}},
+            {"description": "Passes a character whose vocation-choice track (set once, before promotion) equals this base vocation.",
+             "type": "object", "additionalProperties": false, "required": ["kind", "vocation"],
+             "properties": {"kind": {"const": "vocation"}, "vocation": {"enum": ["sorcerer", "druid", "paladin", "knight"]}}},
+            {"description": "No player-state condition: a lever at this position toggles the door open and closed for everyone.",
+             "type": "object", "additionalProperties": false, "required": ["kind", "lever_position"],
+             "properties": {"kind": {"const": "lever"}, "lever_position": {"$ref": "#/$defs/position"}}}
           ]
         },
         "state": {"enum": ["per_character_pass", "shared_lock"]},

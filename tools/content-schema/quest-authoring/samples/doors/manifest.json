@@ -6,6 +6,34 @@
       "kind": "git",
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/actions/dawnport/vocation_door.lua",
+      "blob_sha1": "d8144e7bbffb7cb8e8132e38ff8088bf91455294"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/actions/rookgaard/katana_quest/katana_quest_door.lua",
+      "blob_sha1": "1d53962b0c55736ebb47e149391a19f78691c374"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/actions/rookgaard/katana_quest/katana_quest_lever.lua",
+      "blob_sha1": "c628b8e4959a3b8bc8d04af790c93fe810e43360"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/secret_service/actions_rust_bugs.lua",
+      "blob_sha1": "c5d78ca6908025eaccf6bcfdefebbfdf270705ba"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/startup/tables/door_key.lua",
       "blob_sha1": "01d571991ac93bf52e91a84379925688331fc580"
     },
@@ -43,6 +71,34 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data/scripts/actions/doors/level_door.lua",
       "blob_sha1": "6c90fca6df9429b051f846d01f3ad9d2e3b65757"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data-global/scripts/actions/dawnport/vocation_door.lua",
+      "blob_sha1": "d8144e7bbffb7cb8e8132e38ff8088bf91455294"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data-global/scripts/actions/rookgaard/katana_quest/katana_quest_door.lua",
+      "blob_sha1": "1d53962b0c55736ebb47e149391a19f78691c374"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data-global/scripts/actions/rookgaard/katana_quest/katana_quest_lever.lua",
+      "blob_sha1": "c628b8e4959a3b8bc8d04af790c93fe810e43360"
+    },
+    {
+      "kind": "git",
+      "repository": "zimbadev/crystalserver",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "path": "data-global/scripts/quests/secret_service/actions_rust_bugs.lua",
+      "blob_sha1": "c5d78ca6908025eaccf6bcfdefebbfdf270705ba"
     },
     {
       "kind": "git",
@@ -94,16 +150,18 @@
     "positions_only_crystalserver": 104,
     "gates": {
       "door_key": 38,
+      "lever": 1,
       "min_level": 14,
-      "quest_progress": 184
+      "quest_progress": 184,
+      "vocation": 4
     },
     "progress_gates_reading_a_claim": 1,
     "key_gates_with_a_key_from_a_chest": 24,
     "progress_gates_linked_to_wiki_quest": 176,
     "by_status": {
       "approved_omission": 1,
-      "mapped": 436,
-      "unresolved_semantics": 16
+      "mapped": 441,
+      "unresolved_semantics": 11
     }
   },
   "entries": [
@@ -2858,6 +2916,32 @@
           "action_key": 1080,
           "source_lines": [
             160
+          ]
+        }
+      ]
+    },
+    {
+      "position": [
+        32177,
+        32148,
+        11
+      ],
+      "status": "mapped",
+      "destination": "canary:door-gate/lever/32182_32145_11",
+      "resolution": "dedicated script: lever-controlled door, no player-state condition (Katana Quest); present in both servers and identical",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22006,
+          "source_lines": [
+            925
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22006,
+          "source_lines": [
+            1141
           ]
         }
       ]
@@ -9731,6 +9815,110 @@
     },
     {
       "position": [
+        32073,
+        31885,
+        6
+      ],
+      "status": "mapped",
+      "destination": "canary:door-gate/vocation/druid",
+      "resolution": "dedicated script: vocation door reading a chosen-vocation storage (Druid); present in both servers and identical",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22002,
+          "source_lines": [
+            905
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22002,
+          "source_lines": [
+            1121
+          ]
+        }
+      ]
+    },
+    {
+      "position": [
+        32069,
+        31885,
+        6
+      ],
+      "status": "mapped",
+      "destination": "canary:door-gate/vocation/knight",
+      "resolution": "dedicated script: vocation door reading a chosen-vocation storage (Knight); present in both servers and identical",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22004,
+          "source_lines": [
+            915
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22004,
+          "source_lines": [
+            1131
+          ]
+        }
+      ]
+    },
+    {
+      "position": [
+        32059,
+        31885,
+        6
+      ],
+      "status": "mapped",
+      "destination": "canary:door-gate/vocation/paladin",
+      "resolution": "dedicated script: vocation door reading a chosen-vocation storage (Paladin); present in both servers and identical",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22003,
+          "source_lines": [
+            910
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22003,
+          "source_lines": [
+            1126
+          ]
+        }
+      ]
+    },
+    {
+      "position": [
+        32055,
+        31885,
+        6
+      ],
+      "status": "mapped",
+      "destination": "canary:door-gate/vocation/sorcerer",
+      "resolution": "dedicated script: vocation door reading a chosen-vocation storage (Sorcerer); present in both servers and identical",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22001,
+          "source_lines": [
+            900
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22001,
+          "source_lines": [
+            1116
+          ]
+        }
+      ]
+    },
+    {
+      "position": [
         33908,
         31107,
         9
@@ -10756,68 +10944,18 @@
     },
     {
       "position": [
-        32055,
-        31885,
-        6
-      ],
-      "status": "unresolved_semantics",
-      "resolution": "door opened by a dedicated script (Sorcerer)",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22001,
-          "source_lines": [
-            900
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22001,
-          "source_lines": [
-            1116
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
         32058,
         32266,
         7
       ],
       "status": "unresolved_semantics",
-      "resolution": "door opened by a dedicated script (closed door)",
+      "resolution": "uid declared to restore an id lost when world.otbm stopped storing it, the same defect as a bare-number quest door; no script sets or reads it (closed door); present only in crystalserver",
       "sources": [
         {
           "source": "crystalserver",
           "uid": 50085,
           "source_lines": [
             1150
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
-        32059,
-        31885,
-        6
-      ],
-      "status": "unresolved_semantics",
-      "resolution": "door opened by a dedicated script (Paladin)",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22003,
-          "source_lines": [
-            910
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22003,
-          "source_lines": [
-            1126
           ]
         }
       ]
@@ -10843,56 +10981,6 @@
           "action_key": 103,
           "source_lines": [
             181
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
-        32069,
-        31885,
-        6
-      ],
-      "status": "unresolved_semantics",
-      "resolution": "door opened by a dedicated script (Knight)",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22004,
-          "source_lines": [
-            915
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22004,
-          "source_lines": [
-            1131
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
-        32073,
-        31885,
-        6
-      ],
-      "status": "unresolved_semantics",
-      "resolution": "door opened by a dedicated script (Druid)",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22002,
-          "source_lines": [
-            905
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22002,
-          "source_lines": [
-            1121
           ]
         }
       ]
@@ -10935,31 +11023,6 @@
     },
     {
       "position": [
-        32177,
-        32148,
-        11
-      ],
-      "status": "unresolved_semantics",
-      "resolution": "door opened by a dedicated script (Katana Quest)",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22006,
-          "source_lines": [
-            925
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22006,
-          "source_lines": [
-            1141
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
         32226,
         31049,
         7
@@ -10983,7 +11046,7 @@
         7
       ],
       "status": "unresolved_semantics",
-      "resolution": "door opened by a dedicated script (Secret Service)",
+      "resolution": "dedicated script reads this door only as a mission-item target and never transforms it (Secret Service); present in both servers and identical",
       "sources": [
         {
           "source": "canary",
