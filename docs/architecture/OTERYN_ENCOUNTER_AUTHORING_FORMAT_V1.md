@@ -1,7 +1,8 @@
 # Oteryn Encounter Authoring Format v1
 
 - Date: 2026-09-27
-- DecisionStatus: PROPOSED (owner decision D20: draft for owner acceptance before any implementation)
+- DecisionStatus: CANDIDATE (D20 draft; owner decisions D26-D28 recorded in §10; the vocabulary is
+  implemented offline before any runtime work)
 - DeliveryStatus: OPEN (design draft only)
 - ImplementationStatus: NOT_STARTED
 - Programme: KAN-16 / #504
@@ -45,12 +46,20 @@ The 131 unresolved events (263 monster references) use four handlers: `onDeath` 
    mechanic outside the set stays unresolved in the import manifest, as monsters do.
 3. No raw coordinates. Positions and areas are named anchors of the encounter; a map project binds
    anchors to world positions. Canary coordinates are kept as source evidence only.
-4. Encounter state (counters, flags, timers, phase) lives with one encounter instance in one
-   `WorldId`/`ChannelId` and is discarded on reset. It is never character state.
-5. Character and account effects (quest storages, boss cooldowns, reward rooms, hazard levels) are
-   not executed by the encounter. The encounter emits a named outcome; the owning system (quests,
-   character persistence with session-generation fenced writes, rewards) consumes it under its own
-   contract.
+4. Encounter state (counters, flags, timers, phase) lives with one encounter instance and is
+   discarded on reset. It is never character state. By default an encounter runs as one isolated
+   instance per party (D26): `WorldId + InstanceId` per `FND-ID-01_OWNER_ACCEPTED_BASELINE.md`
+   ("instanced cooperative gameplay requires participants to be admitted into one common
+   `WorldId + InstanceId`"), the "Instanced dungeon" row of `MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md`.
+   Every encounter declares its scope explicitly ("Boss runtime ... must declare scope; no implicit
+   default" in the same matrix).
+5. Character and account effects are not executed by the encounter. The encounter emits a named
+   outcome with its participants; the owning domain consumes it under its own contract (D27):
+   boss cooldowns, reward eligibility and reward rooms belong to the reward domain ("Boss reward
+   eligibility | Reward service/domain | Character/Account/World | Strong durable | Prevent repeated
+   farming across channels" in the scope matrix); quest storages and mission steps belong to the
+   quest domain; hazard levels to their progression domain. Their character writes stay
+   session-generation fenced.
 6. Canary defects are recorded, not reproduced blindly: where a script is broken (for example
    `GloothHorror` uses an undefined variable, `CracklerTransform` never runs its branch) the
    reference-date wiki decides the intended behaviour (D25).
@@ -61,7 +70,11 @@ The 131 unresolved events (263 monster references) use four handlers: `onDeath` 
 Encounter
   identity                      Game key + revision
   display_name
-  participants[]                role key -> CreatureRef, plus "stage" order for multi-form bosses
+  scope                         instance_per_party (default, D26) | channel_shared (explicit opt-in)
+  entry                         admission anchor, party size limits, readiness (consumes the
+                                shared activity-instance admission contract; not defined here)
+  participants[]                role key -> CreatureRef
+  phases[]                      ordered named phases; multi-form bosses move by `set_phase`
   anchors[]                     named point or area (rectangle/zone) to be bound by the map project
   state
     counters[]                  name, initial integer
@@ -86,6 +99,7 @@ Encounter
 | `timer_elapsed(timer)` | `addEvent` delays, `onThink` countdowns |
 | `counter_reached(counter, value)` | global kill/stage counters |
 | `area_entered(anchor, role or player)` / `area_left` | zone crossing (`izcandarThink`) |
+| `phase_entered(phase)` | stage bosses |
 | `encounter_started` / `encounter_reset` | lifecycle |
 
 ## 5. Conditions
@@ -109,6 +123,7 @@ Encounter
 | `teleport` | role or `players_in(anchor)`, to anchor |
 | `map_item` | create/transform/remove ItemRef at anchor, `revert_after_ms` |
 | `counter` / `flag` / `timer` | set, add, start, stop |
+| `set_phase` | next or named phase (phase changes are triggers too: `phase_entered(name)`) |
 | `cast` | AbilityRef at a role or anchor (death explosions) |
 | `say` | role, text, mode |
 | `drop_item` | ItemRef, chance, at role position |
@@ -137,10 +152,28 @@ Encounter
 4. Quest storages, cooldowns and rewards become `emit_outcome` names plus a list for the quest and
    reward owners.
 
-## 9. Open questions for the owner
+## 9. Rules for the vocabulary (D28)
 
-1. Instance scope: one shared arena per channel (Canary behaviour) or an instanced arena per party.
-2. Owner of boss cooldowns and reward rooms: quest system, character persistence or a boss-lock
-   service.
-3. Acceptance of the primitive set in §4-6 as the v1 vocabulary; anything else stays unresolved.
-4. Order of work: the 15-monster `FourthTaintBossesPrepareDeath` and the largest death events first.
+1. §4-6 is the closed v1 vocabulary. A mechanic outside it stays an unresolved import row with its
+   evidence; it is brought to the owner instead of being approximated or scripted.
+2. Rules run in their listed order; a trigger fires its rules once per occurrence; actions of one
+   rule run in order. `prevent_death` is valid only in a `lethal_damage` rule.
+3. Randomness (`chance_percent`, random positions) is drawn by the encounter instance, so a fight
+   can be audited and replayed from its seed.
+4. Health carried by `transform`/`spawn` is explicit (`keep_percent`, `keep_absolute`, `full`,
+   percent); nothing is implied.
+5. Anchors are typed (point or area) and must all be bound by the map project before admission;
+   an unbound anchor blocks the encounter, never falls back to raw coordinates.
+6. Validation mirrors the monster schema: JSON Schema plus a semantic validator and an import
+   manifest in which every Canary event line is mapped, omitted with a reason, or unresolved.
+
+## 10. Owner decisions
+
+| # | Decision | Basis |
+|---|---|---|
+| D26 | Encounters are instanced per party by default (a separate copy of the arena for each party), unlike Canary's one shared arena; `channel_shared` is an explicit opt-in per encounter. | Owner request 2026-09-27; `WorldId + InstanceId` in FND-ID-01; "Instanced dungeon" in the scope matrix. |
+| D27 | Encounters only emit named outcomes. Boss cooldowns, reward eligibility and reward rooms are consumed by the reward domain; quest steps by the quest domain. | Owner delegated the choice; the scope matrix already assigns boss reward eligibility to the reward domain. |
+| D28 | §4-6 plus phases is the v1 vocabulary under the rules of §9; work starts with `FourthTaintBossesPrepareDeath` (15 bosses), then the largest death events. | Owner delegated the choice. |
+
+Instance admission, party size and readiness are consumed from the shared activity-instance
+admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
