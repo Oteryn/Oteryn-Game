@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 223,
-    "fully_resolved": 1427,
+    "blocked": 217,
+    "fully_resolved": 1433,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1064
+    "wiki_adopted_monsters": 1065
   },
   "wiki_adopted_rows": {
     "Loot2": 11595,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 149,
+      "monsters": 143,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -887,6 +887,7 @@
     "gorerilla",
     "gorger_inferniarch",
     "gorgo",
+    "gorzindel",
     "gozzler",
     "grand_canon_dominus",
     "grand_chaplain_gaunder",
@@ -1507,6 +1508,11 @@
     "stalking_stalk",
     "stampor",
     "starving_wolf",
+    "stolen_knowledge_of_armor",
+    "stolen_knowledge_of_healing",
+    "stolen_knowledge_of_lifesteal",
+    "stolen_knowledge_of_spells",
+    "stolen_knowledge_of_summoning",
     "stolen_soul",
     "stone_devourer",
     "stone_golem",

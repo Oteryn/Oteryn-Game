@@ -1,0 +1,255 @@
+{
+  "identity": {
+    "key": "canary:encounter/gorzindel",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The Secret Library: Gorzindel",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "gorzindel",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/gorzindel",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "mean_minion",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mean_minion",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "stolen_knowledge_of_armor",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/stolen_knowledge_of_armor",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "stolen_knowledge_of_summoning",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/stolen_knowledge_of_summoning",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "stolen_knowledge_of_lifesteal",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/stolen_knowledge_of_lifesteal",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "stolen_knowledge_of_spells",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/stolen_knowledge_of_spells",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "stolen_knowledge_of_healing",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/stolen_knowledge_of_healing",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "stolen_tome_of_portals",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/stolen_tome_of_portals",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "knowledges_killed",
+        "initial": 0
+      }
+    ],
+    "flags": [
+      {
+        "name": "gorzindel_immune",
+        "initial": true
+      }
+    ],
+    "timers": [
+      {
+        "name": "knowledge_check",
+        "duration_ms": 1000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "stolen_knowledge_of_armor_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "stolen_knowledge_of_armor"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "knowledges_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "stolen_knowledge_of_summoning_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "stolen_knowledge_of_summoning"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "knowledges_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "stolen_knowledge_of_lifesteal_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "stolen_knowledge_of_lifesteal"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "knowledges_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "stolen_knowledge_of_spells_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "stolen_knowledge_of_spells"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "knowledges_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "stolen_knowledge_of_healing_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "stolen_knowledge_of_healing"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "knowledges_killed",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "all_knowledges_killed",
+      "trigger": {
+        "kind": "counter_reached",
+        "counter": "knowledges_killed",
+        "value": 5
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "knowledge_check",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "gorzindel_weakened",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "knowledge_check"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "mean_minion"
+        },
+        {
+          "kind": "flag",
+          "flag": "gorzindel_immune",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "gorzindel_immunity",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "gorzindel",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "gorzindel_immune",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "gorzindel",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

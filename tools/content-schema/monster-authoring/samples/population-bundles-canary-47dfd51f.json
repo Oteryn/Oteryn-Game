@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1427,
+  "bundles": 1433,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -555,6 +555,7 @@
     {"monster":"gorerilla","file":"mammals/gorerilla","sha256":"aff74a14ff4294996e0dc141b02e65fe1c46f309d69088af0b2bcc771a702775"},
     {"monster":"gorger_inferniarch","file":"demons/gorger_inferniarch","sha256":"5629bf6e2cd8f9676967fabfbf8670b13bedc75ebac08f62dafcc0ac06cf36ce"},
     {"monster":"gorgo","file":"quests/killing_in_the_name_of/gorgo","sha256":"8d0a7771e17d2443f7d998b80544a216b5290a7cfd65cce70391cd325f319694"},
+    {"monster":"gorzindel","file":"quests/the_secret_library/bosses/gorzindel","sha256":"31c82ee9934cf2469df3857101310cec40f5784675be0ad588d13c86296c39d4"},
     {"monster":"gozzler","file":"demons/gozzler","sha256":"eba86e1b058ba29fb417ffccaf73138778175f3b906c7be404bb85f27bc9f2f6"},
     {"monster":"grand_canon_dominus","file":"quests/the_secret_library/bosses/grand_canon_dominus","sha256":"68ca31aa7ceda92a7a4d6d9b5454bdd8cc21dc143f330ee7d3375ac86bd84aa7"},
     {"monster":"grand_chaplain_gaunder","file":"quests/the_secret_library/bosses/grand_chaplain_gaunder","sha256":"4987d3369b8e68fca70b78dfb5dfd27644625460d25cbbc2184cb48d6f140402"},
@@ -1175,6 +1176,11 @@
     {"monster":"stalking_stalk","file":"plants/stalking_stalk","sha256":"681db8a2082a11da93e57e17a0a5b8efd210d67fe2488905b0c6a801f9d0ac92"},
     {"monster":"stampor","file":"reptiles/stampor","sha256":"5d884df91759f5d27db61fbfae187a20eee3401bc99747354c5878142001aba9"},
     {"monster":"starving_wolf","file":"mammals/starving_wolf","sha256":"133881744114db6dda2d26d0e001f266f56d60d969c0e04b61e2474c45757018"},
+    {"monster":"stolen_knowledge_of_armor","file":"quests/the_secret_library/stolen_knowledge_of_armor","sha256":"1f541710c9b5dc43f7f89656ca8e9b5facb4a466ba95ecc79779f3b151f1b1ac"},
+    {"monster":"stolen_knowledge_of_healing","file":"quests/the_secret_library/stolen_knowledge_of_healing","sha256":"0a678e2a1ac3f8631f14750e80104af08463d71311bb51a27f2de0212d1c9566"},
+    {"monster":"stolen_knowledge_of_lifesteal","file":"quests/the_secret_library/stolen_knowledge_of_lifesteal","sha256":"29fc44852441200e2d26c58b478ebd8b0fafe5eaf40ca08ed7da864fd6326adc"},
+    {"monster":"stolen_knowledge_of_spells","file":"quests/the_secret_library/stolen_knowledge_of_spells","sha256":"65961ad3e776c0d6d65a4fd4ec01dda98fa49660929c2dc159f168e7a8b35cf2"},
+    {"monster":"stolen_knowledge_of_summoning","file":"quests/the_secret_library/stolen_knowledge_of_summoning","sha256":"cd08d132fdaa4e9f64746ea1eda5531da227a7a526429a3b0d8e8eabce167b0c"},
     {"monster":"stolen_soul","file":"quests/cults_of_tibia/bosses/summons/stolen_soul","sha256":"1b3a7d0a567ca8ff93f8d71c896212b981e8b58f1951dae4910cea77049eca4e"},
     {"monster":"stone_devourer","file":"constructs/stone_devourer","sha256":"e495ba039768139efeea6e4ef99d6b0db246a50e4a0e72d71c3a96033c6305d0"},
     {"monster":"stone_golem","file":"constructs/stone_golem","sha256":"aa8199202bb53d1d640216a67d50a37c1c820590e2e626a1fccabdeaf50dd040"},

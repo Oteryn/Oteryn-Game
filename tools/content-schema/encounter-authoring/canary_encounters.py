@@ -739,12 +739,64 @@ def azerus(build):
     build.entry(item, AZERUS, [27], 'approved_omission', None, 'The poff effect on each removed monster is cosmetic.')
 
 
+GORZINDEL = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_gorzindel.lua'
+GORZINDEL_LEVER = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/actions_gorzindel.lua'
+KNOWLEDGES = [('Stolen Knowledge of Armor', 2, 22), ('Stolen Knowledge of Summoning', 3, 23), ('Stolen Knowledge of Lifesteal', 4, 24),
+              ('Stolen Knowledge of Spells', 5, 25), ('Stolen Knowledge of Healing', 6, 26)]
+
+
+def gorzindel(build):
+    """gorzindelDeath and gorzindelHealth: Gorzindel is immune until the five stolen knowledges are dead; then the mean
+    minions vanish. The Stolen Tome of Portals opens a portal whose per-player room assignment stays unresolved."""
+    item = build.get('gorzindel', 'The Secret Library: Gorzindel', 'instance_per_party')
+    encounter = item['encounter']
+    build.participant(item, 'gorzindel', 'Gorzindel', 'gorzindelHealth')
+    build.participant(item, 'mean_minion', 'Mean Minion')
+    encounter['state']['counters'].append({'name': 'knowledges_killed', 'initial': 0})
+    encounter['state']['flags'].append({'name': 'gorzindel_immune', 'initial': True})
+    encounter['state']['timers'].append({'name': 'knowledge_check', 'duration_ms': 1000, 'repeat': False})
+    for knowledge, line, lever_line in KNOWLEDGES:
+        role = slug(knowledge)
+        build.participant(item, role, knowledge, 'gorzindelDeath')
+        path = build.rule(item, {'key': f'{role}_killed', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'counter', 'counter': 'knowledges_killed', 'operation': 'add', 'value': 1}]})
+        build.entry(item, GORZINDEL, [11, 13, 16, line], 'mapped', path + '/actions/0',
+                    f'onDeath of "{knowledge.lower()}", placed once by the boss lever ({GORZINDEL_LEVER} line {lever_line}).')
+    path = build.rule(item, {'key': 'all_knowledges_killed', 'trigger': {'kind': 'counter_reached', 'counter': 'knowledges_killed', 'value': 5},
+                             'conditions': [], 'actions': [{'kind': 'timer', 'timer': 'knowledge_check', 'operation': 'start'}]})
+    build.entry(item, GORZINDEL, [9, 17, 18, 19, 20, 21, 22, 23, 24, 25, 37], 'mapped', path,
+                'One second after each knowledge death Canary looks for a living knowledge within 12 tiles of (32687, 32719, 10); '
+                'the five are placed once, in rooms inside that range, so the check first finds none one second after the fifth '
+                'death. The reference-date wiki (The Secret Library Quest/Spoiler: "When the 5 books are dead, all that is left is '
+                'for players to attack Gorzindel") confirms the intent (D25). Only when the last two die within one second does '
+                'Canary act up to a second earlier.')
+    path = build.rule(item, {'key': 'gorzindel_weakened', 'trigger': {'kind': 'timer_elapsed', 'timer': 'knowledge_check'}, 'conditions': [],
+                             'actions': [{'kind': 'remove', 'role': 'mean_minion'},
+                                         {'kind': 'flag', 'flag': 'gorzindel_immune', 'value': False}]})
+    build.entry(item, GORZINDEL, [26, 27, 28, 30], 'mapped', path + '/actions/0', 'Every mean minion in range is removed.')
+    build.entry(item, GORZINDEL, [29], 'approved_omission', None, 'The poff effect on each removed minion is cosmetic.')
+    build.entry(item, GORZINDEL, [31, 32], 'mapped', path + '/actions/1',
+                'c:unregisterEvent("gorzindelHealth") ends Gorzindel\'s immunity (the gorzindel_immune flag).')
+    path = build.rule(item, {'key': 'gorzindel_immunity', 'trigger': {'kind': 'damage_taken', 'role': 'gorzindel', 'source': 'any'},
+                             'conditions': [{'kind': 'flag', 'flag': 'gorzindel_immune', 'value': True}],
+                             'actions': [{'kind': 'damage_modifier', 'role': 'gorzindel', 'multiplier_percent': 0, 'sources': 'any',
+                                          'until': 'this_hit'}]})
+    build.entry(item, GORZINDEL, [55, 57, 58, 59, 60, 63], 'mapped', path,
+                'gorzindelHealth (registered by the Gorzindel monster file) zeroes both damage parts of every hit while the '
+                'event stays registered; Gorzindel has no healing, so only damage is affected.')
+    build.participant(item, 'stolen_tome_of_portals', 'Stolen Tome of Portals')
+    build.entry(item, GORZINDEL, [38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 'unresolved_semantics', None,
+                'The Stolen Tome of Portals leaves a portal (item 1949, action 4952) on its tile and returns there after 10 s. '
+                'The portal sends each player who steps in to the next free knowledge room for 10 s '
+                '(movements_gorzindel.lua lines 1-38): a per-player room assignment outside the v1 vocabulary.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel):
         transcribe(build)
     print(json.dumps(build.write()))
 
