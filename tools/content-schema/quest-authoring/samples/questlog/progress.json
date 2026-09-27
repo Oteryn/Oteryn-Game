@@ -4443,42 +4443,6 @@
       ]
     },
     {
-      "key": "canary:quest-progress/quest/u14_15/the_way_of_the_monk/missions/tree_fold_path",
-      "missions": [
-        "canary:quest/the_way_of_the_monk_quest#the_three_fold_path"
-      ],
-      "start_of": [],
-      "read_by_gates": [],
-      "writes": {
-        "canary": 2,
-        "crystalserver": 0
-      },
-      "transitions": [
-        {
-          "key": "npc_1",
-          "script": "npc/ambassador_manop.lua",
-          "sources": {
-            "canary": {
-              "path": "data-otservbr-global/npc/ambassador_manop.lua",
-              "line": 136,
-              "registrations": []
-            }
-          }
-        },
-        {
-          "key": "npc_2",
-          "script": "npc/ambassador_manop.lua",
-          "sources": {
-            "canary": {
-              "path": "data-otservbr-global/npc/ambassador_manop.lua",
-              "line": 149,
-              "registrations": []
-            }
-          }
-        }
-      ]
-    },
-    {
       "key": "canary:quest-progress/quest/u14_15/the_way_of_the_monk/quest_line",
       "missions": [],
       "start_of": [
@@ -4636,6 +4600,7 @@
     {
       "key": "canary:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
       "missions": [
+        "canary:quest/the_way_of_the_monk_quest#the_three_fold_path",
         "canary:quest/the_way_of_the_monk_quest#the_invitation",
         "canary:quest/the_way_of_the_monk_quest#dawnport_shrines"
       ],

@@ -21,7 +21,7 @@ from pathlib import Path
 
 import lua_tables
 import lua_writers
-from ots_chests import REVISION, ROOT, SOURCES, check_checkout, git_blob, quest_key, ref, slug, text_ref, wiki_matcher
+from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, quest_key, ref, slug, text_ref, unused_decisions, wiki_matcher
 
 
 
@@ -152,6 +152,7 @@ def build(repos, chests_dir, doors_dir, coverage):
             by_name[norm(quest['name'])][name] = quest
 
     storyline, manifest_entries, tracks = {}, [], defaultdict(lambda: {'missions': [], 'start_of': []})
+    used_decisions = set()
     for key_name, pair in sorted(by_name.items()):
         primary = pair.get('canary') or pair['crystalserver']
         namespace = 'canary' if 'canary' in pair else 'crystalserver'
@@ -169,6 +170,14 @@ def build(repos, chests_dir, doors_dir, coverage):
             order += [(norm(m['name']), 'crystalserver', m) for m in pair['crystalserver']['missions'] if norm(m['name']) not in known]
         other_missions = {norm(m['name']): m for m in pair['crystalserver']['missions']} if 'canary' in pair and 'crystalserver' in pair else {}
         for mission_name, server, mission in order:
+            source_mission = mission
+            decision = CONFLICT_DECISIONS['missions'].get(f'{key}#{slug(mission["name"]) or "mission"}')
+            if decision and server == 'canary' and mission_name in other_missions:
+                used_decisions.add(f'{key}#{slug(mission["name"]) or "mission"}')
+                if decision['decision'] == 'crystalserver':
+                    mission = other_missions[mission_name]
+            else:
+                decision = None
             storage = mission.get('storageId')
             if not isinstance(storage, (dict, int)):
                 manifest_entries.append({'quest': primary['name'], 'mission': mission['name'], 'status': 'unresolved_semantics',
@@ -193,11 +202,13 @@ def build(repos, chests_dir, doors_dir, coverage):
             elif mission_name not in other_missions:
                 resolution = 'mission present only in canary'
             else:
-                a, b = comparable_mission(mission), comparable_mission(other_missions[mission_name])
+                a, b = comparable_mission(source_mission), comparable_mission(other_missions[mission_name])
                 fields = sorted(k for k in a if a[k] != b[k])
                 if fields:
                     status = 'conflict'
                     resolution = 'servers disagree on ' + ', '.join(fields) + '; the Canary value is kept'
+                    if decision:
+                        status, resolution = 'mapped', 'servers disagree on ' + ', '.join(fields) + '; ' + decided(decision)
             mission_rows.append({'quest': key, 'mission': mission_key, 'status': status, 'resolution': resolution,
                                  'sources': [{'source': n, 'path': q['path'], 'quest_line': q['line']} for n, q in pair.items()]})
         manifest_entries.extend(mission_rows)
@@ -250,6 +261,7 @@ def build(repos, chests_dir, doors_dir, coverage):
                                          for t in mission_transitions(found)]})
     all_transitions = [t for q in storyline.values() for m in q['missions'] for t in m['transitions']]
     counts = Counter(e['status'] for e in manifest_entries)
+    unused_decisions('missions', used_decisions)
     manifest = {
         'classification': 'OTS_HYPOTHESIS_ONLY',
         'join': 'quest and mission names (normalised)',

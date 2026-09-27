@@ -18,7 +18,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import lua_tables
-from ots_chests import REVISION, ROOT, SOURCES, check_checkout, git_blob, quest_key, ref, slug, wiki_matcher
+from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, quest_key, ref, slug, unused_decisions, wiki_matcher
 
 TABLES = {
     'quest': ('startup/tables/door_quest.lua', 'QuestDoorAction'),
@@ -120,6 +120,7 @@ def build(repos, chests_dir, coverage):
                     for pair in by_position.values()
                     if 'canary' in pair and not (pair['canary']['kind'] == 'quest' and not isinstance(pair['canary']['key'], dict))}
     gates = {}
+    used_decisions = set()
     for position, pair in sorted(by_position.items()):
         primary = pair.get('canary') or pair['crystalserver']
         if primary['kind'] == 'quest' and not isinstance(primary['key'], dict):
@@ -140,6 +141,12 @@ def build(repos, chests_dir, coverage):
             if letters(gate_key(other)) != letters(gate_key(condition)):
                 status = 'conflict'
                 resolution = f'servers disagree: canary {gate_key(condition)}; crystalserver {gate_key(other)}'
+                decision = CONFLICT_DECISIONS['doors'].get(','.join(map(str, position)))
+                if decision:
+                    used_decisions.add(','.join(map(str, position)))
+                    if decision['decision'] != 'canary':
+                        raise SystemExit(f'{position}: only Canary door decisions are wired')
+                    status, resolution = 'mapped', resolution + '; ' + decided(decision)
             elif gate_key(other) != gate_key(condition):
                 resolution = 'present in both servers; the storage name differs only in letter case'
         key = f'{namespace}:door-gate/{gate_key(condition)}'
@@ -165,6 +172,7 @@ def build(repos, chests_dir, coverage):
 
     gate_list = sorted(gates.values(), key=lambda g: g['identity']['key'])
     counts = Counter(e['status'] for e in manifest_entries)
+    unused_decisions('doors', used_decisions)
     manifest = {
         'classification': 'OTS_HYPOTHESIS_ONLY',
         'join': 'map position',

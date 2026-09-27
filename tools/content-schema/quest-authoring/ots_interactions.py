@@ -30,7 +30,7 @@ from pathlib import Path
 
 import lua_blocks
 from lua_writers import REGISTRATION, strip_code
-from ots_chests import REVISION, ROOT, SOURCES, check_checkout, git_blob, ref, slug
+from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
 from validate_quest_content import BLOCKED
 
@@ -228,7 +228,12 @@ class Script:
             self.bind(number, m.group(2))
             nodes = lua_blocks.parse(self.lines, lua_blocks.function_body(self.lines, number))
             rules = self.convert(nodes)
-            key = stem if len(starts) == 1 else f'{stem}_{index + 1}'
+            # several callbacks in one file are told apart by their script object, which both servers share even when
+            # one of them adds or reorders callbacks; a repeated object name takes its occurrence number
+            objects_before = [CALLBACK.match(self.lines[n - 1]).group(1) for n in starts[:index]]
+            key = stem if len(starts) == 1 else f'{stem}_{slug(m.group(1))}'
+            if m.group(1) in objects_before:
+                key += f'_{objects_before.count(m.group(1)) + 1}'
             out.append({'identity': {'key': f'{self.namespace}:interaction/{key}', 'revision': REVISION},
                         'source': {'edge': EDGES[m.group(2)], 'callback': m.group(2), 'target_registrations': registrations},
                         'rules': rules, 'anchors': self.anchors, 'unresolved': self.unresolved,
@@ -308,7 +313,7 @@ def build(repos, scripts, questlog_dir):
             script.declared = declared_by_path
             for interaction in script.interactions():
                 by_script.setdefault(interaction['identity']['key'].split(':', 1)[1], {})[name] = interaction
-    interactions, manifest_entries = [], []
+    interactions, manifest_entries, used = [], [], set()
     for _, pair in sorted(by_script.items()):
         primary = pair.get('canary') or pair['crystalserver']
         agree = len(pair) == 2 and comparable(pair['canary']) == comparable(pair['crystalserver'])
@@ -317,12 +322,21 @@ def build(repos, scripts, questlog_dir):
                       else 'the servers differ; the Canary transcription is kept')
         if len(pair) == 2 and not agree:
             status = 'conflict'
+            decision = CONFLICT_DECISIONS['interactions'].get(primary['identity']['key'])
+            if decision:
+                used.add(primary['identity']['key'])
+                if decision['decision'] == 'crystalserver':
+                    # the CrystalServer transcription under the quest's Canary identity (D33)
+                    primary = dict(pair['crystalserver'], identity=primary['identity'])
+                status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
+                resolution = 'the servers differ; ' + decided(decision)
         interactions.append({k: v for k, v in primary.items() if k not in ('script', 'callback_line')})
         manifest_entries.append({'destination': primary['identity']['key'], 'status': status, 'resolution': resolution,
                                  'sources': [{'source': n, 'path': SOURCES[n]['datapack'] + '/' + i['script'],
                                               'callback_line': i['callback_line'],
                                               'blob_sha1': git_blob(repos[n], SOURCES[n]['datapack'] + '/' + i['script'])}
                                              for n, i in pair.items()]})
+    unused_decisions('interactions', used)
     children = [c for i in interactions for c in walk(i['rules'])]
     declared = {t['key'] for t in json.loads((questlog_dir / 'progress.json').read_text())['progress']}
     manifest = {

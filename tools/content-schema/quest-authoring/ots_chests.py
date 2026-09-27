@@ -38,6 +38,24 @@ WIKI_DECISIONS = {
     (32551, 32652, 10): ('crystalserver', 'The Thieves Guild Quest spoiler: the chest behind the quest door holds the '
                          'Stolen Golden Goblet', [('The_Thieves_Guild_Quest/Spoiler', 1086330), ('Stolen_Golden_Goblet', 1115203)]),
 }
+# D25 decisions for the conflicts of the later slices, kept as data next to the tools
+CONFLICT_DECISIONS = json.loads((ROOT / 'conflict_decisions.json').read_text())
+
+
+def decided(decision):
+    """The manifest wording of a recorded D25 decision."""
+    wiki = decision['wiki']
+    cite = f', {FANDOM}{wiki["title"].replace(" ", "_")}?oldid={wiki["revid"]}' if wiki else ''
+    return f'D25 decides for {decision["decision"]} ({decision["basis"]}: {decision["difference"]}{cite})'
+
+
+def unused_decisions(section, used):
+    """Fail loudly when a recorded decision no longer matches a conflict."""
+    stale = sorted(set(CONFLICT_DECISIONS[section]) - used)
+    if stale:
+        raise SystemExit(f'{section}: decisions without a matching conflict: {stale}')
+
+
 # The wiki confirms a cooldown that the servers' data sets but their script ignores.
 COOLDOWN_EVIDENCE = [('Brass-Shod_Chest', 1200697, 'Falcon Bastion chests can be opened once every 24h')]
 
@@ -217,6 +235,7 @@ def build(repos, coverage):
     match_quest = wiki_matcher(coverage)
     groups = defaultdict(list)          # claim marker -> [(position, chosen entry, pair, sources, status, resolution)]
     empty = []
+    used_decisions = set()
     for position, pair in sorted(by_position.items()):
         primary = pair.get('canary') or pair['crystalserver']
         status, resolution = 'mapped', 'present in both servers and identical'
@@ -232,6 +251,10 @@ def build(repos, coverage):
                 status = 'conflict'
                 resolution = 'servers disagree on ' + ', '.join(fields) + '; ' + '; '.join(
                     f'{n}: ' + json.dumps({f: comparable(pair[n]).get(f) for f in fields}) for n in pair)
+                decision = CONFLICT_DECISIONS['chests'].get(','.join(map(str, position)))
+                if decision and decision['decision'] == 'canary':
+                    used_decisions.add(','.join(map(str, position)))
+                    status, resolution = 'mapped', resolution + '; ' + decided(decision)
                 if position in WIKI_DECISIONS:
                     winner, reason, pages = WIKI_DECISIONS[position]
                     primary, status = pair[winner], 'mapped'
@@ -298,6 +321,7 @@ def build(repos, coverage):
             manifest_entries.append({'position': list(position), 'sources': sources, 'status': status,
                                      'resolution': resolution, 'destination': key})
 
+    unused_decisions('chests', used_decisions)
     manifest = {
         'classification': 'OTS_HYPOTHESIS_ONLY',
         'join': 'map position (unique ids differ between the servers)',
