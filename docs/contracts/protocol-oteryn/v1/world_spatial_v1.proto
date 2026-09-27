@@ -1,0 +1,55 @@
+// FIRST-CONTROL-WIRE-V1 (#642 owner acceptance 5853424280): typed payloads of command type 1
+// WORLD_ACTOR_STEP_INTENT and state domain 1 WORLD_SPATIAL_VISIBILITY (delta type 1, snapshot
+// type 1). FND-02 envelopes own CommandRef, server sequence, domain ID and revisions; these
+// payloads never duplicate them. Unknown fields, zero and unknown enum values fail closed.
+syntax = "proto3";
+
+package oteryn.protocol.v1.world_spatial;
+
+enum StepDirection {
+  STEP_DIRECTION_UNSPECIFIED = 0;
+  STEP_DIRECTION_NORTH = 1;
+  STEP_DIRECTION_EAST = 2;
+  STEP_DIRECTION_SOUTH = 3;
+  STEP_DIRECTION_WEST = 4;
+}
+
+// ClientCommand.payload of command type 1. At most 4 encoded bytes.
+message WorldActorStepIntentV1 {
+  StepDirection direction = 1;
+}
+
+enum StepDisposition {
+  STEP_DISPOSITION_UNSPECIFIED = 0;
+  STEP_DISPOSITION_MOVED = 1;
+  // Destination is not walkable or outside the active room.
+  STEP_DISPOSITION_BLOCKED = 2;
+  // The actor is not eligible or the binding is stale.
+  STEP_DISPOSITION_REJECTED = 3;
+}
+
+// CommandResult.payload of command type 1: outcome only, never state. At most 4 bytes.
+message WorldActorStepResultV1 {
+  StepDisposition disposition = 1;
+}
+
+// Native-frame coordinates of the Channel's pinned frame binding.
+message ActorPositionV1 {
+  sint32 x = 1;
+  sint32 y = 2;
+  // Limited to the int16 range.
+  sint32 floor = 3;
+}
+
+// StateDelta.payload of domain 1, delta type 1. At most 64 bytes; exactly one actor (own).
+message WorldSpatialDeltaV1 {
+  // The active client artifact digest. Applied only when equal to the loaded generation.
+  bytes content_generation = 1;
+  ActorPositionV1 actor_position = 2;
+}
+
+// StateDomainSnapshot.payload of domain 1, snapshot type 1: a complete own-actor baseline.
+message WorldSpatialSnapshotV1 {
+  bytes content_generation = 1;
+  ActorPositionV1 actor_position = 2;
+}

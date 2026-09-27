@@ -4830,6 +4830,50 @@
         "isolated, unactivated production Movement local-step kernel"
       ],
       "notes": "Accepted by resource owner in #139 comment 5829651359 for the #889 ENGINE_READINESS proof, under the VSL-MOVE-01 owner baseline. This per-decision limit does not admit or activate the July-28 Reference data target (#483), certify Reference parity, bound the static-cell index population, or close other Movement resource rows."
+    },
+    {
+      "id": "MOVE-RL-02",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Movement step inputs applied for one actor in one Channel owner work cycle",
+      "unit": "step inputs per actor per work cycle",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one step input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one step input for an actor is applied in a work cycle",
+        "max+1=2: a second step input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+      ],
+      "consumers": [
+        "first connected Movement child: own-actor cardinal step (FIRST-CONTROL-WIRE-V1)"
+      ],
+      "notes": "Accepted by the resource owner in #139 comment 5853424970 (FIRST-CONTROLLED-STEP-LIMITS-V1). Speed and timing semantics are not decided; occupancy, visibility, relocation, Interaction and pathfinding rows are fail-closed exclusions in this child."
+    },
+    {
+      "id": "MOVE-RL-11",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Semantic entities in one WORLD_SPATIAL_VISIBILITY snapshot or delta",
+      "unit": "entities per snapshot",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The first child carries only the session's own actor; a second entity is refused before encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: the own actor is carried in a snapshot or delta",
+        "max+1=2: a second entity cannot be encoded by the first-child payload schema"
+      ],
+      "consumers": [
+        "WORLD_SPATIAL_VISIBILITY state domain 1, delta type 1, snapshot type 1"
+      ],
+      "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
     }
   ]
 }

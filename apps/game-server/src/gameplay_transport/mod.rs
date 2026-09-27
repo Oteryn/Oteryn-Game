@@ -6,6 +6,7 @@ pub(crate) mod fresh_evidence;
 #[cfg(test)]
 mod qualification;
 mod tcp_tls;
+pub(crate) mod world_spatial;
 
 use crate::domain;
 use crate::durability::DurabilityRoot;
