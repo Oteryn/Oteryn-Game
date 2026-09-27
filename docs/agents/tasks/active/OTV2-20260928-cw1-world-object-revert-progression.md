@@ -37,12 +37,13 @@ still `DecisionStatus: CANDIDATE` for the new part:
 
 1. A new §7 answers, for `revert_after` only, which existing owner supplies a scope-owned logical
    progression input: the minimum real options grounded in code facts (no existing Foundation/global
-   tick; a new scope-owned monotonic step introduced by the scope runtime owner, honestly stated as
-   a new mechanism since no existing scope cadence is proven; a purely reactive re-evaluation), the
-   must-decide-now test, a recommended option, the exact delta the owning lane (the scope-runtime/
-   Foundation carrier lane behind `ChannelRuntimeV1`/`InstanceRuntime`, not this documentation task)
-   must supply, and exact test obligations. The owner question itself (who accepts this decision) is
-   left explicit and unresolved by this task.
+   tick; a monotonic `Deadline` computed from the authored `revert_after_ms` at commit time, using
+   the existing `crates/foundation::time` primitive, RECOMMENDED; a synthetic scope-owned step
+   counter, considered and superseded; a purely reactive re-evaluation, rejected), the
+   must-decide-now test, the exact delta the owning lane (the scope-runtime/Foundation carrier lane
+   behind `ChannelRuntimeV1`/`InstanceRuntime`, not this documentation task) must supply, and exact
+   test obligations, including a decided (not deferred) answer on occupied-target-cell handling. The
+   owner question itself (who accepts this decision) is left explicit and unresolved by this task.
 2. §4/§5 record, without designing it, the CW3 Content-model worker's delta (allocation
    `OTV2-20260928-cw3-local-object-state-model`: 1a per-state collision presence, 1b authored
    initial state validated fail-closed, 1c RETAG decision) and the C3 hardening clarification
@@ -56,40 +57,31 @@ of this is `ACCEPTED`. D37 relocation and `SCOPE_HANDOFF` are untouched.
 
 ## Architecture and source of truth
 
-- `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` (owned doc, CANDIDATE with
-  D37/D38 taken) — PROVEN, read in full.
-- `apps/game-server/src/world_runtime.rs` `LocalObjectRuntime::bind` (~570-712) and `::prepare`
-  (~932-997) — PROVEN by file:line: no tick/time parameter anywhere in bind or prepare; fencing is
-  placement/incarnation/content_generation/expected_revision only; collision is hard-wired to the
-  Open/Close two-state pair (`next_blocking` match at ~978-981); `absolute_collision_cells` computes
-  a fixed footprint once at bind time (~698).
-- `apps/game-server/src/foundation/runtime_actor_carrier.rs` `ChannelRuntimeV1` (~695-700) and
-  `advance_owner` (~2169-2176) — PROVEN: the only progression `ChannelRuntimeV1` exposes is
-  `ScopeOwnershipGeneration` advancement (scope reassignment), not a time/tick/step counter.
-- `apps/game-server/src/gameplay_transport/connection.rs` `Liveness::tick` (~296-320) — PROVEN: a
-  per-connection transport keepalive cadence (probe/ack), unrelated to world/scope simulation state.
-- `apps/game-server/src/content/project/v2/creature.rs` `tick_profile`/`tick_interval_ms`/
-  `tick_counts` (~571-604, ~1189-1231) — PROVEN: an imported-content authoring schema for
-  damage-over-time, not a runtime scheduler; no consumer in `apps/game-server/src` was found driving
-  it as a live clock.
-- `docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md` lines 224 ("No
-  universal fixed global tick is required.") and 419 ("global tick rate ... deliberately
-  deferred.") — PROVEN: architecture-level, no committed global simulation tick exists today.
-- Grep of `apps/game-server/src` and `crates/` for `tick|Tick|logical_time|logical_step|Instant|
-  Clock|SimulationStep` found no scope-owned simulation-step concept beyond the two above —
-  DERIVED (absence evidence, bounded to the read tree).
-- Bounded grep for the scope-runtime driver/cadence (`tokio::time::interval|tokio::time::sleep|
-  select!\{|loop \{` cross-checked against every `ChannelRuntimeV1` use site:
-  `gameplay_transport/{qualification,mod}.rs`, `movement.rs`, `node/serve.rs`,
-  `foundation/{runtime_actor_carrier,mod}.rs`) — PROVEN: every located call into `ChannelRuntimeV1`
-  is reactive (`gameplay_transport/mod.rs` `ComposedFreshAdmission::release_after_grace` ~473-514: a
-  per-connection grace-expiry retry loop with its own backoff `sleep`; `movement.rs`
-  `MovementOwnerTurn::begin`/`try_step` ~213-249: a bounded batch of movement inputs processed per
-  invocation). `movement.rs` ~197-200 states explicitly in its own doc comment: "No production
-  maximum, queue, command outcome, or scheduling authority is implied. Fairness remains an
-  obligation of the future owner scheduler." No independent scope-wide cadence that advances
-  regardless of command activity was found. UNKNOWN whether one exists outside this bounded read
-  tree; §7 states this honestly rather than assuming a cadence to piggyback on.
+Full file:line evidence lives in §7 of the owned doc (Evidence subsection); this is the index.
+
+- `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` — PROVEN, read in full.
+- `apps/game-server/src/world_runtime.rs` `LocalObjectRuntime::bind`/`::prepare` (~570-997),
+  `terminalize_current`/`resume_pending` (~806-846) — PROVEN: no tick/time parameter; collision
+  hard-wired to Open/Close; every prepared outcome (incl. `DISPOSITION_OCCUPIED`) terminalizes
+  immediately and replays on retry rather than re-evaluating (§7 test obligations).
+- `apps/game-server/src/foundation/runtime_actor_carrier.rs`
+  `ChannelRuntimeV1::from_committed_assignment` (~702-750) — PROVEN, production-only: construction
+  pins `scope_generation` once; no production method advances it in place. `advance_owner`
+  (~2169-2176) is test-only (`impl MovementActorFixture`, `#[cfg(test)]`) — round-1 evidence citing
+  it as production was corrected in round 2. Two production doc comments (~760-762, ~773-774)
+  independently say `ChannelRuntimeV1` grants no scheduler.
+- `apps/game-server/src/gameplay_transport/connection.rs` `Liveness::tick` (~296-320) and
+  `apps/game-server/src/content/project/v2/creature.rs` `tick_profile` (~571-604) — PROVEN:
+  transport keepalive and content-authoring data respectively, neither a scope simulation clock.
+- `docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md` lines 224/419 —
+  PROVEN: no committed Foundation/global simulation tick exists.
+- Bounded grep (`tokio::time::interval|sleep|select!\{|loop \{`) against every `ChannelRuntimeV1`
+  call site — PROVEN: every call is reactive; `movement.rs` ~197-200 names the missing "future
+  owner scheduler" itself. UNKNOWN beyond this bounded read tree.
+- `crates/foundation/src/time.rs` `Deadline`/`MonotonicClock`/`ManualClock` (~50-166, exported at
+  `crates/foundation/src/lib.rs` line 5) — PROVEN: an already-tested monotonic-deadline primitive,
+  unused in `apps/game-server/src` today. `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 143 —
+  PROVEN: authors `revert_after_ms` directly (milliseconds).
 
 ## High-risk authority/recovery qualification
 
@@ -121,22 +113,33 @@ reason: >
 
 ## Implementation / findings
 
-The owned architecture doc already records D37/D38 as owner-accepted-pending-review. This task adds
-one new decision delta (§7, revert_after progression owner/options) and records, without designing,
-the CW3 Content-model worker's delta (1a/1b/1c) plus a hardening clarification (C3) that the
-independent review asked for. See the diff for exact wording; see "Architecture and source of truth"
-above for the file:line evidence behind every option and rejection.
+Initial delta: added §7 (revert_after progression owner/options) and recorded, without designing,
+the CW3 Content-model delta (1a/1b/1c) plus hardening clarification C3 in §4/§5/§8. See the diff and
+§7 itself for exact wording and file:line evidence.
 
-Pre-freeze fix (coordinator, PR #1045 returned to AUTHORING): corrected §-numbering throughout this
-task record (the decision is §7, Follow-up is §8, not the reverse); relabelled the Content-model
-worker CW3 (not CW4) in §4/§8 of the owned doc and here; renamed §8 Follow-up item 7 from
-"CW3/CW4 (scope-runtime lane)" to the actual owner, the scope-runtime/Foundation carrier lane
-(`ChannelRuntimeV1`/`InstanceRuntime`), with CW4 adding `revert_after` on top once that lane
-decides; and made §7's option 2 honest by adding the bounded scope-runtime-driver grep evidence
-above (PROVEN: every located call is reactive; no proven scope-owned cadence) and rewriting option 2
-so it states plainly that, absent a proven cadence, the owning lane's exact delta is introducing the
-scope's own step driver (one per scope owner, not per object) as the one real new mechanism, still
-CANDIDATE and not accepted here.
+Pre-freeze round 1 (coordinator): fixed §-numbering (decision is §7, Follow-up §8); relabelled the
+Content-model worker CW3 (not CW4); renamed §8 item 7 to the real owner, the scope-runtime/
+Foundation carrier lane; made §7 option 2 honest with the bounded scope-runtime-driver grep evidence
+(no proven cadence), still CANDIDATE.
+
+Pre-freeze round 2 (Codex review on frozen head bbb3b4cd): verified and fixed three findings.
+- P1: verified `crates/foundation/src/time.rs` `Deadline`/`MonotonicClock` (unused in
+  `apps/game-server/src`) and `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md:143` authors `revert_after_ms`.
+  Added the `Deadline` option, compared it honestly against the round-1 step counter (authored-
+  duration fidelity, no invented unit/cadence, equal determinism via `ManualClock`, equal reset), and
+  switched the recommendation to `Deadline` as minimum-sufficient. Rewrote delta/obligations in
+  milliseconds, not steps.
+- P2a: verified `advance_owner` (~2169-2176) is test-only (`impl MovementActorFixture`,
+  `#[cfg(test)]`), not production. Replaced with production evidence: `scope_generation` is pinned
+  once at construction (~702-750); no in-place advance exists in production. No-cadence conclusion
+  unchanged, now production-only.
+- P2b: verified `terminalize_current` (~834-846) terminalizes every outcome immediately and
+  `resume_pending`'s replay (~817-823) never re-evaluates it. Decided explicitly (not deferred): an
+  occupied revert refuses permanently under its one derived identity (mirrors §3's blocked-
+  relocation discipline); no retry. Rewrote the test obligation and removed the ambiguity from
+  must-decide-now item 5.
+
+Both validators re-run after each round's commit; unchanged pass (see Validation below).
 
 ## Validation
 
@@ -144,14 +147,14 @@ CANDIDATE and not accepted here.
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after the pre-freeze fix commit; unchanged pass)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-2; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 45 workflows)." (re-run after the pre-freeze fix commit; unchanged
-  pass)
+  validation passed (23 files, 45 workflows)." (re-run after each pre-freeze fix commit, rounds 1-2;
+  unchanged)
 
 ### E2E
 
@@ -196,9 +199,9 @@ CANDIDATE and not accepted here.
 
 ```yaml
 last_progress: >
-  PR #1045 returned to AUTHORING by the coordinator for pre-freeze fixes: task-record pr/§-numbering
-  corrected, CW3/CW4 attribution fixed in the owned doc and this record, §7 option 2 made honest
-  with new bounded scope-runtime-driver grep evidence; both validators re-run and still pass.
+  PR #1045 pre-freeze round 2 (Codex review) fixed: added the Deadline option to §7 and made it the
+  recommendation, corrected advance_owner to production-only evidence, decided occupied-revert
+  refuses permanently (no retry); both validators re-run and still pass.
 status: implementing
 branch: claude/cw1-world-object-revert-progression
 head_sha: null

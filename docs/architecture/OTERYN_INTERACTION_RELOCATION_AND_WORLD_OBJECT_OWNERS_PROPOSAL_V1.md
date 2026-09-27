@@ -165,9 +165,11 @@ keeps its lifetime and exclusions.
   (collision presence) and an existing hard-wired binding default (initial state); it adds no new
   owner, persistence or domain. C3 does not add multi-scope or dynamic geometry; it only names the
   footprint boundary the runtime already enforces by computing collision cells once at bind time.
-- §7's recommended `revert_after` option adds exactly one new scope-owned step driver and counter,
-  owned by the same scope-runtime owner named in D38 — one mechanism per scope, never per object;
-  it adds no per-object timer service, queue, receipt store or persistence.
+- §7's recommended `revert_after` option adds exactly one new scope-owned step driver plus a
+  pending-`Deadline` set, both owned by the same scope-runtime owner named in D38 — one mechanism
+  per scope, never per object — and reuses the already-implemented `crates/foundation::time`
+  `Deadline`/`MonotonicClock` primitive rather than inventing a new unit; it adds no per-object
+  timer service, queue, receipt store or persistence.
 
 ## 6. Owner decisions
 
@@ -206,9 +208,18 @@ nobody touches it again. No such input exists in the read code today.
   `::prepare` ~932-997): neither takes a tick, timestamp or step parameter; every fence is
   placement/incarnation/content_generation/expected_revision, all of which only change when a
   command targets that same anchor.
-- PROVEN (`apps/game-server/src/foundation/runtime_actor_carrier.rs` `ChannelRuntimeV1` ~695-700,
-  `advance_owner` ~2169-2176): the only progression the scope owner exposes is
-  `ScopeOwnershipGeneration`, advanced on scope reassignment, not on the passage of scope time.
+- PROVEN, production-only (`apps/game-server/src/foundation/runtime_actor_carrier.rs`
+  `ChannelRuntimeV1::from_committed_assignment` ~702-750): production construction pins
+  `scope_generation` once into `ChannelRuntimeAssignmentBinding` at construction (~727-728,
+  ~738-745); there is no production method that advances it in place. A scope restart in
+  production is therefore a new `ChannelRuntimeV1` instance via `from_committed_assignment`, not an
+  in-place generation bump. (Correction: a prior draft of this evidence cited `advance_owner`
+  ~2169-2176 as the scope owner's progression API; that method is test-only, inside `impl
+  MovementActorFixture` under `#[cfg(test)]` — struct at ~2030-2031, impl at ~2037-2038 — and proves
+  nothing about production.) Two of `ChannelRuntimeV1`'s own production doc comments independently
+  confirm no scheduler exists: `borrow_movement_position` (~760-762) "grants neither initial
+  position authority nor an owner scheduler"; `borrow_combat_death` (~773-774) "grants no scheduler,
+  production activation or corpse lifetime."
 - PROVEN (`apps/game-server/src/gameplay_transport/connection.rs` `Liveness::tick` ~296-320): the
   only "tick" in the read tree is a per-connection transport keepalive cadence (probe/ack
   liveness), unrelated to world/scope simulation state and not addressable per scope.
@@ -231,8 +242,17 @@ nobody touches it again. No such input exists in the read code today.
   explicitly: "No production maximum, queue, command outcome, or scheduling authority is implied.
   Fairness remains an obligation of the future owner scheduler." No independent scope-wide cadence
   that advances regardless of command activity was found anywhere driving `ChannelRuntimeV1`.
-- UNKNOWN whether a scope-owned periodic driver exists outside this bounded read tree. This section
-  does not assume one; option 2 below is written to hold either way.
+- UNKNOWN whether a scope-owned periodic driver exists outside this bounded read tree.
+- PROVEN (`crates/foundation/src/time.rs` ~50-91): `Deadline::after(clock, duration)` and
+  `Deadline::has_elapsed(clock)`/`remaining(clock)` already exist against a `MonotonicClock` trait,
+  with a production `SystemClock` and a deterministic `ManualClock` test double (~120-166,
+  exercised at ~211-217 by advancing a `ManualClock` and observing `has_elapsed`). PROVEN
+  (`crates/foundation/src/lib.rs` line 5): `Deadline`/`MonotonicClock`/`ManualClock`/`SystemClock`
+  are exported from the shared `foundation` crate; a bounded grep of `apps/game-server/src` found no
+  reference to any of them there today — a ready, tested primitive, not yet wired into any runtime
+  path. PROVEN (`docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 143): the
+  map-object authoring format already names the field `revert_after_ms` — milliseconds, not steps or
+  ticks — with a concrete authored value at line 170 (`revert_after_ms 1200000`).
 
 ### Options (minimum real set)
 
@@ -241,46 +261,65 @@ nobody touches it again. No such input exists in the read code today.
    one. Adopting or creating one now would be a new Foundation-owned decision, out of this task's
    `excluded_scope` (Foundation/runtime/protocol/registry) and disproportionate to one `revert_after`
    field.
-2. **A new scope-owned monotonic logical step, supplied by the scope runtime owner (RECOMMENDED,
-   stated honestly).** The evidence above shows no proven scope-owned cadence exists today: every
-   located `ChannelRuntimeV1` call is reactive, and `movement.rs` names the missing "future owner
-   scheduler" in its own doc comment. This option is therefore not "reuse an existing increment
-   point" — it is introducing the one real new mechanism: the same owner D38 already names
-   (`ChannelRuntimeV1`/`InstanceRuntime`) adds its own step driver, one per scope owner (not per
-   object, not per pending revert), that drives all of that scope's own due work forward on
-   whatever cadence the owning lane picks — piggy-backing on a cadence it can later prove already
-   exists, or a minimal interval added for exactly this purpose. `revert_after` stores an absolute
-   target step derived at commit time from that counter; the revert fires as the scope's own next
-   step reaches or passes that target. Without deciding to introduce this driver, option 2 collapses
-   into option 3.
-3. **Purely reactive re-evaluation against an already-existing counter** (`LocalObjectRuntime`'s
-   own `revision`, or `ScopeOwnershipGeneration`). Rejected: both only advance when something else
-   already happens to that same object or scope, so an untouched decaying wall or timed door would
-   never re-evaluate and could never fire — this does not satisfy the covered `decay`/
+2. **A monotonic `Deadline` computed from the authored duration (RECOMMENDED).** At commit time,
+   compute `Deadline::after(clock, Duration::from_millis(revert_after_ms))` from the already-proven
+   `crates/foundation::time` primitive (evidence above) and store it alongside the revert's fences
+   and derived identity. One scope-owned driver — one per scope owner (`ChannelRuntimeV1`/
+   `InstanceRuntime`), never per object, never per pending revert — wakes at the earliest pending
+   deadline (`Deadline::remaining`/`has_elapsed`) and, once woken, commits every due revert through
+   the normal `prepare`/commit path. The driver itself is still one real new mechanism, but the
+   value it wakes on and the unit it stores are not new: they are the authored `revert_after_ms`
+   field and an already-implemented, already-tested Foundation type, not an invented one.
+3. **A new scope-owned monotonic logical step counter (considered, not recommended).** Round 1 of
+   this review recommended a synthetic per-scope "step" incremented by the scope runtime's own
+   cadence. Honest comparison against option 2:
+   - *Authored-duration fidelity.* `revert_after_ms` is authored in milliseconds; a `Deadline`
+     represents that directly. A step counter forces an arbitrary translation from milliseconds to
+     "steps" — and the bounded grep evidence above found no existing per-scope cadence to define
+     what one step even is, so the unit would be invented, not derived from authored content.
+   - *No arbitrary cadence/unit.* Option 2 reuses `crates/foundation::time` as-is; option 3 still
+     needs the same new driver as option 2, plus an invented step-to-millisecond mapping on top of
+     it.
+   - *Determinism/replay.* Both are equally replay-safe in this proposal's sense (idempotent derived
+     identity, no re-fire after commit — see test obligations below); `ManualClock` (evidence above)
+     already gives deterministic, test-controlled time for the `Deadline` option, so option 2 does
+     not trade away deterministic testing to gain authored-duration fidelity.
+   - *Reset on scope restart.* Identical for both: both are `scope_generation`-scoped state owned by
+     the same `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay, so a scope
+     restart (a new instance, per the corrected evidence above) drops both with no separate cleanup
+     path.
+   Option 3 is strictly dominated: it carries every cost of option 2 (new driver, new per-scope
+   state) plus an invented unit option 2 does not need. Superseded by option 2.
+4. **Purely reactive re-evaluation against an already-existing counter** (`LocalObjectRuntime`'s
+   own `revision`, or `scope_generation`). Rejected: both only advance when something else already
+   happens to that same object or scope — `scope_generation` in particular is now shown (corrected
+   evidence above) to be fixed for the entire life of a production `ChannelRuntimeV1` instance, so it
+   never advances at all short of a full scope restart — so an untouched decaying wall or timed door
+   would never re-evaluate and could never fire. This does not satisfy the covered `decay`/
    `revertItem`/`addEvent` use case in §4.
 
 ### Must-decide-now test
 
 1. **Must decide now?** `YES` for the *owner and input shape* only (option 2 vs. the record of why
-   1 and 3 are rejected); `NO` for the exact increment cadence, storage representation or unit,
+   1, 3 and 4 are rejected/superseded); `NO` for the driver's exact wake mechanism (piggybacked on a
+   cadence later proven to exist, or a new minimal timer) or the pending-set storage representation,
    which the owning lane decides when it implements the delta.
 2. **What is blocked?** CW4 cannot ship `revert_after` at all (coordinator direction in §4 already
-   withholds it) until some owner is named for the progression input; naming nothing leaves the
+   withholds it) until some owner and input shape is named; naming nothing leaves the
    `EVIDENCE_GAP` open indefinitely.
 3. **What becomes harder later?** Picking option 1 later, after option 2 ships, would require
-   migrating every stored `revert_after` target from a scope-local step to a global tick value —
-   real but bounded migration cost, not an irreversible one, since both are monotonic counters on
-   the same overlay lifetime.
+   migrating every stored `revert_after` target from a scope-local `Deadline` to a global tick
+   value — real but bounded migration cost, not an irreversible one, since both are monotonic and
+   scoped to the same overlay lifetime.
 4. **What evidence would supersede this?** A later, separately accepted Foundation decision that
    introduces a real global simulation tick for reasons independent of `revert_after` (SIM-
-   DETERMINISM-01 would have to be amended first); or measured evidence that a per-scope counter
+   DETERMINISM-01 would have to be amended first); or measured evidence that a per-scope `Deadline`
    cannot meet a specific product timing requirement (for example cross-scope revert ordering,
    which §4 already excludes).
-5. **What is deliberately not decided?** The exact field name, integer width, whether the owning
-   lane's step driver piggybacks on a cadence it later proves already exists or adds a new minimal
-   interval for exactly this purpose, and whether `revert_after`'s unit is "N scope steps" or another
-   monotonic unit the owning lane picks. Those belong to the owning lane's implementation, not this
-   architecture delta.
+5. **What is deliberately not decided?** The exact wake mechanism inside the scope's step driver
+   (piggybacking on a cadence the owning lane later proves already exists, or a new minimal timer
+   added for exactly this purpose), and the exact storage representation of the pending-revert set.
+   Those belong to the owning lane's implementation, not this architecture delta.
 
 ### Exact delta the owning lane must provide
 
@@ -290,27 +329,30 @@ lane (`apps/game-server/src/world_runtime.rs`) that owns `LocalObjectRuntime`. T
 not implement it; it is CANDIDATE and not owner-accepted.
 
 - Introduce the scope owner's own step driver: one per scope owner (`ChannelRuntimeV1`/
-  `InstanceRuntime`), never a per-object or per-revert timer, driving all of that scope's own due
-  work forward. Whether it piggybacks on a cadence the scope runtime is later shown to already have,
-  or adds one new minimal interval for exactly this purpose, is the owning lane's implementation
-  choice — either way it is one mechanism per scope, not new infrastructure per object.
-- Add one monotonic step counter scoped to `scope_generation`, reset to its initial value whenever
-  `scope_generation` changes (the same reset `advance_owner` already causes for the rest of the
-  overlay), incremented only by that one scope-owned driver.
-- On any `revert_after`-carrying overlay operation, store the derived revert's target step alongside
-  the same fences §4 already requires (World/Channel/InstanceId, `scope_generation`,
+  `InstanceRuntime`), never a per-object or per-revert timer, that wakes at the earliest pending
+  `Deadline` and drives all of that scope's own due reverts forward in one pass. Whether it
+  piggybacks on a cadence the scope runtime is later shown to already have, or adds one new minimal
+  wake for exactly this purpose, is the owning lane's implementation choice — either way it is one
+  mechanism per scope, not new infrastructure per object.
+- On any `revert_after`-carrying overlay operation, compute `Deadline::after(clock,
+  Duration::from_millis(revert_after_ms))` (`crates/foundation::time`) at commit time and store it
+  alongside the same fences §4 already requires (World/Channel/InstanceId, `scope_generation`,
   `content_generation`, the overlay revision of the anchor) and a child identity derived from the
-  original operation's identity (as in §3/§4).
-- On each of the scope runtime's own step advances, check any due entries for anchors it owns and,
-  if due, commit the revert through the same `prepare`/commit path as any other overlay operation
-  (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, `apps/game-server/src/world_runtime.rs`
-  ~982-996) — not a separate code path.
+  original operation's identity (as in §3/§4). This state is `scope_generation`-scoped, owned by the
+  same `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay; a scope restart is a
+  new instance (corrected evidence above), so it is dropped with no separate cleanup path.
+- On each driver wake, check every due entry (`Deadline::has_elapsed`) for anchors this scope owns
+  and, if due, commit the revert through the same `prepare`/commit path as any other overlay
+  operation (`PreparedMutation::Publish`/`TerminalSemanticOutcome`,
+  `apps/game-server/src/world_runtime.rs` ~982-996) — not a separate code path.
+- On an occupancy conflict, terminalize `DISPOSITION_OCCUPIED` for that revert's one derived
+  identity and stop; do not retry it on a later wake (decided below, not left open).
 
 ### Exact test obligations
 
 - **Fires once.** The derived child identity (as in §3/§4) makes a repeated arrival at or after the
-  due step commit only the first outcome; once committed, the entry is removed from the pending set
-  so a later step never refires it.
+  deadline commit only the first outcome; once committed, the entry is removed from the pending set
+  so a later wake never refires it.
 - **Replay-safe.** Re-evaluating "is this due" after it has already fired must be side-effect free:
   it observes the entry already cleared and returns the same deterministic no-op outcome the
   runtime already has for a stale/consumed command (`DISPOSITION_NO_CHANGE`/`DISPOSITION_STALE_STATE`,
@@ -318,20 +360,29 @@ not implement it; it is CANDIDATE and not owner-accepted.
 - **Fenced.** The revert commits only under the same World/Channel/InstanceId, `scope_generation`,
   `content_generation` and overlay-revision-of-anchor fences as any other §4 operation; a fence
   mismatch discards the pending revert rather than forcing it through.
-- **Cleared on scope restart.** Because the step counter and the pending-revert set are both
-  `scope_generation`-scoped state owned by the same instance as the rest of the overlay, a scope
-  restart drops them with no separate cleanup path — the same lifetime §4 already states
-  ("Lifetime: Scope-ephemeral").
+- **Cleared on scope restart.** The pending-revert set (keyed by `Deadline`) is
+  `scope_generation`-scoped state owned by the same `ChannelRuntimeV1`/`InstanceRuntime` instance as
+  the rest of the overlay; a scope restart is a new instance (corrected evidence above), so it is
+  dropped with no separate cleanup path — the same lifetime §4 already states ("Lifetime:
+  Scope-ephemeral").
 - **No partial footprint.** A revert applies its full target state in the same single commit as any
   other overlay operation (the existing `PreparedMutation::Publish` path); this is exactly the C3
   fixed-footprint boundary in §4 — only the anchor's pre-authored, bind-time-reserved footprint is
   ever touched, never a partially materialized one.
-- **Occupied target cells defer/refuse deterministically.** A revert whose target state's footprint
-  conflicts with currently occupied cells reuses the existing `DISPOSITION_OCCUPIED` outcome
-  (`apps/game-server/src/world_runtime.rs` ~965-969) rather than evicting occupants or silently
-  dropping the revert. Whether "occupied" means retry on a later due step or refuse permanently is
-  exactly one deliberately-not-decided implementation choice (must-decide-now item 5 above), but it
-  must be one named, deterministic outcome either way.
+- **Occupied target cells refuse deterministically (decided, not deferred).**
+  `apps/game-server/src/world_runtime.rs` `terminalize_current` (~834-846) commits and terminalizes
+  every prepared outcome in the same call, and `resume_pending`'s
+  `DuplicateDisposition::ReplayRetainedOutcome` (~817-823) replays that same terminal outcome for
+  any later submission with the same derived identity — it does not re-evaluate against later
+  occupancy. Reusing this path therefore cannot implement "retry later" for a revert: a revert whose
+  target state's footprint conflicts with currently occupied cells terminalizes as
+  `DISPOSITION_OCCUPIED` (`apps/game-server/src/world_runtime.rs` ~965-969) for that one derived
+  identity and is refused permanently — the same "no silent search for a free tile unless the
+  definition names one" discipline §3 already applies to a blocked relocation. There is no retry:
+  giving a revert a fresh identity per wake to work around the terminal/replay path would be new
+  per-object retry machinery this decision does not introduce. If a revert must eventually succeed
+  despite occupancy, that is a future definition-level requirement (the definition names a
+  fallback), not a hidden retry loop here.
 
 ## 8. Follow-up
 
