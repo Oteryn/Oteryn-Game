@@ -1,0 +1,88 @@
+{
+  "encounter": "canary:encounter/the_unarmored_voidborn",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "CultsOfTibiaBossDeath": [
+      "canary:creature/the_unarmored_voidborn"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/the_unarmored_voidborn.lua",
+      "blob_sha1": "42fc64987219050e246b0b84cdf5d6a3a26364b5"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
+      "blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The Unarmored Voidborn is the the_unarmored_voidborn participant; its file registers CultsOfTibiaBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        12,
+        13,
+        19,
+        20,
+        21,
+        22,
+        23,
+        5
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"the unarmored voidborn\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        14,
+        15,
+        16,
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a creature with a master (a player never triggers a monster death event).",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        46,
+        47,
+        48,
+        49,
+        50,
+        5
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage CultsOfTibia.Orcs.Mission to 2 when it is lower.",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "the_unarmored_voidborn_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U11_40.CultsOfTibia.Orcs.Mission",
+        "raise_to_at_least": 2
+      }
+    }
+  ]
+}

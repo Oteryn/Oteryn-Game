@@ -349,12 +349,162 @@ def ascendant(build):
                 'outcome contract first.')
 
 
+CULTS = 'data-otservbr-global/scripts/quests/cults_of_tibia/'
+CULTS_BOSSES = CULTS + 'creaturescripts_bosses_mission_cults.lua'
+CULTS_PILLAR = CULTS + 'creaturescripts_destroyed_pillar.lua'
+CULTS_ESSENCE = CULTS + 'creaturescripts_essence_of_malice.lua'
+CULTS_LEVERS = CULTS + 'actions_bosses_levers.lua'
+CULTS_CHECK_TILE = CULTS + 'creaturescripts_check_tile.lua'
+# boss, encounter, config line, quest storage, value
+CULTS_MISSION_BOSSES = [
+    ('Ravenous Hunger', 'ravenous_hunger', 2, 'Barkless.Mission', 6),
+    ('The Souldespoiler', 'the_souldespoiler', 3, 'Misguided.Mission', 4),
+    ('Essence of Malice', 'essence_of_malice', 4, 'Humans.Mission', 2),
+    ('The Unarmored Voidborn', 'the_unarmored_voidborn', 5, 'Orcs.Mission', 2),
+    ('The False God', 'the_false_god', 6, 'Minotaurs.Mission', 4),
+    ('The Source of Corruption', 'the_corruptor_of_souls', 9, 'FinalBoss.Mission', 2)]
+# pillar, lever spawn line, guardian, stop creature, lever line of the stop creature, pillar script lines
+ESSENCE_PILLARS = [
+    ('Pillar of Summoning', 285, 'Eshtaba the Conjurer', 'Eshtaba The Conjurer Stop', 291, (23, 30)),
+    ('Pillar of Death', 286, 'Malkhar Deathbringer', 'Malkhar Deathbringer Stop', 294, (31, 38)),
+    ('Pillar of Protection', 287, 'Eliz the Unyielding', 'Eliz The Unyielding Stop', 292, (47, 54)),
+    ('Pillar of Healing', 288, 'Mezlon the Defiler', 'Mezlon The Defiler Stop', 293, (39, 46)),
+    ('Pillar of Draining', 289, 'Dorokoll the Mystic', 'Dorokoll The Mystic Stop', 290, (55, 62))]
+
+
+def cults_of_tibia(build):
+    """CultsOfTibiaBossDeath, DestroyedPillar and EssenceOfMaliceSpawnsDeath: mission outcomes of the Cults of Tibia
+    bosses, the Essence of Malice pillar room and the Corruptor of Souls hand-over. The Sandking stays unresolved."""
+    event = 'CultsOfTibiaBossDeath'
+    for boss, name, line, storage, value in CULTS_MISSION_BOSSES:
+        item = build.get(name, f'Cults of Tibia: {boss if name != "the_corruptor_of_souls" else "The Corruptor of Souls"}',
+                         'instance_per_party')
+        role = slug(boss)
+        build.participant(item, role, boss, event)
+        outcome = f'{role}_defeated'
+        item['encounter']['outcomes'].append(outcome)
+        path = build.rule(item, {'key': f'{role}_death_outcome', 'trigger': {'kind': 'creature_died', 'role': role},
+                                 'conditions': [{'kind': 'has_master', 'role': role, 'value': False}],
+                                 'actions': [{'kind': 'emit_outcome', 'outcome': outcome, 'credited': 'damage_contributors'}]})
+        build.entry(item, CULTS_BOSSES, [12, 13, 19, 20, 21, 22, 23, line], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss.lower()}".')
+        build.entry(item, CULTS_BOSSES, [14, 15, 16, 17], 'mapped', path + '/conditions/0',
+                    'Returns without effect for a creature with a master (a player never triggers a monster death event).')
+        build.entry(item, CULTS_BOSSES, [46, 47, 48, 49, 50, line], 'mapped', path + '/actions/0',
+                    f'onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage '
+                    f'CultsOfTibia.{storage} to {value} when it is lower.')
+        item['manifest']['outcome_evidence'].append({
+            'outcome': outcome, 'credited': 'damage_contributors',
+            'quest_domain': {'canary_storage': f'Storage.Quest.U11_40.CultsOfTibia.{storage}', 'raise_to_at_least': value}})
+
+    # The Corruptor of Souls hands over to The Source of Corruption.
+    item = build.items['the_corruptor_of_souls']
+    build.participant(item, 'the_corruptor_of_souls', 'The Corruptor of Souls', event)
+    build.participant(item, 'zarcorix_of_yalahar', 'Zarcorix Of Yalahar')
+    source = creature('The Source of Corruption')
+    item['encounter']['anchors'].append({'key': 'source_of_corruption_spawn', 'kind': 'point',
+                                         'description': 'The Source of Corruption appears here; Canary (33039, 31922, 15).'})
+    path = build.rule(item, {
+        'key': 'the_corruptor_of_souls_death', 'trigger': {'kind': 'creature_died', 'role': 'the_corruptor_of_souls'},
+        'conditions': [{'kind': 'has_master', 'role': 'the_corruptor_of_souls', 'value': False}],
+        'actions': [{'kind': 'spawn', 'creature': source, 'role': 'the_source_of_corruption', 'count': 1,
+                     'at': {'anchor': 'source_of_corruption_spawn'}, 'owner': 'none', 'health': 'full'},
+                    {'kind': 'remove', 'role': 'zarcorix_of_yalahar'}]})
+    build.entry(item, CULTS_BOSSES, [12, 13, 19, 20, 21, 22, 23, 8, 27], 'mapped', path + '/trigger',
+                'onDeath of "the corruptor of souls", configured with createNew.')
+    build.entry(item, CULTS_BOSSES, [14, 15, 16, 17], 'mapped', path + '/conditions/0',
+                'Returns without effect for a creature with a master.')
+    build.entry(item, CULTS_BOSSES, [8, 29], 'mapped', path + '/actions/0',
+                'Game.createMonster("The Source Of Corruption", Position(33039, 31922, 15)): a new unowned boss with full health.')
+    build.entry(item, CULTS_BOSSES, [8, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43], 'mapped', path + '/actions/1',
+                'Canary defect: `if removeMonster then` reads an undefined global instead of boss.removeMonster, so the '
+                'zarcorix of yalahar is never removed. The reference-date wiki (Cults of Tibia Quest/Spoiler: "Once you kill '
+                'The Corruptor of Souls, the Zarcorix of Yalahar will disappear and The Source of Corruption will spawn") '
+                'decides (D25): the zarcorix is removed.')
+    build.entry(item, CULTS_BOSSES, [28], 'approved_omission', None,
+                'Game.setStorageValue("CheckTile", -1) resets the vulnerability deadline that the CheckTile onThink '
+                f'({CULTS_CHECK_TILE} lines 1-11) reads for the now dead corruptor; encounter state ends with the instance.')
+    build.entry(item, CULTS_BOSSES, [44], 'mapped', path,
+                'The corruptor itself credits no mission; the credit comes with The Source of Corruption.')
+
+    sandking = build.get('the_sandking', 'Cults of Tibia: The Sandking', 'instance_per_party')
+    build.participant(sandking, 'the_sandking', 'The Sandking')
+    sandking['encounter']['state']['counters'].append({'name': 'stage', 'initial': 0})
+    sandking['encounter']['outcomes'].append('the_sandking_defeated')
+    path = build.rule(sandking, {
+        'key': 'the_sandking_death_outcome', 'trigger': {'kind': 'creature_died', 'role': 'the_sandking'},
+        'conditions': [{'kind': 'has_master', 'role': 'the_sandking', 'value': False},
+                       {'kind': 'counter_compare', 'counter': 'stage', 'op': '>=', 'value': 5}],
+        'actions': [{'kind': 'emit_outcome', 'outcome': 'the_sandking_defeated', 'credited': 'damage_contributors'}]})
+    build.entry(sandking, CULTS_BOSSES, [12, 13, 19, 20, 21, 22, 23, 7], 'mapped', path + '/trigger',
+                'onDeath of the configured boss "the sandking".')
+    build.entry(sandking, CULTS_BOSSES, [14, 15, 16, 17], 'mapped', path + '/conditions/0',
+                'Returns without effect for a creature with a master.')
+    build.entry(sandking, CULTS_BOSSES, [46, 47, 48, 49, 50, 7], 'mapped', path + '/actions/0',
+                'onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage '
+                'CultsOfTibia.Life.Mission to 8 when it is lower.')
+    build.entry(sandking, CULTS_BOSSES, [7, 24, 25, 26], 'unresolved_semantics', path + '/conditions/1',
+                'The credit needs the global "sandking" storage at least 5: the fight stage, set to 1 by '
+                'actions_bosses_levers.lua line 481 and advanced by creaturescripts_sandking.lua. It is the stage counter of '
+                'this encounter, but the rules that advance it are not transcribed yet.')
+    sandking['manifest']['outcome_evidence'].append({
+        'outcome': 'the_sandking_defeated', 'credited': 'damage_contributors',
+        'quest_domain': {'canary_storage': 'Storage.Quest.U11_40.CultsOfTibia.Life.Mission', 'raise_to_at_least': 8}})
+
+    # Essence of Malice: five pillars guard five mini-bosses; the Essence appears after all five are killed.
+    essence = build.items['essence_of_malice']
+    malice = essence['encounter']
+    malice['anchors'].append({'key': 'essence_spawn', 'kind': 'point', 'description': 'Canary (33098, 31920, 15).'})
+    malice['state']['counters'].append({'name': 'guardians_killed', 'initial': 0})
+    destroyed = creature('Destroyed Pillar')
+    build.define(essence, destroyed)
+    for pillar, pillar_line, guardian, stop, stop_line, (first, last) in ESSENCE_PILLARS:
+        role, guardian_role, stop_role = slug(pillar), slug(guardian), slug(stop)
+        build.participant(essence, role, pillar, 'DestroyedPillar')
+        build.participant(essence, stop_role, stop)
+        build.participant(essence, guardian_role, guardian, 'EssenceOfMaliceSpawnsDeath')
+        anchor = f'{guardian_role}_spot'
+        malice['anchors'].append({'key': anchor, 'kind': 'point',
+                                  'description': f'The tile of {stop} next to {pillar}; see {CULTS_LEVERS} line {stop_line}.'})
+        path = build.rule(essence, {
+            'key': f'{role}_destroyed', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+            'actions': [{'kind': 'remove', 'role': stop_role},
+                        {'kind': 'spawn', 'creature': destroyed, 'role': 'destroyed_pillar', 'count': 1, 'at': 'death_position',
+                         'owner': 'none', 'health': 'full'},
+                        {'kind': 'spawn', 'creature': creature(guardian), 'role': guardian_role, 'count': 1,
+                         'at': {'anchor': anchor}, 'owner': 'none', 'health': 'full'}]})
+        build.entry(essence, CULTS_PILLAR, [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 17, 18, 19, 20, 21, 22, first], 'mapped', path + '/trigger',
+                    f'onDeath of "{pillar.lower()}".')
+        build.entry(essence, CULTS_PILLAR, list(range(first + 1, first + 5)), 'mapped', path + '/actions/0',
+                    f'The top creature on the adjacent tile is removed: {stop}, placed there with the pillar '
+                    f'({CULTS_LEVERS} lines {pillar_line}, {stop_line}).')
+        build.entry(essence, CULTS_PILLAR, [last - 1], 'mapped', path + '/actions/1',
+                    'Game.createMonster("Destroyed Pillar", position, true, true) at the death position.')
+        build.entry(essence, CULTS_PILLAR, [last], 'mapped', path + '/actions/2',
+                    f'Game.createMonster("{guardian}", adjacent tile, true, true): the attackable mini-boss replaces {stop}.')
+        path = build.rule(essence, {
+            'key': f'{guardian_role}_killed', 'trigger': {'kind': 'creature_died', 'role': guardian_role}, 'conditions': [],
+            'actions': [{'kind': 'counter', 'counter': 'guardians_killed', 'operation': 'add', 'value': 1}]})
+        build.entry(essence, CULTS_ESSENCE, [1, 3, 4, 23], 'mapped', path + '/actions/0',
+                    f'onDeath of "{guardian.lower()}" counts towards the Essence of Malice (see the counter rule).')
+    path = build.rule(essence, {
+        'key': 'essence_of_malice_appears', 'trigger': {'kind': 'counter_reached', 'counter': 'guardians_killed', 'value': 5},
+        'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('Essence of Malice'), 'role': 'essence_of_malice',
+                                       'count': 1, 'at': {'anchor': 'essence_spawn'}, 'owner': 'none', 'health': 'full'}]})
+    build.entry(essence, CULTS_ESSENCE, [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 'mapped', path,
+                'Canary spawns the Essence at (33098, 31920, 15) when the dying mini-boss is the only one standing in the area '
+                '(33087, 31909)-(33112, 31932) (onDeath runs before the corpse creature leaves its tile, creature.cpp '
+                'dropCorpse). Mini-bosses killed one after another would each be alone, so the Essence would appear after '
+                'the first kill. The reference-date wiki (Cults of Tibia Quest/Spoiler: "After you are done with the 5 mini '
+                'bosses, Essence of Malice will spawn") decides (D25): the fifth kill spawns it.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia):
         transcribe(build)
     print(json.dumps(build.write()))
 

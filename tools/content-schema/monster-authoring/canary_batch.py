@@ -112,6 +112,10 @@ EVENTS = {
                                 'increments The Great Dragon Hunt counter inside fixed areas'),
     'ForgottenKnowledgeBossDeath': ('encounter_bookkeeping', 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua',
                                     'sets the per-player boss cooldown storage on death'),
+    'GlowingRubbishAmuletDeath': ('quest', 'data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_glowing_rubbish_amulet.lua',
+                                  'advances the Misguided mission kill and exorcism counters of the killer\'s party and, at 10 kills '
+                                  'while the glowing rubbish amulet 25296 is worn, replaces it by 25297; quest progress and a quest '
+                                  'item only, no fight or map effect'),
     'HealthForgotten': ('encounter_mechanic', 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_healthchange_forgotten.lua',
                         'doubles damage taken unless a Possessed Tree is within 7 tiles'),
 }
