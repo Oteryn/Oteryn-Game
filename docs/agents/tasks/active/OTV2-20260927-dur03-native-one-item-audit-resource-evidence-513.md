@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: bounded Luna author with root OTV2_WORK_DELIVERY_COORDINATOR control plane
 created_at: 2026-09-27T22:42:31+02:00
-updated_at: 2026-09-27T23:14:59+02:00
+updated_at: 2026-09-27T23:28:05+02:00
 execution_policy: continuous_progress
 owned_paths:
   - ADD docs/contracts/game-events/v1/native_one_item_transaction.proto
@@ -48,10 +48,14 @@ Combat result, or Reference parity result.
 
 - [x] Additive closed candidate grammar represents complete separate one-item
   MINT and TRANSFER aggregates with exact membership.
+- [x] MINT and TRANSFER use distinct EventId and TransactionId values and run
+  through one shared receipt ledger, including ambiguous pickup replay.
 - [x] Two typed definition/revision fixtures exercise one generic path.
 - [x] Actual decoded native bindings are checked against independently supplied
   current facts, including exact native positions; stored expected bindings do
   not create current authority.
+- [x] TRANSFER before/after state is bound to an independently supplied source
+  ItemInstance identity/state; replacing both encoded IDs together rejects.
 - [x] MINT carries and validates explicit pre-operation semantic absence instead
   of treating a default item state as proof that no item existed.
 - [x] Map/content/room/runtime, death/output/revision and
@@ -61,8 +65,9 @@ Combat result, or Reference parity result.
   cover both operations.
 - [x] Exact retry identity/bytes, conflict, lost acknowledgement, ambiguous
   reconciliation, proven noncommit and idempotent replay are covered.
-- [x] Payload/envelope/raw-clone/transient-construction/hash/decode/retained/
-  retry dimensions use checked accounting and max/max+1 rejection.
+- [x] Payload/envelope/raw-clone/transient-construction-and-canonical-scratch/
+  hash/decode/retained/retry dimensions use checked accounting and max/max+1
+  rejection.
 - [x] Normal, reverse and empty-PATH output is byte-identical.
 - [x] Historical v1/v2 candidates are unchanged.
 - [ ] Create the canonical draft PR, bind its number here, freeze the successor
@@ -75,13 +80,13 @@ Combat result, or Reference parity result.
 ## Local evidence
 
 - WSL Linux x86_64, Rust/Cargo 1.94 route.
-- Focused example tests: 13 passed, 0 failed.
+- Focused example tests: 14 passed, 0 failed.
 - `rustfmt --check`: PASS.
 - Normal/reverse/absolute empty-PATH JSON: exact byte equality.
 - JSON: 16,643 LF bytes, SHA-256
-  `349f217cb124e9e2cec1b3dd62e72495e0bd92532aceecc8f10798df2e7230bc`.
-- Rust: 65,950 LF bytes, SHA-256
-  `a16b9b5661ee85e4a5007b1f89851d540eade8b7d1f2873ac5654db52c38c338`.
+  `1558b339151612ecaa3a334a2863ffa7c54fc77c249ce00ac902a324f2157656`.
+- Rust: 70,285 LF bytes, SHA-256
+  `5da852d958799925acea1dd2fbed7bc781851ac7d8e7e12be04c416b540cb7a5`.
 - Proto: 3,473 LF bytes, SHA-256
   `165beae9c29c3405002adf4d6cd2e6cf1cbdff752451c806162643f45eece983`.
 - The inherited vendored Tokio missing-doc warning is outside the allocation.

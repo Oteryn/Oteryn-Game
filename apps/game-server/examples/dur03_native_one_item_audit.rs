@@ -192,6 +192,7 @@ struct CurrentFacts {
     world_id: Vec<u8>,
     channel_id: Vec<u8>,
     definition: Definition,
+    transfer_source_item: Item,
     ground_spatial_position: Vec<u8>,
     character_inventory_position: Vec<u8>,
     death_occurrence: Vec<u8>,
@@ -215,6 +216,7 @@ fn facts(f: &Fixture) -> CurrentFacts {
         world_id: id(1),
         channel_id: id(2),
         definition: definition(f),
+        transfer_source_item: item(f),
         ground_spatial_position: vec![1, 2, 3],
         character_inventory_position: vec![5],
         death_occurrence: id(3),
@@ -301,6 +303,16 @@ fn validate_current_facts(current: &CurrentFacts) -> Result<(), String> {
         .any(|len| *len > ANL_ENVELOPE_STRING_MAX)
     {
         return Err("invalid independent current facts".into());
+    }
+    validate_item(&current.transfer_source_item, current)
+        .map_err(|_| "invalid independent source item facts")?;
+    Ok(())
+}
+
+fn validate_transfer_source_item(value: &Item, current: &CurrentFacts) -> Result<(), String> {
+    validate_item(value, current)?;
+    if value != &current.transfer_source_item {
+        return Err("TRANSFER source item/current binding mismatch".into());
     }
     Ok(())
 }
@@ -392,8 +404,8 @@ fn validate_payload(value: &Payload, current: &CurrentFacts) -> Result<(), Strin
                 .as_ref()
                 .ok_or("missing TRANSFER destination")?;
             let cause = transfer.cause.as_ref().ok_or("missing TRANSFER cause")?;
-            validate_item(before, current)?;
-            validate_item(after, current)?;
+            validate_transfer_source_item(before, current)?;
+            validate_transfer_source_item(after, current)?;
             validate_ground(source, current)?;
             if before != after
                 || !valid_uuid_fixture(&destination.character_id)
@@ -483,8 +495,8 @@ fn payload_with_facts(
     };
     let op = if transfer {
         Operation::Transfer(Transfer {
-            before: Some(item(f)),
-            after: Some(item(f)),
+            before: Some(current.transfer_source_item.clone()),
+            after: Some(current.transfer_source_item.clone()),
             source: Some(ground),
             destination: Some(Inventory {
                 character_id: current.character_id.clone(),
@@ -533,7 +545,7 @@ fn envelope(f: &Fixture, transfer: bool, payload: Vec<u8>) -> Result<Vec<u8>, St
     let digest = Sha256::digest(&payload).to_vec();
     let msg = Envelope {
         envelope_revision: 1,
-        event_id_fixture: offset_id(f.tag, 30)?,
+        event_id_fixture: offset_id(f.tag, if transfer { 31 } else { 30 })?,
         event_type_id_fixture: 0,
         schema_revision_fixture: 1,
         retention_profile_input: "P90D".into(),
@@ -865,13 +877,19 @@ fn operation_resource_usage(
     // the immutable envelope retained for retry.
     let owned_raw_clone = checked_add(p_len, e_len)?;
     // Transient dynamic capacity covers the original Payload/Envelope
-    // construction objects plus three transient decoded Payload values and
-    // one transient decoded Envelope value. The final decoded Payload and
-    // Envelope are charged separately to retained capacity below.
-    let transient_dynamic = checked_add(
+    // construction objects, three transient decoded Payload values, one
+    // transient decoded Envelope value, five payload canonical re-encoding
+    // buffers, and two envelope canonical re-encoding buffers. The final
+    // decoded Payload and Envelope are charged separately to retained capacity.
+    let transient_nested_dynamic = checked_add(
         envelope_dyn.checked_mul(2).ok_or("size overflow")?,
         payload_dyn.checked_mul(4).ok_or("size overflow")?,
     )?;
+    let canonical_reencode_scratch = checked_add(
+        p_len.checked_mul(5).ok_or("size overflow")?,
+        e_len.checked_mul(2).ok_or("size overflow")?,
+    )?;
+    let transient_dynamic = checked_add(transient_nested_dynamic, canonical_reencode_scratch)?;
     // Retained raw payload/envelope + retry bytes + the final decoded envelope
     // and independently decoded payload capacities.
     let retained = checked_add(
@@ -1034,6 +1052,9 @@ mod tests {
         changed.definition.revision_ref = "rev-other".into();
         assert!(validate_payload(&mint, &changed).is_err());
         let mut changed = baseline.clone();
+        changed.transfer_source_item.item_instance_id = id(9);
+        assert!(validate_payload(&transfer, &changed).is_err());
+        let mut changed = baseline.clone();
         changed.death_occurrence = id(9);
         assert!(validate_payload(&mint, &changed).is_err());
         let mut changed = baseline.clone();
@@ -1172,6 +1193,23 @@ mod tests {
             Operation::Transfer(v) => v,
             _ => unreachable!(),
         };
+        transfer.after.as_mut().unwrap().item_instance_id = id(9);
+        let bytes = Payload {
+            interpretation_revision: 1,
+            operation: Some(Operation::Transfer(transfer)),
+        }
+        .encode_to_vec();
+        let decoded = decode_payload_canonical(&bytes).unwrap();
+        assert!(validate_payload(&decoded, &current).is_err());
+        let mut transfer = match Payload::decode(payload(f, true).unwrap().as_slice())
+            .unwrap()
+            .operation
+            .unwrap()
+        {
+            Operation::Transfer(v) => v,
+            _ => unreachable!(),
+        };
+        transfer.before.as_mut().unwrap().item_instance_id = id(9);
         transfer.after.as_mut().unwrap().item_instance_id = id(9);
         let bytes = Payload {
             interpretation_revision: 1,
@@ -1436,6 +1474,80 @@ mod tests {
         );
     }
     #[test]
+    fn mint_then_transfer_use_distinct_ids_and_one_shared_receipt_ledger() {
+        let f = &FIXTURES[0];
+        let current = facts(f);
+        let mint_bytes = envelope(f, false, payload(f, false).unwrap()).unwrap();
+        let transfer_bytes = envelope(f, true, payload(f, true).unwrap()).unwrap();
+        let mint_envelope = decode_envelope_canonical(&mint_bytes).unwrap();
+        let transfer_envelope = decode_envelope_canonical(&transfer_bytes).unwrap();
+        assert_ne!(
+            mint_envelope.event_id_fixture,
+            transfer_envelope.event_id_fixture
+        );
+        assert_ne!(
+            mint_envelope.transaction_id_fixture,
+            transfer_envelope.transaction_id_fixture
+        );
+
+        let mut records = Vec::new();
+        assert_eq!(
+            record_attempt(
+                &mut records,
+                &mint_envelope.event_id_fixture,
+                &mint_envelope.transaction_id_fixture,
+                &mint_bytes,
+                &current,
+                Disposition::Committed,
+            )
+            .unwrap(),
+            Disposition::Committed
+        );
+        assert_eq!(
+            record_attempt(
+                &mut records,
+                &transfer_envelope.event_id_fixture,
+                &transfer_envelope.transaction_id_fixture,
+                &transfer_bytes,
+                &current,
+                Disposition::Ambiguous,
+            )
+            .unwrap(),
+            Disposition::Ambiguous
+        );
+        assert_eq!(records.len(), 2);
+        assert_eq!(
+            record_attempt(
+                &mut records,
+                &transfer_envelope.event_id_fixture,
+                &transfer_envelope.transaction_id_fixture,
+                &transfer_bytes,
+                &current,
+                Disposition::Committed,
+            )
+            .unwrap(),
+            Disposition::Ambiguous
+        );
+        assert_eq!(
+            reconcile_attempt(&mut records[1], Some(true)).unwrap(),
+            Disposition::Committed
+        );
+        assert_eq!(records[1].mutation_applications, 1);
+        assert_eq!(
+            record_attempt(
+                &mut records,
+                &transfer_envelope.event_id_fixture,
+                &transfer_envelope.transaction_id_fixture,
+                &transfer_bytes,
+                &current,
+                Disposition::Committed,
+            )
+            .unwrap(),
+            Disposition::Committed
+        );
+        assert_eq!(records[1].mutation_applications, 1);
+    }
+    #[test]
     fn proven_noncommit_retries_same_candidate_identity_and_bytes() {
         let current = facts(&FIXTURES[0]);
         let bytes = envelope(&FIXTURES[0], false, payload(&FIXTURES[0], false).unwrap()).unwrap();
@@ -1507,7 +1619,7 @@ mod tests {
         );
         assert_eq!(
             hex(&transfer_envelope),
-            "080112100000000000017000800000000000002920012a045039304432100000000000017000800000000000003d380140014add0308011ad8030a4c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f3120012801124c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f31200128011a730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a10000000000001700080000000000000064001222b0a1000000000000170008000000000000004120105180122100000000000017000800000000000000528032a97010a1263616e6469646174653a7472616e736665721210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d723142140a100000000000017000800000000000000510095220a54f63bf00f23b67ba2e92e7337a24f8ce018f75c4dad3173549d1f3bc8e5267"
+            "080112100000000000017000800000000000002a20012a045039304432100000000000017000800000000000003d380140014add0308011ad8030a4c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f3120012801124c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f31200128011a730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a10000000000001700080000000000000064001222b0a1000000000000170008000000000000004120105180122100000000000017000800000000000000528032a97010a1263616e6469646174653a7472616e736665721210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d723142140a100000000000017000800000000000000510095220a54f63bf00f23b67ba2e92e7337a24f8ce018f75c4dad3173549d1f3bc8e5267"
         );
         assert_eq!(
             hex(&Sha256::digest(&transfer_payload)),
@@ -1515,7 +1627,7 @@ mod tests {
         );
         assert_eq!(
             hex(&Sha256::digest(&transfer_envelope)),
-            "cb86e2bd8adeaf34da8a8a026f40b27f19d360b21395969eb41402b9e420cb8c"
+            "e7fe8ec7987e4dcb0de6888f6a27c025bc13b4ad283cfd3df91fca5491053298"
         );
     }
     #[test]
