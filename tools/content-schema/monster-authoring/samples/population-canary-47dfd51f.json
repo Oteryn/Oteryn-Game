@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 127,
-    "fully_resolved": 1523,
+    "blocked": 111,
+    "fully_resolved": 1539,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1114
+    "wiki_adopted_monsters": 1120
   },
   "wiki_adopted_rows": {
     "Loot2": 12722,
@@ -44,13 +44,13 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 55,
+      "monsters": 40,
       "examples": [
         "energized_raging_mage",
-        "gaffir",
-        "guard_captain_quaid",
         "izcandar_champion_of_summer",
-        "izcandar_champion_of_winter"
+        "izcandar_champion_of_winter",
+        "raging_mage",
+        "the_astral_source"
       ]
     },
     {
@@ -66,13 +66,13 @@
     },
     {
       "blocker": "unresolved_semantics mType.onSpawn",
-      "monsters": 11,
+      "monsters": 9,
       "examples": [
         "the_primal_menace",
         "goshnar_s_greed",
-        "goshnar_s_hatred",
-        "mighty_splinter_of_madness",
-        "powerful_soul"
+        "powerful_soul",
+        "soul_sphere",
+        "soulsnatcher"
       ]
     },
     {
@@ -229,14 +229,6 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics mType.onDisappear",
-      "monsters": 2,
-      "examples": [
-        "goshnar_s_greed",
-        "goshnar_s_hatred"
-      ]
-    },
-    {
       "blocker": "unresolved_semantics attacks[] -> heal_allies_in_area",
       "monsters": 1,
       "examples": [
@@ -276,6 +268,13 @@
       "monsters": 1,
       "examples": [
         "mazoran"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics mType.onDisappear",
+      "monsters": 1,
+      "examples": [
+        "goshnar_s_greed"
       ]
     },
     {
@@ -380,6 +379,7 @@
     "armadile",
     "armenius_creature",
     "ascending_ferumbras",
+    "ashes_of_burning_hatred",
     "ashmunrah",
     "askarak_demon",
     "askarak_lord",
@@ -425,6 +425,7 @@
     "black_sheep",
     "black_sphinx_acolyte",
     "black_vixen",
+    "blaze_of_burning_hatred",
     "blazing_fire_elemental",
     "blemished_spawn",
     "blightwalker",
@@ -796,6 +797,7 @@
     "ferumbras",
     "ferumbras_essence",
     "ferumbras_soul_splinter",
+    "fetter",
     "feverish_citizen",
     "feversleep",
     "fiery_blood",
@@ -806,6 +808,7 @@
     "fire_overlord",
     "firestarter",
     "fish",
+    "flame_of_burning_hatred",
     "flame_of_omrafir",
     "flameborn",
     "flamethrower",
@@ -847,6 +850,7 @@
     "fury",
     "fury_of_the_emperor",
     "furyosa",
+    "gaffir",
     "gang_member",
     "gargoyle",
     "gazer",
@@ -900,6 +904,7 @@
     "gorger_inferniarch",
     "gorgo",
     "gorzindel",
+    "goshnar_s_hatred",
     "gozzler",
     "grand_canon_dominus",
     "grand_chaplain_gaunder",
@@ -924,6 +929,7 @@
     "grorlam",
     "grynch_clan_goblin",
     "gryphon",
+    "guard_captain_quaid",
     "guardian_of_tales",
     "guilt",
     "guzzlemaw",
@@ -1022,6 +1028,7 @@
     "kesar",
     "killer_caiman",
     "killer_rabbit",
+    "king_zelos",
     "knight_familiar",
     "knight_s_apparition",
     "knowledge_elemental",
@@ -1106,6 +1113,7 @@
     "magma_bubble",
     "magma_crawler",
     "magma_crystal",
+    "magnor_mournbringer",
     "mahrdis",
     "makara",
     "makeshift_home",
@@ -1175,6 +1183,7 @@
     "midnight_asura",
     "midnight_panther",
     "midnight_spawn",
+    "mighty_splinter_of_madness",
     "mimic",
     "mind_wrecking_dream",
     "minion_of_gaz_haragoth",
@@ -1236,6 +1245,7 @@
     "mycobiontic_beetle",
     "naga_archer",
     "naga_warrior",
+    "nargol_the_impaler",
     "necromancer",
     "necromancer_servant",
     "necropharus",
@@ -1407,6 +1417,8 @@
     "renegade_quara_predator",
     "retainer_of_baeloc",
     "retching_horror",
+    "rewar_the_bloody",
+    "rewar_the_bloody_inv",
     "rhindeer",
     "ribstride",
     "rift_breacher",
@@ -1467,6 +1479,7 @@
     "shadowpelt",
     "shaper_matriarch",
     "shard_of_corruption",
+    "shard_of_magnor",
     "shardhead",
     "shark",
     "sharpclaw",
@@ -1482,6 +1495,7 @@
     "silver_rabbit",
     "sin_devourer",
     "sineater_inferniarch",
+    "sir_baeloc",
     "sir_nictros",
     "sir_valorcrest",
     "skeleton",
@@ -1509,6 +1523,7 @@
     "soul_scourge",
     "souleater",
     "soulless_minion",
+    "spark_of_burning_hatred",
     "spark_of_destruction",
     "sparkion",
     "spawn_of_havoc",
