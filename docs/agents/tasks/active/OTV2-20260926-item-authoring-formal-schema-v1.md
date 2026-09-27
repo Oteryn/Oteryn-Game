@@ -151,7 +151,7 @@ Accepted review repairs:
 ### Focused
 
 - command/run: `python -X utf8 tools/content-schema/item-authoring/verify_formal_schema.py`
-- result: PASS, 217/217; 13 templates, 6 real-source examples, 4 Draft 2020-12 metaschemas, generator byte determinism,
+- result: PASS, 236/236; 13 templates, 6 real-source examples, 4 Draft 2020-12 metaschemas, generator byte determinism,
   positive bundles and fail-closed boundary/semantic cases
 - command/run: `python -m ruff check tools/content-schema/item-authoring`
 - result: PASS
@@ -160,6 +160,8 @@ Accepted review repairs:
 
 ### Component/integration
 
+- command/run: `test_engine_items.py`
+- result: PASS, 291/291
 - command/run: `validate_item_master_schema.py` + `test_validate_item_master_schema.py`
 - result: PASS; 71 fields, 50 families, 22 profiles, zero unassigned; positive=2 negative=5
 - command/run: `tools/agents/validate_governance.py` + lifecycle unit tests
@@ -193,13 +195,11 @@ Accepted review repairs:
 - exact head: pending
 - method/auditor: three read-only Canary, Crystal and Wiki subagents, followed by bounded
   repair verification
-- material findings: v1-v3 findings (trade booleans, appearance binding, Wiki deltas,
-  proficiency crosswalk, evidence/route/extraction proofs) repaired in v3; 517daa6b
-  review (leaf partition, crashes, date-time/digests, Canary bags.xml, unbound key)
-  repaired in v4; audit `AUDIT_2026-09-27.md` of 56a39d15 (F-01..F-07: Delivery Task
-  evidence vs decision, CRLF digests, package CI, Ruff pin, census self-check) repaired;
-  owner adopted Delivery Task rule `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` with per-Item
-  overrides (2026-09-27)
+- material findings: v1-v3 (trade booleans, appearance binding, Wiki deltas,
+  proficiency crosswalk) repaired; 517daa6b review (leaf partition, crashes, digests)
+  repaired; audit 56a39d15 (Delivery Task evidence/decision, CRLF, CI) repaired;
+  converter completed and blockers resolved; owner adopted
+  `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` rule (2026-09-27)
 - verdict: implementation repaired; fresh exact-head final review remains pending
 
 ## PR and closeout
@@ -216,7 +216,7 @@ Accepted review repairs:
 ## Context checkpoint
 
 ```yaml
-last_progress: v4 review repairs (identity binding, validator fail-open, $ref aux schemas) on claude/compassionate-albattani-s29syw above 517daa6b
+last_progress: converter completed (identity from Crystal bindings, non-Item routing, admitted engine defaults); docs updated; next freeze and independent review
 status: implementing
 branch: codex/item-authoring-schema-v1-20260926
 head_sha: 517daa6b017647f52f2632c43c12461e1d0be95d

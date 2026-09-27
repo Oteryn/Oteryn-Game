@@ -281,9 +281,9 @@ The six generated examples use only real source identities (2854, 2874, 3155, 32
 verified in Canary and Crystal. Source IDs stay in evidence/crosswalk data, never as
 the canonical Item identity. An example keeps the canonical Item key that
 `imports/tibiawiki/bindings/items.json` binds to its pinned TibiaWiki BR page: Magic
-Sword (page `5810`) is `oteryn:item.registry.i00003167`. The other five pages have no
-binding yet, so their example keys are provisional and they carry the
-`canonical_item_identity_not_bound` blocker until the Item identity binding covers them. Magic Sword now carries its admitted exact Proficiency
+Sword (page `5810`) is `oteryn:item.registry.i00003167`. All six examples are now
+bound through the Crystal item-id binding (PR #989, fixed by #996), and their keys carry
+exact Proficiency references verified against both engines. Magic Sword now carries its admitted exact Proficiency
 and Ability references; other unadmitted Ability, sound, interaction and raster-atlas
 dependencies remain explicit blockers instead of guessed fields.
 All six examples set `delivery_task_eligible=false` as an explicit Oteryn authoring
@@ -381,40 +381,55 @@ Item schema.
 `engine_items.py` converts every pinned Crystal and Canary `items.xml` +
 `appearances.dat` entry into a candidate Item bundle and `population_census.py`
 validates all of them (`samples/population-*.json`; counters and capped examples only,
-no per-item rows). Keys reproduce the Game's committed allocator (the CW2 B1 identity
-catalog plus the 64 `NATIVE_ITEM_BATCH` semantic keys; Crystal `3288` →
-`oteryn:item.registry.i00003167`), recorded as `cw2_b1_allocator_reproduced` unless an
-exact TibiaWiki binding exists. This is provenance for the census, not a G4 binding.
+no per-item rows). Canonical keys come from the explicit Crystal identity bindings
+`imports/crystalserver/bindings/items.json` (`ots/item_server_id`, #989 and #996; e.g.
+Crystal `3288` → `oteryn:item.registry.i00003167`, `3031` →
+`oteryn:item.currency.gold_coin`). Both engines share that id space; a Canary id without a
+binding stays `identity_not_in_b1_catalog`. All six real examples are bound, and where a
+TibiaWiki BR binding also exists it must agree.
 
 | | Crystal `ff7ede5` | Canary `47dfd51` |
 |---|---|---|
 | entries | 38,157 | 37,527 |
 | validator errors | 0 | 0 |
-| valid, only the sprite atlas pending | 2,521 | 2,481 |
-| valid, other blockers | 9,465 | 9,125 |
-| no family profile (not converted) | 26,171 | 25,921 |
+| valid, only the sprite atlas pending | 9,773 | 9,476 |
+| valid, other blockers | 901 | 876 |
+| routed to a non-Item owner | 25,656 | 25,193 |
+| not converted (no family, or no identity binding) | 1,827 | 1,982 |
+| Delivery Task eligible | 384 | 364 |
+
+Entries that are not portable Items are counted as `routed_non_item` with an owner and
+reason, not as failures (Crystal counts): WorldObject `immovable_unclassified` 8,450,
+`appearance_placeholder_slot` 4,300, `corpse` 3,344, `primarytype_world_object` 981;
+Terrain `primarytype_world_object` 5,138, `ground_or_border` 3,443. An immovable entry
+that resolves an Item family stays an Item with `physical.movable = false`.
+
+Every catalog-mapped field is converted and value-dependent routes are applied as pinned.
+`weapontype` `ammunition` is mapped; `ammo` and `rod` are pinned no-effect because both
+engines reject them. Writability comes only from `items.xml`; appearance write flags prove
+readability only. Two exact engine defaults are admitted: Forge `max_tier` by
+classification (1→1, 2→2, 3→3, 4→10, from `data/scripts/systems/item_tiers.lua`,
+identical in both engines) and mantra damage types (energy, fire, earth, ice). An Item
+with proficiency `238` cites both engines' admitted crosswalks.
+
+Remaining blockers (Crystal): `sprite_atlas_not_admitted` on every converted Item (no
+admitted sprite atlas yet); `family_profile_unresolved` 1,827 (no structural signal,
+editorial backlog); other proficiency ids 642, `augments` 83 and `runespellname` 36 (need
+an Ability identity crosswalk); `flags.forceuse` 34 (loaded but unused by both engines);
+and small data-quality residuals such as `stopduration` without decay or a container
+without `containersize`.
 
 `delivery_task_eligible` follows the owner-approved authoring rule
-`ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5`: an Item is eligible iff its allocator id is on the
+`ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5`: an Item is eligible iff its Crystal id is on the
 digest-pinned Crystal delivery list at `ff7ede5`, unless
 `tools/content-schema/item-authoring/delivery-task-overrides.json` records a per-Item
 exception with a reason (strictly validated, currently empty). Canary runs read that same
 list through a required `--rule-source` Crystal checkout. Each engine's own pool stays a
-separate observation and never decides: Canary Task Board `weeklyItems` has 9 converted
-members, and its id 3031 is a member there but ineligible under the rule. The list has 436
-unique ids. At Crystal, 382 are converted and eligible, 53 are in `items.xml` but have no
-family profile (mostly creature products), and 43848 is absent from `items.xml`. At Canary,
-362 are eligible. An entry with no allocator key gets no decision and keeps
-`delivery_task_decision_not_admitted`. Text artifacts are digested as Git blob bytes (CRLF
-normalized to LF); `appearances.dat` is digested raw, so LF and CRLF checkouts give
-identical censuses. `--check` fails on any drift from the committed census.
-
-Most unconverted entries are immovable map objects (`flags.unmove`, about 23,000), which
-this schema routes to WorldObject/Terrain. The largest Item-side gaps are converter
-work (`flags.container`, `flags.cumulative`, upgrade classification, proficiency IDs)
-and catalog `unresolved_semantics` fields (`type`, `weapontype`, `forceuse`). Engine data
-has no per-item Forge tier and no `stacksize`, so `forge` and `stack.max_count` need
-another source.
+separate observation and never decides. The list has 436 unique ids; at Crystal 384 are
+converted and eligible, 51 are in `items.xml` but not converted, and 43848 is absent from
+`items.xml`. Text artifacts are digested as Git blob bytes (CRLF normalized to LF);
+`appearances.dat` is digested raw, so LF and CRLF checkouts give identical censuses.
+`--check` fails on any drift from the committed census.
 
 ## 6. Validation and non-claims
 
