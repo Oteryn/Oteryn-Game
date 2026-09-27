@@ -78,6 +78,15 @@ the signed `-30000 ms` cooldown modifier. The exact admitted profile validator r
 payload drift, missing corroboration, unknown IDs/versions and wrong source artifacts.
 Character-owned XP and active perk selections are deliberately not Item fields.
 
+Every Item must declare `delivery_task_eligible` as a JSON boolean. `true` means the
+definition may be considered by a future Delivery Task pool; `false` is an explicit
+exclusion, not an unknown value. The Item does not carry requested quantities, weekly
+rotation, task assignment, delivery state, rewards or reset data. Those concerns stay
+with the future task/ruleset system, and this authoring field does not claim that a
+runtime consumer already exists. The six real-source examples currently use `false`
+as an explicit Oteryn author decision rather than presenting it as a Wiki-derived
+Global Tibia fact.
+
 The BR profile is pinned to stable source `424807`; the Fandom profile is pinned to
 historical revision `1035268` and its revision SHA-1. Per-capture SHA-256 remains a
 separate required digest. Value-dependent source fields carry `source_value` so the

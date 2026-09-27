@@ -5,6 +5,7 @@
   },
   "display_name": "Template Armor",
   "family_profile": "equipment_armor",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "equipment",
     "primary": "armor",

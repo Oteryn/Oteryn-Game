@@ -168,6 +168,12 @@ EVIDENCE_ENUM_VALUE_NORMALIZATIONS = {
 }
 NON_SOURCE_DEFAULT_DESTINATIONS = {
     "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES": ("/item/family_profile",),
+    "AUTHOR_SELECTED_DELIVERY_TASK_ELIGIBLE": (
+        "/item/delivery_task_eligible",
+    ),
+    "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE": (
+        "/item/delivery_task_eligible",
+    ),
     "SOURCE_WEIGHT_UNIT_NORMALIZATION": ("/item/physical/weight/unit",),
     "PROFILE_ENFORCEMENT_NORMALIZATION": ("/item/requirements/enforcement_mode",),
     "AUTHORING_PATTERN_ID": ("/item/equipment/patterns/*/pattern_id",),
@@ -1040,6 +1046,17 @@ def validate_non_source_default(entry, resolved, item, errors):
     ):
         errors.append(
             "evidence/non_source_defaults: value differs from the admitted normalization"
+        )
+    delivery_task_values = {
+        "AUTHOR_SELECTED_DELIVERY_TASK_ELIGIBLE": True,
+        "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE": False,
+    }
+    if (
+        entry["state"] in delivery_task_values
+        and resolved is not delivery_task_values[entry["state"]]
+    ):
+        errors.append(
+            "evidence/non_source_defaults: delivery task eligibility differs from the author decision"
         )
     if entry["state"] == "PROFILE_ENFORCEMENT_NORMALIZATION" and resolved not in (
         "on_equip",

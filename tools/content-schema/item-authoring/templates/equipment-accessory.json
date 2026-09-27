@@ -5,6 +5,7 @@
   },
   "display_name": "Template Accessory",
   "family_profile": "equipment_offhand",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "equipment",
     "primary": "accessory",

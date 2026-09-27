@@ -5,6 +5,7 @@
   },
   "display_name": "Template Document",
   "family_profile": "document",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "document",
     "primary": "document",

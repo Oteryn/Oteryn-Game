@@ -62,6 +62,7 @@ def fixture():
         "display_name": "Template Magic Wand",
         "aliases": [],
         "family_profile": "weapon_magic",
+        "delivery_task_eligible": True,
         "presentation": {
             "grammar": {"article": "a", "plural": "template magic wands"},
             "appearance_binding": presentation,
@@ -459,6 +460,39 @@ def main():
             dependencies["proficiency_crosswalks"].append(crosswalk)
 
     case("complete item bundle validates", expected_valid=True)
+    case(
+        "delivery task ineligible boolean validates",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "delivery_task_eligible", False
+        ),
+        True,
+    )
+    case(
+        "reject missing delivery task eligibility",
+        lambda item, dependencies, manifest: item.pop("delivery_task_eligible"),
+        expected_error="delivery_task_eligible",
+    )
+    case(
+        "reject null delivery task eligibility",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "delivery_task_eligible", None
+        ),
+        expected_error="delivery_task_eligible",
+    )
+    case(
+        "reject string delivery task eligibility",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "delivery_task_eligible", "true"
+        ),
+        expected_error="delivery_task_eligible",
+    )
+    case(
+        "reject numeric delivery task eligibility",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "delivery_task_eligible", 1
+        ),
+        expected_error="delivery_task_eligible",
+    )
     case(
         "marketable is independently knowable without tradeable",
         lambda item, dependencies, manifest: item.__setitem__(
@@ -2485,6 +2519,18 @@ def main():
         {
             "name": "real-source defaults reject unadmitted Item leaves",
             "passed": any("state is not admitted" in error for error in probe_errors),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    evidence_probe["item"]["delivery_task_eligible"] = True
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source defaults bind delivery task eligibility value",
+            "passed": any(
+                "delivery task eligibility differs" in error
+                for error in probe_errors
+            ),
         }
     )
     evidence_probe = deepcopy(real_examples["examples"][0])

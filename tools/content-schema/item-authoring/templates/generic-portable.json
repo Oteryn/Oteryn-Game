@@ -5,6 +5,7 @@
   },
   "display_name": "Template Portable Item",
   "family_profile": "material_valuable",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "material",
     "primary": "generic",

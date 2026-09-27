@@ -40,6 +40,7 @@ One `item.json` contains only stable, portable definition facts:
   },
   "display_name": "Magic Sword",
   "family_profile": "weapon_melee",
+  "delivery_task_eligible": false,
   "presentation": {
     "appearance_binding": {
       "family": "Presentation",
@@ -106,6 +107,21 @@ Both sources compose item definitions from appearance metadata, `items.xml` and
 optional Lua behavior. Their broad in-memory `ItemType` is not copied as one Oteryn
 record because it mixes portable definition facts with placed-object facts, mutable
 instance state and external relationships.
+
+Every Oteryn Item additionally requires one author-owned
+`delivery_task_eligible` boolean. `true` admits that definition to a future Delivery
+Task candidate pool; `false` explicitly excludes it. Missing, `null`, numeric and
+string values are invalid, so absence cannot be confused with a deliberate decision.
+This is only a stable eligibility input. Task selection, quantities, weekly rotation,
+delivery from inventory/stash/depot, rewards, reset cadence and per-character progress
+belong to the future task/ruleset implementation and are not Item fields.
+
+The pinned engines already demonstrate that this separation is viable: Canary keeps
+its weekly Item pool in Task Board settings and Crystal keeps a delivery-item list in
+a task-specific Lua module, while their task systems own assignment and delivery
+behavior. Oteryn normalizes only the reusable per-definition membership decision into
+Item authoring. The boolean is not a claim that Oteryn runtime already consumes it and
+is not, by itself, proof of current Global Tibia pool membership or quantity rules.
 
 Fields admitted by this comparison include:
 
@@ -207,6 +223,14 @@ Evidence locations:
   `https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/functions/item/item_parse.hpp#L27-L173`
 - Crystal ItemType:
   `https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/items/items.hpp#L268-L391`
+- Canary Task Board Item settings:
+  `https://github.com/opentibiabr/canary/blob/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/modules/scripts/taskboard/settings.lua`
+- Canary Task Board catalog/rules:
+  `https://github.com/opentibiabr/canary/tree/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/modules/scripts/taskboard`
+- Crystal Delivery Task Item list:
+  `https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/data/scripts/lib/task_board_delivery_items.lua`
+- Crystal weekly task implementation:
+  `https://github.com/zimbadev/crystalserver/blob/ff7ede593c69d4c658b382c97443e8155926924a/src/io/ioweeklytasks.cpp`
 
 ### Wiki BR and Fandom
 
@@ -245,6 +269,9 @@ verified in Canary and Crystal. Source IDs stay in evidence/crosswalk data, neve
 the canonical Item identity. Magic Sword now carries its admitted exact Proficiency
 and Ability references; other unadmitted Ability, sound, interaction and raster-atlas
 dependencies remain explicit blockers instead of guessed fields.
+All six examples set `delivery_task_eligible=false` as an explicit Oteryn authoring
+decision recorded in `non_source_defaults`; it is deliberately not presented as a
+Wiki- or engine-proven parity fact.
 Their closed evidence records partition every ordinary authored scalar leaf into
 either a source-evidenced value or an explicit non-source default. Exact
 profile-bound proficiency leaves form a separate closed partition: the validator
@@ -270,6 +297,8 @@ destination/state/value normalization and cannot act as a generic escape hatch.
 | Stable portable stats/capabilities | `item.json` |
 | Exact referenced definitions/assets | `item-dependencies.json` |
 | Source URL/revision/digest and per-field disposition | import-readiness manifest |
+| Stable admission to a future Delivery Task pool | `item.delivery_task_eligible` |
+| Task pool construction, quantities, assignment, delivery, rewards and reset/player state | task/ruleset owner |
 | Collision, walk/path/projectile blocking, floor change | Terrain / placed WorldObject |
 | Hang/rotate/placement orientation | placed WorldObject / Interaction |
 | Fluid source tile/cask and sleepable bed placement | Terrain / WorldObject / Interaction |
@@ -316,6 +345,7 @@ Item schema.
 The schema validator checks:
 
 - closed JSON shape and explicit units;
+- required boolean Delivery Task eligibility and exact evidence/default binding;
 - exact dependency and asset closure;
 - exact Presentation dependency closure, geometry/sprite-count consistency and
   preservation of ordered duplicate sprite IDs;

@@ -64,6 +64,7 @@ session fence, authority-bearing controller or recovery evidence is touched.
 - [x] Negative tests reject Terrain/WorldObject, ItemInstance and source-ID leakage.
 - [x] Canary/Crystal/Wiki review finds no material portable-field or routing omission.
 - [x] Six real Item examples validate with exact engine presentation evidence and pinned Wiki page overlays.
+- [x] Every Item explicitly declares boolean Delivery Task eligibility without task-runtime state.
 - [ ] Changed-path checks and adversarial whole-diff self-review pass on the frozen head.
 
 ## Excluded scope
@@ -136,13 +137,20 @@ Accepted review repairs:
   choices remain rejected as player-owned state.
 - closed independent-review regressions for otherwise-valid but unused proficiency
   crosswalks and for any `selection_count` other than exactly one.
+- after the owner selected an Item-owned boolean boundary, returned frozen head
+  `7e450684bfc8633ec093506c9e040f1b129ad57c` to AUTHORING and added required
+  `delivery_task_eligible`; missing, null, string and numeric values fail closed;
+- kept pool construction, quantities, weekly assignment, delivery, rewards, reset and
+  player progress outside Item authoring for the later task/ruleset design;
+- set all thirteen templates and six real-source examples explicitly to `false`, with
+  the examples recording an Oteryn author decision rather than claiming source parity.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python -X utf8 tools/content-schema/item-authoring/verify_formal_schema.py`
-- result: PASS, 211/211; 13 templates, 6 real-source examples, 4 Draft 2020-12 metaschemas, generator byte determinism,
+- result: PASS, 217/217; 13 templates, 6 real-source examples, 4 Draft 2020-12 metaschemas, generator byte determinism,
   positive bundles and fail-closed boundary/semantic cases
 - command/run: `python -m ruff check tools/content-schema/item-authoring`
 - result: PASS
@@ -205,10 +213,10 @@ Accepted review repairs:
 ## Context checkpoint
 
 ```yaml
-last_progress: owner correction returned d77b109 to AUTHORING; local successor admits the exact dual-source Magic Sword proficiency profile and passes 211 focused checks; publication and fresh frozen-head qualification pending
+last_progress: owner added the Delivery Task eligibility requirement and returned 7e450684 to AUTHORING; local successor requires the boolean on every Item and passes 217 focused checks; publication and fresh frozen-head qualification pending
 status: implementing
 branch: codex/item-authoring-schema-v1-20260926
-head_sha: d77b109ebe5b7a4befa109b2a20dc5cf925d1671
+head_sha: 7e450684bfc8633ec093506c9e040f1b129ad57c
 pr: 952
 final_head_sha: null
 final_head_frozen_at: null

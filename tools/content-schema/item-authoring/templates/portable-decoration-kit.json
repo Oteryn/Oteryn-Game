@@ -5,6 +5,7 @@
   },
   "display_name": "Template Decoration Kit",
   "family_profile": "decoration",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "decoration",
     "primary": "decoration",

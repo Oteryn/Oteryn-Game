@@ -5,6 +5,7 @@
   },
   "display_name": "Template Distance Weapon",
   "family_profile": "weapon_distance",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "weapon",
     "primary": "distance",

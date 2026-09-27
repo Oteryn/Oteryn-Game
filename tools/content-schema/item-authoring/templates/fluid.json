@@ -5,6 +5,7 @@
   },
   "display_name": "Template Fluid",
   "family_profile": "fluid",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "fluid",
     "primary": "fluid",

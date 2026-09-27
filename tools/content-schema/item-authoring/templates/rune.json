@@ -5,6 +5,7 @@
   },
   "display_name": "Template Rune",
   "family_profile": "rune",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "rune",
     "primary": "rune",

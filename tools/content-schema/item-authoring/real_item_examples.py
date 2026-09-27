@@ -403,6 +403,7 @@ def item_base(key, name, profile, item_class, primary, appearance_id, weight):
         "identity": {"key": key, "revision": "real-source-example-r1"},
         "display_name": name,
         "family_profile": profile,
+        "delivery_task_eligible": False,
         "presentation": {"appearance_binding": presentation_ref(appearance_id)},
         "taxonomy": {"item_class": item_class, "primary": primary},
         "physical": physical(weight),
@@ -505,7 +506,13 @@ def source_evidence(title, item, appearance_id, source_values, blockers, default
         ],
         "source_observations": source_values,
         "field_evidence": _field_evidence(title, item, source_values),
-        "non_source_defaults": defaults,
+        "non_source_defaults": [
+            {
+                "destination": "/item/delivery_task_eligible",
+                "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE",
+            },
+            *defaults,
+        ],
         "readiness": {
             "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
             "blockers": [

@@ -11,6 +11,7 @@
         },
         "display_name": "Magic Sword",
         "family_profile": "weapon_melee",
+        "delivery_task_eligible": false,
         "presentation": {
           "appearance_binding": {
             "family": "Presentation",
@@ -853,6 +854,10 @@
         ],
         "non_source_defaults": [
           {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
             "destination": "/item/family_profile",
             "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
           },
@@ -912,6 +917,7 @@
         },
         "display_name": "Demon Armor",
         "family_profile": "equipment_armor",
+        "delivery_task_eligible": false,
         "presentation": {
           "appearance_binding": {
             "family": "Presentation",
@@ -1387,6 +1393,10 @@
         ],
         "non_source_defaults": [
           {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
             "destination": "/item/family_profile",
             "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
           },
@@ -1426,6 +1436,7 @@
         },
         "display_name": "Backpack",
         "family_profile": "container",
+        "delivery_task_eligible": false,
         "presentation": {
           "appearance_binding": {
             "family": "Presentation",
@@ -1846,6 +1857,10 @@
         ],
         "non_source_defaults": [
           {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
             "destination": "/item/family_profile",
             "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
           },
@@ -1889,6 +1904,7 @@
         },
         "display_name": "Red Apple",
         "family_profile": "food",
+        "delivery_task_eligible": false,
         "presentation": {
           "appearance_binding": {
             "family": "Presentation",
@@ -2315,6 +2331,10 @@
         ],
         "non_source_defaults": [
           {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
             "destination": "/item/family_profile",
             "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
           },
@@ -2363,6 +2383,7 @@
         },
         "display_name": "Sudden Death Rune",
         "family_profile": "rune",
+        "delivery_task_eligible": false,
         "presentation": {
           "appearance_binding": {
             "family": "Presentation",
@@ -2830,6 +2851,10 @@
         ],
         "non_source_defaults": [
           {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
+          {
             "destination": "/item/family_profile",
             "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"
           },
@@ -2871,6 +2896,7 @@
         },
         "display_name": "Vial",
         "family_profile": "fluid",
+        "delivery_task_eligible": false,
         "presentation": {
           "appearance_binding": {
             "family": "Presentation",
@@ -3238,6 +3264,10 @@
           }
         ],
         "non_source_defaults": [
+          {
+            "destination": "/item/delivery_task_eligible",
+            "state": "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE"
+          },
           {
             "destination": "/item/family_profile",
             "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES"

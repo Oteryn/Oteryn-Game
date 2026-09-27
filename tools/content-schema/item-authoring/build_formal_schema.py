@@ -1068,6 +1068,7 @@ def build_item_schema():
         "display_name": text(),
         "aliases": array(text(), unique=True),
         "family_profile": enum(*PROFILES),
+        "delivery_task_eligible": use("bool"),
         "presentation": use("presentation"),
         "taxonomy": use("taxonomy"),
         "physical": use("physical"),
@@ -1098,7 +1099,16 @@ def build_item_schema():
         "$id": ITEM_ID,
         "title": "Oteryn Item authoring candidate v3",
         "description": "Portable Item definition only. Terrain, placed WorldObject and mutable ItemInstance state are outside this schema.",
-        **obj(properties, ("identity", "display_name", "family_profile", "taxonomy")),
+        **obj(
+            properties,
+            (
+                "identity",
+                "display_name",
+                "family_profile",
+                "delivery_task_eligible",
+                "taxonomy",
+            ),
+        ),
         "$defs": d,
     }
 
@@ -1504,6 +1514,7 @@ def base(slug, name, profile, item_class, primary):
         "identity": identity(slug),
         "display_name": name,
         "family_profile": profile,
+        "delivery_task_eligible": False,
         "taxonomy": {"item_class": item_class, "primary": primary, "tags": []},
         "physical": {
             "weight": {"value": "1.00", "unit": "oz"},

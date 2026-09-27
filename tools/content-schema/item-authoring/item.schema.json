@@ -48,6 +48,9 @@
         "plant"
       ]
     },
+    "delivery_task_eligible": {
+      "$ref": "#/$defs/bool"
+    },
     "presentation": {
       "$ref": "#/$defs/presentation"
     },
@@ -125,6 +128,7 @@
     "identity",
     "display_name",
     "family_profile",
+    "delivery_task_eligible",
     "taxonomy"
   ],
   "$defs": {

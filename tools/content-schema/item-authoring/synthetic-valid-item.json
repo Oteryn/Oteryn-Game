@@ -6,6 +6,7 @@
   "display_name": "Template Magic Wand",
   "aliases": [],
   "family_profile": "weapon_magic",
+  "delivery_task_eligible": true,
   "presentation": {
     "grammar": {
       "article": "a",

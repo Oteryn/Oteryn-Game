@@ -5,6 +5,7 @@
   },
   "display_name": "Template Container",
   "family_profile": "container",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "container",
     "primary": "container",

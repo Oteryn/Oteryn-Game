@@ -5,6 +5,7 @@
   },
   "display_name": "Template Food",
   "family_profile": "food",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "consumable",
     "primary": "food",

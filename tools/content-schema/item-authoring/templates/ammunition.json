@@ -5,6 +5,7 @@
   },
   "display_name": "Template Ammunition",
   "family_profile": "weapon_distance",
+  "delivery_task_eligible": false,
   "taxonomy": {
     "item_class": "ammunition",
     "primary": "ammunition",
