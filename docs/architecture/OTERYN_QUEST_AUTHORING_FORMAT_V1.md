@@ -1,16 +1,17 @@
-# Oteryn Quest Authoring Format v1: reward claims and door gates
+# Oteryn Quest Authoring Format v1
 
 - Date: 2026-09-27
-- DecisionStatus: CANDIDATE (owner decisions D32-D33 recorded in §9; slice 1 covers reward chests,
-  slice 2 quest, key and level doors)
+- DecisionStatus: CANDIDATE (owner decisions D32-D34 recorded in §9; slice 1 covers reward chests,
+  slice 2 quest, key and level doors, slice 3 the quest-log quests as staged missions)
 - DeliveryStatus: OPEN (design draft and offline transcription only)
 - ImplementationStatus: NOT_STARTED
 - Programme: CW2 B6 quests/interactions (`docs/agents/programs/OTV2_CONTENT_WORLD_BULK_CATALOG_IMPORT_PLAN.md`)
-- Open precision gap kept open: `CONTENT-QUEST-01` (`ARCHITECTURE_ANALYSIS_GAP_REGISTER.md` §13) for
-  storyline quests (missions, objectives, branching, journal)
+- Precision gap `CONTENT-QUEST-01` (`ARCHITECTURE_ANALYSIS_GAP_REGISTER.md` §13): D34 settles the
+  graph and state representation (staged missions); party/guild/world scope, schedules and resets,
+  migration of active quests and authoring tooling stay open
 - Companion: `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` (encounters emit outcomes the quest domain consumes)
 - Machine artifacts: `tools/content-schema/quest-authoring/` (schema, semantic validator, focused
-  checks, Canary + CrystalServer chest and door transcriptions, wiki coverage evidence)
+  checks, Canary + CrystalServer chest, door and quest-log transcriptions, wiki coverage evidence)
 
 ## 1. Problem
 
@@ -95,6 +96,23 @@ Quest and level gates are checked per character on each passage. A key door's lo
 state of the channel or instance the door stands in (`ChannelRuntime`, local like NPC runtime state
 in the scope matrix), not character state.
 
+### 3.2 Quest log
+
+Canary keeps one catalog file per quest (`lib/core/quests/catalog/*.lua`), CrystalServer one `Quests`
+table (`lib/core/quests.lua`). Both describe a quest the same way:
+
+| Source behaviour | Oteryn rule (D34) |
+|---|---|
+| A quest appears in the log once its start storage reaches the start value | `start`: a progress track and the value it must reach. |
+| A mission is shown while one storage lies between `startValue` and `endValue` | A mission is one progress track (an integer in Character persistence, shared across channels) with a start and an end value. |
+| `states[value]` gives the journal text for each storage value; `description` one text for all | `journal.per_stage` (a text reference per stage value) or `journal.fixed`. |
+| A journal function computes the text, e.g. "You already hunted %d/300 badgers" from a kill counter | `journal.template`: text references for the string pieces and the progress tracks the function reads; typed counters follow when a quest needs them. |
+| Scripts advance the storage: NPC dialogues, map movements, actions, creature events, chests (`setStorageValue`) | A transition is a named event from its owner (NPC dialogue, interaction, gate, claim, encounter outcome) that sets a mission's progress. The writer index in `progress.json` lists where each server sets each track; transcribing those writers is per-domain follow-up work. |
+
+Missions whose storage is a bare number (the 70 Killing in the Name of tasks) keep it as the track
+`storage/<n>`. A mission graph with typed, branching objectives (option B) is added only for a quest
+that staged missions cannot express (D34).
+
 ## 4. Shape
 
 ```
@@ -125,6 +143,24 @@ Quest (kind reward_only)             content/quests/definitions/
   wiki                               title, pageid, revid (facts only)
   requirements_from_wiki             premium, level (as recorded; not yet typed)
   claims[]                           RewardClaim refs
+
+Quest (kind storyline)               content/quests/definitions/ + missions/
+  identity, display_name, wiki,      as reward-only quests; claims[] may be empty
+  requirements_from_wiki, claims[]
+  source_name                        the quest-log name in the source
+  start                              progress, at_least (or null)
+  missions[]
+    key, name
+    progress                         …:quest-progress/<track>
+    start_value, end_value           the range in which the mission shows
+    journal                          per_stage[{value, text_ref | template}] | fixed(text_ref) | template(parts, reads) | none
+  gates[]                            Gate refs whose condition reads one of its tracks
+
+Progress track                       samples/questlog/progress.json (evidence for Character persistence)
+  key                                …:quest-progress/<track>
+  missions[], start_of[]             who uses the track
+  read_by_gates[]
+  writers                            per server: count and first source lines that set it
 
 Gate                                 content/interactions/ (definition) + world placements
   identity                           key + revision (…:door-gate/progress|key|level/<rule>)
@@ -208,6 +244,34 @@ six Kilmaresh sixth-mission mask doors a storage per mask, while CrystalServer g
 (`AccessEastSide`, `AccessEasternSide`) and King Zelos's door (`KingZelos.Room`, `KingZelosDoor`)
 are renamed. They are left for the quest domain, which defines the progress these gates read.
 
+### 6.2 Quest log
+
+`samples/questlog/` (`ots_questlog.py`, deterministic, reads the chest and door samples):
+`quests.json` is the whole quest catalogue (storyline quests plus the reward-only quests no
+storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` the mission mapping.
+
+| | Count |
+|---|---:|
+| Quest-log entries: Canary / CrystalServer / CrystalServer only | 51 / 59 / 7 |
+| Storyline quests / missions | 58 / 529 |
+| Journals: per stage / fixed / template | 468 / 38 / 23 |
+| Progress tracks / set by both servers' Lua / with no literal writer found | 557 / 332 / 179 |
+| Storyline quests linked to a wiki quest | 52 |
+| Reward-only quests absorbed by a storyline quest / catalogue quests | 21 / 157 |
+| Gates / reward claims attached to storyline quests | 138 / 98 |
+| Missions mapped / in conflict | 494 / 35 |
+
+The 35 conflicts are mostly journal texts (21); the rest are storage names or value ranges
+(The Way of the Monk, Hot Cuisine, The Shattered Isles reputation, Bigfoot's Burden recruitment).
+The Canary value is kept until the wiki decides (D25). "No literal writer" means the index found no
+`setStorageValue(<storage>, …)` call; such tracks are set through a variable, a loop or a KV store,
+as the task counters are.
+
+The Queen of the Banshees shows the whole chain. In both servers the seal-flame movement scripts
+set seven of its eight seal missions, and the quest's own script sets the last. Eight quest gates
+(the seal doors and the banshee door, each on its own door storage) belong to the quest, and six
+reward claims hand out the final chests.
+
 ## 7. Ownership
 
 - Static claim and placement: Content (`content/interactions/`, `content/world/placements/`),
@@ -217,15 +281,16 @@ are renamed. They are left for the quest domain, which defines the progress thes
 - Achievement grant: Achievement domain on the claim outcome.
 - Gates: Content (definition and placements). Quest and level checks read character state; a key
   door's lock is channel or instance world-object state.
-- Quest records: `content/quests/definitions/` (`reward_only`); storyline quests wait for
-  `CONTENT-QUEST-01`.
+- Quest records: `content/quests/definitions/` (`reward_only`, `storyline`) and
+  `content/quests/missions/`.
+- Mission progress: Character persistence (one integer per track), shared across channels, written
+  only by the transition events of its owners, session-generation fenced.
 
 ## 8. Next slices
 
-1. Quest-log quests (51 in Canary, 59 in CrystalServer) with missions and objectives: needs the
-   `CONTENT-QUEST-01` decision on graph and state.
-   The quest domain then defines the progress markers the door gates read, and settles the ten
-   door conflicts.
+1. Transitions: transcribe the writers of each progress track into named events of their owners,
+   starting with NPC dialogues (the NPC authoring schema) and map movements; then settle the ten
+   door conflicts and the 35 mission conflicts.
 2. NPC-driven outfit and addon quests (under the NPC service boundary).
 3. The dedicated-script doors (vocation doors, Katana, Secret Service).
 4. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
@@ -237,3 +302,4 @@ are renamed. They are left for the quest domain, which defines the progress thes
 |---|---|---|
 | D32 | A reward chest is modelled as a world interaction: a `RewardClaim` taken once per character (or on a cooldown), with a lightweight `reward_only` quest record for naming, wiki linkage, achievements and prerequisites. It gets no missions and no quest-log entry. A chest that is a step of a storyline quest becomes an objective or reward of that quest. | Owner accepted the proposal ("tak", 2026-09-27). Only 93 of 373 wiki quests appear in Tibia's quest log; both servers serve chests from one data table. |
 | D33 | Canary and CrystalServer are both reference sources for quests, extending D30 (Crystal as a second donor for encounters): for quests CrystalServer is a full source, not only a donor. Their mechanics are used as implemented; where they differ, the union is taken, joined by map position, and conflicts go to the reference-date wiki (D25). | Owner request ("pamiętaj żeby używać i crystal i canary jako reference", "canary i crystal mają pewnie mechaniki wdrożone więc możemy się nimi posiłkować", 2026-09-27). |
+| D34 | Storyline quests use staged missions (option A of `CONTENT-QUEST-01`): a quest has missions, each mission one integer progress track with a start and an end value and a journal text per stage; transitions are named events of their owners (NPC, interaction, gate, claim, encounter). A graph of typed, branching objectives (option B) is added only for a quest that staged missions cannot express. | Owner decision 2026-09-27 ("zróbmy A a potem jeśli będzie potrzeba to B"). Both servers already describe all 529 missions this way. |

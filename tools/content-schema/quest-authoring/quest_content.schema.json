@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "oteryn:schema/quest-content/v1",
-  "title": "Oteryn quest content v1 (CANDIDATE): reward claims, reward-only quests and door gates",
+  "title": "Oteryn quest content v1 (CANDIDATE): reward claims, door gates, reward-only and storyline quests",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -13,7 +13,7 @@
     "text_ref": {
       "description": "Narrative text is reserved content (LICENSE-ASSETS.md): a digest, length and placeholders, never the text.",
       "type": "object", "additionalProperties": false, "required": ["sha256", "length", "placeholders"],
-      "properties": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "length": {"type": "integer", "minimum": 1},
+      "properties": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "length": {"type": "integer", "minimum": 0},
                      "placeholders": {"type": "array", "items": {"type": "string"}}}
     },
     "identity": {
@@ -23,7 +23,7 @@
     "ref": {
       "type": "object", "additionalProperties": false, "required": ["family", "key", "revision"],
       "properties": {
-        "family": {"enum": ["Item", "Achievement", "Quest", "RewardClaim"]},
+        "family": {"enum": ["Item", "Achievement", "Quest", "RewardClaim", "Gate"]},
         "key": {"type": "string", "pattern": "^[a-z0-9_-]+:[a-z0-9_./-]+$"},
         "revision": {"type": "string", "minLength": 1}
       }
@@ -117,12 +117,44 @@
         }
       }
     },
+    "progress": {"type": "string", "pattern": "^[a-z0-9_-]+:quest-progress/[a-z0-9_./-]+$"},
+    "journal_template": {
+      "description": "A journal line the source computes; kept as its string pieces and the progress tracks it reads.",
+      "type": "object", "additionalProperties": false, "required": ["parts", "reads"],
+      "properties": {"parts": {"type": "array", "items": {"$ref": "#/$defs/text_ref"}}, "reads": {"type": "array", "items": {"type": "string"}}}
+    },
+    "mission": {
+      "type": "object", "additionalProperties": false, "required": ["key", "name", "progress", "start_value", "end_value", "journal"],
+      "properties": {
+        "key": {"type": "string", "pattern": "^[a-z0-9_]+$"},
+        "name": {"type": "string", "minLength": 1},
+        "progress": {"$ref": "#/$defs/progress"},
+        "start_value": {"type": "integer"},
+        "end_value": {"type": "integer"},
+        "journal": {
+          "oneOf": [
+            {"type": "object", "additionalProperties": false, "required": ["kind", "stages"],
+             "properties": {"kind": {"const": "per_stage"},
+                            "stages": {"type": "array", "minItems": 1, "items": {
+                              "type": "object", "additionalProperties": false, "required": ["value"],
+                              "properties": {"value": {"type": "integer"}, "text_ref": {"$ref": "#/$defs/text_ref"}, "template": {"$ref": "#/$defs/journal_template"}},
+                              "oneOf": [{"required": ["text_ref"]}, {"required": ["template"]}]}}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "text_ref"],
+             "properties": {"kind": {"const": "fixed"}, "text_ref": {"$ref": "#/$defs/text_ref"}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind", "parts", "reads"],
+             "properties": {"kind": {"const": "template"}, "parts": {"type": "array", "items": {"$ref": "#/$defs/text_ref"}},
+                            "reads": {"type": "array", "items": {"type": "string"}}}},
+            {"type": "object", "additionalProperties": false, "required": ["kind"], "properties": {"kind": {"const": "none"}}}
+          ]
+        }
+      }
+    },
     "quest": {
       "type": "object", "additionalProperties": false, "required": ["identity", "display_name", "kind", "shown_in_quest_log", "claims"],
       "properties": {
         "identity": {"$ref": "#/$defs/identity"},
         "display_name": {"type": "string", "minLength": 1},
-        "kind": {"enum": ["reward_only"]},
+        "kind": {"enum": ["reward_only", "storyline"]},
         "shown_in_quest_log": {"type": "boolean"},
         "wiki": {
           "type": "object", "additionalProperties": false, "required": ["title", "pageid", "revid"],
@@ -132,8 +164,20 @@
           "type": "object", "additionalProperties": false,
           "properties": {"premium": {"type": "string"}, "lvl": {"type": "string"}}
         },
-        "claims": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/ref"}}
-      }
+        "claims": {"type": "array", "items": {"$ref": "#/$defs/ref"}},
+        "source_name": {"type": "string", "minLength": 1},
+        "start": {
+          "oneOf": [{"type": "null"},
+                    {"type": "object", "additionalProperties": false, "required": ["progress", "at_least"],
+                     "properties": {"progress": {"$ref": "#/$defs/progress"}, "at_least": {"type": "integer"}}}]
+        },
+        "missions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/mission"}},
+        "gates": {"type": "array", "items": {"$ref": "#/$defs/ref"}}
+      },
+      "if": {"properties": {"kind": {"const": "storyline"}}},
+      "then": {"required": ["source_name", "start", "missions", "gates"]},
+      "else": {"properties": {"claims": {"minItems": 1}},
+               "not": {"anyOf": [{"required": ["missions"]}, {"required": ["start"]}, {"required": ["gates"]}]}}
     }
   }
 }

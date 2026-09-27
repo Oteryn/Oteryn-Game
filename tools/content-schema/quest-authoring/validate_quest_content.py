@@ -1,7 +1,8 @@
-"""Validate reward claims, reward-only quests and door gates: JSON Schema plus the semantic rules of the format.
+"""Validate reward claims, door gates and the quest catalogue: JSON Schema plus the semantic rules of the format.
 
 Usage: python validate_quest_content.py CLAIMS.json QUESTS.json [--catalog CATALOG.json] [--manifest MANIFEST.json]
                                         [--gates GATES.json [--gates-manifest MANIFEST.json]]
+                                        [--progress PROGRESS.json]   (QUESTS.json is then the whole catalogue, gates required)
 Prints one JSON report; the exit code is 1 when the documents are invalid.
 """
 import argparse
@@ -156,6 +157,44 @@ def validate_gates(gates_doc, claims_doc, manifest=None):
     return sorted(set(errors))
 
 
+def validate_storylines(quests_doc, gates_doc, progress_doc):
+    """Missions, stage values and the progress tracks of storyline quests; claim links are checked by validate()."""
+    schema = json.loads((ROOT / 'quest_content.schema.json').read_text())
+    errors = [f'{"/".join(map(str, e.absolute_path))}: {e.message}'
+              for e in jsonschema.Draft202012Validator(schema).iter_errors(quests_doc)]
+    if errors:
+        return errors
+    gate_keys = {g['identity']['key'] for g in gates_doc['gates']}
+    tracks = {t['key']: t for t in progress_doc['progress']}
+    for quest in quests_doc['quests']:
+        key = quest['identity']['key']
+        for gate_ref in quest.get('gates', []):
+            if gate_ref['family'] != 'Gate' or gate_ref['key'] not in gate_keys:
+                errors.append(f'{key}: unknown gate {gate_ref["key"]}')
+        if quest['kind'] != 'storyline':
+            continue
+        start = quest['start']
+        if start and key not in tracks.get(start['progress'], {}).get('start_of', []):
+            errors.append(f'{key}: start track {start["progress"]} does not name this quest')
+        seen = set()
+        for mission in quest['missions']:
+            where = f'{key}#{mission["key"]}'
+            if mission['key'] in seen:
+                errors.append(f'{where}: duplicate mission key')
+            seen.add(mission['key'])
+            if mission['start_value'] > mission['end_value']:
+                errors.append(f'{where}: start value above end value')
+            if mission['journal']['kind'] == 'per_stage':
+                values = [stage['value'] for stage in mission['journal']['stages']]
+                if values != sorted(set(values)):
+                    errors.append(f'{where}: stage values are not unique and ascending')
+                if any(v < mission['start_value'] or v > mission['end_value'] for v in values):
+                    errors.append(f'{where}: a stage lies outside the mission range')
+            if where not in tracks.get(mission['progress'], {}).get('missions', []):
+                errors.append(f'{where}: progress track {mission["progress"]} does not list this mission')
+    return sorted(set(errors))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('claims', type=Path)
@@ -164,11 +203,16 @@ def main():
     parser.add_argument('--manifest', type=Path)
     parser.add_argument('--gates', type=Path)
     parser.add_argument('--gates-manifest', type=Path)
+    parser.add_argument('--progress', type=Path)
     args = parser.parse_args()
+    if args.progress and not args.gates:
+        parser.error('--progress needs --gates')
     load = lambda p: json.loads(p.read_text()) if p else None
     errors = validate(load(args.claims), load(args.quests), load(args.catalog), load(args.manifest))
     if args.gates:
         errors += validate_gates(load(args.gates), load(args.claims), load(args.gates_manifest))
+    if args.progress:
+        errors += validate_storylines(load(args.quests), load(args.gates), load(args.progress))
     print(json.dumps({'valid': not errors, 'errors': errors[:50], 'error_count': len(errors)}, indent=2))
     sys.exit(1 if errors else 0)
 
