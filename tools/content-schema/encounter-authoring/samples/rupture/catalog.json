@@ -4,6 +4,26 @@
       "family": "Creature",
       "key": "canary:creature/damage_resonance",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/spark_of_destruction",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/rupture",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23483",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23482",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

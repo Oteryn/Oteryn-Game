@@ -29,6 +29,21 @@
       "family": "Creature",
       "key": "canary:creature/unbound_defiler",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/mounted_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/the_shielded_thorn_knight",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/thorn_steed",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

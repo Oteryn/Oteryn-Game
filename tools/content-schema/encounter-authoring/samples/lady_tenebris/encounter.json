@@ -15,6 +15,16 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "shadow_tentacle",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/shadow_tentacle",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [],
@@ -37,6 +47,64 @@
           "kind": "emit_outcome",
           "outcome": "lady_tenebris_defeated",
           "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "lady_tenebris_unguarded_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "lady_tenebris",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "shadow_tentacle",
+          "near": {
+            "role": "lady_tenebris",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "lady_tenebris",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "lady_tenebris_unguarded_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "lady_tenebris",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "shadow_tentacle",
+          "near": {
+            "role": "lady_tenebris",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "lady_tenebris",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
         }
       ]
     }

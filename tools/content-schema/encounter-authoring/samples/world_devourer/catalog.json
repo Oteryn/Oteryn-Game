@@ -34,6 +34,21 @@
       "family": "Creature",
       "key": "canary:creature/the_rage",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/world_devourer",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23483",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23482",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

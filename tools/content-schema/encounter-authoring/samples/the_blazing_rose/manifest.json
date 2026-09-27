@@ -1,0 +1,129 @@
+{
+  "encounter": "canary:encounter/the_blazing_rose",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "AsurasMechanic": [
+      "canary:creature/the_blazing_rose"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_secret_library/the_blazing_rose.lua",
+      "blob_sha1": "569c69affe732f11ecc8a53bebcabfeefd0bb9d9"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/creaturescripts_asuras_mechanic.lua",
+      "blob_sha1": "d569a8806f2858c86fe52059ec4f2a5938e75cd7"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        29
+      ],
+      "status": "mapped",
+      "resolution": "The Blazing Rose is the the_blazing_rose participant; its file registers AsurasMechanic.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50,
+        33,
+        34,
+        35,
+        36,
+        37
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of The Blazing Rose: a hit by a player without silver chimes (28494) in the right hand is zeroed, both parts.",
+      "destination": "/encounter/rules/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        18,
+        19,
+        20,
+        21,
+        23,
+        43,
+        45,
+        46,
+        47,
+        48
+      ],
+      "status": "mapped",
+      "resolution": "A change by any other creature (a summon, a monster) is zeroed too; one without an attacker passes.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        50,
+        33,
+        34,
+        35,
+        36,
+        37
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of The Blazing Rose: a heal by a player without silver chimes (28494) in the right hand is zeroed, both parts; Canary runs the handler for heals too, with the healer as attacker.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        18,
+        19,
+        20,
+        21,
+        23,
+        43,
+        45,
+        46,
+        47,
+        48
+      ],
+      "status": "mapped",
+      "resolution": "A change by any other creature (a summon, a monster) is zeroed too; one without an attacker passes.",
+      "destination": "/encounter/rules/3"
+    }
+  ],
+  "outcome_evidence": []
+}

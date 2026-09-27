@@ -331,12 +331,12 @@ presentation `path_asset_binding`; the "chain" in the names hits only the target
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,490 convert, validate and resolve every manifest row (1,103 before registered spells were
+files, 1,511 convert, validate and resolve every manifest row (1,103 before registered spells were
 converted, 1,315 before wiki adoption, 1,298 before D19, 1,308 before the probed D18 patterns, 1,329
 before the two rules below, 1,345 before `path_requirement`, 1,350 before D21-D25, 1,377 before the first Encounter, 1,383 before the Dream Courts, Forgotten Knowledge and Ferumbras
 Ascension encounters, 1,389 before the Cults of Tibia, Wrath of the Emperor, Rathleton and other
-encounters, 1,427 before the fourth encounter slice, 1,442 before the callback rule below, 1,453 before the D29 encounter slice, 1,463 before the sixth encounter slice, 1,478 before the seventh, 1,486 before the eighth);
-160 are blocked; 6 do not convert (five Soul War bosses
+encounters, 1,427 before the fourth encounter slice, 1,442 before the callback rule below, 1,453 before the D29 encounter slice, 1,463 before the sixth encounter slice, 1,478 before the seventh, 1,486 before the eighth, 1,490 before the ninth, 1,498 before the tenth, 1,505 before the eleventh);
+139 are blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 

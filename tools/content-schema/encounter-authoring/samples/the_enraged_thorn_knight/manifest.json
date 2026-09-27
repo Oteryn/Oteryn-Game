@@ -7,6 +7,15 @@
     ],
     "PossessedTree": [
       "canary:creature/possessed_tree"
+    ],
+    "HealthForgotten": [
+      "canary:creature/mounted_thorn_knight",
+      "canary:creature/the_shielded_thorn_knight",
+      "canary:creature/the_enraged_thorn_knight"
+    ],
+    "ThornKnightDeath": [
+      "canary:creature/mounted_thorn_knight",
+      "canary:creature/the_shielded_thorn_knight"
     ]
   },
   "sources": [
@@ -37,6 +46,34 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_possessed_tree.lua",
       "blob_sha1": "708e04d878e5e9a995261a852066779f64f6adfe"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/mounted_thorn_knight.lua",
+      "blob_sha1": "8d68b77c1e142a979eac8e90f499ebf31fff104c"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_healthchange_forgotten.lua",
+      "blob_sha1": "909e4000d83c9d81a21087b8fb9d28ad9cc24618"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_shielded_thorn_knight.lua",
+      "blob_sha1": "161f215069011ae18e60967bccaada8264f4b8fe"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_thorn_knight_death.lua",
+      "blob_sha1": "f8b17adf7083a4eba8405213d41b230b954ff1ac"
     }
   ],
   "entries": [
@@ -142,6 +179,292 @@
       ],
       "status": "approved_omission",
       "resolution": "The plant effect is cosmetic."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Possessed Tree is the possessed_tree participant.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        57
+      ],
+      "status": "mapped",
+      "resolution": "Mounted Thorn Knight is the mounted_thorn_knight participant; its file registers HealthForgotten.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2,
+        3,
+        21,
+        22,
+        23,
+        25
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of Mounted Thorn Knight: the primary part of every change is doubled (primary + 100/100 * primary).",
+      "destination": "/encounter/rules/3"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "The same handler runs for heals (game.cpp combatChangeHealth), so a heal of the boss is doubled too; in a heal_received rule the this_hit modifier scales that heal (D31).",
+      "destination": "/encounter/rules/4"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "Unless a possessed tree stands within 7 tiles on the same floor (getSpectators 7/7/7/7, not multi-floor); the spectator is found by name, which only that creature carries.",
+      "destination": "/encounter/rules/3/conditions/0"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "The same guard for heals.",
+      "destination": "/encounter/rules/4/conditions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        57
+      ],
+      "status": "mapped",
+      "resolution": "The Shielded Thorn Knight is the the_shielded_thorn_knight participant; its file registers HealthForgotten.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2,
+        3,
+        21,
+        22,
+        23,
+        25
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of The Shielded Thorn Knight: the primary part of every change is doubled (primary + 100/100 * primary).",
+      "destination": "/encounter/rules/5"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "The same handler runs for heals (game.cpp combatChangeHealth), so a heal of the boss is doubled too; in a heal_received rule the this_hit modifier scales that heal (D31).",
+      "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "Unless a possessed tree stands within 7 tiles on the same floor (getSpectators 7/7/7/7, not multi-floor); the spectator is found by name, which only that creature carries.",
+      "destination": "/encounter/rules/5/conditions/0"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "The same guard for heals.",
+      "destination": "/encounter/rules/6/conditions/0"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "The Enraged Thorn Knight is the the_enraged_thorn_knight participant; its file registers HealthForgotten.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2,
+        3,
+        21,
+        22,
+        23,
+        25
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of The Enraged Thorn Knight: the primary part of every change is doubled (primary + 100/100 * primary).",
+      "destination": "/encounter/rules/7"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "The same handler runs for heals (game.cpp combatChangeHealth), so a heal of the boss is doubled too; in a heal_received rule the this_hit modifier scales that heal (D31).",
+      "destination": "/encounter/rules/8"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "Unless a possessed tree stands within 7 tiles on the same floor (getSpectators 7/7/7/7, not multi-floor); the spectator is found by name, which only that creature carries.",
+      "destination": "/encounter/rules/7/conditions/0"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "The same guard for heals.",
+      "destination": "/encounter/rules/8/conditions/0"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "Mounted Thorn Knight is the mounted_thorn_knight participant; its file registers ThornKnightDeath.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        11,
+        12,
+        23,
+        24,
+        25,
+        27,
+        13,
+        14,
+        15,
+        16,
+        18
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of mounted thorn knight: The Shielded Thorn Knight appears (forced) where it died, after its line, with a thorn steed.",
+      "destination": "/encounter/rules/9"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "The Shielded Thorn Knight is the the_shielded_thorn_knight participant; its file registers ThornKnightDeath.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        11,
+        12,
+        23,
+        24,
+        25,
+        27,
+        19,
+        20,
+        22
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the shielded thorn knight: The Enraged Thorn Knight appears (forced) where it died.",
+      "destination": "/encounter/rules/10"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        17,
+        21
+      ],
+      "status": "approved_omission",
+      "resolution": "checkBlood removes the unmovable items (the blood splash) from the death tile 1 ms later; cosmetic."
     }
   ],
   "outcome_evidence": [

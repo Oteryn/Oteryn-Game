@@ -15,15 +15,65 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "rupture",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/rupture",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
-  "anchors": [],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Every tile from Canary (32324, 31239, 14) to (32347, 31263, 14)."
+    },
+    {
+      "key": "exit_vortex",
+      "kind": "point",
+      "description": "Canary (32326, 31250, 14), the vortex of the room."
+    },
+    {
+      "key": "spark_spot_1",
+      "kind": "point",
+      "description": "Canary (32331, 31254, 14)."
+    },
+    {
+      "key": "spark_spot_2",
+      "kind": "point",
+      "description": "Canary (32338, 31254, 14)."
+    },
+    {
+      "key": "spark_spot_3",
+      "kind": "point",
+      "description": "Canary (32330, 31250, 14)."
+    },
+    {
+      "key": "spark_spot_4",
+      "kind": "point",
+      "description": "Canary (32338, 31250, 14)."
+    },
+    {
+      "key": "resonance_spot",
+      "kind": "point",
+      "description": "Canary (32332, 31250, 14)."
+    }
+  ],
   "phases": [],
   "state": {
     "counters": [
       {
         "name": "resonance_active",
         "initial": -1
+      },
+      {
+        "name": "rupture_stage",
+        "initial": 0
       }
     ],
     "flags": [],
@@ -45,7 +95,1134 @@
           "value": 0
         }
       ]
+    },
+    {
+      "key": "rupture_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "rupture"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23483",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23482",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_vortex",
+          "interaction": "canary:interaction/14325"
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "rupture_defeated",
+          "credited": "players_in_anchor",
+          "anchor": "arena"
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_0",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "rupture",
+        "percent": 80
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 0
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "resonance_active",
+          "op": "!=",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_1",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "rupture",
+        "percent": 60
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 1
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "resonance_active",
+          "op": "!=",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 2
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_2",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "rupture",
+        "percent": 40
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 2
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "resonance_active",
+          "op": "!=",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 3
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_3",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "rupture",
+        "percent": 25
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 3
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "resonance_active",
+          "op": "!=",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 4
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_4",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "rupture",
+        "percent": 10
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 4
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "resonance_active",
+          "op": "!=",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 5
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_0_after_resonance",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "damage_resonance"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 0
+        },
+        {
+          "kind": "health_percent",
+          "role": "rupture",
+          "op": "<=",
+          "value": 80
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_1_after_resonance",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "damage_resonance"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 1
+        },
+        {
+          "kind": "health_percent",
+          "role": "rupture",
+          "op": "<=",
+          "value": 60
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 2
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_2_after_resonance",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "damage_resonance"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 2
+        },
+        {
+          "kind": "health_percent",
+          "role": "rupture",
+          "op": "<=",
+          "value": 40
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 3
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_3_after_resonance",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "damage_resonance"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 3
+        },
+        {
+          "kind": "health_percent",
+          "role": "rupture",
+          "op": "<=",
+          "value": 25
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 4
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_stage_4_after_resonance",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "damage_resonance"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rupture_stage",
+          "op": "==",
+          "value": 4
+        },
+        {
+          "kind": "health_percent",
+          "role": "rupture",
+          "op": "<=",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damage_resonance",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "damage_resonance",
+          "count": 1,
+          "at": {
+            "anchor": "resonance_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rupture_stage",
+          "operation": "set",
+          "value": 5
+        },
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "rupture_heals_on_player_hit",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "rupture",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "resonance_active",
+          "op": "==",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "rupture"
+          },
+          "amount": {
+            "min": 5000,
+            "max": 10000
+          }
+        }
+      ]
     }
   ],
-  "outcomes": []
+  "outcomes": [
+    "rupture_defeated"
+  ]
 }

@@ -1,0 +1,273 @@
+{
+  "encounter": "canary:encounter/eradicator",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "HeartBossDeath": [
+      "canary:creature/eradicator",
+      "canary:creature/eradicator2"
+    ],
+    "EradicatorTransform": [
+      "canary:creature/eradicator",
+      "canary:creature/eradicator2"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/actions_eradicator.lua",
+      "blob_sha1": "6bf1eefbcabc5fc580ce6e961958608dd9d44a92"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/eradicator.lua",
+      "blob_sha1": "e7eb2443a4d9d6c9dcfe56e0af17ced1476a2706"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/eradicator2.lua",
+      "blob_sha1": "0c8dba87dac2f14bc94348d6768b841ee91cd843"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua",
+      "blob_sha1": "2c90381a9bb2f15408373edb35a50992d844eadd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_eradicator_transform.lua",
+      "blob_sha1": "fa186ba1882a586e37eed4fb5c5bcb6cff303036"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        13,
+        14,
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "The lever room check area from (32297, 31272, 14) to (32321, 31296, 14) is the arena HeartBossDeath credits.",
+      "destination": "/encounter/anchors/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        61
+      ],
+      "status": "mapped",
+      "resolution": "Eradicator is the eradicator participant; its file registers HeartBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        62
+      ],
+      "status": "mapped",
+      "resolution": "Eradicator2 is the eradicator participant; its file registers HeartBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        113,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        138,
+        139,
+        141
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of Eradicator (the name is looked up in lower case).",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        123,
+        124,
+        125,
+        126,
+        127
+      ],
+      "status": "mapped",
+      "resolution": "The vortex 23483 on the room vortex tile becomes vortex 23482 with action id 14325, which movements_teleport_heart.lua sends to the main room (32216, 31380, 14) (interaction domain). The lever made it 23483 when the fight started.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        75,
+        111,
+        128
+      ],
+      "status": "mapped",
+      "resolution": "Every player standing in the room is credited (D27): the quest domain sets their storage 14330 to 1.",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        97
+      ],
+      "status": "mapped",
+      "resolution": "Eradicator2 is also named \"Eradicator\" (monster.name), so its death runs the same branch.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        23,
+        24,
+        25,
+        27,
+        28,
+        29
+      ],
+      "status": "mapped",
+      "resolution": "The lever sets EradicatorWeak and EradicatorReleaseT to -1 and releases the first change 74000 ms later.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        62
+      ],
+      "status": "mapped",
+      "resolution": "Eradicator is the eradicator participant; its file registers EradicatorTransform.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        63
+      ],
+      "status": "mapped",
+      "resolution": "Eradicator2 is the eradicator participant; its file registers EradicatorTransform.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        1,
+        3,
+        4,
+        5,
+        6,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        30,
+        31,
+        32,
+        34,
+        35,
+        36,
+        37,
+        38,
+        40
+      ],
+      "status": "mapped",
+      "resolution": "onThink after the release with EradicatorWeak not above 0: the eradicator is replaced on its tile by Eradicator2 with the same health, four sparks appear, and the next release follows 9000 ms later.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
+        21,
+        30,
+        31,
+        32,
+        34,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "onThink after the release with EradicatorWeak 1: Eradicator2 is replaced by the Eradicator with the same health and the next release follows 74000 ms later. Canary acts on the first think after the release (about one second).",
+      "destination": "/encounter/rules/3"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "eradicator_defeated",
+      "credited": "players_in_anchor",
+      "quest_domain": {
+        "canary_storage": [
+          "14330"
+        ],
+        "raise_to_at_least": 1
+      }
+    }
+  ]
+}

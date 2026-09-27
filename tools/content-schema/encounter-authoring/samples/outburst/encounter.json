@@ -1,0 +1,899 @@
+{
+  "identity": {
+    "key": "canary:encounter/outburst",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Heart of Destruction: Outburst",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "outburst",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/outburst",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "charging_outburst",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/charging_outburst",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Every tile from Canary (32223, 31273, 14) to (32246, 31297, 14)."
+    },
+    {
+      "key": "exit_vortex",
+      "kind": "point",
+      "description": "Canary (32225, 31285, 14), the vortex of the room."
+    },
+    {
+      "key": "spark_spot_1",
+      "kind": "point",
+      "description": "Canary (32229, 31282, 14)."
+    },
+    {
+      "key": "spark_spot_2",
+      "kind": "point",
+      "description": "Canary (32230, 31287, 14)."
+    },
+    {
+      "key": "spark_spot_3",
+      "kind": "point",
+      "description": "Canary (32237, 31287, 14)."
+    },
+    {
+      "key": "spark_spot_4",
+      "kind": "point",
+      "description": "Canary (32238, 31282, 14)."
+    },
+    {
+      "key": "boss_spot",
+      "kind": "point",
+      "description": "Canary (32234, 31284, 14)."
+    },
+    {
+      "key": "outburst_return",
+      "kind": "point",
+      "description": "Canary (32234, 31285, 14)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "outburst_stage",
+        "initial": 0
+      }
+    ],
+    "flags": [
+      {
+        "name": "charging_outburst_exploded",
+        "initial": false
+      }
+    ],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "outburst_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "outburst"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23483",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23482",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_vortex",
+          "interaction": "canary:interaction/14325"
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "outburst_defeated",
+          "credited": "players_in_anchor",
+          "anchor": "arena"
+        }
+      ]
+    },
+    {
+      "key": "outburst_stage_0",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "outburst",
+        "percent": 80
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "outburst_stage",
+          "op": "==",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "outburst"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charging_outburst",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charging_outburst",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "outburst_stage",
+          "operation": "set",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "charging_outburst_exploded",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "outburst_stage_1",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "outburst",
+        "percent": 60
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "outburst_stage",
+          "op": "==",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "outburst"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charging_outburst",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charging_outburst",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "outburst_stage",
+          "operation": "set",
+          "value": 2
+        },
+        {
+          "kind": "flag",
+          "flag": "charging_outburst_exploded",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "outburst_returns_at_stage_1",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "outburst"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "outburst_stage",
+          "op": "==",
+          "value": 1
+        },
+        {
+          "kind": "health_percent",
+          "role": "outburst",
+          "op": "<=",
+          "value": 60
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "outburst"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charging_outburst",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charging_outburst",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "outburst_stage",
+          "operation": "set",
+          "value": 2
+        },
+        {
+          "kind": "flag",
+          "flag": "charging_outburst_exploded",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "outburst_stage_2",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "outburst",
+        "percent": 40
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "outburst_stage",
+          "op": "==",
+          "value": 2
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "outburst"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charging_outburst",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charging_outburst",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "outburst_stage",
+          "operation": "set",
+          "value": 3
+        },
+        {
+          "kind": "flag",
+          "flag": "charging_outburst_exploded",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "outburst_returns_at_stage_2",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "outburst"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "outburst_stage",
+          "op": "==",
+          "value": 2
+        },
+        {
+          "kind": "health_percent",
+          "role": "outburst",
+          "op": "<=",
+          "value": 40
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "outburst"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charging_outburst",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charging_outburst",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "outburst_stage",
+          "operation": "set",
+          "value": 3
+        },
+        {
+          "kind": "flag",
+          "flag": "charging_outburst_exploded",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "outburst_stage_3",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "outburst",
+        "percent": 20
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "outburst_stage",
+          "op": "==",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "outburst"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charging_outburst",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charging_outburst",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "outburst_stage",
+          "operation": "set",
+          "value": 4
+        },
+        {
+          "kind": "flag",
+          "flag": "charging_outburst_exploded",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "outburst_returns_at_stage_3",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "outburst"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "outburst_stage",
+          "op": "==",
+          "value": 3
+        },
+        {
+          "kind": "health_percent",
+          "role": "outburst",
+          "op": "<=",
+          "value": 20
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "outburst"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charging_outburst",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charging_outburst",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "outburst_stage",
+          "operation": "set",
+          "value": 4
+        },
+        {
+          "kind": "flag",
+          "flag": "charging_outburst_exploded",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "charging_outburst_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "charging_outburst"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "charging_outburst_exploded",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/outburst",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "outburst",
+          "count": 1,
+          "at": {
+            "anchor": "outburst_return"
+          },
+          "owner": "none",
+          "health": "remembered"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "outburst_defeated"
+  ]
+}

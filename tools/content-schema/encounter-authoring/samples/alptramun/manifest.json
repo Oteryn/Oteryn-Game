@@ -8,6 +8,9 @@
       "canary:creature/horrible_dream",
       "canary:creature/nightmarish_dream",
       "canary:creature/mind_wrecking_dream"
+    ],
+    "facelessHealth": [
+      "canary:creature/alptramun"
     ]
   },
   "sources": [
@@ -66,6 +69,13 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/spells/monster/alptramun_summon.lua",
       "blob_sha1": "2b5f1c91023be60301f0d78f808ad9831927409d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_facelessBane.lua",
+      "blob_sha1": "268166d61e08987e40834f1bb0ec44f0234f59e0"
     }
   ],
   "entries": [
@@ -451,6 +461,51 @@
       ],
       "status": "unresolved_semantics",
       "resolution": "The escalation that reads the counter: alptramun_summon.lua summons 1-4 dreams (up to 5 summons, as Alptramun's summons) whose type rises with AlptramunSummonsKilled in bands of nine. No Canary monster casts this spell (it is not in Alptramun's attacks or defenses), and summoned dreams have a master, so this script would not count them. The reference-date wiki says Alptramun \"will initially appear with several summons. These summons, when killed, will be replaced by even stronger summons\" without numbers; defining that ability (an ability_cast rule, D29) needs its exact rule from the owner or further evidence."
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        25
+      ],
+      "status": "mapped",
+      "resolution": "Alptramun is the alptramun participant; its file registers facelessHealth.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        60,
+        61,
+        62,
+        63,
+        65,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange of Alptramun: primary death damage heals it by that amount and deals none; the secondary part is unchanged.",
+      "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        36,
+        37,
+        38
+      ],
+      "status": "mapped",
+      "resolution": "The same handler for heals; a heal is never typed as damage, so it passes unchanged.",
+      "destination": "/encounter/rules/7"
     }
   ],
   "outcome_evidence": [

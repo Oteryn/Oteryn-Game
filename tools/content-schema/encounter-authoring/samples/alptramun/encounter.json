@@ -248,6 +248,44 @@
           "value": 1
         }
       ]
+    },
+    {
+      "key": "alptramun_absorbs_death_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "alptramun",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "convert_damage_to_heal",
+          "role": "alptramun",
+          "damage_types": [
+            "death"
+          ],
+          "component": "primary"
+        }
+      ]
+    },
+    {
+      "key": "alptramun_absorbs_death_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "alptramun",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "convert_damage_to_heal",
+          "role": "alptramun",
+          "damage_types": [
+            "death"
+          ],
+          "component": "primary"
+        }
+      ]
     }
   ],
   "outcomes": [

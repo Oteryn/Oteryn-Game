@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-npc-admission-v2-services
 title: NPC admission slice 2 - typed WorldProject/v2 service offers and travel routes (D7)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
@@ -13,7 +13,7 @@ pr: 994
 jira: KAN-16
 base_sha: 3f29e7d9384b3e21b27032aaf8bdfbc27dae5a09
 head_sha: null
-final_head_sha: null
+final_head_sha: c6a23eccc285a08dcbffd411ed58246894e7d631
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-27
