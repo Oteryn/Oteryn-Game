@@ -5831,7 +5831,7 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
             let candidate = authority_matrix::checked(ReconnectCandidateBindingV1::new(
                 session.commit().game_session_id(), identity.reconnect_attempt_ref(),
                 authority_matrix::checked(ConnectionGeneration::new(2))?,
-                authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x61; 16]))?, now + 4,
+                authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x61; 16]))?, now + 5,
             ))?;
             let keys = vec![
                 AdmissionAuthorityGuardKeyV1::Account { account_id: account.into() },
@@ -5858,6 +5858,32 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
                 current: std::sync::Mutex::new(CompleteReconnectCurrentV1 { snapshot, prepared: None }),
                 security: security.clone(),
             });
+            {
+                // Recovery grants control: claims the source read before an owner refresh
+                // (presence and holder still this session) no longer authorize it.
+                let stale = source.current.lock().map_err(|_| "owner lock")?.clone();
+                let mut row = guards.load(&[keys[0].clone()]).await?.pop().flatten().ok_or("missing account row")?;
+                row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet { expected_publication_revision: row.publication_revision };
+                row.publication_revision += 1;
+                row.source.source_revision += 1;
+                row.source.decision_identity = "platform-refresh".into();
+                if let AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state {
+                    security.provenance.publication_revision = row.publication_revision;
+                }
+                let mut refresher = postgres::fresh::Source::new(now)?;
+                refresher.rows = vec![row];
+                assert_eq!(guards.publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&refresher, now))?).await?, durability::admission_authority_guards::GuardPublicationDisposition::Applied);
+                let stale = std::sync::Arc::new(Owner { current: std::sync::Mutex::new(stale), security: security.clone() });
+                let verified = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
+                    .map_err(|error| format!("verify: {error:?}"))?;
+                let authorization = CompleteReconnectAuthorizationV1::authorize(stale.as_ref(), identity.clone(), CompleteReconnectProofV1::V2(Box::new(verified)), now)
+                    .map_err(|e| format!("stale authorize: {e:?}"))?;
+                let mut stale_flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|e| format!("stale begin: {e:?}"))?;
+                let request = std::sync::Arc::new(stale_flow.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("stale take: {e:?}"))?);
+                assert_eq!(store.apply_complete_reconnect(request, stale).await?, CompleteReconnectOutcomeV1::Rejected);
+                source.current.lock().map_err(|_| "owner lock")?.snapshot.claims =
+                    guards.load(&keys).await?.into_iter().collect::<Option<Vec<_>>>().ok_or("missing claim rows")?;
+            }
             let verified = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
                 .map_err(|error| format!("verify: {error:?}"))?;
             let authorization = CompleteReconnectAuthorizationV1::authorize(source.as_ref(), identity.clone(), CompleteReconnectProofV1::V2(Box::new(verified)), now).map_err(|e| format!("authorize: {e:?}"))?;
@@ -5884,6 +5910,32 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
             let prepare = std::sync::Arc::new(flow.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("take prepare: {e:?}"))?);
             let prepared = store.apply_complete_reconnect(prepare.clone(), source.clone()).await?;
             assert!(matches!(prepared, CompleteReconnectOutcomeV1::Prepared { .. }), "{prepared:?}");
+            {
+                // Only one attempt may be prepared at a time.
+                let other = source.current.lock().map_err(|_| "owner lock")?.clone();
+                let other = std::sync::Arc::new(Owner { current: std::sync::Mutex::new(other), security: security.clone() });
+                let identity21 = authority_matrix::checked(ReconnectIdentityV1::new(
+                    lost.commit().game_session_id(), authority_matrix::checked(ReconnectAttemptRef::new(21))?, account,
+                    lost.commit().character_id(), lost.commit().world_id(), lost.current_runtime_scope(),
+                ))?;
+                let candidate21 = authority_matrix::checked(ReconnectCandidateBindingV1::new(
+                    lost.commit().game_session_id(), identity21.reconnect_attempt_ref(),
+                    authority_matrix::checked(ConnectionGeneration::new(2))?,
+                    authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x63; 16]))?, now + 5,
+                ))?;
+                {
+                    let mut current = other.current.lock().map_err(|_| "owner lock")?;
+                    current.snapshot.candidate = candidate21;
+                    current.snapshot.proof_transition.candidate = candidate21;
+                }
+                let verified = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
+                    .map_err(|error| format!("verify: {error:?}"))?;
+                let authorization = CompleteReconnectAuthorizationV1::authorize(other.as_ref(), identity21, CompleteReconnectProofV1::V2(Box::new(verified)), now)
+                    .map_err(|e| format!("second authorize: {e:?}"))?;
+                let mut second = CompleteReconnectFlowV1::begin(authorization, None).map_err(|e| format!("second begin: {e:?}"))?;
+                let request = std::sync::Arc::new(second.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("second take: {e:?}"))?);
+                assert_eq!(store.apply_complete_reconnect(request, other).await?, CompleteReconnectOutcomeV1::Rejected);
+            }
             // Exact replay of the same PREPARE returns the original decision.
             assert_eq!(store.apply_complete_reconnect(prepare.clone(), source.clone()).await?, prepared);
             let budget = store.recovery_budget(lost.commit().game_session_id(), authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?;

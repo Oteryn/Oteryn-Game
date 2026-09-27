@@ -66,3 +66,11 @@ Exact replays return the original decision, and a conflicting receipt is a store
 - fast-reconnect proof issuance;
 - early terminal replacement;
 - withdrawing a refused PREPARE (5b adds it together with its caller).
+
+## Independent review (head 7ebae0dc)
+
+1. **F1 (High, fixed).** COMMIT and PREPARE re-bound claim ownership only. A ban, a raised security generation floor or lost eligibility published after the source's snapshot could still switch control. Now the locked Account and Character rows must equal exactly the claims the sealed request validated. A test refreshes the Account row after the snapshot and shows the stale source is refused; without the fix, the test fails.
+2. **F2 (Medium, partly fixed).** PREPARE now refuses an already consumed grant nonce, which could never commit. Withdrawing a stuck PREPARE (lost COMMIT) is still 5b, with its caller.
+3. **F3 (Medium, fixed).** The candidate deadline is now the maximum the 5 s evidence freshness allows. The test also covers a second PREPARE while one is outstanding.
+4. **F5 (Low, fixed).** The budget query uses an index-friendly key range. Epoch-scoping the attempt reservations is left to 5c (loss after resume).
+5. **F4 and F6 (Low, accepted).** They match `commit_fresh_loss`: a changed operation for the same attempt is a stored-state conflict, and a commit with an unknown outcome is `Ambiguous`.
