@@ -1,0 +1,57 @@
+name: Monster Authoring TibiaWiki BR Capture
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/monster-authoring/wiki_br_capture.py
+      - .github/workflows/monster-wiki-capture.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wiki-br:
+    # TibiaWiki BR answers 403 (Cloudflare) from the build container; this job reads it from a hosted
+    # runner. The artifact keeps infobox fields cut to 300 characters and revision ids, never raw pages.
+    name: Monster authoring / TibiaWiki BR capture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/monster-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Self-test
+        run: python wiki_br_capture.py self-test
+
+      - name: Capture the Count Vlarkorth pages at the target date
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/out"
+          python wiki_br_capture.py --out "$RUNNER_TEMP/out/wiki-br-grave-danger.json" \
+            "Dark Merudri" "Dark Knight" "Dark Druid" "Dark Paladin" "Dark Sorcerer" "Count Vlarkorth" \
+            "Good Remains of a Merudri" "Good Remains of a Knight"
+
+      - name: Upload BR infobox facts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: monster-wiki-br-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/out/wiki-br-grave-danger.json
+          if-no-files-found: error
+          retention-days: 14
