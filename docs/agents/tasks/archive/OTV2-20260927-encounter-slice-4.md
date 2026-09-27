@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-encounter-slice-4
 title: Transcribe Gorzindel, Heart of Destruction minions, Feroxa and other Canary events into encounters
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 965
 jira: KAN-16
 base_sha: da934ab89206e80765a25c5620ba530485e4a582
-head_sha: null
-final_head_sha: null
+head_sha: 449ff286521208f246f171016c9c21d86736a92e
+final_head_sha: 449ff286521208f246f171016c9c21d86736a92e
 final_head_frozen_at: null
-owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -53,3 +53,8 @@ fence, session, authority or persisted-recovery evidence is touched.
 - Gorzindel, Heart of Destruction minions and chargers, astral glyph, dragon essence, disgusting
   ooze and Feroxa events transcribed: 50 encounters valid, 45 manifests fully resolved.
 - `population_census.py` 1,442 of 1,656 fully resolved (1,427 before).
+
+## Completion
+
+Merged as PR #965 (`87d01a9b3333edc721c07d4cea1e3bca8f31de72`) from final head `449ff28`; required checks passed on that head.
+Owner released.

@@ -642,7 +642,7 @@
       "source_field": "events=ForgottenKnowledgeBossDeath",
       "kind": "script",
       "status": "approved_omission",
-      "resolution": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua sets the per-player boss cooldown storage on death. Owner decision D9: boss encounter bookkeeping belongs to the Encounter definition, not the monster bundle."
+      "resolution": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua sets the per-player boss cooldown storage on death. Relocated to Encounter canary:encounter/the_enraged_thorn_knight (encounter-authoring/samples/the_enraged_thorn_knight), whose manifest covers this creature for the whole event; the monster keeps no copy of the logic (D20, D28)."
     },
     {
       "source_index": 0,
