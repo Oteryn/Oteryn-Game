@@ -2,7 +2,7 @@
 import json
 import sys
 
-from validate_quest_content import validate
+from validate_quest_content import validate, validate_gates
 
 
 def ref(family, name):
@@ -20,7 +20,8 @@ def fixture():
             {'position': {'x': 102, 'y': 200, 'z': 7}, 'appearance': ref('Item', 'item/chest'),
              'reward': {'items': [], 'random_one_of': [{'item': ref('Item', 'item/gold'), 'count': 10}, {'item': ref('Item', 'item/key'), 'count': 1}],
                         'container': ref('Item', 'item/bag'), 'key_binding': 'oteryn:door-key/3800',
-                        'written_text': {'item': ref('Item', 'item/bag'), 'text': 'Hardek *'}}}]}
+                        'written_text': {'item': ref('Item', 'item/bag'),
+                                         'text_ref': {'sha256': '0' * 64, 'length': 8, 'placeholders': []}}}}]}
     quest = {'identity': {'key': 'oteryn:quest/annihilator', 'revision': 'r1'}, 'display_name': 'The Annihilator',
              'kind': 'reward_only', 'shown_in_quest_log': False, 'wiki': {'title': 'The Annihilator', 'pageid': 1, 'revid': 2},
              'requirements_from_wiki': {'premium': 'yes', 'lvl': '100'}, 'claims': [ref('RewardClaim', 'reward-claim/annihilator')]}
@@ -61,6 +62,7 @@ case('floor is bounded', lambda c, q, cat, m: c['placements'][0]['position'].upd
 case('two claims cannot share a position', lambda c, q, cat, m: c['placements'][1]['position'].update(x=100))
 case('unknown reward field', lambda c, q, cat, m: c['placements'][0]['reward'].update(weight=5.0))
 case('key binding names a door key', lambda c, q, cat, m: c['placements'][1]['reward'].update(key_binding='oteryn:storage/1'))
+case('no committed narrative text', lambda c, q, cat, m: c['placements'][1]['reward']['written_text'].update(text='Hardek *'))
 case('written text on an item not handed out', lambda c, q, cat, m: c['placements'][1]['reward']['written_text'].update(item=ref('Item', 'item/gold')))
 case('link basis without a quest', lambda c, q, cat, m: c.update(quest=None))
 case('section candidate on a linked claim', lambda c, q, cat, m: c.update(quest_candidate_from_section=ref('Quest', 'quest/x')))
@@ -86,6 +88,24 @@ results[[r['name'] for r in results].index('duplicate claim key')] = {
     'name': 'duplicate claim key', 'expected_valid': False, 'passed': any('duplicate claim key' in e for e in errors),
     'first_error': errors[0] if errors else None}
 
+# one quest cannot appear under two namespaces
+claims, quests, catalog, manifest = fixture()
+twin = json.loads(json.dumps(quests['quests'][0]))
+twin['identity']['key'] = 'other:quest/annihilator'
+twin['claims'] = []
+twin['kind'] = 'reward_only'
+claims['claims'].append(json.loads(json.dumps(claims['claims'][0])))
+claims['claims'][1]['identity']['key'] = 'oteryn:reward-claim/second'
+claims['claims'][1]['quest'] = {'family': 'Quest', 'key': 'other:quest/annihilator', 'revision': 'r1'}
+for p in claims['claims'][1]['placements']:
+    p['position']['y'] += 50
+twin['claims'] = [{'family': 'RewardClaim', 'key': 'oteryn:reward-claim/second', 'revision': 'r1'}]
+quests['quests'].append(twin)
+manifest['entries'].append({'position': [100, 250, 7], 'status': 'mapped', 'destination': 'oteryn:reward-claim/second'})
+errors = validate(claims, quests, catalog, manifest)
+results.append({'name': 'one identity per quest across namespaces', 'expected_valid': False,
+                'passed': bool(errors) and 'one identity per quest' in errors[0], 'first_error': errors[0] if errors else None})
+
 # an unlinked claim keeps its section candidate and no quest lists it
 claims, quests, catalog, manifest = fixture()
 claims['claims'][0].update(quest=None, quest_link_basis=None, quest_candidate_from_section=ref('Quest', 'quest/annihilator'))
@@ -93,6 +113,48 @@ quests['quests'].clear()
 errors = validate(claims, quests, catalog, manifest)
 results.insert(2, {'name': 'unlinked claim with section candidate accepted', 'expected_valid': True, 'passed': not errors,
                    'first_error': errors[0] if errors else None})
+
+
+
+def gate_fixture():
+    claims, _, _, _ = fixture()
+    claims['claims'][0]['placements'][1]['reward']['key_binding'] = 'oteryn:door-key/3800'
+    gates = {'gates': [
+        {'identity': {'key': 'oteryn:door-gate/progress/reward-claim', 'revision': 'r1'}, 'label': 'The annihilator door',
+         'quest': ref('Quest', 'quest/annihilator'), 'quest_link_basis': 'storage_key',
+         'condition': {'kind': 'quest_progress', 'progress': 'oteryn:quest-progress/annihilator', 'claim': ref('RewardClaim', 'reward-claim/annihilator')},
+         'state': 'per_character_pass', 'placements': [{'position': {'x': 90, 'y': 200, 'z': 7}, 'appearance': None}]},
+        {'identity': {'key': 'oteryn:door-gate/level/100', 'revision': 'r1'}, 'label': None, 'quest': None, 'quest_link_basis': None,
+         'condition': {'kind': 'min_level', 'level': 100}, 'state': 'per_character_pass',
+         'placements': [{'position': {'x': 91, 'y': 200, 'z': 7}, 'appearance': ref('Item', 'item/door')}]},
+        {'identity': {'key': 'oteryn:door-gate/key/3800', 'revision': 'r1'}, 'label': None, 'quest': None, 'quest_link_basis': None,
+         'condition': {'kind': 'door_key', 'key_binding': 'oteryn:door-key/3800', 'key_from_claims': [ref('RewardClaim', 'reward-claim/annihilator')]},
+         'state': 'shared_lock', 'placements': [{'position': {'x': 92, 'y': 200, 'z': 7}, 'appearance': None}]}]}
+    manifest = {'entries': [{'position': [90 + i, 200, 7], 'status': 'mapped', 'destination': g['identity']['key']}
+                            for i, g in enumerate(gates['gates'])]}
+    return gates, claims, manifest
+
+
+def gate_case(name, mutate=None, expected=False):
+    gates, claims, manifest = gate_fixture()
+    if mutate:
+        mutate(gates['gates'], claims, manifest)
+    errors = validate_gates(gates, claims, manifest)
+    results.append({'name': name, 'expected_valid': expected, 'passed': (not errors) == expected,
+                    'first_error': errors[0] if errors else None})
+
+
+gate_case('gate fixture accepted', expected=True)
+gate_case('condition kind is closed', lambda g, c, m: g[1]['condition'].update(kind='vocation'))
+gate_case('level is positive', lambda g, c, m: g[1]['condition'].update(level=0))
+gate_case('only key doors share a lock', lambda g, c, m: g[1].update(state='shared_lock'))
+gate_case('key doors share a lock', lambda g, c, m: g[2].update(state='per_character_pass'))
+gate_case('two gates cannot share a position', lambda g, c, m: g[1]['placements'][0]['position'].update(x=90))
+gate_case('progress door reads the claim it names', lambda g, c, m: g[0]['condition'].update(progress='oteryn:quest-progress/other'))
+gate_case('progress door names a known claim', lambda g, c, m: g[0]['condition'].update(claim=ref('RewardClaim', 'reward-claim/ghost')))
+gate_case('key comes from a chest that hands it out', lambda g, c, m: g[2]['condition'].update(key_binding='oteryn:door-key/1'))
+gate_case('gate link basis without a quest', lambda g, c, m: g[0].update(quest=None))
+gate_case('every gate is mapped from a source', lambda g, c, m: m['entries'].pop())
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:
