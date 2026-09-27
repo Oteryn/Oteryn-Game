@@ -110,6 +110,8 @@ def semantic(e, catalog):
                 subject(action['subject'], at, trigger)
             if 'at' in action:
                 position(action['at'], at)
+            if action.get('owner') == 'death_master' and kind not in ('creature_died', 'lethal_damage'):
+                errors.append(f'{at}: death_master exists only for death and lethal damage triggers')
             if ak == 'prevent_death' and (kind != 'lethal_damage' or trigger['role'] != action['role']):
                 errors.append(f'{at}: prevent_death is valid only in a lethal_damage rule for the same role')
             if ak == 'remove' and ('role' in action) == ('all_in' in action):

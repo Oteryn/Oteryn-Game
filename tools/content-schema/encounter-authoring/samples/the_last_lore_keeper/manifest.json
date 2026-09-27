@@ -5,6 +5,9 @@
     "ForgottenKnowledgeBossDeath": [
       "canary:creature/the_last_lore_keeper",
       "canary:creature/an_astral_glyph"
+    ],
+    "AstralGlyphDeath": [
+      "canary:creature/an_astral_glyph"
     ]
   },
   "sources": [
@@ -28,6 +31,13 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/monster/quests/kilmaresh/an_astral_glyph.lua",
       "blob_sha1": "a9c8792332ac999ba51c0dd398d8741e5df514dd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua",
+      "blob_sha1": "18cb3f3a9f568bbc8540b10b48720daf503a330d"
     }
   ],
   "entries": [
@@ -88,6 +98,34 @@
       ],
       "status": "approved_omission",
       "resolution": "An astral glyph has an empty config: no storage, not the thorn knight, not the horror, so its death has no effect in this event."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        19
+      ],
+      "status": "mapped",
+      "resolution": "An Astral Glyph is the astral_glyph participant; its file registers AstralGlyphDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of an astral glyph.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        3
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"the last lore keeper\", death position, true, true): full health, no owner.",
+      "destination": "/encounter/rules/1/actions/0"
     }
   ],
   "outcome_evidence": [

@@ -739,12 +739,208 @@ def azerus(build):
     build.entry(item, AZERUS, [27], 'approved_omission', None, 'The poff effect on each removed monster is cosmetic.')
 
 
+GORZINDEL = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_gorzindel.lua'
+GORZINDEL_LEVER = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/actions_gorzindel.lua'
+KNOWLEDGES = [('Stolen Knowledge of Armor', 2, 22), ('Stolen Knowledge of Summoning', 3, 23), ('Stolen Knowledge of Lifesteal', 4, 24),
+              ('Stolen Knowledge of Spells', 5, 25), ('Stolen Knowledge of Healing', 6, 26)]
+
+
+def gorzindel(build):
+    """gorzindelDeath and gorzindelHealth: Gorzindel is immune until the five stolen knowledges are dead; then the mean
+    minions vanish. The Stolen Tome of Portals opens a portal whose per-player room assignment stays unresolved."""
+    item = build.get('gorzindel', 'The Secret Library: Gorzindel', 'instance_per_party')
+    encounter = item['encounter']
+    build.participant(item, 'gorzindel', 'Gorzindel', 'gorzindelHealth')
+    build.participant(item, 'mean_minion', 'Mean Minion')
+    encounter['state']['flags'].append({'name': 'gorzindel_immune', 'initial': True})
+    encounter['anchors'].append({'key': 'knowledge_range', 'kind': 'area',
+                                 'description': 'Tiles within 12 of Canary (32687, 32719, 10) on that floor: the main room and the '
+                                                'five knowledge rooms.'})
+    roles = [slug(k) for k, _, _ in KNOWLEDGES]
+    for knowledge, _, _ in KNOWLEDGES:
+        build.participant(item, slug(knowledge), knowledge, 'gorzindelDeath')
+    for knowledge, line, lever_line in KNOWLEDGES:
+        role = slug(knowledge)
+        path = build.rule(item, {
+            'key': f'{role}_killed', 'trigger': {'kind': 'creature_died', 'role': role}, 'delay_ms': 1000,
+            'conditions': [{'kind': 'creature_present', 'role': r, 'anchor': 'knowledge_range', 'present': False} for r in roles],
+            'actions': [{'kind': 'remove', 'role': 'mean_minion'}, {'kind': 'flag', 'flag': 'gorzindel_immune', 'value': False}]})
+        build.entry(item, GORZINDEL, [11, 13, 16, 17, 37, line], 'mapped', path + '/trigger',
+                    f'onDeath of "{knowledge.lower()}" (placed once by {GORZINDEL_LEVER} line {lever_line}) runs a check one '
+                    'second later (delay_ms).')
+        build.entry(item, GORZINDEL, [9, 18, 19, 20, 21, 22, 23, 24, 25], 'mapped', path + '/conditions',
+                    'The check acts only when no stolen knowledge is within 12 tiles of (32687, 32719, 10).')
+        build.entry(item, GORZINDEL, [26, 27, 28, 30], 'mapped', path + '/actions/0',
+                    'Every mean minion in range is removed; mean minions exist only in the main room.')
+        build.entry(item, GORZINDEL, [31, 32], 'mapped', path + '/actions/1',
+                    'c:unregisterEvent("gorzindelHealth") ends Gorzindel\'s immunity (the gorzindel_immune flag).')
+    build.entry(item, GORZINDEL, [29], 'approved_omission', None, 'The poff effect on each removed minion is cosmetic.')
+    path = build.rule(item, {'key': 'gorzindel_immunity', 'trigger': {'kind': 'damage_taken', 'role': 'gorzindel', 'source': 'any'},
+                             'conditions': [{'kind': 'flag', 'flag': 'gorzindel_immune', 'value': True}],
+                             'actions': [{'kind': 'damage_modifier', 'role': 'gorzindel', 'multiplier_percent': 0, 'sources': 'any',
+                                          'until': 'this_hit'}]})
+    build.entry(item, GORZINDEL, [55, 57, 58, 59, 60, 63], 'mapped', path,
+                'gorzindelHealth (registered by the Gorzindel monster file) zeroes both damage parts of every hit while the '
+                'event stays registered; Gorzindel has no healing, so only damage is affected.')
+    build.participant(item, 'stolen_tome_of_portals', 'Stolen Tome of Portals')
+    build.entry(item, GORZINDEL, [38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49], 'unresolved_semantics', None,
+                'The Stolen Tome of Portals leaves a portal (item 1949, action 4952) on its tile and returns there after 10 s. '
+                'The portal sends each player who steps in to the next free knowledge room for 10 s '
+                '(movements_gorzindel.lua lines 1-38): a per-player room assignment outside the v1 vocabulary.')
+
+HEART = 'data-otservbr-global/scripts/quests/heart_of_destruction/'
+HEART_MINION = HEART + 'creaturescripts_heart_minion_death.lua'
+HEART_FINAL_LEVER = HEART + 'actions_final_lever.lua'
+
+
+def heart_minions(build):
+    """HeartMinionDeath: minion and boss deaths update the counters of the World Devourer fight and the resonance state of
+    the Rupture fight. The summon spells that read the counters are transcribed with those monsters."""
+    event = 'HeartMinionDeath'
+    item = build.get('world_devourer', 'Heart of Destruction: World Devourer', 'instance_per_party')
+    encounter = item['encounter']
+    for name in ('rage_summons', 'destruction_summons', 'devourer_summons', 'bosses_killed'):
+        encounter['state']['counters'].append({'name': name, 'initial': 0})
+    for name in ('the_hunger_killed', 'the_destruction_killed', 'the_rage_killed'):
+        encounter['state']['flags'].append({'name': name, 'initial': False})
+    build.entry(item, HEART_FINAL_LEVER, [457, 458, 459, 460, 462, 463, 464, 465], 'mapped', '/encounter/state',
+                'The final lever starts the fight with every counter at 0 and every boss flag false.')
+    minions = [('Frenzy', [7, 8, 9], ['rage_summons', 'devourer_summons']),
+               ('Disruption', [12, 13, 14], ['destruction_summons', 'devourer_summons']),
+               ('Charged Disruption', [12, 13, 14], ['destruction_summons', 'devourer_summons']),
+               ('Overcharged Disruption', [12, 13, 14], ['destruction_summons', 'devourer_summons'])]
+    for minion, lines, counters in minions:
+        role = slug(minion)
+        build.participant(item, role, minion, event)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'counter', 'counter': c, 'operation': 'add', 'value': -1} for c in counters]})
+        build.entry(item, HEART_MINION, [1, 2, 3, 4, 5, 6] + lines, 'mapped', path + '/actions',
+                    f'The death of a {minion.lower()} lowers the {" and ".join(counters)} counters by one.')
+    for boss, lines in (('The Hunger', [15, 16, 17]), ('The Destruction', [18, 19, 20]), ('The Rage', [21, 22, 23])):
+        role = slug(boss)
+        build.participant(item, role, boss, event)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'counter', 'counter': 'bosses_killed', 'operation': 'add', 'value': 1},
+                                             {'kind': 'flag', 'flag': f'{role}_killed', 'value': True}]})
+        build.entry(item, HEART_MINION, [1, 2, 3, 4, 5, 6] + lines, 'mapped', path + '/actions',
+                    f'The death of {boss.lower()} raises bosses_killed and sets its killed flag.')
+
+    rupture = build.get('rupture', 'Heart of Destruction: Rupture', 'instance_per_party')
+    rupture['encounter']['state']['counters'].append({'name': 'resonance_active', 'initial': -1})
+    build.entry(rupture, HEART + 'actions_rupture.lua', [25], 'mapped', '/encounter/state/counters/0',
+                'The Rupture lever starts the fight with RuptureResonanceActive at -1.')
+    build.participant(rupture, 'damage_resonance', 'Damage Resonance', event)
+    path = build.rule(rupture, {'key': 'damage_resonance_death', 'trigger': {'kind': 'creature_died', 'role': 'damage_resonance'},
+                                'conditions': [], 'actions': [{'kind': 'counter', 'counter': 'resonance_active', 'operation': 'set',
+                                                               'value': 0}]})
+    build.entry(rupture, HEART_MINION, [1, 2, 3, 4, 5, 6, 10, 11], 'mapped', path + '/actions/0',
+                'The death of the damage resonance sets RuptureResonanceActive to 0.')
+
+
+
+def heart_chargers(build):
+    """ChargerSpawn: a dead charger is replaced after 6 s on one of ten fixed spots."""
+    path_ = HEART + 'creaturescripts_charger_spawn.lua'
+    item = build.get('heart_chargers', 'Heart of Destruction: charger room', 'instance_per_party')
+    build.participant(item, 'charger', 'Charger', 'ChargerSpawn')
+    item['encounter']['anchors'].append({
+        'key': 'charger_spots', 'kind': 'area',
+        'description': 'Exactly ten tiles, Canary (32151, 31356, 14), (32154, 31353, 14), (32153, 31361, 14), (32158, 31362, 14), '
+                       '(32161, 31360, 14), (32156, 31357, 14), (32159, 31354, 14), (32163, 31356, 14), (32162, 31352, 14), '
+                       '(32158, 31350, 14).'})
+    path = build.rule(item, {'key': 'charger_respawn', 'trigger': {'kind': 'creature_died', 'role': 'charger'}, 'delay_ms': 6000,
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('Charger'), 'role': 'charger',
+                                                            'count': 1, 'at': {'random_in': 'charger_spots'}, 'owner': 'none',
+                                                            'health': 'full'}]})
+    build.entry(item, path_, [7, 8, 23, 25, 26], 'mapped', path + '/trigger',
+                'onDeath of a charger schedules chargerSpawn 6000 ms later, once per death (delay_ms).')
+    build.entry(item, path_, [1, 2, 4, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22], 'mapped', path + '/actions/0',
+                'Game.createMonster("charger", one of the ten positions picked uniformly, false, true): a full-health charger '
+                'on a uniformly random tile of the charger_spots anchor.')
+    build.entry(item, path_, [3, 24], 'approved_omission', None,
+                'spawningCharge marks a pending respawn for actions_charges_lever.lua line 65, which keeps the shared room '
+                'locked; an instance per party (D26) replaces the lock.')
+
+
+
+def small_boss_events(build):
+    """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
+    glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
+    keeper = build.items['the_last_lore_keeper']
+    build.participant(keeper, 'astral_glyph', 'An Astral Glyph', 'AstralGlyphDeath')
+    path = build.rule(keeper, {'key': 'astral_glyph_death', 'trigger': {'kind': 'creature_died', 'role': 'astral_glyph'}, 'conditions': [],
+                               'actions': [{'kind': 'spawn', 'creature': creature('The Last Lore Keeper'), 'role': 'the_last_lore_keeper',
+                                            'count': 1, 'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+    build.entry(keeper, glyph_death, [1, 2], 'mapped', path + '/trigger', 'onDeath of an astral glyph.')
+    build.entry(keeper, glyph_death, [3], 'mapped', path + '/actions/0',
+                'Game.createMonster("the last lore keeper", death position, true, true): full health, no owner.')
+
+    essence_death = 'data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_dragon_essence.lua'
+    item = build.get('the_first_dragon', 'The First Dragon', 'instance_per_party')
+    build.participant(item, 'dragon_essence', 'Dragon Essence', 'DragonEssenceDeath')
+    item['encounter']['anchors'].append({'key': 'lair_centre', 'kind': 'point', 'description': 'Canary (33617, 31023, 14).'})
+    build.define(item, creature('The First Dragon'))
+    text = 'BEWARE! THE FIRST DRAGON APROACHES!'
+    path = build.rule(item, {'key': 'dragon_essence_death', 'trigger': {'kind': 'creature_died', 'role': 'dragon_essence'}, 'conditions': [],
+                             'actions': [{'kind': 'remove', 'role': 'dragon_essence'},
+                                         {'kind': 'spawn', 'creature': creature('The First Dragon'), 'role': 'the_first_dragon',
+                                          'count': 1, 'at': {'anchor': 'lair_centre'}, 'owner': 'none', 'health': 'full'},
+                                         {'kind': 'say', 'subject': {'role': 'dragon_essence'}, 'text': text, 'mode': 'say'}]})
+    build.entry(item, essence_death, [1, 3], 'mapped', path + '/trigger', 'onDeath of a dragon essence.')
+    build.entry(item, essence_death, [4, 5, 6, 7, 8, 9, 10], 'mapped', path + '/actions/0',
+                'Every other dragon essence within 14 tiles of (33617, 31023, 14), the whole lair, is removed.')
+    build.entry(item, essence_death, [11], 'mapped', path + '/actions/1',
+                'Game.createMonster("The First Dragon", (33617, 31023, 14), true, true): full health, no owner.')
+    build.entry(item, essence_death, [12], 'mapped', path + '/actions/2',
+                'The dying essence says the warning (Canary places the text on the lair centre).')
+
+    ooze_death = 'data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_disgusting_ooze_death.lua'
+    item = build.items['plagirath']
+    build.participant(item, 'disgusting_ooze', 'Disgusting Ooze', 'DisgustingOozeDeath')
+    ooze = creature('Disgusting Ooze')
+    path = build.rule(item, {'key': 'disgusting_ooze_splits', 'trigger': {'kind': 'creature_died', 'role': 'disgusting_ooze'},
+                             'conditions': [{'kind': 'chance_percent', 'value': 10}],
+                             'actions': [{'kind': 'spawn', 'creature': ooze, 'role': 'disgusting_ooze', 'count': 2, 'at': 'death_position',
+                                          'owner': 'death_master', 'health': 'full'},
+                                         {'kind': 'say', 'subject': {'role': 'disgusting_ooze'}, 'text': 'The ooze splits and regenerates.',
+                                          'mode': 'say'}]})
+    build.entry(item, ooze_death, [1, 2, 3, 4, 5], 'mapped', path + '/trigger',
+                'onDeath of a disgusting ooze (Plagirath summons them, plagirath_summon.lua); summons run death events too.')
+    build.entry(item, ooze_death, [7], 'mapped', path + '/conditions/0', 'math.random(20) < 3: 2 of 20 values, a 10% chance.')
+    build.entry(item, ooze_death, [8, 9, 10, 11, 12, 13, 14], 'mapped', path + '/actions/0',
+                'Two new oozes on the death position with the master of the dying ooze (setMaster(creature:getMaster())).')
+    build.entry(item, ooze_death, [15], 'mapped', path + '/actions/1', 'creature:say(..., TALKTYPE_MONSTER_SAY).')
+
+    feroxa_path = 'data-otservbr-global/scripts/quests/grimvale/creaturescripts_feroxa_transform.lua'
+    item = build.get('feroxa', 'Grimvale: Feroxa', 'channel_shared')
+    build.participant(item, 'feroxa', 'Feroxa', 'FeroxaTransform')
+    build.participant(item, 'feroxa2', 'Feroxa2', 'FeroxaTransform')
+    build.define(item, creature('Feroxa3'))
+    build.define(item, creature('Feroxa4'))
+    path = build.rule(item, {'key': 'feroxa_second_form', 'trigger': {'kind': 'health_crossed', 'role': 'feroxa', 'percent': 50},
+                             'conditions': [], 'actions': [{'kind': 'transform', 'role': 'feroxa', 'into': creature('Feroxa2'),
+                                                            'health': 'full'}]})
+    build.entry(item, feroxa_path, [1, 2, 3, 4, 5, 6, 7, 12], 'mapped', path + '/trigger',
+                'onThink of a creature named "Feroxa" with 100000 maximum health: at 50000 health or less, 50%.')
+    build.entry(item, feroxa_path, [9, 10, 11], 'mapped', path + '/actions/0',
+                'Feroxa is removed and Feroxa2 (displayed as "Feroxa", 50000 health) is created in its place with full health.')
+    path = build.rule(item, {'key': 'feroxa_third_form', 'trigger': {'kind': 'health_crossed', 'role': 'feroxa2', 'percent': 50},
+                             'conditions': [], 'actions': [{'kind': 'transform', 'role': 'feroxa2',
+                                                            'into': {'random_of': [creature('Feroxa3'), creature('Feroxa4')]},
+                                                            'health': 'full'}]})
+    build.entry(item, feroxa_path, [13, 14, 23, 24], 'mapped', path + '/trigger',
+                'Feroxa2 carries the display name "Feroxa" and 50000 maximum health, so this branch runs: at 25000 or less, 50%.')
+    build.entry(item, feroxa_path, [16, 17, 18, 19, 20, 21, 22], 'mapped', path + '/actions/0',
+                'Feroxa3 or Feroxa4, picked uniformly, replaces it with full health.')
+    build.entry(item, feroxa_path, [8, 15], 'approved_omission', None, 'The poff effect is cosmetic.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events):
         transcribe(build)
     print(json.dumps(build.write()))
 

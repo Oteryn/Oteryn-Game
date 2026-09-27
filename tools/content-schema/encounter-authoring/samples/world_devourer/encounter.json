@@ -1,0 +1,271 @@
+{
+  "identity": {
+    "key": "canary:encounter/world_devourer",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Heart of Destruction: World Devourer",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "frenzy",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/frenzy",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "disruption",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/disruption",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "charged_disruption",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/charged_disruption",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "overcharged_disruption",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/overcharged_disruption",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_hunger",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_hunger",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_destruction",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_destruction",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_rage",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_rage",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "rage_summons",
+        "initial": 0
+      },
+      {
+        "name": "destruction_summons",
+        "initial": 0
+      },
+      {
+        "name": "devourer_summons",
+        "initial": 0
+      },
+      {
+        "name": "bosses_killed",
+        "initial": 0
+      }
+    ],
+    "flags": [
+      {
+        "name": "the_hunger_killed",
+        "initial": false
+      },
+      {
+        "name": "the_destruction_killed",
+        "initial": false
+      },
+      {
+        "name": "the_rage_killed",
+        "initial": false
+      }
+    ],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "frenzy_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "frenzy"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "rage_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "disruption_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "disruption"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "destruction_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "charged_disruption_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "charged_disruption"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "destruction_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "overcharged_disruption_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "overcharged_disruption"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "destruction_summons",
+          "operation": "add",
+          "value": -1
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "the_hunger_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_hunger"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "bosses_killed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "the_hunger_killed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "key": "the_destruction_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_destruction"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "bosses_killed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "the_destruction_killed",
+          "value": true
+        }
+      ]
+    },
+    {
+      "key": "the_rage_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_rage"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "bosses_killed",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "the_rage_killed",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}
