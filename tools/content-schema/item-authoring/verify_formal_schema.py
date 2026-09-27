@@ -1,4 +1,4 @@
-"""Focused positive/negative verification for the Item authoring schema candidate v3."""
+"""Focused positive/negative verification for the Item authoring schema candidate v4."""
 
 import json
 from copy import deepcopy
@@ -515,18 +515,21 @@ def main():
     case(
         "reject empty trade capability",
         lambda item, dependencies, manifest: item.__setitem__("trade", {}),
+        expected_error="trade: {} is not valid under any of the given schemas",
     )
     case(
         "reject market category without marketable=true",
         lambda item, dependencies, manifest: item.__setitem__(
             "trade", {"market_category": "weapons"}
         ),
+        expected_error="trade: 'marketable' is a required property",
     )
     case(
         "reject marketable=false with market category",
         lambda item, dependencies, manifest: item.__setitem__(
             "trade", {"marketable": False, "market_category": "weapons"}
         ),
+        expected_error="trade/marketable: True was expected",
     )
     case(
         "Canary market flag maps only to marketable=true",
@@ -553,6 +556,7 @@ def main():
             "mapped",
             "/item/trade/tradeable",
         ),
+        expected_error="source field destination is not an allowed formal Item path",
     )
     case(
         "reject Canary appearance field attributed to items.xml",
@@ -568,18 +572,21 @@ def main():
             ),
             manifest["sources"][0].__setitem__("path", "data/items/items.xml"),
         ),
+        expected_error="engine source path differs from the field's pinned origin",
     )
     case(
         "reject old unversioned string appearance binding",
         lambda item, dependencies, manifest: item["presentation"].__setitem__(
             "appearance_binding", "oteryn:asset.item.magic-wand"
         ),
+        expected_error="'oteryn:asset.item.magic-wand' is not of type 'object'",
     )
     case(
         "reject presentation sprite count inconsistent with geometry",
         lambda item, dependencies, manifest: dependencies["presentations"][0][
             "frame_groups"
         ][0]["geometry"].__setitem__("pattern_width", 2),
+        expected_error="sprite count differs from geometry/layers/phases",
     )
     case(
         "ordered duplicate sprite IDs remain valid",
@@ -598,6 +605,7 @@ def main():
         lambda item, dependencies, manifest: dependencies["presentations"][0][
             "source"
         ].__setitem__("digest_sha256", "0" * 64),
+        expected_error="appearance source differs from its pinned profile",
     )
     case(
         "exact raster atlas closes the presentation warning",
@@ -627,6 +635,7 @@ def main():
                 "pixels": [0, 1],
             },
         ),
+        expected_error="'pixels' was unexpected",
     )
     case(
         "reject data URI in sprite atlas binding",
@@ -641,12 +650,14 @@ def main():
                 "data_uri": "data:image/png;base64,AA==",
             },
         ),
+        expected_error="'data_uri' was unexpected",
     )
     case(
         "reject sprite atlas binding without revision and digest",
         lambda item, dependencies, manifest: dependencies["presentations"][
             0
         ].__setitem__("sprite_atlas", {"key": "oteryn:asset.atlas.client-items"}),
+        expected_error="'revision' is a required property",
     )
     case(
         "reject proficiency reference without source identity crosswalk",
@@ -660,6 +671,7 @@ def main():
                 ]
             ),
         ),
+        expected_error="missing admitted source identity crosswalk",
     )
     case(
         "reject unused admitted proficiency crosswalks",
@@ -688,6 +700,7 @@ def main():
         lambda item, dependencies, manifest: bind_magic_sword_proficiency(
             item, dependencies, include_crystal=False
         ),
+        expected_error="exact Canary and Crystal source corroboration is required",
     )
     case(
         "reject invented target for otherwise pinned proficiency 238/3",
@@ -696,18 +709,21 @@ def main():
             dependencies,
             target=ref("Proficiency", "completely-invented-target"),
         ),
+        expected_error="target has no admitted canonical profile",
     )
     case(
         "reject unknown proficiency source ID",
         lambda item, dependencies, manifest: bind_magic_sword_proficiency(
             item, dependencies, external_id="999999"
         ),
+        expected_error="exact source-to-target mapping is not in the pinned admitted index",
     )
     case(
         "reject unknown proficiency source version",
         lambda item, dependencies, manifest: bind_magic_sword_proficiency(
             item, dependencies, version=999
         ),
+        expected_error="exact source-to-target mapping is not in the pinned admitted index",
     )
     case(
         "reject duplicate proficiency source identity",
@@ -717,6 +733,7 @@ def main():
                 deepcopy(dependencies["proficiency_crosswalks"][0])
             ),
         ),
+        expected_error="duplicate source identity",
     )
     case(
         "reject wrong Crystal proficiency artifact path",
@@ -726,6 +743,7 @@ def main():
                 "path", "data/items/proficiencies.json"
             ),
         ),
+        expected_error="'path': 'data/items/proficiencies.json'",
     )
     case(
         "reject wrong Crystal proficiency artifact digest",
@@ -735,6 +753,7 @@ def main():
                 "digest_sha256", "0" * 64
             ),
         ),
+        expected_error="'digest_sha256': '000000000000",
     )
     case(
         "reject proficiency payload drift from admitted source profile",
@@ -744,6 +763,7 @@ def main():
                 "numerator", 8
             ),
         ),
+        expected_error="inline profile differs from its admitted canonical payload",
     )
     case(
         "reject non-contiguous proficiency selection slots",
@@ -753,6 +773,7 @@ def main():
                 "selection_slot", 4
             ),
         ),
+        expected_error="selection_slot must be contiguous in source order",
     )
     case(
         "reject more than one active proficiency perk per level",
@@ -760,6 +781,7 @@ def main():
             bind_magic_sword_proficiency(item, dependencies),
             item["proficiency"]["levels"][1].__setitem__("selection_count", 2),
         ),
+        expected_error="selection_count: 1 was expected",
     )
     case(
         "reject player proficiency experience in Item definition",
@@ -767,6 +789,7 @@ def main():
             bind_magic_sword_proficiency(item, dependencies),
             item["proficiency"].__setitem__("experience", 25000),
         ),
+        expected_error="'experience' was unexpected",
     )
     case(
         "reject player active proficiency selections in Item definition",
@@ -776,6 +799,7 @@ def main():
                 "active_perks", [{"level": 2, "selection_slot": 1}]
             ),
         ),
+        expected_error="'active_perks' was unexpected",
     )
     case(
         "light radius remains optional evidence",
@@ -894,6 +918,7 @@ def main():
         lambda item, dependencies, manifest: item["physical"].__setitem__(
             "weight", {"value": "-1.00", "unit": "oz"}
         ),
+        expected_error="physical/weight/value",
     )
     case(
         "reject invented level-magic shortfall multiplier",
@@ -907,6 +932,7 @@ def main():
                 },
             },
         ),
+        expected_error="damage_multiplier_per_failed_check/denominator: 2 was expected",
     )
     case(
         "reject zero chain override coefficient because zero means disabled",
@@ -917,18 +943,21 @@ def main():
                 "skill_formula_coefficient": {"numerator": 0, "denominator": 1},
             },
         ),
+        expected_error="weapon/chain:",
     )
     case(
         "reject free-form mantra",
         lambda item, dependencies, manifest: item["modifiers"].__setitem__(
             "mantra", "10"
         ),
+        expected_error="modifiers/mantra: '10' is not of type 'object'",
     )
     case(
         "reject legacy collapsed distance weapon kind",
         lambda item, dependencies, manifest: item["weapon"].__setitem__(
             "weapon_type", "distance"
         ),
+        expected_error="weapon_type: 'distance' is not one of",
     )
 
     templates = sorted((ROOT / "templates").glob("*.json"))
@@ -971,27 +1000,32 @@ def main():
             lambda item, dependencies, manifest, field=field, value=value: (
                 item.__setitem__(field, value)
             ),
+            expected_error=f"'{field}' was unexpected",
         )
 
     case(
         "reject unresolved definition reference",
         lambda item, dependencies, manifest: dependencies["definitions"].pop(),
+        expected_error="unresolved exact definition",
     )
     case(
         "reject unresolved asset",
         lambda item, dependencies, manifest: dependencies["assets"].pop(),
+        expected_error="unresolved asset oteryn:asset.effect.energy-shot",
     )
     case(
         "reject noncanonical ratio",
         lambda item, dependencies, manifest: item["weapon"].__setitem__(
             "hit_chance_percent", {"numerator": 2, "denominator": 2}
         ),
+        expected_error="ratio must be in lowest terms (zero is 0/1)",
     )
     case(
         "reject reflection without flat or percent value",
         lambda item, dependencies, manifest: item["modifiers"].__setitem__(
             "reflection", [{"damage_type": "energy"}]
         ),
+        expected_error="modifiers/reflection/0",
     )
     case(
         "reject duplicate specialized magic combat type",
@@ -1002,12 +1036,14 @@ def main():
                 {"combat_type": "death", "amount": 3},
             ],
         ),
+        expected_error="magic_level: duplicate combat_type",
     )
     case(
         "reject free-form proficiency augment",
         lambda item, dependencies, manifest: item.__setitem__(
             "proficiency", {"augments": ["damage"]}
         ),
+        expected_error="proficiency/augments/0: 'damage' is not of type 'object'",
     )
     case(
         "reject duplicate augment rank",
@@ -1020,30 +1056,35 @@ def main():
                 {"rank": 1, "value": {"kind": "signed_points", "value": 3}},
             ],
         ),
+        expected_error="augments/rank_values: duplicate rank",
     )
     case(
         "reject percent above 100",
         lambda item, dependencies, manifest: item["weapon"].__setitem__(
             "hit_chance_percent", {"numerator": 101, "denominator": 1}
         ),
+        expected_error="percentage must be within -100..100",
     )
     case(
         "reject inverted weapon damage range",
         lambda item, dependencies, manifest: item["weapon"].__setitem__(
             "damage_range", {"minimum": 20, "maximum": 10}
         ),
+        expected_error="minimum exceeds maximum",
     )
     case(
         "reject two hands without reserving other hand",
         lambda item, dependencies, manifest: item["equipment"].update(
             {"hands": 2, "reserved_slots": []}
         ),
+        expected_error="two-handed item must reserve the other hand",
     )
     case(
         "reject two hands reserving the same hand",
         lambda item, dependencies, manifest: item["equipment"].update(
             {"hands": 2, "reserved_slots": ["right_hand"]}
         ),
+        expected_error="must not reserve its own slot",
     )
     case(
         "reject duplicate equipment pattern IDs",
@@ -1056,30 +1097,35 @@ def main():
                 ]
             },
         ),
+        expected_error="duplicate pattern_id",
     )
     case(
         "reject fluid content without fluid_type",
         lambda item, dependencies, manifest: item.__setitem__(
             "fluid", {"role": "content"}
         ),
+        expected_error="content role requires fluid_type",
     )
     case(
         "reject placed fluid source role",
         lambda item, dependencies, manifest: item.__setitem__(
             "fluid", {"role": "source", "fluid_type": "water"}
         ),
+        expected_error="'source' is not one of",
     )
     case(
         "reject placed bed capability",
         lambda item, dependencies, manifest: item.__setitem__(
             "bed", {"sleepable": True}
         ),
+        expected_error="'bed' was unexpected",
     )
     case(
         "reject use_with when unusable",
         lambda item, dependencies, manifest: item.__setitem__(
             "use", {"usable": False, "use_with": True}
         ),
+        expected_error="use_with requires usable=true",
     )
     case(
         "reject direct self transformation",
@@ -1087,6 +1133,7 @@ def main():
             "transforms",
             [{"trigger": "use", "target": {"family": "Item", **item["identity"]}}],
         ),
+        expected_error="direct self-reference is not a valid lifecycle/dependency edge",
     )
     case(
         "reject unresolved manifest semantics",
@@ -1097,46 +1144,54 @@ def main():
                 "destination": "/item/weapon/weapon_type",
             }
         ),
+        expected_error="unresolved_semantics item[@id='template'] weapontype",
     )
     case(
         "reject mapped manifest destination that does not exist",
         lambda item, dependencies, manifest: manifest["entries"][0].__setitem__(
             "destination", "/item/weapon/not_a_field"
         ),
+        expected_error="missing destination /item/weapon/not_a_field",
     )
     case(
         "reject destination on external-domain manifest entry",
         lambda item, dependencies, manifest: manifest["entries"][1].__setitem__(
             "destination", "/item/taxonomy"
         ),
+        expected_error="only mapped entries may declare destination",
     )
     case(
         "reject terrain mapped into portable Item",
         lambda item, dependencies, manifest: manifest["entries"][1].update(
             {"status": "mapped", "destination": "/item/display_name"}
         ),
+        expected_error="world_object cannot map into portable Item",
     )
     case(
         "reject duplicate source-field disposition",
         lambda item, dependencies, manifest: manifest["entries"].append(
             dict(manifest["entries"][0])
         ),
+        expected_error="duplicate source-field disposition",
     )
     case(
         "reject incomplete source-field disposition",
         lambda item, dependencies, manifest: manifest["entries"].pop(),
+        expected_error="dispositions must equal the complete source field inventory",
     )
     case(
         "reject unused exact dependency",
         lambda item, dependencies, manifest: dependencies["definitions"].append(
             ref("Item", "unused")
         ),
+        expected_error="unused exact definitions",
     )
     case(
         "reject unused asset binding",
         lambda item, dependencies, manifest: dependencies["assets"].append(
             "oteryn:asset.unused"
         ),
+        expected_error="unused asset bindings",
     )
     case(
         "reject duplicate transform trigger",
@@ -1146,6 +1201,7 @@ def main():
             ),
             dependencies["definitions"].append(ref("Item", "other")),
         ),
+        expected_error="lifecycle/transforms: duplicate trigger",
     )
     case(
         "reject conflicting temporal and lifecycle decay targets",
@@ -1163,6 +1219,7 @@ def main():
             ),
             dependencies["definitions"].append(ref("Item", "other")),
         ),
+        expected_error="decay transform conflicts with temporal.decay_target",
     )
     case(
         "reject writable but unreadable document",
@@ -1175,6 +1232,7 @@ def main():
                 "max_characters": 100,
             },
         ),
+        expected_error="readable/readable: True was expected",
     )
     case(
         "reject write-once document without target",
@@ -1187,6 +1245,7 @@ def main():
                 "max_characters": 100,
             },
         ),
+        expected_error="'write_once_target' is a required property",
     )
     case(
         "reject imbuement family both allowed and excluded",
@@ -1198,6 +1257,7 @@ def main():
                 "excluded_families": ["fire"],
             },
         ),
+        expected_error="family cannot be both allowed and excluded",
     )
     case(
         "reject Wiki reverse relation mislabeled as Item definition",
@@ -1231,6 +1291,7 @@ def main():
                 ],
             ),
         ),
+        expected_error="Wiki relationship field requires relationship/reverse_relation",
     )
     case(
         "Wiki reverse relation routes outside Item",
@@ -1270,12 +1331,14 @@ def main():
         lambda item, dependencies, manifest: wiki_field(
             manifest, "attack", "definition", "mapped", "/item/display_name"
         ),
+        expected_error="Wiki field destination is not its allowed formal Item path",
     )
     case(
         "reject approved omission of a typed TibiaWiki BR field",
         lambda item, dependencies, manifest: wiki_field(
             manifest, "attack", "definition", "approved_omission"
         ),
+        expected_error="Wiki Item field requires a typed authoring mapping",
     )
     case(
         "Wiki attack maps to the formal attack leaf",
@@ -1308,6 +1371,7 @@ def main():
             "mapped",
             "/item/modifiers/magic_level",
         ),
+        expected_error="source field kind differs from its pinned disposition",
     )
     case(
         "Crystal showcharges maps to charge display semantics",
@@ -1369,6 +1433,7 @@ def main():
             "/item/physical/movable",
             True,
         ),
+        expected_error="mapped destination does not satisfy the pinned boolean inversion",
     )
     case(
         "reject negative engine weight routed to gameplay mass",
@@ -1381,6 +1446,7 @@ def main():
             "/item/physical/weight",
             -1,
         ),
+        expected_error="signed weight source and destination signs disagree",
     )
     case(
         "nonnegative TibiaWiki BR weight routes to gameplay mass",
@@ -1421,6 +1487,7 @@ def main():
             "/item/taxonomy/item_class",
             "container",
         ),
+        expected_error="mapped destination value differs from the pinned normalization",
     )
     case(
         "engine type value routes bed outside portable Item",
@@ -1444,6 +1511,7 @@ def main():
             "mapped",
             "/item/taxonomy/item_class",
         ),
+        expected_error="value-dependent source field requires source_value",
     )
     case(
         "nested equip eventtype routes to typed equipment",
@@ -1525,6 +1593,7 @@ def main():
                 False,
             ),
         ),
+        expected_error="chain destination mode differs from source_value",
     )
     case(
         "positive chain coefficient is preserved exactly",
@@ -1559,6 +1628,7 @@ def main():
             "/item/weapon/consumption_mode",
             "removecharge",
         ),
+        expected_error="mapped destination value differs from the pinned normalization",
     )
     case(
         "engine missile weapon kind normalizes to thrown_missile",
@@ -1586,6 +1656,7 @@ def main():
             "mapped",
             "/item/display_name",
         ),
+        expected_error="unsupported field for source_profile canary_47dfd51_item_definition_v1",
     )
     case(
         "Fandom historical name maps with exact revision profile",
@@ -1614,6 +1685,7 @@ def main():
                 "url", "https://example.invalid/not-fandom"
             ),
         ),
+        expected_error="Fandom URL differs from pinned historical source",
     )
     case(
         "reject Fandom profile with the wrong revision SHA-1",
@@ -1628,6 +1700,7 @@ def main():
             ),
             manifest["sources"][0].__setitem__("revision_sha1", "0" * 40),
         ),
+        expected_error="Fandom revision SHA-1 differs from pinned historical revision",
     )
     case(
         "Fandom unresolved historical imbuements field blocks readiness",
@@ -1638,6 +1711,7 @@ def main():
             "raw_text",
             "unresolved_semantics",
         ),
+        expected_error="unresolved_semantics pinned-source imbuements",
     )
     case(
         "Fandom immobile=false maps by checked inversion to movable=true",
@@ -1666,6 +1740,7 @@ def main():
                 False,
             ),
         ),
+        expected_error="mapped destination does not satisfy the pinned boolean inversion",
     )
     case(
         "Fandom immobile=true remains WorldObject-owned",
@@ -1684,12 +1759,14 @@ def main():
         lambda item, dependencies, manifest: manifest["sources"][0].__setitem__(
             "revision", "wrong"
         ),
+        expected_error="source revision differs from pinned source_profile",
     )
     case(
         "reject invalid provenance capture timestamp",
         lambda item, dependencies, manifest: manifest["sources"][0].__setitem__(
             "captured_at", "definitely-not-a-date"
         ),
+        expected_error="'definitely-not-a-date' is not a 'date-time'",
     )
     case(
         "Wiki modificadores requires typed modifier content",
@@ -1699,6 +1776,7 @@ def main():
                 manifest, "modificadores", "definition", "mapped", "/item/modifiers"
             ),
         ),
+        expected_error="modificadores requires at least one typed modifier; editor_notes alone is insufficient",
     )
     case(
         "reject TibiaWiki BR profile with an unpinned stable source",
@@ -1706,6 +1784,7 @@ def main():
             wiki_field(manifest, "name", "definition", "mapped", "/item/display_name"),
             manifest["sources"][0].__setitem__("revision", "stableid:wrong"),
         ),
+        expected_error="TibiaWiki BR revision differs from pinned stable source",
     )
     case(
         "Wiki modificadores maps to a typed modifier aggregate",
@@ -1724,6 +1803,7 @@ def main():
                 manifest, "modificadores", "definition", "mapped", "/item/modifiers"
             ),
         ),
+        expected_error="modificadores has unresolved clauses and is not import-ready",
     )
     case(
         "reject Wiki attrib mapped to the wrong Item leaf",
@@ -1733,6 +1813,7 @@ def main():
             ),
             wiki_field(manifest, "attrib", "raw_text", "mapped", "/item/display_name"),
         ),
+        expected_error="Wiki field destination is not its allowed formal Item path",
     )
     case(
         "Wiki attrib retains raw text and resolves a typed promotion",
