@@ -4895,7 +4895,7 @@
       "consumers": [
         "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
       ],
-      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Out-of-combat detection is about three cadences."
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Out-of-combat loss is declared three cadences after the first unanswered probe (four after the baseline snapshot)."
     },
     {
       "id": "FND04B-LIVENESS-IDLE-MISSED",
@@ -4917,7 +4917,7 @@
       "consumers": [
         "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
       ],
-      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. "
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss."
     },
     {
       "id": "FND04B-LIVENESS-COMBAT-PROBE-MS",

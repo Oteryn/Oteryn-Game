@@ -390,16 +390,17 @@ where
             Probe,
         }
         // Both futures are cancel-safe: the frame reader keeps partial bytes and a dropped
-        // interval tick is not consumed.
+        // interval tick is not consumed. The tick is polled first so a client that keeps
+        // frames flowing cannot starve the cadence; it is ready at most once per interval.
         let next = {
             let mut read = std::pin::pin!(frames.next(stream));
             let mut tick = std::pin::pin!(cadence.tick());
             std::future::poll_fn(|context| {
-                if let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
-                    return std::task::Poll::Ready(Next::Frame(read));
-                }
                 if tick.as_mut().poll(context).is_ready() {
                     return std::task::Poll::Ready(Next::Probe);
+                }
+                if let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
+                    return std::task::Poll::Ready(Next::Frame(read));
                 }
                 std::task::Poll::Pending
             })
@@ -421,10 +422,13 @@ where
                 let Ok(probe) = probe else {
                     return ConnectionEnd::AdmittedThenDisconnected(admitted);
                 };
-                if write_frame(stream, &probe).await.is_err() {
-                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                // A peer that does not consume even one small probe within a cadence is not
+                // in control; an unbounded write would also stall the cadence itself.
+                match tokio::time::timeout(policy.interval, write_frame(stream, &probe)).await {
+                    Ok(Ok(())) => continue,
+                    Ok(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+                    Err(_) => return ConnectionEnd::AdmittedThenControlLost(admitted),
                 }
-                continue;
             }
         };
         let command = match decode_wire_envelope(&frame) {
@@ -971,6 +975,55 @@ mod tests {
             client?;
             assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
             assert_eq!(*authority.steps.borrow(), [StepDirection::East]);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn flooding_stale_acks_cannot_starve_the_cadence() -> Result<(), Box<dyn Error>> {
+        use std::io::{Read, Write};
+        run(async {
+            let authority = StepAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
+            let address = listener.local_addr()?;
+            // A separate thread writes faster than the server reads, as a real flooding
+            // client does: after probe 1 it repeats acks of probe 1 and never answers a later
+            // probe.
+            let flooder = std::thread::spawn(move || -> std::io::Result<()> {
+                let mut socket = std::net::TcpStream::connect(address)?;
+                let mut seen = Vec::new();
+                let probe = framed(&encode_liveness_probe(ADMITTED_GENERATION, 1).map_err(
+                    |error| std::io::Error::new(std::io::ErrorKind::InvalidData, error),
+                )?);
+                let mut chunk = [0_u8; 4096];
+                while !seen
+                    .windows(probe.len())
+                    .any(|window| window == probe.as_slice())
+                {
+                    let read = socket.read(&mut chunk)?;
+                    if read == 0 {
+                        return Ok(());
+                    }
+                    seen.extend_from_slice(&chunk[..read]);
+                }
+                let stale: Vec<u8> = (0..512).flat_map(|_| framed(&ack(1, 1))).collect();
+                while socket.write_all(&stale).is_ok() {}
+                Ok(())
+            });
+            let (stream, _) = listener.accept()?;
+            stream.set_nonblocking(true)?;
+            let mut stream = tokio::net::TcpStream::from_std(stream)?;
+            let end = tokio::time::timeout(
+                std::time::Duration::from_secs(5),
+                serve_admitted(&mut stream, positioned()?, &authority, FAST),
+            )
+            .await
+            .map_err(|_| "the flood starved the liveness cadence")?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenControlLost(_)));
+            drop(stream);
+            let _ = flooder.join();
             Ok(())
         })
     }
