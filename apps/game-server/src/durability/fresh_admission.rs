@@ -1779,6 +1779,165 @@ impl FreshAdmissionStore {
     }
 }
 
+/// Outcome of one grace-expiry release attempt for a lost GameSession.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExpiredLossReleaseV1 {
+    /// The session is not a reconnectable loss any more (resumed, replaced or
+    /// already released); nothing is this attempt's to release.
+    NotApplicable,
+    /// The original grace deadline is still ahead on the durable clock.
+    NotExpired { deadline: i64, now: i64 },
+    /// The terminal release is durable (possibly by an earlier attempt).
+    Released { decided_at: i64 },
+    /// The lost session is already TERMINAL (an earlier attempt's commit whose
+    /// acknowledgement was lost, or another terminal owner). The Channel actor
+    /// bound to this exact session is no longer controllable.
+    Terminal,
+}
+
+/// The owning release source for one expired loss: the current claim rows,
+/// cleared for the terminal session at the durable decision time.
+struct ExpiredLossReleaseOwner {
+    current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    transition: AdmissionClaimTransitionEvidenceV1,
+}
+impl fresh_source_sealed::Sealed for ExpiredLossReleaseOwner {}
+impl AdmissionClaimOwningSourceV1 for ExpiredLossReleaseOwner {
+    fn prepare_lifecycle_claim(
+        &self,
+        operation: &AdmissionClaimLifecycleOperationV1,
+        _now: i64,
+    ) -> std::result::Result<
+        AdmissionClaimLifecycleResolutionV1,
+        AdmissionAuthorityPublicationErrorV1,
+    > {
+        if !matches!(
+            operation,
+            AdmissionClaimLifecycleOperationV1::TerminalRelease { .. }
+        ) {
+            return Err(AdmissionAuthorityPublicationErrorV1::Invalid);
+        }
+        Ok(AdmissionClaimLifecycleResolutionV1 {
+            current_session: self.current,
+            evidence: self.transition.clone(),
+        })
+    }
+    fn prepare_fresh_claim(
+        &self,
+        _binding: &FreshAdmissionAuditBindingV1,
+        _now: i64,
+    ) -> std::result::Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1>
+    {
+        Err(AdmissionAuthorityPublicationErrorV1::Unavailable)
+    }
+}
+
+impl FreshAdmissionStore {
+    /// FND-04B §6 grace expiry: once the original deadline of a committed loss
+    /// has passed on the durable clock, terminally release the session. The
+    /// release is prepared from the *current* claim rows (an owner refresh
+    /// since admission is not an ownership change) and committed through the
+    /// exact fenced [`Self::release`], which rejects any concurrent change of
+    /// the session or its claims. A lost acknowledgement is reconciled, never
+    /// decided again.
+    pub async fn release_expired_loss(
+        &self,
+        session: GameSessionId,
+        account_id: &str,
+    ) -> Result<ExpiredLossReleaseV1> {
+        let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
+        let Some(deadline) = current.current_original_grace_deadline() else {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        };
+        if current.session_state() != GameSessionState::Reconnectable
+            || current.current_control_loss_epoch().is_none()
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        if now < deadline {
+            return Ok(ExpiredLossReleaseV1::NotExpired { deadline, now });
+        }
+        let keys = [
+            AdmissionAuthorityGuardKeyV1::Account {
+                account_id: account_id.into(),
+            },
+            AdmissionAuthorityGuardKeyV1::Character(current.commit().character_id()),
+        ];
+        let predecessors = self
+            .guards
+            .load(&keys)
+            .await?
+            .into_iter()
+            .collect::<Option<Vec<_>>>()
+            .ok_or(DurabilityError::Unavailable)?;
+        // Successor source times never precede a predecessor's (a row last
+        // published on a faster host clock): until the durable clock catches
+        // up, the fenced release refuses and a later attempt retries.
+        let prepared_at = predecessors
+            .iter()
+            .map(|row| row.source.source_observed_at)
+            .fold(now, i64::max);
+        let mut successors = predecessors.clone();
+        for row in &mut successors {
+            row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: row.publication_revision,
+            };
+            row.publication_revision = row
+                .publication_revision
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            row.source.source_revision = row
+                .source
+                .source_revision
+                .checked_add(1)
+                .ok_or(DurabilityError::InvalidStoredState)?;
+            row.source.decision_identity =
+                format!("grace-expiry-release:{}", row.source.source_revision);
+            row.source.source_observed_at = prepared_at;
+            row.source.clock_uncertainty_seconds = 0;
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                    security.provenance.publication_revision = row.publication_revision;
+                    *presence = None;
+                }
+                AdmissionAuthorityGuardStateV1::Character { holder, .. } => *holder = None,
+                _ => return Err(DurabilityError::InvalidStoredState),
+            }
+        }
+        let owner = ExpiredLossReleaseOwner {
+            current,
+            transition: AdmissionClaimTransitionEvidenceV1 {
+                predecessors,
+                successors,
+                prepared_at,
+            },
+        };
+        let transition = match TerminalReleaseClaimTransitionV1::prepare(
+            &owner,
+            account_id,
+            current,
+            prepared_at,
+        ) {
+            Ok(transition) => transition,
+            // Ownership no longer names this session: not this release's to make.
+            Err(AdmissionAuthorityPublicationErrorV1::Stale) => {
+                return Ok(ExpiredLossReleaseV1::NotApplicable);
+            }
+            Err(_) => return Err(DurabilityError::Unavailable),
+        };
+        match self.release(&transition).await {
+            Ok(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
+            Err(error) => match self.reconcile_lifecycle(transition.evidence()).await? {
+                Some(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),
+                None => Err(error),
+            },
+        }
+    }
+}
+
 pub(super) struct PreparedReplacementClaims {
     rows: Vec<Option<AdmissionAuthorityPublicationChangeV1>>,
     encoded_successors: Vec<String>,
