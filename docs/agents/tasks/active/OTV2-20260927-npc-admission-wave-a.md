@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-npc-admission-wave-a
 title: NPC admission slice 4 - wave A (983 NPCs) into WorldProject/v2 and the NPC and Service tree families
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 1024
 jira: KAN-16
 base_sha: e2e2038b0f1020751f87b75df174cdfadc9b430c
 head_sha: null
