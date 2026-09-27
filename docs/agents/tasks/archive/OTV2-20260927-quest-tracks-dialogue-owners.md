@@ -4,22 +4,22 @@
 task_id: OTV2-20260927-quest-tracks-dialogue-owners
 title: Quest format - declared tracks, NPC dialogue binding, owner decisions D37-D42
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 1029
 base_sha: 9367bb33e91a8f3c74b1eba70fc0c9db6f8534e6
-head_sha: null
-final_head_sha: null
+head_sha: 13e8f678e946b658934f034c20b94aeed35f6252
+final_head_sha: 13e8f678e946b658934f034c20b94aeed35f6252
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260927-quest-tracks-dialogue-owners.md
+  - docs/agents/tasks/archive/OTV2-20260927-quest-tracks-dialogue-owners.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
   - docs/architecture/OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md
