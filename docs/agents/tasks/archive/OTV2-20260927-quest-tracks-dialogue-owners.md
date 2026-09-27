@@ -4,15 +4,15 @@
 task_id: OTV2-20260927-quest-tracks-dialogue-owners
 title: Quest format - declared tracks, NPC dialogue binding, owner decisions D37-D42
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 1029
 base_sha: 9367bb33e91a8f3c74b1eba70fc0c9db6f8534e6
-head_sha: null
-final_head_sha: null
+head_sha: 13e8f678e946b658934f034c20b94aeed35f6252
+final_head_sha: 13e8f678e946b658934f034c20b94aeed35f6252
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-27
@@ -75,3 +75,7 @@ authority; accepting it needs owner decisions and independent review.
 - No narrative text is committed: keyword phrases longer than two words are text references.
 - `validate_governance.py` and `validate_repository_policy.py` pass.
 - Jira: mapping to a programme Story not resolved in this session (pending).
+
+## Completion
+
+Merged as PR #1029 (`767890c710340b682b3a2f01284cc90ff8168b3c`) from final head `13e8f678e946b658934f034c20b94aeed35f6252` on 2026-09-27. Ownership released.
