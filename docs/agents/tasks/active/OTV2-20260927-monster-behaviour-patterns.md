@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-monster-behaviour-patterns
 title: Wiki ability scenes, spell behaviour patterns and plain-combat fields for Canary monsters (D18, D19)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 959
 jira: KAN-16
 base_sha: 39ab2aa4dac0fe1b11d3e00fde0d03967c60f0d3
 head_sha: null
