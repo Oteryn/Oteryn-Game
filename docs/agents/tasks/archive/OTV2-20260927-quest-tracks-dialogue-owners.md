@@ -75,3 +75,7 @@ authority; accepting it needs owner decisions and independent review.
 - No narrative text is committed: keyword phrases longer than two words are text references.
 - `validate_governance.py` and `validate_repository_policy.py` pass.
 - Jira: mapping to a programme Story not resolved in this session (pending).
+
+## Completion
+
+Merged as PR #1029 (`767890c710340b682b3a2f01284cc90ff8168b3c`) from final head `13e8f678e946b658934f034c20b94aeed35f6252` on 2026-09-27. Ownership released.

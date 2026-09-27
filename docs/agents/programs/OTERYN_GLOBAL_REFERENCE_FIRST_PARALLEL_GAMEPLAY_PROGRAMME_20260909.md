@@ -26,7 +26,7 @@ This document is a scheduling/execution plan over already accepted architecture.
 
 The accepted first external behavior target is:
 
-> Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary.
+> Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary. Superseded 2026-09-27: the target is now 2026-09-27, see `OTERYN_TARGET_DATE_20260927_DECISION.md`.
 
 For this programme use these unambiguous terms:
 

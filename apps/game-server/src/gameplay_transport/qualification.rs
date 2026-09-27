@@ -1585,17 +1585,22 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     }
     evidence("replayed_grant=refused admissions=1");
 
-    // Concurrent use of one valid grant: at most one GameSession.
+    // Concurrent use of one valid grant: exactly one GameSession. Each attempt refreshes
+    // the account's owner evidence, which can leave the others' rounds stale; they retry
+    // from fresh evidence and the grant replay key admits only one.
     let generation = platform_generation(descriptor, &accounts[1]).await?;
     let second = next_grant(&accounts[1], characters[1], generation);
     let token = sign_grant(&second.borrowed(), now_seconds()?);
     let raw = framed(&bootstrap(1, 1, &characters[1], &token));
-    let (left, right) = join(
-        exchange(address, &exact, &raw),
+    let ((first, second), third) = join(
+        join(
+            exchange(address, &exact, &raw),
+            exchange(address, &exact, &raw),
+        ),
         exchange(address, &exact, &raw),
     )
     .await;
-    let concurrent: Vec<[u8; 16]> = [left?, right?]
+    let concurrent: Vec<[u8; 16]> = [first?, second?, third?]
         .iter()
         .filter_map(accepted_session)
         .collect();
@@ -1603,7 +1608,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     if accepted != 1 || committed_admissions(url).await? != 2 {
         return Err(format!("concurrent same-grant admission accepted {accepted}").into());
     }
-    evidence("concurrent_same_grant accepted=1 admissions=2");
+    evidence("concurrent_same_grant attempts=3 accepted=1 admissions=2");
 
     evidence("stage=control_loss");
     // DISCONNECT-PROTECTION-V1: the admission-stage transport closed on a command gap and the

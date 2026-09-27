@@ -411,7 +411,7 @@ fn draft() -> ProjectV2Draft {
             semantic_schema_version: "reference-schema-v1".into(),
             licensing_metadata: "license:project-owned-v1".into(),
             world_id: "0123456789ab70cd8ef0123456789abc".into(),
-            coordinate_frame: "global-target-2026-07-28".into(),
+            coordinate_frame: "global-target-2026-09-27".into(),
             records: records(),
             imports: vec![],
             metadata: vec![],

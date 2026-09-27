@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-thirteenth-encounter-slice
 title: Monster spawn callbacks (thirteenth encounter slice)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1023
 jira: KAN-16
 base_sha: 52b983faad527247dfcd7cdc7a3dc41b834df9b1
-head_sha: null
-final_head_sha: null
+head_sha: b5e526bdce2991698e0022a15cffb96714492506
+final_head_sha: b5e526bdce2991698e0022a15cffb96714492506
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -55,3 +55,8 @@ Authority: owner direction in this session ("kontynuuj dalej to co możesz"). Ru
 - `population_census.py` reports 1,523 resolved, 127 blocked and 6 not converted.
 - Crystal (D30) carries none of these callbacks, so Canary is transcribed.
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1023 (`c385e90fb63af1d6c8469ee51cd455512b4b2b07`) from final head `b5e526b`; required checks passed on that head.
+Owner released.

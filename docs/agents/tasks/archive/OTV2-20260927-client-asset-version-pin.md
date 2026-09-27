@@ -4,15 +4,15 @@
 task_id: OTV2-20260927-client-asset-version-pin
 title: Pin target client graphics to Tibia 15.30 via a checksum-only asset manifest
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 1025
 base_sha: null
-head_sha: null
-final_head_sha: null
+head_sha: d7ec11f9f6f4ed4d0590ea89af699b57e1a3abc4
+final_head_sha: d7ec11f9f6f4ed4d0590ea89af699b57e1a3abc4
 final_head_frozen_at: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-27T00:00:00Z
@@ -207,3 +207,7 @@ owner_action_required: null
 blocker: null
 next_action: run validate_governance.py and the imports-covering content-routing tests, then publish and freeze the exact remote head
 ```
+
+## Completion
+
+Merged as PR #1025 (`da042ecfe8524be463319c35518ef5972987de6f`) from final head `d7ec11f9f6f4ed4d0590ea89af699b57e1a3abc4` on 2026-09-27. Ownership released.
