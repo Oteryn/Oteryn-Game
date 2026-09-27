@@ -189,4 +189,3 @@ owner_action_required: null
 blocker: null
 next_action: publish through guarded high-level API writes, verify the exact remote delta and freeze the returned head
 ```
-
