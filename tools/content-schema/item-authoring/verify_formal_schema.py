@@ -676,9 +676,7 @@ def main():
     case(
         "reject unused admitted proficiency crosswalks",
         lambda item, dependencies, manifest: (
-            dependencies["definitions"].append(
-                deepcopy(MAGIC_SWORD_PROFICIENCY_REF)
-            ),
+            dependencies["definitions"].append(deepcopy(MAGIC_SWORD_PROFICIENCY_REF)),
             dependencies["proficiency_crosswalks"].extend(
                 [
                     proficiency_crosswalk(CANARY_PROFICIENCY_SOURCE),
@@ -2773,8 +2771,7 @@ def main():
         {
             "name": "real-source defaults bind delivery task eligibility value",
             "passed": any(
-                "delivery task eligibility differs" in error
-                for error in probe_errors
+                "delivery task eligibility differs" in error for error in probe_errors
             ),
         }
     )
