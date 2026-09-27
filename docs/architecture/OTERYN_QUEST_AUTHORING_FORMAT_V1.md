@@ -195,6 +195,10 @@ Quest (kind reward_only)             content/quests/definitions/
   requirements_from_wiki             premium, level (as recorded; not yet typed)
   claims[]                           RewardClaim refs
 
+Quest (kind script_only)             content/quests/definitions/
+  identity, display_name, wiki,      as reward-only quests; no missions, start or gates
+  requirements_from_wiki, claims[]
+
 Quest (kind storyline)               content/quests/definitions/ + missions/
   identity, display_name, wiki,      as reward-only quests; claims[] may be empty
   requirements_from_wiki, claims[]
@@ -311,8 +315,15 @@ Seven doors are opened by their own script, identical in both servers:
 ### 6.2 Quest log
 
 `samples/questlog/` (`ots_questlog.py`, deterministic, reads the chest and door samples):
-`quests.json` is the whole quest catalogue (storyline quests plus the reward-only quests no
-storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` the mission mapping.
+`quests.json` is the whole quest catalogue (storyline quests, the reward-only quests no storyline
+quest absorbs, and the script-only quests), `progress.json` the progress tracks, `manifest.json` the
+mission mapping.
+
+A **script-only** quest is one both servers implement in scripts (bosses, chests, world state) but
+neither lists in its quest log, for example Soul War, Kilmaresh and Heart of Destruction.
+`script_quests.json` names each one by its wiki title and gives the basis of the match. For 25 the
+wiki title and the script directory match once normalised. For 10 an explicit key covers an
+apostrophe, an article, a plural or a source spelling.
 
 | | Count |
 |---|---:|
@@ -321,7 +332,7 @@ storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` t
 | Journals: per stage / fixed / template | 468 / 38 / 23 |
 | Progress tracks (mission and start / auxiliary, §6.5) / set by both servers' Lua / with no literal writer found | 1,001 (556 / 445) / 704 / 109 |
 | Storyline quests linked to a wiki quest | 52 |
-| Reward-only quests absorbed by a storyline quest / catalogue quests | 21 / 157 |
+| Reward-only quests absorbed by a storyline quest / script-only quests / catalogue quests | 21 / 35 / 192 |
 | Gates / reward claims attached to storyline quests | 138 / 98 |
 | Missions mapped / of which decided from a conflict (§6.4) | 529 / 35 |
 | Transitions / missions with at least one | 1,832 / 422 |
@@ -412,7 +423,8 @@ state. Under D35 the quest domain owns them too, so the catalogue declares each 
 | The script directory whose scripts write the missions of one quest | 8 |
 | `track_owners.json`: assigned from the track and script names and the script code, checked by sampling | 158 |
 
-- 81 tracks belong to a wiki quest that is not in the catalogue yet (`wiki_quest`).
+- The 81 tracks that belonged to a wiki quest missing from the catalogue now name their
+  script-only quest.
 - 8 belong to no quest; their `note` gives the reason, for example world changes, generic helpers and
   an example script.
 - 33 auxiliary tracks are read by door gates.
@@ -451,23 +463,24 @@ v3.6.1, the `mapDownloadUrl` of the pinned revision, sha256 `a80de1dd…`) and C
 quest, the engine features it needs and the data gaps it still has. It joins interactions to
 quests through the tracks they read or write, then through the script directory.
 
-Built in the order that completes the most quests first, the features give (157 quests):
+Built in the order that completes the most quests first, the features give (192 quests):
 
 | Built so far | Quests complete on the engine side (without data gaps) |
 |---|---:|
-| `USE` trigger and reward claim | 76 (76) |
-| + world objects, step triggers, teleports | 82 (77) |
-| + quest state and NPC dialogue | 91 (85) |
-| + progress doors | 104 (97) |
-| + item consumption and hand-out, delayed callbacks | 115 (98) |
-| + summons, kill triggers, conditions, achievements | 134 (98) |
-| + creature removal, boss cooldowns, key-value state, outfits, experience, mounts | 157 (98) |
+| `USE` trigger and reward claim | 75 (75) |
+| + world objects, teleports, step triggers | 88 (76) |
+| + item consumption, kill triggers, quest state | 95 (78) |
+| + NPC dialogue and progress doors | 121 (98) |
+| + delayed callbacks, item hand-out, summons, achievements, conditions | 158 (99) |
+| + creature removal, boss cooldowns, key-value state, outfits, mounts, experience | 192 (99) |
 
-- The reward chest is the first target: with the `USE` trigger it completes 76 quests.
+- The reward chest is the first target: with the `USE` trigger it completes 75 quests.
 - The Queen of the Banshees needs ten features, including summons and delayed callbacks, and still
   has 18 data gaps in 9 interactions.
-- 346 of 1,221 interactions join no catalogue quest. Most belong to quests the catalogue does not
-  have yet (Soul War, Kilmaresh, Heart of Destruction and others).
+- 29 of 1,221 interactions join no catalogue quest. They are generic scripts (Rookgaard helpers,
+  Candia bosses, Marapur, the Raging Mage tower, Soulpit and others), not quest content.
+  Five script directories whose name differs from their quest key are joined explicitly
+  (`DIRECTORY_QUESTS`).
 
 ## 7. Ownership
 
@@ -480,7 +493,7 @@ Built in the order that completes the most quests first, the features give (157 
   child is executed by its owner (quest, ability, item transaction), never by the interaction.
 - Gates: Content (definition and placements). Quest and level checks read character state; a key
   door's lock is channel or instance world-object state.
-- Quest records: `content/quests/definitions/` (`reward_only`, `storyline`) and
+- Quest records: `content/quests/definitions/` (`reward_only`, `script_only`, `storyline`) and
   `content/quests/missions/`.
 - Mission progress: Character persistence (one integer per track), shared across channels. Only the
   quest domain writes it, by validating a requested transition against the current stage (D35);
@@ -518,7 +531,7 @@ A player completing The Queen of the Banshees needs:
 | Quest lowering from content | none | a Quest/Interaction definition family in the Reference linker |
 
 The smallest playable slice is a reward chest: a `USE` trigger, one DUR-03 hand-out and a per-character
-claim. It needs only GAME-INTERACTION-01 and DUR-03 accepted and a claim store, and it completes 76
+claim. It needs only GAME-INTERACTION-01 and DUR-03 accepted and a claim store, and it completes 75
 quests on the engine side (§6.7). It also needs the first durable inventory: today only XP persists,
 and item weight and capacity limits are still `PARITY_PENDING_EVIDENCE` (GAME-ITEM-01). A full storyline quest
 needs every row above.

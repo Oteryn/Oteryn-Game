@@ -64,6 +64,14 @@ REASON_FEATURE = {
 }
 OWNER_FEATURE = {'Movement': 'teleport', 'WorldObject': 'world_object', 'Ability': 'summon',
                  'Achievement': 'achievement', 'Outfit': 'outfit', 'Mount': 'mount', 'Experience': 'experience'}
+# Script directories whose name differs from their catalogue quest key beyond punctuation.
+DIRECTORY_QUESTS = {
+    'the_order_of_lion': 'canary:quest/the_order_of_the_lion_quest',
+    'alawars_vault': 'canary:quest/alawar_s_vault_quest',
+    'fathers_burden': 'canary:quest/a_father_s_burden_quest',
+    'mintwallin_quest': 'canary:quest/mintwallin_cyclops_quest',
+    'thieves_guild': 'canary:quest/the_thieves_guild_quest',
+}
 EDGE_FEATURE = {'USE': 'trigger_use', 'ON_ENTER': 'trigger_step', 'ON_LEAVE': 'trigger_step',
                 'ON_CONTACT': 'trigger_step', 'ON_DEATH': 'trigger_kill', 'ON_KILL': 'trigger_kill'}
 # A feature that cannot work without another one: a chest is used, and progress
@@ -188,6 +196,8 @@ def main():
         if not joined:
             candidates = by_name[normalized(directory)]
             joined = candidates if len(candidates) == 1 else set()
+        if not joined and directory in DIRECTORY_QUESTS:
+            joined = {DIRECTORY_QUESTS[directory]} & info.keys()
         if not joined:
             unlinked.append(key)
             continue

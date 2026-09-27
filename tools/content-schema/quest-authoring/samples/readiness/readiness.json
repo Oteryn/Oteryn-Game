@@ -39,8 +39,8 @@
    "creature_removal": 17,
    "door_progress": 51,
    "experience": 2,
-   "item_consume": 56,
-   "item_hand_out": 44,
+   "item_consume": 58,
+   "item_hand_out": 45,
    "kv_state": 8,
    "mount": 4,
    "npc_dialogue": 67,
@@ -52,12 +52,12 @@
    "teleport": 76,
    "trigger_kill": 48,
    "trigger_step": 74,
-   "trigger_use": 174,
-   "world_object": 74
+   "trigger_use": 175,
+   "world_object": 76
   },
-  "quests_without_data_gaps": 101,
-  "interactions_joined": 1181,
-  "interactions_unlinked": 40
+  "quests_without_data_gaps": 99,
+  "interactions_joined": 1192,
+  "interactions_unlinked": 29
  },
  "unlock_order": [
   {
@@ -69,122 +69,122 @@
   {
    "feature": "reward_claim",
    "owner": "DUR-03 inventory mint and RewardClaim (D39-D42)",
-   "quests_complete_on_engine_side": 77,
-   "of_which_without_data_gaps": 77
+   "quests_complete_on_engine_side": 75,
+   "of_which_without_data_gaps": 75
   },
   {
    "feature": "world_object",
    "owner": "world-object overlay (D38)",
-   "quests_complete_on_engine_side": 80,
-   "of_which_without_data_gaps": 77
+   "quests_complete_on_engine_side": 78,
+   "of_which_without_data_gaps": 75
   },
   {
    "feature": "teleport",
    "owner": "relocation owner (D37)",
-   "quests_complete_on_engine_side": 83,
-   "of_which_without_data_gaps": 78
+   "quests_complete_on_engine_side": 81,
+   "of_which_without_data_gaps": 76
   },
   {
    "feature": "trigger_step",
    "owner": "GAME-INTERACTION-01 step edges",
-   "quests_complete_on_engine_side": 90,
-   "of_which_without_data_gaps": 78
-  },
-  {
-   "feature": "trigger_kill",
-   "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 93,
-   "of_which_without_data_gaps": 79
-  },
-  {
-   "feature": "quest_state",
-   "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 94,
-   "of_which_without_data_gaps": 79
-  },
-  {
-   "feature": "npc_dialogue",
-   "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 104,
-   "of_which_without_data_gaps": 87
-  },
-  {
-   "feature": "door_progress",
-   "owner": "door gate: quest progress",
-   "quests_complete_on_engine_side": 119,
-   "of_which_without_data_gaps": 100
+   "quests_complete_on_engine_side": 88,
+   "of_which_without_data_gaps": 76
   },
   {
    "feature": "item_consume",
    "owner": "DUR-03 consumption",
-   "quests_complete_on_engine_side": 122,
-   "of_which_without_data_gaps": 100
+   "quests_complete_on_engine_side": 91,
+   "of_which_without_data_gaps": 77
+  },
+  {
+   "feature": "trigger_kill",
+   "owner": "GAME-INTERACTION-01 death/kill edges",
+   "quests_complete_on_engine_side": 94,
+   "of_which_without_data_gaps": 78
+  },
+  {
+   "feature": "quest_state",
+   "owner": "quest-state store (D35)",
+   "quests_complete_on_engine_side": 95,
+   "of_which_without_data_gaps": 78
+  },
+  {
+   "feature": "npc_dialogue",
+   "owner": "NPC dialogue runtime",
+   "quests_complete_on_engine_side": 106,
+   "of_which_without_data_gaps": 86
+  },
+  {
+   "feature": "door_progress",
+   "owner": "door gate: quest progress",
+   "quests_complete_on_engine_side": 121,
+   "of_which_without_data_gaps": 98
   },
   {
    "feature": "scheduler",
    "owner": "owner for delayed callbacks (none yet)",
-   "quests_complete_on_engine_side": 128,
-   "of_which_without_data_gaps": 100
+   "quests_complete_on_engine_side": 127,
+   "of_which_without_data_gaps": 98
   },
   {
    "feature": "item_hand_out",
    "owner": "DUR-03 inventory mint",
    "quests_complete_on_engine_side": 135,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "summon",
    "owner": "GAME-AI-01 spawn",
    "quests_complete_on_engine_side": 144,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "achievement",
    "owner": "Achievement owner",
    "quests_complete_on_engine_side": 149,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "condition",
    "owner": "owner for player conditions (none yet)",
    "quests_complete_on_engine_side": 158,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "creature_removal",
    "owner": "owner for creature removal (none yet)",
    "quests_complete_on_engine_side": 164,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "boss_cooldown",
    "owner": "boss cooldown owner (none yet)",
    "quests_complete_on_engine_side": 175,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "kv_state",
    "owner": "owner for key-value writes (none yet)",
    "quests_complete_on_engine_side": 182,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "outfit",
    "owner": "Outfit grant owner",
    "quests_complete_on_engine_side": 186,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "mount",
    "owner": "Mount grant owner",
    "quests_complete_on_engine_side": 190,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   },
   {
    "feature": "experience",
    "owner": "Character XP award from an interaction",
    "quests_complete_on_engine_side": 192,
-   "of_which_without_data_gaps": 101
+   "of_which_without_data_gaps": 99
   }
  ],
  "quests": [
@@ -193,13 +193,15 @@
    "kind": "storyline",
    "features": [
     "door_progress",
+    "item_hand_out",
     "npc_dialogue",
-    "quest_state"
+    "quest_state",
+    "trigger_use"
    ],
-   "interactions": 0,
+   "interactions": 1,
    "data_gaps": {
-    "interactions_with_gaps": 0,
-    "unresolved_items": 0
+    "interactions_with_gaps": 1,
+    "unresolved_items": 3
    }
   },
   {
@@ -278,13 +280,15 @@
    "quest": "canary:quest/alawar_s_vault_quest",
    "kind": "reward_only",
    "features": [
+    "item_consume",
     "reward_claim",
-    "trigger_use"
+    "trigger_use",
+    "world_object"
    ],
-   "interactions": 0,
+   "interactions": 1,
    "data_gaps": {
-    "interactions_with_gaps": 0,
-    "unresolved_items": 0
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
    }
   },
   {
@@ -1651,10 +1655,12 @@
    "quest": "canary:quest/mintwallin_cyclops_quest",
    "kind": "reward_only",
    "features": [
+    "item_consume",
     "reward_claim",
-    "trigger_use"
+    "trigger_use",
+    "world_object"
    ],
-   "interactions": 0,
+   "interactions": 1,
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
@@ -2645,10 +2651,10 @@
     "trigger_step",
     "trigger_use"
    ],
-   "interactions": 14,
+   "interactions": 21,
    "data_gaps": {
-    "interactions_with_gaps": 11,
-    "unresolved_items": 41
+    "interactions_with_gaps": 16,
+    "unresolved_items": 63
    }
   },
   {
@@ -2851,10 +2857,10 @@
     "trigger_use",
     "world_object"
    ],
-   "interactions": 7,
+   "interactions": 8,
    "data_gaps": {
-    "interactions_with_gaps": 3,
-    "unresolved_items": 4
+    "interactions_with_gaps": 4,
+    "unresolved_items": 5
    }
   },
   {
@@ -3353,19 +3359,16 @@
   }
  ],
  "interactions_unlinked": [
-  "canary:interaction/alawars_vault/action_lever",
   "canary:interaction/chayenne_realm/actions_lever",
   "canary:interaction/chayenne_realm/actions_reward",
   "canary:interaction/chayenne_realm/movements_enter_realm",
   "canary:interaction/edron_rope/movements_rope",
   "canary:interaction/extension_mota/movements_extension_mota",
-  "canary:interaction/fathers_burden/actions_corpse",
   "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
   "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
   "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
   "canary:interaction/marapur/actions_teleports_timira",
   "canary:interaction/marapur/movements_ramp_to_north_temple",
-  "canary:interaction/mintwallin_quest/actions_devil_helmet_lever",
   "canary:interaction/mysterious_ornate/actions_mysterious_metal_egg",
   "canary:interaction/others/actions_calassa_comb_door",
   "canary:interaction/others/actions_gooey_mass",
@@ -3382,14 +3385,6 @@
   "canary:interaction/soulpit/soul_prism",
   "canary:interaction/soulpit/soulpit_fight",
   "canary:interaction/thais_quest/actions_life_ring_lever",
-  "canary:interaction/the_order_of_lion/action_bounac_entrance",
-  "canary:interaction/the_order_of_lion/action_drume",
-  "canary:interaction/the_order_of_lion/action_elevator_elevator_bounac_action",
-  "canary:interaction/the_order_of_lion/action_elevator_elevator_bounac_move_event",
-  "canary:interaction/the_order_of_lion/creatureevent_commander_kills_lion_commander_death",
-  "canary:interaction/the_order_of_lion/creatureevent_commander_kills_usurper_commander_death",
-  "canary:interaction/the_order_of_lion/moveevent_drume_entrance",
-  "canary:interaction/thieves_guild/creaturescripts_nomad_kill",
   "canary:interaction/white_pearl/movements_white_pearl",
   "crystalserver:interaction/candia_bosses/sugar_daddy_teleports",
   "crystalserver:interaction/rookgaard_quests/quiver"

@@ -36,7 +36,7 @@ Owner request (2026-09-27, this session): while the engine lacks the runtime own
 quest data as far as possible, with a map of which engine features each quest needs.
 
 1. **Readiness map** (`ots_readiness.py`, quest format §6.7): per quest, the features it needs, its
-   data gaps and the unlock order. The `USE` trigger and reward claim alone complete 76 of 157
+   data gaps and the unlock order. The `USE` trigger and reward claim alone complete 75 of 192
    quests on the engine side.
 2. **Fewer unresolved interaction parts** (§3.3, §6.3): `actor_item_count` condition, getter-form
    object conditions, Outfit, Mount and Experience grants, map marks, reward container contents,
@@ -47,6 +47,10 @@ quest data as far as possible, with a map of which engine features each quest ne
 4. **Map check** (`ots_map_check.py`, §6.6): every chest item is on its tile, every anchor tile
    exists, and 284 of 349 trigger ids are on the map or stamped at startup. The two open map
    questions are answered.
+5. **Script-only quests** (§6.2, §6.5): 35 quests both servers implement in scripts without a
+   quest-log entry (Soul War, Kilmaresh, Heart of Destruction and others) join the catalogue from
+   `script_quests.json`; the 81 tracks that named a missing wiki quest now name them. Interactions
+   joining no quest drop from 346 to 29, all generic scripts.
 
 Runtime, persistence, `content/**` and NPC-owned files stay unchanged. No map is committed.
 
@@ -55,8 +59,8 @@ Runtime, persistence, `content/**` and NPC-owned files stay unchanged. No map is
 - `PROVEN`: pinned Canary and CrystalServer revisions; Canary `otservbr.otbm` v3.6.1 and
   CrystalServer `world.otbm`, both pinned by sha256.
 - `DERIVED`: the readiness map and the map check, from the committed samples.
-- `UNKNOWN`: 65 trigger ids not found on the startup map; 346 interactions that join no catalogue
-  quest (mostly quests the catalogue does not have yet).
+- `UNKNOWN`: 65 trigger ids not found on the startup map; 29 interactions that join no catalogue
+  quest (generic scripts).
 
 ## High-risk authority/recovery qualification
 
