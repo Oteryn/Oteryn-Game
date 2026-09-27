@@ -33,7 +33,9 @@ ITEM_ALLOCATION_SHA256 = 'ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91
 # voices, variants, chain, invisible and familiar appearance, skipped loot entry, bosstiary).
 PILOT = ('rat', 'dragon', 'dragon_lord', 'demon', 'warlock', 'orc_shaman', 'bonebeast', 'hydra',
          'nightmare', 'ghoul', 'undead_dragon', 'frost_dragon', 'water_elemental', 'hellhound',
-         'plaguesmith', 'massive_fire_elemental', 'serpent_spawn', 'wyrm', 'juggernaut', 'grim_reaper')
+         'plaguesmith', 'massive_fire_elemental', 'serpent_spawn', 'wyrm', 'juggernaut', 'grim_reaper',
+         # summoned by the pilot monsters above, so that the pilot closes over its references
+         'fire_elemental', 'snake', 'stone_golem', 'clay_guardian')
 NONPRODUCTION = ('fixture', 'synthetic', 'evidence', 'test-only')
 
 
@@ -471,6 +473,20 @@ class Stage:
         return result
 
 
+def definition_refs(value: Any):
+    """Yield every non-Item typed definition reference as (family, key)."""
+    if isinstance(value, dict):
+        if set(value) == {'family', 'key', 'revision'}:
+            if value['family'] != 'Item':
+                yield value['family'], value['key']
+            return
+        for child in value.values():
+            yield from definition_refs(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from definition_refs(child)
+
+
 def encounter_covered() -> set[str]:
     covered: set[str] = set()
     for manifest in sorted(ENCOUNTERS.glob('*/manifest.json')):
@@ -493,8 +509,9 @@ def main() -> None:
     mapper = Mapper({row['source_item_id']: row['native_key'] for row in item_export['records']})
     index = json.loads(INDEX.read_text(encoding='utf-8'))
     covered = encounter_covered()
-    stage = Stage(mapper)
-    admitted, deferred = [], {'encounter': [], 'unregistered_items': [], 'reference_loot_contract': []}
+    candidates: dict[str, tuple[dict, dict, dict, set, set]] = {}
+    deferred: dict[str, list] = {'encounter': [], 'unregistered_items': [], 'reference_loot_contract': [],
+                                 'unresolved_reference': []}
     for row in index['monsters']:
         if args.pilot and row['monster'] not in PILOT:
             continue
@@ -516,11 +533,37 @@ def main() -> None:
             deferred['reference_loot_contract'].append(row['monster'])
             continue
         probe = Stage(mapper)
+        probe.stage_dependencies(dependencies, key)
+        probe.stage_monster(monster, row['file'])
+        produced = {(value['identity']['family'], value['identity']['key']) for value in probe.records.values()}
+        referenced = set(definition_refs([probe.records, probe.profiles])) - produced
+        candidates[row['monster']] = (row, monster, dependencies, produced, referenced)
+
+    # Admit only a closed set: every non-Item reference must resolve to a record of an admitted monster.
+    admitted_set = set(candidates)
+    while True:
+        available = set().union(*(candidates[name][3] for name in admitted_set)) if admitted_set else set()
+        dropped = {name: sorted(candidates[name][4] - available) for name in admitted_set
+                   if not candidates[name][4] <= available}
+        if not dropped:
+            break
+        for name, keys in dropped.items():
+            admitted_set.discard(name)
+            deferred['unresolved_reference'].append({'monster': name, 'references': [key for _, key in keys]})
+    deferred['unresolved_reference'].sort(key=lambda value: value['monster'])
+
+    stage = Stage(mapper)
+    admitted = []
+    for name, (row, monster, dependencies, _, _) in candidates.items():
+        if name not in admitted_set:
+            continue
+        key = monster['creature']['identity']['key']
+        probe = Stage(mapper)
         probe.records, probe.profiles = dict(stage.records), dict(stage.profiles)
         probe.stage_dependencies(dependencies, key)
         probe.stage_monster(monster, row['file'])
         stage.records, stage.profiles, stage.bindings = probe.records, probe.profiles, stage.bindings + probe.bindings
-        admitted.append(row['monster'])
+        admitted.append(name)
     if args.pilot and len(admitted) != len(PILOT):
         raise StageError(f'pilot admitted {len(admitted)} of {len(PILOT)}')
 
@@ -534,7 +577,8 @@ def main() -> None:
         'counts': {'creatures': len(admitted), 'records': len(stage.records), 'profiles': len(stage.profiles),
                    'deferred_encounter': len(deferred['encounter']),
                    'deferred_unregistered_items': len(deferred['unregistered_items']),
-                   'deferred_reference_loot_contract': len(deferred['reference_loot_contract'])},
+                   'deferred_reference_loot_contract': len(deferred['reference_loot_contract']),
+                   'deferred_unresolved_reference': len(deferred['unresolved_reference'])},
         'records': [value for _, value in sorted(stage.records.items(), key=order)],
         'authoring_profiles': [value for _, value in sorted(stage.profiles.items(), key=order)],
         'source_identity_bindings': sorted(stage.bindings, key=lambda b: b['external_id']),

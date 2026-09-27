@@ -33,9 +33,21 @@ The 1,656 Canary `47dfd51f` monster files break down as follows:
 | Covered by an Encounter manifest | 101 | their events live in an Encounter, and there is no Encounter runtime yet |
 | Referencing an Item missing from the Oteryn Item registry | 59 | 68 Canary item ids newer than the Crystal registry |
 | With a loot entry whose minimum count is 0 | 1 | Duke Krule: the Reference Loot entry requires a count of at least 1 |
-| **Admitted in wave A** | **1,329** | |
+| Referencing a creature or Ability that is not admitted | 14 | see below |
+| **Admitted in wave A** | **1,315** | |
 
-The staging tool (§6) computes these groups; its counts are the authority. The 59 monsters wait
+The staging tool (§6) computes these groups; its counts are the authority. Admission is closed over
+references: a monster is admitted only when every Creature, Ability, Effect and Formula it
+references is a record of an admitted monster. The tool repeats this check until nothing more is
+dropped. The 14 monsters dropped by the check are the following:
+
+- 10 summon or name a creature that is itself deferred, or not resolved by the census. Examples
+  are Devovorga, The Baron from Below and Wormling.
+- Grand Mother Foulscale is also dropped, because it summons `dragon hatchlings`, a name no Canary
+  monster type carries (the type is `Dragon Hatchling`). It waits for that source correction.
+- The knight, monk and paladin familiars reference their player summon spells, which are not admitted.
+
+The 59 monsters wait
 until the Item domain registers the 68 items. Duke Krule waits for an owned decision on zero-count
 loot entries. The 101 monsters wait for an
 Encounter runtime slice, because admitting them without their encounter rules would change the
@@ -142,12 +154,13 @@ monster of each profile shape.
 1. This decision.
 2. Rust: the §5 profiles, `canonicalize`, `validate_v2_authoring_profile` and focused positive
    and negative tests. No content change.
-3. Writer and pilot: about 20 monsters, including a shared spell, inline condition effects and
-   a skipped loot entry, through admission and linking.
-4. Wave A in bulk (1,329) and regeneration of the content tree.
+3. Writer and pilot: 24 monsters through admission and linking. They include a shared spell,
+   inline condition effects, a skipped loot entry, and the four creatures the pilot monsters
+   summon.
+4. Wave A in bulk (1,315) and regeneration of the content tree.
 5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; Duke
-   Krule after a zero-count loot decision; the 101
-   encounter monsters with an Encounter runtime slice.
+   Krule after a zero-count loot decision; the 101 encounter monsters with an Encounter runtime
+   slice; the 14 reference-blocked monsters as their references become admitted.
 
 Each slice runs the repository gates. A slice that changes `content/world/**` also gets one
 independent exact-head review before the Merge Queue (standing authorization in
