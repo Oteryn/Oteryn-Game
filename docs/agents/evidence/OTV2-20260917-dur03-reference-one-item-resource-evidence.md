@@ -6,6 +6,11 @@ Allocation: [#162 comment 5855106063](https://github.com/Oteryn/Oteryn-Game/issu
 Repository/base: `Oteryn/Oteryn-Game@a822326c9cf4607100e58bbc3673748f3fa299bb`.
 Bound META: `Oteryn/Oteryn@1bfb5ff98c8aa156e73669a14e083a1d464c29fb`.
 
+The sections through "Production gaps and lifecycle" below preserve the historical
+revision-1 evidence, not current worker publication authority. The separately
+allocated signed revision-2 successor is documented in the final section and
+the JSON's `signed_offline_candidate_v2` key. Its local writer cannot publish.
+
 ## Authority and interpretation
 
 `PROVEN`: the protected DUR-03 §39.1 supplies the closed semantic MINT/TRANSFER
@@ -277,3 +282,150 @@ embed its own SHA. Hosted exact-head checks, independent review, PR creation,
 ready state, Merge Queue and protected integration belong to the active control
 plane and remain pending. Material repair after freeze requires control-plane
 disposition; this worker must not move the frozen head.
+
+## Signed offline revision-2 successor (current authoring evidence)
+
+Allocation: [#162 comment 5856736427](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856736427),
+with [custody refinement 5856742846](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856742846).
+Protected source base: `56e5c8a39bf2d899cbbc24735d2d7440d4ecaec1`.
+Exactly five owned paths; root is sole API publisher/control plane and this worker
+authors locally only. Task: `OTV2-20260927-dur03-signed-offline-candidate-resource-evidence-513`.
+No PR/frozen head is asserted by this local report.
+
+`PROVEN`: v1 IDL, literal goldens, 155/223 payload bytes, 346/462 envelope bytes,
+1040-byte historical fixture charge and all historical JSON fields are preserved.
+Removing only `signed_offline_candidate_v2` restores the original JSON value.
+The historical LF report was 11865 bytes with SHA-256
+`d1ea0f574542fc677d6d5f60170743b4e758594ad5e1fc69e6ba8aad412f3bdd`.
+The new namespace is `oteryn.events.candidate.v2`, interpretation revision 2;
+foundation envelope revision 1/schema revision 2/type 0. Crossrevision rejects,
+including old positive uint32 geometry that would otherwise reinterpret 100 as
+sint32 50. There is no automatic migration or Tibia z-to-floor adapter.
+
+`PROVEN`: signed x/y use `sint32`; floor also uses `sint32` with a preallocation
+checked-i16 range. Independently supplied synthetic World facts bind exact WorldId
+and `content_revision=synthetic_world_r2`, half-open x/y bounds `[-200,200)`, and
+sorted unique floor set `[-1,0,7]`. A malformed profile rejects: empty/unsorted/
+duplicate floors, empty/reversed intervals, or bounds beyond i32 endpoints.
+Separate positive tests supply the full synthetic signed domain in i64 intervals
+`[i32::MIN,i32::MAX+1)` and floors `[i16::MIN,0,i16::MAX]`. Those are synthetic
+representation tests, not product World activation or numerical gameplay policy.
+The typed root is closed `SyntheticDirectRoot=1` (0/unknown reject), **not** the
+old revision-1 slot 0, Tibia slots 1..11, or a u16/u32 product slot ceiling.
+
+The v2 fixture has its own two-record custody/retry model. It retains signed
+Ground `[100,-100,7]`, compares the complete retained MINT.after/Ground and
+synthetic World revision with TRANSFER.before/source, and then moves
+the same fixed synthetic live item (WorldId/item identity/key1/revision1/qty1)
+to the synthetic direct root. A World-admitted but different source coordinate
+rejects without publication. This is not an audit sidecar on the old +100-y model.
+Different v2 EventIds/TransactionIds separate it from historical v1 goldens.
+
+### Independent finite byte oracle
+
+`DERIVED/PROVEN_BY_WIDTH_WITNESS`: an evidence-backed conservative canonical
+serialized representation superset is sufficient for bounded byte safety;
+it need not be a tight reachable admitted maximum. Private key/revision/quantity
+u32 extremes are only width witnesses, not accepted Content semantics. Optional
+Envelope fields may be mutually incompatible; negative timestamp and maximal
+scalar values may be semantically invalid. Width witnesses are explicitly
+labelled `semantically_admitted=false` and never published by the fixture model.
+
+| Component (including its own field keys) | Width upper, bytes |
+|---|---:|
+| ItemState: two IDs + three u32 fields + lifecycle=1 | 36+18+2 = 56 |
+| Ground: three IDs + u64 corpse revision + two zigzag i32 + zigzag i16 | 54+11+12+4 = 81 |
+| Inventory: CharacterId + u64 generation + closed enum=1 | 18+11+2 = 31 |
+| Provenance: source kind=1 + two IDs | 2+36 = 38 |
+| MINT nested body / revision-2 payload | 58+83+40 = 181 / 186 |
+| TRANSFER nested body / revision-2 payload | 58+58+83+33+40 = 272 / 277 |
+| All-field Envelope non-payload overhead | 1004 |
+| MINT full Envelope = complete one-event aggregate | 1004+2+2+186 = 1194 |
+| TRANSFER full Envelope = complete one-event aggregate | 1004+2+2+277 = 1285 |
+
+The independent envelope non-payload per-tag charges are:
+`1:2, 2:18, 3:0(omitted), 4:2, 5:2, 6:2, 7:131, 8:11,
+9:18, 10:18, 11:18, 12:18, 13:18, 14:11, 15:24, 16:12,
+17:19, 18:25, 19:19, 20:34, 21:164, 22:7, 23:132, 24:132,
+25:132, 27:35 = 1004`. Payload tag 26 has a two-byte key and two-byte length
+prefix for both v2 bounds. Header constants are pinned candidate constants,
+not full-width u32 gameplay values. UUIDs are exactly 16 bytes, SHA-256 exactly
+32, string byte maximum 128, RuntimeOrder two u64, and complete membership
+one TransactionId plus fixed ordinal=count=1. CommandRef is the largest allowed
+causation alternative; actor identity domain is also charged to 128 bytes.
+An independent read-only oracle hand-encoded the valid signed payload goldens
+(157/227 bytes) and independently verified these component/aggregate formulas.
+The code compares literal hex, not a second call to the same encoder.
+
+### Admission and allocation boundary
+
+`PROVEN`: the v2 borrowed preflight closes **both** the entire Envelope and
+payload grammar before prost decoding or input-sized owned copies. Unknown,
+duplicate, out-of-order and wrong-wire-type fields, multiple oneof members,
+overlong/nonminimal/truncated/overflowing key/length/scalar varints, u32 overwidth,
+floor zigzag >65535, wrong ID/hash widths, non-ASCII/empty/>128-byte text,
+missing required members and unsupported enum/revisions reject. Explicit
+event_type_id tag3=0 also rejects: the omitted zero header cannot add uncharged
+raw bytes. Canonical default omission and field ordering are candidate-local
+restrictions, not a claim about general ANL additive compatibility. V1's existing
+reordered/additive-unknown compatibility tests remain unchanged and passing.
+The root schema has finite nesting (Envelope→Payload→operation→leaf), no recursive
+containers; checked arithmetic guards all sums, lengths, reservations and retry
+increments. The global ANL 196608/262144 caps are not promoted to game limits.
+
+Actual valid fixture results on Linux x86_64:
+
+| Measurement | MINT | TRANSFER |
+|---|---:|---:|
+| Payload / Envelope / complete one-member aggregate bytes | 157 / 358 / 358 | 227 / 476 / 476 |
+| Frozen carrier inline bytes | 576 | 576 |
+| Owned semantic payload capacity | 157 | 227 |
+| Owned full wire capacity (contains another payload copy) | 358 | 476 |
+| All retained vector/string capacities | 667 | 887 |
+| Frozen carrier inline + dynamic capacity | 1243 | 1463 |
+| Conservative dynamic capacity reservation | 2228 | 2410 |
+
+All dynamic side buffers are accounted, including optional UUIDs, membership,
+each causation alternative, actor ID/domain, retention/build/ruleset/content
+strings. A string's actual capacity is charged, not just byte length.
+Conservative reservation adds payload separately to full wire, 208 bytes of
+ID/hash side vectors and five 128-byte strings (848 bytes total side buffers).
+Model inline bytes are 1200 including both spare record slots; actual dynamic
+1554; actual total 2754; injected conservative two-record reservation 5838.
+These are retained carrier/capacity facts only: no allocator metadata, transient
+decode/proposed-event copies, peak RSS, SQL, persistence or production capacity
+claim. Proposed frozen-carrier capacities are checked too: byte equality alone
+cannot admit an enlarged backing allocation. Private prost buffers are created only after facts and the complete
+finite injected reservation pass; publication is after exact validation/budget.
+
+Retry/reconcile work counts three **logical** units (inspect/compare/disposition)
+per retry transition; the injected per-record budget is six. Derived shape units
+count one participant plus custody effects, or effects plus publication receipt
+(MINT 2, TRANSFER 3). They are not measured CPU instructions or latency and exclude
+parsing, hashing, allocation, text scans and World-profile iteration. The actual
+profile has three floors; no production retry horizon or CPU ceiling is chosen.
+Known noncommit retains the exact original bytes and permits only the same
+candidate retry. Lost commit responses hold immutable EventId/payload/hash/full
+Envelope until reconciliation; unknown observations cannot remint or resurrect
+Ground. Conflicting payload under the same transaction rejects. Budget, wrong
+commit observation and checked-overflow failures leave custody/records unchanged.
+
+### Dispositions and qualification boundary
+
+The JSON gives explicit DUR03-RL-01..08 dispositions for this successor:
+one item; one MINT establish/two TRANSFER effects; no account/transform/container
+surface; physically retained two records; complete one-member audit aggregate
+with finite candidate byte upper; immutable in-memory retry only. Production
+RL-07 remains `EVIDENCE_GAP`, as do restart/SQL/current live fencing, real Content
+stack/quantity/direct-root legality, event/profile/resource registration, playable
+Combat/pickup and Reference parity. Candidate representation improvements do not
+turn those unknowns into owner-selected numeric limits.
+
+Authoring qualification uses offline locked no-default-features example tests,
+build, strict Clippy, format, governance, repository policy and architecture
+boundaries on a clean LF Linux execution copy. Generation runs twice and in
+reverse presentation order and compares exact LF bytes. Current commands and
+review state are in the new task record. The inherited vendored Tokio missing-doc
+warning is not a new candidate warning. Exact remote freeze, candidate-specific
+CI/independent whole-diff review and DRAFT PR remain parent control-plane steps;
+no ready/review-trigger/enqueue/merge is authorized to this writer.
