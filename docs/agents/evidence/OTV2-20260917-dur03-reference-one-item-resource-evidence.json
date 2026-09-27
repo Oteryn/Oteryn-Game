@@ -206,6 +206,172 @@
     "DUR03-RL-08": "MEASURED_IN_MEMORY_STATE_MACHINE_ONLY; stable transaction/output identities; no DB/restart proof"
   },
   "schema_version": 1,
+  "signed_offline_candidate_v2": {
+    "allocation": "5856736427",
+    "bound_scope": "finite canonical serialized representation superset, not necessarily tight reachable shape; not a gameplay/production maximum",
+    "classification": "UNREGISTERED_OFFLINE_REVISION_2_EVIDENCE_CANDIDATE",
+    "closed_wire_preflight": "borrowed finite graph before prost allocations; exact UUID/hash widths, bounded ASCII text, canonical minimal key/length/scalar varints, u32 and checked-i16 floor widths; unknown/duplicate/out-of-order fields, unknown enums and crossrevision reject",
+    "custody_refinement": "5856742846",
+    "fixture_root": "SyntheticDirectRoot enum 1; NOT revision1 slot0 or a product slot index",
+    "historical_v1": "UNCHANGED_SCHEMA_GOLDENS_AND_MEASUREMENTS",
+    "interpretation_revision": 2,
+    "not_proven": [
+      "production event/profile/resource registration",
+      "Content quantity/stack/root legality",
+      "runtime or PostgreSQL atomicity/fencing/restart",
+      "allocator metadata, transient decode/copies or peak RSS",
+      "Tibia floor adapter or Reference parity"
+    ],
+    "operations": [
+      {
+        "actual_retained": {
+          "all_dynamic_vector_string_capacities": 667,
+          "frozen_inline_bytes": 576,
+          "inline_plus_dynamic": 1243,
+          "semantic_payload_capacity": 157,
+          "semantic_payload_len": 157,
+          "wire_capacity": 358,
+          "wire_len": 358
+        },
+        "aggregate": {
+          "bytes": 358,
+          "count": 1,
+          "ordinal": 1
+        },
+        "algebraic_width_witness": {
+          "envelope_bytes": 1194,
+          "envelope_sha256": "be0bcbc0af3394f5f9a303a227de4c1ffd6a3659000dcb32f9789305f4b47216",
+          "payload_bytes": 186,
+          "payload_sha256": "31d4b9268947a736d0941d55d7f1aad8fdefb3e26e716f0b28510405beae86ab",
+          "semantically_admitted": false
+        },
+        "envelope_encoded_bytes": 358,
+        "event_id": "00000000000170008000000000000014",
+        "exact_envelope_hex": "08011210000000000001700080000000000000142002280230033a176f66666c696e655f6974656d5f756e616363657074656440014a10000000000001700080000000000000015210000000000001700080000000000000067a04080110019201160a100000000000017000800000000000001610011801ba01086669787475726532c2011273796e7468657469635f776f726c645f7232ca01076f66666c696e65d2019d0108021298010a2c0a1000000000000170008000000000000003121000000000000170008000000000000001180120012801300112400a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c200128c80130c701380e1a26080112100000000000017000800000000000000c1a100000000000017000800000000000000ada0120a43ed9b81a2255b7169d78311ff0dbf26984a10b4db0c7ce4bd43de228d9c158",
+        "exact_payload_hex": "08021298010a2c0a1000000000000170008000000000000003121000000000000170008000000000000001180120012801300112400a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c200128c80130c701380e1a26080112100000000000017000800000000000000c1a100000000000017000800000000000000a",
+        "operation": "MINT",
+        "payload_encoded_bytes": 157,
+        "payload_sha256": "a43ed9b81a2255b7169d78311ff0dbf26984a10b4db0c7ce4bd43de228d9c158",
+        "representation_superset_upper": {
+          "envelope_and_complete_aggregate": 1194,
+          "envelope_nonpayload_fields": 1004,
+          "item_state": 56,
+          "operation_body": 181,
+          "payload": 186,
+          "provenance": 38,
+          "retained_dynamic_capacity_reservation": 2228,
+          "signed_ground": 81,
+          "typed_inventory": 31
+        },
+        "retry_work_units": 6,
+        "transaction_id": "00000000000170008000000000000016"
+      },
+      {
+        "actual_retained": {
+          "all_dynamic_vector_string_capacities": 887,
+          "frozen_inline_bytes": 576,
+          "inline_plus_dynamic": 1463,
+          "semantic_payload_capacity": 227,
+          "semantic_payload_len": 227,
+          "wire_capacity": 476,
+          "wire_len": 476
+        },
+        "aggregate": {
+          "bytes": 476,
+          "count": 1,
+          "ordinal": 1
+        },
+        "algebraic_width_witness": {
+          "envelope_bytes": 1285,
+          "envelope_sha256": "66fd249a7d83d6bd3c0c28d164875dd5afb64b2d4b2bf68e841a43d6ccec2062",
+          "payload_bytes": 277,
+          "payload_sha256": "3c8be5a276417a14032ebdc292f52d229580dd695d2f86e4e08d58ee06cd1561",
+          "semantically_admitted": false
+        },
+        "envelope_encoded_bytes": 476,
+        "event_id": "00000000000170008000000000000015",
+        "exact_envelope_hex": "08011210000000000001700080000000000000152002280230033a176f66666c696e655f6974656d5f756e616363657074656440014a10000000000001700080000000000000015210000000000001700080000000000000066a100000000000017000800000000000000770017a04080110028001029201160a100000000000017000800000000000001710011801a2011612140a10000000000001700080000000000000071002ba01086669787475726532c2011273796e7468657469635f776f726c645f7232ca01076f66666c696e65d201e30108021ade010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128013001122c0a100000000000017000800000000000000312100000000000017000800000000000000118012001280130011a400a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c200128c80130c701380e22160a1000000000000170008000000000000002100118012a26080112100000000000017000800000000000000c1a100000000000017000800000000000000bda01200744ac4add5e58c95b52e58bedf2b6b3c0b1fe620b671747fa947f005a897a75",
+        "exact_payload_hex": "08021ade010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128013001122c0a100000000000017000800000000000000312100000000000017000800000000000000118012001280130011a400a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c200128c80130c701380e22160a1000000000000170008000000000000002100118012a26080112100000000000017000800000000000000c1a100000000000017000800000000000000b",
+        "operation": "TRANSFER",
+        "payload_encoded_bytes": 227,
+        "payload_sha256": "0744ac4add5e58c95b52e58bedf2b6b3c0b1fe620b671747fa947f005a897a75",
+        "representation_superset_upper": {
+          "envelope_and_complete_aggregate": 1285,
+          "envelope_nonpayload_fields": 1004,
+          "item_state": 56,
+          "operation_body": 272,
+          "payload": 277,
+          "provenance": 38,
+          "retained_dynamic_capacity_reservation": 2410,
+          "signed_ground": 81,
+          "typed_inventory": 31
+        },
+        "retry_work_units": 6,
+        "transaction_id": "00000000000170008000000000000017"
+      }
+    ],
+    "quantity_and_content": "private fixture key1 revision1 quantity1; production Content/stack semantics UNKNOWN",
+    "retained_model": {
+      "actual_dynamic_capacity_bytes": 1554,
+      "actual_inline_plus_dynamic": 2754,
+      "authoritative_items": 1,
+      "custody": "CharacterInventory/synthetic-direct-root",
+      "fixed_inline_including_two_slots": 1200,
+      "immediate_locations": 1,
+      "injected_reservation": 5838,
+      "records": 2
+    },
+    "rows": {
+      "DUR03-RL-01": "one item, qty1 positive fixture; u32 width is only conservative representation bound",
+      "DUR03-RL-02": "MINT one establish; TRANSFER remove+establish; single tuple publication",
+      "DUR03-RL-03": "not applicable/0; no value/account surface",
+      "DUR03-RL-04": "not applicable/0; no transform surface",
+      "DUR03-RL-05": "closed synthetic direct-root only; no container expansion",
+      "DUR03-RL-06": "physically represented fixed two-record model plus owned vector/string capacities",
+      "DUR03-RL-07": "PROVEN candidate-only finite payload/envelope/complete one-member aggregate upper; production EVIDENCE_GAP unchanged",
+      "DUR03-RL-08": "in-memory immutable frozen ambiguity/retry/reconcile only; restart/DB EVIDENCE_GAP"
+    },
+    "source_base_sha": "56e5c8a39bf2d899cbbc24735d2d7440d4ecaec1",
+    "source_blobs_at_base": {
+      "example": "3e5400fa139854d986c6d8dc9240397f01a90ad3",
+      "historical_json": "0c63b65809bbd7b0541dc289d2aed0cfd6cae95d",
+      "historical_markdown": "022463e01180f408908b6d321894fc0234a62a09"
+    },
+    "work": {
+      "injected_retry_work_per_record": 6,
+      "logical_shape_units_derived_not_execution_measurement": {
+        "apply": {
+          "MINT": 2,
+          "TRANSFER": 3
+        },
+        "plan": {
+          "MINT": 2,
+          "TRANSFER": 3
+        }
+      },
+      "retry_per_call": 3,
+      "scope": "one logical unit per participant/custody effect, publication receipt, or retry inspect/compare/disposition; excludes parser/hash/allocation/string scans/World profile checks, CPU instructions, latency, RSS, SQL and production retry ceiling"
+    },
+    "world": {
+      "floors": [
+        -1,
+        0,
+        7
+      ],
+      "id": "00000000000170008000000000000001",
+      "independent_current_facts": true,
+      "production_activation": false,
+      "revision": "synthetic_world_r2",
+      "x_half_open": [
+        -200,
+        200
+      ],
+      "y_half_open": [
+        -200,
+        200
+      ]
+    }
+  },
   "source_base_sha": "a822326c9cf4607100e58bbc3673748f3fa299bb",
   "source_revisions": {
     "ANL01_foundation_resource_registry": "a822326c9cf4607100e58bbc3673748f3fa299bb",
