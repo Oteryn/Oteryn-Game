@@ -239,6 +239,7 @@ fn profiles() -> Vec<ProjectV2AuthoringProfile> {
                     walks_on_energy: true,
                     walks_on_fire: true,
                     walks_on_poison: true,
+                    wander: None,
                 },
                 targeting: ProjectV2Targeting {
                     hostile: true,

@@ -52,6 +52,8 @@ Keys are production keys, revision `definition-r1` (D4). The `canary:` / `crysta
 | Record | Key |
 |---|---|
 | NPC | `oteryn:npc.<slug>` |
+| Presentation | `oteryn:presentation.npc.<slug>` |
+| Behavior | `oteryn:behavior.npc.<slug>` |
 | Trade service | `oteryn:service.trade.<slug>` |
 | Travel service | `oteryn:service.travel.<slug>` |
 
@@ -76,12 +78,17 @@ TibiaWiki page id and revision. The candidate report records the snapshot and It
 
 | v2 record | Carries in wave A |
 |---|---|
-| `NPC` declaration | identity, `services`, and candidate `fields`: profession, speech bubble, outfit (look type, head/body/legs/feet, addons, mount or item look), walk interval and radius, floor change |
+| `NPC` declaration | identity, `presentation`, `behavior`, `services`, and candidate `fields` (namespaced paths such as `oteryn:source.npc.profession`): profession and speech bubble |
+| `Presentation` (Generic Reference record, `ClientSafe`) + Presentation profile | the outfit, in the monster format: `asset_binding` `canary.appearance:outfit/<lookType>` (or `canary.appearance:object/<lookTypeEx>` for the 31 item-look NPCs), palette slots Head/Body/Legs/Feet `canary.appearance:palette/<color>`, Addon attachments `…/outfit/<lookType>/addon-<bit>`, a Mount attachment with its Mount palette slots; `light_level` 0 |
+| `Behavior` (Generic Reference record, `ServerOnly`) + Behavior profile | `movement.can_walk` (false for the 105 NPCs with walk interval 0), `movement.wander` `{interval_ms, radius_tiles}` from the source walk interval and radius; targeting not hostile and not targeting; no attacks, voices (D5) or summons |
 | `Service` (trade) | `offers`: Item, direction (`SellToPlayer` for the source `buy` price, `BuyFromPlayer` for `sell`), unit price, currency (absent = gold), and the new count and sub type (§6) |
 | `Service` (travel) | the new typed routes (§6) |
 
-Outfit and movement ride as candidate fields until the NPC presentation and behaviour are bound to the
-Presentation and Behavior profiles the creature admission introduces; that binding is a later slice.
+The NPC reuses the creature admission's Presentation and Behavior profiles instead of candidate fields.
+The only extension is `ProjectV2Movement.wander` (slice 2b): an optional `{interval_ms, radius_tiles}`
+that requires `can_walk` and a positive interval. `floorchange` is false for all 984 NPCs and is not
+carried. The Generic Presentation and Behavior records are executable Reference records, as for
+monsters; the NPC declaration itself stays declarative.
 
 ## 5. Placements
 
@@ -113,6 +120,8 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
 1. This decision (with the promotion candidates and the Item join in the same change).
 2. Rust: §6 extension, `canonicalize` and validation, focused positive and negative tests. No content change.
    Done in `OTV2-20260927-npc-admission-v2-services`.
+2b. Rust: `ProjectV2Movement.wander` and the NPC Presentation/Behavior binding of §4, with tests.
+   Done in `OTV2-20260927-npc-admission-presentation-behavior`.
 3. Writer and pilot: about 20 NPCs through v2 load and validation, including a travel NPC, a shop with a
    non-gold currency, count and sub-type offers, and a single-source NPC decided by the wiki.
 4. Wave A in bulk (984 NPCs) and regeneration of the content tree with the NPC and Service families.
