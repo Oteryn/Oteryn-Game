@@ -1651,13 +1651,55 @@ def d31_events(build):
                 'SnailSlimeThink is registered only by the snail slime, but acts only on a creature named "the count of the core", '
                 'so it never does anything.')
 
+def respawn_and_remains(build):
+    """CarlinVortexDeath (the cult soul remains) and DeathDragon (Ragiaz's dragons revive; the wiki decides, D25)."""
+    path_ = 'data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua'
+    item = build.get('cult_soul_remains', 'Cults of Tibia: soul remains of the cultists', 'channel_shared')
+    for name in ('Cult Believer', 'Cult Enforcer', 'Cult Scholar'):
+        build.participant(item, 'cultist', name, 'CarlinVortexDeath')
+    branches = []
+    for item_id in (32414, 32415):
+        remains = ref('Item', f'canary:item/{item_id}')
+        build.define(item, remains)
+        branches.append({'weight': 1, 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': remains, 'at': 'death_position',
+                                                   'revert_after_ms': 60000, 'interaction': 'canary:interaction/5580'}]})
+    path = build.rule(item, {'key': 'cultist_leaves_soul_remains', 'trigger': {'kind': 'creature_died', 'role': 'cultist'}, 'conditions': [],
+                             'actions': [{'kind': 'one_of', 'branches': branches}]})
+    build.entry(item, path_, [1, 2, 15], 'mapped', path + '/trigger', 'onDeath of a cult believer, enforcer or scholar.')
+    build.entry(item, path_, [3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 'mapped', path + '/actions/0',
+                'Remains 32414 or 32415, picked uniformly, with action id 5580 on the death position, removed after one minute. '
+                'Action id 5580 (movements_task_teleport.lua) lets a player absorb the remains for a Cults of Tibia mission '
+                'counter (interaction and quest domains).')
+
+    path_ = 'data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_death_dragon.lua'
+    item = build.items['ragiaz']
+    build.participant(item, 'death_dragon', 'Death Dragon', 'DeathDragon')
+    revive = build.rule(item, {'key': 'death_dragon_revives', 'trigger': {'kind': 'creature_died', 'role': 'death_dragon'}, 'delay_ms': 1000,
+                               'conditions': [],
+                               'actions': [{'kind': 'spawn', 'creature': creature('Death Dragon'), 'role': 'death_dragon', 'count': 1,
+                                            'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+    speak = build.rule(item, {'key': 'ragiaz_revives_his_minion', 'trigger': {'kind': 'creature_died', 'role': 'death_dragon'},
+                              'conditions': [{'kind': 'creature_present', 'role': 'ragiaz', 'near': {'role': 'death_dragon', 'radius': 10},
+                                              'present': True}],
+                              'actions': [{'kind': 'say', 'subject': {'role': 'ragiaz'}, 'text': 'Ragiaz power revives his minion!',
+                                           'mode': 'say'}]})
+    build.entry(item, path_, [1, 2, 3, 4, 5, 21, 23], 'mapped', revive + '/trigger',
+                'onDeath of a death dragon. The guard reads the undefined global targetMonster, so Canary always returns here and '
+                'the rest never runs. The reference-date wiki (Ferumbras\' Ascension Quest/Spoiler: "The Death Dragons respawn '
+                'immediately after being killed") decides (D25): the body below is transcribed.')
+    build.entry(item, path_, [7, 8, 9, 10], 'mapped', revive + '/actions/0',
+                'A new death dragon, forced, on the death position one second later (addEvent returns an event id, so the nil check '
+                'never stops it).')
+    build.entry(item, path_, [12, 13, 14, 15, 16, 17, 18, 19, 20], 'mapped', speak,
+                'Ragiaz within 10 tiles of the dead dragon says the line.')
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains):
         transcribe(build)
     print(json.dumps(build.write()))
 

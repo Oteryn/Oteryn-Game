@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1486,
+  "bundles": 1490,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -252,6 +252,9 @@
     {"monster":"crystal_spider","file":"vermins/crystal_spider","sha256":"38cc2cc44dc4dc55fe72f5b5ecb9a0590849b36ee3e47deb96cd01e0b94b9f05"},
     {"monster":"crystal_wolf","file":"mammals/crystal_wolf","sha256":"7885b2a3d2fe961bbe8d655eeceb5caf4f20a35ee6985e079e7c7258fc9cd73c"},
     {"monster":"crystalcrusher","file":"magicals/crystalcrusher","sha256":"13ec801165e5aecb5c74b0aa2eec13d540c1de8bc6f2b33716eaf695a4be0ee0"},
+    {"monster":"cult_believer","file":"quests/cults_of_tibia/cult_believer","sha256":"6d8739c6497bc783f2d70fd0b5e0c63a860b47b9ab7b4bac7f95fdcd3fad7ae6"},
+    {"monster":"cult_enforcer","file":"quests/cults_of_tibia/cult_enforcer","sha256":"051d6847fe5352946279901763796511e0147c61ae44158653a8e3c91b9fe342"},
+    {"monster":"cult_scholar","file":"quests/cults_of_tibia/cult_scholar","sha256":"8bbc393383d12ca5de2e80b4dd835432e8f866be9d1e8cb27c249dd316b0bbe4"},
     {"monster":"cunning_werepanther","file":"lycanthropes/cunning_werepanther","sha256":"a97c641697a4299d44f3fa37d520d32acce80aea07b53971ac2f2bd80a36be22"},
     {"monster":"cursed_ape","file":"undeads/cursed_ape","sha256":"15628438772d7d6e5a6ea6b115e6940105e85845608190412bbe17a518b50d9f"},
     {"monster":"cursed_book","file":"magicals/cursed_book","sha256":"14b47aebbe621f14f67e85789506efa6c7c30092d795482e1a71cf183f971e83"},
@@ -292,6 +295,7 @@
     {"monster":"dazed_leaf_golem","file":"quests/the_secret_library/dazed_leaf_golem","sha256":"287851390b180bce3364164ebb4571984e93b3f5bad232de9940678d5ccd9ce6"},
     {"monster":"deadeye_devious","file":"raids/deadeye_devious","sha256":"439846527144edb69778148717ca96b8d7c1769e8ae37b81c90e789f65745d73"},
     {"monster":"death_blob","file":"slimes/death_blob","sha256":"b43c0e185df613bd69083bfcfc09dd009d3c6a8536ab5ee3b63fec741303b1a0"},
+    {"monster":"death_dragon","file":"quests/ferumbras_ascension/bosses/death_dragon","sha256":"be177109c4cd15470cd8f296849c57b2e819c35936f2dbc74b12944b1b1f6771"},
     {"monster":"death_priest","file":"undeads/death_priest","sha256":"b29f4ba386bc94a5c479a61fb6cbaf42f7bcfd9d40d21e849b0a009dcc747ac1"},
     {"monster":"death_priest_shargon","file":"quests/dark_trails/death_priest_shargon","sha256":"83b8e4457afe5cc6aaef9aac3c6d11af0bbb3311127293127b742047f5bbf23c"},
     {"monster":"deathbine","file":"quests/killing_in_the_name_of/deathbine","sha256":"1f8fd18c12d9a1e40c29553e66f8e1b255e5a7752a205b8db3abc38f2188c563"},

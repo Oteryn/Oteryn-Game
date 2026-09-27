@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-encounter-slice-7
 title: Encounter vocabulary D31 and a seventh slice of Canary events (knowledge drops, skirmish, evaporation, drops)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 972
 jira: KAN-16
 base_sha: 4731bbefab6703dc9b43c6154d661033f7505690
-head_sha: null
-final_head_sha: null
+head_sha: ef1ed2b134454633e82e60f73ae702b6f3507ec3
+final_head_sha: ef1ed2b134454633e82e60f73ae702b6f3507ec3
 final_head_frozen_at: null
-owner: claude/nice-edison-h9aqh0
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -54,3 +54,8 @@ fence, session, authority or persisted-recovery evidence is touched.
   the Welter egg, possessed trees, Ugly Monster drops, Soulcatcher, Death Priest Shargon and the snail
   slime transcribed: 67 encounters valid, 61 manifests fully resolved.
 - `population_census.py` 1,486 of 1,656 fully resolved (1,478 before).
+
+## Completion
+
+Merged as PR #972 (`a822326c9cf4607100e58bbc3673748f3fa299bb`) from final head `ef1ed2b`; required checks passed on that head.
+Owner released.

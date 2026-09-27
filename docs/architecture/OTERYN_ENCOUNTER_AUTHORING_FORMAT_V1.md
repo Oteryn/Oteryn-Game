@@ -330,3 +330,16 @@ every vulnerable phase, while the wiki says it happens once per fight and does n
 it.
 67 encounters validate, 61 manifests resolve fully, `verify_encounter_schema.py` 84/84; the census
 rises from 1,478 to 1,486.
+
+An eighth slice:
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `CarlinVortexDeath` | 1 | 3 | A `channel_shared` rule: a dying cultist leaves one of two soul remains (`one_of`) for one minute, with the mission interaction of action id 5580. |
+| `DeathDragon` | 1 | 1 | The guard reads an undefined global, so Canary never runs the body; the wiki says Ragiaz's death dragons respawn immediately (D25), so the body is transcribed: a new dragon after 1 s and Ragiaz's line. |
+
+The Crystal comparison (D30) of the remaining events found 68 identical scripts. Three differ only
+cosmetically. Four differ in behaviour: nil guards and a Monk's Apparition branch in Mirror Image,
+none of which changes a transcription. Sixteen mechanics were removed in Crystal, most of them in
+Grave Danger. Crystal's lever for Ghulosh is the one fix that bears on a transcription.
+68 encounters validate, 62 manifests resolve fully; the census rises from 1,486 to 1,490.
