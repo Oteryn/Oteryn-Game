@@ -2423,6 +2423,14 @@ impl RecoveryProtectionContinuityV1 {
         };
         if usage_valid && rearm_valid { Ok(()) } else { Err(ReconnectDurabilityErrorV1::InvalidRecord) }
     }
+    /// The continuity a same-session complete reconnect committed at `committed_at`
+    /// leaves: exactly the effect's protection, re-derived from durable facts.
+    pub fn after_complete_reconnect(
+        self,
+        committed_at: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        complete_reconnect_protection(self, committed_at)
+    }
 }
 
 /// An inert observation returned only through the sealed Game owning source.

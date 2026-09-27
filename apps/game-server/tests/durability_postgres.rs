@@ -6046,3 +6046,455 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
         result
     })
 }
+
+#[test]
+fn resumed_session_loss_opens_the_next_epoch_and_resumes_again()
+-> Result<(), Box<dyn std::error::Error>> {
+    use base64::Engine;
+    use durability::admission_authority_guards::AdmissionGuardStore;
+    use durability::fresh_admission::{
+        FreshAdmissionStore, FreshLossReconciliation, FreshReconciliation,
+    };
+    use ed25519_dalek::{Signer, SigningKey};
+    use foundation::admission_authority_publication::*;
+    use foundation::fnd04_verifier::*;
+    use foundation::*;
+    struct LossSource(ControlLossObservationV1);
+    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for LossSource {}
+    impl ControlLossSourceV1 for LossSource {
+        fn resolve_loss(
+            &self,
+            _: GameSessionId,
+            _: i64,
+        ) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> {
+            Ok(self.0.clone())
+        }
+    }
+    #[derive(Clone)]
+    struct Security {
+        signing: RecoverySigningTrustObservationV2,
+        security: RecoveryAccountSecurityObservationV2,
+    }
+    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Security {}
+    impl RecoveryDurabilityEvidenceSourceV2 for Security {
+        fn signing_trust(
+            &self,
+            _: &str,
+            _: i64,
+        ) -> Result<RecoverySigningTrustObservationV2, Fnd04EvidenceError> {
+            Ok(self.signing.clone())
+        }
+        fn account_security(
+            &self,
+            _: &str,
+            _: i64,
+        ) -> Result<RecoveryAccountSecurityObservationV2, Fnd04EvidenceError> {
+            Ok(self.security.clone())
+        }
+    }
+    struct Owner {
+        current: std::sync::Mutex<CompleteReconnectCurrentV1>,
+        security: Security,
+    }
+    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Owner {}
+    impl CompleteReconnectSourceV1 for Owner {
+        fn resolve_reconnect(
+            &self,
+            _: &ReconnectIdentityV1,
+            _: i64,
+        ) -> Result<CompleteReconnectCurrentV1, ReconnectDurabilityErrorV1> {
+            Ok(match self.current.lock() {
+                Ok(current) => current.clone(),
+                Err(poisoned) => poisoned.into_inner().clone(),
+            })
+        }
+        fn recovery_v2_source(&self) -> Option<&dyn RecoveryDurabilityEvidenceSourceV2> {
+            Some(&self.security)
+        }
+    }
+    struct Report(Option<CompleteReconnectCompletionV1>);
+    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for Report {}
+    impl CompleteReconnectCompletionSourceV1 for Report {
+        fn take_complete_reconnect_completion(
+            &mut self,
+            _: &CompleteReconnectDurabilityOperationV1,
+        ) -> Result<Option<CompleteReconnectCompletionV1>, ReconnectDurabilityErrorV1> {
+            Ok(self.0.take())
+        }
+    }
+    fn uuid(bytes: &[u8; 16]) -> String {
+        let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
+        format!(
+            "{}-{}-{}-{}-{}",
+            &hex[..8],
+            &hex[8..12],
+            &hex[12..16],
+            &hex[16..20],
+            &hex[20..]
+        )
+    }
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let database = postgres::IsolatedPostgres::create("resumed_session_loss").await?;
+        let result = async {
+            let url = database.database_url()?;
+            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let now = postgres_clock(&pool).await?;
+            let owner = postgres::fresh::Source::new(now)?;
+            let guards = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+            guards.publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner, now))?).await?;
+            let store = FreshAdmissionStore::connect_runtime(&url, 65536, 8192).await?;
+            let request = owner.request()?;
+            store.commit(&request).await?;
+            let FreshReconciliation::Committed(initial) = store.reconcile(request.operation()).await? else { return Err("missing fresh session".into()); };
+            let session = initial.current_session;
+            let session_id = session.commit().game_session_id();
+            let account = "00000000-0000-4000-8000-000000000001";
+            let presence = authority_matrix::checked(AccountPresenceClaimV1::new(account, session.commit().character_id()))?;
+            let protection = RecoveryProtectionContinuityV1 {
+                usage: RecoveryProtectionUseV1::Unused { entitlement_generation: 1 },
+                rearm: RecoveryProtectionRearmV1::Satisfied { generation: 1, established_at: now },
+            };
+            let loss_source = std::sync::Arc::new(LossSource(ControlLossObservationV1 {
+                source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
+                decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+                accepted_decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+                observed_at: now, session, account_presence: presence.clone(),
+                placement_identity: [9; 16], placement_revision: 1, actor_present: true, runtime_ready: true,
+                cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss,
+                loss_epoch: authority_matrix::checked(ControlLossEpochRefV1::new(1))?, loss_origin: now,
+                original_grace_deadline: now + 120, history: ControlLossHistoryV1::FreshOrigin, protection,
+            }));
+            let authorization = authority_matrix::checked(ControlLossAuthorizationV1::authorize(loss_source.as_ref(), session_id, now))?;
+            let mut loss_flow = ControlLossFlowV1::begin(authorization);
+            let loss = std::sync::Arc::new(authority_matrix::checked(loss_flow.take_request())?);
+            let ControlLossOutcomeV1::Committed { decided_at: loss_decided_at } = store.commit_fresh_loss(loss.clone(), loss_source.clone()).await? else { return Err("loss not committed".into()); };
+            let (lost, _now_after_loss) = store.current_session_at(session_id).await?;
+            assert_eq!(lost.session_state(), GameSessionState::Reconnectable);
+            // The durable clock may have advanced by the time the commit actually
+            // decided; every later timing check requires `now >= loss_decided_at`.
+            let now = now.max(loss_decided_at);
+
+            // A Platform recovery credential for exactly this account, character and world.
+            let key = SigningKey::from_bytes(&[23; 32]);
+            let character = uuid(session.commit().character_id().as_bytes());
+            let world = uuid(session.commit().world_id().as_bytes());
+            let nonce = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([8; 32]);
+            let header = r#"{"alg":"Ed25519","kid":"recovery-1","typ":"oteryn-recovery+jwt"}"#;
+            let payload = format!(
+                r#"{{"iss":"urn:oteryn:platform:game-recovery","aud":"urn:oteryn:game:recovery","iat":{now},"nbf":{now},"exp":{},"jti":"{nonce}","profile":"oteryn-reauth-recovery-v1","purpose":"existing_actor_recovery","attempt_ref":"00000000-0000-7000-8000-000000000001","account_id":"{account}","character_id":"{character}","world_id":"{world}","account_security_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1"}}"#,
+                now + 30
+            );
+            let input = format!("{}.{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header), base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(payload));
+            let token = format!("{input}.{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(key.sign(input.as_bytes()).to_bytes()));
+            let provenance = |purpose| FreshEvidenceProvenanceV1 {
+                source_authority: "independent-platform-fixture".into(), purpose, scope: Fnd04EvidenceScope::ExistingActorRecovery,
+                source_revision: 1, accepted_source_revision: 1, decision_identity: "recovery-1".into(), accepted_decision_identity: "recovery-1".into(),
+                source_observed_at: now, clock_uncertainty_seconds: 0, publication_revision: 1,
+            };
+            let security = Security {
+                signing: RecoverySigningTrustObservationV2 { key_id: "recovery-1".into(), public_key: key.verifying_key().to_bytes(), trusted: true, provenance: provenance(FreshEvidencePurposeV1::SigningTrust) },
+                security: RecoveryAccountSecurityObservationV2 { account_id: account.into(), minimum_generation: 1, allowed: true, provenance: provenance(FreshEvidencePurposeV1::PlatformSecurity) },
+            };
+            let recovery = RecoveryCurrentEvidence {
+                account_id: account.into(), character_id: session.commit().character_id(), world_id: session.commit().world_id(),
+                ruleset_revision: "rules-1".into(), content_revision: "content-1".into(), map_revision: "map-1".into(), world_policy_revision: "policy-1".into(),
+            };
+            let identity = authority_matrix::checked(ReconnectIdentityV1::new(
+                session_id, authority_matrix::checked(ReconnectAttemptRef::new(20))?, account,
+                session.commit().character_id(), session.commit().world_id(), session.current_runtime_scope(),
+            ))?;
+            let candidate = authority_matrix::checked(ReconnectCandidateBindingV1::new(
+                session_id, identity.reconnect_attempt_ref(),
+                authority_matrix::checked(ConnectionGeneration::new(2))?,
+                authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x61; 16]))?, now + 5,
+            ))?;
+            let keys = vec![
+                AdmissionAuthorityGuardKeyV1::Account { account_id: account.into() },
+                AdmissionAuthorityGuardKeyV1::Character(session.commit().character_id()),
+            ];
+            let claims = guards.load(&keys).await?.into_iter().collect::<Option<Vec<_>>>().ok_or("missing claim rows")?;
+            let snapshot = CompleteReconnectSnapshotV1 {
+                replacement_anchor: None, predecessor_attempts: vec![],
+                loss: loss.operation().clone(), loss_decided_at,
+                source_authority: lost.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1, observed_at: now,
+                session: lost, account_presence: presence, actor_present: true, runtime_ready: true,
+                placement_identity: [9; 16], placement_revision: 1, protection,
+                budget: store.recovery_budget(session_id, authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?,
+                candidate,
+                proof_transition: CompleteReconnectProofTransitionV1 {
+                    owner: lost.current_runtime_scope(), revision: 1, accepted_revision: 1, observed_at: now,
+                    predecessor_session: session_id, predecessor_generation: 1,
+                    successor_session: session_id, successor_generation: 2, candidate,
+                },
+                fnd02: authority_matrix::checked(Fnd02ReconciliationFenceV1::new(authority_matrix::checked(CommandId::new(1))?, vec![], 1, vec![]))?,
+                recovery: recovery.clone(), claims,
+            };
+            let source = std::sync::Arc::new(Owner {
+                current: std::sync::Mutex::new(CompleteReconnectCurrentV1 { snapshot, prepared: None }),
+                security: security.clone(),
+            });
+            let verified = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
+                .map_err(|error| format!("verify: {error:?}"))?;
+            let authorization = CompleteReconnectAuthorizationV1::authorize(source.as_ref(), identity.clone(), CompleteReconnectProofV1::V2(Box::new(verified)), now)
+                .map_err(|e| format!("authorize: {e:?}"))?;
+            let mut flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|e| format!("begin: {e:?}"))?;
+            let prepare = std::sync::Arc::new(flow.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("take prepare: {e:?}"))?);
+            let prepared = store.apply_complete_reconnect(prepare.clone(), source.clone()).await?;
+            assert!(matches!(prepared, CompleteReconnectOutcomeV1::Prepared { .. }), "{prepared:?}");
+            let budget = store.recovery_budget(session_id, authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?;
+            {
+                let mut current = source.current.lock().map_err(|_| "owner lock")?;
+                current.snapshot.budget = budget;
+                current.prepared = Some(Box::new(flow.operation().clone()));
+            }
+            flow.accept_completion(&mut Report(Some(CompleteReconnectCompletionV1 { operation: flow.operation().clone(), outcome: prepared })))
+                .map_err(|error| format!("prepared completion: {error:?}"))?;
+            let fresh = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
+                .map_err(|error| format!("reverify: {error:?}"))?;
+            let final_authorization = CompleteReconnectAuthorizationV1::reauthorize_history(flow.operation().recovery.clone(), CompleteReconnectProofV1::V2(Box::new(fresh)), source.as_ref(), now)
+                .map_err(|e| format!("reauthorize: {e:?}"))?;
+            flow.resume_prepared(final_authorization, source.as_ref(), now).map_err(|e| format!("resume: {e:?}"))?;
+            let commit = std::sync::Arc::new(flow.take_request(CompleteReconnectRequestKindV1::Commit).map_err(|e| format!("take commit: {e:?} phase {:?}", flow.phase()))?);
+            let committed = store.apply_complete_reconnect(commit.clone(), source.clone()).await?;
+            let CompleteReconnectOutcomeV1::Committed { decided_at } = committed else { return Err(format!("commit: {committed:?}").into()); };
+            assert!(decided_at >= loss_decided_at);
+            let (resumed, _) = store.current_session_at(session_id).await?;
+            assert_eq!(resumed.session_state(), GameSessionState::Active);
+            assert_eq!(resumed.current_game_session_id(), session_id);
+            assert_eq!(resumed.current_connection_generation().get(), 2);
+            assert_eq!(resumed.current_transport(), Some(candidate.transport_ref()));
+
+            // 1. `resumed_history` reports the epoch-1 loss's retained history, with
+            // protection now Activated by the just-committed same-session resume.
+            let history_epoch1 = store.resumed_history(session_id).await?.ok_or("missing resumed history")?;
+            let ControlLossHistoryV1::Resumed { budget: budget1, original_grace_deadline: grace1, protection: protection1 } = history_epoch1.clone() else {
+                return Err("expected Resumed history".into());
+            };
+            assert_eq!(budget1.epoch(), authority_matrix::checked(ControlLossEpochRefV1::new(1))?);
+            assert_eq!(budget1.state(), RecoveryEpochStateV1::Restored);
+            let committed_entries: Vec<_> = budget1.entries().iter().filter(|entry| entry.disposition == RetainedRecoveryAttemptDispositionV1::Committed).collect();
+            assert_eq!(committed_entries.len(), 1);
+            assert_eq!(committed_entries[0].transport, candidate.transport_ref());
+            assert_eq!(grace1, resumed.current_original_grace_deadline().ok_or("grace")?);
+            assert_eq!(
+                protection1,
+                RecoveryProtectionContinuityV1 {
+                    usage: RecoveryProtectionUseV1::Activated { entitlement_generation: 1, activated_at: decided_at, deadline: decided_at + 4 },
+                    // `after_complete_reconnect` only ever touches `usage`; the original
+                    // rearm evidence (fixed at `protection`'s construction, before the
+                    // durable clock may have advanced) is carried through unchanged.
+                    rearm: protection.rearm,
+                }
+            );
+
+            let now2 = postgres_clock(&pool).await?;
+            let presence2 = authority_matrix::checked(AccountPresenceClaimV1::new(account, session.commit().character_id()))?;
+            let make_observation = |epoch: u64, grace_deadline: i64, history: ControlLossHistoryV1, protection: RecoveryProtectionContinuityV1| -> Result<ControlLossObservationV1, Box<dyn std::error::Error>> {
+                Ok(ControlLossObservationV1 {
+                    source_authority: resumed.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
+                    decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(epoch))?,
+                    accepted_decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(epoch))?,
+                    observed_at: now2, session: resumed, account_presence: presence2.clone(),
+                    placement_identity: [9; 16], placement_revision: 1, actor_present: true, runtime_ready: true,
+                    cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss,
+                    loss_epoch: authority_matrix::checked(ControlLossEpochRefV1::new(epoch))?, loss_origin: now2,
+                    original_grace_deadline: grace_deadline, history, protection,
+                })
+            };
+
+            // 2a. Skipping an epoch (3 instead of 2) is otherwise foundation-valid
+            // (budget.epoch() 1 < loss_epoch 3) but is rejected by the durable
+            // re-derivation's own epoch-continuity check.
+            {
+                let observation = make_observation(3, now2 + 60, ControlLossHistoryV1::Resumed { budget: budget1.clone(), original_grace_deadline: grace1, protection: protection1 }, protection1)?;
+                let source3 = std::sync::Arc::new(LossSource(observation));
+                let authorization3 = authority_matrix::checked(ControlLossAuthorizationV1::authorize(source3.as_ref(), session_id, now2))?;
+                let mut flow3 = ControlLossFlowV1::begin(authorization3);
+                let request3 = std::sync::Arc::new(authority_matrix::checked(flow3.take_request())?);
+                assert_eq!(store.commit_fresh_loss(request3, source3.clone()).await?, ControlLossOutcomeV1::Rejected, "an epoch skip must be rejected");
+                assert_eq!(store.current_session_at(session_id).await?.0, resumed, "the session row is unchanged");
+            }
+
+            // 2b. A retained history whose protection was not genuinely left by the
+            // resume (Foundation only checks internal self-consistency between the
+            // observation's protection and the history's protection, never that this
+            // protection is what the resume actually produced) is rejected by the
+            // durable layer, which re-derives the real protection independently.
+            {
+                let observation = make_observation(2, now2 + 60, ControlLossHistoryV1::Resumed { budget: budget1.clone(), original_grace_deadline: grace1, protection }, protection)?;
+                let source_bogus = std::sync::Arc::new(LossSource(observation));
+                let authorization_bogus = authority_matrix::checked(ControlLossAuthorizationV1::authorize(source_bogus.as_ref(), session_id, now2))?;
+                let mut flow_bogus = ControlLossFlowV1::begin(authorization_bogus);
+                let request_bogus = std::sync::Arc::new(authority_matrix::checked(flow_bogus.take_request())?);
+                assert_eq!(store.commit_fresh_loss(request_bogus, source_bogus.clone()).await?, ControlLossOutcomeV1::Rejected, "a forged retained protection must be rejected");
+                assert_eq!(store.current_session_at(session_id).await?.0, resumed, "the session row is unchanged");
+            }
+
+            // 2c. A tampered `original_grace_deadline` inside the retained history is
+            // NOT expressible as a durable-layer `Ok(Rejected)`: Foundation's own
+            // `ControlLossObservationV1::validate` (admission_recovery_inner.rs,
+            // the `Resumed` arm) requires the history's `original_grace_deadline`
+            // to exactly equal `session.current_original_grace_deadline()` of that
+            // SAME observation. Tampering the history's field alone therefore fails
+            // inside `ControlLossAuthorizationV1::authorize` itself (a hard `Err`
+            // from the `?` operator), never reaching `commit_fresh_loss`. Tampering
+            // the session's own grace field to keep the two consistent instead makes
+            // the whole session snapshot disagree with the live database row, which
+            // is then rejected for session/predecessor mismatch, not for the grace
+            // field specifically, and duplicates case 2a's mechanism rather than
+            // exercising a new one. So this sub-case is skipped.
+
+            // 3. The genuine epoch-2 loss commits with the retained history exactly
+            // as `resumed_history` reported it.
+            let observation2 = make_observation(2, now2 + 60, ControlLossHistoryV1::Resumed { budget: budget1.clone(), original_grace_deadline: grace1, protection: protection1 }, protection1)?;
+            let source2 = std::sync::Arc::new(LossSource(observation2));
+            let authorization2 = authority_matrix::checked(ControlLossAuthorizationV1::authorize(source2.as_ref(), session_id, now2))?;
+            let mut flow2 = ControlLossFlowV1::begin(authorization2);
+            let loss2 = std::sync::Arc::new(authority_matrix::checked(flow2.take_request())?);
+            let ControlLossOutcomeV1::Committed { decided_at: loss2_decided_at } = store.commit_fresh_loss(loss2.clone(), source2.clone()).await? else { return Err("epoch-2 loss not committed".into()); };
+            // The epoch-2 loss's own committed grace deadline is fixed at `loss2_now + 60`;
+            // keep that value for the later assertion while advancing `now2` for every
+            // timing check downstream of this commit (the durable clock may have moved on).
+            let loss2_now = now2;
+            let now2 = now2.max(loss2_decided_at);
+
+            let epoch2 = authority_matrix::checked(ControlLossEpochRefV1::new(2))?;
+            type EpochRow = (i64, i16, i16, Option<Vec<u8>>, Option<Vec<u8>>);
+            let row: EpochRow = sqlx::query_as(
+                "SELECT control_loss_epoch::BIGINT, session_state, attempt_count, prepared_attempt_ref, current_transport_ref \
+                 FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid",
+            )
+            .bind(session_id.as_bytes().as_slice())
+            .fetch_one(&pool)
+            .await?;
+            assert_eq!(row.0, 2);
+            assert_eq!(row.1, 1, "RECONNECTABLE");
+            assert_eq!(row.2, 0);
+            assert!(row.3.is_none(), "no prepared attempt");
+            assert!(row.4.is_none(), "no current transport");
+
+            let (owning2, owning2_decided_at) = store.owning_loss(session_id, epoch2).await?.ok_or("missing epoch-2 receipt")?;
+            assert_eq!(&owning2, loss2.operation());
+            assert_eq!(owning2_decided_at, loss2_decided_at);
+
+            // Idempotent replay: the same request re-commits to the same decision.
+            assert_eq!(
+                store.commit_fresh_loss(loss2.clone(), source2.clone()).await?,
+                ControlLossOutcomeV1::Committed { decided_at: loss2_decided_at }
+            );
+            assert!(matches!(
+                store.reconcile_fresh_loss(loss2.operation()).await?,
+                FreshLossReconciliation::Committed { .. }
+            ));
+
+            // 4. Resume again at epoch 2, through the same complete-reconnect path,
+            // with a new grant nonce and a new candidate transport/attempt.
+            let (lost2, _now_after_loss2) = store.current_session_at(session_id).await?;
+            assert_eq!(lost2.session_state(), GameSessionState::Reconnectable);
+            // Fresh platform security/signing evidence observed at `now2`: the first
+            // resume's evidence (observed at the original `now`) falls outside
+            // `EVIDENCE_FRESHNESS_SECONDS_V1` by the time this second resume runs.
+            let provenance2 = |purpose| FreshEvidenceProvenanceV1 {
+                source_authority: "independent-platform-fixture".into(), purpose, scope: Fnd04EvidenceScope::ExistingActorRecovery,
+                source_revision: 1, accepted_source_revision: 1, decision_identity: "recovery-1".into(), accepted_decision_identity: "recovery-1".into(),
+                source_observed_at: now2, clock_uncertainty_seconds: 0, publication_revision: 1,
+            };
+            let security2 = Security {
+                signing: RecoverySigningTrustObservationV2 { key_id: "recovery-1".into(), public_key: key.verifying_key().to_bytes(), trusted: true, provenance: provenance2(FreshEvidencePurposeV1::SigningTrust) },
+                security: RecoveryAccountSecurityObservationV2 { account_id: account.into(), minimum_generation: 1, allowed: true, provenance: provenance2(FreshEvidencePurposeV1::PlatformSecurity) },
+            };
+            let nonce2 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([12; 32]);
+            let payload2 = format!(
+                r#"{{"iss":"urn:oteryn:platform:game-recovery","aud":"urn:oteryn:game:recovery","iat":{now2},"nbf":{now2},"exp":{},"jti":"{nonce2}","profile":"oteryn-reauth-recovery-v1","purpose":"existing_actor_recovery","attempt_ref":"00000000-0000-7000-8000-000000000002","account_id":"{account}","character_id":"{character}","world_id":"{world}","account_security_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1"}}"#,
+                now2 + 30
+            );
+            let input2 = format!("{}.{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header), base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(payload2));
+            let token2 = format!("{input2}.{}", base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(key.sign(input2.as_bytes()).to_bytes()));
+            let identity2 = authority_matrix::checked(ReconnectIdentityV1::new(
+                session_id, authority_matrix::checked(ReconnectAttemptRef::new(30))?, account,
+                session.commit().character_id(), session.commit().world_id(), lost2.current_runtime_scope(),
+            ))?;
+            let candidate2 = authority_matrix::checked(ReconnectCandidateBindingV1::new(
+                session_id, identity2.reconnect_attempt_ref(),
+                authority_matrix::checked(ConnectionGeneration::new(3))?,
+                authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x71; 16]))?, now2 + 5,
+            ))?;
+            let claims2 = guards.load(&keys).await?.into_iter().collect::<Option<Vec<_>>>().ok_or("missing claim rows")?;
+            let snapshot2 = CompleteReconnectSnapshotV1 {
+                replacement_anchor: None, predecessor_attempts: vec![],
+                loss: loss2.operation().clone(), loss_decided_at: loss2_decided_at,
+                source_authority: lost2.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1, observed_at: now2,
+                session: lost2, account_presence: presence2.clone(), actor_present: true, runtime_ready: true,
+                placement_identity: [9; 16], placement_revision: 1, protection: protection1,
+                budget: store.recovery_budget(session_id, epoch2).await?,
+                candidate: candidate2,
+                proof_transition: CompleteReconnectProofTransitionV1 {
+                    owner: lost2.current_runtime_scope(), revision: 1, accepted_revision: 1, observed_at: now2,
+                    predecessor_session: session_id, predecessor_generation: 2,
+                    successor_session: session_id, successor_generation: 3, candidate: candidate2,
+                },
+                fnd02: authority_matrix::checked(Fnd02ReconciliationFenceV1::new(authority_matrix::checked(CommandId::new(1))?, vec![], 1, vec![]))?,
+                recovery: recovery.clone(), claims: claims2,
+            };
+            let source_resume2 = std::sync::Arc::new(Owner {
+                current: std::sync::Mutex::new(CompleteReconnectCurrentV1 { snapshot: snapshot2, prepared: None }),
+                security: security2.clone(),
+            });
+            let verified2 = verify_recovery_grant_durability_v2(&token2, now2, &RecoveryDurabilityTrustContextV2::from_owning_source(&security2), &recovery)
+                .map_err(|error| format!("verify2: {error:?}"))?;
+            let authorization_resume2 = CompleteReconnectAuthorizationV1::authorize(source_resume2.as_ref(), identity2.clone(), CompleteReconnectProofV1::V2(Box::new(verified2)), now2)
+                .map_err(|e| format!("authorize2: {e:?}"))?;
+            let mut flow_resume2 = CompleteReconnectFlowV1::begin(authorization_resume2, None).map_err(|e| format!("begin2: {e:?}"))?;
+            let prepare2 = std::sync::Arc::new(flow_resume2.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("take prepare2: {e:?}"))?);
+            let prepared2 = store.apply_complete_reconnect(prepare2.clone(), source_resume2.clone()).await?;
+            assert!(matches!(prepared2, CompleteReconnectOutcomeV1::Prepared { .. }), "{prepared2:?}");
+            let budget2_after_prepare = store.recovery_budget(session_id, epoch2).await?;
+            {
+                let mut current = source_resume2.current.lock().map_err(|_| "owner lock")?;
+                current.snapshot.budget = budget2_after_prepare;
+                current.prepared = Some(Box::new(flow_resume2.operation().clone()));
+            }
+            flow_resume2.accept_completion(&mut Report(Some(CompleteReconnectCompletionV1 { operation: flow_resume2.operation().clone(), outcome: prepared2 })))
+                .map_err(|error| format!("prepared2 completion: {error:?}"))?;
+            let fresh2 = verify_recovery_grant_durability_v2(&token2, now2, &RecoveryDurabilityTrustContextV2::from_owning_source(&security2), &recovery)
+                .map_err(|error| format!("reverify2: {error:?}"))?;
+            let final_authorization2 = CompleteReconnectAuthorizationV1::reauthorize_history(flow_resume2.operation().recovery.clone(), CompleteReconnectProofV1::V2(Box::new(fresh2)), source_resume2.as_ref(), now2)
+                .map_err(|e| format!("reauthorize2: {e:?}"))?;
+            flow_resume2.resume_prepared(final_authorization2, source_resume2.as_ref(), now2).map_err(|e| format!("resume2: {e:?}"))?;
+            let commit2 = std::sync::Arc::new(flow_resume2.take_request(CompleteReconnectRequestKindV1::Commit).map_err(|e| format!("take commit2: {e:?} phase {:?}", flow_resume2.phase()))?);
+            let committed2 = store.apply_complete_reconnect(commit2.clone(), source_resume2.clone()).await?;
+            let CompleteReconnectOutcomeV1::Committed { decided_at: decided_at2 } = committed2 else { return Err(format!("commit2: {committed2:?}").into()); };
+            assert!(decided_at2 >= loss2_decided_at);
+
+            let (resumed2, _) = store.current_session_at(session_id).await?;
+            assert_eq!(resumed2.session_state(), GameSessionState::Active);
+            assert_eq!(resumed2.current_game_session_id(), session_id);
+            assert_eq!(resumed2.current_connection_generation().get(), 3);
+            assert_eq!(resumed2.current_transport(), Some(candidate2.transport_ref()));
+            assert_eq!(resumed2.current_control_loss_epoch().map(ControlLossEpochRefV1::get), Some(2));
+
+            // 5. `resumed_history` now reports the epoch-2 budget, Restored, with the
+            // same (already Activated) protection unchanged.
+            let history_epoch2 = store.resumed_history(session_id).await?.ok_or("missing epoch-2 resumed history")?;
+            let ControlLossHistoryV1::Resumed { budget: budget2, original_grace_deadline: grace2, protection: protection2 } = history_epoch2 else {
+                return Err("expected Resumed history at epoch 2".into());
+            };
+            assert_eq!(budget2.epoch(), epoch2);
+            assert_eq!(budget2.state(), RecoveryEpochStateV1::Restored);
+            let committed_entries2: Vec<_> = budget2.entries().iter().filter(|entry| entry.disposition == RetainedRecoveryAttemptDispositionV1::Committed).collect();
+            assert_eq!(committed_entries2.len(), 1);
+            assert_eq!(committed_entries2[0].transport, candidate2.transport_ref());
+            assert_eq!(grace2, loss2_now + 60);
+            assert_eq!(protection2, protection1);
+
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result
+    })
+}

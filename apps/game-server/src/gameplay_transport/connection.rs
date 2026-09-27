@@ -103,8 +103,9 @@ pub(crate) enum ControlLossResult {
     Refused,
     /// The durable outcome could not be proven within the bounded reconciliation.
     Unknown,
-    /// The ended controller had resumed a lost session. A loss after a resume is not
-    /// recorded yet (FND-04B resumed history); the session is released instead.
+    /// The ended controller had resumed a lost session, but its loss after the resume
+    /// could not be recorded (resumed history unproven or refused); the session is
+    /// released instead of staying ACTIVE on a dead transport.
     ResumedHistory,
 }
 
