@@ -254,6 +254,8 @@ def candidate_errors(candidate, index):
             if len(wiki_placements) != 1:
                 errs.append(f"{alabel}: rule 'WIKI_POSITION' requires exactly one wiki-origin "
                              f"placement, found {len(wiki_placements)}")
+            if candidate.get('wiki') is None:
+                errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
         elif rule == 'WIKI_CONFIRMED':
             if chosen != 'wiki':
                 errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")

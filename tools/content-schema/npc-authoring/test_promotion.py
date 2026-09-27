@@ -184,6 +184,15 @@ class PromotionValidatorTests(unittest.TestCase):
         errs = validate_promotion.errors(report)
         self.assertTrue(any('wiki-origin placement direction must be null' in e for e in errs))
 
+    def test_wiki_position_without_wiki_page_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if len(c['provenance']) == 2
+                          and any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        candidate['wiki'] = None
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any("rule 'WIKI_POSITION' requires a wiki page" in e for e in errs))
+
     def test_wiki_origin_placement_with_radius_fails(self):
         report = load_sample()
         candidate = next(c for c in report['candidates']
