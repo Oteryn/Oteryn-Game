@@ -4,7 +4,7 @@
 task_id: OTV2-20260926-monster-import-readiness
 title: Raise Canary monster import readiness and record familiar and corpse decisions
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,12 +12,12 @@ issue: 162
 pr: 951
 jira: KAN-16
 base_sha: d6c6c18eb1690208213b8871a30c992681ee4f2d
-head_sha: null
-final_head_sha: null
+head_sha: 204f6dcbbb9bfe24701a4f7cd194c38ab235d82d
+final_head_sha: 204f6dcbbb9bfe24701a4f7cd194c38ab235d82d
 final_head_frozen_at: null
 owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
 created_at: 2026-09-26
-updated_at: 2026-09-26
+updated_at: 2026-09-27
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260926-monster-import-readiness.md
@@ -55,3 +55,15 @@ fence, session, authority or persisted-recovery evidence is touched.
   (D17). `verify_formal_schema.py` 180/180.
 - Batch 1 10/10 and batch 2 7/10 manifests resolve; `knight_familiar` look and thorn knight addons
   are mapped.
+
+## Postmerge closeout
+
+`PROVEN`: [PR #951](https://github.com/Oteryn/Oteryn-Game/pull/951) merged
+`204f6dcbbb9bfe24701a4f7cd194c38ab235d82d` as
+`150928e65c8a83f91ceb5b238ac1dda9a3b067eb` at `2026-09-27T06:07:19Z`.
+[Reconciliation allocation](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5855464134)
+confirms the prior lease is terminal/released and allocates this separate archive move.
+The bounded delivery is completed; earlier acceptance results and owned paths remain
+historical evidence. The monster runtime and GAME-AI-01 product gap remain outside scope.
+`final_head_sha` identifies the merged PR head; its original freeze timestamp is
+`UNKNOWN` and stays null. No new review, MQ, E2E or runtime qualification is claimed.

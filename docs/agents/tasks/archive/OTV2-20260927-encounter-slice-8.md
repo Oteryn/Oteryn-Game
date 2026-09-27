@@ -15,7 +15,7 @@ base_sha: a822326c9cf4607100e58bbc3673748f3fa299bb
 head_sha: 280b00ecad031f0188fa11059b3fabb6d92e928e
 final_head_sha: 280b00ecad031f0188fa11059b3fabb6d92e928e
 final_head_frozen_at: null
-owner: released
+owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -51,7 +51,14 @@ fence, session, authority or persisted-recovery evidence is touched.
 - Crystal comparison summarised in the format doc §11.
 - `population_census.py` 1,490 of 1,656 fully resolved (1,486 before).
 
-## Completion
+## Postmerge closeout
 
-Merged as PR #973 (`68d0ae0005a8bed45f2427dd7a0d762eeeaf7239`) from final head `280b00e`; required checks passed on that head.
-Owner released.
+`PROVEN`: [PR #973](https://github.com/Oteryn/Oteryn-Game/pull/973) merged
+`280b00ecad031f0188fa11059b3fabb6d92e928e` as
+`68d0ae0005a8bed45f2427dd7a0d762eeeaf7239` at `2026-09-27T10:50:07Z`.
+[Reconciliation allocation](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5855464134)
+confirms the prior lease is terminal/released and allocates this separate archive move.
+The bounded delivery is completed; earlier acceptance results and owned paths remain
+historical evidence. Runtime implementation stays unallocated.
+`final_head_sha` identifies the merged PR head; its original freeze timestamp is
+`UNKNOWN` and stays null. No new review, MQ, E2E or runtime qualification is claimed.

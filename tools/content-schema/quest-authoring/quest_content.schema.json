@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/quest-content/v1",
+  "title": "Oteryn quest content v1 (CANDIDATE): reward claims and reward-only quests",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "claims": {"type": "array", "items": {"$ref": "#/$defs/claim"}},
+    "quests": {"type": "array", "items": {"$ref": "#/$defs/quest"}}
+  },
+  "$defs": {
+    "identity": {
+      "type": "object", "additionalProperties": false, "required": ["key", "revision"],
+      "properties": {"key": {"type": "string", "pattern": "^[a-z0-9_-]+:[a-z0-9_./-]+$"}, "revision": {"type": "string", "minLength": 1}}
+    },
+    "ref": {
+      "type": "object", "additionalProperties": false, "required": ["family", "key", "revision"],
+      "properties": {
+        "family": {"enum": ["Item", "Achievement", "Quest", "RewardClaim"]},
+        "key": {"type": "string", "pattern": "^[a-z0-9_-]+:[a-z0-9_./-]+$"},
+        "revision": {"type": "string", "minLength": 1}
+      }
+    },
+    "quantity": {
+      "type": "object", "additionalProperties": false, "required": ["item", "count"],
+      "properties": {"item": {"$ref": "#/$defs/ref"}, "count": {"type": "integer", "minimum": 1}}
+    },
+    "position": {
+      "description": "Source map position, kept as evidence; a map project binds it to a world placement.",
+      "type": "object", "additionalProperties": false, "required": ["x", "y", "z"],
+      "properties": {"x": {"type": "integer", "minimum": 0}, "y": {"type": "integer", "minimum": 0}, "z": {"type": "integer", "minimum": 0, "maximum": 15}}
+    },
+    "reward": {
+      "type": "object", "additionalProperties": false, "required": ["items"],
+      "properties": {
+        "items": {"type": "array", "items": {"$ref": "#/$defs/quantity"}},
+        "random_one_of": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/quantity"}},
+        "container": {"$ref": "#/$defs/ref"},
+        "key_binding": {"type": ["string", "null"], "pattern": "^[a-z0-9_-]+:door-key/[0-9]+$"},
+        "written_text": {
+          "type": "object", "additionalProperties": false, "required": ["item", "text"],
+          "properties": {"item": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]}, "text": {"type": "string", "minLength": 1}}
+        }
+      }
+    },
+    "placement": {
+      "type": "object", "additionalProperties": false, "required": ["position", "appearance", "reward"],
+      "properties": {
+        "position": {"$ref": "#/$defs/position"},
+        "appearance": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+        "reward": {"$ref": "#/$defs/reward"},
+        "achievement": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "claim": {
+      "type": "object", "additionalProperties": false,
+      "required": ["identity", "label", "section", "quest", "quest_link_basis", "quest_candidate_from_section", "claim", "placements"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "label": {"type": ["string", "null"]},
+        "section": {"type": ["string", "null"]},
+        "quest": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+        "quest_link_basis": {"enum": ["kv_quest_name", "storage_key", "label", null]},
+        "quest_candidate_from_section": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
+        "claim": {
+          "type": "object", "additionalProperties": false, "required": ["per", "repeat"],
+          "properties": {
+            "per": {"const": "character"},
+            "repeat": {
+              "oneOf": [
+                {"type": "object", "additionalProperties": false, "required": ["kind"], "properties": {"kind": {"const": "once"}}},
+                {"type": "object", "additionalProperties": false, "required": ["kind", "hours"],
+                 "properties": {"kind": {"const": "cooldown"}, "hours": {"type": "integer", "minimum": 1}}}
+              ]
+            }
+          }
+        },
+        "placements": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/placement"}},
+        "source_divergence": {"type": "string", "minLength": 1}
+      }
+    },
+    "quest": {
+      "type": "object", "additionalProperties": false, "required": ["identity", "display_name", "kind", "shown_in_quest_log", "claims"],
+      "properties": {
+        "identity": {"$ref": "#/$defs/identity"},
+        "display_name": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["reward_only"]},
+        "shown_in_quest_log": {"type": "boolean"},
+        "wiki": {
+          "type": "object", "additionalProperties": false, "required": ["title", "pageid", "revid"],
+          "properties": {"title": {"type": "string"}, "pageid": {"type": "integer"}, "revid": {"type": "integer"}}
+        },
+        "requirements_from_wiki": {
+          "type": "object", "additionalProperties": false,
+          "properties": {"premium": {"type": "string"}, "lvl": {"type": "string"}}
+        },
+        "claims": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/ref"}}
+      }
+    }
+  }
+}

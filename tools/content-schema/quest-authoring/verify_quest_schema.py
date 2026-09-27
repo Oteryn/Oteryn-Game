@@ -1,0 +1,102 @@
+"""Focused positive/negative checks of the quest content schema and semantic validator (synthetic fixtures only)."""
+import json
+import sys
+
+from validate_quest_content import validate
+
+
+def ref(family, name):
+    return {'family': family, 'key': 'oteryn:' + name, 'revision': 'r1'}
+
+
+def fixture():
+    claim = {
+        'identity': {'key': 'oteryn:reward-claim/annihilator', 'revision': 'r1'}, 'label': 'Demon armor',
+        'section': 'Annihilator quest', 'quest': ref('Quest', 'quest/annihilator'), 'quest_link_basis': 'storage_key',
+        'quest_candidate_from_section': None, 'claim': {'per': 'character', 'repeat': {'kind': 'once'}},
+        'placements': [
+            {'position': {'x': 100, 'y': 200, 'z': 7}, 'appearance': ref('Item', 'item/chest'),
+             'reward': {'items': [{'item': ref('Item', 'item/demon_armor'), 'count': 1}]}, 'achievement': ref('Achievement', 'achievement/annihilator')},
+            {'position': {'x': 102, 'y': 200, 'z': 7}, 'appearance': ref('Item', 'item/chest'),
+             'reward': {'items': [], 'random_one_of': [{'item': ref('Item', 'item/gold'), 'count': 10}, {'item': ref('Item', 'item/key'), 'count': 1}],
+                        'container': ref('Item', 'item/bag'), 'key_binding': 'oteryn:door-key/3800',
+                        'written_text': {'item': ref('Item', 'item/bag'), 'text': 'Hardek *'}}}]}
+    quest = {'identity': {'key': 'oteryn:quest/annihilator', 'revision': 'r1'}, 'display_name': 'The Annihilator',
+             'kind': 'reward_only', 'shown_in_quest_log': False, 'wiki': {'title': 'The Annihilator', 'pageid': 1, 'revid': 2},
+             'requirements_from_wiki': {'premium': 'yes', 'lvl': '100'}, 'claims': [ref('RewardClaim', 'reward-claim/annihilator')]}
+    catalog = {'definitions': [ref('Item', f'item/{n}') for n in ('chest', 'demon_armor', 'gold', 'key', 'bag')] +
+               [ref('Achievement', 'achievement/annihilator')]}
+    manifest = {'entries': [{'position': [100, 200, 7], 'status': 'mapped', 'destination': 'oteryn:reward-claim/annihilator'},
+                            {'position': [102, 200, 7], 'status': 'conflict', 'destination': 'oteryn:reward-claim/annihilator'},
+                            {'position': [1, 1, 7], 'status': 'approved_omission'}]}
+    return {'claims': [claim]}, {'quests': [quest]}, catalog, manifest
+
+
+results = []
+
+
+def case(name, mutate=None, expected=False):
+    claims, quests, catalog, manifest = fixture()
+    if mutate:
+        mutate(claims['claims'][0], quests['quests'][0], catalog, manifest)
+    errors = validate(claims, quests, catalog, manifest)
+    results.append({'name': name, 'expected_valid': expected, 'passed': (not errors) == expected,
+                    'first_error': errors[0] if errors else None})
+
+
+def placement(i):
+    return lambda c, q, cat, m: c['placements'][i]
+
+
+case('fixture accepted', expected=True)
+case('cooldown claim accepted', lambda c, q, cat, m: c['claim'].update(repeat={'kind': 'cooldown', 'hours': 24}), expected=True)
+case('claims are per character only', lambda c, q, cat, m: c['claim'].update(per='account'))
+case('cooldown needs hours', lambda c, q, cat, m: c['claim'].update(repeat={'kind': 'cooldown'}))
+case('cooldown hours are positive', lambda c, q, cat, m: c['claim'].update(repeat={'kind': 'cooldown', 'hours': 0}))
+case('placements are required', lambda c, q, cat, m: c.update(placements=[]))
+case('a placement hands out something', lambda c, q, cat, m: c['placements'][0]['reward'].update(items=[]))
+case('counts are positive', lambda c, q, cat, m: c['placements'][0]['reward']['items'][0].update(count=0))
+case('random reward needs two options', lambda c, q, cat, m: c['placements'][1]['reward']['random_one_of'].pop())
+case('floor is bounded', lambda c, q, cat, m: c['placements'][0]['position'].update(z=16))
+case('two claims cannot share a position', lambda c, q, cat, m: c['placements'][1]['position'].update(x=100))
+case('unknown reward field', lambda c, q, cat, m: c['placements'][0]['reward'].update(weight=5.0))
+case('key binding names a door key', lambda c, q, cat, m: c['placements'][1]['reward'].update(key_binding='oteryn:storage/1'))
+case('written text on an item not handed out', lambda c, q, cat, m: c['placements'][1]['reward']['written_text'].update(item=ref('Item', 'item/gold')))
+case('link basis without a quest', lambda c, q, cat, m: c.update(quest=None))
+case('section candidate on a linked claim', lambda c, q, cat, m: c.update(quest_candidate_from_section=ref('Quest', 'quest/x')))
+case('link basis is closed', lambda c, q, cat, m: c.update(quest_link_basis='section'))
+case('quest lists an unknown claim', lambda c, q, cat, m: q['claims'].append(ref('RewardClaim', 'reward-claim/ghost')))
+case('claim and quest disagree', lambda c, q, cat, m: c.update(quest=ref('Quest', 'quest/other')))
+case('quest kind is closed', lambda c, q, cat, m: q.update(kind='storyline'))
+case('duplicate claim key', lambda c, q, cat, m: None)
+case('item missing from catalog', lambda c, q, cat, m: cat['definitions'].pop(1))
+case('achievement missing from catalog', lambda c, q, cat, m: cat['definitions'].pop())
+case('manifest status is closed', lambda c, q, cat, m: m['entries'][2].update(status='skipped'))
+case('manifest destination must exist', lambda c, q, cat, m: m['entries'][0].update(destination='oteryn:reward-claim/ghost'))
+case('mapped entry needs a destination', lambda c, q, cat, m: m['entries'][0].pop('destination'))
+case('every claim is mapped from a source', lambda c, q, cat, m: m.update(entries=m['entries'][2:]))
+
+# 'duplicate claim key' needs two claims: rebuild it by hand
+claims, quests, catalog, manifest = fixture()
+claims['claims'].append(json.loads(json.dumps(claims['claims'][0])))
+for p in claims['claims'][1]['placements']:
+    p['position']['y'] += 50
+errors = validate(claims, quests, catalog, manifest)
+results[[r['name'] for r in results].index('duplicate claim key')] = {
+    'name': 'duplicate claim key', 'expected_valid': False, 'passed': any('duplicate claim key' in e for e in errors),
+    'first_error': errors[0] if errors else None}
+
+# an unlinked claim keeps its section candidate and no quest lists it
+claims, quests, catalog, manifest = fixture()
+claims['claims'][0].update(quest=None, quest_link_basis=None, quest_candidate_from_section=ref('Quest', 'quest/annihilator'))
+quests['quests'].clear()
+errors = validate(claims, quests, catalog, manifest)
+results.insert(2, {'name': 'unlinked claim with section candidate accepted', 'expected_valid': True, 'passed': not errors,
+                   'first_error': errors[0] if errors else None})
+
+failed = [r for r in results if not r['passed']]
+if '--verbose' in sys.argv:
+    for r in results:
+        print(f"{r['name']:<48} {r['first_error']}")
+print(json.dumps({'cases': len(results), 'passed': len(results) - len(failed), 'failed': failed}, indent=2))
+sys.exit(1 if failed else 0)

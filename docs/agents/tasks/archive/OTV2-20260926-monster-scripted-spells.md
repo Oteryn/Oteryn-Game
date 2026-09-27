@@ -4,7 +4,7 @@
 task_id: OTV2-20260926-monster-scripted-spells
 title: Convert registered Canary monster spell scripts (D11/D12)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 955
 jira: KAN-16
 base_sha: 139202f1aa790e573c0ae5d41f4e529fdc503016
-head_sha: null
-final_head_sha: null
+head_sha: d0da9fcd055a8ce3a4ee5baedbbaaf68f00d51e0
+final_head_sha: d0da9fcd055a8ce3a4ee5baedbbaaf68f00d51e0
 final_head_frozen_at: null
 owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
 created_at: 2026-09-26
@@ -56,3 +56,15 @@ fence, session, authority or persisted-recovery evidence is touched.
   committed index holds one SHA-256 per bundle. Batch 1 10/10, batch 2 9/10 manifests resolve.
 - `wiki_compare.py --population` parses thousands separators and marks `?`/`~` values as
   WIKI_UNCERTAIN (never adopted) and non-numeric values as WIKI_UNPARSED.
+
+## Postmerge closeout
+
+`PROVEN`: [PR #955](https://github.com/Oteryn/Oteryn-Game/pull/955) merged
+`d0da9fcd055a8ce3a4ee5baedbbaaf68f00d51e0` as
+`39ab2aa4dac0fe1b11d3e00fde0d03967c60f0d3` at `2026-09-27T07:32:51Z`.
+[Reconciliation allocation](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5855464134)
+confirms the prior lease is terminal/released and allocates this separate archive move.
+The bounded delivery is completed; earlier acceptance results and owned paths remain
+historical evidence. P4 custom logic remains unresolved and runtime work unallocated.
+`final_head_sha` identifies the merged PR head; its original freeze timestamp is
+`UNKNOWN` and stays null. No new review, MQ, E2E or runtime qualification is claimed.
