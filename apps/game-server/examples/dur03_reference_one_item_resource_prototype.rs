@@ -1,5 +1,5 @@
 //! Nonproduction DUR-03 resource evidence for deterministic Gold Coin x1.
-//! No database, runtime activation, production maxima, event family or wire schema.
+//! Unregistered closed candidate protobuf measurement; no runtime or production admission.
 
 #![cfg_attr(
     not(test),
@@ -165,6 +165,7 @@ enum Observation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ReconciliationRecord {
     plan: Plan,
+    event: candidate::FrozenEvent,
     // This is the separate in-memory committed-store fixture fact. It does not
     // assert a DB receipt, process restart, isolation, or current authority.
     committed: bool,
@@ -475,12 +476,26 @@ impl Model {
 
     fn publish_custody(&mut self, plan: &Plan) -> Result<(), Failure> {
         // Validate every line before changing the single custody tuple.
+        let expected_establish = Effect {
+            kind: EffectKind::Establish,
+            item: plan.intent.item.id(),
+            location: plan.intent.destination.clone(),
+        };
+        if plan.participants[0].item != plan.intent.item || plan.participants[0].quantity != 1 {
+            return Err(Failure::Custody);
+        }
         match plan.intent.kind {
-            Kind::Mint if self.custody.is_none() => {}
+            Kind::Mint
+                if self.custody.is_none()
+                    && plan.effects[0].as_ref() == Some(&expected_establish)
+                    && plan.effects[1].is_none() => {}
             Kind::Transfer => {
                 let source = plan.effects[0].as_ref().ok_or(Failure::Custody)?;
-                if self.custody.as_ref()
-                    != Some(&(plan.participants[0].clone(), source.location.clone()))
+                if source.kind != EffectKind::Remove
+                    || source.item != plan.intent.item.id()
+                    || plan.effects[1].as_ref() != Some(&expected_establish)
+                    || self.custody.as_ref()
+                        != Some(&(plan.participants[0].clone(), source.location.clone()))
                 {
                     return Err(Failure::Custody);
                 }
@@ -509,6 +524,7 @@ impl Model {
             if record.plan.intent != intent || record.plan.audit_probe != audit_probe {
                 return Err(Failure::Conflict);
             }
+            record.event.check()?;
             if record.observation == Observation::NotApplied {
                 // Frozen candidate, same ID and output slot; no rematerialization.
                 let plan = record.plan.clone();
@@ -559,6 +575,8 @@ impl Model {
         self.check_plan(&plan, limits)?;
         // Encoding occurs only after all checked preflight limits have passed.
         let _encoded = plan.encode_records()?;
+        // Freeze exact event identity, semantic envelope and bytes before ambiguity.
+        let event = candidate::freeze(&plan)?;
         let committed = !matches!(outcome, Attempt::AmbiguousWithoutCommit);
         if committed {
             self.publish_custody(&plan)?;
@@ -571,6 +589,7 @@ impl Model {
         let id = plan.intent.item.id();
         self.records[slot] = Some(ReconciliationRecord {
             plan,
+            event,
             committed,
             observation,
             retry_work: 0,
@@ -590,6 +609,7 @@ impl Model {
     ) -> Result<ResultState, Failure> {
         let index = self.record_index(transaction).ok_or(Failure::Conflict)?;
         let record = self.records[index].as_mut().ok_or(Failure::Conflict)?;
+        record.event.check()?;
         // Three deterministic units: receipt lookup, identity check, resolution.
         let work = add(record.retry_work, 3)?;
         limits.check(11, work)?;
@@ -618,6 +638,1653 @@ fn audit_probe() -> AuditBudgetProbe {
     }
 }
 
+// Schema-specific, example-only candidate; nothing is exported by the server crate.
+mod candidate {
+    use super::{Failure, Kind, Location, Plan, add, uuid_fixture};
+    use prost::Message;
+    use serde_json::{Value, json};
+    use sha2::{Digest, Sha256};
+    use std::mem::size_of;
+
+    const PAYLOAD_MAX: usize = 196_608;
+    const ENVELOPE_MAX: usize = 262_144;
+    const STRING_MAX: usize = 128;
+    const DEPTH_MAX: usize = 32;
+
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct ItemState {
+        #[prost(bytes = "vec", tag = "1")]
+        item_instance_id: Vec<u8>,
+        #[prost(bytes = "vec", tag = "2")]
+        world_id: Vec<u8>,
+        #[prost(uint32, tag = "3")]
+        definition_key: u32,
+        #[prost(uint32, tag = "4")]
+        definition_revision: u32,
+        #[prost(uint32, tag = "5")]
+        quantity: u32,
+        #[prost(uint32, tag = "6")]
+        lifecycle: u32,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Ground {
+        #[prost(bytes = "vec", tag = "1")]
+        world_id: Vec<u8>,
+        #[prost(bytes = "vec", tag = "2")]
+        channel_id: Vec<u8>,
+        #[prost(bytes = "vec", tag = "3")]
+        corpse_occurrence_id: Vec<u8>,
+        #[prost(uint64, tag = "4")]
+        corpse_revision: u64,
+        #[prost(uint32, tag = "5")]
+        x: u32,
+        #[prost(uint32, tag = "6")]
+        y: u32,
+        #[prost(uint32, tag = "7")]
+        z: u32,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Inventory {
+        #[prost(bytes = "vec", tag = "1")]
+        character_id: Vec<u8>,
+        #[prost(uint64, tag = "2")]
+        session_generation: u64,
+        #[prost(uint32, tag = "3")]
+        direct_root_slot: u32,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Provenance {
+        #[prost(uint32, tag = "1")]
+        source_kind: u32,
+        #[prost(bytes = "vec", tag = "2")]
+        occurrence_id: Vec<u8>,
+        #[prost(bytes = "vec", tag = "3")]
+        cause_id: Vec<u8>,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Mint {
+        #[prost(message, optional, tag = "1")]
+        after: Option<ItemState>,
+        #[prost(message, optional, tag = "2")]
+        destination: Option<Ground>,
+        #[prost(message, optional, tag = "3")]
+        source: Option<Provenance>,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Transfer {
+        #[prost(message, optional, tag = "1")]
+        before: Option<ItemState>,
+        #[prost(message, optional, tag = "2")]
+        after: Option<ItemState>,
+        #[prost(message, optional, tag = "3")]
+        source: Option<Ground>,
+        #[prost(message, optional, tag = "4")]
+        destination: Option<Inventory>,
+        #[prost(message, optional, tag = "5")]
+        cause: Option<Provenance>,
+    }
+    #[derive(Clone, PartialEq, Eq, prost::Oneof)]
+    enum Operation {
+        #[prost(message, tag = "2")]
+        Mint(Mint),
+        #[prost(message, tag = "3")]
+        Transfer(Transfer),
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Payload {
+        #[prost(uint32, tag = "1")]
+        interpretation_revision: u32,
+        #[prost(oneof = "Operation", tags = "2, 3")]
+        operation: Option<Operation>,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct RuntimeOrder {
+        #[prost(uint64, tag = "1")]
+        scope_ownership_generation: u64,
+        #[prost(uint64, tag = "2")]
+        runtime_execution_ordinal: u64,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Membership {
+        #[prost(bytes = "vec", tag = "1")]
+        transaction_id: Vec<u8>,
+        #[prost(uint32, tag = "2")]
+        ordinal: u32,
+        #[prost(uint32, tag = "3")]
+        count: u32,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Command {
+        #[prost(bytes = "vec", tag = "1")]
+        game_session_id: Vec<u8>,
+        #[prost(uint64, tag = "2")]
+        command_id: u64,
+    }
+    #[derive(Clone, PartialEq, Eq, prost::Oneof)]
+    enum Cause {
+        #[prost(bytes, tag = "1")]
+        Event(Vec<u8>),
+        #[prost(message, tag = "2")]
+        Command(Command),
+        #[prost(bytes, tag = "3")]
+        Operation(Vec<u8>),
+        #[prost(bytes, tag = "4")]
+        Transaction(Vec<u8>),
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Causation {
+        #[prost(oneof = "Cause", tags = "1, 2, 3, 4")]
+        cause: Option<Cause>,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Actor {
+        #[prost(string, tag = "1")]
+        identity_domain: String,
+        #[prost(uint64, tag = "2")]
+        identity_epoch: u64,
+        #[prost(bytes = "vec", tag = "3")]
+        analytics_actor_id: Vec<u8>,
+    }
+    #[derive(Clone, PartialEq, Eq, Message)]
+    struct Envelope {
+        #[prost(uint32, tag = "1")]
+        envelope_revision: u32,
+        #[prost(bytes = "vec", tag = "2")]
+        event_id: Vec<u8>,
+        #[prost(uint32, tag = "3")]
+        event_type_id: u32,
+        #[prost(uint32, tag = "4")]
+        event_schema_revision: u32,
+        #[prost(int32, tag = "5")]
+        durability_class: i32,
+        #[prost(int32, tag = "6")]
+        privacy_class: i32,
+        #[prost(string, tag = "7")]
+        retention_profile_id: String,
+        #[prost(int64, tag = "8")]
+        occurred_at_unix_ms: i64,
+        #[prost(bytes = "vec", optional, tag = "9")]
+        world_id: Option<Vec<u8>>,
+        #[prost(bytes = "vec", optional, tag = "10")]
+        channel_id: Option<Vec<u8>>,
+        #[prost(bytes = "vec", optional, tag = "11")]
+        instance_id: Option<Vec<u8>>,
+        #[prost(bytes = "vec", optional, tag = "12")]
+        node_id: Option<Vec<u8>>,
+        #[prost(bytes = "vec", optional, tag = "13")]
+        game_session_id: Option<Vec<u8>>,
+        #[prost(uint64, optional, tag = "14")]
+        connection_generation: Option<u64>,
+        #[prost(message, optional, tag = "15")]
+        runtime_order: Option<RuntimeOrder>,
+        #[prost(uint64, optional, tag = "16")]
+        command_id: Option<u64>,
+        #[prost(bytes = "vec", optional, tag = "17")]
+        operation_id: Option<Vec<u8>>,
+        #[prost(message, optional, tag = "18")]
+        transaction_event: Option<Membership>,
+        #[prost(bytes = "vec", optional, tag = "19")]
+        correlation_id: Option<Vec<u8>>,
+        #[prost(message, optional, tag = "20")]
+        causation: Option<Causation>,
+        #[prost(message, optional, tag = "21")]
+        analytics_actor: Option<Actor>,
+        #[prost(uint32, optional, tag = "22")]
+        protocol_major: Option<u32>,
+        #[prost(string, optional, tag = "23")]
+        ruleset_revision: Option<String>,
+        #[prost(string, optional, tag = "24")]
+        content_revision: Option<String>,
+        #[prost(string, tag = "25")]
+        server_build_id: String,
+        #[prost(bytes = "vec", tag = "26")]
+        payload: Vec<u8>,
+        #[prost(bytes = "vec", tag = "27")]
+        payload_sha256: Vec<u8>,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub(super) struct FrozenEvent {
+        semantic: Envelope,
+        wire: Vec<u8>,
+    }
+
+    // Independent current-fact fixture supplied to validation, not reconstructed
+    // from the event/plan. No claim of production lease/session/current authority.
+    #[derive(Clone)]
+    struct Facts {
+        world: [u8; 16],
+        channel: [u8; 16],
+        corpse: [u8; 16],
+        character: [u8; 16],
+        session: [u8; 16],
+        generation: u64,
+        corpse_revision: u64,
+        definition_revision: u32,
+    }
+    fn current_fixture() -> Facts {
+        Facts {
+            world: uuid_fixture(1),
+            channel: uuid_fixture(6),
+            corpse: uuid_fixture(12),
+            character: uuid_fixture(2),
+            session: uuid_fixture(7),
+            generation: 1,
+            corpse_revision: 1,
+            definition_revision: 1,
+        }
+    }
+    fn bounded(amount: usize, maximum: usize) -> Result<(), Failure> {
+        if amount > maximum {
+            return Err(Failure::Budget("ANL shared limit"));
+        }
+        Ok(())
+    }
+    fn identity(value: &[u8]) -> Result<(), Failure> {
+        if value.len() != 16
+            || value.iter().all(|byte| *byte == 0)
+            || value[6] >> 4 != 7
+            || value[8] >> 6 != 2
+        {
+            return Err(Failure::Identity);
+        }
+        Ok(())
+    }
+    fn string(value: &str) -> Result<(), Failure> {
+        bounded(value.len(), STRING_MAX)?;
+        if value.is_empty()
+            || !value
+                .bytes()
+                .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+        {
+            return Err(Failure::Facts);
+        }
+        Ok(())
+    }
+    fn state(value: &ItemState, facts: &Facts) -> Result<(), Failure> {
+        identity(&value.item_instance_id)?;
+        identity(&value.world_id)?;
+        if value.world_id != facts.world
+            || value.definition_key != 1
+            || value.definition_revision != facts.definition_revision
+            || value.quantity == 0
+            || value.lifecycle != 1
+        {
+            return Err(Failure::Facts);
+        }
+        Ok(())
+    }
+    fn ground(value: &Ground, facts: &Facts) -> Result<(), Failure> {
+        for id in [
+            &value.world_id,
+            &value.channel_id,
+            &value.corpse_occurrence_id,
+        ] {
+            identity(id)?;
+        }
+        if value.world_id != facts.world
+            || value.channel_id != facts.channel
+            || value.corpse_occurrence_id != facts.corpse
+            || value.corpse_revision == 0
+            || value.corpse_revision != facts.corpse_revision
+            || [value.x, value.y, value.z] != [100, 100, 7]
+        {
+            return Err(Failure::Facts);
+        }
+        Ok(())
+    }
+    fn provenance(value: &Provenance, kind: Kind, facts: &Facts) -> Result<(), Failure> {
+        identity(&value.occurrence_id)?;
+        identity(&value.cause_id)?;
+        if value.source_kind != 1
+            || value.occurrence_id != facts.corpse
+            || value.cause_id != uuid_fixture(if kind == Kind::Mint { 10 } else { 11 })
+        {
+            return Err(Failure::Facts);
+        }
+        Ok(())
+    }
+    fn validate_payload(value: &Payload, facts: &Facts) -> Result<Kind, Failure> {
+        if value.interpretation_revision != 1 {
+            return Err(Failure::Unsupported);
+        }
+        match value.operation.as_ref().ok_or(Failure::Unsupported)? {
+            Operation::Mint(mint) => {
+                state(mint.after.as_ref().ok_or(Failure::Facts)?, facts)?;
+                ground(mint.destination.as_ref().ok_or(Failure::Facts)?, facts)?;
+                provenance(
+                    mint.source.as_ref().ok_or(Failure::Facts)?,
+                    Kind::Mint,
+                    facts,
+                )?;
+                Ok(Kind::Mint)
+            }
+            Operation::Transfer(transfer) => {
+                let before = transfer.before.as_ref().ok_or(Failure::Facts)?;
+                let after = transfer.after.as_ref().ok_or(Failure::Facts)?;
+                state(before, facts)?;
+                state(after, facts)?;
+                if before != after {
+                    return Err(Failure::Conflict);
+                }
+                ground(transfer.source.as_ref().ok_or(Failure::Facts)?, facts)?;
+                let destination = transfer.destination.as_ref().ok_or(Failure::Facts)?;
+                identity(&destination.character_id)?;
+                if destination.character_id != facts.character
+                    || destination.session_generation == 0
+                    || destination.session_generation != facts.generation
+                    || destination.direct_root_slot != 0
+                {
+                    return Err(Failure::Facts);
+                }
+                provenance(
+                    transfer.cause.as_ref().ok_or(Failure::Facts)?,
+                    Kind::Transfer,
+                    facts,
+                )?;
+                Ok(Kind::Transfer)
+            }
+        }
+    }
+
+    // Borrowed preflight knows only this finite candidate/foundation graph.
+    // Unknown additive scalars/opaque bytes are skipped; groups are rejected,
+    // including unknown groups, before prost's fixed 100-level recursion path.
+    #[derive(Clone, Copy)]
+    enum Schema {
+        Envelope,
+        Payload,
+        Mint,
+        Transfer,
+        State,
+        Ground,
+        Inventory,
+        Provenance,
+        Runtime,
+        Membership,
+        Causation,
+        Command,
+        Actor,
+    }
+    fn field(schema: Schema, tag: u32) -> Option<(u8, Option<Schema>, usize)> {
+        use Schema::*;
+        let result = match (schema, tag) {
+            (Envelope, 1 | 3 | 4 | 5 | 6 | 8 | 14 | 16 | 22)
+            | (Payload, 1)
+            | (State, 3..=6)
+            | (Ground, 4..=7)
+            | (Inventory, 2 | 3)
+            | (Provenance, 1)
+            | (Runtime, 1 | 2)
+            | (Membership, 2 | 3)
+            | (Command, 2)
+            | (Actor, 2) => (0, None, 0),
+            (Envelope, 7 | 23 | 24 | 25) | (Actor, 1) => (2, None, STRING_MAX),
+            (Envelope, 15) => (2, Some(Runtime), ENVELOPE_MAX),
+            (Envelope, 18) => (2, Some(Membership), ENVELOPE_MAX),
+            (Envelope, 20) => (2, Some(Causation), ENVELOPE_MAX),
+            (Envelope, 21) => (2, Some(Actor), ENVELOPE_MAX),
+            (Envelope, 26) => (2, Some(Payload), PAYLOAD_MAX),
+            (Envelope, 27) => (2, None, 32),
+            (Payload, 2) => (2, Some(Mint), PAYLOAD_MAX),
+            (Payload, 3) => (2, Some(Transfer), PAYLOAD_MAX),
+            (Mint, 1) | (Transfer, 1 | 2) => (2, Some(State), PAYLOAD_MAX),
+            (Mint, 2) | (Transfer, 3) => (2, Some(Ground), PAYLOAD_MAX),
+            (Mint, 3) | (Transfer, 5) => (2, Some(Provenance), PAYLOAD_MAX),
+            (Transfer, 4) => (2, Some(Inventory), PAYLOAD_MAX),
+            (Causation, 2) => (2, Some(Command), ENVELOPE_MAX),
+            (Envelope, 2 | 9..=13 | 17 | 19)
+            | (State, 1 | 2)
+            | (Ground, 1..=3)
+            | (Inventory, 1)
+            | (Provenance, 2 | 3)
+            | (Membership, 1)
+            | (Command, 1)
+            | (Causation, 1 | 3 | 4)
+            | (Actor, 3) => (2, None, 16),
+            _ => return None,
+        };
+        Some(result)
+    }
+    fn varint(input: &[u8], cursor: &mut usize) -> Result<u64, Failure> {
+        let mut result = 0;
+        for shift in (0..70).step_by(7) {
+            let byte = *input.get(*cursor).ok_or(Failure::Facts)?;
+            *cursor = cursor.checked_add(1).ok_or(Failure::Overflow)?;
+            if shift == 63 && byte > 1 {
+                return Err(Failure::Facts);
+            }
+            result |= u64::from(byte & 127) << shift;
+            if byte & 128 == 0 {
+                return Ok(result);
+            }
+        }
+        Err(Failure::Facts)
+    }
+    fn preflight(input: &[u8], schema: Schema, depth: usize) -> Result<(), Failure> {
+        bounded(depth, DEPTH_MAX)?;
+        let mut cursor = 0;
+        let mut seen = [false; 28];
+        let mut oneof_seen = false;
+        while cursor < input.len() {
+            let key = varint(input, &mut cursor)?;
+            let tag = u32::try_from(key >> 3).map_err(|_| Failure::Facts)?;
+            if tag == 0 || tag > 536_870_911 {
+                return Err(Failure::Facts);
+            }
+            let wire = u8::try_from(key & 7).map_err(|_| Failure::Facts)?;
+            let known = field(schema, tag);
+            if let Some((expected, _, _)) = known {
+                if wire != expected {
+                    return Err(Failure::Facts);
+                }
+                let index = usize::try_from(tag).map_err(|_| Failure::Overflow)?;
+                if seen[index] {
+                    return Err(Failure::Conflict);
+                }
+                seen[index] = true;
+                if matches!(schema, Schema::Payload) && matches!(tag, 2 | 3)
+                    || matches!(schema, Schema::Causation)
+                {
+                    if oneof_seen {
+                        return Err(Failure::Conflict);
+                    }
+                    oneof_seen = true;
+                }
+            }
+            match wire {
+                0 => {
+                    varint(input, &mut cursor)?;
+                }
+                1 | 5 => {
+                    cursor = cursor
+                        .checked_add(if wire == 1 { 8 } else { 4 })
+                        .ok_or(Failure::Overflow)?;
+                    if cursor > input.len() {
+                        return Err(Failure::Facts);
+                    }
+                }
+                2 => {
+                    // Unknown opaque bytes cannot be admitted by this closed
+                    // candidate: their identity/privacy meaning is unresolved.
+                    // Additive primitive numeric fields remain compatible.
+                    if known.is_none() {
+                        return Err(Failure::Unsupported);
+                    }
+                    let length = usize::try_from(varint(input, &mut cursor)?)
+                        .map_err(|_| Failure::Overflow)?;
+                    let end = cursor.checked_add(length).ok_or(Failure::Overflow)?;
+                    let borrowed = input.get(cursor..end).ok_or(Failure::Facts)?;
+                    if let Some((_, child, maximum)) = known {
+                        bounded(length, maximum)?;
+                        if let Some(child) = child {
+                            preflight(
+                                borrowed,
+                                child,
+                                depth.checked_add(1).ok_or(Failure::Overflow)?,
+                            )?;
+                        }
+                    }
+                    cursor = end;
+                }
+                _ => return Err(Failure::Unsupported),
+            }
+        }
+        Ok(())
+    }
+    fn decode_payload(input: &[u8]) -> Result<Payload, Failure> {
+        bounded(input.len(), PAYLOAD_MAX)?;
+        preflight(input, Schema::Payload, 2)?;
+        Payload::decode(input).map_err(|_| Failure::Facts)
+    }
+    fn validate_envelope(value: &Envelope, facts: &Facts) -> Result<Kind, Failure> {
+        identity(&value.event_id)?;
+        for id in [&value.world_id, &value.channel_id] {
+            identity(id.as_ref().ok_or(Failure::Facts)?)?;
+        }
+        for text in [&value.retention_profile_id, &value.server_build_id] {
+            string(text)?;
+        }
+        for text in [&value.ruleset_revision, &value.content_revision]
+            .into_iter()
+            .flatten()
+        {
+            string(text)?;
+        }
+        if value.envelope_revision != 1
+            || value.event_schema_revision != 1
+            || value.event_type_id != 0
+        {
+            return Err(Failure::Unsupported);
+        }
+        if value.durability_class != 2
+            || !matches!(value.privacy_class, 3 | 4)
+            || value.retention_profile_id != "offline_item_unaccepted"
+            || value.occurred_at_unix_ms <= 0
+            || value.world_id.as_deref() != Some(&facts.world)
+            || value.channel_id.as_deref() != Some(&facts.channel)
+            || value.ruleset_revision.as_deref() != Some("fixture1")
+            || value.content_revision.as_deref() != Some("fixture1")
+            || value.server_build_id != "offline"
+            || value.instance_id.is_some()
+            || value.node_id.is_some()
+            || value.operation_id.is_some()
+            || value.correlation_id.is_some()
+            || value.analytics_actor.is_some()
+            || value.protocol_major.is_some()
+        {
+            return Err(Failure::Facts);
+        }
+        let order = value.runtime_order.as_ref().ok_or(Failure::Facts)?;
+        if order.scope_ownership_generation == 0
+            || order.scope_ownership_generation != facts.generation
+            || order.runtime_execution_ordinal == 0
+        {
+            return Err(Failure::Facts);
+        }
+        let member = value.transaction_event.as_ref().ok_or(Failure::Facts)?;
+        identity(&member.transaction_id)?;
+        if member.ordinal != 1 || member.count != 1 {
+            return Err(Failure::Conflict);
+        }
+        bounded(value.payload.len(), PAYLOAD_MAX)?;
+        if value.payload_sha256.as_slice() != Sha256::digest(&value.payload).as_slice() {
+            return Err(Failure::Conflict);
+        }
+        let kind = validate_payload(&decode_payload(&value.payload)?, facts)?;
+        if member.transaction_id != uuid_fixture(if kind == Kind::Mint { 4 } else { 5 })
+            || order.runtime_execution_ordinal != u64::from(kind.tag())
+        {
+            return Err(Failure::Facts);
+        }
+        match kind {
+            Kind::Mint
+                if value.game_session_id.is_none()
+                    && value.connection_generation.is_none()
+                    && value.command_id.is_none()
+                    && value.causation.is_none() => {}
+            Kind::Transfer => {
+                identity(value.game_session_id.as_ref().ok_or(Failure::Facts)?)?;
+                if value.game_session_id.as_deref() != Some(&facts.session)
+                    || value.connection_generation != Some(facts.generation)
+                    || value.command_id != Some(2)
+                {
+                    return Err(Failure::Facts);
+                }
+                let Some(Cause::Command(command)) = value
+                    .causation
+                    .as_ref()
+                    .and_then(|cause| cause.cause.as_ref())
+                else {
+                    return Err(Failure::Facts);
+                };
+                if command.game_session_id != facts.session || command.command_id != 2 {
+                    return Err(Failure::Facts);
+                }
+            }
+            _ => return Err(Failure::Facts),
+        }
+        Ok(kind)
+    }
+
+    // Checked shape accounting precedes prost sizing/encoding and every
+    // size-controlled vector allocation. No padding/filler to reach a maximum.
+    fn encode<M: Message>(
+        value: &M,
+        checked_ceiling: usize,
+        limit: usize,
+    ) -> Result<Vec<u8>, Failure> {
+        bounded(checked_ceiling, limit)?;
+        let length = value.encoded_len();
+        bounded(length, checked_ceiling)?;
+        let mut output = Vec::new();
+        output
+            .try_reserve_exact(length)
+            .map_err(|_| Failure::Budget("allocation"))?;
+        value.encode(&mut output).map_err(|_| Failure::Facts)?;
+        if output.len() != length {
+            return Err(Failure::Conflict);
+        }
+        Ok(output)
+    }
+    fn raw_shape_charge(plan: &Plan) -> Result<usize, Failure> {
+        if plan.participants[0].quantity == 0
+            || plan.intent.cause != u64::from(plan.intent.kind.tag())
+        {
+            return Err(Failure::Facts);
+        }
+        // Finite nonrecursive shape: <=64 fields, <=3 bytes key/length and
+        // <=10 bytes scalar; at most 13 fixed 16-byte IDs. Checked before copy.
+        let upper = add(64_u64.checked_mul(13).ok_or(Failure::Overflow)?, 13 * 16)?;
+        usize::try_from(upper).map_err(|_| Failure::Overflow)
+    }
+    fn payload(plan: &Plan) -> Result<Payload, Failure> {
+        let checked = raw_shape_charge(plan)?;
+        bounded(checked, PAYLOAD_MAX)?;
+        let state = ItemState {
+            item_instance_id: plan.intent.item.id().as_bytes().to_vec(),
+            world_id: plan.intent.item.world().as_bytes().to_vec(),
+            definition_key: *plan.intent.item.definition().key(),
+            definition_revision: *plan.intent.item.definition().revision(),
+            quantity: plan.participants[0].quantity,
+            lifecycle: 1,
+        };
+        let location = plan
+            .effects
+            .iter()
+            .flatten()
+            .find_map(|effect| match &effect.location {
+                Location::Ground {
+                    world_id,
+                    runtime_scope,
+                    spatial_position,
+                } => Some((world_id, runtime_scope, spatial_position)),
+                _ => None,
+            })
+            .ok_or(Failure::Facts)?;
+        if location.1.channel != 1 || location.1.corpse_occurrence != 1 {
+            return Err(Failure::Facts);
+        }
+        let ground = Ground {
+            world_id: location.0.as_bytes().to_vec(),
+            channel_id: uuid_fixture(6).to_vec(),
+            corpse_occurrence_id: uuid_fixture(12).to_vec(),
+            corpse_revision: plan.intent.corpse_revision,
+            x: u32::try_from(location.2[0]).map_err(|_| Failure::Facts)?,
+            y: u32::try_from(location.2[1]).map_err(|_| Failure::Facts)?,
+            z: u32::try_from(location.2[2]).map_err(|_| Failure::Facts)?,
+        };
+        let source = Provenance {
+            source_kind: 1,
+            occurrence_id: uuid_fixture(12).to_vec(),
+            cause_id: uuid_fixture(if plan.intent.kind == Kind::Mint {
+                10
+            } else {
+                11
+            })
+            .to_vec(),
+        };
+        let operation = match plan.intent.kind {
+            Kind::Mint => Operation::Mint(Mint {
+                after: Some(state),
+                destination: Some(ground),
+                source: Some(source),
+            }),
+            Kind::Transfer => {
+                let Location::CharacterInventory {
+                    character_id,
+                    position,
+                } = &plan.intent.destination
+                else {
+                    return Err(Failure::Unsupported);
+                };
+                Operation::Transfer(Transfer {
+                    before: Some(state.clone()),
+                    after: Some(state),
+                    source: Some(ground),
+                    destination: Some(Inventory {
+                        character_id: character_id.as_bytes().to_vec(),
+                        session_generation: plan.intent.authority_generation,
+                        direct_root_slot: u32::from(*position),
+                    }),
+                    cause: Some(source),
+                })
+            }
+        };
+        let value = Payload {
+            interpretation_revision: 1,
+            operation: Some(operation),
+        };
+        validate_payload(&value, &current_fixture())?;
+        Ok(value)
+    }
+    pub(super) fn freeze(plan: &Plan) -> Result<FrozenEvent, Failure> {
+        let checked = raw_shape_charge(plan)?;
+        // Reserve the finite retained shape before any private prost buffers:
+        // payload <= checked, envelope <= checked+1024, bounded identity/string
+        // side buffers <=174, plus the inline carrier. This is a derived offline
+        // fixture bound, not a registry or production resource maximum.
+        let retained_reservation = checked
+            .checked_mul(2)
+            .and_then(|n| n.checked_add(1024 + 174 + size_of::<FrozenEvent>()))
+            .ok_or(Failure::Overflow)?;
+        let bytes = encode(&payload(plan)?, checked, PAYLOAD_MAX)?;
+        // All fixed envelope strings/IDs checked as literals; reserve for actual
+        // payload plus finite envelope overhead before any envelope copies.
+        let envelope_ceiling = usize::try_from(add(
+            u64::try_from(bytes.len()).map_err(|_| Failure::Overflow)?,
+            1024,
+        )?)
+        .map_err(|_| Failure::Overflow)?;
+        bounded(envelope_ceiling, ENVELOPE_MAX)?;
+        let transfer = plan.intent.kind == Kind::Transfer;
+        let value = Envelope {
+            envelope_revision: 1,
+            event_id: uuid_fixture(if transfer { 9 } else { 8 }).to_vec(),
+            event_type_id: 0,
+            event_schema_revision: 1,
+            durability_class: 2,
+            privacy_class: 3,
+            retention_profile_id: "offline_item_unaccepted".into(),
+            occurred_at_unix_ms: 1,
+            world_id: Some(plan.intent.item.world().as_bytes().to_vec()),
+            channel_id: Some(uuid_fixture(6).to_vec()),
+            runtime_order: Some(RuntimeOrder {
+                scope_ownership_generation: plan.intent.authority_generation,
+                runtime_execution_ordinal: u64::from(plan.intent.kind.tag()),
+            }),
+            transaction_event: Some(Membership {
+                transaction_id: plan.intent.transaction.0.to_vec(),
+                ordinal: 1,
+                count: 1,
+            }),
+            game_session_id: transfer.then(|| uuid_fixture(7).to_vec()),
+            connection_generation: transfer.then_some(1),
+            command_id: transfer.then_some(2),
+            causation: transfer.then(|| Causation {
+                cause: Some(Cause::Command(Command {
+                    game_session_id: uuid_fixture(7).to_vec(),
+                    command_id: 2,
+                })),
+            }),
+            ruleset_revision: Some("fixture1".into()),
+            content_revision: Some("fixture1".into()),
+            server_build_id: "offline".into(),
+            payload_sha256: Sha256::digest(&bytes).to_vec(),
+            payload: bytes,
+            ..Envelope::default()
+        };
+        validate_envelope(&value, &current_fixture())?;
+        let wire = encode(&value, envelope_ceiling, ENVELOPE_MAX)?;
+        preflight(&wire, Schema::Envelope, 1)?;
+        let frozen = FrozenEvent {
+            semantic: value,
+            wire,
+        };
+        bounded(
+            size_of::<FrozenEvent>()
+                .checked_add(frozen.dynamic_retained_bytes()?)
+                .ok_or(Failure::Overflow)?,
+            retained_reservation,
+        )?;
+        Ok(frozen)
+    }
+    impl FrozenEvent {
+        fn decode(wire: &[u8], facts: &Facts) -> Result<Self, Failure> {
+            bounded(wire.len(), ENVELOPE_MAX)?;
+            preflight(wire, Schema::Envelope, 1)?;
+            let semantic = Envelope::decode(wire).map_err(|_| Failure::Facts)?;
+            validate_envelope(&semantic, facts)?;
+            Ok(Self {
+                semantic,
+                wire: wire.to_vec(),
+            })
+        }
+        pub(super) fn check(&self) -> Result<(), Failure> {
+            let decoded = Self::decode(&self.wire, &current_fixture())?;
+            if decoded.semantic != self.semantic {
+                return Err(Failure::Conflict);
+            }
+            Ok(())
+        }
+        // Semantic equality + exact payload bytes/hash; reordered outer envelope
+        // wire is permitted by ANL. Retrying this fixture nevertheless retains
+        // its original outer wire as well, without reserialization.
+        fn duplicate(&self, other: &Self) -> Result<(), Failure> {
+            self.check()?;
+            other.check()?;
+            if self.semantic != other.semantic {
+                return Err(Failure::Conflict);
+            }
+            Ok(())
+        }
+        fn replay(&self, model: &super::Model) -> Result<Value, Failure> {
+            self.check()?;
+            // Read-only model borrow: replay cannot call publication or attempt.
+            Ok(
+                json!({"derived_only":true,"authoritative_items":usize::from(model.custody.is_some())}),
+            )
+        }
+        fn production_admission(&self) -> Result<(), Failure> {
+            // No registered type or accepted item retention/access profile exists.
+            Err(Failure::Unsupported)
+        }
+        fn raw_id_export(&self, authorized_item_profile: bool) -> Result<&[u8], Failure> {
+            if !authorized_item_profile {
+                return Err(Failure::Facts);
+            }
+            // Even caller authorization cannot substitute for registry/profile.
+            self.production_admission()?;
+            Ok(&self.semantic.payload)
+        }
+        pub(super) fn dynamic_retained_bytes(&self) -> Result<usize, Failure> {
+            let value = &self.semantic;
+            let mut dynamic = self.wire.capacity();
+            let mut charge = |amount: usize| -> Result<(), Failure> {
+                dynamic = dynamic.checked_add(amount).ok_or(Failure::Overflow)?;
+                Ok(())
+            };
+            for bytes in [&value.event_id, &value.payload, &value.payload_sha256] {
+                charge(bytes.capacity())?;
+            }
+            for bytes in [&value.world_id, &value.channel_id, &value.game_session_id]
+                .into_iter()
+                .flatten()
+            {
+                charge(bytes.capacity())?;
+            }
+            for text in [&value.retention_profile_id, &value.server_build_id] {
+                charge(text.capacity())?;
+            }
+            for text in [&value.ruleset_revision, &value.content_revision]
+                .into_iter()
+                .flatten()
+            {
+                charge(text.capacity())?;
+            }
+            if let Some(member) = &value.transaction_event {
+                charge(member.transaction_id.capacity())?;
+            }
+            if let Some(Cause::Command(command)) = value
+                .causation
+                .as_ref()
+                .and_then(|cause| cause.cause.as_ref())
+            {
+                charge(command.game_session_id.capacity())?;
+            }
+            Ok(dynamic)
+        }
+        pub(super) fn measurement(&self) -> Result<Value, Failure> {
+            self.check()?;
+            let value = &self.semantic;
+            let dynamic = self.dynamic_retained_bytes()?;
+            Ok(json!({
+                "classification":"UNREGISTERED_OFFLINE_CANDIDATE",
+                "registered_event_type_id":null,"retention_profile_accepted":false,
+                "event_id":hex(&value.event_id),"payload_sha256":hex(&value.payload_sha256),
+                "payload_encoded_bytes":value.payload.len(),"full_envelope_encoded_bytes":self.wire.len(),
+                "one_event_aggregate_count":1,"one_event_aggregate_encoded_bytes":self.wire.len(),
+                "envelope_wire_vector_capacity_bytes":self.wire.capacity(),
+                "payload_vector_capacity_bytes":value.payload.capacity(),
+                "frozen_carrier_inline_bytes":size_of::<Self>(),
+                "retained_dynamic_vector_and_string_capacity_bytes":dynamic,
+                "retained_inline_plus_dynamic_bytes":size_of::<Self>().checked_add(dynamic).ok_or(Failure::Overflow)?,
+                "transient_decode_or_allocator_overhead_measured":false,
+                "membership":{"ordinal":1,"count":1},
+                "exact_payload_hex":hex(&value.payload),"exact_envelope_hex":hex(&self.wire)
+            }))
+        }
+    }
+    fn hex(value: &[u8]) -> String {
+        value.iter().map(|byte| format!("{byte:02x}")).collect()
+    }
+
+    #[cfg(test)]
+    mod tests {
+        use super::super::{
+            Attempt, Model, Observation, Reconcile, Request, ResultState, audit_probe,
+            evidence_limits, fixture,
+        };
+        use super::*;
+        use std::error::Error;
+
+        // Literal octets hand-derived from the field/tag/wire/varint/length
+        // table in the retained Markdown. Neither prost nor encode() made them.
+        const MINT_PAYLOAD: &str = concat!(
+            "08011296010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128",
+            "013001123e0a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000",
+            "017000800000000000000c20012864306438071a26080112100000000000017000800000000000000c1a100000000000",
+            "017000800000000000000a"
+        );
+        const TRANSFER_PAYLOAD: &str = concat!(
+            "08011ada010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128",
+            "013001122c0a100000000000017000800000000000000312100000000000017000800000000000000118012001280130",
+            "011a3e0a10000000000001700080000000000000011210000000000001700080000000000000061a1000000000000170",
+            "00800000000000000c200128643064380722140a100000000000017000800000000000000210012a2608011210000000",
+            "0000017000800000000000000c1a100000000000017000800000000000000b"
+        );
+        const MINT_ENVELOPE: &str = concat!(
+            "08011210000000000001700080000000000000082001280230033a176f66666c696e655f6974656d5f756e6163636570",
+            "74656440014a10000000000001700080000000000000015210000000000001700080000000000000067a040801100192",
+            "01160a100000000000017000800000000000000410011801ba01086669787475726531c201086669787475726531ca01",
+            "076f66666c696e65d2019b0108011296010a2c0a10000000000001700080000000000000031210000000000001700080",
+            "000000000000011801200128013001123e0a100000000000017000800000000000000112100000000000017000800000",
+            "00000000061a100000000000017000800000000000000c20012864306438071a26080112100000000000017000800000",
+            "000000000c1a100000000000017000800000000000000ada0120d92805b6ed5196cb0f41844f9270b96f1730cda8b5b0",
+            "659c818a0419fa1b2947"
+        );
+        const TRANSFER_ENVELOPE: &str = concat!(
+            "08011210000000000001700080000000000000092001280230033a176f66666c696e655f6974656d5f756e6163636570",
+            "74656440014a10000000000001700080000000000000015210000000000001700080000000000000066a100000000000",
+            "017000800000000000000770017a04080110028001029201160a100000000000017000800000000000000510011801a2",
+            "011612140a10000000000001700080000000000000071002ba01086669787475726531c201086669787475726531ca01",
+            "076f66666c696e65d201df0108011ada010a2c0a10000000000001700080000000000000031210000000000001700080",
+            "000000000000011801200128013001122c0a100000000000017000800000000000000312100000000000017000800000",
+            "000000000118012001280130011a3e0a1000000000000170008000000000000001121000000000000170008000000000",
+            "0000061a100000000000017000800000000000000c200128643064380722140a10000000000001700080000000000000",
+            "0210012a26080112100000000000017000800000000000000c1a100000000000017000800000000000000bda01201398",
+            "65089c9450ade078899260f69f620ca17e3969844906f288eee2729665ef"
+        );
+
+        fn unhex(value: &str) -> Result<Vec<u8>, Box<dyn Error>> {
+            value
+                .as_bytes()
+                .chunks_exact(2)
+                .map(|pair| Ok(u8::from_str_radix(std::str::from_utf8(pair)?, 16)?))
+                .collect()
+        }
+        fn event(kind: Kind) -> Result<FrozenEvent, Box<dyn Error>> {
+            let (mint, transfer, facts) = fixture()?;
+            let mut model = Model::default();
+            if kind == Kind::Transfer {
+                model.attempt(
+                    Request::OneItem(mint.clone()),
+                    facts,
+                    audit_probe(),
+                    evidence_limits()?,
+                    Attempt::Acknowledged,
+                )?;
+            }
+            Ok(freeze(&model.plan(
+                if kind == Kind::Mint { mint } else { transfer },
+                audit_probe(),
+            )?)?)
+        }
+        fn rewrite(value: &Envelope) -> Result<Vec<u8>, Failure> {
+            // Negative fixtures, no production authoring path.
+            encode(value, ENVELOPE_MAX, ENVELOPE_MAX)
+        }
+        fn reject_envelope(mutator: impl FnOnce(&mut Envelope)) -> Result<(), Box<dyn Error>> {
+            let original = event(Kind::Transfer)?;
+            let mut changed = original.semantic.clone();
+            mutator(&mut changed);
+            assert!(FrozenEvent::decode(&rewrite(&changed)?, &current_fixture()).is_err());
+            assert_eq!(original, event(Kind::Transfer)?);
+            Ok(())
+        }
+        fn reject_payload(mutator: impl FnOnce(&mut Transfer)) -> Result<(), Box<dyn Error>> {
+            let mut envelope = event(Kind::Transfer)?.semantic;
+            let mut value = decode_payload(&envelope.payload)?;
+            let Some(Operation::Transfer(transfer)) = &mut value.operation else {
+                return Err(Failure::Unsupported.into());
+            };
+            mutator(transfer);
+            envelope.payload = encode(&value, PAYLOAD_MAX, PAYLOAD_MAX)?;
+            envelope.payload_sha256 = Sha256::digest(&envelope.payload).to_vec();
+            assert!(FrozenEvent::decode(&rewrite(&envelope)?, &current_fixture()).is_err());
+            Ok(())
+        }
+
+        #[test]
+        fn literal_payload_envelope_goldens_and_roundtrip() -> Result<(), Box<dyn Error>> {
+            for (kind, payload_hex, envelope_hex) in [
+                (Kind::Mint, MINT_PAYLOAD, MINT_ENVELOPE),
+                (Kind::Transfer, TRANSFER_PAYLOAD, TRANSFER_ENVELOPE),
+            ] {
+                let frozen = event(kind)?;
+                assert_eq!(hex(&frozen.semantic.payload), payload_hex);
+                assert_eq!(hex(&frozen.wire), envelope_hex);
+                let decoded = FrozenEvent::decode(&unhex(envelope_hex)?, &current_fixture())?;
+                assert_eq!(decoded, frozen);
+                let payload = decode_payload(&unhex(payload_hex)?)?;
+                assert_eq!(
+                    encode(&payload, PAYLOAD_MAX, PAYLOAD_MAX)?,
+                    frozen.semantic.payload
+                );
+                assert!(frozen.production_admission().is_err());
+            }
+            Ok(())
+        }
+
+        fn idl_fields(
+            source: &str,
+            message: &str,
+        ) -> Result<std::collections::BTreeMap<String, u32>, Box<dyn Error>> {
+            let start = source
+                .find(&format!("message {message} {{"))
+                .ok_or(Failure::Facts)?;
+            let body = &source[start..];
+            let body = body.split_once('}').ok_or(Failure::Facts)?.0;
+            let mut fields = std::collections::BTreeMap::new();
+            for line in body.lines().skip(1) {
+                let line = line.split("//").next().ok_or(Failure::Facts)?.trim();
+                if let Some((left, right)) = line.split_once('=') {
+                    let name = left.split_whitespace().last().ok_or(Failure::Facts)?;
+                    fields.insert(
+                        name.to_string(),
+                        right.trim().trim_end_matches(';').parse()?,
+                    );
+                }
+            }
+            Ok(fields)
+        }
+        fn rust_fields(
+            source: &str,
+            message: &str,
+        ) -> Result<std::collections::BTreeMap<String, u32>, Box<dyn Error>> {
+            let start = source
+                .find(&format!("struct {message} {{"))
+                .ok_or(Failure::Facts)?;
+            let body = source[start..]
+                .split_once("\n    }")
+                .ok_or(Failure::Facts)?
+                .0;
+            let mut fields = std::collections::BTreeMap::new();
+            let mut pending = None;
+            for line in body.lines().skip(1) {
+                if let Some((_, right)) = line.split_once("tag = \"") {
+                    pending = Some(
+                        right
+                            .split_once('"')
+                            .ok_or(Failure::Facts)?
+                            .0
+                            .parse::<u32>()?,
+                    );
+                } else if line.trim().starts_with("#[prost(oneof") {
+                    pending = None;
+                } else if let Some((name, _)) = line.trim().split_once(':') {
+                    if let Some(tag) = pending.take() {
+                        fields.insert(name.to_string(), tag);
+                    }
+                }
+            }
+            Ok(fields)
+        }
+
+        #[test]
+        fn every_private_prost_field_matches_candidate_and_foundation_idl_tags()
+        -> Result<(), Box<dyn Error>> {
+            let source = include_str!("dur03_reference_one_item_resource_prototype.rs");
+            let candidate =
+                include_str!("../../../docs/contracts/game-events/v1/item_transaction.proto");
+            let foundation =
+                include_str!("../../../docs/contracts/game-events/v1/foundation.proto");
+            for (rust, idl, text) in [
+                ("ItemState", "CandidateItemState", candidate),
+                ("Ground", "CandidateGround", candidate),
+                ("Inventory", "CandidateInventory", candidate),
+                ("Provenance", "CandidateProvenance", candidate),
+                ("Mint", "OneItemMint", candidate),
+                ("Transfer", "OneItemTransfer", candidate),
+                ("Envelope", "EventEnvelope", foundation),
+                ("Membership", "TransactionEventRef", foundation),
+                ("RuntimeOrder", "RuntimeOrderRef", foundation),
+                ("Command", "CommandRef", foundation),
+                ("Actor", "AnalyticsActorRef", foundation),
+            ] {
+                assert_eq!(
+                    rust_fields(source, rust)?,
+                    idl_fields(text, idl)?,
+                    "{rust}/{idl}"
+                );
+            }
+            let fields = idl_fields(candidate, "OneItemTransactionCandidate")?;
+            assert_eq!(fields["interpretation_revision"], 1);
+            assert_eq!(fields["mint"], 2);
+            assert_eq!(fields["transfer"], 3);
+            assert!(source.contains("#[prost(message, tag = \"2\")]\n        Mint(Mint)"));
+            assert!(source.contains("#[prost(message, tag = \"3\")]\n        Transfer(Transfer)"));
+            assert_eq!(
+                idl_fields(foundation, "CausationRef")?
+                    .into_values()
+                    .collect::<Vec<_>>(),
+                vec![2, 1, 3, 4]
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn reordered_fields_and_additive_unknowns_preserve_exact_payload_identity()
+        -> Result<(), Box<dyn Error>> {
+            for kind in [Kind::Mint, Kind::Transfer] {
+                let original = event(kind)?;
+                // Move envelope_revision from start to end and add unknown tag64
+                // primitive scalar (key 512 = 80 04), which is safely additive.
+                let mut reordered = original.wire[2..].to_vec();
+                reordered.extend_from_slice(&[8, 1, 0x80, 0x04, 1]);
+                let decoded = FrozenEvent::decode(&reordered, &current_fixture())?;
+                original.duplicate(&decoded)?;
+                assert_eq!(original.semantic.payload, decoded.semantic.payload);
+                assert_ne!(original.wire, decoded.wire);
+                let mut changed = original.semantic.clone();
+                changed.payload.extend_from_slice(&[0x80, 0x04, 1]);
+                changed.payload_sha256 = Sha256::digest(&changed.payload).to_vec();
+                let accepted = FrozenEvent::decode(&rewrite(&changed)?, &current_fixture())?;
+                // Same semantics, different exact payload bytes is a conflict.
+                assert_eq!(original.duplicate(&accepted), Err(Failure::Conflict));
+            }
+            Ok(())
+        }
+
+        #[test]
+        fn malformed_truncated_varint_wire_groups_duplicates_and_closed_variant_reject()
+        -> Result<(), Box<dyn Error>> {
+            for input in [
+                vec![0],
+                vec![0x80],
+                vec![8, 0x80],
+                vec![
+                    0x08, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 2,
+                ],
+                vec![0x0a, 0],
+                vec![0x12, 9, 1],
+                vec![0x83, 4, 0x84, 4],
+                vec![0x0d, 1],
+                vec![0x0e],
+                vec![0x0f],
+                vec![8, 1, 8, 1],
+                vec![8, 1, 0x22, 0],
+                vec![8, 1, 0x12, 0, 0x1a, 0],
+            ] {
+                assert!(
+                    decode_payload(&input)
+                        .and_then(|p| validate_payload(&p, &current_fixture()))
+                        .is_err(),
+                    "{input:?}"
+                );
+            }
+            for kind in [Kind::Mint, Kind::Transfer] {
+                let frozen = event(kind)?;
+                for length in 0..frozen.wire.len() {
+                    assert!(
+                        FrozenEvent::decode(&frozen.wire[..length], &current_fixture()).is_err(),
+                        "prefix {length}"
+                    );
+                }
+            }
+            let mut envelope = event(Kind::Mint)?.semantic;
+            envelope.payload[1] = 2; // unsupported interpretation revision
+            envelope.payload_sha256 = Sha256::digest(&envelope.payload).to_vec();
+            assert!(FrozenEvent::decode(&rewrite(&envelope)?, &current_fixture()).is_err());
+            reject_envelope(|e| e.event_schema_revision = 2)?;
+            reject_envelope(|e| e.envelope_revision = 2)?;
+            reject_envelope(|e| e.event_type_id = 1)?;
+            Ok(())
+        }
+
+        #[test]
+        fn shared_limits_exact_max_plus_one_checked_arithmetic_before_allocation()
+        -> Result<(), Box<dyn Error>> {
+            for maximum in [PAYLOAD_MAX, ENVELOPE_MAX, STRING_MAX, DEPTH_MAX] {
+                bounded(maximum, maximum)?;
+                assert!(
+                    bounded(maximum.checked_add(1).ok_or(Failure::Overflow)?, maximum).is_err()
+                );
+            }
+            let registry: Value = serde_json::from_str(include_str!(
+                "../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+            ))?;
+            let text = serde_json::to_string(&registry)?;
+            for (id, maximum) in [
+                ("ANL01-EVENT-PAYLOAD-BYTES", PAYLOAD_MAX),
+                ("ANL01-EVENT-ENVELOPE-BYTES", ENVELOPE_MAX),
+                ("ANL01-ENVELOPE-STRING-BYTES", STRING_MAX),
+                ("ANL01-PROTOBUF-NESTING-DEPTH", DEPTH_MAX),
+            ] {
+                let begin = text
+                    .find(&format!("\"id\":\"{id}\""))
+                    .ok_or(Failure::Facts)?;
+                let entry = text[..begin].rfind('{').ok_or(Failure::Facts)?;
+                let end = text[begin..]
+                    .find("},\"")
+                    .map(|n| begin + n)
+                    .unwrap_or(text.len());
+                assert!(text[entry..end].contains(&format!("\"hard_maximum\":{maximum}")));
+            }
+            // Actual finite shape is shallow. Exercise the borrowed boundary
+            // at depth32 and a known child at depth33; groups reject outright.
+            preflight(&[8, 1], Schema::Runtime, 32)?;
+            preflight(&[0x7a, 2, 8, 1], Schema::Envelope, 31)?;
+            assert!(preflight(&[0x7a, 2, 8, 1], Schema::Envelope, 32).is_err());
+            assert!(preflight(&[0x83, 4, 0x84, 4], Schema::Envelope, 1).is_err());
+            preflight(&[0x3a, 0x80, 1], Schema::Envelope, 1)
+                .err()
+                .ok_or(Failure::Facts)?;
+            let mut long = vec![0x3a, 0x80, 1];
+            long.extend(std::iter::repeat_n(b'a', 128));
+            preflight(&long, Schema::Envelope, 1)?;
+            long[1] = 0x81;
+            long.push(b'a');
+            assert!(preflight(&long, Schema::Envelope, 1).is_err());
+            assert!(usize::MAX.checked_add(1).is_none());
+            assert_eq!(add(u64::MAX, 1), Err(Failure::Overflow));
+            assert!(encode(&RuntimeOrder::default(), ENVELOPE_MAX + 1, ENVELOPE_MAX).is_err());
+            Ok(())
+        }
+
+        #[test]
+        fn missing_nil_wrong_scope_identity_session_revision_and_provenance_reject()
+        -> Result<(), Box<dyn Error>> {
+            reject_envelope(|e| e.event_id = vec![0; 16])?;
+            reject_envelope(|e| e.world_id = None)?;
+            reject_envelope(|e| e.world_id = Some(uuid_fixture(13).to_vec()))?;
+            reject_envelope(|e| e.channel_id = None)?;
+            reject_envelope(|e| e.channel_id = Some(uuid_fixture(13).to_vec()))?;
+            reject_envelope(|e| e.runtime_order = None)?;
+            reject_envelope(|e| {
+                if let Some(r) = &mut e.runtime_order {
+                    r.scope_ownership_generation = 2;
+                }
+            })?;
+            reject_envelope(|e| e.game_session_id = None)?;
+            reject_envelope(|e| e.game_session_id = Some(uuid_fixture(13).to_vec()))?;
+            reject_envelope(|e| e.connection_generation = None)?;
+            reject_envelope(|e| e.connection_generation = Some(2))?;
+            reject_envelope(|e| e.command_id = Some(0))?;
+            reject_envelope(|e| e.causation = None)?;
+            reject_envelope(|e| e.content_revision = Some("other".into()))?;
+            reject_payload(|t| t.after = None)?;
+            reject_payload(|t| {
+                if let Some(s) = &mut t.after {
+                    s.item_instance_id = vec![0; 16];
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(g) = &mut t.source {
+                    g.world_id = uuid_fixture(13).to_vec();
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(g) = &mut t.source {
+                    g.channel_id = uuid_fixture(13).to_vec();
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(g) = &mut t.source {
+                    g.corpse_occurrence_id = uuid_fixture(13).to_vec();
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(g) = &mut t.source {
+                    g.corpse_revision = 2;
+                }
+            })?;
+            reject_payload(|t| t.destination = None)?;
+            reject_payload(|t| {
+                if let Some(d) = &mut t.destination {
+                    d.character_id = uuid_fixture(13).to_vec();
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(d) = &mut t.destination {
+                    d.session_generation = 2;
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(d) = &mut t.destination {
+                    d.direct_root_slot = 1;
+                }
+            })?;
+            reject_payload(|t| t.cause = None)?;
+            reject_payload(|t| {
+                if let Some(c) = &mut t.cause {
+                    c.cause_id = uuid_fixture(13).to_vec();
+                }
+            })?;
+            // Current facts are independently substituted one invariant at time.
+            let event = event(Kind::Transfer)?;
+            for changed in 0..8 {
+                let mut facts = current_fixture();
+                match changed {
+                    0 => facts.world = uuid_fixture(13),
+                    1 => facts.channel = uuid_fixture(13),
+                    2 => facts.corpse = uuid_fixture(13),
+                    3 => facts.character = uuid_fixture(13),
+                    4 => facts.session = uuid_fixture(13),
+                    5 => facts.generation = 2,
+                    6 => facts.corpse_revision = 2,
+                    _ => facts.definition_revision = 2,
+                }
+                assert!(FrozenEvent::decode(&event.wire, &facts).is_err());
+            }
+            Ok(())
+        }
+
+        #[test]
+        fn lifecycle_type_quantity_conservation_and_partial_transfer_reject_without_publication()
+        -> Result<(), Box<dyn Error>> {
+            reject_payload(|t| {
+                if let Some(s) = &mut t.after {
+                    s.lifecycle = 2;
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(s) = &mut t.after {
+                    s.definition_key = 2;
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(s) = &mut t.after {
+                    s.definition_revision = 2;
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(s) = &mut t.after {
+                    s.quantity = 0;
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(s) = &mut t.after {
+                    s.quantity = 2;
+                }
+            })?;
+            reject_payload(|t| {
+                if let Some(s) = &mut t.after {
+                    s.item_instance_id = uuid_fixture(13).to_vec();
+                }
+            })?;
+            let (mint, transfer, facts) = fixture()?;
+            let mut model = Model::default();
+            model.attempt(
+                Request::OneItem(mint),
+                facts,
+                audit_probe(),
+                evidence_limits()?,
+                Attempt::Acknowledged,
+            )?;
+            let before = model.clone();
+            let mut plan = model.plan(transfer, audit_probe())?;
+            plan.effects[1] = None;
+            assert_eq!(model.publish_custody(&plan), Err(Failure::Custody));
+            assert_eq!(model, before);
+            Ok(())
+        }
+
+        #[test]
+        fn complete_membership_duplicate_gap_out_of_order_and_identity_conflict()
+        -> Result<(), Box<dyn Error>> {
+            reject_envelope(|e| e.transaction_event = None)?;
+            for (ordinal, count) in [(0, 1), (2, 1), (1, 0), (1, 2), (2, 2)] {
+                reject_envelope(|e| {
+                    if let Some(m) = &mut e.transaction_event {
+                        m.ordinal = ordinal;
+                        m.count = count;
+                    }
+                })?;
+            }
+            reject_envelope(|e| {
+                if let Some(m) = &mut e.transaction_event {
+                    m.transaction_id = uuid_fixture(13).to_vec();
+                }
+            })?;
+            let original = event(Kind::Transfer)?;
+            original.duplicate(&original)?;
+            let mut changed = original.semantic.clone();
+            changed.occurred_at_unix_ms = 2;
+            let changed = FrozenEvent::decode(&rewrite(&changed)?, &current_fixture())?;
+            assert_eq!(original.duplicate(&changed), Err(Failure::Conflict));
+            assert_ne!(
+                event(Kind::Mint)?.semantic.event_id,
+                original.semantic.event_id
+            );
+            Ok(())
+        }
+
+        #[test]
+        fn frozen_bytes_hash_envelope_and_membership_survive_ambiguity_abort_retry_and_replay()
+        -> Result<(), Box<dyn Error>> {
+            for kind in [Kind::Mint, Kind::Transfer] {
+                for outcome in [
+                    Attempt::CommittedResponseLost,
+                    Attempt::AmbiguousWithoutCommit,
+                ] {
+                    let (mint, transfer, facts) = fixture()?;
+                    let mut model = Model::default();
+                    if kind == Kind::Transfer {
+                        model.attempt(
+                            Request::OneItem(mint.clone()),
+                            facts,
+                            audit_probe(),
+                            evidence_limits()?,
+                            Attempt::Acknowledged,
+                        )?;
+                    }
+                    let intent = if kind == Kind::Mint { mint } else { transfer };
+                    model.attempt(
+                        Request::OneItem(intent.clone()),
+                        facts,
+                        audit_probe(),
+                        evidence_limits()?,
+                        outcome,
+                    )?;
+                    let index = model
+                        .record_index(intent.transaction)
+                        .ok_or(Failure::Conflict)?;
+                    let frozen = model.records[index]
+                        .as_ref()
+                        .ok_or(Failure::Conflict)?
+                        .event
+                        .clone();
+                    model.reconcile(
+                        intent.transaction,
+                        evidence_limits()?,
+                        Reconcile::InspectCommittedStore,
+                    )?;
+                    let not_applied = model.records[index]
+                        .as_ref()
+                        .ok_or(Failure::Conflict)?
+                        .observation
+                        == Observation::NotApplied;
+                    if not_applied {
+                        model.attempt(
+                            Request::OneItem(intent.clone()),
+                            facts,
+                            audit_probe(),
+                            evidence_limits()?,
+                            Attempt::Acknowledged,
+                        )?;
+                    } else {
+                        assert_eq!(
+                            model.attempt(
+                                Request::OneItem(intent.clone()),
+                                facts,
+                                audit_probe(),
+                                evidence_limits()?,
+                                Attempt::Acknowledged
+                            )?,
+                            ResultState::Committed(intent.item.id())
+                        );
+                    }
+                    let retained = &model.records[index]
+                        .as_ref()
+                        .ok_or(Failure::Conflict)?
+                        .event;
+                    assert_eq!(retained, &frozen);
+                    let snapshot = model.clone();
+                    frozen.replay(&model)?;
+                    assert_eq!(model, snapshot);
+                    // Known abort cannot mutate admitted bytes, hash, timestamp,
+                    // membership, profile, identity or permit stale current facts.
+                    let mut wrong = facts;
+                    wrong.authority_generation = 2;
+                    assert!(
+                        model
+                            .attempt(
+                                Request::OneItem(intent),
+                                wrong,
+                                audit_probe(),
+                                evidence_limits()?,
+                                Attempt::Acknowledged
+                            )
+                            .is_err()
+                    );
+                    assert_eq!(model, snapshot);
+                }
+            }
+            Ok(())
+        }
+
+        #[test]
+        fn privacy_missing_profile_secret_and_unauthorized_raw_export_fail_closed()
+        -> Result<(), Box<dyn Error>> {
+            for privacy in [0, 1, 2, 5] {
+                reject_envelope(|e| e.privacy_class = privacy)?;
+            }
+            reject_envelope(|e| e.retention_profile_id.clear())?;
+            reject_envelope(|e| {
+                e.retention_profile_id = "CHARACTER_AUTHORITY_DURABLE_AUDIT_RETENTION_V1".into()
+            })?;
+            reject_envelope(|e| e.server_build_id = "Bearer secret".into())?;
+            reject_envelope(|e| e.durability_class = 1)?;
+            let event = event(Kind::Transfer)?;
+            assert!(event.raw_id_export(false).is_err());
+            assert!(event.raw_id_export(true).is_err());
+            assert!(event.production_admission().is_err());
+            Ok(())
+        }
+
+        #[test]
+        fn mint_missing_nil_state_source_and_provenance_fail_closed() -> Result<(), Box<dyn Error>>
+        {
+            for case in 0..10 {
+                let mut envelope = event(Kind::Mint)?.semantic;
+                let mut value = decode_payload(&envelope.payload)?;
+                let Some(Operation::Mint(mint)) = &mut value.operation else {
+                    return Err(Failure::Unsupported.into());
+                };
+                match case {
+                    0 => mint.after = None,
+                    1 => mint.destination = None,
+                    2 => mint.source = None,
+                    3 => {
+                        if let Some(s) = &mut mint.after {
+                            s.item_instance_id = vec![0; 16];
+                        }
+                    }
+                    4 => {
+                        if let Some(s) = &mut mint.after {
+                            s.quantity = 0;
+                        }
+                    }
+                    5 => {
+                        if let Some(s) = &mut mint.after {
+                            s.lifecycle = 0;
+                        }
+                    }
+                    6 => {
+                        if let Some(g) = &mut mint.destination {
+                            g.corpse_occurrence_id = vec![0; 16];
+                        }
+                    }
+                    7 => {
+                        if let Some(g) = &mut mint.destination {
+                            g.corpse_revision = 0;
+                        }
+                    }
+                    8 => {
+                        if let Some(p) = &mut mint.source {
+                            p.source_kind = 2;
+                        }
+                    }
+                    _ => {
+                        if let Some(p) = &mut mint.source {
+                            p.occurrence_id = uuid_fixture(13).to_vec();
+                        }
+                    }
+                }
+                envelope.payload = encode(&value, PAYLOAD_MAX, PAYLOAD_MAX)?;
+                envelope.payload_sha256 = Sha256::digest(&envelope.payload).to_vec();
+                assert!(FrozenEvent::decode(&rewrite(&envelope)?, &current_fixture()).is_err());
+            }
+            Ok(())
+        }
+
+        #[test]
+        fn numeric_fixture_source_cause_cannot_be_silently_reinterpreted()
+        -> Result<(), Box<dyn Error>> {
+            let (mut mint, _, facts) = fixture()?;
+            mint.cause = 9;
+            let mut model = Model::default();
+            assert!(
+                model
+                    .attempt(
+                        Request::OneItem(mint),
+                        facts,
+                        audit_probe(),
+                        evidence_limits()?,
+                        Attempt::Acknowledged
+                    )
+                    .is_err()
+            );
+            assert_eq!(model, Model::default());
+            Ok(())
+        }
+
+        #[test]
+        fn oversized_borrowed_inputs_and_unknown_private_bytes_reject_before_decode()
+        -> Result<(), Box<dyn Error>> {
+            assert!(decode_payload(&vec![0; PAYLOAD_MAX + 1]).is_err());
+            assert!(FrozenEvent::decode(&vec![0; ENVELOPE_MAX + 1], &current_fixture()).is_err());
+            // Uninterpreted bytes might conceal private IDs/secrets. Only safe
+            // additive numeric unknowns are admitted by this closed candidate.
+            assert!(
+                preflight(
+                    &[0x82, 4, 6, b's', b'e', b'c', b'r', b'e', b't'],
+                    Schema::Payload,
+                    2
+                )
+                .is_err()
+            );
+            let mut changed = event(Kind::Transfer)?.semantic;
+            if let Some(Causation {
+                cause: Some(Cause::Command(command)),
+            }) = &mut changed.causation
+            {
+                command.game_session_id = uuid_fixture(13).to_vec();
+            }
+            assert!(FrozenEvent::decode(&rewrite(&changed)?, &current_fixture()).is_err());
+            Ok(())
+        }
+
+        #[test]
+        fn corrupt_frozen_carrier_cannot_reconcile_or_retry_a_known_abort()
+        -> Result<(), Box<dyn Error>> {
+            for corrupt in 0..4 {
+                let (mint, _, facts) = fixture()?;
+                let mut model = Model::default();
+                model.attempt(
+                    Request::OneItem(mint.clone()),
+                    facts,
+                    audit_probe(),
+                    evidence_limits()?,
+                    Attempt::AmbiguousWithoutCommit,
+                )?;
+                let record = model.records[0].as_mut().ok_or(Failure::Conflict)?;
+                match corrupt {
+                    0 => record.event.semantic.payload_sha256[0] ^= 1,
+                    1 => record.event.semantic.occurred_at_unix_ms += 1,
+                    2 => record.event.wire[0] ^= 1,
+                    _ => record.event.semantic.event_id = uuid_fixture(13).to_vec(),
+                }
+                let snapshot = model.clone();
+                assert!(
+                    model
+                        .reconcile(
+                            mint.transaction,
+                            evidence_limits()?,
+                            Reconcile::InspectCommittedStore
+                        )
+                        .is_err()
+                );
+                assert_eq!(model, snapshot);
+                assert!(
+                    model
+                        .attempt(
+                            Request::OneItem(mint),
+                            facts,
+                            audit_probe(),
+                            evidence_limits()?,
+                            Attempt::Acknowledged
+                        )
+                        .is_err()
+                );
+                assert_eq!(model, snapshot);
+            }
+            Ok(())
+        }
+    }
+}
+
 fn evidence_limits() -> Result<EvidenceLimits, Failure> {
     Ok(EvidenceLimits([
         1,
@@ -639,7 +2306,8 @@ fn identity_hex(bytes: &[u8; 16]) -> String {
     bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-fn measurements(plan: &Plan) -> Result<Value, Failure> {
+fn measurements(record: &ReconciliationRecord) -> Result<Value, Failure> {
+    let plan = &record.plan;
     let usage = plan.usage(1)?;
     let effects = plan.effects.iter().flatten().map(|effect| {
         Ok(json!({
@@ -672,8 +2340,10 @@ fn measurements(plan: &Plan) -> Result<Value, Failure> {
         "transform_inputs_outputs": 0,
         "reconciliation_state_records": 1,
         "reconciliation_state_retained_bytes": size_of::<ReconciliationRecord>(),
+        "reconciliation_size_scope": "inline carrier including FrozenEvent; its dynamic vectors/strings are charged separately",
         "retry_reconcile_work_units_per_call": 3,
         "effects": effects,
+        "offline_candidate_audit": record.event.measurement()?,
         "mandatory_audit": {
             "classification": "EVIDENCE_GAP",
             "event_contribution_count": null,
@@ -691,7 +2361,7 @@ fn measurement_target() -> Value {
         "build_toolchain_identity": "UNKNOWN",
         "build_toolchain_identity_reason": "This standalone example has no build-time compiler attestation",
         "retained_size_basis": "size_of for the executable target, including padding",
-        "encoding": "explicit example-only big-endian record encoding"
+        "encoding": "prototype big-endian records and unregistered protobuf candidate measured separately"
     })
 }
 
@@ -727,26 +2397,36 @@ fn normalized_report(reverse: bool) -> Result<String, Box<dyn Error>> {
         limits,
         Reconcile::InspectCommittedStore,
     )?;
-    let mut plans = model
-        .records
-        .iter()
-        .flatten()
-        .map(|record| &record.plan)
-        .collect::<Vec<_>>();
+    let mut plans = model.records.iter().flatten().collect::<Vec<_>>();
     if reverse {
         plans.reverse();
     }
     // Sort presentation, never execution, by explicit mutation class order.
-    plans.sort_by_key(|plan| plan.intent.kind.tag());
+    plans.sort_by_key(|record| record.plan.intent.kind.tag());
     let operations = plans
         .into_iter()
         .map(measurements)
         .collect::<Result<Vec<_>, _>>()?;
+    let retained_dynamic = model
+        .records
+        .iter()
+        .flatten()
+        .try_fold(0_usize, |total, record| {
+            total
+                .checked_add(record.event.dynamic_retained_bytes()?)
+                .ok_or(Failure::Overflow)
+        })?;
     let report = json!({
         "schema_version": 1,
-        "classification": "NON_PRODUCTION_RESOURCE_EVIDENCE_ONLY",
-        "task_id": "OTV2-20260917-dur03-reference-one-item-resource-evidence-513",
-        "source_base_sha": "fd504f5659fe900861b6556751275488c2a22dec",
+        "classification": "NONPRODUCTION_OFFLINE_CANDIDATE_SCHEMA_MEASUREMENT",
+        "task_id": "OTV2-20260927-dur03-one-item-audit-offline-measurement-513",
+        "source_base_sha": "a822326c9cf4607100e58bbc3673748f3fa299bb",
+        "source_revisions": {
+            "DUR03_section_39_1": "a822326c9cf4607100e58bbc3673748f3fa299bb",
+            "ANL01_foundation_resource_registry": "a822326c9cf4607100e58bbc3673748f3fa299bb",
+            "META_policy": "1bfb5ff98c8aa156e73669a14e083a1d464c29fb",
+            "prost": "0.14.4"
+        },
         "fixture": "Gold Coin x1",
         "item_definition_ref": { "key": 1, "revision": 1, "scope": "private fixture mapping only; no Content catalog resolution" },
         "natural_drop_probability": "UNKNOWN/NOT_ASSERTED",
@@ -764,6 +2444,8 @@ fn normalized_report(reverse: bool) -> Result<String, Box<dyn Error>> {
             "retained_reconciliation_records": model.records.iter().flatten().count(),
             "retained_reconciliation_record_bytes": bytes(2, size_of::<ReconciliationRecord>())?,
             "fixed_model_retained_bytes_including_spare_slots": size_of::<Model>(),
+            "retained_event_dynamic_vector_and_string_bytes": retained_dynamic,
+            "model_inline_plus_retained_dynamic_bytes": size_of::<Model>().checked_add(retained_dynamic).ok_or(Failure::Overflow)?,
             "MINT_retry_work_units": model.records[0].as_ref().ok_or(Failure::Conflict)?.retry_work,
             "TRANSFER_retry_work_units": model.records[1].as_ref().ok_or(Failure::Conflict)?.retry_work
         },
@@ -774,7 +2456,7 @@ fn normalized_report(reverse: bool) -> Result<String, Box<dyn Error>> {
             "DUR03-RL-04": "NOT_EXERCISED/0; transform capability rejects before planning",
             "DUR03-RL-05": "DIRECT_ROOT_ONLY/0; Container rejects before planning; no general container bound",
             "DUR03-RL-06": "MEASURED_PROTOTYPE_ONLY; counts derived from physically represented records",
-            "DUR03-RL-07": "EVIDENCE_GAP for actual mandatory count/payload bytes; synthetic budget preflight only",
+            "DUR03-RL-07": "MEASURED_UNREGISTERED_CANDIDATE separately; production mandatory count/bytes EVIDENCE_GAP; synthetic probe retained separately",
             "DUR03-RL-08": "MEASURED_IN_MEMORY_STATE_MACHINE_ONLY; stable transaction/output identities; no DB/restart proof"
         },
         "evidence_gaps": [
