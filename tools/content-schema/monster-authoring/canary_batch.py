@@ -876,15 +876,16 @@ class Converter:
         title = record['wiki_title']
         if stats.get('status') != 'COMPARED':
             for name in only_wiki:
-                wiki_row(1, title, loot_diff['wiki_line'], f'Infobox Creature.loot={name}', None, status='unresolved_semantics',
-                         resolution='Wiki lists the item but no Loot Statistics page gives a probability.')
+                wiki_row(1, title, loot_diff['wiki_line'], f'Infobox Creature.loot={name}', None, status='approved_omission',
+                         resolution='Wiki lists the item but no Loot Statistics page gives a probability, so the Canary loot '
+                                    'list is kept and the item is not added (owner decision D23).')
             return
         stat = source(stats['page_title'], stats['page_id'], stats['cut_revision_id'], stats['cut_content_sha256'])
         block = f'the version {stats["version"]} block of {stats["page_title"]} ({stats["kills"]} kills)'
         entries = monster['loot']['entries']
 
-        def estimate(times):
-            exact = Fraction(times * 100, stats['kills'])
+        def estimate(times, share=1):
+            exact = Fraction(times * 100, stats['kills']) / share
             percent = (Decimal(exact.numerator) / Decimal(exact.denominator)).quantize(Decimal('0.0001'), ROUND_HALF_EVEN)
             return exact, int(percent) if percent == percent.to_integral_value() else float(percent)
 
@@ -914,25 +915,53 @@ class Converter:
             else:
                 canary_row['resolution'] += ' ' + chance.get('note', '') + ' Canary probability kept.'
 
-        for item in (i for i in stats['items'] if i['name'] in only_wiki):
+        wiki_items = [i for i in stats['items'] if i['name'] in only_wiki]
+        # Rows resolved through a disambiguation page come last, so a row naming the exact item page wins.
+        wiki_items.sort(key=lambda i: bool((i.get('item_page') or {}).get('variants')))
+        listed = {e['item']['key'] for e in entries}
+        for item in wiki_items:
             candidates = self.index.get(item['name'], [])
             page_ids = (item.get('item_page') or {}).get('item_ids', [])
+            variants = (item.get('item_page') or {}).get('variants', [])
+            if variants:
+                mine = [v for v in variants if title.lower() in v.get('dropped_by', [])]
+                chosen = mine if len(mine) == 1 else variants
+                page_ids = sorted({i for v in chosen for i in v['item_ids']})
+                for v in chosen:
+                    source(v['page_title'], v['page_id'], v['cut_revision_id'], v['cut_content_sha256'])
+                item = {**item, 'item_page': {**item['item_page'], 'item_ids': page_ids}}
+                candidates = [] if len(mine) == 1 else candidates
+                note_variant = (f' The wiki page is a disambiguation; its item page "{mine[0]["page_title"]}" names {title} in '
+                                f'droppedby (line {mine[0]["droppedby_line"]}) and declares itemid {page_ids} (owner decision '
+                                'D25).' if len(mine) == 1 else
+                                f' The wiki page is a disambiguation and no variant names {title} in droppedby, so every '
+                                f'variant id {page_ids} is used (owner decision D22).')
+            else:
+                note_variant = ''
             narrowed = [i for i in candidates if i in page_ids]
-            id_note = ''
+            id_note = note_variant
             if len(candidates) > 1 and len(narrowed) == 1:
                 page_info = item['item_page']
                 page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
                                      page_info['cut_content_sha256'])
-                id_note = (f' The name matches ids {sorted(candidates)}; the item page (source {page_source}, line '
+                id_note += (f' The name matches ids {sorted(candidates)}; the item page (source {page_source}, line '
                            f'{page_info["itemid_line"]}) declares itemid {narrowed[0]}.')
                 candidates = narrowed
+            elif candidates and page_ids and not narrowed and len(page_ids) == 1 and page_ids[0] in self.names:
+                page_info = item['item_page']
+                page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
+                                     page_info['cut_content_sha256'])
+                id_note += (f' The name matches Canary ids {sorted(candidates)}, but the item page (source {page_source}, line '
+                           f'{page_info["itemid_line"]}) declares itemid {page_ids[0]} ("{self.names[page_ids[0]]}"); the '
+                           'wiki decides (owner decision D25).')
+                candidates = page_ids
             elif len(candidates) == 1 and page_ids and candidates[0] not in page_ids:
                 candidates = []
             elif not candidates and len(page_ids) == 1 and page_ids[0] in self.names:
                 page_info = item['item_page']
                 page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
                                      page_info['cut_content_sha256'])
-                id_note = (f' No Canary item has the wiki name; the item page (source {page_source}, line '
+                id_note += (f' No Canary item has the wiki name; the item page (source {page_source}, line '
                            f'{page_info["itemid_line"]}) declares itemid {page_ids[0]}.')
                 candidates = page_ids
             if len(candidates) > 1:
@@ -945,23 +974,45 @@ class Converter:
                     id_note += (f' Ids {sorted(pool)} share the name; {sorted(worn & set(pool))} is the equipped state '
                                 f'(items.xml transformEquipTo), so the dropped item is {unworn[0]}.')
                     candidates = unworn
-            if item['times'] == 0 or len(candidates) != 1:
+            page_set = sorted(set(page_ids))
+            if len(candidates) != 1 and len(page_set) > 1 and (set(candidates) == set(page_set) or
+                                                               (not candidates and all(i in self.names for i in page_set))):
+                page_info = item['item_page']
+                page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
+                                     page_info['cut_content_sha256'])
+                id_note += (f' The item page (source {page_source}, line {page_info["itemid_line"]}) lists ids {page_set} for '
+                            f'this name, so each id gets an equal share of the probability (owner decision D22).')
+                candidates = page_set
+            elif item['times'] and len(candidates) != 1:
                 wiki_row(stat, stats['page_title'], item['line'] or stats['kills_line'], f'Loot2.{item["name"]}', None,
                          status='unresolved_dependency',
                          resolution=f'{item["times"]} drops recorded; item name resolves to {len(candidates)} ids.')
                 continue
-            item_id = candidates[0]
-            exact, value = estimate(item['times'])
-            low, _, high = item['amount'].partition('-')
-            entries.append({'item': ref('Item', f'canary:item/{item_id}'), 'min_count': int(low), 'max_count': int(high or low),
-                            'probability_percent': value, 'skip_later_same_item_after_success': False})
-            definitions.add(('Item', f'canary:item/{item_id}'))
-            confidence = '' if item['times'] >= LOW_CONFIDENCE_DROPS else ' Low confidence: fewer than 10 drops.'
-            wiki_row(stat, stats['page_title'], item['line'], f'Loot2.{item["name"]}', f'/monster/loot/entries/{len(entries) - 1}',
-                     f'Listed in the {title} infobox loot (source 1, line {loot_diff["wiki_line"]}), absent in Canary. '
-                     f'Probability = {item["times"]} drops / {stats["kills"]} kills in {block}, {float(exact):.6f}% rounded '
-                     f'half-even to 1 ppm ({WIKI_ADOPTION}).{confidence}{id_note} Item {item_id} "{self.names.get(item_id)}" is a '
-                     f'declared source-scoped reference, not an admitted canonical Item.')
+            if item['times'] == 0:
+                wiki_row(stat, stats['page_title'], item['line'] or stats['kills_line'], f'Loot2.{item["name"]}', None,
+                         status='approved_omission', resolution=f'0 drops in {block}: no probability, so the Canary loot '
+                                                                'list is kept (owner decision D23).')
+                continue
+            if variants and all(f'canary:item/{i}' in listed for i in candidates):
+                wiki_row(stat, stats['page_title'], item['line'] or stats['kills_line'], f'Loot2.{item["name"]}', None,
+                         status='approved_omission', resolution=f'{note_variant.strip()} The id is already in this loot table '
+                         'under its own statistics row, so this row is not added again.')
+                continue
+            for item_id in candidates:
+                listed.add(f'canary:item/{item_id}')
+                exact, value = estimate(item['times'], len(candidates))
+                low, _, high = item['amount'].partition('-')
+                entries.append({'item': ref('Item', f'canary:item/{item_id}'), 'min_count': int(low), 'max_count': int(high or low),
+                                'probability_percent': value, 'skip_later_same_item_after_success': False})
+                definitions.add(('Item', f'canary:item/{item_id}'))
+                confidence = '' if item['times'] >= LOW_CONFIDENCE_DROPS else ' Low confidence: fewer than 10 drops.'
+                share = f' / {len(candidates)} ids' if len(candidates) > 1 else ''
+                wiki_row(stat, stats['page_title'], item['line'], f'Loot2.{item["name"]}' + (f'#{item_id}' if share else ''),
+                         f'/monster/loot/entries/{len(entries) - 1}',
+                         f'Listed in the {title} infobox loot (source 1, line {loot_diff["wiki_line"]}), absent in Canary. '
+                         f'Probability = {item["times"]} drops / {stats["kills"]} kills{share} in {block}, {float(exact):.6f}% '
+                         f'rounded half-even to 1 ppm ({WIKI_ADOPTION}).{confidence}{id_note} Item {item_id} '
+                         f'"{self.names.get(item_id)}" is a declared source-scoped reference, not an admitted canonical Item.')
 
         # Keep the registrar's ascending-probability order (stable) and move every loot pointer with its entry.
         order = sorted(range(len(entries)), key=lambda i: entries[i]['probability_percent'])

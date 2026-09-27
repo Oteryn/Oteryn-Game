@@ -119,18 +119,40 @@ def version_key(version):
     return (Decimal(parts[0] + '.' + (parts[1] if len(parts) > 1 else '0')),) + tuple(int(p) for p in parts[2:])
 
 
-def item_page(title, cache):
-    """Item ids declared by the item's own wiki page at the cut (`| itemid =`)."""
+def subpages(title, cache):
+    """Titles `<title> (...)` for a disambiguation page, from the MediaWiki prefix index (cached)."""
+    path = cache / (cb.slug('subpages ' + title) + '.json')
+    if path.exists():
+        return json.loads(path.read_text(encoding='utf-8'))
+    pages = api({'action': 'query', 'list': 'allpages', 'apprefix': title + ' (', 'aplimit': 50})['query']['allpages']
+    titles = sorted(p['title'] for p in pages)
+    path.write_text(json.dumps(titles, ensure_ascii=False), encoding='utf-8')
+    time.sleep(0.5)
+    return titles
+
+
+def item_page(title, cache, variants=True):
+    """Item ids declared by the item's own wiki page at the cut (`| itemid =`). A disambiguation page lists
+    its `<title> (...)` item pages as variants, each with its ids and `droppedby` creatures."""
     record = fetch(title, cache)
     cut = record['cut']
     if not cut:
         return {'page_title': title, 'status': 'WIKI_PAGE_MISSING'}
     line = field_line(cut['content'], 'itemid')
     raw = cut['content'].splitlines()[line - 1].split('=', 1)[1] if line else ''
-    return {'page_title': cut['title'], 'page_id': cut['page_id'], 'cut_revision_id': cut['revision_id'],
+    page = {'page_title': cut['title'], 'page_id': cut['page_id'], 'cut_revision_id': cut['revision_id'],
             'cut_content_sha256': hashlib.sha256(cut['content'].encode('utf-8')).hexdigest(),
             'current_revision_id': record['current']['revision_id'], 'retrieved_at': record['retrieved_at'],
             'status': 'COMPARED', 'itemid_line': line, 'item_ids': [int(v) for v in re.findall(r'\d+', raw)]}
+    dropped = field_line(cut['content'], 'droppedby')
+    if dropped:
+        text = cut['content'].splitlines()[dropped - 1]
+        page['droppedby_line'] = dropped
+        page['dropped_by'] = [n.strip().lower() for n in re.sub(r'.*\{\{Dropped By\|', '', text).rstrip('}').split('|') if n.strip()]
+    if variants and not line and '{{disambig}}' in cut['content'].lower():
+        page['variants'] = [v for v in (item_page(sub, cache, False) for sub in subpages(cut['title'], cache))
+                            if v['status'] == 'COMPARED' and v['item_ids']]
+    return page
 
 
 def loot_statistics(title, wanted, cache):
