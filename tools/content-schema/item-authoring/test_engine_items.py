@@ -10,6 +10,7 @@ from pathlib import Path
 
 import engine_items
 import population_census
+import source_field_catalogs
 
 # --- minimal hand-rolled protobuf encoder (mirrors engine_items' decoder) -----------
 
@@ -1707,6 +1708,61 @@ def test_item_without_allocator_key_keeps_the_blocker_and_no_field():
         check("delivery_task" not in report, report)
 
 
+def test_crystal_item_bindings_reject_duplicate_target_key():
+    """_load_crystal_item_bindings fails closed when two distinct Crystal
+    external_ids bind to the same Item target key; the committed
+    imports/crystalserver/bindings/items.json has no such row, so this drives the
+    loader against a synthetic fixture catalog instead."""
+
+    def binding(external_id, key):
+        return {
+            "external_id": external_id,
+            "disposition": "EXACT",
+            "identity_namespace": source_field_catalogs.CRYSTAL_ITEM_BINDINGS_NAMESPACE,
+            "source_key": source_field_catalogs.CRYSTAL_ITEM_BINDINGS_SOURCE_KEY,
+            "target": {
+                "family": "Item",
+                "key": key,
+                "revision": source_field_catalogs.DEFINITION_REVISION,
+            },
+        }
+
+    catalog = {
+        "schema": source_field_catalogs.CRYSTAL_ITEM_BINDINGS_SCHEMA,
+        "family": "Item",
+        "bindings": [
+            binding("100", "oteryn:item.template.sample-a"),
+            binding("200", "oteryn:item.template.sample-a"),
+        ],
+    }
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items.json"
+        path.write_text(json.dumps(catalog), encoding="utf-8")
+        try:
+            source_field_catalogs._load_crystal_item_bindings(path)
+        except SystemExit as exc:
+            check("bound by both external_id" in str(exc), f"unexpected error: {exc}")
+        else:
+            raise AssertionError(
+                "two external ids binding to the same target key must be a hard error"
+            )
+
+    # A single external_id per target key still loads cleanly.
+    catalog["bindings"][1] = binding("200", "oteryn:item.template.sample-b")
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items.json"
+        path.write_text(json.dumps(catalog), encoding="utf-8")
+        index = source_field_catalogs._load_crystal_item_bindings(path)
+        check(
+            index
+            == {
+                "100": "oteryn:item.template.sample-a",
+                "200": "oteryn:item.template.sample-b",
+            },
+            index,
+        )
+
+
 def main():
     tests = [
         test_lf_and_crlf_text_fixtures_byte_identical,
@@ -1746,6 +1802,7 @@ def main():
         test_routed_non_item_corpse_and_placeholder_and_terrain,
         test_routed_non_item_unmove_map_geometry,
         test_family_profile_fallbacks,
+        test_crystal_item_bindings_reject_duplicate_target_key,
     ]
     for test in tests:
         test()

@@ -32,6 +32,9 @@ Architecture and boundaries:
 | `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every emitted bundle (the real `delivery_task_eligible` decision, not a proposal), and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage, Delivery Task decision/observation/crystal-list counts, and a `routed_non_item` owner/reason breakdown). `--self-check` runs required engine-specific assertions for both engines; `--check` diffs an in-memory regeneration against the committed file instead of writing. |
 | `test_engine_items.py` | Fixture-checkout tests for `engine_items`/`population_census`: LF/CRLF digest portability, per-engine Delivery Task pool parsing, the Crystal-list adoption rule and its per-item overrides, plus direct synthetic-`sources` tests (real identity index and disposition catalogs, fabricated `items`/`appearances`) for every implemented field family and value route. Run with `python test_engine_items.py`. |
 | `samples/population-crystal-ff7ede5.json`, `samples/population-canary-47dfd51f.json` | Committed census outputs for the two pinned engine revisions. |
+| `lower_promotion_packet.py` | Lowers every zero-validator-error Crystal Item bundle's authored values for the 9 field paths (`presentation.name`, `weapon.attack`/`defense`/`extra_defense`/`range_cells`/`hit_chance`, `protection.armor`, `charges.count`, `container.capacity`) that `apps/game-server/src/content/cw2_b1_import.rs`'s `decode_item_semantic_promotion_value` accepts into a candidate `OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1` packet, in that decoder's exact typed representation. `--self-check` checks named Crystal ids (Magic Sword `3288`, a container, a charges item); `--check` diffs an in-memory regeneration against the committed file instead of writing. See "Item semantic-promotion lowering" below. |
+| `test_lower_promotion_packet.py` | No-network fixture tests for `lower_promotion_packet.py`'s encode/decode mirror of the Rust decoder and its `build_packet`/`validate_packet` wiring, against the same kind of synthetic `sources` `test_engine_items.py` uses. Run with `python test_lower_promotion_packet.py`. |
+| `samples/promotion-crystal-ff7ede5.json` | Committed candidate lowering packet for the pinned Crystal revision. |
 
 The profiles are guidance inside one schema. Missing a common capability produces a
 warning; optional capabilities preserve the wider census union without warning noise.
@@ -47,9 +50,11 @@ python validate_item.py synthetic-valid-item.json synthetic-valid-dependencies.j
 ```
 
 CI: `.github/workflows/item-authoring-schema.yml` runs these steps plus
-`test_engine_items.py`, the Item Master census and Ruff on every PR touching the package.
-The whole-population census needs the pinned upstream checkouts and stays a local
-`population_census.py --check` step.
+`test_engine_items.py`, `test_lower_promotion_packet.py`, the Item Master census and
+Ruff on every PR touching the package. `population_census.py --check` and
+`lower_promotion_packet.py --check`/`--self-check` need the pinned Crystal/Canary
+checkouts, so neither is a CI step; each stays a local check run by hand before a
+whole-population claim is made.
 
 Engine population census (pinned Crystal/Canary checkouts, digests verified before read
 on both LF and CRLF checkouts; Crystal also needs its existing delivery list, Canary
@@ -69,6 +74,47 @@ python test_engine_items.py
 `population_census.py` is evidence tooling: it proves what the pinned engine sources
 convert to under this schema today, not a corpus migration or Game truth. It never
 commits per-item rows, only counters and capped examples in `samples/`.
+
+### Item semantic-promotion lowering (v1, not yet wired)
+
+`apps/game-server/src/content/cw2_b1_import.rs` already decodes one hand-compiled Item
+semantic-promotion packet
+(`docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json`,
+`OTERYN_ITEM_SEMANTIC_PROMOTION/v1`) into the existing Reference Item family for 9
+field paths: `presentation.name`, `weapon.attack`/`defense`/`extra_defense`/
+`range_cells`/`hit_chance`, `protection.armor`, `charges.count`,
+`container.capacity`. `lower_promotion_packet.py` proves this package's own authored
+Item data can systematically feed that same decoder, at population scale, rather than
+by hand: it runs `engine_items`/`validate_item` over the whole pinned Crystal
+population exactly like `population_census.py`, keeps only Items whose bundle
+validates with zero errors, and re-encodes their authored values for those 9 field
+paths in that decoder's exact typed representation (`TEXT`, `SIGNED_POINTS`, `CELLS`,
+canonical-reduced `RATIONAL_PERCENT`, `COUNT_U32`, `CAPACITY_U16`) — a value this
+package's own schema allows but the Rust decoder's narrower bounds do not is skipped,
+counted, and never smuggled in as a wrong or clamped value. Every row is then checked
+again by `validate_packet`/`validate_row`, a fail-closed Python restatement of the
+Rust decoder's own rules (shape, kind, source/typed equality, bounds, ordering,
+uniqueness, count partition), before the packet is written.
+
+```text
+python lower_promotion_packet.py --source /path/to/crystalserver --self-check
+python lower_promotion_packet.py --source /path/to/crystalserver --check
+```
+
+The committed output is `samples/promotion-crystal-ff7ede5.json`: 13,292 rows over
+10,674 Items (`charges.count` 121, `container.capacity` 453, `presentation.name`
+10,674, `protection.armor` 429, `weapon.attack` 621, `weapon.defense` 636,
+`weapon.extra_defense` 160, `weapon.hit_chance` 56, `weapon.range_cells` 142;
+~3.4 MiB). Its `schema`/`profile`/`status`/`next_action` are deliberately different
+literal strings from the pinned Rust constants and from the wired packet's own values,
+so this candidate can never be mistaken for, or silently accepted as, the wired one.
+
+This is a v1 lowering **candidate**, not a Rust-side claim: wiring it into
+`apps/game-server/src/content/cw2_b1_import.rs` (pinned byte-count/digest constants
+for this packet, a bespoke apply function mirroring `apply_item_semantic_promotion`,
+and a Rust integration test, per the existing packet's own pattern) is left to the
+Content/World import role, since it is the one that owns and can requalify the target
+Item family this would apply to.
 
 ### Value-dependent fields and non-Item routing
 
