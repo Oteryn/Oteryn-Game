@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-fifteenth-encounter-slice
 title: D34 boss attribute for Burning Hatred (fifteenth encounter slice)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1043
 jira: KAN-16
 base_sha: 961c74ab573d87807ed24cbd414a46d8072f72d3
-head_sha: null
-final_head_sha: null
+head_sha: dce472cd02a48a69782ee6d6c0685aa9f572c090
+final_head_sha: dce472cd02a48a69782ee6d6c0685aa9f572c090
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -59,3 +59,8 @@ Authority: owner answer in this session ("Wszystkie 7" for the D34 vocabulary). 
 - `population_census.py` reports 1,539 resolved, 111 blocked and 6 not converted, with the 2026-09-27 wiki samples.
 - The wiki (Fandom, Soul War Quest spoiler, read 2026-09-27) decides (D25) that an unremoved Mighty Splinter is absorbed.
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1043 (`6fc6868ff8e5c8840c03d253049a6dc106c151e7`) from final head `dce472c`; required checks passed on that head.
+Owner released.
