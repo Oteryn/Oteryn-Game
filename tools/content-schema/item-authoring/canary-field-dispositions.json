@@ -1,0 +1,4221 @@
+{
+  "schema": "OTERYN_ITEM_AUTHORING_ENGINE_FIELD_DISPOSITIONS/candidate-2",
+  "source_profile": "canary_47dfd51_item_definition_v1",
+  "repository": "opentibiabr/canary",
+  "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "parser_registry": {
+    "entry_count": 144,
+    "unique_key_count": 143,
+    "duplicate_registrations": {
+      "movable": 2
+    }
+  },
+  "unknown_field_policy": "unsupported_source_field",
+  "origins": [
+    {
+      "name": "xml_item_root",
+      "fields": [
+        "article",
+        "editorsuffix",
+        "fromid",
+        "id",
+        "name",
+        "plural",
+        "toid"
+      ]
+    },
+    {
+      "name": "xml_item_attribute",
+      "fields": [
+        "absorbpercentall",
+        "absorbpercentallelements",
+        "absorbpercentdeath",
+        "absorbpercentdrown",
+        "absorbpercentearth",
+        "absorbpercentelements",
+        "absorbpercentenergy",
+        "absorbpercentfire",
+        "absorbpercenthealing",
+        "absorbpercentholy",
+        "absorbpercentice",
+        "absorbpercentlifedrain",
+        "absorbpercentmagic",
+        "absorbpercentmanadrain",
+        "absorbpercentphysical",
+        "absorbpercentpoison",
+        "allowdistread",
+        "allowpickupable",
+        "ammotype",
+        "armor",
+        "attack",
+        "augments",
+        "bedpart",
+        "bedpartof",
+        "blocking",
+        "blockprojectile",
+        "charges",
+        "cleavepercent",
+        "containersize",
+        "criticalhitchance",
+        "criticalhitdamage",
+        "deathmagiclevelpoints",
+        "decayto",
+        "defense",
+        "description",
+        "destroyto",
+        "duration",
+        "earthmagiclevelpoints",
+        "effect",
+        "elementalbond",
+        "elementdeath",
+        "elementearth",
+        "elementenergy",
+        "elementfire",
+        "elementholy",
+        "elementice",
+        "energymagiclevelpoints",
+        "extradef",
+        "femalesleeper",
+        "femaletransformto",
+        "field",
+        "fieldabsorbpercentearth",
+        "fieldabsorbpercentenergy",
+        "fieldabsorbpercentfire",
+        "fieldabsorbpercentpoison",
+        "firemagiclevelpoints",
+        "floorchange",
+        "fluidsource",
+        "healingmagiclevelpoints",
+        "healthgain",
+        "healthticks",
+        "hitchance",
+        "holymagiclevelpoints",
+        "icemagiclevelpoints",
+        "imbuementslot",
+        "invisible",
+        "leveldoor",
+        "lifeleechamount",
+        "lifeleechchance",
+        "loottype",
+        "magiclevelpoints",
+        "magicpoints",
+        "magicpointspercent",
+        "magicshieldcapacityflat",
+        "magicshieldcapacitypercent",
+        "malesleeper",
+        "maletransformto",
+        "managain",
+        "manaleechamount",
+        "manaleechchance",
+        "manashield",
+        "manaticks",
+        "mantra",
+        "maxhitchance",
+        "maxhitpoints",
+        "maxhitpointspercent",
+        "maxmanapoints",
+        "maxmanapointspercent",
+        "maxtextlen",
+        "movable",
+        "partnerdirection",
+        "perfectshotdamage",
+        "perfectshotrange",
+        "physicalmagiclevelpoints",
+        "pickupable",
+        "primarytype",
+        "proficiency",
+        "range",
+        "readable",
+        "reflectdamage",
+        "reflectpercentall",
+        "replaceable",
+        "rotateto",
+        "runespellname",
+        "script",
+        "shoottype",
+        "showattributes",
+        "showcharges",
+        "showcount",
+        "showduration",
+        "skillaxe",
+        "skillclub",
+        "skilldist",
+        "skillfish",
+        "skillfist",
+        "skillshield",
+        "skillsword",
+        "slottype",
+        "speed",
+        "stacksize",
+        "stopduration",
+        "suppresscurse",
+        "suppressdazzle",
+        "suppressdrown",
+        "suppressdrunk",
+        "suppressenergy",
+        "suppressfire",
+        "suppressfreeze",
+        "suppressphysical",
+        "suppresspoison",
+        "transformdeequipto",
+        "transformequipto",
+        "transformonuse",
+        "type",
+        "unwrapableto",
+        "usedbyhouseguests",
+        "walkstack",
+        "weapontype",
+        "weight",
+        "wrapableto",
+        "wrapcontainer",
+        "writeable",
+        "writeonceitemid"
+      ]
+    },
+    {
+      "name": "nested_script_attribute",
+      "fields": [
+        "action",
+        "breakchance",
+        "chain",
+        "eventtype",
+        "fromdamage",
+        "level",
+        "mana",
+        "premium",
+        "slot",
+        "todamage",
+        "unproperly",
+        "vocation",
+        "wandtype",
+        "weapontype"
+      ]
+    },
+    {
+      "name": "appearance",
+      "fields": [
+        "appearance.description",
+        "appearance.frame_group",
+        "appearance.id",
+        "appearance.name",
+        "automap.color",
+        "bank.waypoints",
+        "changedtoexpire.former_object_typeid",
+        "clothes.slot",
+        "cyclopediaitem.cyclopedia_type",
+        "default_action.action",
+        "flags.ammo",
+        "flags.animate_always",
+        "flags.automap",
+        "flags.avoid",
+        "flags.bank",
+        "flags.bottom",
+        "flags.changedtoexpire",
+        "flags.clip",
+        "flags.clockexpire",
+        "flags.clothes",
+        "flags.container",
+        "flags.corpse",
+        "flags.cumulative",
+        "flags.cyclopediaitem",
+        "flags.default_action",
+        "flags.dont_hide",
+        "flags.dual_wielding",
+        "flags.expire",
+        "flags.expirestop",
+        "flags.forceuse",
+        "flags.fullbank",
+        "flags.hang",
+        "flags.height",
+        "flags.hook",
+        "flags.ignore_look",
+        "flags.lenshelp",
+        "flags.light",
+        "flags.liquidcontainer",
+        "flags.liquidpool",
+        "flags.lying_object",
+        "flags.market",
+        "flags.multiuse",
+        "flags.no_movement_animation",
+        "flags.npcsaledata",
+        "flags.player_corpse",
+        "flags.proficiency",
+        "flags.reportable",
+        "flags.reverse_addons_east",
+        "flags.reverse_addons_north",
+        "flags.reverse_addons_south",
+        "flags.reverse_addons_west",
+        "flags.rotate",
+        "flags.shift",
+        "flags.show_off_socket",
+        "flags.skillwheel_gem",
+        "flags.take",
+        "flags.top",
+        "flags.topeffect",
+        "flags.translucent",
+        "flags.unmove",
+        "flags.unpass",
+        "flags.unsight",
+        "flags.unwrap",
+        "flags.upgradeclassification",
+        "flags.usable",
+        "flags.wearout",
+        "flags.wrap",
+        "flags.wrapkit",
+        "flags.write",
+        "flags.write_once",
+        "height.elevation",
+        "hook.direction",
+        "lenshelp.id",
+        "light.brightness",
+        "light.color",
+        "market.category",
+        "market.minimum_level",
+        "market.restrict_to_profession",
+        "market.show_as_object_id",
+        "market.trade_as_object_id",
+        "npcsaledata.buy_price",
+        "npcsaledata.currency_object_type_id",
+        "npcsaledata.currency_quest_flag_display_name",
+        "npcsaledata.location",
+        "npcsaledata.name",
+        "npcsaledata.sale_price",
+        "proficiency.proficiency_id",
+        "shift.x",
+        "shift.y",
+        "skillwheel_gem.gem_quality_id",
+        "skillwheel_gem.vocation_id",
+        "upgradeclassification.upgrade_classification",
+        "write.max_text_length",
+        "write_once.max_text_length_once"
+      ]
+    },
+    {
+      "name": "reverse_bag_relation",
+      "fields": [
+        "bags.bossOnly",
+        "bags.chance",
+        "bags.class",
+        "bags.itemid",
+        "bags.maxAmount",
+        "bags.minAmount",
+        "bags.name",
+        "bags.raceId"
+      ]
+    }
+  ],
+  "fields": [
+    {
+      "source_field": "absorbpercentall",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "expands to every combat type except healing, undefined and mana drain"
+    },
+    {
+      "source_field": "absorbpercentallelements",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "PINNED_NO_EFFECT",
+      "kind": "source_defect",
+      "status": "pinned_no_effect",
+      "allowed_destinations": [],
+      "reason": "registered, but the handler expects absorbpercentelements",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentdeath",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentdrown",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentearth",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "canonical earth spelling"
+    },
+    {
+      "source_field": "absorbpercentelements",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "expands to energy, fire, earth and ice"
+    },
+    {
+      "source_field": "absorbpercentenergy",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentfire",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercenthealing",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentholy",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentice",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentlifedrain",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentmagic",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "expands to energy, fire, earth and ice"
+    },
+    {
+      "source_field": "absorbpercentmanadrain",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentphysical",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "absorbpercentpoison",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "source spelling normalizes damage type to earth"
+    },
+    {
+      "source_field": "action",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "VALUE_DEPENDENT",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "source_value is required to select a pinned action normalization",
+      "source_value_routes": [
+        {
+          "source_value": "removecharge",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/consumption_mode"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "consume_charge"
+        },
+        {
+          "source_value": "removecount",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/consumption_mode"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "consume_item"
+        },
+        {
+          "source_value": "move",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/consumption_mode"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "move_item_to_impact_tile"
+        }
+      ]
+    },
+    {
+      "source_field": "allowdistread",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/distance_readable"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "allowpickupable",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/physical/pickupable"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "exact alias group pickupable"
+    },
+    {
+      "source_field": "ammotype",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/ammunition_kind"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "appearance.description",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/inspection_description"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "appearance.frame_group",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "appearance.id",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "numeric source appearance ID is crosswalk provenance"
+    },
+    {
+      "source_field": "appearance.name",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/display_name"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "armor",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/armor"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "article",
+      "origins": [
+        "xml_item_root"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/grammar/article"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "attack",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/attack"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "augments",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/proficiency/augments"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "automap.color",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "TERRAIN",
+      "kind": "terrain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "automap presentation belongs to Terrain/world presentation"
+    },
+    {
+      "source_field": "bags.bossOnly",
+      "origins": [
+        "reverse_bag_relation"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "Creature/Loot owns reverse surprise-bag membership"
+    },
+    {
+      "source_field": "bags.chance",
+      "origins": [
+        "reverse_bag_relation"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "Creature/Loot owns reverse surprise-bag membership"
+    },
+    {
+      "source_field": "bags.class",
+      "origins": [
+        "reverse_bag_relation"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "Creature/Loot owns reverse surprise-bag membership"
+    },
+    {
+      "source_field": "bags.itemid",
+      "origins": [
+        "reverse_bag_relation"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "Creature/Loot owns reverse surprise-bag membership"
+    },
+    {
+      "source_field": "bags.maxAmount",
+      "origins": [
+        "reverse_bag_relation"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "Creature/Loot owns reverse surprise-bag membership"
+    },
+    {
+      "source_field": "bags.minAmount",
+      "origins": [
+        "reverse_bag_relation"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "Creature/Loot owns reverse surprise-bag membership"
+    },
+    {
+      "source_field": "bags.name",
+      "origins": [
+        "reverse_bag_relation"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "Creature/Loot owns reverse surprise-bag membership"
+    },
+    {
+      "source_field": "bags.raceId",
+      "origins": [
+        "reverse_bag_relation"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "Creature/Loot owns reverse surprise-bag membership"
+    },
+    {
+      "source_field": "bank.waypoints",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "bedpart",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "bedpartof",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "blocking",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "blockprojectile",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "breakchance",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/break_chance_percent"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "chain",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/chain"
+      ],
+      "reason": "typed portable Item definition fact",
+      "source_value_router": "chain_mode"
+    },
+    {
+      "source_field": "changedtoexpire.former_object_typeid",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/temporal/decay_target",
+        "/item/lifecycle/transforms"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "charges",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/charges/count"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "cleavepercent",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/cleave_percent"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "clothes.slot",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/equipment/slot",
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "containersize",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/container/capacity"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "criticalhitchance",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/critical_chance_percent"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "criticalhitdamage",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/critical_damage_percent"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "cyclopediaitem.cyclopedia_type",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "client catalog/help/report metadata is provenance, not gameplay truth"
+    },
+    {
+      "source_field": "deathmagiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "decayto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/temporal/decay_target",
+        "/item/lifecycle/transforms"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "default_action.action",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/use/default_action"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "defense",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/defense"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "description",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/inspection_description"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "destroyto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/transforms"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "duration",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/temporal/duration_ms"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "earthmagiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "editorsuffix",
+      "origins": [
+        "xml_item_root"
+      ],
+      "disposition": "APPROVED_OMISSION",
+      "kind": "editor",
+      "status": "approved_omission",
+      "allowed_destinations": [],
+      "reason": "present in source XML but ignored by the pinned loader"
+    },
+    {
+      "source_field": "effect",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/effects"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "elementalbond",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/elemental_bond"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "elementdeath",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/elemental_attack"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "elementearth",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/elemental_attack"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "elementenergy",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/elemental_attack"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "elementfire",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/elemental_attack"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "elementholy",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/elemental_attack"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "elementice",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/elemental_attack"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "energymagiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "eventtype",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "VALUE_DEPENDENT",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "source_value is required to select a pinned route",
+      "source_value_routes": [
+        {
+          "source_value": "equip",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/equipment/activation_events"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_array_contains": "equip"
+        },
+        {
+          "source_value": "deequip",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/equipment/activation_events"
+          ],
+          "reason": "source deequip normalizes to the unequip activation event",
+          "destination_array_contains": "unequip"
+        },
+        {
+          "source_value": "stepin",
+          "disposition": "EXTERNAL_BEHAVIOR",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "Interaction owns movement-event behavior"
+        },
+        {
+          "source_value": "stepout",
+          "disposition": "EXTERNAL_BEHAVIOR",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "Interaction owns movement-event behavior"
+        },
+        {
+          "source_value": "additem",
+          "disposition": "EXTERNAL_BEHAVIOR",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "Interaction owns movement-event behavior"
+        },
+        {
+          "source_value": "removeitem",
+          "disposition": "EXTERNAL_BEHAVIOR",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "Interaction owns movement-event behavior"
+        }
+      ]
+    },
+    {
+      "source_field": "extradef",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/extra_defense"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "femalesleeper",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "PINNED_NO_EFFECT",
+      "kind": "source_defect",
+      "status": "pinned_no_effect",
+      "allowed_destinations": [],
+      "reason": "registered alias has no effective pinned Canary handler",
+      "parser_registration_count": 1,
+      "normalization_note": "Crystal alias of femaletransformto; pinned Canary registration is ineffective"
+    },
+    {
+      "source_field": "femaletransformto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "field",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "TERRAIN",
+      "kind": "terrain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed magic-field behavior belongs to Terrain/Interaction",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "fieldabsorbpercentearth",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "PINNED_NO_EFFECT",
+      "kind": "source_defect",
+      "status": "pinned_no_effect",
+      "allowed_destinations": [],
+      "reason": "registered, but the handler accepts only energy, fire and poison spellings",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "fieldabsorbpercentenergy",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "fieldabsorbpercentfire",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "fieldabsorbpercentpoison",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/resistances"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "source spelling normalizes damage type to earth"
+    },
+    {
+      "source_field": "firemagiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "wrong pinned enum token, but string dispatch remains effective"
+    },
+    {
+      "source_field": "flags.ammo",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/weapon_type"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.animate_always",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.automap",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "TERRAIN",
+      "kind": "terrain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "automap presentation belongs to Terrain/world presentation"
+    },
+    {
+      "source_field": "flags.avoid",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.bank",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.bottom",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.changedtoexpire",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/temporal/decay_target",
+        "/item/lifecycle/transforms"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.clip",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.clockexpire",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/display_flags/client_expiry_timer"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.clothes",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/equipment/slot",
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.container",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/container"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.corpse",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "corpse container behavior belongs to WorldObject/Interaction"
+    },
+    {
+      "source_field": "flags.cumulative",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/stack/stackable"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.cyclopediaitem",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "client catalog/help/report metadata is provenance, not gameplay truth"
+    },
+    {
+      "source_field": "flags.default_action",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/use/default_action"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.dont_hide",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.dual_wielding",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/equipment/dual_wielding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.expire",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/display_flags/client_expiry_timer"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.expirestop",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/display_flags/client_expiry_timer"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.forceuse",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "UNRESOLVED",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "loaded by the pinned engines but no downstream behavior was proven"
+    },
+    {
+      "source_field": "flags.fullbank",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.hang",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.height",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.hook",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.ignore_look",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.lenshelp",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "client catalog/help/report metadata is provenance, not gameplay truth"
+    },
+    {
+      "source_field": "flags.light",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/light"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.liquidcontainer",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/fluid/role"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.liquidpool",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.lying_object",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.market",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/trade"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.multiuse",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/use/use_with"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.no_movement_animation",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.npcsaledata",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "NPC Service owns Item offers"
+    },
+    {
+      "source_field": "flags.player_corpse",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "player-corpse behavior belongs to WorldObject/Interaction"
+    },
+    {
+      "source_field": "flags.proficiency",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/proficiency/profile_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.reportable",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "client catalog/help/report metadata is provenance, not gameplay truth"
+    },
+    {
+      "source_field": "flags.reverse_addons_east",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.reverse_addons_north",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.reverse_addons_south",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.reverse_addons_west",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.rotate",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.shift",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.show_off_socket",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.skillwheel_gem",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "EXTERNAL_DOMAIN",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Skill Wheel owns gem semantics"
+    },
+    {
+      "source_field": "flags.take",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/physical/pickupable"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.top",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.topeffect",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.translucent",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.unmove",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "VALUE_DEPENDENT",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "source_value is required to apply the pinned boolean inversion",
+      "source_value_routes": [
+        {
+          "source_value": false,
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/physical/movable"
+          ],
+          "reason": "appearance unmove=false normalizes to movable=true",
+          "destination_value_transform": "boolean_not_source"
+        },
+        {
+          "source_value": true,
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/physical/movable"
+          ],
+          "reason": "appearance unmove=true normalizes to movable=false",
+          "destination_value_transform": "boolean_not_source"
+        }
+      ]
+    },
+    {
+      "source_field": "flags.unpass",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.unsight",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "flags.unwrap",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/wrapping/unwrap_enabled"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.upgradeclassification",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/forge/classification"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.usable",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/use/usable"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.wearout",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/display_flags/client_wear_counter"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.wrap",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/wrapping/wrap_enabled"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.wrapkit",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/wrapping/is_wrap_kit"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.write",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/writable",
+        "/item/readable/write_policy"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "flags.write_once",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/writable",
+        "/item/readable/write_policy"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "floorchange",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "fluidsource",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "fluid source is a placed WorldObject/Terrain fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "fromdamage",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/damage_range"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "fromid",
+      "origins": [
+        "xml_item_root"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "numeric source ID range is crosswalk provenance only"
+    },
+    {
+      "source_field": "healingmagiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "healthgain",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/regeneration"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "healthticks",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/regeneration"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "height.elevation",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "hitchance",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/hit_chance_modifier_percent"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "holymagiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "hook.direction",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed geometry, collision or traversal belongs to WorldObject/Terrain"
+    },
+    {
+      "source_field": "icemagiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "id",
+      "origins": [
+        "xml_item_root"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "numeric source ID is crosswalk provenance only"
+    },
+    {
+      "source_field": "imbuementslot",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/imbuement/slot_count"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "invisible",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/invisibility_enabled"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "lenshelp.id",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "client catalog/help/report metadata is provenance, not gameplay truth"
+    },
+    {
+      "source_field": "level",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/requirements/min_level",
+        "/item/equipment/patterns/*/min_level"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "leveldoor",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "door gating belongs to WorldObject/Interaction",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "lifeleechamount",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/leech"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "lifeleechchance",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/leech"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "light.brightness",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/light/intensity"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "light.color",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/light/color_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "loottype",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/taxonomy/tags"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "magiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "magicpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "alias of magiclevelpoints"
+    },
+    {
+      "source_field": "magicpointspercent",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "PINNED_NO_EFFECT",
+      "kind": "source_defect",
+      "status": "pinned_no_effect",
+      "allowed_destinations": [],
+      "reason": "registered, but the handler checks the unregistered magiclevelpointspercent spelling",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "magicshieldcapacityflat",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_shield_capacity"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "magicshieldcapacitypercent",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_shield_capacity"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "malesleeper",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "PINNED_NO_EFFECT",
+      "kind": "source_defect",
+      "status": "pinned_no_effect",
+      "allowed_destinations": [],
+      "reason": "registered alias has no effective pinned Canary handler",
+      "parser_registration_count": 1,
+      "normalization_note": "Crystal alias of maletransformto; pinned Canary registration is ineffective"
+    },
+    {
+      "source_field": "maletransformto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "mana",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/use/mana_cost"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "managain",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/regeneration"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "manaleechamount",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/leech"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "manaleechchance",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/leech"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "manashield",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/mana_shield_enabled"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "manaticks",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/regeneration"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "mantra",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/mantra"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "market.category",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/trade/market_category"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "market.minimum_level",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/requirements/min_level"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "market.restrict_to_profession",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/trade/vocations"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "market.show_as_object_id",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "source appearance crosswalk only"
+    },
+    {
+      "source_field": "market.trade_as_object_id",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "source appearance crosswalk only"
+    },
+    {
+      "source_field": "maxhitchance",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/max_hit_chance_percent"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "maxhitpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/resource_capacity"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "maxhitpointspercent",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/resource_capacity"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "maxmanapoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/resource_capacity"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "maxmanapointspercent",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/resource_capacity"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "maxtextlen",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/max_characters"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "movable",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/physical/movable"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 2,
+      "normalization_note": "registered twice; both registrations dispatch to the same handler"
+    },
+    {
+      "source_field": "name",
+      "origins": [
+        "xml_item_root"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/display_name"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "npcsaledata.buy_price",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "NPC Service owns Item offers"
+    },
+    {
+      "source_field": "npcsaledata.currency_object_type_id",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "NPC Service owns Item offers"
+    },
+    {
+      "source_field": "npcsaledata.currency_quest_flag_display_name",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "NPC Service owns Item offers"
+    },
+    {
+      "source_field": "npcsaledata.location",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "NPC Service owns Item offers"
+    },
+    {
+      "source_field": "npcsaledata.name",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "NPC Service owns Item offers"
+    },
+    {
+      "source_field": "npcsaledata.sale_price",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "RELATIONSHIP",
+      "kind": "relationship",
+      "status": "reverse_relation",
+      "allowed_destinations": [],
+      "reason": "NPC Service owns Item offers"
+    },
+    {
+      "source_field": "partnerdirection",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "perfectshotdamage",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/perfect_shot_bonus"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "perfectshotrange",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/perfect_shot_bonus"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "physicalmagiclevelpoints",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/magic_level"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "pickupable",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/physical/pickupable"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1,
+      "normalization_note": "exact alias group pickupable"
+    },
+    {
+      "source_field": "plural",
+      "origins": [
+        "xml_item_root"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/grammar/plural"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "premium",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/requirements/premium_only"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "primarytype",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/taxonomy/primary"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "proficiency",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/proficiency/profile_binding"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "proficiency.proficiency_id",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/proficiency/profile_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "range",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/range_cells"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "readable",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/readable"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "reflectdamage",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/reflection"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "reflectpercentall",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/reflection"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "replaceable",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "rotateto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "runespellname",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/use/ability"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "script",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "VALUE_DEPENDENT",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "source_value is required to select a pinned route",
+      "source_value_routes": [
+        {
+          "source_value": "weapon",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon"
+          ],
+          "reason": "typed portable Item definition fact"
+        },
+        {
+          "source_value": "moveevent",
+          "disposition": "VALUE_DEPENDENT",
+          "kind": "template_control",
+          "status": "approved_omission",
+          "allowed_destinations": [],
+          "reason": "nested eventtype supplies the exact portable or external owner route"
+        }
+      ],
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "shift.x",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "shift.y",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/appearance_binding"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "shoottype",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/projectile_effect"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "showattributes",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/display_flags/attributes"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "showcharges",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/charges/show_count"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "showcount",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/display_flags/stack_count"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "showduration",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "presentation",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/presentation/display_flags/duration"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "skillaxe",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/skill_boost"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "skillclub",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/skill_boost"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "skilldist",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/skill_boost"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "skillfish",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/skill_boost"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "skillfist",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/skill_boost"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "skillshield",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/skill_boost"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "skillsword",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/skill_boost"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "skillwheel_gem.gem_quality_id",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "EXTERNAL_DOMAIN",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Skill Wheel owns gem semantics"
+    },
+    {
+      "source_field": "skillwheel_gem.vocation_id",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "EXTERNAL_DOMAIN",
+      "kind": "external_domain",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "Skill Wheel owns gem semantics"
+    },
+    {
+      "source_field": "slot",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/equipment/slot",
+        "/item/equipment/patterns/*/slot"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "slottype",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/equipment/slot",
+        "/item/equipment/patterns/*/slot"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "speed",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/modifiers/movement_speed"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "stacksize",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/stack/max_count"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "stopduration",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/temporal/stop_duration_while_unequipped"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppresscurse",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppressdazzle",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppressdrown",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppressdrunk",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppressenergy",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppressfire",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppressfreeze",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppressphysical",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "suppresspoison",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/protection/condition_suppressions"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "todamage",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/damage_range"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "toid",
+      "origins": [
+        "xml_item_root"
+      ],
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "numeric source ID range is crosswalk provenance only"
+    },
+    {
+      "source_field": "transformdeequipto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/transforms"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "transformequipto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/transforms"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "transformonuse",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/transforms"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "type",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "VALUE_DEPENDENT",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "source_value is required to select a pinned route",
+      "source_value_routes": [
+        {
+          "source_value": "key",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "key"
+        },
+        {
+          "source_value": "container",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "container"
+        },
+        {
+          "source_value": "rune",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "rune"
+        },
+        {
+          "source_value": "supply",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "supply"
+        },
+        {
+          "source_value": "creatureproduct",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "creatureproduct"
+        },
+        {
+          "source_value": "food",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "food"
+        },
+        {
+          "source_value": "valuable",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "valuable"
+        },
+        {
+          "source_value": "potion",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "potion"
+        },
+        {
+          "source_value": "soulcore",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/taxonomy/item_class"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "soulcore"
+        },
+        {
+          "source_value": "magicfield",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "depot",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "rewardchest",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "carpet",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "mailbox",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "trashholder",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "teleport",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "door",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "bed",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "ladder",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        },
+        {
+          "source_value": "dummy",
+          "disposition": "EXTERNAL_DOMAIN",
+          "kind": "external_domain",
+          "status": "external_domain",
+          "allowed_destinations": [],
+          "reason": "this type value belongs to WorldObject, Terrain or Interaction"
+        }
+      ],
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "unproperly",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/requirements/level_magic_shortfall"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "unwrapableto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "PINNED_NO_EFFECT",
+      "kind": "source_defect",
+      "status": "pinned_no_effect",
+      "allowed_destinations": [],
+      "reason": "registered, but parseWrapableTo accepts only wrapableto",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "upgradeclassification.upgrade_classification",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/forge/classification"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "usedbyhouseguests",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "house access belongs to WorldObject/Interaction ACL",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "vocation",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/requirements/vocations",
+        "/item/equipment/patterns/*/vocations"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "walkstack",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "WORLD_OBJECT",
+      "kind": "world_object",
+      "status": "external_domain",
+      "allowed_destinations": [],
+      "reason": "placed collision, traversal, bed or transform behavior is not portable Item truth",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "wandtype",
+      "origins": [
+        "nested_script_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/weapon/damage_type"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "weapontype",
+      "origins": [
+        "xml_item_attribute",
+        "nested_script_attribute"
+      ],
+      "disposition": "VALUE_DEPENDENT",
+      "kind": "raw_text",
+      "status": "unresolved_semantics",
+      "allowed_destinations": [],
+      "reason": "source_value is required to select a pinned route",
+      "source_value_routes": [
+        {
+          "source_value": "sword",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "sword"
+        },
+        {
+          "source_value": "axe",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "axe"
+        },
+        {
+          "source_value": "club",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "club"
+        },
+        {
+          "source_value": "fist",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "fist"
+        },
+        {
+          "source_value": "distance",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "distance_launcher"
+        },
+        {
+          "source_value": "ammo",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "ammunition"
+        },
+        {
+          "source_value": "missile",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "thrown_missile"
+        },
+        {
+          "source_value": "wand",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "wand"
+        },
+        {
+          "source_value": "rod",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "rod"
+        },
+        {
+          "source_value": "shield",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "shield"
+        },
+        {
+          "source_value": "spellbook",
+          "disposition": "ITEM_TYPED",
+          "kind": "definition",
+          "status": "mapped",
+          "allowed_destinations": [
+            "/item/weapon/weapon_type"
+          ],
+          "reason": "typed portable Item definition fact",
+          "destination_value_equals": "spellbook"
+        }
+      ],
+      "parser_registration_count": 1,
+      "normalization_note": "distance, ammo and missile normalize to distinct canonical authoring kinds; spellbook remains distinct from shield"
+    },
+    {
+      "source_field": "weight",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/physical/weight",
+        "/item/presentation/display_weight"
+      ],
+      "reason": "typed portable Item definition fact",
+      "source_value_router": "signed_weight",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "wrapableto",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/wrapping/wrap_target"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "wrapcontainer",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/lifecycle/wrapping/preserve_contents"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "write.max_text_length",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/max_characters"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "write_once.max_text_length_once",
+      "origins": [
+        "appearance"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/max_characters"
+      ],
+      "reason": "typed portable Item definition fact"
+    },
+    {
+      "source_field": "writeable",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/writable",
+        "/item/readable/write_policy"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    },
+    {
+      "source_field": "writeonceitemid",
+      "origins": [
+        "xml_item_attribute"
+      ],
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/readable/write_once_target"
+      ],
+      "reason": "typed portable Item definition fact",
+      "parser_registration_count": 1
+    }
+  ]
+}
+
