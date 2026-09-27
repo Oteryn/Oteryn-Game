@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-encounter-slice-6
 title: Transcribe a sixth slice of Canary creature events into encounters; record Crystal as a second donor (D30)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 970
 jira: KAN-16
 base_sha: 6f3da2f4079d2f668b8aa7aec5199857422cde6e
-head_sha: null
-final_head_sha: null
+head_sha: a7249dec92d625a2caddaae34adbc5fbe55df0bb
+final_head_sha: a7249dec92d625a2caddaae34adbc5fbe55df0bb
 final_head_frozen_at: null
-owner: claude/nice-edison-h9aqh0
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -54,3 +54,8 @@ fence, session, authority or persisted-recovery evidence is touched.
 - `health_crossed` threshold semantics stated (§9.2); D30 recorded; the unresolved events are listed
   with the vocabulary addition each needs.
 - `population_census.py` 1,478 of 1,656 fully resolved (1,463 before).
+
+## Completion
+
+Merged as PR #970 (`4731bbefab6703dc9b43c6154d661033f7505690`) from final head `a7249de`; required checks passed on that head.
+Owner released.
