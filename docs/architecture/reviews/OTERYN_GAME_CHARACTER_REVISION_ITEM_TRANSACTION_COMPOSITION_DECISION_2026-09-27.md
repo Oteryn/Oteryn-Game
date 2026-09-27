@@ -35,16 +35,36 @@ How does such a transaction relate to the global `CharacterRevision`?
 - DUR-03 §7.2: the durable COMMIT for an item transaction validates the TransactionId/cause, the
   expected item state, the current CharacterLease/session authority and the runtime-scope fence.
   It does not list `CharacterRevision`.
-- DUR-03 §39.3: "MINT does not touch Character state". The same section forbids inventing an XP
-  receipt for inventory work and forbids joining XP and item transfer into one transaction to
-  paper over the conflict.
-- `0009` guards: `game_character_roots` and `game_character_progression_state` accept only a
-  `+1` revision successor. The commit-time consistency guard then requires
-  receipts = `CharacterRevision − 1` and an XP receipt at the current revision.
-- The XP writer (`apps/game-server/src/durability/character_progression.rs`) checks the admission
-  character, account and runtime guards (lease generation, holder GameSession, scope ownership
-  generation). It then locks `game_character_roots ... FOR UPDATE`, and only then checks its
-  `expected_character_revision`.
+- DUR-03 §39.3: "MINT does not touch Character state". The same section says it neither invents
+  an XP receipt for inventory work nor joins XP and item transfer into one transaction.
+- DUR-03 §31: a reserved CommandRef may survive an eligible reconnect of the same GameSession
+  while `connection_generation` advances. DB commit does not require the old transport
+  generation. It requires originally valid ingress, the current logical
+  GameSession/lease/runtime authority under FND continuation rules, and current participant
+  commit fences.
+- `0009` guards: `game_character_roots` accepts only a `+1` revision successor.
+  `game_character_progression_state` accepts only a `+1` successor with strictly greater
+  `total_experience`. The commit-time consistency guard then requires
+  receipts = `CharacterRevision − 1` and an XP receipt at the current revision. So under `0009`
+  every revision after 1 must be an XP award.
+- The XP writer (`commit_character_experience` in
+  `apps/game-server/src/durability/character_progression.rs`) runs these steps in one
+  transaction, in this order:
+  1. assert the recovery fence and lock the admission relations;
+  2. take a per-occurrence advisory lock;
+  3. replay: an existing receipt with the same binding returns its retained result without
+     reacquiring session authority, and a changed binding conflicts;
+  4. for a new occurrence, check the `game_durability_reconnect_sessions` row `FOR SHARE`:
+     GameSession, Character, World, Channel scope, `current_generation` = the fence's
+     `connection_generation`, lease generation, scope ownership generation and
+     `session_state IN (1,2)`;
+  5. check the `game_runtime_scope_assignments` row `FOR SHARE` (active, ownership generation,
+     holder node and registration revision) and prove the current node incarnation;
+  6. check the admission character, account and runtime guards;
+  7. lock `game_character_roots ... FOR UPDATE`, and only then check `expected_character_revision`.
+
+  The fence is supplied by the current runtime owner at commit time. It is not captured at
+  ingress: the binding test shows a reconnected fence yields the same command binding.
 - No migration on protected main creates an inventory or reward-claim table.
 - D40: a reward MINT is idempotent per (claim, character). D42: `RewardClaim` is its own
   per-character record, is not a quest-progress track, does not reuse the XP tables, and commits
@@ -77,28 +97,51 @@ How does such a transaction relate to the global `CharacterRevision`?
    keyed by a Character (for example `RewardClaim`) does not advance `CharacterRevision`. It does
    not write `game_character_roots`, `game_character_progression_state` or
    `game_character_xp_receipts`. `0009` stays unchanged.
-2. **Fence.** Such a transaction is fenced by the same current-authority facts as the XP writer:
-   - the admission character guard (eligible, lease generation, holder GameSession);
-   - the account guard (presence and holder);
-   - the runtime-scope guard (ready, ownership generation).
+2. **Fence.** Such a transaction uses the XP writer's complete fence (§2, steps 1–6), with
+   the DUR-03 cause taking the place of the XP occurrence:
+   - the recovery fence and admission-relation locks;
+   - a lock on the DUR-03 cause identity (for a reward, (claim, character)), then replay: the
+     same cause and binding return the first outcome, and a changed binding conflicts;
+   - for a new effect, the reconnect-session row (GameSession, Character, World, runtime scope,
+     `current_generation`, lease generation, scope ownership generation,
+     `session_state IN (1,2)`);
+   - the runtime-scope assignment and current node incarnation;
+   - the admission character, account and runtime guards.
 
-   It also carries the DUR-03 TransactionId/cause idempotency. It never uses
-   `expected_character_revision` as its authority fence.
-3. **Per-Character serialization.** A transaction whose admission depends on the Character's
+   It never uses `expected_character_revision` as its authority fence.
+3. **Session-generation semantics and the DUR-03 §31 continuation.** The committing runtime
+   supplies the fence from its *current* authority at commit time, as the XP writer does:
+   - After an eligible same-GameSession reconnect, the current owner commits a still-pending
+     reserved CommandRef with the current `connection_generation`. The same GameSession, lease
+     and scope generations must still match.
+   - Original ingress validity is proven by the current owner's FND-02 `CommandIngress` still
+     holding that CommandRef as pending (#663). A CommandRef that the current owner does not hold
+     as pending is not continued.
+   - A stale predecessor that presents an older `connection_generation`, a replaced GameSession,
+     a moved lease or scope, or a session outside states 1–2 fails the reconnect-session row
+     check and commits nothing.
+   - A lost response or retry after commit resolves through the cause replay step, not through
+     current authority.
+4. **Per-Character serialization.** A transaction whose admission depends on the Character's
    inventory occupancy, capacity or claims must hold `SELECT ... FROM game_character_roots ...
    FOR UPDATE` for that Character before it reads or writes item, occupancy or claim rows. The
-   lock order is: authority guards → `character_root` → domain rows. This is the XP writer's
-   order, so XP awards and item transactions for one Character serialize without deadlock. A row
-   lock is not an UPDATE, so the `0009` revision guard does not fire.
-4. **Atomicity stays in DUR-03.** D41 and D42 are met inside one PostgreSQL transaction: capacity
+   lock order is the XP writer's: recovery fence and admission relations → cause lock → session,
+   assignment and guard checks → `character_root` → domain rows. XP awards and item transactions
+   for one Character therefore serialize without deadlock. A row lock is not an UPDATE, so the
+   `0009` revision guard does not fire.
+5. **Atomicity stays in DUR-03.** D41 and D42 are met inside one PostgreSQL transaction: capacity
    check, MINT of every reward item, the `RewardClaim` insert and mandatory audit all commit or
    none do. A refused capacity check writes nothing.
-5. **Character semantic writes are unchanged.** A transaction that changes Character root or
-   progression state (an XP award, a future stat or level change) still advances
-   `CharacterRevision` exactly once, with its `0009` receipt. If a later accepted transaction must
-   change both Character semantic state and item locations, it still advances `CharacterRevision`
-   once, for the Character part only. §3.1 covers the item part. This decision does not require
-   or allocate such a combined transaction.
+6. **XP-backed Character writes are unchanged; other Character semantic writes are not
+   covered.**
+   - An XP award still advances `CharacterRevision` exactly once, with its `0009` receipt.
+   - Under `0009` no non-XP Character semantic mutation can advance `CharacterRevision`,
+     whether a stat, level-without-XP, profile or other change. It would fail the deferred
+     consistency guard or need a fabricated XP receipt. Admitting any such mutation needs a
+     later migration and receipt redesign under its own architecture decision.
+   - An XP award and DUR-03 item effects may share one transaction under `0009`. The XP part
+     advances the revision with its receipt, and §3.1 covers the item part. This decision does
+     not require or allocate such a combined transaction.
 
 ## 4. Rejected options
 
@@ -110,9 +153,11 @@ How does such a transaction relate to the global `CharacterRevision`?
 - **A separate inventory revision domain.** This adds an identity and revision scalar that no
   accepted requirement asks for. DUR-03 already has TransactionId, item non-reuse and
   per-transaction receipts.
-- **Invent an XP receipt for inventory work.** DUR-03 §39.3 forbids it.
-- **Join the XP award and the item transfer in one transaction to satisfy the guard.** DUR-03
-  §39.3 forbids it, and it would change D42's meaning.
+- **Invent an XP receipt for inventory work.** It fabricates XP evidence and breaks the
+  progression receipt chain. DUR-03 §39.3 explicitly declines it.
+- **Attach an XP award to every item transaction just to satisfy the guard.** Most item
+  transactions carry no XP, so it would change D42's meaning. DUR-03 §39.3 declines it. A genuine
+  XP award that happens to share a transaction with item effects is a different case (§3.6).
 
 ## 5. Decision test
 
@@ -149,7 +194,7 @@ required_fresh_allocation: true
 required_independent_review: "exact-head independent review (persistence/value and session-fence semantics)"
 required_revalidation:
   - DUR-03 and Character contract text for D40-D42 cites this decision (reward chest §7 step 2)
-  - "the first RewardClaim/MINT migration proves: no CharacterRevision change; stale lease, session or scope generation rejected; refused capacity writes nothing; idempotent repeat per (claim, character); a concurrent XP award and item transaction serialize on character_root without deadlock"
+  - "the first RewardClaim/MINT migration proves: no CharacterRevision change; each one-changed stale fence rejected (connection_generation, GameSession, lease generation, scope ownership generation, session_state, runtime assignment, node incarnation); a still-pending reserved CommandRef commits after an eligible same-GameSession reconnect with the current connection_generation; a retry after commit replays the first outcome; refused capacity writes nothing; idempotent repeat per (claim, character); a concurrent XP award and item transaction serialize on character_root without deadlock"
 remaining_unknowns:
   - inventory position/capacity/weight policy and numbers
   - RewardClaim physical schema and cooldown identity

@@ -77,11 +77,23 @@ PREPARE/COMMIT or recovery interpretation. The implementing allocation must comp
 ## Independent review
 
 - required: YES. The decision is about persistence/value and session-fence semantics.
+- Codex review of frozen head `432dc37545b94dcf50bdf7e42275ee9e911e0ea5` (review 5332650313):
+  - P1 (comment 4117445998), incomplete session-generation fence: **accepted and repaired**.
+    §3.2 now requires the XP writer's complete fence, including the reconnect-session row with
+    `current_generation` and `session_state`, the runtime-scope assignment and node
+    incarnation. §3.3 states how the DUR-03 §31 continuation is proven.
+  - P2 (comment 4117446002), non-XP semantic commits under `0009`: **accepted and repaired**.
+    §3.6 is narrowed to XP-backed writes; any other Character semantic mutation needs a later
+    migration and receipt redesign.
+  - Self-review during the repair: the §39.3 wording was corrected from "forbids" to
+    "declines" in the facts and rejected options.
+- `432dc37` is superseded. Its review and CI are historical, and the successor head needs
+  fresh exact-head review and CI.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: decision drafted
+last_progress: returned to AUTHORING after Codex P1/P2 on 432dc37; repaired
 status: implementing
 branch: claude/gifted-rubin-a0axzx
 head_sha: null
