@@ -9,18 +9,18 @@
         "oteryn:item.registry.i00000038",
         "oteryn:item.registry.i00000039"
       ],
-      "items": 11284
+      "items": 11347
     },
     {
       "blocker": "family_profile_unresolved",
       "examples": [
         "oteryn:item.registry.i00000001",
-        "oteryn:item.registry.i00000006",
         "oteryn:item.registry.i00000019",
         "oteryn:item.registry.i00000028",
-        "oteryn:item.registry.i00000031"
+        "oteryn:item.registry.i00000031",
+        "oteryn:item.registry.i00000034"
       ],
-      "items": 999
+      "items": 934
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -58,13 +58,13 @@
     {
       "blocker": "converter_missing:flags.container",
       "examples": [
+        "oteryn:item.registry.i00004134",
         "oteryn:item.registry.i00011107",
         "oteryn:item.registry.i00012173",
         "oteryn:item.registry.i00012265",
-        "oteryn:item.registry.i00012266",
-        "oteryn:item.registry.i00012437"
+        "oteryn:item.registry.i00012266"
       ],
-      "items": 40
+      "items": 41
     },
     {
       "blocker": "converter_missing:changedtoexpire.former_object_typeid",
@@ -3116,27 +3116,27 @@
       "items": 1
     }
   ],
-  "bundle_digest": "cce43a54b8c8a41cc3d8518223c438ed77db5eee4dd3289b8996680559a7476e",
+  "bundle_digest": "c5f970bea3e24f2a8352e701708fb3f5bdbc73f6d99651fa01aab6991dafe038",
   "by_profile": {
-    "container": 276,
+    "container": 279,
     "container_equipment": 8,
-    "decoration": 2877,
-    "document": 429,
+    "decoration": 2892,
+    "document": 435,
     "equipment_armor": 468,
     "equipment_offhand": 446,
-    "event_collectible": 175,
-    "fluid": 102,
-    "food": 189,
+    "event_collectible": 179,
+    "fluid": 107,
+    "food": 190,
     "key": 12,
     "light_source": 169,
-    "material_valuable": 3049,
+    "material_valuable": 3053,
     "plant": 872,
-    "quest_item": 1043,
+    "quest_item": 1065,
     "rune": 41,
-    "tool": 319,
+    "tool": 324,
     "transformation_item": 23,
     "trash": 196,
-    "unresolved": 26655,
+    "unresolved": 26590,
     "weapon_distance": 152,
     "weapon_magic": 88,
     "weapon_melee": 568
@@ -3151,20 +3151,20 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 11069,
+      "eligible_false": 11134,
       "eligible_true": 433,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 433,
-      "not_member": 11069,
+      "not_member": 11134,
       "source": "crystal_delivery_list"
     }
   },
   "family_profile_basis": {
     "engine_attribute": 10674,
-    "wiki_evidence_fallback": 828
+    "wiki_evidence_fallback": 893
   },
   "field_coverage": {
     "absorbpercentall": {
@@ -4523,10 +4523,10 @@
     "tibiawiki_exact_binding": 165
   },
   "outcome": {
-    "blocked": 901,
-    "fully_resolved": 10601,
+    "blocked": 902,
+    "fully_resolved": 10665,
     "items": 38157,
-    "not_converted": 999,
+    "not_converted": 934,
     "routed_non_item": 25656
   },
   "routed_non_item": [

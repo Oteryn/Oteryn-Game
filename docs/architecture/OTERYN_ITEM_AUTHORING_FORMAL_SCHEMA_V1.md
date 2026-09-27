@@ -392,10 +392,10 @@ TibiaWiki BR binding also exists it must agree.
 |---|---|---|
 | entries | 38,157 | 37,527 |
 | validator errors | 0 | 0 |
-| valid, only the sprite atlas pending | 10,601 | 10,268 |
-| valid, other blockers | 901 | 876 |
+| valid, only the sprite atlas pending | 10,665 | 10,328 |
+| valid, other blockers | 902 | 877 |
 | routed to a non-Item owner | 25,656 | 25,193 |
-| not converted (no family, or no identity binding) | 999 | 1,190 |
+| not converted (no family, or no identity binding) | 934 | 1,129 |
 | Delivery Task eligible | 433 | 401 |
 
 Entries that are not portable Items are counted as `routed_non_item` with an owner and
@@ -419,19 +419,19 @@ identical in both engines) and mantra damage types (energy, fire, earth, ice). A
 with proficiency `238` cites both engines' admitted crosswalks.
 
 Remaining blockers (Crystal): `sprite_atlas_not_admitted` on every converted Item (no
-admitted sprite atlas yet); `family_profile_unresolved` 999 (no structural signal and no
+admitted sprite atlas yet); `family_profile_unresolved` 934 (no structural signal and no
 admitted wiki evidence either; editorial backlog); other proficiency ids 642, `augments`
 83 and `runespellname` 36 (need an Ability identity crosswalk); `flags.forceuse` 34
 (loaded but unused by both engines); and small data-quality residuals such as
 `stopduration` without decay or a container without `containersize`. Canary's own
-`family_profile_unresolved` is 954, plus 236 `identity_not_in_b1_catalog` (no Crystal
+`family_profile_unresolved` is 893, plus 236 `identity_not_in_b1_catalog` (no Crystal
 allocator key at all, so the wiki fallback below is never consulted for those).
 
 `family_profile_basis` distinguishes how each converted Item's `family_profile` was
 decided: `engine_attribute` (the engine's own `primarytype`/`weapontype`/slot/etc., as
 `classify_family_profile` always decides first) or `wiki_evidence_fallback` (§5b below,
 applied only when the engine carried no such signal at all). Crystal: 10,674
-`engine_attribute`, 828 `wiki_evidence_fallback`. Canary: 10,352 `engine_attribute`, 792
+`engine_attribute`, 893 `wiki_evidence_fallback`. Canary: 10,352 `engine_attribute`, 853
 `wiki_evidence_fallback`.
 
 `delivery_task_eligible` follows the owner-approved authoring rule
@@ -453,18 +453,27 @@ locally, not by repository CI.
 
 `tools/content-census/item_wiki_family_capture.py` is a manual, network-using capture
 tool (not run by repository CI) that looks up every `family_profile_unresolved` engine
-Item's own name on English TibiaWiki (`tibia.fandom.com`) via the MediaWiki API
-(`redirects=1`, small-word title-cased form first, then the literal name with only its
-first letter upper-cased), parses the resolved page's `{{Infobox Object`/`{{Infobox Item`
-`primarytype`/`objectclass` fields, and, for a `{{Disambig}}` page, resolves every linked
-candidate page instead. A match is only ever committed when `engine_items.
-resolve_wiki_family_value` — the admitted mapping, `PRIMARYTYPE_PROFILE` folded to lower
-case plus a small dedicated `WIKI_OBJECTCLASS_PROFILE` for the `objectclass` fallback —
-resolves it to exactly one profile (for a disambiguation, only when every candidate agrees
-on the same profile); broad buckets (`others`, `other items`, `household items`, `tools
-and other equipment`, `utilities`, `plants, animal products, food and drink`, `other
-objects`) and the owner-decision-pending values `fireworks`, `blessing charms` and
-`clothing accessories` never resolve. The snapshot
+Item's own name on English TibiaWiki (`tibia.fandom.com`) against an exact,
+case-insensitive index of every main-namespace title (`list=allpages`, `apnamespace=0`,
+`apfilterredir=all`, walked to completion — 29,012 titles on the wiki as captured). A
+name's candidate titles are every title whose lower case equals the name itself, or the
+name plus a `" (item)"`/`" (object)"` disambiguating suffix (TibiaWiki's own convention
+for an item that shares a bare name with an NPC or other page); content is fetched with
+`redirects=1`. That is the full extent of the matching: exact case-insensitivity,
+redirects and the two admitted suffixes, never a capitalisation guess. Each candidate is
+parsed for `{{Infobox Object`/`{{Infobox Item` `primarytype`/`objectclass` fields, or, for
+a `{{Disambig}}` page, resolved through every linked candidate page instead; a page with
+neither is not evidence (e.g. an NPC page sharing an item's bare name) and is ignored. A
+match is only ever committed when `engine_items.resolve_wiki_family_value` — the admitted
+mapping, `PRIMARYTYPE_PROFILE` folded to lower case plus a small dedicated
+`WIKI_OBJECTCLASS_PROFILE` for the `objectclass` fallback — resolves it to exactly one
+profile; when a name's candidates include two or more pages carrying admitted evidence
+(directly, or through a disambiguation page's own linked candidates), every one must
+independently resolve and all must agree on the exact same profile, recorded with the
+existing disambiguation shape ("several wiki pages, all agree"). Broad buckets (`others`,
+`other items`, `household items`, `tools and other equipment`, `utilities`, `plants,
+animal products, food and drink`, `other objects`) and the owner-decision-pending values
+`fireworks`, `blessing charms` and `clothing accessories` never resolve. The snapshot
 (`imports/tibiawiki/facts/items-family-fallback.json`, batch `g5-item-family-fallback-
 tibiawiki-r1`) holds only page/revision identity, digests and the one or two field
 observations each record needed — never wikitext bodies or images — and is strictly
@@ -479,9 +488,12 @@ engine-attribute classification always wins. A hit sets `family_profile_basis:
 "wiki_evidence_fallback"` and a `family_profile_evidence` citation (matched field/value,
 wiki title/page id/revision id/content digest, or the full candidate list for a
 disambiguation) on the converted Item. Of 3,573 previously-unresolved (engine, id) pairs
-(1,827 Crystal + 1,746 Canary) across 1,062 unique engine names, 881 names resolved to one
-admitted profile (823 direct, 58 disambiguation), recovering 828 Crystal and 792 Canary
-Items (1,620 total); the remainder stays `family_profile_unresolved`, still fail-closed.
+(1,827 Crystal + 1,746 Canary) across 1,065 unique engine names, 946 names resolved to one
+admitted profile (885 direct, 61 disambiguation), recovering 893 Crystal and 853 Canary
+Items (1,746 total); the remainder stays `family_profile_unresolved`, still fail-closed.
+The title index itself is not pinned in the schema (it is provenance, not correctness --
+every record's own wiki page/revision identity is what the loader verifies); its count and
+digest are recorded in the capture tool's uncommitted report only.
 
 ## 6. Validation and non-claims
 

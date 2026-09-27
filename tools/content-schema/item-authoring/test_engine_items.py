@@ -1464,7 +1464,7 @@ def test_committed_wiki_fallback_snapshot_loads_fail_closed():
     resolved = engine_items.load_wiki_family_fallback(
         engine_items.WIKI_FAMILY_FALLBACK_PATH, engine_items.build_identity_index()
     )
-    check(len(resolved) == 881, len(resolved))
+    check(len(resolved) == 946, len(resolved))
     check(
         all(
             entry["profile"] in engine_items.PROFILE_ITEM_CLASS
