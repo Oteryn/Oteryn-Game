@@ -225,8 +225,13 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             attempt_ref,
             ConnectionGeneration::new(successor).map_err(|_| Unavailable)?,
             attempt.transport,
+            // Never outlive the verified evidence or the original grace: the Foundation
+            // refuses a candidate deadline past either, and the evidence was observed
+            // before `now` was sampled, so `now + 5` can exceed it by a second boundary.
             now.checked_add(CANDIDATE_LIFETIME_SECONDS)
-                .ok_or(Unavailable)?,
+                .ok_or(Unavailable)?
+                .min(verified.accepted_deadline())
+                .min(loss.observation.original_grace_deadline),
         )
         .map_err(|_| Rejected)?;
         let fnd02 = Fnd02ReconciliationFenceV1::new(
