@@ -368,6 +368,16 @@ COMMIT additionally revalidates recovery JWT time, exact credential/trust state,
 
 RecoveryGrantNonce is consumed only with successful authority switch.
 
+Implementation note (#822 PR 5a): for a session whose loss is recorded by the owning-loss receipt, same-session reauthenticated recovery uses the typed complete-reconnect durability format, not the legacy reconnect journal. Under the admission relation locks, the adapter binds each PREPARE and COMMIT to:
+
+- the exact durable original loss;
+- the exact current session;
+- current claim ownership;
+- the ready runtime owner;
+- the retained budget reconstructed from its immutable receipts.
+
+PREPARE reserves the candidate transport. COMMIT consumes the RecoveryGrantNonce and switches the same GameSession to the candidate connection. The legacy continuity row never holds protection continuity; the complete-reconnect effect carries it.
+
 ## 21. Grace expiry and post-grace existing-actor recovery
 
 Once original same-session grace expires:
