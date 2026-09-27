@@ -87,7 +87,11 @@ RULES = {
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-07-28.json'
 BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
-PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls')
+PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile')
+PATH_TRAIL = (r'local target = Creature\(var\.number\) if not target then return false end local creaturePos = creature:getPosition\(\) '
+              r'local path = creaturePos:getPathTo\(target:getPosition\(\), 0, 0, true, (true|false), (\d+)\) if not path or #path == 0 '
+              r'then return false end for i = 1, #path do creaturePos:getNextPosition\(path\[i\], 1\) '
+              r'creaturePos:sendMagicEffect\((CONST_ME_\w+)\) end return combat:execute\(creature, var\)')
 WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces '
                  'it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary '
                  'difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain '
@@ -1056,6 +1060,8 @@ class Converter:
             try:
                 if pattern == 'conditional_summon':
                     self.probe_summon(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                elif pattern == 'path_trail_missile':
+                    self.path_trail(probe, key, geometry, range_tiles, scratch, asset, notes)
                 elif pattern == 'heal_allies_in_area':
                     self.probe_callbacks(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
                 else:
@@ -1247,6 +1253,25 @@ class Converter:
             affects['creatures'].append(ref('Creature', creature))
         return [(f'-callback-{offset + 1}', self.health_body('COMBAT_HEALING', min(low, high), max(low, high), affects,
                                                             f'{key}/formula-callback-{offset + 1}', deps))]
+
+    def path_trail(self, probe, key, geometry, range_tiles, deps, asset, notes):
+        """The Canary single-target 'chain' template: a path trail effect, then one combat on the target."""
+        match = re.fullmatch(PATH_TRAIL, spell_scripts.cast_body(probe.source) or '')
+        combats = list(probe.rec['combats'].values())
+        if not match or len(combats) != 1:
+            raise SpellUnresolved('onCastSpell is not the path trail template')
+        clear_sight, search, trail = match.group(1) == 'true', int(match.group(2)), match.group(3)
+        combat = self.spell_scripts._combat(probe.lua, combats[0])
+        if combat['callbacks'] or combat['area']:
+            raise SpellUnresolved('the path trail combat has callbacks or an area')
+        self.combat_ability(key, combat, {**geometry, 'needs_target': True}, range_tiles, deps, asset, notes)
+        ability = deps['abilities'][-1]
+        ability['path_requirement'] = {'max_search_tiles': search, 'clear_sight': clear_sight}
+        first = next(e for e in deps['effects'] if e['identity']['key'] == ability['effects'][0]['key'])
+        first.setdefault('presentation', {})['path_asset_binding'] = asset(self.visual('@' + trail, 'effect')[0])
+        notes.append(f'Template match: Position:getPathTo(target, 0, 0, true, {match.group(1)}, {search}) must find a path or '
+                     f'the cast returns false; {trail} is sent on every path tile, then the combat runs on the target. The '
+                     'name says chain but only the target is hit.')
 
     def probe_remove_items(self, probe, lua_spell, key, deps, asset, notes):
         probe.world['items'] = probe.lua.table()

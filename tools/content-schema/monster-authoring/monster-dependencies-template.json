@@ -40,6 +40,10 @@
           "revision": null
         }
       ],
+      "path_requirement": {
+        "max_search_tiles": null,
+        "clear_sight": null
+      },
       "chain": {
         "max_targets": null,
         "range_tiles": null,
@@ -158,7 +162,8 @@
       "removed_condition": null,
       "presentation": {
         "impact_asset_binding": null,
-        "projectile_asset_binding": null
+        "projectile_asset_binding": null,
+        "path_asset_binding": null
       }
     }
   ],

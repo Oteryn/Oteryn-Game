@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 305,
-    "fully_resolved": 1345,
+    "blocked": 300,
+    "fully_resolved": 1350,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1020
+    "wiki_adopted_monsters": 1023
   },
   "wiki_adopted_rows": {
     "Loot2": 11547,
@@ -128,17 +128,6 @@
         "ichgahal",
         "mitmah_vanguard",
         "murcion"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics attacks[] -> path_trail_missile",
-      "monsters": 11,
-      "examples": [
-        "hardened_usurper_knight",
-        "hardened_usurper_warlock",
-        "usurper_knight",
-        "usurper_warlock",
-        "goshnar_s_greed"
       ]
     },
     {
@@ -810,6 +799,7 @@
     "drillworm",
     "dromedary",
     "druid_s_apparition",
+    "drume",
     "dryad",
     "duke_krule",
     "duskbringer",
@@ -1012,6 +1002,8 @@
     "hacker",
     "hairman_the_huge",
     "hardened_usurper_archer",
+    "hardened_usurper_knight",
+    "hardened_usurper_warlock",
     "harpy",
     "hateful_soul",
     "haunted_dragon",
@@ -1715,6 +1707,8 @@
     "urmahlullu_the_weakened",
     "ushuriel",
     "usurper_archer",
+    "usurper_knight",
+    "usurper_warlock",
     "utua_stone_sting",
     "valkyrie",
     "vampire",

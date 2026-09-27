@@ -1782,6 +1782,24 @@
           "minItems": 2,
           "description": "D12: each cast runs one variant picked uniformly; variants have no variants."
         },
+        "path_requirement": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_search_tiles": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "clear_sight": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "max_search_tiles",
+            "clear_sight"
+          ],
+          "description": "D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight when clear_sight); without one the cast fails and nothing happens."
+        },
         "chain": {
           "type": "object",
           "additionalProperties": false,
@@ -2370,6 +2388,10 @@
             },
             "projectile_asset_binding": {
               "$ref": "#/$defs/assetBinding"
+            },
+            "path_asset_binding": {
+              "$ref": "#/$defs/assetBinding",
+              "description": "D18: shown on every tile of the walking path from the caster to the target before the effect applies."
             }
           },
           "required": []

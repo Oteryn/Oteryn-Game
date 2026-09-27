@@ -143,6 +143,9 @@ d['area']=obj({'length_tiles':integer(1),'spread_tiles':integer(),'radius_tiles'
 d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range_tiles':integer(),'needs_target':use('bool'),'needs_direction':use('bool'),
     'area':use('area'),'effects':array(use('EffectRef'),1),'audio':obj({'cast_cue':text(),'impact_cue':text()}),
     'variants':array(use('AbilityRef'),2,description='D12: each cast runs one variant picked uniformly; variants have no variants.'),
+    'path_requirement':obj({'max_search_tiles':integer(1),'clear_sight':use('bool')},('max_search_tiles','clear_sight'),
+        description='D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight '
+            'when clear_sight); without one the cast fails and nothing happens.'),
     'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding')},
                 ('max_targets','range_tiles','backtracking'),description='D12: the effect jumps between up to max_targets creatures.')},
     ('identity','kind','range_tiles','needs_target','needs_direction'),
@@ -198,7 +201,9 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
             'requested at the caster position offset by up to max_offset_tiles per axis; owned makes the caster its master.'),
     'removed_condition':{**use('conditionType'),'description':'remove_condition: every condition of this type on the target '
         'ends (Canary/Crystal COMBAT_PARAM_DISPEL, Creature::removeCombatCondition).'},
-    'presentation':obj({'impact_asset_binding':use('assetBinding'),'projectile_asset_binding':use('assetBinding')})},
+    'presentation':obj({'impact_asset_binding':use('assetBinding'),'projectile_asset_binding':use('assetBinding'),
+        'path_asset_binding':{**use('assetBinding'),'description':'D18: shown on every tile of the walking path from the caster to '
+            'the target before the effect applies.'}})},
     ('identity','operation'),allOf=[
     {'if':{'properties':{'operation':{'enum':['damage','heal']}},'required':['operation']},
      'then':{'required':['formula','damage_type'],**forbid('condition','appearance_transform','created_item')},

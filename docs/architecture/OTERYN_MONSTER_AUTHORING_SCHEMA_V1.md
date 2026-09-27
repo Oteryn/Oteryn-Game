@@ -147,7 +147,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 219 focused positive/negative cases
+python verify_formal_schema.py     # 222 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -295,13 +295,19 @@ value rolled once while the script loads (`minotaur cult prophet mass healing`),
 constants the stubs do not model (`destroy magic walls`) and scripts that need more world API.
 This resolves 21 more monsters.
 
+`path_trail_missile` (`singlecloudchain`, `singledeathchain`, `singleicechain`) is one exact
+template: `Position:getPathTo(target, 0, 0, true, clearSight, 8)` must find a path or the cast
+fails, the trail effect is sent on every path tile, then one combat hits the target. It is authored
+as a single-target Ability with `path_requirement` (search distance, clear sight) and the
+presentation `path_asset_binding`; the "chain" in the names hits only the target.
+
 ## 9. Import readiness of the Canary population
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,345 convert, validate and resolve every manifest row (1,103 before registered spells were
+files, 1,350 convert, validate and resolve every manifest row (1,103 before registered spells were
 converted, 1,315 before wiki adoption, 1,298 before D19, 1,308 before the probed D18 patterns, 1,329
-before the two rules below); 305 are blocked; 6 do not convert (five Soul War bosses
+before the two rules below, 1,345 before `path_requirement`); 300 are blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 
@@ -327,7 +333,7 @@ stay unresolved.
 
 Remaining blockers by affected monsters: encounter-mechanic events (215; 168 monsters are blocked by
 events alone), inline `mType` callbacks (up to 28 per callback kind), custom spell logic grouped by
-D18 pattern (largest: `path_trail_missile` 11, `conditional_summon` on fixed map positions 14,
+D18 pattern (largest: `conditional_summon` on fixed map positions 14,
 `delayed_telegraphed_nuke` 8, `escalating_dot_curse` 6, `area_damage_named_target` 6), wiki loot that
 names no single Canary item (14 list `giant shimmering pearl`, which is two items, 281 green and 282
 brown), wiki loot without a Loot Statistics page (5) and the invisible wild magic traps without a look
