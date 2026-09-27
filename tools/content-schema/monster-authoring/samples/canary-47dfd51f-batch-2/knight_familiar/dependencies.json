@@ -19,6 +19,23 @@
     },
     {
       "identity": {
+        "key": "canary:ability/spell/sudden_death_rune",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:ability/spell/sudden_death_rune/effect",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
         "key": "canary:ability/knight_familiar/attack-3",
         "revision": "canary-47dfd51f"
       },
@@ -99,6 +116,23 @@
     },
     {
       "identity": {
+        "key": "canary:ability/spell/ice_strike",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 3,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:ability/spell/ice_strike/effect",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
         "key": "canary:ability/knight_familiar/defense-1",
         "revision": "canary-47dfd51f"
       },
@@ -127,6 +161,27 @@
         "family": "Formula",
         "key": "canary:formula/knight_familiar/attack-1-1",
         "revision": "canary-47dfd51f"
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/spell/sudden_death_rune/effect",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "death",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/mortarea",
+        "projectile_asset_binding": "canary.appearance:missile/suddendeath"
       }
     },
     {
@@ -195,6 +250,23 @@
     },
     {
       "identity": {
+        "key": "canary:ability/spell/ice_strike/effect",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "ice",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/iceattack",
+        "projectile_asset_binding": "canary.appearance:missile/smallice"
+      }
+    },
+    {
+      "identity": {
         "key": "canary:effect/knight_familiar/defense-1",
         "revision": "canary-47dfd51f"
       },
@@ -221,6 +293,13 @@
         "minimum": 0,
         "maximum": 200
       }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "caster_magnitude"
     },
     {
       "identity": {

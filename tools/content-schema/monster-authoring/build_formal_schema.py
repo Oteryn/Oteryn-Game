@@ -82,7 +82,10 @@ d['creature']=obj({
                             'blocked_by_nearby_players':use('bool')},('period','ignore_period_underground','blocked_by_nearby_players')),
     'reward_encounter':use('EncounterRef')},
     ('identity','display_name','inspection','stats','resistances','immunities','flags','summoning','presentation','behavior','damage_reflection','healing_from_damage'))
-d['schedule']=obj({'ability':use('AbilityRef'),'interval_ms':use('ms'),'chance_percent':use('percent')},('ability','interval_ms','chance_percent'))
+d['schedule']=obj({'ability':use('AbilityRef'),'interval_ms':use('ms'),'chance_percent':use('percent'),
+    'magnitude':obj({'minimum':integer(),'maximum':integer()},('minimum','maximum'),
+                    description='D11: this monster\'s damage/heal magnitude for effects whose formula is caster_magnitude.'),
+    'range_tiles':integer(description='D11: this monster\'s cast range for the shared Ability.')},('ability','interval_ms','chance_percent'))
 d['voices']=obj({'interval_ms':use('ms'),'chance_percent':use('percent'),
     'entries':array(obj({'text':text(),'mode':enum('say','yell')},('text','mode')),1)},('interval_ms','chance_percent','entries'))
 d['behavior']=obj({
@@ -108,11 +111,16 @@ d['assetBinding']=use('key')
 d['presentation']=obj({
     'identity':use('identity'),
     'appearance':obj({'asset_binding':use('assetBinding'),
-        'selection':{**enum('owner_familiar_look'),'description':'D16: the runtime shows the familiar look selected by the owner; '
-                                                               'asset_binding is the default look for a character without a selection.'},
+        'selection':{**enum('owner_familiar_look','invisible'),'description':'D16: owner_familiar_look shows the familiar look '
+            'selected by the owner; asset_binding is the default look for a character without a selection. D24: invisible means '
+            'the creature has no appearance at all (Canary lookType 0 without lookTypeEx) and forbids asset_binding.'},
         'palette_bindings':array(obj({'slot':enum('head','body','legs','feet','mount_head','mount_body','mount_legs','mount_feet'),'palette_binding':use('assetBinding')},('slot','palette_binding'))),
         'attachment_bindings':array(obj({'slot':enum('addon','mount','familiar','wing'),'asset_binding':use('assetBinding')},('slot','asset_binding'))),
-        'visual_effect_bindings':array(obj({'slot':enum('aura','effect','shader'),'asset_binding':use('assetBinding')},('slot','asset_binding')))},('asset_binding','palette_bindings','attachment_bindings','visual_effect_bindings')),
+        'visual_effect_bindings':array(obj({'slot':enum('aura','effect','shader'),'asset_binding':use('assetBinding')},('slot','asset_binding')))},
+        ('palette_bindings','attachment_bindings','visual_effect_bindings'),allOf=[
+        {'if':{'properties':{'selection':{'const':'invisible'}},'required':['selection']},
+         'then':{**forbid('asset_binding'),'properties':{'palette_bindings':{'maxItems':0},'attachment_bindings':{'maxItems':0}}},
+         'else':{'required':['asset_binding']}}]),
     'light':obj({'level':integer(0,255),'color_binding':use('assetBinding')},('level',)),
     'audio':obj({'event_bindings':array(obj({'event':enum('cast','impact','death','periodic'),'cue_id':text(),
         'asset_binding':use('assetBinding')},('event','cue_id','asset_binding')))},('event_bindings',)),
@@ -128,33 +136,86 @@ d['lootEntry']=obj({'item':use('ItemRef'),'min_count':integer(),'max_count':inte
 d['loot']=obj({'identity':use('identity'),'algorithm':enum('IndependentBernoulli'),
     'entries':array(use('lootEntry'))},('identity','algorithm','entries'),
     description='Only the source-supported independent base table is in this schema. Other native algorithms retain their own accepted contracts.')
-d['area']=obj({'length_tiles':integer(1),'spread_tiles':integer(),'radius_tiles':integer()},oneOf=[
-    {'required':['length_tiles','spread_tiles'],**forbid('radius_tiles')},
-    {'required':['radius_tiles'],**forbid('length_tiles','spread_tiles')}])
+d['areaMatrix']=array(text(pattern=r'^[.xcC]+$'),1,
+    description="Rows of cells: '.' not hit, 'x' hit, 'c' centre not hit, 'C' centre hit; rectangular, exactly one centre.")
+d['area']=obj({'length_tiles':integer(1),'spread_tiles':integer(),'radius_tiles':integer(),
+    'matrix':obj({'north':use('areaMatrix'),'diagonal':use('areaMatrix')},('north',),
+        description='D12: authored facing north (diagonal: facing north-west) and rotated to the direction from the centre to '
+                    'the target (combat.cpp AreaCombat::getArea); tiles need a clear line of sight from the caster.')},oneOf=[
+    {'required':['length_tiles','spread_tiles'],**forbid('radius_tiles','matrix')},
+    {'required':['radius_tiles'],**forbid('length_tiles','spread_tiles','matrix')},
+    {'required':['matrix'],**forbid('length_tiles','spread_tiles','radius_tiles')}])
 d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range_tiles':integer(),'needs_target':use('bool'),'needs_direction':use('bool'),
-    'area':use('area'),'effects':array(use('EffectRef'),1),'audio':obj({'cast_cue':text(),'impact_cue':text()})},
-    ('identity','kind','range_tiles','needs_target','needs_direction','effects'),
+    'area':use('area'),'effects':array(use('EffectRef'),1),'audio':obj({'cast_cue':text(),'impact_cue':text()}),
+    'variants':array(use('AbilityRef'),2,description='D12: each cast runs one variant picked uniformly; variants have no variants.'),
+    'path_requirement':obj({'max_search_tiles':integer(1),'clear_sight':use('bool')},('max_search_tiles','clear_sight'),
+        description='D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight '
+            'when clear_sight); without one the cast fails and nothing happens.'),
+    'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding')},
+                ('max_targets','range_tiles','backtracking'),description='D12: the effect jumps between up to max_targets creatures.')},
+    ('identity','kind','range_tiles','needs_target','needs_direction'),
+    oneOf=[{'required':['effects'],**forbid('variants')},{'required':['variants'],**forbid('effects','area','chain')}],
     description='For area casts, center precedence is required target position, facing-adjacent position when needs_direction, then caster position. Native execution and no-area target selection require separate qualification.')
 d['initialTick']=obj({'mode':enum('automatic','fixed'),'amount':integer(1)},('mode',),allOf=[
     {'if':{'properties':{'mode':{'const':'fixed'}},'required':['mode']},'then':{'required':['amount']},'else':forbid('amount')}])
 d['damageOverTime']=obj({
+    'fixed_ticks':array(obj({'count':integer(1),'interval_ms':use('ms'),'amount':integer(1)},('count','interval_ms','amount')),1,
+        description='D12: explicit ticks in order (Condition:addDamage rounds, time, value).'),
     'total_damage_range':obj({'minimum':integer(0,description='0 is allowed: the total is drawn uniformly from the range and a '
                                                                'zero draw means the condition does not start (condition.cpp ConditionDamage::init).'),
                               'maximum':integer(1)},('minimum','maximum')),
     'tick_interval_ms':use('ms'),'initial_tick':use('initialTick'),
-    'tick_profile':enum('decreasing'),'first_tick':enum('after_interval')},
-    ('total_damage_range','tick_interval_ms','initial_tick','tick_profile','first_tick'),
+    'geometric':obj({'base_range':obj({'minimum':integer(1),'maximum':integer(1)},('minimum','maximum')),'factor':use('ratio'),
+        'tick_counts':array(integer(1),1,True),'tick_interval_ms':use('ms')},('base_range','factor','tick_counts','tick_interval_ms'),
+        description='D21: each cast draws an integer base uniformly from base_range and a tick count uniformly from tick_counts; '
+            'tick k (from 0) deals the base multiplied k times by factor in double precision, truncated toward zero.'),
+    'tick_profile':enum('decreasing','fixed','geometric'),'first_tick':enum('after_interval','immediate')},
+    ('tick_profile','first_tick'),allOf=[
+    {'if':{'properties':{'tick_profile':{'const':'fixed'}},'required':['tick_profile']},
+     'then':{'required':['fixed_ticks'],**forbid('total_damage_range','tick_interval_ms','initial_tick','geometric')}},
+    {'if':{'properties':{'tick_profile':{'const':'geometric'}},'required':['tick_profile']},
+     'then':{'required':['geometric'],**forbid('total_damage_range','tick_interval_ms','initial_tick','fixed_ticks')}},
+    {'if':{'properties':{'tick_profile':{'const':'decreasing'}},'required':['tick_profile']},
+     'then':{'required':['total_damage_range','tick_interval_ms','initial_tick'],**forbid('fixed_ticks','geometric')}}],
     description='Nominal source damage budget, not per-tick magnitude or a promise of exact summed damage. Native schedule parity requires separate qualification.')
 d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration','damage_schedule'),
-    'damage_over_time':use('damageOverTime'),'speed_formula':use('FormulaRef')},('type','lifetime'),allOf=[
+    'damage_over_time':use('damageOverTime'),'speed_formula':use('FormulaRef'),
+    'attribute_modifiers':array(obj({'attribute':text(pattern=r'^[a-z][a-z0-9_]*$'),'mode':enum('percent_of_base','add'),
+        'value':{'type':'integer'}},('attribute','mode','value')),1,
+        description='D12: percent_of_base sets the attribute to value% of its base; add adds value.')},('type','lifetime'),allOf=[
     {'if':{'properties':{'lifetime':{'const':'damage_schedule'}},'required':['lifetime']},
      'then':{'required':['damage_over_time'],**forbid('speed_formula')},'else':forbid('damage_over_time')}])
-d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only'),
+d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only','remove_condition',
+                     'remove_items','summon_creature'),
     'damage_type':use('damageType'),'formula':use('FormulaRef'),'duration_ms':use('ms'),'condition':use('condition'),
+    'mitigated_by':array(enum('armor','shield'),1,True,description='Target defences that reduce this damage (Canary/Crystal '
+        'blockedByArmor/blockedByShield); absent means neither. The reduction formula itself is a world combat rule.'),
     'appearance_transform':obj({'creature':use('CreatureRef'),'item':use('ItemRef')},oneOf=[
         {'required':['creature'],**forbid('item')},{'required':['item'],**forbid('creature')}]),
     'created_item':use('ItemRef'),
-    'presentation':obj({'impact_asset_binding':use('assetBinding'),'projectile_asset_binding':use('assetBinding')})},
+    'affects':obj({'kind':enum('masterless_monsters','non_player_side','player_side','named_creatures'),
+        'creatures':array(use('CreatureRef'),1,True),'top_creature_only':use('bool'),'excludes_caster_name':use('bool'),
+        'includes_caster':use('bool')},
+        ('kind','top_creature_only','excludes_caster_name','includes_caster'),allOf=[
+        {'if':{'properties':{'kind':{'const':'named_creatures'}},'required':['kind']},'then':{'required':['creatures']},'else':forbid('creatures')}],
+        description='D18: which creatures in the ability area this damage/heal reaches instead of the combat targets. masterless_monsters = '
+            'monsters without a master; non_player_side = neither a player nor a player-owned summon; player_side = a player or a '
+            'player-owned summon; named_creatures = those creatures. top_creature_only: only the top creature of each tile; excludes_caster_name: not '
+            'creatures named like the caster; includes_caster: the caster is affected when it stands in the area.'),
+    'removed_items':obj({'items':array(use('ItemRef'),1,True),'selection':enum('first_listed_per_tile','top_item_first_tile')},
+        ('items','selection'),description='D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first '
+            'listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops.'),
+    'summon':obj({'creatures':array(use('CreatureRef'),1,True),'count_mode':enum('fill_to_limit','fixed'),'count':integer(1),
+        'only_below_summons':integer(1),'owned':use('bool'),'max_offset_tiles':integer(0)},
+        ('creatures','count_mode','count','only_below_summons','owned','max_offset_tiles'),
+        description='D18: summon_creature. Nothing is created unless the caster has fewer than only_below_summons summons; then '
+            'fill_to_limit creates count minus current summons, fixed creates count. Each creature is picked uniformly from creatures and '
+            'requested at the caster position offset by up to max_offset_tiles per axis; owned makes the caster its master.'),
+    'removed_condition':{**use('conditionType'),'description':'remove_condition: every condition of this type on the target '
+        'ends (Canary/Crystal COMBAT_PARAM_DISPEL, Creature::removeCombatCondition).'},
+    'presentation':obj({'impact_asset_binding':use('assetBinding'),'projectile_asset_binding':use('assetBinding'),
+        'path_asset_binding':{**use('assetBinding'),'description':'D18: shown on every tile of the walking path from the caster to '
+            'the target before the effect applies.'}})},
     ('identity','operation'),allOf=[
     {'if':{'properties':{'operation':{'enum':['damage','heal']}},'required':['operation']},
      'then':{'required':['formula','damage_type'],**forbid('condition','appearance_transform','created_item')},
@@ -168,8 +229,16 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
     {'if':{'properties':{'operation':{'const':'create_item'}},'required':['operation']},
      'then':{'required':['created_item']},'else':forbid('created_item')},
     {'if':{'properties':{'operation':{'const':'presentation_only'}},'required':['operation']},
-     'then':{'required':['presentation'],'properties':{'presentation':{'minProperties':1}},**forbid('duration_ms')}}])
-d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_skill','speed_modifier'),
+     'then':{'required':['presentation'],'properties':{'presentation':{'minProperties':1}},**forbid('duration_ms')}},
+    {'if':{'properties':{'operation':{'const':'damage'}},'required':['operation']},'then':{},'else':forbid('mitigated_by')},
+    {'if':{'properties':{'operation':{'enum':['damage','heal']}},'required':['operation']},'then':{},'else':forbid('affects')},
+    {'if':{'properties':{'operation':{'const':'remove_items'}},'required':['operation']},
+     'then':{'required':['removed_items'],**forbid('duration_ms')},'else':forbid('removed_items')},
+    {'if':{'properties':{'operation':{'const':'summon_creature'}},'required':['operation']},
+     'then':{'required':['summon'],**forbid('duration_ms')},'else':forbid('summon')},
+    {'if':{'properties':{'operation':{'const':'remove_condition'}},'required':['operation']},
+     'then':{'required':['removed_condition'],**forbid('duration_ms')},'else':forbid('removed_condition')}])
+d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_skill','speed_modifier','caster_magnitude'),
     'magnitude':obj({'minimum':integer(),'maximum':integer()},('minimum','maximum')),
     'melee':obj({'attack':integer(),'skill':integer()},('attack','skill')),
     'speed':obj({'minimum_multiplier':use('nonnegativeRatio'),'minimum_offset':{'type':'integer'},
@@ -177,7 +246,9 @@ d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_s
         ('minimum_multiplier','minimum_offset','maximum_multiplier','maximum_offset'))},('identity','kind'),allOf=[
     {'if':{'properties':{'kind':{'const':'range'}},'required':['kind']},'then':{'required':['magnitude'],**forbid('melee','speed')}},
     {'if':{'properties':{'kind':{'const':'melee_attack_skill'}},'required':['kind']},'then':{'required':['melee'],**forbid('magnitude','speed')}},
-    {'if':{'properties':{'kind':{'const':'speed_modifier'}},'required':['kind']},'then':{'required':['speed'],**forbid('magnitude','melee')}}])
+    {'if':{'properties':{'kind':{'const':'speed_modifier'}},'required':['kind']},'then':{'required':['speed'],**forbid('magnitude','melee')}},
+    {'if':{'properties':{'kind':{'const':'caster_magnitude'}},'required':['kind']},'then':forbid('magnitude','melee','speed')}],
+    description='caster_magnitude (D11): the magnitude comes from the casting monster\'s schedule entry (Monster::getCombatValues).')
 d['document']=obj({'identity':use('identity'),
     'document_type':enum('Book','Letter','Note','Diary','Report','Scroll','Parchment','Tablet','Inscription','Notice','Other'),
     'title':text(),'author':text(),'language':text(pattern=r'^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$'),

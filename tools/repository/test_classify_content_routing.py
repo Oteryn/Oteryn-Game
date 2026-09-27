@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import importlib.util
 import os
-from pathlib import Path
 import subprocess
 import tempfile
+from pathlib import Path, PurePosixPath
 
 MODULE = Path(__file__).with_name("classify_pr_test_lanes.py")
 
@@ -165,9 +165,11 @@ def test_unknown_inputs_remain_fail_closed(module):
 def test_exact_candidate_scan_finds_existing_content_world_consumer(module):
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
-        metadata = fixture(str(root))
+        metadata = fixture()
+        metadata_root = PurePosixPath(metadata["workspace_root"])
         for package in metadata["packages"]:
-            manifest = Path(package["manifest_path"])
+            relative_manifest = PurePosixPath(package["manifest_path"]).relative_to(metadata_root)
+            manifest = root.joinpath(*relative_manifest.parts)
             manifest.parent.mkdir(parents=True, exist_ok=True)
             manifest.write_text("[package]\nname = \"fixture\"\nversion = \"0.0.0\"\n", encoding="utf-8")
 

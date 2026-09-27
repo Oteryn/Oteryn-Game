@@ -210,6 +210,29 @@
         },
         "interval_ms": 2000,
         "chance_percent": 1
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/war_golem_electrify",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 15,
+        "magnitude": {
+          "minimum": 0,
+          "maximum": 0
+        },
+        "range_tiles": 1
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/war_golem_skill_reducer",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 10
       }
     ],
     "defenses": [

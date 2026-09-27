@@ -5,13 +5,12 @@ from __future__ import annotations
 import contextlib
 import importlib.util
 import io
-import json
 import os
-from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import textwrap
+from pathlib import Path, PurePosixPath
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -218,19 +217,24 @@ def test_exact_candidate_reference_scan(module):
         git(root, "init", "-q")
         git(root, "config", "user.email", "ci@example.invalid")
         git(root, "config", "user.name", "CI")
-        metadata = fixture(str(root))
+        metadata = fixture()
+        metadata_root = PurePosixPath(metadata["workspace_root"])
 
         for package in metadata["packages"]:
-            package_root = Path(package["manifest_path"]).parent
+            relative_manifest = PurePosixPath(package["manifest_path"]).relative_to(metadata_root)
+            manifest = root.joinpath(*relative_manifest.parts)
+            package_root = manifest.parent
             package_root.mkdir(parents=True, exist_ok=True)
-            Path(package["manifest_path"]).write_text("[package]\n", encoding="utf-8")
+            manifest.write_text("[package]\n", encoding="utf-8")
 
         server = root / "apps/game-server/src/lib.rs"
         server.parent.mkdir(parents=True, exist_ok=True)
         server.write_text(
             'const DATA: &[u8] = include_bytes!("../../../docs/agents/evidence/server.json");\n'
             'fn policy() { let _ = std::fs::read_to_string("AGENTS.md"); }\n'
-            'fn generated() { let _ = std::fs::read_dir("../../../docs/runtime/generated"); }\n',
+            'fn generated() { let _ = std::fs::read_dir("../../../docs/runtime/generated"); }\n'
+            'fn exact_manifest() { let _ = std::fs::read_to_string("docs/agents/evidence/runtime/manifest.json"); }\n'
+            'fn unrelated_names() { let _ = "manifest.json"; let _ = "assets/catalog.json"; }\n',
             encoding="utf-8",
         )
         client = root / "apps/client/src/lib.rs"
@@ -251,6 +255,9 @@ def test_exact_candidate_reference_scan(module):
             "docs/runtime/generated/item.json",
             "tools/content/helper.py",
             "docs/unconsumed.json",
+            "docs/agents/evidence/runtime/manifest.json",
+            "tools/content-schema/monster-authoring/samples/rat/manifest.json",
+            "tools/content-schema/monster-authoring/samples/rat/catalog.json",
         ):
             target = root / path
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -272,6 +279,9 @@ def test_exact_candidate_reference_scan(module):
                     "docs/runtime/generated/item.json",
                     "tools/content/helper.py",
                     "docs/unconsumed.json",
+                    "docs/agents/evidence/runtime/manifest.json",
+                    "tools/content-schema/monster-authoring/samples/rat/manifest.json",
+                    "tools/content-schema/monster-authoring/samples/rat/catalog.json",
                 ],
             )
         finally:
@@ -283,6 +293,9 @@ def test_exact_candidate_reference_scan(module):
         assert found["docs/runtime/generated/item.json"] == {"oteryn-game-server"}, found
         assert found["tools/content/helper.py"] == {module.CONTROL_CONSUMER}, found
         assert found["docs/unconsumed.json"] == set(), found
+        assert found["docs/agents/evidence/runtime/manifest.json"] == {"oteryn-game-server"}, found
+        assert found["tools/content-schema/monster-authoring/samples/rat/manifest.json"] == set(), found
+        assert found["tools/content-schema/monster-authoring/samples/rat/catalog.json"] == set(), found
     print("Exact candidate reference scan PASS: file, directory, package and canonical-control consumers")
 
 
@@ -300,12 +313,18 @@ def test_candidate_modes(module):
         os.chdir(root)
         try:
             assert module.candidate_modes_safe(regular) is True
-            if hasattr(os, "symlink"):
-                os.symlink("regular.txt", root / "link.txt")
-                git(root, "add", ".")
-                git(root, "commit", "-qm", "symlink")
-                special = git(root, "rev-parse", "HEAD")
-                assert module.candidate_modes_safe(special) is False
+            link_blob = subprocess.check_output(
+                ["git", "-C", str(root), "hash-object", "-w", "--stdin"],
+                input="regular.txt",
+                text=True,
+            ).strip()
+            subprocess.check_call([
+                "git", "-C", str(root), "update-index", "--add", "--cacheinfo",
+                "120000", link_blob, "link.txt",
+            ])
+            git(root, "commit", "-qm", "symlink")
+            special = git(root, "rev-parse", "HEAD")
+            assert module.candidate_modes_safe(special) is False
         finally:
             os.chdir(old_cwd)
     print("Candidate mode PASS: regular trees accepted, special modes fail closed")

@@ -6,7 +6,8 @@
   "classification": "Wiki = player-observed reference evidence; Canary = OTS_HYPOTHESIS_ONLY",
   "row_status_totals": {
     "DIFF": 12,
-    "MATCH": 239,
+    "MATCH": 229,
+    "WIKI_UNCERTAIN": 10,
     "WIKI_UNKNOWN": 8
   },
   "loot_chance_rule": "highest-version Loot Statistics block at the cut; estimate = times / kills with a 95% Wilson interval; fewer than 10 drops is low_confidence. CONSISTENT = Canary inside the interval",
@@ -66,6 +67,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "gold coin",
           "canary_percent": 100.0,
           "canary_amount": "1-4",
@@ -83,6 +85,7 @@
           "status": "DIFF"
         },
         {
+          "position": 1,
           "item": "cheese",
           "canary_percent": 39.41,
           "canary_amount": "1",
@@ -150,7 +153,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 29,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -159,7 +162,7 @@
           "wiki_raw": "80%",
           "status": "MATCH",
           "wiki_line": 30,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -168,7 +171,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 31,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -177,7 +180,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 32,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -186,7 +189,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 33,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -195,7 +198,7 @@
           "wiki_raw": "80%",
           "status": "MATCH",
           "wiki_line": 34,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -204,7 +207,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 35,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
@@ -213,7 +216,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 36,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
@@ -222,7 +225,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 37,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -452,6 +455,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "wolf tooth chain",
           "canary_percent": 0.19,
           "canary_amount": "1",
@@ -469,6 +473,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 1,
           "item": "gold coin",
           "canary_percent": 82.0,
           "canary_amount": "1-47",
@@ -486,6 +491,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 2,
           "item": "club ring",
           "canary_percent": 0.09,
           "canary_amount": "1",
@@ -503,6 +509,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 3,
           "item": "halberd",
           "canary_percent": 1.003,
           "canary_amount": "1",
@@ -520,6 +527,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 4,
           "item": "short sword",
           "canary_percent": 8.0,
           "canary_amount": "1",
@@ -537,6 +545,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 5,
           "item": "dark helmet",
           "canary_percent": 0.22,
           "canary_amount": "1",
@@ -554,6 +563,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 6,
           "item": "plate shield",
           "canary_percent": 2.5,
           "canary_amount": "1",
@@ -571,6 +581,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 7,
           "item": "battle shield",
           "canary_percent": 1.4,
           "canary_amount": "1",
@@ -588,6 +599,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 8,
           "item": "meat",
           "canary_percent": 30.07,
           "canary_amount": "1",
@@ -605,6 +617,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 9,
           "item": "cyclops trophy",
           "canary_percent": 0.08,
           "canary_amount": "1",
@@ -622,6 +635,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 10,
           "item": "health potion",
           "canary_percent": 0.21,
           "canary_amount": "1",
@@ -639,6 +653,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 11,
           "item": "cyclops toe",
           "canary_percent": 4.93,
           "canary_amount": "1",
@@ -656,6 +671,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 12,
           "item": "heavy old tome",
           "canary_percent": 1.0,
           "canary_amount": "1",
@@ -723,7 +739,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 28,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -732,7 +748,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 29,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -741,7 +757,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 30,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -750,7 +766,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 31,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -759,7 +775,7 @@
           "wiki_raw": "75%",
           "status": "MATCH",
           "wiki_line": 32,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -768,7 +784,7 @@
           "wiki_raw": "80%",
           "status": "MATCH",
           "wiki_line": 33,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -777,7 +793,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 34,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
@@ -786,16 +802,16 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 35,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 36,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -976,6 +992,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "gold coin",
           "canary_percent": 25.05,
           "canary_amount": "1-11",
@@ -993,6 +1010,7 @@
           "status": "DIFF"
         },
         {
+          "position": 1,
           "item": "spear",
           "canary_percent": 17.44,
           "canary_amount": "1",
@@ -1010,6 +1028,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 2,
           "item": "machete",
           "canary_percent": 3.0,
           "canary_amount": "1",
@@ -1027,6 +1046,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 3,
           "item": "studded legs",
           "canary_percent": 10.0,
           "canary_amount": "1",
@@ -1044,6 +1064,7 @@
           "status": "DIFF"
         },
         {
+          "position": 4,
           "item": "studded helmet",
           "canary_percent": 9.0,
           "canary_amount": "1",
@@ -1061,6 +1082,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 5,
           "item": "meat",
           "canary_percent": 30.2,
           "canary_amount": "1",
@@ -1074,6 +1096,7 @@
           "note": "Not listed in the highest-version block."
         },
         {
+          "position": 6,
           "item": "orc tooth",
           "canary_percent": 0.15,
           "canary_amount": "1",
@@ -1091,6 +1114,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 7,
           "item": "orc leather",
           "canary_percent": 2.3,
           "canary_amount": "1",
@@ -1104,6 +1128,7 @@
           "note": "Not listed in the highest-version block."
         },
         {
+          "position": 8,
           "item": "heavy old tome",
           "canary_percent": 1.0,
           "canary_amount": "1",
@@ -1171,7 +1196,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 33,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -1180,7 +1205,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 34,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -1189,7 +1214,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 35,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -1198,7 +1223,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 36,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -1207,7 +1232,7 @@
           "wiki_raw": "80%",
           "status": "MATCH",
           "wiki_line": 37,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -1216,7 +1241,7 @@
           "wiki_raw": "80%",
           "status": "MATCH",
           "wiki_line": 38,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -1225,7 +1250,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 39,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
@@ -1234,7 +1259,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 40,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
@@ -1243,7 +1268,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 41,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -1382,6 +1407,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "scorpion tail",
           "canary_percent": 4.93,
           "canary_amount": "1",
@@ -1449,7 +1475,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 28,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -1458,7 +1484,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 29,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -1467,7 +1493,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 30,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -1476,7 +1502,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 31,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -1485,7 +1511,7 @@
           "wiki_raw": "80%",
           "status": "MATCH",
           "wiki_line": 32,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -1494,7 +1520,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 33,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -1503,16 +1529,16 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 34,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 35,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
@@ -1521,7 +1547,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 36,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -1723,6 +1749,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "book",
           "canary_percent": 0.52,
           "canary_amount": "1",
@@ -1740,6 +1767,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 1,
           "item": "gold coin",
           "canary_percent": 90.0,
           "canary_amount": "1-5",
@@ -1757,6 +1785,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 2,
           "item": "wand of decay",
           "canary_percent": 1.0,
           "canary_amount": "1",
@@ -1774,6 +1803,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 3,
           "item": "spear",
           "canary_percent": 4.85,
           "canary_amount": "1",
@@ -1791,6 +1821,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 4,
           "item": "chain armor",
           "canary_percent": 8.75,
           "canary_amount": "1",
@@ -1808,6 +1839,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 5,
           "item": "corncob",
           "canary_percent": 10.6,
           "canary_amount": "1-2",
@@ -1825,6 +1857,7 @@
           "status": "DIFF"
         },
         {
+          "position": 6,
           "item": "orc tooth",
           "canary_percent": 2.1,
           "canary_amount": "1",
@@ -1842,6 +1875,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 7,
           "item": "broken shamanic staff",
           "canary_percent": 10.3,
           "canary_amount": "1",
@@ -1859,6 +1893,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 8,
           "item": "shamanic hood",
           "canary_percent": 6.86,
           "canary_amount": "1",
@@ -1876,6 +1911,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 9,
           "item": "orc leather",
           "canary_percent": 4.3,
           "canary_amount": "1",
@@ -1889,6 +1925,7 @@
           "note": "Not listed in the highest-version block."
         },
         {
+          "position": 10,
           "item": "heavy old tome",
           "canary_percent": 1.0,
           "canary_amount": "1",
@@ -1956,7 +1993,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 36,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -1965,7 +2002,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 37,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -1974,7 +2011,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 38,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -1983,7 +2020,7 @@
           "wiki_raw": "105%",
           "status": "MATCH",
           "wiki_line": 39,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -1992,7 +2029,7 @@
           "wiki_raw": "50%",
           "status": "MATCH",
           "wiki_line": 40,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -2001,7 +2038,7 @@
           "wiki_raw": "90%",
           "status": "MATCH",
           "wiki_line": 41,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -2010,7 +2047,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 42,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
@@ -2019,7 +2056,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 43,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
@@ -2028,7 +2065,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 44,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -2249,6 +2286,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "gold coin",
           "canary_percent": 30.05,
           "canary_amount": "1-90",
@@ -2266,6 +2304,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 1,
           "item": "boots of haste",
           "canary_percent": 0.21,
           "canary_amount": "1",
@@ -2283,6 +2322,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 2,
           "item": "clerical mace",
           "canary_percent": 0.39,
           "canary_amount": "1",
@@ -2300,6 +2340,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 3,
           "item": "skull staff",
           "canary_percent": 0.1,
           "canary_amount": "1",
@@ -2317,6 +2358,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 4,
           "item": "poison arrow",
           "canary_percent": 15.0,
           "canary_amount": "1-5",
@@ -2334,6 +2376,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 5,
           "item": "mystic turban",
           "canary_percent": 0.5,
           "canary_amount": "1",
@@ -2351,6 +2394,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 6,
           "item": "green mushroom",
           "canary_percent": 1.47,
           "canary_amount": "1",
@@ -2368,6 +2412,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 7,
           "item": "noble axe",
           "canary_percent": 0.01,
           "canary_amount": "1",
@@ -2385,6 +2430,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 8,
           "item": "strong mana potion",
           "canary_percent": 0.3,
           "canary_amount": "1",
@@ -2402,6 +2448,7 @@
           "status": "DIFF"
         },
         {
+          "position": 9,
           "item": "spellbook of warding",
           "canary_percent": 0.13,
           "canary_amount": "1",
@@ -2419,6 +2466,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 10,
           "item": "book of necromantic rituals",
           "canary_percent": 10.13,
           "canary_amount": "1",
@@ -2436,6 +2484,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 11,
           "item": "necromantic robe",
           "canary_percent": 1.001,
           "canary_amount": "1",
@@ -2503,7 +2552,7 @@
           "wiki_raw": "105%",
           "status": "MATCH",
           "wiki_line": 37,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -2512,7 +2561,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 38,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -2521,7 +2570,7 @@
           "wiki_raw": "105%",
           "status": "MATCH",
           "wiki_line": 39,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -2530,7 +2579,7 @@
           "wiki_raw": "50%",
           "status": "MATCH",
           "wiki_line": 40,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -2539,7 +2588,7 @@
           "wiki_raw": "80%",
           "status": "MATCH",
           "wiki_line": 41,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -2548,7 +2597,7 @@
           "wiki_raw": "105%",
           "status": "MATCH",
           "wiki_line": 42,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -2557,7 +2606,7 @@
           "wiki_raw": "90%",
           "status": "MATCH",
           "wiki_line": 43,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
@@ -2566,7 +2615,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 44,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
@@ -2575,7 +2624,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 45,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -2736,7 +2785,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 37,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -2745,7 +2794,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 38,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -2754,7 +2803,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 39,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -2763,7 +2812,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 40,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -2772,7 +2821,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 41,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -2781,7 +2830,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 42,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -2790,7 +2839,7 @@
           "wiki_raw": "125%",
           "status": "MATCH",
           "wiki_line": 43,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
@@ -2799,7 +2848,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 44,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
@@ -2808,7 +2857,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 45,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -3076,6 +3125,10 @@
               "itemid_line": 5,
               "item_ids": [
                 44158
+              ],
+              "droppedby_line": 17,
+              "dropped_by": [
+                "dragon"
               ]
             }
           },
@@ -3098,6 +3151,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "gold coin",
           "canary_percent": 89.92,
           "canary_amount": "1-102",
@@ -3115,6 +3169,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 1,
           "item": "dragon ham",
           "canary_percent": 66.27,
           "canary_amount": "1-2",
@@ -3132,6 +3187,7 @@
           "status": "DIFF"
         },
         {
+          "position": 2,
           "item": "steel shield",
           "canary_percent": 15.65,
           "canary_amount": "1",
@@ -3149,6 +3205,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 3,
           "item": "dragon's tail",
           "canary_percent": 9.68,
           "canary_amount": "1",
@@ -3166,6 +3223,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 4,
           "item": "crossbow",
           "canary_percent": 9.12,
           "canary_amount": "1",
@@ -3183,6 +3241,7 @@
           "status": "DIFF"
         },
         {
+          "position": 5,
           "item": "burst arrow",
           "canary_percent": 8.06,
           "canary_amount": "1-10",
@@ -3200,6 +3259,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 6,
           "item": "longsword",
           "canary_percent": 3.83,
           "canary_amount": "1",
@@ -3217,6 +3277,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 7,
           "item": "steel helmet",
           "canary_percent": 3.49,
           "canary_amount": "1",
@@ -3234,6 +3295,7 @@
           "status": "DIFF"
         },
         {
+          "position": 8,
           "item": "broadsword",
           "canary_percent": 2.7,
           "canary_amount": "1",
@@ -3251,6 +3313,7 @@
           "status": "DIFF"
         },
         {
+          "position": 9,
           "item": "plate legs",
           "canary_percent": 2.029,
           "canary_amount": "1",
@@ -3268,6 +3331,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 10,
           "item": "double axe",
           "canary_percent": 1.58,
           "canary_amount": "1",
@@ -3285,6 +3349,7 @@
           "status": "DIFF"
         },
         {
+          "position": 11,
           "item": "strong health potion",
           "canary_percent": 1.13,
           "canary_amount": "1",
@@ -3302,6 +3367,7 @@
           "status": "DIFF"
         },
         {
+          "position": 12,
           "item": "green dragon leather",
           "canary_percent": 1.07,
           "canary_amount": "1",
@@ -3319,6 +3385,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 13,
           "item": "green dragon scale",
           "canary_percent": 1.01,
           "canary_amount": "1",
@@ -3336,6 +3403,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 14,
           "item": "wand of inferno",
           "canary_percent": 0.56,
           "canary_amount": "1",
@@ -3353,6 +3421,7 @@
           "status": "DIFF"
         },
         {
+          "position": 15,
           "item": "small diamond",
           "canary_percent": 0.45,
           "canary_amount": "1",
@@ -3370,6 +3439,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 16,
           "item": "serpent sword",
           "canary_percent": 0.23,
           "canary_amount": "1",
@@ -3387,6 +3457,7 @@
           "status": "DIFF"
         },
         {
+          "position": 17,
           "item": "dragon hammer",
           "canary_percent": 0.23,
           "canary_amount": "1",
@@ -3404,6 +3475,7 @@
           "status": "DIFF"
         },
         {
+          "position": 18,
           "item": "dragonbone staff",
           "canary_percent": 0.17,
           "canary_amount": "1",
@@ -3421,6 +3493,7 @@
           "status": "DIFF"
         },
         {
+          "position": 19,
           "item": "life crystal",
           "canary_percent": 0.17,
           "canary_amount": "1",
@@ -3438,6 +3511,7 @@
           "status": "DIFF"
         },
         {
+          "position": 20,
           "item": "dragon shield",
           "canary_percent": 0.11,
           "canary_amount": "1",
@@ -3505,7 +3579,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 36,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -3514,7 +3588,7 @@
           "wiki_raw": "20%",
           "status": "MATCH",
           "wiki_line": 37,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -3523,7 +3597,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 38,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -3532,7 +3606,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 39,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -3541,7 +3615,7 @@
           "wiki_raw": "80%",
           "status": "MATCH",
           "wiki_line": 40,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -3550,7 +3624,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 41,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -3559,7 +3633,7 @@
           "wiki_raw": "110%",
           "status": "MATCH",
           "wiki_line": 42,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
@@ -3568,7 +3642,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 43,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
@@ -3577,7 +3651,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 44,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -3786,6 +3860,74 @@
               "itemid_line": 5,
               "item_ids": [
                 3081
+              ],
+              "droppedby_line": 19,
+              "dropped_by": [
+                "arachnophobica",
+                "banshee",
+                "bloodback",
+                "bragrumol",
+                "burster spectre",
+                "cart packed with gold",
+                "cobra scout",
+                "corrupted ghost",
+                "corrupted skeleton",
+                "courage leech",
+                "cursed book",
+                "darkfang",
+                "druid's apparition",
+                "drume",
+                "feroxa",
+                "feroxa (gloom wolf)",
+                "ghulosh",
+                "golgordan",
+                "gorzindel",
+                "hellgorak",
+                "hemming",
+                "hydra",
+                "infernal demon",
+                "ink blob",
+                "knight's apparition",
+                "latrivan",
+                "lokathmor",
+                "lost soul",
+                "many faces",
+                "massive earth elemental",
+                "mazzinor",
+                "memory of a banshee",
+                "memory of a hydra",
+                "minotaur amazon",
+                "misguided thief",
+                "morgaroth",
+                "morguthis",
+                "nighthunter",
+                "ogre ruffian",
+                "orshabaal",
+                "owin (creature)",
+                "paladin's apparition",
+                "rotten golem",
+                "shadowpelt",
+                "shaper matriarch",
+                "sight of surrender",
+                "sorcerer's apparition",
+                "stone devourer",
+                "the baron from below",
+                "the blazing time guardian",
+                "the count of the core",
+                "the duke of the depths",
+                "the freezing time guardian",
+                "the many",
+                "the time guardian",
+                "the welter",
+                "tremor worm",
+                "turbulent elemental",
+                "ushuriel",
+                "warlock",
+                "werebear",
+                "wereboar",
+                "werewolf",
+                "xogixath",
+                "zugurosh"
               ]
             }
           }
@@ -3794,6 +3936,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "book",
           "canary_percent": 1.31,
           "canary_amount": "1",
@@ -3811,6 +3954,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 1,
           "item": "stealth ring",
           "canary_percent": 0.18,
           "canary_amount": "1",
@@ -3828,6 +3972,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 2,
           "item": "morning star",
           "canary_percent": 10.61,
           "canary_amount": "1",
@@ -3845,6 +3990,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 3,
           "item": "combat knife",
           "canary_percent": 7.002,
           "canary_amount": "1",
@@ -3862,6 +4008,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 4,
           "item": "ancient shield",
           "canary_percent": 0.86,
           "canary_amount": "1",
@@ -3879,6 +4026,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 5,
           "item": "cape",
           "canary_percent": 8.8,
           "canary_amount": "1",
@@ -3896,6 +4044,7 @@
           "status": "DIFF"
         },
         {
+          "position": 6,
           "item": "shadow herb",
           "canary_percent": 14.4,
           "canary_amount": "1",
@@ -3913,6 +4062,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 7,
           "item": "white piece of cloth",
           "canary_percent": 1.94,
           "canary_amount": "1",
@@ -3930,6 +4080,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 8,
           "item": "ghostly tissue",
           "canary_percent": 1.87,
           "canary_amount": "1",
@@ -3997,7 +4148,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 27,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
@@ -4006,7 +4157,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 28,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -4015,7 +4166,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 29,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
@@ -4024,7 +4175,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 30,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
@@ -4033,7 +4184,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 31,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
@@ -4042,7 +4193,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 32,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
@@ -4051,7 +4202,7 @@
           "wiki_raw": "100%",
           "status": "MATCH",
           "wiki_line": 33,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
@@ -4060,7 +4211,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 34,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
@@ -4069,7 +4220,7 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 35,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
@@ -4307,6 +4458,7 @@
       },
       "loot_chances": [
         {
+          "position": 0,
           "item": "platinum coin",
           "canary_percent": 99.15,
           "canary_amount": "1-10",
@@ -4324,6 +4476,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 1,
           "item": "dragon claw",
           "canary_percent": 100.0,
           "canary_amount": "1",
@@ -4341,6 +4494,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 2,
           "item": "green mushroom",
           "canary_percent": 25.65,
           "canary_amount": "1-7",
@@ -4358,6 +4512,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 3,
           "item": "small sapphire",
           "canary_percent": 12.0,
           "canary_amount": "1",
@@ -4375,6 +4530,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 4,
           "item": "great mana potion",
           "canary_percent": 9.5,
           "canary_amount": "1",
@@ -4392,6 +4548,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 5,
           "item": "onyx arrow",
           "canary_percent": 4.25,
           "canary_amount": "1-5",
@@ -4409,6 +4566,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 6,
           "item": "life crystal",
           "canary_percent": 0.85,
           "canary_amount": "1",
@@ -4426,6 +4584,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 7,
           "item": "power bolt",
           "canary_percent": 19.65,
           "canary_amount": "1-10",
@@ -4443,6 +4602,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 8,
           "item": "energy ring",
           "canary_percent": 10.25,
           "canary_amount": "1",
@@ -4460,6 +4620,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 9,
           "item": "great health potion",
           "canary_percent": 9.5,
           "canary_amount": "1",
@@ -4477,6 +4638,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 10,
           "item": "dragon scale mail",
           "canary_percent": 1.7,
           "canary_amount": "1",
@@ -4494,6 +4656,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 11,
           "item": "dragon ham",
           "canary_percent": 75.2,
           "canary_amount": "1-10",
@@ -4507,6 +4670,7 @@
           "note": "Not listed in the highest-version block."
         },
         {
+          "position": 12,
           "item": "red dragon leather",
           "canary_percent": 13.7,
           "canary_amount": "1",
@@ -4520,6 +4684,7 @@
           "note": "Not listed in the highest-version block."
         },
         {
+          "position": 13,
           "item": "book",
           "canary_percent": 10.25,
           "canary_amount": "1",
@@ -4537,6 +4702,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 14,
           "item": "golden mug",
           "canary_percent": 6.0,
           "canary_amount": "1",
@@ -4554,6 +4720,7 @@
           "status": "CONSISTENT"
         },
         {
+          "position": 15,
           "item": "fire sword",
           "canary_percent": 1.7,
           "canary_amount": "1",
@@ -4616,20 +4783,20 @@
         {
           "field": "resistance.physical",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 32,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.earth",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 33,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.fire",
@@ -4638,61 +4805,61 @@
           "wiki_raw": "0%",
           "status": "MATCH",
           "wiki_line": 34,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.death",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 35,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.energy",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 36,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.holy",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 37,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.ice",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 38,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.life_drain",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 39,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "resistance.drowning",
           "canary": 0,
-          "wiki": 0,
+          "wiki": "100%?",
           "wiki_raw": "100%?",
-          "status": "MATCH",
+          "status": "WIKI_UNCERTAIN",
           "wiki_line": 40,
-          "note": "Wiki lists damage taken; resistance = 100 - taken."
+          "note": "Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100."
         },
         {
           "field": "summon_mana_cost",
