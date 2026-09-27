@@ -59,7 +59,7 @@ d = {
     'AbilityRef': obj({'family': const('Ability'), 'key': KEY, 'revision': TEXT}, ('family', 'key', 'revision')),
     'subject': {'oneOf': [obj({'role': NAME}, ('role',)), obj({'killer': const(True)}, ('killer',)),
                           obj({'spawned': const(True)}, ('spawned',))]},
-    'health': {'oneOf': [enum('full', 'keep_percent', 'keep_absolute'), obj({'percent': integer(1, 100)}, ('percent',))]},
+    'health': {'oneOf': [enum('full', 'keep_percent', 'keep_absolute', 'remembered'), obj({'percent': integer(1, 100)}, ('percent',))]},
     'position': {'oneOf': [enum('death_position', 'subject_position'), obj({'anchor': NAME}, ('anchor',)),
                            obj({'random_in': NAME}, ('random_in',)),
                            obj({'role_position': NAME, 'otherwise': enum('death_position')}, ('role_position',)),

@@ -884,6 +884,277 @@ def heart_chargers(build):
 
 
 
+HEART_BOSS_DEATH = HEART + 'creaturescripts_heart_boss_death.lua'
+HEART_SPARK = 'Spark of Destruction'
+# encounter (the dying boss), display, lever file, arena corners, vortex tile, HeartBossDeath config lines, access storage, sparks
+HEART_BOSS_ROOMS = [
+    ('anomaly', 'Anomaly', 'actions_anomaly.lua', ((32258, 31237), (32284, 31262)), (32261, 31250), range(76, 83), 14326,
+     [(32267, 31253), (32274, 31255), (32274, 31249), (32267, 31249)]),
+    ('rupture', 'Rupture', 'actions_rupture.lua', ((32324, 31239), (32347, 31263)), (32326, 31250), range(83, 90), 14327,
+     [(32331, 31254), (32338, 31254), (32330, 31250), (32338, 31250)]),
+    ('realityquake', 'Realityquake', 'actions_foreshock.lua', ((32197, 31236), (32220, 31260)), (32199, 31248), range(90, 97), 14328,
+     [(32203, 31246), (32205, 31251), (32210, 31251), (32212, 31246)]),
+    ('eradicator', 'Eradicator', 'actions_eradicator.lua', ((32297, 31272), (32321, 31296)), (32318, 31284), range(97, 104), 14330,
+     [(32304, 31282), (32305, 31287), (32312, 31287), (32314, 31282)]),
+    ('outburst', 'Outburst', 'actions_outburst.lua', ((32223, 31273), (32246, 31297)), (32225, 31285), range(104, 111), 14332,
+     [(32229, 31282), (32230, 31287), (32237, 31287), (32238, 31282)])]
+
+
+def heart_sparks():
+    return [{'kind': 'spawn', 'creature': creature(HEART_SPARK), 'count': 1, 'at': {'anchor': f'spark_spot_{n}'}, 'owner': 'none',
+             'health': 'full'} for n in range(1, 5)]
+
+
+def heart_stage_rules(build, item, role, stages, actions, path_, lines, text, extra_conditions=(), respawn_check=False):
+    """One rule per onThink stage `(threshold, stage)`: crossing the threshold at that stage runs `actions(stage)`. A creature that
+    comes back already at or below the threshold of its stage is checked again when it appears (`respawn_check`)."""
+    counter = f'{role}_stage'
+    for threshold, stage in stages:
+        conditions = [{'kind': 'counter_compare', 'counter': counter, 'op': '==', 'value': stage}, *extra_conditions]
+        path = build.rule(item, {'key': f'{role}_stage_{stage}', 'trigger': {'kind': 'health_crossed', 'role': role, 'percent': threshold},
+                                 'conditions': conditions, 'actions': actions(stage)})
+        build.entry(item, path_, lines, 'mapped', path, text.format(threshold=threshold, stage=stage))
+        if respawn_check and stage:
+            path = build.rule(item, {'key': f'{role}_returns_at_stage_{stage}', 'trigger': {'kind': 'creature_spawned', 'role': role},
+                                     'conditions': conditions + [{'kind': 'health_percent', 'role': role, 'op': '<=', 'value': threshold}],
+                                     'actions': actions(stage)})
+            build.entry(item, path_, lines, 'mapped', path,
+                        f'onThink also fires when the {role} comes back at stage {stage} already at or below {threshold}% health.')
+
+
+def heart_bosses(build):
+    """The five Heart of Destruction boss rooms and the World Devourer: HeartBossDeath opens the room vortex and credits every
+    player in the room (D27); the stage scripts swap each boss with a charged form or its twin at fixed health thresholds."""
+    rooms = {}
+    for name, display, lever, ((x1, y1), (x2, y2)), (vx, vy), config, storage, sparks in HEART_BOSS_ROOMS:
+        item = rooms[name] = build.get(name, f'Heart of Destruction: {display}', 'instance_per_party')
+        anchors = item['encounter']['anchors']
+        anchors.append({'key': 'arena', 'kind': 'area', 'description': f'Every tile from Canary ({x1}, {y1}, 14) to ({x2}, {y2}, 14).'})
+        anchors.append({'key': 'exit_vortex', 'kind': 'point', 'description': f'Canary ({vx}, {vy}, 14), the vortex of the room.'})
+        anchors += [{'key': f'spark_spot_{n}', 'kind': 'point', 'description': f'Canary ({x}, {y}, 14).'} for n, (x, y) in enumerate(sparks, 1)]
+        build.define(item, creature(HEART_SPARK))
+        build.entry(item, HEART + lever, [13, 14, 15, 16], 'mapped', '/encounter/anchors/0',
+                    f'The lever room check area from ({x1}, {y1}, 14) to ({x2}, {y2}, 14) is the arena HeartBossDeath credits.')
+
+    fight_vortex, vortex = ref('Item', 'canary:item/23483'), ref('Item', 'canary:item/23482')
+
+    def boss_death(item, role, boss, lines, tile_line, credit_lines, aid, storage, extra=()):
+        outcome = f'{role}_defeated'
+        item['encounter']['outcomes'].append(outcome)
+        build.define(item, fight_vortex)
+        build.define(item, vortex)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'map_item', 'operation': 'transform', 'item': fight_vortex, 'into': vortex,
+                                              'anchor': 'exit_vortex', 'interaction': f'canary:interaction/{aid}'},
+                                             {'kind': 'emit_outcome', 'outcome': outcome, 'credited': 'players_in_anchor',
+                                              'anchor': 'arena'}, *extra]})
+        build.entry(item, HEART_BOSS_DEATH, [113, 115, 116, 117, 118, 119, 120, 121, 122, 138, 139, 141], 'mapped', path + '/trigger',
+                    f'onDeath of {boss} (the name is looked up in lower case).')
+        build.entry(item, HEART_BOSS_DEATH, lines + tile_line, 'mapped', path + '/actions/0',
+                    f'The vortex 23483 on the room vortex tile becomes vortex 23482 with action id {aid}, which '
+                    f'movements_teleport_heart.lua sends to {"the reward room (32112, 31375, 14)" if aid == 14354 else "the main room (32216, 31380, 14)"} '
+                    '(interaction domain). The lever made it 23483 when the fight started.')
+        build.entry(item, HEART_BOSS_DEATH, credit_lines, 'mapped', path + '/actions/1',
+                    'Every player standing in the room is credited (D27): the quest domain sets their storage '
+                    + ', '.join(str(s) for s in storage) + ' to 1.')
+        item['manifest']['outcome_evidence'].append({'outcome': outcome, 'credited': 'players_in_anchor',
+                                                     'quest_domain': {'canary_storage': [str(s) for s in storage], 'raise_to_at_least': 1}})
+        return path
+
+    for name, display, lever, corners, tile, config, storage, sparks in HEART_BOSS_ROOMS:
+        item = rooms[name]
+        build.participant(item, name, display, 'HeartBossDeath')
+        if name == 'eradicator':
+            build.participant(item, name, 'Eradicator2', 'HeartBossDeath')
+        boss_death(item, name, display, list(config), [123, 124, 125, 126, 127], [51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+                   64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 75, 111, 128], 14325, [storage])
+    build.entry(rooms['eradicator'], HEART_BOSS_DEATH, [97], 'mapped', '/encounter/participants/0/creatures',
+                'Eradicator2 is also named "Eradicator" (monster.name), so its death runs the same branch.')
+
+    # World Devourer: the room is cleared after the credit.
+    item = build.get('world_devourer', 'Heart of Destruction: World Devourer', 'instance_per_party')
+    item['encounter']['anchors'] += [
+        {'key': 'arena', 'kind': 'area', 'description': 'Every tile from Canary (32260, 31336, 14) to (32283, 31360, 14).'},
+        {'key': 'exit_vortex', 'kind': 'point', 'description': 'Canary (32281, 31348, 14), the vortex of the room.'}]
+    build.participant(item, 'world_devourer', 'World Devourer', 'HeartBossDeath')
+    path = boss_death(item, 'world_devourer', 'World Devourer', [129], [130, 131, 132, 133, 134], [26, 27, 28, 29, 30, 31, 32, 33,
+                      34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 135], 14354, [60835, 60814, 60828],
+                      [{'kind': 'remove', 'all_in': 'arena'}])
+    build.entry(item, HEART_BOSS_DEATH, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 136], 'mapped',
+                path + '/actions/2', 'clearDevourer removes every monster in the room.')
+    build.entry(item, HEART_BOSS_DEATH, [21, 22, 23, 24], 'approved_omission', None,
+                'stopEvent cancels the room-change, room-clear and spark timers of the final lever (actions_final_lever.lua lines '
+                '23, 178, 218, 219). Those belong to the lever transcription; the encounter ends with the boss.')
+
+    # Anomaly: four charged anomalies; each death brings the anomaly back at the next quarter of its health.
+    item = rooms['anomaly']
+    transform, death = HEART + 'creaturescripts_anomaly_transform.lua', HEART + 'creaturescripts_charged_anomaly_death.lua'
+    item['encounter']['anchors'].append({'key': 'boss_spot', 'kind': 'point', 'description': 'Canary (32271, 31249, 14).'})
+    item['encounter']['state']['counters'].append({'name': 'anomaly_stage', 'initial': 0})
+    build.entry(item, HEART + 'actions_anomaly.lua', [23, 24], 'mapped', '/encounter/state/counters/0',
+                'The lever starts the fight with ChargedAnomaly 0.')
+    build.participant(item, 'anomaly', 'Anomaly', 'AnomalyTransform')
+    build.participant(item, 'charged_anomaly', 'Charged Anomaly', 'ChargedAnomalyDeath')
+    heart_stage_rules(build, item, 'anomaly', [(75, 0), (50, 1), (25, 2), (5, 3)], lambda stage: [
+        {'kind': 'remove', 'role': 'anomaly'}, *heart_sparks(),
+        {'kind': 'spawn', 'creature': creature('Charged Anomaly'), 'role': 'charged_anomaly', 'count': 1, 'at': {'anchor': 'boss_spot'},
+         'owner': 'none', 'health': 'full'},
+        {'kind': 'counter', 'counter': 'anomaly_stage', 'operation': 'set', 'value': stage + 1}],
+        transform, [1, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13, 14, 15, 17, 18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 36],
+        'onThink: at or below {threshold}% health with ChargedAnomaly {stage}, the anomaly is removed and four sparks and a '
+        'charged anomaly appear; ChargedAnomaly becomes {stage} + 1.')
+    for stage, health, lines in ((1, 75, [7]), (2, 50, [8]), (3, 25, [9]), (4, 5, [10])):
+        path = build.rule(item, {'key': f'charged_anomaly_death_{stage}', 'trigger': {'kind': 'creature_died', 'role': 'charged_anomaly'},
+                                 'conditions': [{'kind': 'counter_compare', 'counter': 'anomaly_stage', 'op': '==', 'value': stage}],
+                                 'actions': [{'kind': 'spawn', 'creature': creature('Anomaly'), 'role': 'anomaly', 'count': 1,
+                                              'at': {'anchor': 'boss_spot'}, 'owner': 'none', 'health': {'percent': health}}]})
+        build.entry(item, death, [1, 2, 3, 4, 6, 11, 13, 15, 16, 17, 18, 20, 21, 22, 23, 25, 26, 27, 28, 30, 31, 33] + lines, 'mapped',
+                    path, f'onDeath of a charged anomaly at ChargedAnomaly {stage}: the anomaly comes back with {290000 - health * 2900} '
+                    f'of its 290000 health removed, {health}% left.')
+
+    # Rupture: five resonance waves; while a damage resonance lives, each player hit heals the rupture.
+    item = rooms['rupture']
+    resonance, heal = HEART + 'creaturescripts_rupture_resonance.lua', HEART + 'creaturescripts_rupture_heal.lua'
+    item['encounter']['anchors'].append({'key': 'resonance_spot', 'kind': 'point', 'description': 'Canary (32332, 31250, 14).'})
+    item['encounter']['state']['counters'].append({'name': 'rupture_stage', 'initial': 0})
+    build.entry(item, HEART + 'actions_rupture.lua', [23, 24], 'mapped', '/encounter/state/counters/1',
+                'The lever starts the fight with RuptureResonanceStage -1, read as 0.')
+
+    def wave(stage):
+        return [*heart_sparks(),
+                {'kind': 'spawn', 'creature': creature('Damage Resonance'), 'role': 'damage_resonance', 'count': 1,
+                 'at': {'anchor': 'resonance_spot'}, 'owner': 'none', 'health': 'full'},
+                {'kind': 'counter', 'counter': 'rupture_stage', 'operation': 'set', 'value': stage + 1},
+                {'kind': 'counter', 'counter': 'resonance_active', 'operation': 'set', 'value': 1}]
+    build.participant(item, 'rupture', 'Rupture', 'RuptureResonance')
+    stages = [(80, 0), (60, 1), (40, 2), (25, 3), (10, 4)]
+    inactive = [{'kind': 'counter_compare', 'counter': 'resonance_active', 'op': '!=', 'value': 1}]
+    heart_stage_rules(build, item, 'rupture', stages, wave, resonance,
+                      [1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 15, 16, 18, 19, 21, 22, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 34, 35, 37, 38, 40],
+                      'onThink: at or below {threshold}% health at resonance stage {stage} with no resonance active, four sparks and a '
+                      'damage resonance appear; the stage becomes {stage} + 1 and the resonance is active.', inactive)
+    for threshold, stage in stages:
+        path = build.rule(item, {'key': f'rupture_stage_{stage}_after_resonance', 'trigger': {'kind': 'creature_died', 'role': 'damage_resonance'},
+                                 'conditions': [{'kind': 'counter_compare', 'counter': 'rupture_stage', 'op': '==', 'value': stage},
+                                                {'kind': 'health_percent', 'role': 'rupture', 'op': '<=', 'value': threshold}],
+                                 'actions': wave(stage)})
+        build.entry(item, resonance, [13, 29, 30, 31, 32], 'mapped', path,
+                    f'onThink also fires when the resonance dies (RuptureResonanceActive 0) while the rupture is already at or below '
+                    f'{threshold}% at stage {stage}.')
+    build.participant(item, 'rupture', 'Rupture', 'RuptureHeal')
+    path = build.rule(item, {'key': 'rupture_heals_on_player_hit', 'trigger': {'kind': 'damage_taken', 'role': 'rupture', 'source': 'player'},
+                             'conditions': [{'kind': 'counter_compare', 'counter': 'resonance_active', 'op': '==', 'value': 1}],
+                             'actions': [{'kind': 'heal', 'subject': {'role': 'rupture'}, 'amount': {'min': 5000, 'max': 10000}}]})
+    build.entry(item, heal, [1, 3, 4, 5, 6, 7, 9, 10, 11, 13], 'mapped', path,
+                'onHealthChange: a player hit while the resonance is active heals the rupture by 5000-10000; the hit itself is '
+                'applied unchanged.')
+    build.entry(item, heal, [8], 'approved_omission', None, 'The green magic effect is cosmetic.')
+
+    # Foreshock and Aftershock swap at every 20% (then 10%) of their own health; Realityquake follows the second death.
+    item = rooms['realityquake']
+    shocks, fore, after = HEART + 'creaturescripts_shocks_death.lua', HEART + 'creaturescripts_foreshock_transform.lua', \
+        HEART + 'creaturescripts_aftershock_transform.lua'
+    item['encounter']['anchors'].append({'key': 'shock_spot', 'kind': 'point', 'description': 'Canary (32208, 31248, 14).'})
+    state = item['encounter']['state']
+    state['counters'] += [{'name': 'foreshock_stage', 'initial': 0}, {'name': 'aftershock_stage', 'initial': 0}]
+    state['flags'].append({'name': 'foreshock_defeated', 'initial': False})
+    build.entry(item, HEART + 'actions_foreshock.lua', [23, 24, 25, 26, 27], 'mapped', '/encounter/state',
+                'The lever starts both shocks at stage -1 (read as 0) and stores 105000 health for each, their full health.')
+    build.define(item, creature('Realityquake'))
+
+    def swap(leaving, coming):
+        return lambda stage: [{'kind': 'spawn', 'creature': creature(coming.title()), 'role': coming, 'count': 1, 'at': {'anchor': 'shock_spot'},
+                               'owner': 'none', 'health': 'remembered'},
+                              {'kind': 'remove', 'role': leaving}, *heart_sparks(),
+                              {'kind': 'counter', 'counter': f'{leaving}_stage', 'operation': 'set', 'value': stage + 1}]
+    stages = [(80, 0), (60, 1), (40, 2), (20, 3), (10, 4)]
+    swap_lines = [1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 20, 21, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37,
+                  38, 39, 40, 41, 42, 43, 45]
+    build.participant(item, 'foreshock', 'Foreshock', 'ForeshockTransform')
+    heart_stage_rules(build, item, 'foreshock', stages, swap('foreshock', 'aftershock'), fore, swap_lines,
+                      'onThink: at or below {threshold}% health at stage {stage}, an aftershock appears with the health it last had '
+                      '(stored every think, 105000 at the start), the foreshock is removed, four sparks appear and the foreshock '
+                      'stage becomes {stage} + 1.', respawn_check=True)
+    build.participant(item, 'aftershock', 'Aftershock', 'AftershockTransform')
+    heart_stage_rules(build, item, 'aftershock', stages, swap('aftershock', 'foreshock'), after, swap_lines,
+                      'onThink: at or below {threshold}% health at stage {stage}, a foreshock appears with the health it last had, the '
+                      'aftershock is removed, four sparks appear and the aftershock stage becomes {stage} + 1. The wiki (2026-07-28) '
+                      'spawns Realityquake "after defeating Foreshock and Aftershock", so a defeated foreshock does not come back (D25); '
+                      'Canary would bring it back with the health of its last think.',
+                      [{'kind': 'flag', 'flag': 'foreshock_defeated', 'value': False}], respawn_check=True)
+    build.participant(item, 'foreshock', 'Foreshock', 'ShocksDeath')
+    path = build.rule(item, {'key': 'foreshock_death', 'trigger': {'kind': 'creature_died', 'role': 'foreshock'}, 'conditions': [],
+                             'actions': [{'kind': 'flag', 'flag': 'foreshock_defeated', 'value': True},
+                                         {'kind': 'spawn', 'creature': creature('Aftershock'), 'role': 'aftershock', 'count': 1,
+                                          'at': {'anchor': 'shock_spot'}, 'owner': 'none', 'health': 'remembered'}, *heart_sparks()]})
+    build.entry(item, shocks, [1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 29, 30, 32], 'mapped', path,
+                'onDeath of the foreshock: an aftershock appears with the health it last had and four sparks appear.')
+    build.participant(item, 'aftershock', 'Aftershock', 'ShocksDeath')
+    path = build.rule(item, {'key': 'aftershock_death', 'trigger': {'kind': 'creature_died', 'role': 'aftershock'}, 'conditions': [],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Realityquake'), 'role': 'realityquake', 'count': 1,
+                                          'at': 'death_position', 'owner': 'none', 'health': 'full'}, *heart_sparks()]})
+    build.entry(item, shocks, [23, 24, 25, 26, 27, 28], 'mapped', path,
+                'onDeath of the aftershock: Realityquake appears where it died, with four sparks.')
+
+    # Eradicator: 74 s shielded, then 9 s exposed as Eradicator2 with four sparks, again and again.
+    item = rooms['eradicator']
+    think = HEART + 'creaturescripts_eradicator_transform.lua'
+    item['encounter']['state']['timers'] += [{'name': 'eradicator_shielded', 'duration_ms': 74000, 'repeat': False},
+                                             {'name': 'eradicator_exposed', 'duration_ms': 9000, 'repeat': False}]
+    path = build.rule(item, {'key': 'eradicator_fight_starts', 'trigger': {'kind': 'encounter_started'}, 'conditions': [],
+                             'actions': [{'kind': 'timer', 'timer': 'eradicator_shielded', 'operation': 'start'}]})
+    build.entry(item, HEART + 'actions_eradicator.lua', [23, 24, 25, 27, 28, 29], 'mapped', path,
+                'The lever sets EradicatorWeak and EradicatorReleaseT to -1 and releases the first change 74000 ms later.')
+    build.participant(item, 'eradicator', 'Eradicator', 'EradicatorTransform')
+    build.participant(item, 'eradicator', 'Eradicator2', 'EradicatorTransform')
+    path = build.rule(item, {'key': 'eradicator_exposed', 'trigger': {'kind': 'timer_elapsed', 'timer': 'eradicator_shielded'}, 'conditions': [],
+                             'actions': [{'kind': 'transform', 'role': 'eradicator', 'into': creature('Eradicator2'), 'health': 'keep_absolute'},
+                                         *heart_sparks(), {'kind': 'timer', 'timer': 'eradicator_exposed', 'operation': 'start'}]})
+    build.entry(item, think, [1, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 30, 31, 32, 34, 35,
+                              36, 37, 38, 40], 'mapped', path,
+                'onThink after the release with EradicatorWeak not above 0: the eradicator is replaced on its tile by Eradicator2 with '
+                'the same health, four sparks appear, and the next release follows 9000 ms later.')
+    path = build.rule(item, {'key': 'eradicator_shielded_again', 'trigger': {'kind': 'timer_elapsed', 'timer': 'eradicator_exposed'},
+                             'conditions': [], 'actions': [{'kind': 'transform', 'role': 'eradicator', 'into': creature('Eradicator'),
+                                                            'health': 'keep_absolute'},
+                                                           {'kind': 'timer', 'timer': 'eradicator_shielded', 'operation': 'start'}]})
+    build.entry(item, think, [8, 9, 10, 11, 12, 14, 15, 16, 21, 30, 31, 32, 34, 35], 'mapped', path,
+                'onThink after the release with EradicatorWeak 1: Eradicator2 is replaced by the Eradicator with the same health and '
+                'the next release follows 74000 ms later. Canary acts on the first think after the release (about one second).')
+
+    # Outburst: four charging outbursts; the outburst comes back with the health it had.
+    item = rooms['outburst']
+    charge, death = HEART + 'creaturescripts_outburst_charge.lua', HEART + 'creaturescripts_charging_out_death.lua'
+    item['encounter']['anchors'] += [{'key': 'boss_spot', 'kind': 'point', 'description': 'Canary (32234, 31284, 14).'},
+                                     {'key': 'outburst_return', 'kind': 'point', 'description': 'Canary (32234, 31285, 14).'}]
+    item['encounter']['state']['counters'].append({'name': 'outburst_stage', 'initial': 0})
+    item['encounter']['state']['flags'].append({'name': 'charging_outburst_exploded', 'initial': False})
+    build.entry(item, HEART + 'actions_outburst.lua', [23, 24, 25], 'mapped', '/encounter/state',
+                'The lever starts the fight at OutburstStage 0 and stores 290000 health, the full health of the outburst.')
+    build.participant(item, 'outburst', 'Outburst', 'OutburstCharge')
+    build.define(item, creature('Charging Outburst'))
+    heart_stage_rules(build, item, 'outburst', [(80, 0), (60, 1), (40, 2), (20, 3)], lambda stage: [
+        {'kind': 'remove', 'role': 'outburst'}, *heart_sparks(),
+        {'kind': 'spawn', 'creature': creature('Charging Outburst'), 'role': 'charging_outburst', 'count': 1, 'at': {'anchor': 'boss_spot'},
+         'owner': 'none', 'health': 'full'},
+        {'kind': 'counter', 'counter': 'outburst_stage', 'operation': 'set', 'value': stage + 1},
+        {'kind': 'flag', 'flag': 'charging_outburst_exploded', 'value': False}],
+        charge, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 14, 15, 16, 17, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 39],
+        'onThink: at or below {threshold}% health at OutburstStage {stage}, the outburst (its health stored every think) is removed, '
+        'four sparks and a charging outburst appear, the stage becomes {stage} + 1 and the explosion mark is cleared.',
+        respawn_check=True)
+    build.participant(item, 'charging_outburst', 'Charging Outburst', 'ChargingOutDeath')
+    path = build.rule(item, {'key': 'charging_outburst_death', 'trigger': {'kind': 'creature_died', 'role': 'charging_outburst'},
+                             'conditions': [{'kind': 'flag', 'flag': 'charging_outburst_exploded', 'value': False}],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Outburst'), 'role': 'outburst', 'count': 1,
+                                          'at': {'anchor': 'outburst_return'}, 'owner': 'none', 'health': 'remembered'}]})
+    build.entry(item, death, [1, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15], 'mapped', path,
+                'onDeath of a charging outburst that has not exploded: the outburst comes back one tile south of its start with the '
+                'health it had. The explosion (spell outburst_explode, transcribed with the charging outburst) sets the mark and '
+                'brings the outburst back itself.')
+
+
+
 def small_boss_events(build):
     """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
     glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
@@ -1699,7 +1970,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains):
         transcribe(build)
     print(json.dumps(build.write()))
 

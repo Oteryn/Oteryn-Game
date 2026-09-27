@@ -10,6 +10,9 @@
       "canary:creature/the_hunger",
       "canary:creature/the_destruction",
       "canary:creature/the_rage"
+    ],
+    "HeartBossDeath": [
+      "canary:creature/world_devourer"
     ]
   },
   "sources": [
@@ -75,6 +78,20 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/monster/quests/heart_of_destruction/the_rage.lua",
       "blob_sha1": "9a5c3dc1124805a3d2d9d99a868e4e01cc43f9ff"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/world_devourer.lua",
+      "blob_sha1": "6bf55bf348d765d717fe36c4088b7cc0356c0e85"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_heart_boss_death.lua",
+      "blob_sha1": "2c90381a9bb2f15408373edb35a50992d844eadd"
     }
   ],
   "entries": [
@@ -275,7 +292,136 @@
       "status": "mapped",
       "resolution": "The death of the rage raises bosses_killed and sets its killed flag.",
       "destination": "/encounter/rules/6/actions"
+    },
+    {
+      "source_index": 9,
+      "source_lines": [
+        61
+      ],
+      "status": "mapped",
+      "resolution": "World Devourer is the world_devourer participant; its file registers HeartBossDeath.",
+      "destination": "/encounter/participants/7/creatures"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        113,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        138,
+        139,
+        141
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of World Devourer (the name is looked up in lower case).",
+      "destination": "/encounter/rules/7/trigger"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        129,
+        130,
+        131,
+        132,
+        133,
+        134
+      ],
+      "status": "mapped",
+      "resolution": "The vortex 23483 on the room vortex tile becomes vortex 23482 with action id 14354, which movements_teleport_heart.lua sends to the reward room (32112, 31375, 14) (interaction domain). The lever made it 23483 when the fight started.",
+      "destination": "/encounter/rules/7/actions/0"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        135
+      ],
+      "status": "mapped",
+      "resolution": "Every player standing in the room is credited (D27): the quest domain sets their storage 60835, 60814, 60828 to 1.",
+      "destination": "/encounter/rules/7/actions/1"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        136
+      ],
+      "status": "mapped",
+      "resolution": "clearDevourer removes every monster in the room.",
+      "destination": "/encounter/rules/7/actions/2"
+    },
+    {
+      "source_index": 10,
+      "source_lines": [
+        21,
+        22,
+        23,
+        24
+      ],
+      "status": "approved_omission",
+      "resolution": "stopEvent cancels the room-change, room-clear and spark timers of the final lever (actions_final_lever.lua lines 23, 178, 218, 219). Those belong to the lever transcription; the encounter ends with the boss."
     }
   ],
-  "outcome_evidence": []
+  "outcome_evidence": [
+    {
+      "outcome": "world_devourer_defeated",
+      "credited": "players_in_anchor",
+      "quest_domain": {
+        "canary_storage": [
+          "60835",
+          "60814",
+          "60828"
+        ],
+        "raise_to_at_least": 1
+      }
+    }
+  ]
 }

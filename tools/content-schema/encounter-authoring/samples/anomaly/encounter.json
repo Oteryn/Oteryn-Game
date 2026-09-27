@@ -1,0 +1,647 @@
+{
+  "identity": {
+    "key": "canary:encounter/anomaly",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Heart of Destruction: Anomaly",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "anomaly",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/anomaly",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "charged_anomaly",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/charged_anomaly",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Every tile from Canary (32258, 31237, 14) to (32284, 31262, 14)."
+    },
+    {
+      "key": "exit_vortex",
+      "kind": "point",
+      "description": "Canary (32261, 31250, 14), the vortex of the room."
+    },
+    {
+      "key": "spark_spot_1",
+      "kind": "point",
+      "description": "Canary (32267, 31253, 14)."
+    },
+    {
+      "key": "spark_spot_2",
+      "kind": "point",
+      "description": "Canary (32274, 31255, 14)."
+    },
+    {
+      "key": "spark_spot_3",
+      "kind": "point",
+      "description": "Canary (32274, 31249, 14)."
+    },
+    {
+      "key": "spark_spot_4",
+      "kind": "point",
+      "description": "Canary (32267, 31249, 14)."
+    },
+    {
+      "key": "boss_spot",
+      "kind": "point",
+      "description": "Canary (32271, 31249, 14)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "anomaly_stage",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "anomaly_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "anomaly"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23483",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23482",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_vortex",
+          "interaction": "canary:interaction/14325"
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "anomaly_defeated",
+          "credited": "players_in_anchor",
+          "anchor": "arena"
+        }
+      ]
+    },
+    {
+      "key": "anomaly_stage_0",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "anomaly",
+        "percent": 75
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "anomaly_stage",
+          "op": "==",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "anomaly"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charged_anomaly",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charged_anomaly",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "anomaly_stage",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "anomaly_stage_1",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "anomaly",
+        "percent": 50
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "anomaly_stage",
+          "op": "==",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "anomaly"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charged_anomaly",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charged_anomaly",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "anomaly_stage",
+          "operation": "set",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "anomaly_stage_2",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "anomaly",
+        "percent": 25
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "anomaly_stage",
+          "op": "==",
+          "value": 2
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "anomaly"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charged_anomaly",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charged_anomaly",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "anomaly_stage",
+          "operation": "set",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "anomaly_stage_3",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "anomaly",
+        "percent": 5
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "anomaly_stage",
+          "op": "==",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "anomaly"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/charged_anomaly",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "charged_anomaly",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "anomaly_stage",
+          "operation": "set",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": "charged_anomaly_death_1",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "charged_anomaly"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "anomaly_stage",
+          "op": "==",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/anomaly",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "anomaly",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": {
+            "percent": 75
+          }
+        }
+      ]
+    },
+    {
+      "key": "charged_anomaly_death_2",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "charged_anomaly"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "anomaly_stage",
+          "op": "==",
+          "value": 2
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/anomaly",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "anomaly",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": {
+            "percent": 50
+          }
+        }
+      ]
+    },
+    {
+      "key": "charged_anomaly_death_3",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "charged_anomaly"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "anomaly_stage",
+          "op": "==",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/anomaly",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "anomaly",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": {
+            "percent": 25
+          }
+        }
+      ]
+    },
+    {
+      "key": "charged_anomaly_death_4",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "charged_anomaly"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "anomaly_stage",
+          "op": "==",
+          "value": 4
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/anomaly",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "anomaly",
+          "count": 1,
+          "at": {
+            "anchor": "boss_spot"
+          },
+          "owner": "none",
+          "health": {
+            "percent": 5
+          }
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "anomaly_defeated"
+  ]
+}

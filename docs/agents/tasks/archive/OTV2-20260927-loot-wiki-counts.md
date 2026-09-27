@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-loot-wiki-counts
 title: Wiki loot counts for Canary monsters (D32) and the Duke Krule admission
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1006
 jira: KAN-16
 base_sha: ae8db236697bfc802dddb7162a43bca1b9b34429
-head_sha: null
-final_head_sha: null
+head_sha: d0d64fd40c5a776cbe4b62a80ca4715cc9315d31
+final_head_sha: d0d64fd40c5a776cbe4b62a80ca4715cc9315d31
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -75,3 +75,9 @@ persisted-recovery evidence is touched.
   - `content_world_project_repository`;
   - the tree validators;
   - the governance and policy validators.
+
+## Completion
+
+Merged as PR #1006 (`6a57fff4b19972bae06d2e3fd4d03728f42cb9b8`) from final head `d0d64fd`; required checks passed on that head.
+The Codex exact-head review raised one P2 finding (only one bound was mapped when both changed), which was fixed in `d0d64fd`.
+Owner released.

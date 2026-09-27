@@ -173,6 +173,9 @@ case('spawned speaker needs a spawn', rule([{'kind': 'say', 'subject': {'spawned
 case('role position fallback accepted', rule([{**add(), 'at': {'role_position': 'boss', 'otherwise': 'death_position'}}], trigger=died), True)
 case('chance above 100 rejected', rule(conditions=[{'kind': 'chance_percent', 'value': 150}]))
 case('duplicate rule key', lambda e, c: e['rules'].append(copy.deepcopy(e['rules'][0])))
+case('remembered health accepted', rule([{**add(), 'role': 'boss', 'health': 'remembered'}], trigger=died), True)
+case('remembered health needs a role', rule([{**add(), 'health': 'remembered'}], trigger=died))
+case('transform cannot remember health', rule([{'kind': 'transform', 'role': 'boss', 'into': ref('Creature', 'add'), 'health': 'remembered'}], trigger=died))
 
 if __name__ == '__main__':
     report = {'scope': 'Encounter schema and semantic validator, synthetic fixtures only; no Lua or Oteryn runtime executed',

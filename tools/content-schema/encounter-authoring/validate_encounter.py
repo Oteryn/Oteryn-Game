@@ -169,6 +169,8 @@ def semantic(e, catalog):
                 errors.append(f'{at}: remove triggering needs a trigger fired by one creature')
             if ak == 'remove' and 'keep_summons' in action and 'all_in' not in action:
                 errors.append(f'{at}: keep_summons applies only to remove all_in')
+            if action.get('health') == 'remembered' and (ak != 'spawn' or 'role' not in action):
+                errors.append(f'{at}: remembered health needs a spawn into a named role')
             if ak == 'message':
                 need_area(action['to']['players_in'], at)
             if ak == 'remove' and 'all_in' in action:
