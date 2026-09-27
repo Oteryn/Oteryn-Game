@@ -244,7 +244,9 @@ physical damage). Boss-specific logic
 definitions of D9. Canary defects found on the way: `gorerilla small ring` uses the undefined
 `COMBAT_PHYSICALDAMAGEDAMAGE`, `metal gargoyle curse` has a one-step loop, `icicle heal` deals 100
 damage, and `gaz'haragoth summon` calls `setSummon` with an undefined value. The grouping is a
-proposal for owner review; no behaviour key is created by it.
+proposal for owner review; no behaviour key is created by it. After D18 the converter tags each
+blocking manifest row with its pattern and `population_census.py` groups the blockers by pattern;
+the rows stay unresolved until a pattern has an accepted parameter contract and runtime owner.
 
 ### 8.5 Plain combat fields (D19): `mitigated_by`, `remove_condition`, engine parameter binding
 

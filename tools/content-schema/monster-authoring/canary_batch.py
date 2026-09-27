@@ -82,6 +82,7 @@ RULES = {
 # Owner decisions 2026-09-26 (docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md section 3).
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-07-28.json'
+BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
 WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces '
                  'it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary '
                  'difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain '
@@ -963,9 +964,11 @@ class Converter:
         where = f'registered {info["kind"]} spell "{name}" ({info["script"]})'
         if info.get('tier') == 'NOOP':
             return 'OMIT', f'{where} returns false for a non-player caster, so it has no effect in Canary (D14).'
+        pattern = self.behaviour_patterns().get(name)
+        tag = f' D18 pattern `{pattern}` (samples/{BEHAVIOUR_PATTERNS}).' if pattern else ''
         if info.get('tier') == 'P4' or 'error' in info:
             reason = '; '.join(info.get('tier_reasons') or []) or info.get('error', '')
-            return 'UNRESOLVED', f'{where} has custom logic ({reason[:200]}); needs a native behaviour (D13).'
+            return 'UNRESOLVED', f'{where} has custom logic ({reason[:200]}); needs a native behaviour (D13).{tag}'
         key = f'canary:ability/spell/{slug(name)}'
         flags = info['spell_calls']
         geometry = {'needs_target': bool(flags.get('needTarget', [False])[0] or flags.get('needCasterTargetOrDirection', [False])[0]),
@@ -1002,7 +1005,7 @@ class Converter:
                     uses_magnitude = any(self.ability_uses_magnitude(k, deps) for k in variant_keys)
                 notes.append(f'{len(variant_keys)} variants picked uniformly by math.random (D12).')
         except SpellUnresolved as exc:
-            return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.'
+            return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.{tag}'
         extras = {}
         if uses_magnitude:
             low, high = abs(spell.get('minDamage', 0)), abs(spell.get('maxDamage', 0))
@@ -1017,6 +1020,14 @@ class Converter:
         ability = next(a for a in deps['abilities'] if a['identity']['key'] == key)
         effects = {e['identity']['key']: e for e in deps['effects']}
         return any(effects[r['key']].get('formula', {}).get('key') == CASTER_MAGNITUDE for r in ability.get('effects', []))
+
+    def behaviour_patterns(self):
+        """spell name -> D18 native behaviour pattern id from the committed pattern grouping."""
+        if getattr(self, '_patterns', None) is None:
+            path = ROOT / 'samples' / BEHAVIOUR_PATTERNS
+            spells = json.loads(path.read_text(encoding='utf-8'))['spells'] if path.exists() else []
+            self._patterns = {s['spell']: s['pattern'] for s in spells}
+        return self._patterns
 
     def engine_params(self, param_calls, notes):
         """Combat:setParameter calls as the engine applies them, in call order: key and value are read as numbers

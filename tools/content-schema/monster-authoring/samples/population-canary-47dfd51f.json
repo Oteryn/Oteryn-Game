@@ -53,28 +53,6 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics attacks[]",
-      "monsters": 78,
-      "examples": [
-        "quara_looter",
-        "cerebellum",
-        "doctor_marrow",
-        "lisa",
-        "spider_queen"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics defenses[]",
-      "monsters": 39,
-      "examples": [
-        "bullwark",
-        "lisa",
-        "salamander_trainer",
-        "grimeleech",
-        "minotaur_cult_prophet"
-      ]
-    },
-    {
       "blocker": "unresolved_semantics mType.onThink",
       "monsters": 28,
       "examples": [
@@ -83,6 +61,28 @@
         "ichgahal",
         "mitmah_vanguard",
         "murcion"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[] -> conditional_summon",
+      "monsters": 22,
+      "examples": [
+        "bullwark",
+        "lisa",
+        "salamander_trainer",
+        "glooth_anemone",
+        "plagirath"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> remove_magic_walls",
+      "monsters": 20,
+      "examples": [
+        "the_monster",
+        "aftershock",
+        "anomaly",
+        "charged_anomaly",
+        "charging_outburst"
       ]
     },
     {
@@ -152,6 +152,17 @@
       ]
     },
     {
+      "blocker": "unresolved_semantics attacks[] -> path_trail_missile",
+      "monsters": 11,
+      "examples": [
+        "hardened_usurper_knight",
+        "hardened_usurper_warlock",
+        "usurper_knight",
+        "usurper_warlock",
+        "goshnar_s_greed"
+      ]
+    },
+    {
       "blocker": "unresolved_semantics top-level script after mType:register",
       "monsters": 11,
       "examples": [
@@ -160,6 +171,72 @@
         "gore_horn",
         "gorerilla",
         "nighthunter"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[] -> heal_allies_in_area",
+      "monsters": 9,
+      "examples": [
+        "minotaur_cult_prophet",
+        "mezlon_the_defiler",
+        "mezlon_the_defiler_stop",
+        "misguided_bully",
+        "orc_cult_priest"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> delayed_telegraphed_nuke",
+      "monsters": 8,
+      "examples": [
+        "doctor_marrow",
+        "carnisylvan_sapling",
+        "plagirath",
+        "eruption_of_destruction",
+        "lady_tenebris"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> heal_allies_in_area",
+      "monsters": 8,
+      "examples": [
+        "cerebellum",
+        "the_flaming_orchid",
+        "aggressive_lava",
+        "ember_beast",
+        "fiery_blood"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> area_damage_named_target",
+      "monsters": 6,
+      "examples": [
+        "ravenous_lava_lurker",
+        "freed_soul",
+        "the_corruptor_of_souls",
+        "the_remorseless_corruptor",
+        "the_source_of_corruption"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> conditional_summon",
+      "monsters": 6,
+      "examples": [
+        "lady_tenebris",
+        "the_destruction",
+        "the_hunger",
+        "the_rage",
+        "world_devourer"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> escalating_dot_curse",
+      "monsters": 6,
+      "examples": [
+        "metal_gargoyle",
+        "ghastly_dragon",
+        "essence_of_malice",
+        "ethershreck",
+        "sharpclaw"
       ]
     },
     {
@@ -182,6 +259,49 @@
         "undead_minion",
         "irgix_the_flimsy",
         "overcharged_energy_elemental"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[]",
+      "monsters": 5,
+      "examples": [
+        "grimeleech",
+        "angry_sugar_fairy",
+        "priestess_of_the_wild_sun",
+        "sister_hetai",
+        "rhindeer"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> chain_bounce",
+      "monsters": 5,
+      "examples": [
+        "quara_looter",
+        "rootthing_amber_shaper",
+        "rootthing_bug_tracker",
+        "mould_phantom",
+        "rotten_golem"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[] -> heal_self_conditional",
+      "monsters": 5,
+      "examples": [
+        "lisa",
+        "professor_maxxen",
+        "omrafir",
+        "the_welter",
+        "tyrn"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> fear",
+      "monsters": 4,
+      "examples": [
+        "goshnar_s_spite",
+        "bony_sea_devil",
+        "turbulent_elemental",
+        "hazardous_phantom"
       ]
     },
     {
@@ -208,6 +328,62 @@
       "examples": [
         "salamander",
         "troll_trained_salamander"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> map_or_quest_specific",
+      "monsters": 2,
+      "examples": [
+        "spider_queen",
+        "charging_outburst"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> multi_combat_sequence",
+      "monsters": 2,
+      "examples": [
+        "rootthing_amber_shaper",
+        "rootthing_nutshell"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> skill_or_attribute_debuff",
+      "monsters": 2,
+      "examples": [
+        "lisa",
+        "walker"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> taunt_challenge",
+      "monsters": 2,
+      "examples": [
+        "druid_familiar",
+        "sorcerer_familiar"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[] -> boss_escape_utility",
+      "monsters": 2,
+      "examples": [
+        "zamulosh",
+        "professor_maxxen"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[] -> boss_form_swap",
+      "monsters": 2,
+      "examples": [
+        "ragiaz",
+        "the_time_guardian"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[] -> map_or_quest_specific",
+      "monsters": 2,
+      "examples": [
+        "the_blazing_time_guardian",
+        "the_freezing_time_guardian"
       ]
     },
     {
@@ -250,6 +426,41 @@
       "monsters": 1,
       "examples": [
         "the_monster"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> periodic_area_scheduled",
+      "monsters": 1,
+      "examples": [
+        "foam_stalker"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> temporary_ground_transform",
+      "monsters": 1,
+      "examples": [
+        "charged_anomaly"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[]",
+      "monsters": 1,
+      "examples": [
+        "grimeleech"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[] -> area_damage_named_target",
+      "monsters": 1,
+      "examples": [
+        "icicle"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics defenses[] -> temporary_ground_transform",
+      "monsters": 1,
+      "examples": [
+        "mazoran"
       ]
     },
     {

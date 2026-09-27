@@ -28,7 +28,8 @@ OPEN = ('unsupported_source_field', 'unresolved_semantics', 'unresolved_dependen
 
 def blocker(entry):
     field = re.sub(r'\[\d+\]', '[]', re.sub(r'=.*', '', entry['source_field']))
-    return f'{entry["status"]} {field}'
+    pattern = re.search(r'D18 pattern `([a-z_]+)`', entry.get('resolution', ''))
+    return f'{entry["status"]} {field}' + (f' -> {pattern.group(1)}' if pattern else '')
 
 
 def dump(value):
