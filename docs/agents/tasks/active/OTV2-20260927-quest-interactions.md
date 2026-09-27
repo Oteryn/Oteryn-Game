@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: null
-base_sha: 53abffba06ab8001e94748cfc8b928cdc5458cd6
+base_sha: 75f2f045700ea6aedf5cf864966a60235921e19d
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -20,11 +20,11 @@ updated_at: 2026-09-27
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260927-quest-interactions.md
+  - docs/agents/tasks/archive/OTV2-20260927-quest-staged-missions.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - tools/content-schema/quest-authoring/**
 public_contracts: []
-depends_on:
-  - OTV2-20260927-quest-staged-missions
+depends_on: []
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
