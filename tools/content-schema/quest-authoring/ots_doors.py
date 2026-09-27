@@ -11,8 +11,9 @@ scripts decide (identical in both servers):
 - key door: a key whose action id matches locks or unlocks the door for everyone.
 `QuestDoorUnique` doors are each opened by their own dedicated script (identical source in both servers) instead of
 one of the three shared ones:
-- the four Dawnport vocation doors (`vocation_door.lua`): pass a player whose vocation-choice storage equals the
-  door's vocation;
+- the four Dawnport vocation doors (`vocation_door.lua`) are not gates: the door never opens; a USE on it checks the
+  vocation-choice track, removes mainland items and relocates the player, which is an interaction, so they stay
+  `unresolved_semantics`;
 - the Katana Quest door (`katana_quest_door.lua`/`katana_quest_lever.lua`): has no player-state condition at all,
   a nearby lever toggles it open and closed for everyone;
 - the Secret Service door and CrystalServer's one restored-id door have no script that transforms them and stay
@@ -183,14 +184,10 @@ def build(repos, chests_dir, coverage):
         primary = pair.get('canary') or pair['crystalserver']
         agreement = 'present in both servers and identical' if len(pair) == 2 else f'present only in {primary["server"]}'
         sources = [{'source': n, 'uid': r['key'], 'source_lines': [r['line']]} for n, r in pair.items()]
-        if uid in vocation_map or uid == katana_uid:
-            if uid in vocation_map:
-                condition, state = {'kind': 'vocation', 'vocation': vocation_map[uid]}, 'per_character_pass'
-                note = f'dedicated script: vocation door reading a chosen-vocation storage ({label})'
-            else:
-                condition = {'kind': 'lever', 'lever_position': dict(zip('xyz', katana_lever))}
-                state = 'shared_lock'
-                note = f'dedicated script: lever-controlled door, no player-state condition ({label})'
+        if uid == katana_uid:
+            condition = {'kind': 'lever', 'lever_position': dict(zip('xyz', katana_lever))}
+            state = 'shared_lock'
+            note = f'dedicated script: lever-controlled door, no player-state condition ({label})'
             namespace = 'canary' if 'canary' in pair else 'crystalserver'
             key = f'{namespace}:door-gate/{gate_key(condition)}'
             gate = gates.setdefault(key, {'identity': {'key': key, 'revision': REVISION}, 'label': label, 'quest': None,
@@ -199,6 +196,12 @@ def build(repos, chests_dir, coverage):
                                        'appearance': ref('Item', f'{primary["server"]}:item/{primary["appearance"]}') if primary['appearance'] else None})
             manifest_entries.append({'position': list(position), 'status': 'mapped', 'destination': key,
                                      'resolution': f'{note}; {agreement}', 'sources': sources})
+            continue
+        if uid in vocation_map:
+            manifest_entries.append({'position': list(position), 'status': 'unresolved_semantics', 'sources': sources,
+                                     'resolution': f'not a gate: the dedicated script never opens the door; a USE checks the '
+                                                   f'vocation-choice track for {vocation_map[uid]}, removes mainland items and '
+                                                   f'relocates the player, which is an interaction ({label}); {agreement}'})
             continue
         resolution = (f'dedicated script reads this door only as a mission-item target and never transforms it ({label}); {agreement}'
                      if uid == secret_service_uid else

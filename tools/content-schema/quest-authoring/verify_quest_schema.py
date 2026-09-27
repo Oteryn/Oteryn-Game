@@ -155,9 +155,6 @@ gate_case('progress door names a known claim', lambda g, c, m: g[0]['condition']
 gate_case('key comes from a chest that hands it out', lambda g, c, m: g[2]['condition'].update(key_binding='oteryn:door-key/1'))
 gate_case('gate link basis without a quest', lambda g, c, m: g[0].update(quest=None))
 gate_case('every gate is mapped from a source', lambda g, c, m: m['entries'].pop())
-gate_case('vocation gate accepted', lambda g, c, m: g[1].update(condition={'kind': 'vocation', 'vocation': 'knight'}), expected=True)
-gate_case('vocation enum is closed', lambda g, c, m: g[1].update(condition={'kind': 'vocation', 'vocation': 'wizard'}))
-gate_case('vocation gate has no shared lock', lambda g, c, m: g[1].update(condition={'kind': 'vocation', 'vocation': 'knight'}, state='shared_lock'))
 gate_case('lever gate accepted',
           lambda g, c, m: g[2].update(condition={'kind': 'lever', 'lever_position': {'x': 1, 'y': 2, 'z': 7}}), expected=True)
 gate_case('lever needs a position', lambda g, c, m: g[2].update(condition={'kind': 'lever'}))

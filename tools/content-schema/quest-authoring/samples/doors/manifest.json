@@ -152,16 +152,15 @@
       "door_key": 38,
       "lever": 1,
       "min_level": 14,
-      "quest_progress": 184,
-      "vocation": 4
+      "quest_progress": 184
     },
     "progress_gates_reading_a_claim": 1,
     "key_gates_with_a_key_from_a_chest": 24,
     "progress_gates_linked_to_wiki_quest": 176,
     "by_status": {
       "approved_omission": 1,
-      "mapped": 441,
-      "unresolved_semantics": 11
+      "mapped": 437,
+      "unresolved_semantics": 15
     }
   },
   "entries": [
@@ -9815,110 +9814,6 @@
     },
     {
       "position": [
-        32073,
-        31885,
-        6
-      ],
-      "status": "mapped",
-      "destination": "canary:door-gate/vocation/druid",
-      "resolution": "dedicated script: vocation door reading a chosen-vocation storage (Druid); present in both servers and identical",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22002,
-          "source_lines": [
-            905
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22002,
-          "source_lines": [
-            1121
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
-        32069,
-        31885,
-        6
-      ],
-      "status": "mapped",
-      "destination": "canary:door-gate/vocation/knight",
-      "resolution": "dedicated script: vocation door reading a chosen-vocation storage (Knight); present in both servers and identical",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22004,
-          "source_lines": [
-            915
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22004,
-          "source_lines": [
-            1131
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
-        32059,
-        31885,
-        6
-      ],
-      "status": "mapped",
-      "destination": "canary:door-gate/vocation/paladin",
-      "resolution": "dedicated script: vocation door reading a chosen-vocation storage (Paladin); present in both servers and identical",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22003,
-          "source_lines": [
-            910
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22003,
-          "source_lines": [
-            1126
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
-        32055,
-        31885,
-        6
-      ],
-      "status": "mapped",
-      "destination": "canary:door-gate/vocation/sorcerer",
-      "resolution": "dedicated script: vocation door reading a chosen-vocation storage (Sorcerer); present in both servers and identical",
-      "sources": [
-        {
-          "source": "canary",
-          "uid": 22001,
-          "source_lines": [
-            900
-          ]
-        },
-        {
-          "source": "crystalserver",
-          "uid": 22001,
-          "source_lines": [
-            1116
-          ]
-        }
-      ]
-    },
-    {
-      "position": [
         33908,
         31107,
         9
@@ -10944,6 +10839,31 @@
     },
     {
       "position": [
+        32055,
+        31885,
+        6
+      ],
+      "status": "unresolved_semantics",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22001,
+          "source_lines": [
+            900
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22001,
+          "source_lines": [
+            1116
+          ]
+        }
+      ],
+      "resolution": "not a gate: the dedicated script never opens the door; a USE checks the vocation-choice track for sorcerer, removes mainland items and relocates the player, which is an interaction (Sorcerer); present in both servers and identical"
+    },
+    {
+      "position": [
         32058,
         32266,
         7
@@ -10959,6 +10879,31 @@
           ]
         }
       ]
+    },
+    {
+      "position": [
+        32059,
+        31885,
+        6
+      ],
+      "status": "unresolved_semantics",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22003,
+          "source_lines": [
+            910
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22003,
+          "source_lines": [
+            1126
+          ]
+        }
+      ],
+      "resolution": "not a gate: the dedicated script never opens the door; a USE checks the vocation-choice track for paladin, removes mainland items and relocates the player, which is an interaction (Paladin); present in both servers and identical"
     },
     {
       "position": [
@@ -10984,6 +10929,56 @@
           ]
         }
       ]
+    },
+    {
+      "position": [
+        32069,
+        31885,
+        6
+      ],
+      "status": "unresolved_semantics",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22004,
+          "source_lines": [
+            915
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22004,
+          "source_lines": [
+            1131
+          ]
+        }
+      ],
+      "resolution": "not a gate: the dedicated script never opens the door; a USE checks the vocation-choice track for knight, removes mainland items and relocates the player, which is an interaction (Knight); present in both servers and identical"
+    },
+    {
+      "position": [
+        32073,
+        31885,
+        6
+      ],
+      "status": "unresolved_semantics",
+      "sources": [
+        {
+          "source": "canary",
+          "uid": 22002,
+          "source_lines": [
+            905
+          ]
+        },
+        {
+          "source": "crystalserver",
+          "uid": 22002,
+          "source_lines": [
+            1121
+          ]
+        }
+      ],
+      "resolution": "not a gate: the dedicated script never opens the door; a USE checks the vocation-choice track for druid, removes mainland items and relocates the player, which is an interaction (Druid); present in both servers and identical"
     },
     {
       "position": [
