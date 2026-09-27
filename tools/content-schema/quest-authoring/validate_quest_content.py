@@ -171,6 +171,13 @@ def validate_storylines(quests_doc, gates_doc, progress_doc):
         return errors
     gate_keys = {g['identity']['key'] for g in gates_doc['gates']}
     tracks = {t['key']: t for t in progress_doc['progress']}
+    quest_keys = {q['identity']['key'] for q in quests_doc['quests']}
+    for track in progress_doc['progress']:
+        if 'auxiliary_of' in track:
+            if track['missions'] or track['start_of']:
+                errors.append(f'{track["key"]}: an auxiliary track is no mission or start track')
+            for owner in sorted(set(track['auxiliary_of']) - quest_keys):
+                errors.append(f'{track["key"]}: auxiliary of unknown quest {owner}')
     for quest in quests_doc['quests']:
         key = quest['identity']['key']
         for gate_ref in quest.get('gates', []):
@@ -198,6 +205,9 @@ def validate_storylines(quests_doc, gates_doc, progress_doc):
             track = tracks.get(mission['progress'], {})
             if where not in track.get('missions', []):
                 errors.append(f'{where}: progress track {mission["progress"]} does not list this mission')
+            for transition in mission['transitions']:
+                if ('requested_by' in transition) != (transition['owner'] == 'npc'):
+                    errors.append(f'{where}: transition {transition["key"]} names NPC dialogue without an NPC owner or the reverse')
             keys = [t['key'] for t in mission['transitions']]
             if len(keys) != len(set(keys)):
                 errors.append(f'{where}: duplicate transition key')

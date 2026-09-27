@@ -387,25 +387,32 @@
       "per_stage": 468,
       "fixed": 38
     },
-    "progress_tracks": 556,
-    "tracks_written_by_both_servers": 332,
-    "tracks_without_a_writer": 179,
-    "transitions": 1618,
+    "progress_tracks": 1001,
+    "tracks_written_by_both_servers": 704,
+    "tracks_without_a_writer": 109,
+    "transitions": 1832,
     "transitions_by_owner": {
-      "action": 169,
-      "creature_event": 27,
+      "action": 182,
+      "creature_event": 31,
+      "event_callback": 3,
       "library": 40,
-      "movement": 68,
-      "npc": 1259,
-      "other": 55
+      "movement": 78,
+      "npc": 1442,
+      "other": 56
     },
     "transitions_by_effect": {
       "computed": 42,
-      "increment": 61,
-      "to": 1515
+      "increment": 63,
+      "to": 1727
     },
-    "transitions_with_known_from": 383,
-    "transitions_in_both_servers": 1298,
+    "transitions_with_known_from": 441,
+    "npc_transitions": {
+      "total": 1442,
+      "with_keywords": 1240,
+      "with_topics": 739,
+      "npc_in_npc_census": 1442
+    },
+    "transitions_in_both_servers": 1371,
     "storyline_quests_linked_to_wiki": 52,
     "reward_only_quests_absorbed": 21,
     "catalogue_quests": 157,

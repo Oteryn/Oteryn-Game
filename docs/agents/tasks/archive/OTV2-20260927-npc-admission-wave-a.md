@@ -12,8 +12,8 @@ issue: 162
 pr: 1024
 jira: KAN-16
 base_sha: e2e2038b0f1020751f87b75df174cdfadc9b430c
-head_sha: null
-final_head_sha: 63de6f9ab0c4f22abad1c81c996d525bdc00c1dc
+head_sha: e3aa100f8344815da1cc7862af9057a840735e9b
+final_head_sha: e3aa100f8344815da1cc7862af9057a840735e9b
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-27
@@ -89,3 +89,7 @@ review under the standing authorization of `OWNER_FUNDED_AI_POLICY.md`.
 - Placements wait for a World, and dialogue waits for Oteryn-authored text.
 - Travel discounts, gated rows, held NPCs and the deferred NPC stay in the candidates.
 - The bank, blessings, crafting and tasks service markers stay unpopulated.
+
+## Completion
+
+Merged as PR #1024 (`63de6f9ab0c4f22abad1c81c996d525bdc00c1dc`) from final head `e3aa100f8344815da1cc7862af9057a840735e9b` on 2026-09-27. Ownership released.

@@ -120,6 +120,15 @@ branch, negated in `else` or after an early `return`, unknown otherwise, and not
 condition is compound. It is a line-level reading, not an evaluation; the transcription of each
 owner confirms it.
 
+A transition written by an NPC script names its dialogue in `requested_by`:
+- the NPC bundle key of the NPC authoring format (`canary:npc/<file>`, `crystal:npc/<file>`);
+- the player keywords (`MsgContains`) of the if-blocks around the write;
+- the dialogue topics those if-blocks test.
+
+The NPC side binds this to its dialogue nodes once its promotion needs it. Until then the node keeps
+its opaque `LUA_ACTION` and the quest side carries the reference, so no NPC-owned file changes (O4
+is settled by D35).
+
 Missions whose storage is a bare number (the 70 Killing in the Name of tasks) keep it as the track
 `storage/<n>`. A mission graph with typed, branching objectives (option B) is added only for a quest
 that staged missions cannot express (D34).
@@ -140,10 +149,11 @@ point at these definitions.
 | `Game.setStorageValue` | Quest child: world state shared by all players (D29). |
 | `Game.createMonster` | Ability child: a summon effect (GAME-ABILITY-01) at a named anchor. |
 | `player:addItem` | Item child: a hand-out through the DUR-03 item transaction. |
+| `player:removeItem`; `remove` on the item used (`onUse`) or dropped onto the edge (`onAddItem`) | Item child: consumption through DUR-03 (D38), never map state. |
 | `addAchievement` | Achievement child: a grant by the Achievement domain. |
 | `sendMagicEffect`, `sendTextMessage`, `say`, `sendCancelMessage` | Presentation child, never authoritative; a message keeps its source line, never its text (LICENSE-ASSETS.md). |
 | `teleportTo` | Movement child, blocked: no movement owner contract yet (GAME-INTERACTION-01 §19.3). |
-| `transform`, `createItem`, `removeItem`, `revertItem`, `decay`, `setActionId` on map items (walls, levers, flames) | WorldObject child, blocked: no world-object state owner contract yet. |
+| `transform`, `createItem`, `remove`, `revertItem`, `decay`, `setActionId` on map objects (walls, levers, flames) | WorldObject child, blocked: no world-object state owner contract yet. |
 | Encounter scripts | Stay encounters; they emit outcomes only (D27). |
 
 Source positions become anchors (`p1`, `p2`, …) with the coordinates kept as evidence until world
@@ -299,15 +309,16 @@ storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` t
 | Quest-log entries: Canary / CrystalServer / CrystalServer only | 51 / 59 / 7 |
 | Storyline quests / missions | 58 / 529 |
 | Journals: per stage / fixed / template | 468 / 38 / 23 |
-| Progress tracks / set by both servers' Lua / with no literal writer found | 557 / 332 / 179 |
+| Progress tracks (mission and start / auxiliary, §6.5) / set by both servers' Lua / with no literal writer found | 1,001 (556 / 445) / 704 / 109 |
 | Storyline quests linked to a wiki quest | 52 |
 | Reward-only quests absorbed by a storyline quest / catalogue quests | 21 / 157 |
 | Gates / reward claims attached to storyline quests | 138 / 98 |
 | Missions mapped / of which decided from a conflict (§6.4) | 529 / 35 |
-| Transitions / missions with at least one | 1,616 / 355 |
-| Transitions by owner: NPC / action / movement / creature event / library / other | 1,257 / 169 / 68 / 27 / 40 / 55 |
-| Effects: new value / step / computed | 1,513 / 61 / 42 |
-| Transitions with a known `from` stage (exact) / in both servers | 383 (312) / 1,298 |
+| Transitions / missions with at least one | 1,832 / 422 |
+| Transitions by owner: NPC / action / movement / creature event / library / other | 1,442 / 182 / 78 / 31 / 40 / 59 |
+| Effects: new value / step / computed | 1,727 / 63 / 42 |
+| Transitions with a known `from` stage (exact) / in both servers | 441 (343) / 1,371 |
+| NPC transitions / with keywords / with topics / whose NPC is in the NPC census | 1,442 / 1,240 / 739 / 1,442 |
 
 The 35 conflicts were mostly journal texts; the rest storage names or value ranges. They are decided
 in §6.4. "No literal writer" means the index found no
@@ -332,18 +343,16 @@ joined by that key; `interaction.schema.json` and
 |---|---:|
 | Interactions | 1,221 |
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
-| Children: Quest / Ability / Item / Achievement / Presentation | 944 / 208 / 160 / 30 / 2,668 |
-| Children blocked: Movement / WorldObject | 800 / 1,117 |
-| Quest children naming a mission transition | 193 |
-| Unresolved statements / conditions | 2,016 / 1,963 |
+| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Presentation | 944 / 208 / 343 (160, 183) / 30 / 2,668 |
+| Children blocked: Movement / WorldObject | 800 / 891 |
+| Quest children naming a mission transition | 215 |
+| Unresolved statements (of which creature removals) / conditions | 2,059 (43) / 1,963 |
 | Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 236 / 985 / 37 |
-| Progress tracks written but not declared by the catalogue | 373 |
 
 An independent spot check of 56 randomly sampled classified lines against their source found no
 misclassification. Most interactions keep some unresolved part: local tables and lookups,
 boss-room loops and delayed callbacks are the common ones. They stay with their source line
-rather than being guessed. The 373 undeclared tracks are the quest domain's to declare before the
-requests can run (D35).
+rather than being guessed. Every track a quest child writes is declared by the catalogue (§6.5).
 
 The Queen of the Banshees shows the result for one quest: 18 interactions; its seven seal flames
 request the seven movement transitions of slice 3 (one per mission, the last one opening the final
@@ -379,6 +388,29 @@ A first pass found 60 interaction conflicts. Twenty-three were callbacks paired 
 a file, so one server's added callback shifted the pairs; they are now joined by their script object.
 Interactions decided for CrystalServer keep the quest's Canary identity (D33).
 
+### 6.5 Declared auxiliary tracks
+
+Quest scripts also write tracks outside any mission: seal doors, counters, cooldowns and puzzle
+state. Under D35 the quest domain owns them too, so the catalogue declares each one (445) in
+`progress.json` with `auxiliary_of`. The owning quest comes from three sources, in this order:
+
+| Owner basis | Tracks |
+|---|---:|
+| The longest mission-track prefix that names one quest | 279 |
+| The script directory whose scripts write the missions of one quest | 8 |
+| `track_owners.json`: assigned from the track and script names and the script code, checked by sampling | 158 |
+
+- 81 tracks belong to a wiki quest that is not in the catalogue yet (`wiki_quest`).
+- 8 belong to no quest; their `note` gives the reason, for example world changes, generic helpers and
+  an example script.
+- 33 auxiliary tracks are read by door gates.
+
+The converter stops when a written track has no owner, and when `track_owners.json` names a track
+that needs no record. No interaction writes an undeclared track.
+
+Both converters expand `local X = Storage.…` aliases before reading writes. That added 216
+transitions to slice 3. A file that shadows `Storage` itself keeps its full paths.
+
 ## 7. Ownership
 
 - Static claim and placement: Content (`content/interactions/`, `content/world/placements/`),
@@ -399,13 +431,38 @@ Interactions decided for CrystalServer keep the quest's Canary identity (D33).
 
 ## 8. Next slices
 
-1. Owner transcription: bind each transition to its owner's content. The movement and action
-   scripts are transcribed (§6.3) and all conflicts are decided (§6.4); next the undeclared progress
-   tracks join their missions. Then NPC dialogue nodes (the NPC schema's open decision O4 is settled by D35: dialogue requests transitions and reads
-   stages, the quest domain owns the state).
+1. Owner transcription. The movement and action scripts are transcribed (§6.3), all conflicts are
+   decided (§6.4), the tracks the scripts write are declared (§6.5) and NPC transitions name their
+   dialogue (§3.2). Next, the NPC format binds `requested_by` to its dialogue nodes when it promotes
+   dialogue; that work lives in the NPC-owned files.
 2. NPC-driven outfit and addon quests (under the NPC service boundary).
-3. The dedicated-script doors (vocation doors, Katana, Secret Service).
-4. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
+3. Movement and world-object owners: D37 and D38 are decided
+   (`OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md`). After the independent
+   review and the scope-runtime implementation, the blocked children become executable. The first
+   target is The Queen of the Banshees, played from start to end.
+4. The dedicated-script doors (vocation doors, Katana, Secret Service).
+
+**Runtime readiness for a playable quest (audit 2026-09-27).** The server does not execute any quest
+content yet. WorldProject/v2 admits Quest, Interaction, WorldObject, Npc and Dialogue records as
+declarations only (`content/project/v2.rs`); only the Reference linker's definition families lower
+to runtime, and none of them is a quest family.
+
+A player completing The Queen of the Banshees needs:
+
+| Need | Today | Blocked on |
+|---|---|---|
+| Step-on and use triggers | generic proposal dispatcher only (`interaction/`) | GAME-INTERACTION-01 successor (PROPOSED) |
+| Quest progress store, fenced per character | only character XP persists | a quest-state store; D35 gives the rules, no contract yet |
+| Teleport, walls and levers | one local step (`movement.rs`); no map-object state | VSL-MOVE-01 implementation; D37/D38 review |
+| Summons | spawn rejected (`ai/mod.rs`) | GAME-AI-01 (PROPOSED) |
+| Reward items | fixture-only | DUR-03 (CANDIDATE, no runtime authority) |
+| NPC dialogue with quest hooks | none | an NPC dialogue runtime contract (none yet) |
+| Quest lowering from content | none | a Quest/Interaction definition family in the Reference linker |
+
+The smallest playable slice is a reward chest: a `USE` trigger, one DUR-03 hand-out and a per-character
+claim. It needs only GAME-INTERACTION-01 and DUR-03 accepted and a claim store. A full storyline quest
+needs every row above.
+5. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
    Cloudflare challenge.
 
 ## 9. Owner decisions
@@ -417,3 +474,6 @@ Interactions decided for CrystalServer keep the quest's Canary identity (D33).
 | D34 | Storyline quests use staged missions (option A of `CONTENT-QUEST-01`): a quest has missions, each mission one integer progress track with a start and an end value and a journal text per stage; transitions are named events of their owners (NPC, interaction, gate, claim, encounter). A graph of typed, branching objectives (option B) is added only for a quest that staged missions cannot express. | Owner decision 2026-09-27 ("zróbmy A a potem jeśli będzie potrzeba to B"). Both servers already describe all 529 missions this way. |
 | D35 | Only the quest domain writes quest progress. Each mission declares named transitions (from a stage to a new value, a step or a computed value); NPC dialogue, movements, actions, creature events, encounters and claims request a transition, conditions read stages, and the quest domain validates the request against the current stage, applies it idempotently and session-generation fenced, and hands rewards to the reward and item owners. This settles the quest-state part of the NPC schema's open decision O4. | Owner accepted the proposal ("zgadzam się", 2026-09-27). Quest progress is character state shared across channels while NPC runtime is channel-local; both servers let any script write progress (1,616 transitions over 355 missions). |
 | D36 | Movement, action and creature-event scripts become interaction definitions in `content/interactions/`, compiled to GAME-INTERACTION-01 plans: an edge (`ON_ENTER`, `ON_LEAVE`, `ON_CONTACT`, `USE`, `ON_DEATH`, `ON_KILL`), read-only conditions and children executed by their existing owners: quest transitions and world state (D35, D29), ability effects such as summons (GAME-ABILITY-01), item handouts (DUR-03), achievement grants. Teleports and map-object changes stay in the definition as blocked children until a movement and a world-object owner contract exist; encounters keep emitting outcomes only (D27); what data cannot express becomes a DUR-04 component. Items (`use.interactions[]`) and monsters (event bindings, D6) reference these definitions. | Owner continued after the consistency check against GAME-INTERACTION-01, GAME-ABILITY-01, DUR-04, ADR-0019 and the item and monster schemas ("kontynuuj", 2026-09-27), replacing the earlier proposal of a shared rule core. |
+| D37 | Interaction relocation children (teleports) are owned by the current scope's `ChannelRuntime`/`InstanceRuntime`, as VSL-MOVE-01 accepts. They are identified by the GAME-INTERACTION child identity and fenced on World, scope, session generation, position revision and content generation. A request not committed in its tick is rejected, and relocation to another Channel or Instance stays blocked until `SCOPE_HANDOFF` has a contract. | Owner accepted proposals R1-R3 ("zgadzam się", 2026-09-27); the contract text awaits independent review (`OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md`). |
+| D38 | Map-object changes are a scope-ephemeral overlay owned by the same scope runtime, extending the local transition candidate. Operations are `TRANSFORM`, `CREATE`, `REMOVE` and `RETAG`, each optionally with `revert_after`. Anything durable is quest state (D35); pick-up-able objects and carried-item removal are always DUR-03. | Owner accepted proposals W1-W3 ("zgadzam się", 2026-09-27); the contract text awaits independent review. |
+| D39-D42 | The reward chest slice: GAME-INTERACTION-01 governs the `USE` edge (D39); DUR-03 mints from an interaction child, idempotent per claim and character (D40); the reward goes only into the inventory: weight and backpack room are checked first, and a failure tells the player why and creates nothing, never dropping to the ground (D41); a per-character `RewardClaim` record commits in the same transaction as the item (D42). | Owner consent after a comparison with both servers (2026-09-27); details and the open composition point in `OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md`. |
