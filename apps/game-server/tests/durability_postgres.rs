@@ -289,7 +289,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-        for scenario in 0..4 {
+        for scenario in 0..6 {
         let not_entitled = scenario == 1;
         let database = postgres::IsolatedPostgres::create("owning_fresh_loss").await?;
         let result = async {
@@ -305,6 +305,10 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             store.commit(&request).await?;
             let FreshReconciliation::Committed(initial) = store.reconcile(request.operation()).await? else { return Err("missing fresh session".into()); };
             let session = initial.current_session;
+            // Loss is timed on the database clock sampled with the session.
+            let (timed, clock) = store.current_session_at(session.commit().game_session_id()).await?;
+            assert_eq!(timed, session);
+            assert!((now..=now + 5).contains(&clock));
             let source = std::sync::Arc::new(LossSource(std::sync::Mutex::new(ControlLossObservationV1 {
                 source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
                 decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
@@ -314,7 +318,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 placement_identity: [9;16], placement_revision: 1, actor_present: true, runtime_ready: true,
                 cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss,
                 loss_epoch: authority_matrix::checked(ControlLossEpochRefV1::new(1))?, loss_origin: now,
-                original_grace_deadline: now + 120, history: ControlLossHistoryV1::FreshOrigin,
+                original_grace_deadline: if scenario == 5 { now + 2 } else { now + 120 }, history: ControlLossHistoryV1::FreshOrigin,
                 protection: RecoveryProtectionContinuityV1 {
                     usage: if not_entitled { RecoveryProtectionUseV1::NotEntitled } else { RecoveryProtectionUseV1::Unused { entitlement_generation: 1 } },
                     rearm: if not_entitled { RecoveryProtectionRearmV1::NotRearmed { generation: 7, stable_control_started_at: Some(now - 10), accepted_deadline: Some(now + 10) } } else { RecoveryProtectionRearmV1::Satisfied { generation: 1, established_at: now } },
@@ -341,7 +345,50 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             let mut flow = ControlLossFlowV1::begin(authorization);
             let loss = std::sync::Arc::new(authority_matrix::checked(flow.take_request())?);
             assert_eq!(store.reconcile_fresh_loss(loss.operation()).await?, FreshLossReconciliation::Absent);
-            if scenario >= 2 {
+            if scenario >= 4 {
+                // A later, refused admission attempt for the same account
+                // re-observes Platform security and republishes the Account
+                // row. Presence still names this session, so loss commits.
+                let key = owner.rows[0].key.clone();
+                let mut row = guards.load(&[key]).await?.pop().flatten().ok_or("missing account row")?;
+                row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet { expected_publication_revision: row.publication_revision };
+                row.publication_revision += 1;
+                row.source.source_revision += 1;
+                row.source.decision_identity = "platform-refresh".into();
+                if let AdmissionAuthorityGuardStateV1::Account { security, presence } = &mut row.state {
+                    security.provenance.publication_revision = row.publication_revision;
+                    assert_eq!(*presence, Some((session.commit().character_id(), session.commit().game_session_id())));
+                } else { return Err("missing account fixture".into()); }
+                owner.rows = vec![row];
+                let publication = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner, now))?;
+                assert_eq!(guards.publish(&publication).await?, durability::admission_authority_guards::GuardPublicationDisposition::Applied);
+            }
+            if scenario == 5 {
+                // Grace expiry: the loss commits, is not released before its
+                // deadline, then releases from the *current* (refreshed) rows.
+                let account = "00000000-0000-4000-8000-000000000001";
+                let id = session.commit().game_session_id();
+                assert!(matches!(store.commit_fresh_loss(loss.clone(), source.clone()).await?, ControlLossOutcomeV1::Committed { .. }));
+                assert!(matches!(store.release_expired_loss(id, account).await?, durability::fresh_admission::ExpiredLossReleaseV1::NotExpired { .. }));
+                tokio::time::sleep(std::time::Duration::from_millis(3100)).await;
+                // Another account has no claim rows naming this session.
+                assert_eq!(store.release_expired_loss(id, "00000000-0000-4000-8000-000000000099").await.ok(), None);
+                let durability::fresh_admission::ExpiredLossReleaseV1::Released { decided_at } = store.release_expired_loss(id, account).await? else { return Err("expired loss was not released".into()); };
+                assert!(decided_at >= now + 2);
+                let (released, _) = store.current_session_at(id).await?;
+                assert_eq!(released.session_state(), GameSessionState::Terminal);
+                assert_eq!(released.current_character_lease(), session.current_character_lease());
+                let keys = vec![AdmissionAuthorityGuardKeyV1::Account { account_id: account.into() }, AdmissionAuthorityGuardKeyV1::Character(session.commit().character_id())];
+                let rows = guards.load(&keys).await?;
+                assert!(matches!(rows[0].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Account { presence: None, .. })));
+                assert!(matches!(rows[1].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Character { holder: None, lease_generation, .. }) if *lease_generation == session.current_character_lease().generation()));
+                // Terminal (also after a lost acknowledgement): nothing further to
+                // release, and the owner may remove the exact actor.
+                assert_eq!(store.release_expired_loss(id, account).await?, durability::fresh_admission::ExpiredLossReleaseV1::Terminal);
+                pool.close().await;
+                return Ok(());
+            }
+            if (2..4).contains(&scenario) {
                 // Publish one independently valid current runtime change while
                 // leaving the session, claims, and loss source exactly unchanged.
                 owner.rows.retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));

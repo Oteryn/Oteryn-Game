@@ -1331,6 +1331,17 @@ pub const ITEM_SEMANTIC_PROMOTION_ITEM_COUNT: usize = 23;
 pub const ITEM_SEMANTIC_PROMOTION_PACKET: &[u8] = include_bytes!(
     "../../../../docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json"
 );
+pub const R7_P04_GOLD_COIN_EVIDENCE_PACKET: &[u8] =
+    include_bytes!("../../../../docs/agents/evidence/OTV2-20260927-r7-p04-gold-coin.json");
+pub const R7_P04_GOLD_COIN_EVIDENCE_BYTES: usize = 4_982;
+pub const R7_P04_GOLD_COIN_EVIDENCE_SHA256: &str =
+    "53223cb967b6428c134729252930e4f351e0c25afb09bb36b7e4025c0631768e";
+pub const R7_P04_GOLD_COIN_SOURCE_ITEM_ID: u64 = 3_031;
+pub const R7_P04_GOLD_COIN_OPAQUE_SEQUENCE: usize = 2_921;
+pub const R7_P04_GOLD_COIN_OLD_KEY: &str = "oteryn:item.registry.i00002921";
+pub const R7_P04_GOLD_COIN_KEY: &str = "oteryn:item.currency.gold_coin";
+pub const R7_P04_UNRELATED_REGISTRY_KEY: &str = "oteryn:item.registry.i00003031";
+pub const R7_P04_UNRELATED_SOURCE_ITEM_ID: u64 = 3_147;
 const ITEM_SEMANTIC_PROMOTION_SCHEMA: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION/v1";
 const ITEM_SEMANTIC_PROMOTION_PROFILE: &str = "OTERYN_ITEM_SEMANTIC_PROMOTION_COMPILER/v1";
 const ITEM_SEMANTIC_PROMOTION_STATUS: &str = "PARTIAL_CANONICAL_SEMANTIC_PROMOTION_PACKET";
@@ -1955,6 +1966,319 @@ pub fn protected_cw2_b1_promoted_item_family_import(
         promoted_fields: seen_atoms.len(),
         promoted_items: seen_items.len(),
     })
+}
+
+fn validate_r7_p04_gold_coin_evidence(
+    evidence_bytes: &[u8],
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if evidence_bytes.len() > R7_P04_GOLD_COIN_EVIDENCE_BYTES {
+        return Err(ProtectedCw2B1ImportError::InputLimitExceeded {
+            actual: evidence_bytes.len(),
+            limit: R7_P04_GOLD_COIN_EVIDENCE_BYTES,
+        });
+    }
+    if evidence_bytes.len() != R7_P04_GOLD_COIN_EVIDENCE_BYTES
+        || world_project_sha256(evidence_bytes) != R7_P04_GOLD_COIN_EVIDENCE_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin evidence bytes",
+        ));
+    }
+
+    let packet: serde_json::Value = serde_json::from_slice(evidence_bytes).map_err(|_| {
+        ProtectedCw2B1ImportError::EvidenceMismatch("R7 P04 Gold Coin evidence JSON")
+    })?;
+    let source =
+        packet
+            .get("source_identity")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin source identity",
+            ))?;
+    let fields =
+        packet
+            .get("field_dispositions")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin field dispositions",
+            ))?;
+    let invariants =
+        packet
+            .get("invariants")
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin invariants",
+            ))?;
+
+    if packet["schema"] != "OTERYN_R7_P04_GOLD_COIN_PROMOTION/v1"
+        || packet["status"] != "REFERENCE_CONTENT_ONLY"
+        || packet["authority"]["native_identity"] != "OTERYN_EDITORIAL_SELECTION"
+        || packet["authority"]["runtime_qualified"] != false
+        || packet["authority"]["global_parity"] != "UNKNOWN"
+        || source["source_item_id"] != R7_P04_GOLD_COIN_SOURCE_ITEM_ID
+        || source["protected_catalog_index"] != 2_948
+        || source["opaque_sequence"] != R7_P04_GOLD_COIN_OPAQUE_SEQUENCE
+        || source["current_native_key"] != R7_P04_GOLD_COIN_OLD_KEY
+        || source["target_native_key"] != R7_P04_GOLD_COIN_KEY
+        || source["target_revision"] != CW2_B1_FULL_ITEM_REVISION
+        || source["source_node_sha256"]
+            != "9528fadc4f8fdf66e7937d15e3843b3f39b35ae47ae8a737d93ca76efe652124"
+        || source["field_profile_sha256"]
+            != "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0"
+        || source["numeric_coordinate_is_native_identity"] != false
+        || fields["materializable"] != "ADMITTED_TRUE_REFERENCE_CARRIER_ONLY"
+        || fields["stack_class"] != "ADMITTED_STACK_CAPABLE"
+        || fields["typed_stackable"] != "UNKNOWN_NOT_EMITTED"
+        || fields["max_stack"] != "UNKNOWN_NOT_EMITTED"
+        || fields["weight"] != "CONFLICT_RETAINED_NOT_EMITTED"
+        || fields["runtime_activation"] != "NOT_AUTHORIZED"
+        || fields["mint_transfer"] != "NOT_IMPLEMENTED"
+        || fields["global_parity"] != "UNKNOWN"
+        || invariants["full_item_family_count"] != CW2_B1_FULL_ITEM_FAMILY_COUNT
+        || invariants["replace_exactly_one_opaque_identity"] != true
+        || invariants["preserve_unrelated_registry_key_i00003031"] != true
+        || invariants["all_typed_semantics_remain_unknown"] != true
+        || invariants["source_id_never_used_as_native_key"] != true
+        || invariants["no_tibiawiki_binding_from_server_item_id"] != true
+        || invariants["no_runtime_or_durability_claim"] != true
+        || packet["source_evidence"]["canary"]["revision"]
+            != "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+        || packet["source_evidence"]["canary"]["item_node_sha256"]
+            != "a13fff4efd0edccee26f5b37c8f7b131aa85acbe5ac34779f0e475c5cc16ac9e"
+        || packet["source_evidence"]["crystalserver"]["revision"]
+            != "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
+        || packet["source_evidence"]["crystalserver"]["item_node_sha256"]
+            != "5684fce5eea620260f5d0dbc2ed9645fc61bd164d88e3ab2fea7425bda4c3ed0"
+        || packet["source_evidence"]["tibiawiki_br"]["revision_id"] != 429_156
+        || packet["source_evidence"]["tibia_fandom"]["revision_id"] != 1_175_624
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin evidence contract",
+        ));
+    }
+    Ok(())
+}
+
+/// Apply the R7 P04 editorial identity decision to one protected full-family source slot.
+///
+/// Source item `3031` remains provenance only. The resulting Reference carrier is
+/// materializable and stack-capable, while every typed semantic field remains unknown. In
+/// particular, this function does not admit a stack maximum, weight, value, exchange rate,
+/// runtime activation, transaction behavior or Global parity.
+pub fn protected_r7_p04_gold_coin_item_family_import(
+    b1_evidence_bytes: &[u8],
+    gold_coin_evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    validate_r7_p04_gold_coin_evidence(gold_coin_evidence_bytes)?;
+    let mut promoted = protected_cw2_b1_promoted_item_family_import(b1_evidence_bytes)?;
+    let family = &mut promoted.family;
+
+    if family.records.iter().any(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_KEY)
+    }) {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin target identity already exists",
+        ));
+    }
+
+    let mut matching_records = family.records.iter_mut().filter(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_OLD_KEY)
+    });
+    let record = matching_records
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record",
+        ))?;
+    if matching_records.next().is_some() {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record uniqueness",
+        ));
+    }
+    let ProjectReferenceRecord::Item {
+        identity,
+        materializable,
+        stack_class,
+        semantics,
+        ..
+    } = record
+    else {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin record family",
+        ));
+    };
+    if identity.family != "Item"
+        || identity.revision != CW2_B1_FULL_ITEM_REVISION
+        || *materializable
+        || *stack_class != ItemStackDocument::Unknown
+        || !semantics.is_all_unknown()
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin opaque record baseline",
+        ));
+    }
+    identity.key = R7_P04_GOLD_COIN_KEY.to_owned();
+    *materializable = true;
+    *stack_class = ItemStackDocument::StackCapable;
+
+    let mut matching_candidates =
+        family.batch.candidates.iter_mut().filter(|candidate| {
+            candidate.source_numeric_id == Some(R7_P04_GOLD_COIN_SOURCE_ITEM_ID)
+        });
+    let candidate =
+        matching_candidates
+            .next()
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 Gold Coin source candidate",
+            ))?;
+    if matching_candidates.next().is_some() {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin source candidate uniqueness",
+        ));
+    }
+    let mut bindings = candidate.normalized_fields.iter_mut().filter_map(|field| {
+        if field.field_path == "binding.native-item"
+            && let CandidateValue::NativeItemBinding(binding) = &mut field.value
+        {
+            return Some(binding);
+        }
+        None
+    });
+    let binding = bindings
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin native binding",
+        ))?;
+    if bindings.next().is_some()
+        || binding.identity.family != "Item"
+        || binding.identity.key != R7_P04_GOLD_COIN_OLD_KEY
+        || binding.identity.revision != CW2_B1_FULL_ITEM_REVISION
+        || candidate.candidate_target
+            != format!("{R7_P04_GOLD_COIN_OLD_KEY}@{CW2_B1_FULL_ITEM_REVISION}")
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin native binding baseline",
+        ));
+    }
+    binding.identity.key = R7_P04_GOLD_COIN_KEY.to_owned();
+    candidate.candidate_target = format!("{R7_P04_GOLD_COIN_KEY}@{CW2_B1_FULL_ITEM_REVISION}");
+    candidate.disposition_reason =
+        "R7_P04_REFERENCE_CONTENT_PROMOTION_RUNTIME_UNQUALIFIED".to_owned();
+    let authorship = candidate
+        .normalized_fields
+        .iter_mut()
+        .find(|field| field.field_path == "source.native-key-authorship")
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin authorship field",
+        ))?;
+    if authorship.value
+        != CandidateValue::Text("OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_1".to_owned())
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin authorship baseline",
+        ));
+    }
+    authorship.value = CandidateValue::Text(
+        "OTERYN_EDITORIAL_SELECTION_R7_P04_SOURCE_ID_PROVENANCE_ONLY".to_owned(),
+    );
+
+    let mut matching_reimports = family
+        .batch
+        .reimport_states
+        .iter_mut()
+        .filter(|state| state.stable_identity == R7_P04_GOLD_COIN_OLD_KEY);
+    let reimport = matching_reimports
+        .next()
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin reimport identity",
+        ))?;
+    if matching_reimports.next().is_some()
+        || reimport.field_path != "source.item-id"
+        || reimport.baseline != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.upstream != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.local != Some(CandidateValue::SourceId(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        || reimport.decision != ReimportDecision::Unchanged
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin reimport baseline",
+        ));
+    }
+    reimport.stable_identity = R7_P04_GOLD_COIN_KEY.to_owned();
+
+    let unrelated = family
+        .batch
+        .candidates
+        .iter()
+        .find(|candidate| candidate.source_numeric_id == Some(R7_P04_UNRELATED_SOURCE_ITEM_ID))
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry source",
+        ))?;
+    let unrelated_binding = unrelated
+        .normalized_fields
+        .iter()
+        .find_map(|field| match &field.value {
+            CandidateValue::NativeItemBinding(binding) => Some(binding),
+            _ => None,
+        })
+        .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry binding",
+        ))?;
+    if unrelated_binding.identity.key != R7_P04_UNRELATED_REGISTRY_KEY {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 unrelated registry identity drift",
+        ));
+    }
+
+    let mut allocations = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    for candidate in &family.batch.candidates {
+        let source_item_id =
+            candidate
+                .source_numeric_id
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "R7 P04 allocation source identity",
+                ))?;
+        let binding = candidate
+            .normalized_fields
+            .iter()
+            .find_map(|field| match &field.value {
+                CandidateValue::NativeItemBinding(binding) => Some(binding),
+                _ => None,
+            })
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "R7 P04 allocation native identity",
+            ))?;
+        allocations.push((source_item_id, binding.identity.key.as_str()));
+    }
+    allocations.sort_unstable_by_key(|(source_item_id, _)| *source_item_id);
+    let mut digest_input = Vec::with_capacity(CW2_B1_FULL_ITEM_FAMILY_COUNT * 48);
+    for (source_item_id, native_key) in allocations {
+        digest_input.extend_from_slice(source_item_id.to_string().as_bytes());
+        digest_input.push(0);
+        digest_input.extend_from_slice(native_key.as_bytes());
+        digest_input.push(b'\n');
+    }
+    family.allocation_digest_sha256 = world_project_sha256(&digest_input);
+
+    family.records.sort_by(|left, right| {
+        let ProjectReferenceRecord::Item {
+            identity: left_identity,
+            ..
+        } = left
+        else {
+            unreachable!("protected full Item family contains only Item records")
+        };
+        let ProjectReferenceRecord::Item {
+            identity: right_identity,
+            ..
+        } = right
+        else {
+            unreachable!("protected full Item family contains only Item records")
+        };
+        left_identity.key.cmp(&right_identity.key)
+    });
+    family.batch.reimport_states.sort_by(|left, right| {
+        left.stable_identity
+            .cmp(&right.stable_identity)
+            .then_with(|| left.field_path.cmp(&right.field_path))
+    });
+
+    Ok(promoted)
 }
 
 fn validate_protected_evidence(evidence_bytes: &[u8]) -> Result<(), ProtectedCw2B1ImportError> {

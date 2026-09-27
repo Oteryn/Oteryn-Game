@@ -11,10 +11,10 @@ use oteryn_game_server::content::{
     ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
     ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
     ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
-    ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
-    ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
-    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
-    protected_cw2_b1_promoted_item_family_import,
+    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
+    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
+    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
+    ReferenceSignedPoints, ReferenceWeaponType, protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -987,7 +987,10 @@ fn populate_outfits(
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
-    let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
+    let promoted = protected_r7_p04_gold_coin_item_family_import(
+        B1_EVIDENCE,
+        R7_P04_GOLD_COIN_EVIDENCE_PACKET,
+    )?;
     if promoted.family.records.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
         return Err("protected promoted Item family count drifted".into());
     }
@@ -1034,7 +1037,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-item-wave1-r1".to_owned(),
+                project_revision: "g4-item-wave1-r7-p04-gold-coin-r1".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
