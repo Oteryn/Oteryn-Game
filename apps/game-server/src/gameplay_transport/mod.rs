@@ -49,7 +49,7 @@ use crate::foundation::{
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, ControlLossResult, ControllerBinding,
     FirstEntryOutcome, FreshAdmissionAttempt, FreshAdmissionAuthority, GraceExpiryResult,
-    IDLE_LIVENESS, StepOutcome, admit_frame, serve_admitted,
+    IDLE_LIVENESS, SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -722,6 +722,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 transport: attempt.transport,
                 account_id: *record.account_id.as_bytes(),
             }),
+            continuity: SessionContinuity::FRESH,
         })
     }
 }
@@ -1224,6 +1225,7 @@ mod tests {
                 runtime_actor: None,
                 first_entry: FirstEntryOutcome::NotApplicable,
                 controller: None,
+                continuity: SessionContinuity::FRESH,
             })
         }
     }

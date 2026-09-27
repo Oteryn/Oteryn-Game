@@ -50,6 +50,31 @@ pub(crate) struct AdmittedSession {
     /// The admitted controller: the exact authenticated transport and the account whose
     /// presence the session holds. Transport-only fixtures omit it.
     pub(crate) controller: Option<ControllerBinding>,
+    /// FND-02 continuity of this controller connection, current at the moment the
+    /// connection ends (the next CommandId, server_sequence and spatial revision).
+    pub(crate) continuity: SessionContinuity,
+}
+
+/// FND-02 continuity of one admitted controller connection. A same-session recovery
+/// resumes CommandId order and server_sequence from the value the lost connection ended
+/// with, on a strictly newer connection generation (FND-04B §16).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct SessionContinuity {
+    pub(crate) connection_generation: u64,
+    pub(crate) next_command_id: u64,
+    pub(crate) server_sequence: u64,
+    pub(crate) spatial_revision: u64,
+}
+
+impl SessionContinuity {
+    /// A fresh admission: generation 1, first CommandId 1, no sequenced output yet, and
+    /// the baseline spatial revision 1.
+    pub(crate) const FRESH: Self = Self {
+        connection_generation: ADMITTED_GENERATION,
+        next_command_id: 1,
+        server_sequence: 0,
+        spatial_revision: 1,
+    };
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -398,6 +423,8 @@ where
     S: AsyncRead + AsyncWrite + Unpin,
     A: FreshAdmissionAuthority,
 {
+    let mut admitted = admitted;
+    let generation = admitted.continuity.connection_generation;
     let playable = matches!(
         admitted.first_entry,
         FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
@@ -408,12 +435,12 @@ where
     let Some(baseline) = authority.observe(actor).await else {
         return hold_admitted(stream, admitted).await;
     };
-    let mut revision = 1_u64;
+    let mut revision = admitted.continuity.spatial_revision;
     let payload = encode_world_spatial(&baseline);
     let snapshot = encode_single_chunk_snapshot(
-        ADMITTED_GENERATION,
+        generation,
         1,
-        0,
+        admitted.continuity.server_sequence,
         &[DomainSnapshot {
             domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
             revision,
@@ -429,8 +456,8 @@ where
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
     }
-    let mut sequence = 0_u64;
-    let mut next_command = 1_u64;
+    let mut sequence = admitted.continuity.server_sequence;
+    let mut next_command = admitted.continuity.next_command_id;
     let mut frames = FrameReader::default();
     let mut liveness = Liveness::new(policy);
     let mut cadence = tokio::time::interval_at(
@@ -465,7 +492,7 @@ where
             Next::Frame(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
             Next::Probe => {
                 let probe = match liveness.tick() {
-                    Ok(probe_id) => encode_liveness_probe(ADMITTED_GENERATION, probe_id),
+                    Ok(probe_id) => encode_liveness_probe(generation, probe_id),
                     Err(LivenessEnd::ControlLost) => {
                         return ConnectionEnd::AdmittedThenControlLost(admitted);
                     }
@@ -487,7 +514,7 @@ where
         };
         let command = match decode_wire_envelope(&frame) {
             Err(error) => return close_admitted(stream, admitted, error).await,
-            Ok(envelope) if envelope.connection_generation() != ADMITTED_GENERATION => {
+            Ok(envelope) if envelope.connection_generation() != generation => {
                 return close_admitted(
                     stream,
                     admitted,
@@ -497,7 +524,7 @@ where
             }
             Ok(envelope) if envelope.message_type() == MessageType::LivenessAck => {
                 match envelope
-                    .liveness_ack(ADMITTED_GENERATION)
+                    .liveness_ack(generation)
                     .and_then(|ack| liveness.ack(ack.probe_id))
                 {
                     Ok(()) => continue,
@@ -512,7 +539,7 @@ where
                 )
                 .await;
             }
-            Ok(envelope) => match envelope.client_command(ADMITTED_GENERATION) {
+            Ok(envelope) => match envelope.client_command(generation) {
                 Ok(command) => command,
                 Err(error) => return close_admitted(stream, admitted, error).await,
             },
@@ -527,7 +554,7 @@ where
             };
             let _ = match encode_command_protocol_error(
                 error,
-                ADMITTED_GENERATION,
+                generation,
                 command.command_id,
                 expected,
             ) {
@@ -550,13 +577,15 @@ where
         };
         sequence = result_sequence;
         next_command = following;
+        admitted.continuity.server_sequence = sequence;
+        admitted.continuity.next_command_id = next_command;
         let status = if outcome.disposition == StepDisposition::Rejected {
             CommandStatus::Rejected
         } else {
             CommandStatus::Accepted
         };
         let Ok(result) = encode_command_result(
-            ADMITTED_GENERATION,
+            generation,
             sequence,
             command.command_id,
             status,
@@ -578,7 +607,7 @@ where
                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
             };
             let Ok(delta) = encode_state_delta(
-                ADMITTED_GENERATION,
+                generation,
                 delta_sequence,
                 STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
                 revision,
@@ -590,6 +619,8 @@ where
             };
             sequence = delta_sequence;
             revision = new_revision;
+            admitted.continuity.server_sequence = sequence;
+            admitted.continuity.spatial_revision = revision;
             if write_frame(stream, &delta).await.is_err() {
                 return ConnectionEnd::AdmittedThenDisconnected(admitted);
             }
@@ -602,7 +633,7 @@ async fn close_admitted<S: AsyncWrite + Unpin>(
     admitted: AdmittedSession,
     error: FoundationProtocolError,
 ) -> ConnectionEnd {
-    let _ = send_error(stream, error, ADMITTED_GENERATION).await;
+    let _ = send_error(stream, error, admitted.continuity.connection_generation).await;
     ConnectionEnd::AdmittedThenClosed(admitted, error)
 }
 
@@ -677,6 +708,7 @@ mod tests {
                 runtime_actor: None,
                 first_entry: FirstEntryOutcome::NotApplicable,
                 controller: None,
+                continuity: SessionContinuity::FRESH,
             })
         }
     }
@@ -851,6 +883,7 @@ mod tests {
             runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
             first_entry: FirstEntryOutcome::Positioned,
             controller: None,
+            continuity: SessionContinuity::FRESH,
         };
         let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 21);
         for frame in client_frames {
@@ -908,6 +941,7 @@ mod tests {
             runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
             first_entry: FirstEntryOutcome::Positioned,
             controller: None,
+            continuity: SessionContinuity::FRESH,
         })
     }
 
@@ -1178,13 +1212,24 @@ mod tests {
                 )?,
             ]);
             assert_eq!(frames, expected);
-            assert!(matches!(
-                end,
-                ConnectionEnd::AdmittedThenClosed(
-                    _,
-                    FoundationProtocolError::CommandOutcomeExpired
-                )
-            ));
+            let ConnectionEnd::AdmittedThenClosed(
+                ended,
+                FoundationProtocolError::CommandOutcomeExpired,
+            ) = end
+            else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            // The ended session carries the FND-02 continuity a same-session recovery
+            // resumes from: next CommandId 4, server_sequence 4, spatial revision 2.
+            assert_eq!(
+                ended.continuity,
+                SessionContinuity {
+                    connection_generation: 1,
+                    next_command_id: 4,
+                    server_sequence: 4,
+                    spatial_revision: 2,
+                }
+            );
             // The unregistered type and the replayed ID never reached Movement.
             assert_eq!(
                 *authority.steps.borrow(),
@@ -1247,6 +1292,7 @@ mod tests {
                 runtime_actor: None,
                 first_entry: FirstEntryOutcome::NotApplicable,
                 controller: None,
+                continuity: SessionContinuity::FRESH,
             };
             assert_eq!(end, ConnectionEnd::AdmittedThenDisconnected(admitted));
             assert_eq!(authority.calls.get(), 1);
