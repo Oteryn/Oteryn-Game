@@ -54,4 +54,3 @@ historical revision `1035268` and its revision SHA-1. Per-capture SHA-256 remain
 separate required digest. Value-dependent source fields carry `source_value` so the
 validator can prove conditional owner routing and normalizations (including signed
 weight, `unmove`/`immobile`, item type, equip events, weapon actions and weapon kinds).
-
