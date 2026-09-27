@@ -295,7 +295,7 @@
    "interactions": 30,
    "data_gaps": {
     "interactions_with_gaps": 28,
-    "unresolved_items": 96
+    "unresolved_items": 94
    }
   },
   {
@@ -330,7 +330,7 @@
    "interactions": 13,
    "data_gaps": {
     "interactions_with_gaps": 11,
-    "unresolved_items": 57
+    "unresolved_items": 55
    }
   },
   {
@@ -451,7 +451,7 @@
    "interactions": 38,
    "data_gaps": {
     "interactions_with_gaps": 32,
-    "unresolved_items": 265
+    "unresolved_items": 235
    }
   },
   {
@@ -473,7 +473,7 @@
    "interactions": 25,
    "data_gaps": {
     "interactions_with_gaps": 20,
-    "unresolved_items": 118
+    "unresolved_items": 108
    }
   },
   {
@@ -534,7 +534,7 @@
    "interactions": 7,
    "data_gaps": {
     "interactions_with_gaps": 6,
-    "unresolved_items": 19
+    "unresolved_items": 18
    }
   },
   {
@@ -686,8 +686,8 @@
    ],
    "interactions": 22,
    "data_gaps": {
-    "interactions_with_gaps": 18,
-    "unresolved_items": 100
+    "interactions_with_gaps": 17,
+    "unresolved_items": 97
    }
   },
   {
@@ -804,7 +804,7 @@
    "interactions": 61,
    "data_gaps": {
     "interactions_with_gaps": 57,
-    "unresolved_items": 229
+    "unresolved_items": 225
    }
   },
   {
@@ -853,7 +853,7 @@
    "interactions": 39,
    "data_gaps": {
     "interactions_with_gaps": 34,
-    "unresolved_items": 151
+    "unresolved_items": 149
    }
   },
   {
@@ -1020,7 +1020,7 @@
    "interactions": 19,
    "data_gaps": {
     "interactions_with_gaps": 15,
-    "unresolved_items": 44
+    "unresolved_items": 42
    }
   },
   {
@@ -1268,7 +1268,7 @@
    "interactions": 5,
    "data_gaps": {
     "interactions_with_gaps": 4,
-    "unresolved_items": 19
+    "unresolved_items": 18
    }
   },
   {
@@ -1302,8 +1302,8 @@
    ],
    "interactions": 12,
    "data_gaps": {
-    "interactions_with_gaps": 11,
-    "unresolved_items": 45
+    "interactions_with_gaps": 10,
+    "unresolved_items": 44
    }
   },
   {
@@ -1867,7 +1867,7 @@
    "interactions": 57,
    "data_gaps": {
     "interactions_with_gaps": 54,
-    "unresolved_items": 197
+    "unresolved_items": 193
    }
   },
   {
@@ -1908,7 +1908,7 @@
    "interactions": 16,
    "data_gaps": {
     "interactions_with_gaps": 16,
-    "unresolved_items": 50
+    "unresolved_items": 49
    }
   },
   {
@@ -1929,7 +1929,7 @@
    "interactions": 13,
    "data_gaps": {
     "interactions_with_gaps": 7,
-    "unresolved_items": 36
+    "unresolved_items": 34
    }
   },
   {
@@ -1952,7 +1952,7 @@
    "interactions": 10,
    "data_gaps": {
     "interactions_with_gaps": 9,
-    "unresolved_items": 30
+    "unresolved_items": 28
    }
   },
   {
@@ -2020,7 +2020,7 @@
    "interactions": 16,
    "data_gaps": {
     "interactions_with_gaps": 11,
-    "unresolved_items": 33
+    "unresolved_items": 32
    }
   },
   {
@@ -2039,8 +2039,8 @@
    ],
    "interactions": 14,
    "data_gaps": {
-    "interactions_with_gaps": 12,
-    "unresolved_items": 47
+    "interactions_with_gaps": 11,
+    "unresolved_items": 45
    }
   },
   {
@@ -2091,8 +2091,8 @@
    ],
    "interactions": 27,
    "data_gaps": {
-    "interactions_with_gaps": 24,
-    "unresolved_items": 62
+    "interactions_with_gaps": 23,
+    "unresolved_items": 61
    }
   },
   {
@@ -2151,7 +2151,7 @@
    "interactions": 48,
    "data_gaps": {
     "interactions_with_gaps": 47,
-    "unresolved_items": 178
+    "unresolved_items": 177
    }
   },
   {
@@ -2173,7 +2173,7 @@
    "interactions": 37,
    "data_gaps": {
     "interactions_with_gaps": 33,
-    "unresolved_items": 133
+    "unresolved_items": 127
    }
   },
   {
@@ -2300,8 +2300,8 @@
    ],
    "interactions": 29,
    "data_gaps": {
-    "interactions_with_gaps": 20,
-    "unresolved_items": 99
+    "interactions_with_gaps": 19,
+    "unresolved_items": 98
    }
   },
   {
@@ -2336,7 +2336,7 @@
    "interactions": 24,
    "data_gaps": {
     "interactions_with_gaps": 16,
-    "unresolved_items": 90
+    "unresolved_items": 87
    }
   },
   {
@@ -2366,7 +2366,7 @@
    "interactions": 1,
    "data_gaps": {
     "interactions_with_gaps": 1,
-    "unresolved_items": 3
+    "unresolved_items": 2
    }
   },
   {
@@ -2534,8 +2534,8 @@
    ],
    "interactions": 22,
    "data_gaps": {
-    "interactions_with_gaps": 19,
-    "unresolved_items": 80
+    "interactions_with_gaps": 18,
+    "unresolved_items": 78
    }
   },
   {
