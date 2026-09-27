@@ -196,11 +196,19 @@ runtime's own later operation: derived child identity, same World/scope/content-
 overlay-revision fences, fired from the scope runtime's existing progression, cleared on scope
 restart — no per-object timer service, queue, receipt store or persistence).
 
+Round 3 correction: `revert_after` is bound to the existing FND-03 §10 authoritative-timer contract
+(`docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md`), not to the client-command lifecycle a
+prior draft assumed. FND-03 already defines exactly the shape a scope-owned deadline needs — a
+mutation-capable timer that is "an owner-scoped input, not a direct callback" (§10) — so this
+section binds `revert_after` to it rather than inventing parallel semantics.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
 sends another command to the affected anchor — a decayed wall or a timed door must still revert if
-nobody touches it again. No such input exists in the read code today.
+nobody touches it again, and even if the player who triggered the original operation has since
+disconnected. No such input, and no non-client-command commit path for it, exists in the read code
+today.
 
 ### Evidence
 
@@ -213,46 +221,67 @@ nobody touches it again. No such input exists in the read code today.
   `scope_generation` once into `ChannelRuntimeAssignmentBinding` at construction (~727-728,
   ~738-745); there is no production method that advances it in place. A scope restart in
   production is therefore a new `ChannelRuntimeV1` instance via `from_committed_assignment`, not an
-  in-place generation bump. (Correction: a prior draft of this evidence cited `advance_owner`
-  ~2169-2176 as the scope owner's progression API; that method is test-only, inside `impl
-  MovementActorFixture` under `#[cfg(test)]` — struct at ~2030-2031, impl at ~2037-2038 — and proves
-  nothing about production.) Two of `ChannelRuntimeV1`'s own production doc comments independently
-  confirm no scheduler exists: `borrow_movement_position` (~760-762) "grants neither initial
-  position authority nor an owner scheduler"; `borrow_combat_death` (~773-774) "grants no scheduler,
-  production activation or corpse lifetime."
-- PROVEN (`apps/game-server/src/gameplay_transport/connection.rs` `Liveness::tick` ~296-320): the
-  only "tick" in the read tree is a per-connection transport keepalive cadence (probe/ack
-  liveness), unrelated to world/scope simulation state and not addressable per scope.
-- PROVEN (`apps/game-server/src/content/project/v2/creature.rs` `tick_profile`/`tick_interval_ms`/
-  `tick_counts` ~571-604, ~1189-1231): an imported-content authoring schema describing
-  damage-over-time timing as *data*; no runtime consumer executing it as a live clock was found in
-  the read tree.
-- PROVEN (`docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md` line 224:
-  "No universal fixed global tick is required."; line 419: "global tick rate ... deliberately
-  deferred."): there is no committed Foundation/global simulation tick to reuse.
-- PROVEN (bounded grep for `tokio::time::interval|tokio::time::sleep|select!\{|loop \{` in
-  `apps/game-server/src` and `crates/`, cross-checked against every `ChannelRuntimeV1` use site —
-  `gameplay_transport/{qualification,mod}.rs`, `movement.rs`, `node/serve.rs`,
-  `foundation/{runtime_actor_carrier,mod}.rs`): every located call into `ChannelRuntimeV1` is
-  reactive. `apps/game-server/src/gameplay_transport/mod.rs`
-  `ComposedFreshAdmission::release_after_grace` (~473-514) is a per-connection grace-expiry retry
-  loop with its own backoff `sleep`, scoped to one admitted session, not the scope. `apps/game-
-  server/src/movement.rs` `MovementOwnerTurn::begin`/`try_step` (~213-249) processes a bounded batch
-  of movement inputs (`max_inputs`) per invocation, and its own doc comment (~197-200) says so
-  explicitly: "No production maximum, queue, command outcome, or scheduling authority is implied.
-  Fairness remains an obligation of the future owner scheduler." No independent scope-wide cadence
-  that advances regardless of command activity was found anywhere driving `ChannelRuntimeV1`.
-- UNKNOWN whether a scope-owned periodic driver exists outside this bounded read tree.
-- PROVEN (`crates/foundation/src/time.rs` ~50-91): `Deadline::after(clock, duration)` and
-  `Deadline::has_elapsed(clock)`/`remaining(clock)` already exist against a `MonotonicClock` trait,
-  with a production `SystemClock` and a deterministic `ManualClock` test double (~120-166,
-  exercised at ~211-217 by advancing a `ManualClock` and observing `has_elapsed`). PROVEN
-  (`crates/foundation/src/lib.rs` line 5): `Deadline`/`MonotonicClock`/`ManualClock`/`SystemClock`
-  are exported from the shared `foundation` crate; a bounded grep of `apps/game-server/src` found no
-  reference to any of them there today — a ready, tested primitive, not yet wired into any runtime
-  path. PROVEN (`docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 143): the
-  map-object authoring format already names the field `revert_after_ms` — milliseconds, not steps or
-  ticks — with a concrete authored value at line 170 (`revert_after_ms 1200000`).
+  in-place generation bump. (`advance_owner` ~2169-2176 is test-only, inside `impl
+  MovementActorFixture` under `#[cfg(test)]` — struct at ~2030-2031 — and proves nothing about
+  production.) Two production doc comments independently confirm no scheduler exists:
+  `borrow_movement_position` (~760-762) "grants neither initial position authority nor an owner
+  scheduler"; `borrow_combat_death` (~773-774) "grants no scheduler, production activation or corpse
+  lifetime."
+- PROVEN (`apps/game-server/src/gameplay_transport/connection.rs` `Liveness::tick` ~296-320,
+  `apps/game-server/src/content/project/v2/creature.rs` `tick_profile` ~571-604,
+  `docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md` lines 224/419, and a
+  bounded grep for `tokio::time::interval|tokio::time::sleep|select!\{|loop \{` against every
+  `ChannelRuntimeV1` call site): no scope-wide cadence, no global tick, and every located
+  `ChannelRuntimeV1` call is reactive (`movement.rs` ~197-200 itself names the missing "future owner
+  scheduler"). UNKNOWN beyond this bounded read tree.
+- PROVEN (`crates/foundation/src/time.rs` `Deadline`/`MonotonicClock`/`ManualClock` ~50-166, exported
+  at `crates/foundation/src/lib.rs` line 5): an already-tested monotonic-deadline primitive, unused
+  in `apps/game-server/src` today. PROVEN (`docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md`
+  line 143): the map-object authoring format already names `revert_after_ms` (milliseconds), with a
+  concrete authored value at line 170 (`revert_after_ms 1200000`).
+- PROVEN (`docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md` §10, lines 391-436): "Mutation-
+  capable timers are owner-scoped inputs, not direct callbacks." §10.1 binds a timer to semantic
+  runtime scope, current ownership generation, target entity/local generation, monotonic due
+  deadline and deterministic equal-deadline order, adding: "Equal-deadline order is derived from the
+  owner resolution that scheduled the timer plus a deterministic within-resolution sequence; a
+  separate globally visible timer counter is not required." §10.2: "When due, the timer becomes a
+  normalized authoritative input and receives a new `RuntimeExecutionOrdinal` when the current owner
+  accepts it for resolution." §10.3 lists cancellation/staleness triggers: scope ownership
+  generation changed, target entity/local generation mismatch, owning state/condition invalidated,
+  or explicit cancellation/expiry.
+- PROVEN (FND-03 §15.4, lines 560-564): "If committing a new operation requires registering a
+  required authoritative timer and no safe bounded timer capacity exists, the operation fails before
+  committing the state that depends on that timer," and an already-accepted timer is never silently
+  discarded for due-queue congestion.
+- PROVEN (FND-03 §28, line 891): the Foundation error vocabulary already names this outcome:
+  "registered queue/timer/work/resource limit reached" → `CAPACITY_EXCEEDED` → "bounded rejection/
+  backpressure before unsafe acceptance."
+- PROVEN (FND-03 §9, lines 376-389): "An opaque process-local monotonic instant can never be the
+  durable representation of a timer that must survive process failure," with a durable-encoding
+  requirement for any timer "whose semantics cross a GameNode process lifetime." `revert_after` does
+  not cross a process lifetime (D38 W2: scope-ephemeral, cleared on scope restart), so §9's durable-
+  encoding requirement does not apply to it; this is stated explicitly so a later reviewer does not
+  need to re-derive it.
+- PROVEN (`apps/game-server/src/foundation/mod.rs` `RuntimeExecutionOrdinal`/`ScopeRuntimeFence`
+  ~959-1058): the FND-03 §10.2 ordinal-on-accept mechanism is already implemented —
+  `ScopeRuntimeFence::accept_input(generation)` mints a new `RuntimeExecutionOrdinal` only for the
+  exact current `ScopeOwnershipGeneration`, rejecting a stale one, matching §10.3's generation-
+  changed cancellation exactly. It is currently instantiated per `GameSession`
+  (`apps/game-server/src/foundation/admission.rs` ~365-381, ~728), not yet as one scope-wide instance
+  consumed by `world_runtime.rs`.
+- PROVEN (`apps/game-server/src/world_runtime.rs` `apply`/`resume_pending` ~776-832,
+  `validate_current_authority` ~849-859): both require a live `GameSessionAuthoritySnapshot`
+  (rejecting when `session_state() != Active` or the snapshot's `game_session_id` does not match the
+  command's) and a per-session `CommandIngress` for duplicate detection. A scope-owned due timer has
+  neither — the player who triggered the original operation may have disconnected by the time
+  `revert_after` elapses. "The same prepare/commit path as any client command" was therefore
+  undefined for the revert; only `prepare`'s pure state/footprint-transition logic, not the
+  session-command lifecycle around it, can be reused.
+- PROVEN (`crates/foundation/src/time.rs` `SystemClock::new()` ~98-104, `Moment`/`Deadline` ~5-52):
+  `SystemClock::new()` sets `origin: Instant::now()` fresh on every call, and a `Moment`/`Deadline`
+  stores only elapsed duration with no origin identity — two `Deadline`s produced from two different
+  `SystemClock` instances are not meaningfully comparable; evaluating `has_elapsed`/`remaining`
+  against the wrong clock instance would silently misfire.
 
 ### Options (minimum real set)
 
@@ -261,15 +290,26 @@ nobody touches it again. No such input exists in the read code today.
    one. Adopting or creating one now would be a new Foundation-owned decision, out of this task's
    `excluded_scope` (Foundation/runtime/protocol/registry) and disproportionate to one `revert_after`
    field.
-2. **A monotonic `Deadline` computed from the authored duration (RECOMMENDED).** At commit time,
-   compute `Deadline::after(clock, Duration::from_millis(revert_after_ms))` from the already-proven
-   `crates/foundation::time` primitive (evidence above) and store it alongside the revert's fences
-   and derived identity. One scope-owned driver — one per scope owner (`ChannelRuntimeV1`/
-   `InstanceRuntime`), never per object, never per pending revert — wakes at the earliest pending
-   deadline (`Deadline::remaining`/`has_elapsed`) and, once woken, commits every due revert through
-   the normal `prepare`/commit path. The driver itself is still one real new mechanism, but the
-   value it wakes on and the unit it stores are not new: they are the authored `revert_after_ms`
-   field and an already-implemented, already-tested Foundation type, not an invented one.
+2. **An FND-03 §10 authoritative timer bound to a monotonic `Deadline` computed from the authored
+   duration (RECOMMENDED).** At commit time — as part of the *same* staged commit as the original
+   `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below) — compute `Deadline::after(clock,
+   Duration::from_millis(revert_after_ms))` from the one clock instance the scope owns (evidence
+   above) and register it under an FND-03 §10.1 scheduling key: World/Channel/InstanceId,
+   `scope_generation`, the anchor's overlay revision captured now, the `Deadline`, and a
+   deterministic equal-deadline tie-break (deadline, then derived child identity — exactly the
+   "deterministic within-resolution sequence" §10.1 asks for). One scope-owned driver — one per
+   scope owner, never per object, never per pending revert — wakes at the earliest pending deadline;
+   each due entry becomes a normalized FND-03 authoritative input and mints a new
+   `RuntimeExecutionOrdinal` when the scope's own ordinal issuer accepts it for resolution (§10.2,
+   reusing `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` — evidence above — as one scope-wide
+   instance rather than per-`GameSession`). The revert's state/footprint delta reuses `prepare`'s
+   pure transition logic; committing it does **not** go through `apply`/`resume_pending`/
+   `CommandIngress`, because there is no live client command or session to replay (P1, evidence
+   above). Cancellation follows §10.3 exactly: the same fences §4 already requires. The driver and
+   the ordinal-issuer promotion are still one real new mechanism each, but the unit it stores and the
+   ordinal/cancellation contract it follows are not invented: they are the authored `revert_after_ms`
+   field, the already-implemented `Deadline` primitive, and the already-accepted FND-03 §10 timer
+   contract.
 3. **A new scope-owned monotonic logical step counter (considered, not recommended).** Round 1 of
    this review recommended a synthetic per-scope "step" incremented by the scope runtime's own
    cadence. Honest comparison against option 2:
@@ -300,26 +340,32 @@ nobody touches it again. No such input exists in the read code today.
 
 ### Must-decide-now test
 
-1. **Must decide now?** `YES` for the *owner and input shape* only (option 2 vs. the record of why
-   1, 3 and 4 are rejected/superseded); `NO` for the driver's exact wake mechanism (piggybacked on a
-   cadence later proven to exist, or a new minimal timer) or the pending-set storage representation,
-   which the owning lane decides when it implements the delta.
+1. **Must decide now?** `YES` for the *owner, input shape and FND-03 binding* (option 2: a scope-
+   owned `Deadline` fired as an FND-03 §10 authoritative timer with its own ordinal/cancellation/
+   capacity contract, never a client `LocalObjectCommand` — vs. the record of why 1, 3 and 4 are
+   rejected/superseded). `NO` for the driver's exact wake mechanism, whether `ScopeRuntimeFence` is
+   promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
+   pending-set storage representation, and the concrete timer-capacity numeric bound (FND-03 §14.1:
+   "Concrete numeric limits gate implementation, not this architecture decision" — it belongs in
+   `RESOURCE_LIMITS_REGISTRY.json`). Those belong to the owning lane's implementation.
 2. **What is blocked?** CW4 cannot ship `revert_after` at all (coordinator direction in §4 already
-   withholds it) until some owner and input shape is named; naming nothing leaves the
-   `EVIDENCE_GAP` open indefinitely.
+   withholds it) until some owner, input shape and commit path is named; naming nothing leaves the
+   `EVIDENCE_GAP` open indefinitely, and building an ad hoc timer without the FND-03 binding would
+   need reworking once FND-03 conformance is checked.
 3. **What becomes harder later?** Picking option 1 later, after option 2 ships, would require
    migrating every stored `revert_after` target from a scope-local `Deadline` to a global tick
-   value — real but bounded migration cost, not an irreversible one, since both are monotonic and
-   scoped to the same overlay lifetime.
+   value — real but bounded migration cost, not an irreversible one, since both are monotonic,
+   FND-03-timer-shaped and scoped to the same overlay lifetime.
 4. **What evidence would supersede this?** A later, separately accepted Foundation decision that
    introduces a real global simulation tick for reasons independent of `revert_after` (SIM-
    DETERMINISM-01 would have to be amended first); or measured evidence that a per-scope `Deadline`
    cannot meet a specific product timing requirement (for example cross-scope revert ordering,
    which §4 already excludes).
-5. **What is deliberately not decided?** The exact wake mechanism inside the scope's step driver
-   (piggybacking on a cadence the owning lane later proves already exists, or a new minimal timer
-   added for exactly this purpose), and the exact storage representation of the pending-revert set.
-   Those belong to the owning lane's implementation, not this architecture delta.
+5. **What is deliberately not decided?** The exact wake mechanism inside the scope's step driver, the
+   exact way `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` is made scope-wide, the exact storage
+   representation of the pending-timer set, and the concrete timer-capacity bound in
+   `RESOURCE_LIMITS_REGISTRY.json`. Those belong to the owning lane's implementation, not this
+   architecture delta.
 
 ### Exact delta the owning lane must provide
 
@@ -334,37 +380,61 @@ not implement it; it is CANDIDATE and not owner-accepted.
   piggybacks on a cadence the scope runtime is later shown to already have, or adds one new minimal
   wake for exactly this purpose, is the owning lane's implementation choice — either way it is one
   mechanism per scope, not new infrastructure per object.
-- On any `revert_after`-carrying overlay operation, compute `Deadline::after(clock,
-  Duration::from_millis(revert_after_ms))` (`crates/foundation::time`) at commit time and store it
-  alongside the same fences §4 already requires (World/Channel/InstanceId, `scope_generation`,
-  `content_generation`, the overlay revision of the anchor) and a child identity derived from the
-  original operation's identity (as in §3/§4). This state is `scope_generation`-scoped, owned by the
-  same `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay; a scope restart is a
-  new instance (corrected evidence above), so it is dropped with no separate cleanup path.
-- On each driver wake, check every due entry (`Deadline::has_elapsed`) for anchors this scope owns
-  and, if due, commit the revert through the same `prepare`/commit path as any other overlay
-  operation (`PreparedMutation::Publish`/`TerminalSemanticOutcome`,
-  `apps/game-server/src/world_runtime.rs` ~982-996) — not a separate code path.
+- Provide one scope-wide instance of the FND-03 §10.2 ordinal issuer
+  (`RuntimeExecutionOrdinal`/`ScopeRuntimeFence`, currently instantiated per `GameSession` in
+  `apps/game-server/src/foundation/admission.rs`), or an equivalent scope-owned issuer, so every
+  accepted due timer mints its ordinal through the same single-owner sequence as any other scope
+  mutation, per §10.2.
+- Provide one shared `MonotonicClock` instance per scope (constructed once, never `SystemClock::new()`
+  called again per call site) and use it for every `Deadline::after` at commit time and every
+  `has_elapsed`/`remaining` at wake time for that scope — never mix two clock instances (evidence
+  above: `SystemClock::new()` starts a fresh, incomparable origin each time).
+- On any `revert_after`-carrying overlay operation, as part of the *same* staged commit as the
+  original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve safe bounded timer capacity
+  first; if none is available, fail the *entire* original operation before anything commits — no
+  object mutation and no partial timer entry survive. If capacity is available, compute
+  `Deadline::after(clock, Duration::from_millis(revert_after_ms))` and register the FND-03 §10.1
+  scheduling key (World/Channel/InstanceId, `scope_generation`, the overlay revision of the anchor,
+  the `Deadline`, and the (deadline, then derived child identity) tie-break) alongside the derived
+  child identity (as in §3/§4). This state is `scope_generation`-scoped, owned by the same
+  `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay; a scope restart is a new
+  instance (corrected evidence above), so it is dropped with no separate cleanup path. Map the
+  capacity failure to `CAPACITY_EXCEEDED` (FND-03 §28) and register the concrete numeric bound in
+  `RESOURCE_LIMITS_REGISTRY.json` per FND-03 §14.1 — that number is not decided here.
+- On each driver wake, present every due entry as a normalized FND-03 §10.2 authoritative input, in
+  the deterministic (deadline, then derived child identity) tie-break order when deadlines are
+  equal: mint its `RuntimeExecutionOrdinal` via the scope's ordinal issuer's `accept_input(current
+  scope_generation)`, reuse `prepare`'s pure state/footprint-transition logic for the delta, and
+  commit through a scope-authority path (`PreparedMutation::Publish`/`TerminalSemanticOutcome`,
+  `apps/game-server/src/world_runtime.rs` ~982-996) — never `apply`/`resume_pending`/`CommandIngress`,
+  which require a live `GameSessionAuthoritySnapshot` this timer does not have (P1, evidence above).
+- Cancellation follows FND-03 §10.3 exactly: `scope_generation` changed, the anchor's overlay
+  revision no longer matches what was captured at scheduling, or explicit invalidation each discard
+  the pending entry without mutating.
 - On an occupancy conflict, terminalize `DISPOSITION_OCCUPIED` for that revert's one derived
   identity and stop; do not retry it on a later wake (decided below, not left open).
 
 ### Exact test obligations
 
-- **Fires once.** The derived child identity (as in §3/§4) makes a repeated arrival at or after the
-  deadline commit only the first outcome; once committed, the entry is removed from the pending set
-  so a later wake never refires it.
-- **Replay-safe.** Re-evaluating "is this due" after it has already fired must be side-effect free:
-  it observes the entry already cleared and returns the same deterministic no-op outcome the
-  runtime already has for a stale/consumed command (`DISPOSITION_NO_CHANGE`/`DISPOSITION_STALE_STATE`,
-  `apps/game-server/src/world_runtime.rs` ~947-958).
-- **Fenced.** The revert commits only under the same World/Channel/InstanceId, `scope_generation`,
-  `content_generation` and overlay-revision-of-anchor fences as any other §4 operation; a fence
-  mismatch discards the pending revert rather than forcing it through.
-- **Cleared on scope restart.** The pending-revert set (keyed by `Deadline`) is
+- **Fires once.** Once a due entry's `RuntimeExecutionOrdinal` is minted and its state/footprint
+  delta commits, the entry is removed from the pending set; the same physical timer entry cannot be
+  presented to `accept_input` a second time, so a later wake never refires it.
+- **Replay-safe.** A due entry re-presented before it is removed (for example a driver wake that
+  overlaps its own commit) must not mint a second `RuntimeExecutionOrdinal` or commit twice for the
+  same entry; the scope's ordinal issuer's single-owner, monotonic `accept_input` (evidence above)
+  and the pending-set removal together make a second acceptance for the same entry impossible, not
+  merely a deterministic no-op.
+- **Fenced (FND-03 §10.1/§10.3).** The revert commits only under the same World/Channel/InstanceId,
+  `scope_generation`, `content_generation` and overlay-revision-of-anchor fences as any other §4
+  operation; per §10.3, a `scope_generation` change, a target overlay-revision mismatch, or explicit
+  invalidation each cancel the pending entry rather than letting it mutate.
+- **Cleared on scope restart.** The pending-timer set (keyed by `Deadline`) is
   `scope_generation`-scoped state owned by the same `ChannelRuntimeV1`/`InstanceRuntime` instance as
   the rest of the overlay; a scope restart is a new instance (corrected evidence above), so it is
   dropped with no separate cleanup path — the same lifetime §4 already states ("Lifetime:
-  Scope-ephemeral").
+  Scope-ephemeral") and the same trigger FND-03 §10.3 already names ("scope ownership generation
+  changed"). Because it never crosses a process lifetime, FND-03 §9's durable-encoding requirement
+  does not apply here (evidence above) — this is a positive test, not merely an absence.
 - **No partial footprint.** A revert applies its full target state in the same single commit as any
   other overlay operation (the existing `PreparedMutation::Publish` path); this is exactly the C3
   fixed-footprint boundary in §4 — only the anchor's pre-authored, bind-time-reserved footprint is
@@ -383,6 +453,24 @@ not implement it; it is CANDIDATE and not owner-accepted.
   per-object retry machinery this decision does not introduce. If a revert must eventually succeed
   despite occupancy, that is a future definition-level requirement (the definition names a
   fallback), not a hidden retry loop here.
+- **Timer-capacity atomicity (FND-03 §15.4).** If safe bounded timer capacity is unavailable when a
+  `revert_after`-carrying operation is about to commit, the *entire* original operation fails before
+  anything commits: neither the world-object mutation nor a partial/orphaned timer entry survive.
+  An already-accepted timer already in the pending set is never discarded merely because the due
+  queue is congested (FND-03 §15.4, second sentence) — that pressure produces `CAPACITY_EXCEEDED` on
+  the *next incoming* operation, not eviction of an existing entry.
+- **Equal-deadline determinism (FND-03 §10.1/§10.2).** Two or more due entries sharing the identical
+  `Deadline` resolve in the stable (deadline, then derived child identity) tie-break order, and each
+  mints its own new `RuntimeExecutionOrdinal` in that order; re-running the same set of due entries
+  against the same clock and `scope_generation` must always reproduce the same order and the same
+  ordinals (a determinism/replay test, per FND-03 §11's "multiple equal-deadline timers" case).
+- **Single clock origin (detects cross-clock comparison).** A test constructs two independent
+  `MonotonicClock` instances (for example two `SystemClock`s, or a `SystemClock` and a `ManualClock`),
+  computes a `Deadline` under one, and asserts the implementation's design makes it impossible to
+  evaluate `has_elapsed`/`remaining` for that `Deadline` against the other — only one clock reference
+  is reachable from both the commit-time scheduling call and the wake-time check for a given scope.
+  This guards against exactly the hazard the evidence above proves: `SystemClock::new()` starts a
+  fresh, incomparable origin on every call.
 
 ## 8. Follow-up
 

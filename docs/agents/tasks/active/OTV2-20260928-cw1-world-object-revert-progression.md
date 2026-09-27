@@ -36,14 +36,15 @@ One decision delta recorded in `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_O
 still `DecisionStatus: CANDIDATE` for the new part:
 
 1. A new §7 answers, for `revert_after` only, which existing owner supplies a scope-owned logical
-   progression input: the minimum real options grounded in code facts (no existing Foundation/global
-   tick; a monotonic `Deadline` computed from the authored `revert_after_ms` at commit time, using
-   the existing `crates/foundation::time` primitive, RECOMMENDED; a synthetic scope-owned step
-   counter, considered and superseded; a purely reactive re-evaluation, rejected), the
-   must-decide-now test, the exact delta the owning lane (the scope-runtime/Foundation carrier lane
-   behind `ChannelRuntimeV1`/`InstanceRuntime`, not this documentation task) must supply, and exact
-   test obligations, including a decided (not deferred) answer on occupied-target-cell handling. The
-   owner question itself (who accepts this decision) is left explicit and unresolved by this task.
+   progression input, bound to the existing FND-03 §10 authoritative-timer contract rather than a
+   client command: the minimum real options grounded in code facts (no existing Foundation/global
+   tick; an FND-03 timer over a monotonic `Deadline` from the authored `revert_after_ms`, RECOMMENDED;
+   a synthetic scope-owned step counter, considered and superseded; a purely reactive re-evaluation,
+   rejected), the must-decide-now test, the exact delta the owning lane (the scope-runtime/Foundation
+   carrier lane behind `ChannelRuntimeV1`/`InstanceRuntime`, not this documentation task) must
+   supply, and exact test obligations covering firing, fencing, capacity atomicity, equal-deadline
+   ordering, clock-origin safety and occupied-target-cell handling (decided, not deferred). The owner
+   question itself (who accepts this decision) is left explicit and unresolved by this task.
 2. §4/§5 record, without designing it, the CW3 Content-model worker's delta (allocation
    `OTV2-20260928-cw3-local-object-state-model`: 1a per-state collision presence, 1b authored
    initial state validated fail-closed, 1c RETAG decision) and the C3 hardening clarification
@@ -82,6 +83,12 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
   `crates/foundation/src/lib.rs` line 5) — PROVEN: an already-tested monotonic-deadline primitive,
   unused in `apps/game-server/src` today. `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 143 —
   PROVEN: authors `revert_after_ms` directly (milliseconds).
+- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §9/§10/§15.4/§28 (lines 376-436, 560-564, 891) — PROVEN:
+  the timer scheduling/firing/cancellation/capacity/error-mapping contract §7 now binds
+  `revert_after` to. `foundation/mod.rs` `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` (~959-1058)
+  — PROVEN: already implements §10.2's ordinal-on-accept, currently per-`GameSession`
+  (`admission.rs` ~365-381/728). `world_runtime.rs` `apply`/`resume_pending` (~776-832) — PROVEN:
+  need a live `GameSessionAuthoritySnapshot`/`CommandIngress`, which a disconnected timer lacks.
 
 ## High-risk authority/recovery qualification
 
@@ -113,33 +120,35 @@ reason: >
 
 ## Implementation / findings
 
-Initial delta: added §7 (revert_after progression owner/options) and recorded, without designing,
-the CW3 Content-model delta (1a/1b/1c) plus hardening clarification C3 in §4/§5/§8. See the diff and
-§7 itself for exact wording and file:line evidence.
+Initial delta: added §7 (revert_after owner/options); recorded CW3's 1a/1b/1c delta and C3 in
+§4/§5/§8 without designing them.
 
-Pre-freeze round 1 (coordinator): fixed §-numbering (decision is §7, Follow-up §8); relabelled the
-Content-model worker CW3 (not CW4); renamed §8 item 7 to the real owner, the scope-runtime/
-Foundation carrier lane; made §7 option 2 honest with the bounded scope-runtime-driver grep evidence
-(no proven cadence), still CANDIDATE.
+Round 1 (coordinator): fixed §-numbering (decision §7, Follow-up §8); CW3 (not CW4) attribution;
+§8 item 7 renamed to the scope-runtime/Foundation carrier lane; §7 option 2 made honest (no proven
+scope cadence, grep evidence).
 
-Pre-freeze round 2 (Codex review on frozen head bbb3b4cd): verified and fixed three findings.
-- P1: verified `crates/foundation/src/time.rs` `Deadline`/`MonotonicClock` (unused in
-  `apps/game-server/src`) and `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md:143` authors `revert_after_ms`.
-  Added the `Deadline` option, compared it honestly against the round-1 step counter (authored-
-  duration fidelity, no invented unit/cadence, equal determinism via `ManualClock`, equal reset), and
-  switched the recommendation to `Deadline` as minimum-sufficient. Rewrote delta/obligations in
-  milliseconds, not steps.
-- P2a: verified `advance_owner` (~2169-2176) is test-only (`impl MovementActorFixture`,
-  `#[cfg(test)]`), not production. Replaced with production evidence: `scope_generation` is pinned
-  once at construction (~702-750); no in-place advance exists in production. No-cadence conclusion
-  unchanged, now production-only.
-- P2b: verified `terminalize_current` (~834-846) terminalizes every outcome immediately and
-  `resume_pending`'s replay (~817-823) never re-evaluates it. Decided explicitly (not deferred): an
-  occupied revert refuses permanently under its one derived identity (mirrors §3's blocked-
-  relocation discipline); no retry. Rewrote the test obligation and removed the ambiguity from
-  must-decide-now item 5.
+Round 2 (Codex, bbb3b4cd): added `Deadline` option (`crates/foundation/src/time.rs`, unused in
+`apps/game-server/src`; `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md:143` authors `revert_after_ms`),
+made it the recommendation over the round-1 step counter; corrected `advance_owner` (test-only,
+~2169-2176) to production-only evidence (`from_committed_assignment` ~702-750); decided
+occupied-revert refuses permanently (`terminalize_current`/`resume_pending`, ~817-846).
 
-Both validators re-run after each round's commit; unchanged pass (see Validation below).
+Round 3 (Codex, 350dca59, FINAL): all four findings trace to the existing FND-03 timer contract
+(§9/§10/§15.4/§28, read before writing). Rebound §7 to an FND-03 §10 authoritative timer:
+- P1 commit path: `apply`/`resume_pending` (~776-832) need a live `GameSessionAuthoritySnapshot`/
+  `CommandIngress` a disconnected player's timer lacks. Fixed: due timer is now a normalized §10.2
+  input minting its own `RuntimeExecutionOrdinal` via the scope's ordinal issuer
+  (`RuntimeExecutionOrdinal`/`ScopeRuntimeFence`, `foundation/mod.rs` ~959-1058, currently
+  per-`GameSession` in `admission.rs`), reusing only `prepare`'s pure delta logic.
+- P1 timer capacity: FND-03 §15.4 requires the original operation to fail before commit if timer
+  capacity is unavailable. Fixed: capacity reserved in the same staged commit; added the atomicity
+  obligation and `CAPACITY_EXCEEDED` mapping (§28; numeric bound left to `RESOURCE_LIMITS_REGISTRY.json`).
+- P2 equal-deadline: bound a stable (deadline, then derived identity) tie-break plus a new ordinal
+  per accepted due timer (§10.1/§10.2); added the determinism obligation.
+- P2 clock origin: `SystemClock::new()` (~98-104) starts a fresh, incomparable origin each call.
+  Fixed: one shared clock instance per scope for schedule and wake; added a cross-clock obligation.
+
+All validators re-run after each round's commit; unchanged pass (see Validation below).
 
 ## Validation
 
@@ -147,13 +156,13 @@ Both validators re-run after each round's commit; unchanged pass (see Validation
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-2; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-3; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 45 workflows)." (re-run after each pre-freeze fix commit, rounds 1-2;
+  validation passed (23 files, 45 workflows)." (re-run after each pre-freeze fix commit, rounds 1-3;
   unchanged)
 
 ### E2E
@@ -199,9 +208,10 @@ Both validators re-run after each round's commit; unchanged pass (see Validation
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 2 (Codex review) fixed: added the Deadline option to §7 and made it the
-  recommendation, corrected advance_owner to production-only evidence, decided occupied-revert
-  refuses permanently (no retry); both validators re-run and still pass.
+  PR #1045 pre-freeze round 3 (FINAL, Codex review) rebound §7's revert_after recommendation to the
+  existing FND-03 §10 authoritative-timer contract: due-timer input (not a client command), staged
+  timer-capacity atomicity (§15.4), equal-deadline RuntimeExecutionOrdinal tie-break, one shared
+  clock instance per scope; both validators re-run and still pass.
 status: implementing
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
