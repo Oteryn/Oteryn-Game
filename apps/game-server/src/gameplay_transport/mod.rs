@@ -861,7 +861,7 @@ enum ReconciliationDisposition {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
-    /// Record authoritative unexpected control loss for a fresh-origin session. The owning
+    /// Record authoritative unexpected control loss, fresh-origin or after a resume. The owning
     /// source is composed at decision time from the Channel owner (actor present, placement,
     /// assignment revision), the current durable GameSession and the admitted account; the
     /// durable commit revalidates session, claims and runtime guard under its relation locks.
@@ -886,26 +886,61 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return ControlLossResult::NotApplicable;
         }
-        if session.current_control_loss_epoch().is_some() {
-            // This controller resumed a lost session; loss after a resume is not recorded.
-            return ControlLossResult::ResumedHistory;
-        }
-        let Some(grace_deadline) = now.checked_add(SAME_SESSION_GRACE_SECONDS) else {
+        // This controller may have resumed a lost session: its loss opens the next epoch
+        // and retains the resumed one's history, read from the durable receipts. A resumed
+        // session whose history cannot be proven is released instead (`ResumedHistory`).
+        let (history, protection) = match session.current_control_loss_epoch() {
+            None => (
+                ControlLossHistoryV1::FreshOrigin,
+                RecoveryProtectionContinuityV1 {
+                    usage: RecoveryProtectionUseV1::Unused {
+                        entitlement_generation: 1,
+                    },
+                    rearm: RecoveryProtectionRearmV1::NotRearmed {
+                        generation: 1,
+                        stable_control_started_at: None,
+                        accepted_deadline: None,
+                    },
+                },
+            ),
+            Some(_) => match store.resumed_history(game_session_id).await {
+                Ok(Some(
+                    history @ ControlLossHistoryV1::Resumed {
+                        protection: retained,
+                        ..
+                    },
+                )) => (history, retained),
+                _ => return ControlLossResult::ResumedHistory,
+            },
+        };
+        // A refused loss must not strand a resumed session ACTIVE on its dead transport.
+        let refused = if matches!(history, ControlLossHistoryV1::Resumed { .. }) {
+            ControlLossResult::ResumedHistory
+        } else {
+            ControlLossResult::Refused
+        };
+        let next_epoch = match &history {
+            ControlLossHistoryV1::FreshOrigin => Some(1),
+            ControlLossHistoryV1::Resumed { budget, .. } => budget.epoch().get().checked_add(1),
+        };
+        let (Some(grace_deadline), Some(next_epoch)) =
+            (now.checked_add(SAME_SESSION_GRACE_SECONDS), next_epoch)
+        else {
             return ControlLossResult::Unknown;
         };
         let (Ok(epoch), Ok(account_presence)) = (
-            ControlLossEpochRefV1::new(1),
+            ControlLossEpochRefV1::new(next_epoch),
             AccountPresenceClaimV1::new(
                 &canonical_uuid(&controller.account_id),
                 session.commit().character_id(),
             ),
         ) else {
-            return ControlLossResult::Refused;
+            return refused;
         };
         let observation = {
             let runtime = self.runtime.lock().await;
             let Ok(facts) = runtime.player_control_facts(actor, game_session_id) else {
-                return ControlLossResult::Refused;
+                return refused;
             };
             if facts.control_loss.is_some() {
                 return ControlLossResult::NotApplicable;
@@ -928,28 +963,19 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 loss_epoch: epoch,
                 loss_origin: now,
                 original_grace_deadline: grace_deadline,
-                history: ControlLossHistoryV1::FreshOrigin,
-                protection: RecoveryProtectionContinuityV1 {
-                    usage: RecoveryProtectionUseV1::Unused {
-                        entitlement_generation: 1,
-                    },
-                    rearm: RecoveryProtectionRearmV1::NotRearmed {
-                        generation: 1,
-                        stable_control_started_at: None,
-                        accepted_deadline: None,
-                    },
-                },
+                history,
+                protection,
             }
         };
         let source = std::sync::Arc::new(ChannelOwnedLossSource(observation));
         let Ok(authorization) =
             ControlLossAuthorizationV1::authorize(source.as_ref(), game_session_id, now)
         else {
-            return ControlLossResult::Refused;
+            return refused;
         };
         let mut flow = ControlLossFlowV1::begin(authorization);
         let Ok(request) = flow.take_request() else {
-            return ControlLossResult::Refused;
+            return refused;
         };
         let request = std::sync::Arc::new(request);
         match store
@@ -957,7 +983,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             .await
         {
             Ok(ControlLossOutcomeV1::Committed { .. }) => {}
-            Ok(ControlLossOutcomeV1::Rejected) => return ControlLossResult::Refused,
+            Ok(ControlLossOutcomeV1::Rejected) => return refused,
             // The commit may have landed with its acknowledgement lost: reconcile the exact
             // immutable operation; never re-decide with a new observation.
             Ok(ControlLossOutcomeV1::Ambiguous) | Err(_) => {
@@ -977,7 +1003,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 }
                 match proven {
                     Some(true) => {}
-                    Some(false) => return ControlLossResult::Refused,
+                    Some(false) => return refused,
                     None => return ControlLossResult::Unknown,
                 }
             }

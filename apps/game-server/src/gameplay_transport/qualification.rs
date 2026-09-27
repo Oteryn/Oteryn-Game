@@ -1201,7 +1201,31 @@ fn sign_recovery(
 /// The exact frames after a same-session recovery of the admission-stage session: resumed
 /// generation 2 continues CommandId 6 and server_sequence 7 with a baseline snapshot at the
 /// committed position (0,0,0) revision 3; command 6 steps east (revision 4); command 8 is a gap.
-fn resume_frames(world: WorldId, session: &[u8; 16]) -> TestResult<Vec<Vec<u8>>> {
+/// One accepted resume at `generation`: `ServerResumeAccepted` continuing `sequence` and
+/// `next` CommandId, the snapshot of the actor at `x` and `revision`, command `next` stepping
+/// to `to` at `revision + 1`, then the gap error for command `next + 2`.
+struct ResumeFrames {
+    generation: u64,
+    sequence: u64,
+    next: u64,
+    revision: u64,
+    x: i32,
+    to: i32,
+}
+
+fn resume_frames(
+    world: WorldId,
+    session: &[u8; 16],
+    resume: ResumeFrames,
+) -> TestResult<Vec<Vec<u8>>> {
+    let ResumeFrames {
+        generation,
+        sequence,
+        next,
+        revision,
+        x,
+        to,
+    } = resume;
     let room = crate::content::qualify_native_entry_room(world)
         .map_err(|e| format!("native entry room: {e}"))?;
     let at = |x| {
@@ -1213,42 +1237,47 @@ fn resume_frames(world: WorldId, session: &[u8; 16]) -> TestResult<Vec<Vec<u8>>>
     let mut frames = vec![crate::foundation::encode_server_resume_accepted(
         &crate::foundation::ServerResumeAcceptedValue {
             game_session_id: crate::foundation::GameSessionId::decode(session)?,
-            connection_generation: 2,
-            current_server_sequence: 7,
-            next_command_id: 6,
+            connection_generation: generation,
+            current_server_sequence: sequence,
+            next_command_id: next,
             schema_revision: super::connection::SERVER_SCHEMA_REVISION,
             selected_capabilities: &[],
         },
     )?];
     frames.extend(encode_single_chunk_snapshot(
-        2,
+        generation,
         1,
-        7,
+        sequence,
         &[DomainSnapshot {
             domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            revision: 3,
+            revision,
             snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-            payload: &at(0),
+            payload: &at(x),
         }],
     )?);
     frames.extend([
         encode_command_result(
-            2,
-            8,
-            6,
+            generation,
+            sequence + 1,
+            next,
             CommandStatus::Accepted,
             &encode_step_result(StepDisposition::Moved),
         )?,
         encode_state_delta(
-            2,
-            9,
+            generation,
+            sequence + 2,
             STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            3,
-            4,
+            revision,
+            revision + 1,
             DELTA_TYPE_WORLD_SPATIAL_V1,
-            &at(1),
+            &at(to),
         )?,
-        encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 2, 8, 7)?,
+        encode_command_protocol_error(
+            FoundationProtocolError::CommandSequenceGap,
+            generation,
+            next + 2,
+            next + 1,
+        )?,
     ]);
     Ok(frames)
 }
@@ -1632,7 +1661,18 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         &encode_step_intent(StepDirection::East),
     )));
     let reply = exchange_must_close(address, &exact, &raw).await?;
-    let expected = resume_frames(WorldId::decode(&world)?, &session)?;
+    let expected = resume_frames(
+        WorldId::decode(&world)?,
+        &session,
+        ResumeFrames {
+            generation: 2,
+            sequence: 7,
+            next: 6,
+            revision: 3,
+            x: 0,
+            to: 1,
+        },
+    )?;
     if reply != Reply::Frames(expected) {
         return Err(format!("same-session resume diverged: {reply:?}").into());
     }
@@ -1654,11 +1694,76 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     }
     evidence("resume replayed_credential=refused");
 
+    evidence("stage=resumed_loss");
+    // FND-04B §§5–6, §20: the resumed connection ended on a gap, so its loss opens the next
+    // epoch with its own 60 s grace, retaining the resumed epoch. Within that grace the
+    // player resumes the SAME GameSession again: generation 3 continues CommandId and
+    // server_sequence from generation 2, and the actor steps back west.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        if let Some((1, epoch, grace)) = session_loss_row(url, session).await? {
+            if epoch != "2" || !(58..=62).contains(&grace) {
+                return Err(format!("resumed loss epoch={epoch} grace={grace}").into());
+            }
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("resumed session never became reconnectable".into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    let generation = platform_generation(descriptor, &accounts[0]).await?;
+    let token = sign_recovery(
+        recovery,
+        &accounts[0],
+        &characters[0],
+        &world,
+        generation,
+        now_seconds()?,
+        [0x5f; 32],
+    );
+    let mut raw = framed(&resume(&session, token.as_bytes()));
+    raw.extend_from_slice(&framed(&client_command_at(
+        3,
+        7,
+        step,
+        &encode_step_intent(StepDirection::West),
+    )));
+    raw.extend_from_slice(&framed(&client_command_at(
+        3,
+        9,
+        step,
+        &encode_step_intent(StepDirection::West),
+    )));
+    let reply = exchange_must_close(address, &exact, &raw).await?;
+    let expected = resume_frames(
+        WorldId::decode(&world)?,
+        &session,
+        ResumeFrames {
+            generation: 3,
+            sequence: 9,
+            next: 7,
+            revision: 4,
+            x: 1,
+            to: 0,
+        },
+    )?;
+    if reply != Reply::Frames(expected) {
+        return Err(format!("second same-session resume diverged: {reply:?}").into());
+    }
+    if committed_admissions(url).await? != 2 {
+        return Err("second resume created an admission".into());
+    }
+    evidence(
+        "resumed_loss epoch=2 grace_s=60 same_session=resumed generation=3 next_command_id=7 server_sequence=9 position=1_0_0_rev4 step_west=moved_0_0_0_rev5 admissions=2",
+    );
+
     evidence("stage=grace_expiry");
     // FND-04B §6: with no resumed control, each lost session is terminally released once its
     // original grace deadline passes; the released claims let the character enter again.
+    // The twice-resumed session was lost a third time (epoch 3) and expires on its own grace.
     for (label, id) in [("closed", session), ("silent", concurrent[0])] {
-        let deadline = tokio::time::Instant::now() + Duration::from_secs(80);
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
         while !matches!(session_loss_row(url, id).await?, Some((3, _, _))) {
             if tokio::time::Instant::now() >= deadline {
                 return Err(format!("{label} session was not released after grace").into());
@@ -1666,17 +1771,29 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
     }
-    let generation = platform_generation(descriptor, &accounts[0]).await?;
-    let again = next_grant(&accounts[0], characters[0], generation);
-    let token = sign_grant(&again.borrowed(), now_seconds()?);
-    let reply = exchange(
-        address,
-        &exact,
-        &framed(&bootstrap(1, 1, &characters[0], &token)),
-    )
-    .await?;
-    if accepted_session(&reply).is_none() || committed_admissions(url).await? != 3 {
-        return Err(format!("released character was not admitted again: {reply:?}").into());
+    // The Channel removes the exact actor only after the TERMINAL fact, so a fresh entry
+    // is refused until then; retry with a fresh grant for a bounded time.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+    loop {
+        let generation = platform_generation(descriptor, &accounts[0]).await?;
+        let again = next_grant(&accounts[0], characters[0], generation);
+        let token = sign_grant(&again.borrowed(), now_seconds()?);
+        let reply = exchange(
+            address,
+            &exact,
+            &framed(&bootstrap(1, 1, &characters[0], &token)),
+        )
+        .await?;
+        if accepted_session(&reply).is_some() {
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err(format!("released character was not admitted again: {reply:?}").into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    if committed_admissions(url).await? != 3 {
+        return Err("readmission after release did not commit exactly one GameSession".into());
     }
     evidence(
         "grace_expiry closed=terminal silent=terminal readmitted_after_release=1 admissions=3",
@@ -1684,7 +1801,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     Ok(())
 }
 
-/// Durable session state, loss epoch and grace seconds counted from the loss decision.
+/// Durable session state, current loss epoch and grace seconds counted from that loss's decision.
 async fn session_loss_row(url: &str, session: [u8; 16]) -> TestResult<Option<(i16, String, i64)>> {
     let mut connection = sqlx::PgConnection::connect(url).await?;
     let row: Option<(i16, Option<String>, Option<i64>)> = sqlx::query_as(
@@ -1693,7 +1810,7 @@ async fn session_loss_row(url: &str, session: [u8; 16]) -> TestResult<Option<(i1
          FROM game_durability_reconnect_sessions s \
          LEFT JOIN game_durability_admission_lifecycle_receipts r \
            ON r.operation_key = 'owning-loss-v1'::bytea || uuid_send(s.game_session_id) \
-              || int8send(1) \
+              || int8send(s.control_loss_epoch::bigint) \
          WHERE s.game_session_id = encode($1, 'hex')::uuid",
     )
     .bind(session.as_slice())

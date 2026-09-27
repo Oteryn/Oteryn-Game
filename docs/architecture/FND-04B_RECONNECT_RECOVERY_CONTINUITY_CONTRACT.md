@@ -385,7 +385,12 @@ Implementation note (#822 PR 5b): the Channel owner serves `ClientResume` with a
 - A refused or unproven PREPARE is withdrawn.
 - The resumed connection continues FND-02 CommandId and server_sequence from the lost connection, at the next connection generation, with a snapshot of the same actor.
 
-Until loss after a resume is recorded, a resumed session whose recovered connection ends is terminally released instead of staying ACTIVE on a dead transport. The player then loses grace, but can still enter again.
+Implementation note (#822 PR 5c): a loss after a resume is recorded as the next epoch (§5). The recovered connection ended, so the restored episode is closed and a new one begins.
+
+- The loss retains the resumed epoch's history: its restored budget, its original grace deadline and the protection its committed recovery left. The durable commit re-derives that history from the immutable receipts under its relation locks and refuses any other.
+- The new epoch is exactly the resumed epoch plus one. It has its own original grace deadline (§6) and its own empty recovery budget.
+- Protection is carried unchanged: a resume never re-arms it (§8). Re-arm stays with the protection work.
+- If the loss after a resume cannot be proven or is refused, the session is terminally released instead of staying ACTIVE on a dead transport. The player then loses grace, but can still enter again.
 
 ## 21. Grace expiry and post-grace existing-actor recovery
 
