@@ -499,12 +499,112 @@ def cults_of_tibia(build):
                 'bosses, Essence of Malice will spawn") decides (D25): the fifth kill spawns it.')
 
 
+WOTE = 'data-otservbr-global/scripts/quests/wrath_of_the_emperor/'
+WOTE_BOSSES = WOTE + 'creaturescripts_bosses_kill.lua'
+WOTE_ZALAMON = WOTE + 'creaturescripts_zalamon_kill.lua'
+# boss, config lines, statue position
+WOTE_BOSS_CONFIG = [
+    ('Fury of the Emperor', [2, 3, 4, 5], (33048, 31085, 15)),
+    ('Wrath of the Emperor', [6, 7, 8, 9], (33094, 31087, 15)),
+    ('Scorn of the Emperor', [10, 11, 12, 13], (33095, 31110, 15)),
+    ('Spite of the Emperor', [14, 15, 16, 17], (33048, 31111, 15))]
+# form, config lines, next form
+ZALAMON_FORMS = [
+    ('Snake God Essence', [2, 3, 4, 5], 'Snake Thing', "IT'S NOT THAT EASY MORTALS! FEEL THE POWER OF THE GOD!"),
+    ('Snake Thing', [6, 7, 8, 9], 'Lizard Abomination', 'NOOO! NOW YOU HERETICS WILL FACE MY GODLY WRATH!'),
+    ('Lizard Abomination', [10, 11, 12, 13], 'Mutated Zalamon', 'YOU ... WILL ... PAY WITH ETERNITY ... OF AGONY!')]
+
+
+def wrath_of_the_emperor(build):
+    """WrathOfTheEmperorBossDeath and ZalamonDeath: the four emperor bosses unseal their statue; Zalamon's forms follow
+    one another."""
+    event = 'WrathOfTheEmperorBossDeath'
+    sealed, unsealed = ref('Item', 'canary:item/10797'), ref('Item', 'canary:item/11427')
+    for boss, lines, statue in WOTE_BOSS_CONFIG:
+        role = slug(boss)
+        item = build.get(role, f'Wrath of the Emperor: {boss}', 'instance_per_party')
+        build.participant(item, role, boss, event)
+        item['encounter']['anchors'].append({'key': 'statue', 'kind': 'point', 'description': f'Boss statue; Canary {statue}.'})
+        build.define(item, sealed)
+        build.define(item, unsealed)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'map_item', 'operation': 'transform', 'item': sealed, 'into': unsealed,
+                                              'anchor': 'statue'}]})
+        build.entry(item, WOTE_BOSSES, [20, 21, 22, 23, 24, 25] + lines[:1], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss.lower()}".')
+        build.entry(item, WOTE_BOSSES, [28, 29, 30, 31, 32, 33, 34] + lines[1:2], 'mapped', path + '/actions/0',
+                    f'Item 10797 on {statue} becomes 11427 (the sceptre of mission 10 turns it back, '
+                    'actions_mission10_a_message_of_freedom_sceptre.lua lines 10-11: quest interaction, not this event).')
+        build.entry(item, WOTE_BOSSES, [27] + lines[2:3], 'approved_omission', None,
+                    'Game.setStorageValue(Bosses.<boss>, 0): nothing sets this global to 1, and movements_boss_teleport.lua '
+                    'lines 55-60 teleport in both branches, differing only by a teleport effect, so the write has no effect.')
+
+    event = 'ZalamonDeath'
+    item = build.get('zalamon', 'Wrath of the Emperor: Zalamon', 'instance_per_party')
+    for form, lines, next_form, text in ZALAMON_FORMS:
+        role, next_role = slug(form), slug(next_form)
+        build.participant(item, role, form, event)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'spawn', 'creature': creature(next_form), 'role': next_role, 'count': 1,
+                                              'at': 'death_position', 'owner': 'none', 'health': 'full'},
+                                             {'kind': 'say', 'subject': {'role': next_role}, 'text': text, 'mode': 'say'}]})
+        build.entry(item, WOTE_ZALAMON, [17, 18, 23, 24, 25, 26, 27] + lines[:1] + lines[2:3], 'mapped', path + '/trigger',
+                    f'onDeath of the form "{form.lower()}", whose next form is "{next_form.lower()}".')
+        build.entry(item, WOTE_ZALAMON, [38, 42] + lines[2:3], 'mapped', path + '/actions/0',
+                    f'Game.createMonster("{next_form.lower()}", death position, false, true): the next form with full health.')
+        build.entry(item, WOTE_ZALAMON, [39, 40] + lines[1:2], 'mapped', path + '/actions/1',
+                    'monster:say(text, TALKTYPE_MONSTER_SAY) by the new form.')
+        build.entry(item, WOTE_ZALAMON, [29, 30, 31, 32, 33, 34, 35, 37], 'approved_omission', None,
+                    'The next form is not created when a creature of that name is already in view. In one encounter instance '
+                    'the next form exists only through this rule, which runs once for the single previous form, so the guard '
+                    'never fails.')
+    build.participant(item, 'mutated_zalamon', 'Mutated Zalamon', event)
+    build.entry(item, WOTE_ZALAMON, [17, 18, 19, 20, 21], 'approved_omission', None,
+                'The death of "mutated zalamon" sets the global Mission11 storage to -1, releasing the arena lock that '
+                'actions_mission11_payback_time_lever.lua lines 18-24 hold for ten minutes; an instance per party (D26) '
+                'replaces the shared-arena lock.')
+
+
+GHULOSH = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_ghulosh.lua'
+
+
+def ghulosh(build):
+    """ghuloshDeath: the Book of Death and Concentrated Death alternate in the Ghulosh fight."""
+    event = 'ghuloshDeath'
+    item = build.get('ghulosh', 'The Secret Library: Ghulosh', 'instance_per_party')
+    build.participant(item, 'the_book_of_death', 'The Book of Death', event)
+    build.participant(item, 'concentrated_death', 'Concentrated Death', event)
+    item['encounter']['anchors'].append({'key': 'book_of_death_spawn', 'kind': 'point', 'description': 'Canary (32755, 32716, 10).'})
+    item['encounter']['state']['timers'].append({'name': 'book_of_death_return', 'duration_ms': 12000, 'repeat': False})
+    path = build.rule(item, {'key': 'the_book_of_death_death', 'trigger': {'kind': 'creature_died', 'role': 'the_book_of_death'},
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('Concentrated Death'),
+                                                            'role': 'concentrated_death', 'count': 1, 'at': 'death_position',
+                                                            'owner': 'none', 'health': 'full'}]})
+    build.entry(item, GHULOSH, [55, 56, 57, 58, 60], 'mapped', path + '/trigger', 'onDeath of "the book of death".')
+    build.entry(item, GHULOSH, [61], 'mapped', path + '/actions/0',
+                'Game.createMonster("Concentrated Death", death position): full health, no owner.')
+    path = build.rule(item, {'key': 'concentrated_death_death', 'trigger': {'kind': 'creature_died', 'role': 'concentrated_death'},
+                             'conditions': [], 'actions': [{'kind': 'timer', 'timer': 'book_of_death_return', 'operation': 'start'}]})
+    build.entry(item, GHULOSH, [62, 63], 'mapped', path + '/actions/0',
+                'onDeath of "concentrated death": addEvent(doSpawn, 4000, ..., k = 1). doSpawn reschedules itself every 2000 ms '
+                'while k <= 4 (k = 1..4) and creates the book at k = 5: 4000 + 4 * 2000 = 12000 ms.')
+    path = build.rule(item, {'key': 'book_of_death_returns', 'trigger': {'kind': 'timer_elapsed', 'timer': 'book_of_death_return'},
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('The Book of Death'),
+                                                            'role': 'the_book_of_death', 'count': 1,
+                                                            'at': {'anchor': 'book_of_death_spawn'}, 'owner': 'none',
+                                                            'health': 'full'}]})
+    build.entry(item, GHULOSH, [45, 50, 51, 52, 53], 'mapped', path + '/actions/0',
+                'Game.createMonster("The Book of Death", Position(32755, 32716, 10)): full health, no owner.')
+    build.entry(item, GHULOSH, [46, 47, 48, 49], 'approved_omission', None,
+                'The teleport magic effect on the spawn tile every 2 s before the book returns is cosmetic.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh):
         transcribe(build)
     print(json.dumps(build.write()))
 
