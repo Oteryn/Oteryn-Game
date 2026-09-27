@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-npc-admission-wiki-completion
 title: NPC admission D8 - complete held NPCs from TibiaWiki (wiki positions and variant base names)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 1036
 jira: KAN-16
 base_sha: 63de6f9ab0c4f22abad1c81c996d525bdc00c1dc
 head_sha: null
