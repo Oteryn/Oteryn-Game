@@ -64,6 +64,9 @@ RULES = {
     'familiar_look': 'data/libs/systems/familiar.lua FAMILIAR_ID gives the default look per vocation, which '
                      'creaturescripts/familiar/on_login.lua assigns to a character without a selection',
     'nil_constant': 'an undefined Lua global evaluates to nil in Canary',
+    'nil_zero': 'src/lua/functions/lua_functions_loader.hpp getNumber reads nil with lua_tonumber as 0',
+    'dispel': 'src/creatures/combat/combat.cpp CombatDispelFunc removes every condition of COMBAT_PARAM_DISPEL type from '
+              'each target after the health change (or on a combat without damage)',
     'element_over_100': 'monster.cpp blockHit sets damage <= 0 to 0, so more than 100% reduction equals 100% '
                         '(the excess only offsets the Wheel "Ballistic Mastery" element reduction)',
     'zero_condition': 'condition.cpp ConditionDamage::init: a damage condition with zero total damage never starts',
@@ -1015,18 +1018,51 @@ class Converter:
         effects = {e['identity']['key']: e for e in deps['effects']}
         return any(effects[r['key']].get('formula', {}).get('key') == CASTER_MAGNITUDE for r in ability.get('effects', []))
 
+    def engine_params(self, param_calls, notes):
+        """Combat:setParameter calls as the engine applies them, in call order: key and value are read as numbers
+        (combat_functions.cpp luaCombatSetParameter), so an undefined global (nil) is 0 and a constant of another
+        enum selects the parameter or value with its number. Values are named again by the parameter they set."""
+        enums = self.spell_scripts.enums
+        by_number = {v: k for k, v in enums['CombatParam_t'].items()}
+        tables = (*enums.values(), self.magic_effects, self.missiles)
+
+        def number(value):
+            if isinstance(value, bool):
+                return int(value)
+            if isinstance(value, (int, float)):
+                return int(value)
+            return next((table[value] for table in tables if value in table), None)
+
+        value_names = {'COMBAT_PARAM_TYPE': enums['CombatType_t'], 'COMBAT_PARAM_DISPEL': enums['ConditionType_t'],
+                       'COMBAT_PARAM_CHAIN_EFFECT': self.magic_effects}
+        params = {}
+        for key, value in param_calls:
+            key_number, value_number = number(key), number(value)
+            if key_number is None:
+                key_number = 0
+                notes.append(f'{key} is not a Canary constant: {RULES["nil_zero"]}, so this call sets {by_number[0]}.')
+            elif key not in enums['CombatParam_t']:
+                notes.append(f'{key} is {key_number}, which the engine reads as {by_number.get(key_number, "no combat parameter")}.')
+            if key_number not in by_number:
+                continue
+            name = by_number[key_number]
+            if value_number is None:
+                value_number = 0
+                notes.append(f'{value} is not a Canary constant: {RULES["nil_zero"]}.')
+            if name in value_names:
+                reverse = {v: k for k, v in value_names[name].items()}
+                params[name] = reverse.get(value_number, value_number)
+            else:
+                params[name] = value_number
+        return params
+
     def combat_ability(self, key, combat, geometry, range_tiles, deps, asset, notes):
         """One recorded Combat as an Ability plus its Effects; True when a damage/heal effect uses the caster magnitude."""
-        enums = self.spell_scripts.enums
-        params = dict(combat['params'])
-        for name in list(params):
-            if name not in enums['CombatParam_t']:
-                notes.append(f'{name} is not a Canary constant (nil), so setParameter has no effect.')
-                params.pop(name)
+        params = self.engine_params(combat.get('param_calls', []), notes)
         unsupported = set(params) - {'COMBAT_PARAM_TYPE', 'COMBAT_PARAM_EFFECT', 'COMBAT_PARAM_DISTANCEEFFECT',
                                      'COMBAT_PARAM_CHAIN_EFFECT', 'COMBAT_PARAM_CREATEITEM', 'COMBAT_PARAM_AGGRESSIVE',
                                      'COMBAT_PARAM_USECHARGES', 'COMBAT_PARAM_IMPACTSOUND', 'COMBAT_PARAM_CASTSOUND',
-                                     'COMBAT_PARAM_BLOCKARMOR', 'COMBAT_PARAM_BLOCKSHIELD'}
+                                     'COMBAT_PARAM_BLOCKARMOR', 'COMBAT_PARAM_BLOCKSHIELD', 'COMBAT_PARAM_DISPEL'}
         if unsupported:
             raise SpellUnresolved(f'combat parameter(s) {sorted(unsupported)} have no authoring field.')
         if combat.get('formula'):
@@ -1078,6 +1114,9 @@ class Converter:
             item = ref('Item', f'canary:item/{int(params["COMBAT_PARAM_CREATEITEM"])}')
             self.pending_definitions.add((item['family'], item['key']))
             add('-item', {'operation': 'create_item', 'created_item': item})
+        if params.get('COMBAT_PARAM_DISPEL') not in (None, 'CONDITION_NONE'):
+            notes.append(RULES['dispel'] + '.')
+            add('-dispel', {'operation': 'remove_condition', 'removed_condition': params['COMBAT_PARAM_DISPEL'][len('CONDITION_'):].lower()})
         for n, condition in enumerate(combat['conditions'], 1):
             body = self.script_condition(condition, deps, f'{key}/formula-{n}', notes)
             if body:

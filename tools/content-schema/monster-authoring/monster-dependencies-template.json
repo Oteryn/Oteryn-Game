@@ -118,6 +118,7 @@
         "key": null,
         "revision": null
       },
+      "removed_condition": null,
       "presentation": {
         "impact_asset_binding": null,
         "projectile_asset_binding": null

@@ -99,20 +99,40 @@ def body_tier(text, shared, callbacks):
     return tier, reasons
 
 
+ENUMS = ('ConditionParam_t', 'ConditionType_t', 'CombatParam_t', 'CallBackParam_t', 'CombatType_t')
+
+
+def enum_values(text, enum):
+    """name -> value of a C++ enum: explicit integer values, otherwise the previous value plus one."""
+    body = re.search(r'enum ' + enum + r'[^{]*\{(.*?)\};', text, re.S).group(1)
+    values, current = {}, -1
+    for line in body.splitlines():
+        line = line.split('//')[0].strip().rstrip(',')
+        match = re.match(r'([A-Z][A-Z0-9_]+)\s*(?:=\s*(.+))?$', line)
+        if not match:
+            continue
+        name, expression = match.groups()
+        if expression is None:
+            current += 1
+        elif expression in values:
+            current = values[expression]
+        else:
+            shift = re.fullmatch(r'1\s*<<\s*(\d+)', expression)
+            current = 1 << int(shift.group(1)) if shift else int(expression, 0)
+        values[name] = current
+    return values
+
+
 def engine_enums(canary):
-    """Names of the Canary ConditionParam_t, ConditionType_t, CombatParam_t and CallBackParam_t enums."""
+    """name -> value of the Canary enums a spell script passes to Combat and Condition."""
     text = (canary / ENGINE_DEFINITIONS).read_text(encoding='utf-8')
-    names = {}
-    for enum in ('ConditionParam_t', 'ConditionType_t', 'CombatParam_t', 'CallBackParam_t'):
-        body = re.search(r'enum ' + enum + r'[^{]*\{(.*?)\};', text, re.S).group(1)
-        names[enum] = set(re.findall(r'^\s*([A-Z][A-Z0-9_]+)', body, re.M))
-    return names
+    return {enum: enum_values(text, enum) for enum in ENUMS}
 
 
 def area_constants(canary):
     """Top-level `NAME = { ... }` table blocks of the Canary spell library (AREA_* and friends)."""
     text = (canary / SPELL_LIB).read_text(encoding='utf-8', errors='replace')
-    return '\n'.join(re.findall(r'^[A-Z][A-Z0-9_]* = \{.*?^\}', text, re.M | re.S))
+    return '\n'.join(re.findall(r'^[A-Z]\w* = \{.*?^\}', text, re.M | re.S))
 
 
 def index_spells(canary):
@@ -210,10 +230,11 @@ class SpellScripts:
         return result
 
     def _combat(self, lua, combat):
-        data = {'params': {}, 'callbacks': {}, 'conditions': [], 'area': None, 'formula': None}
+        data = {'params': {}, 'param_calls': [], 'callbacks': {}, 'conditions': [], 'area': None, 'formula': None}
         for method, args in calls(combat):
             if method == 'setParameter' and len(args) >= 2:
                 data['params'][str(args[0]).lstrip('@')] = args[1].lstrip('@') if isinstance(args[1], str) else args[1]
+                data['param_calls'].append([str(args[0]).lstrip('@'), args[1].lstrip('@') if isinstance(args[1], str) else args[1]])
             elif method == 'setArea' and args and isinstance(args[0], dict):
                 data['area'] = {'north': args[0].get('north'), 'diagonal': args[0].get('ext')}
             elif method == 'setCallback' and len(args) >= 2:

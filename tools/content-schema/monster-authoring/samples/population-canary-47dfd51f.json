@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 346,
-    "fully_resolved": 1304,
+    "blocked": 342,
+    "fully_resolved": 1308,
     "not_converted": 6,
-    "wiki_adopted_monsters": 992
+    "wiki_adopted_monsters": 995
   },
   "wiki_adopted_rows": {
     "Loot2": 11547,
@@ -54,7 +54,7 @@
     },
     {
       "blocker": "unresolved_semantics attacks[]",
-      "monsters": 84,
+      "monsters": 78,
       "examples": [
         "quara_looter",
         "cerebellum",
@@ -65,7 +65,7 @@
     },
     {
       "blocker": "unresolved_semantics defenses[]",
-      "monsters": 40,
+      "monsters": 39,
       "examples": [
         "bullwark",
         "lisa",
@@ -393,6 +393,7 @@
     "bloodback",
     "bloodpaw",
     "blue_butterfly",
+    "blue_djinn",
     "boar",
     "boar_man",
     "bog_frog",
@@ -796,6 +797,7 @@
     "gravelord_oshuran",
     "greater_canopic_jar",
     "greater_death_minion",
+    "green_djinn",
     "green_frog",
     "grey_horse",
     "grim_reaper",
@@ -953,6 +955,7 @@
     "lovely_rotworm",
     "lovely_scorpion",
     "lovely_snake",
+    "lovely_souleater",
     "lovely_yielothax",
     "lumbering_carnivor",
     "mad_mage",
@@ -1172,6 +1175,7 @@
     "pirate_marauder",
     "pirate_skeleton",
     "pixie",
+    "plaguesmith",
     "plaguethrower",
     "plant_attendant",
     "plunder_patriarch",
@@ -1184,7 +1188,6 @@
     "poor_soul",
     "preceptor_lazare",
     "priestess",
-    "priestess_of_the_wild_sun",
     "primitive",
     "prince_drazzak",
     "psychic_spirit_elemental",
@@ -1294,7 +1297,6 @@
     "sineater_inferniarch",
     "sir_nictros",
     "sir_valorcrest",
-    "sister_hetai",
     "skeleton",
     "skeleton_elite_warrior",
     "skeleton_warrior",
@@ -1315,6 +1317,7 @@
     "soul_of_dragonking_zyrtarch",
     "soul_reaper",
     "soul_scourge",
+    "souleater",
     "soulless_minion",
     "spark_of_destruction",
     "sparkion",
@@ -1450,6 +1453,7 @@
     "tiger",
     "time_keeper",
     "time_waster",
+    "tiquandas_revenge",
     "toad",
     "tomb_servant",
     "tormented_ghost",

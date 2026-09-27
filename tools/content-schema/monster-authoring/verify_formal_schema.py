@@ -200,6 +200,15 @@ if __name__=='__main__':
     def healed(m,d,c):
         d['effects'][0].update({'operation':'heal','damage_type':'healing','mitigated_by':['armor']})
     case('heal cannot be mitigated by armor',healed)
+    def dispel(body):
+        def mutate(m,d,c):
+            d['effects'].append({'identity':ident('dispel'),'operation':'remove_condition',**body})
+            d['abilities'][0]['effects'].append(ref('Effect','dispel'))
+        return mutate
+    case('remove condition accepted (DISPEL)',dispel({'removed_condition':'paralyze'}),True)
+    case('remove condition names its condition',dispel({}))
+    case('remove condition has no duration',dispel({'removed_condition':'paralyze','duration_ms':1000}))
+    case('damage cannot remove a condition',set_value(('d','effects',0,'removed_condition'),'paralyze'))
     def variants(nested=False,with_effects=False):
         def mutate(m,d,c):
             base=d['abilities'][0]

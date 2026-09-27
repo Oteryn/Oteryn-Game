@@ -170,13 +170,15 @@ d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration'
         description='D12: percent_of_base sets the attribute to value% of its base; add adds value.')},('type','lifetime'),allOf=[
     {'if':{'properties':{'lifetime':{'const':'damage_schedule'}},'required':['lifetime']},
      'then':{'required':['damage_over_time'],**forbid('speed_formula')},'else':forbid('damage_over_time')}])
-d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only'),
+d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only','remove_condition'),
     'damage_type':use('damageType'),'formula':use('FormulaRef'),'duration_ms':use('ms'),'condition':use('condition'),
     'mitigated_by':array(enum('armor','shield'),1,True,description='Target defences that reduce this damage (Canary/Crystal '
         'blockedByArmor/blockedByShield); absent means neither. The reduction formula itself is a world combat rule.'),
     'appearance_transform':obj({'creature':use('CreatureRef'),'item':use('ItemRef')},oneOf=[
         {'required':['creature'],**forbid('item')},{'required':['item'],**forbid('creature')}]),
     'created_item':use('ItemRef'),
+    'removed_condition':{**use('conditionType'),'description':'remove_condition: every condition of this type on the target '
+        'ends (Canary/Crystal COMBAT_PARAM_DISPEL, Creature::removeCombatCondition).'},
     'presentation':obj({'impact_asset_binding':use('assetBinding'),'projectile_asset_binding':use('assetBinding')})},
     ('identity','operation'),allOf=[
     {'if':{'properties':{'operation':{'enum':['damage','heal']}},'required':['operation']},
@@ -192,7 +194,9 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
      'then':{'required':['created_item']},'else':forbid('created_item')},
     {'if':{'properties':{'operation':{'const':'presentation_only'}},'required':['operation']},
      'then':{'required':['presentation'],'properties':{'presentation':{'minProperties':1}},**forbid('duration_ms')}},
-    {'if':{'properties':{'operation':{'const':'damage'}},'required':['operation']},'then':{},'else':forbid('mitigated_by')}])
+    {'if':{'properties':{'operation':{'const':'damage'}},'required':['operation']},'then':{},'else':forbid('mitigated_by')},
+    {'if':{'properties':{'operation':{'const':'remove_condition'}},'required':['operation']},
+     'then':{'required':['removed_condition'],**forbid('duration_ms')},'else':forbid('removed_condition')}])
 d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_skill','speed_modifier','caster_magnitude'),
     'magnitude':obj({'minimum':integer(),'maximum':integer()},('minimum','maximum')),
     'melee':obj({'attack':integer(),'skill':integer()},('attack','skill')),

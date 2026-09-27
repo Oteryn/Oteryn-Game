@@ -2144,7 +2144,8 @@
             "condition",
             "appearance_transform",
             "create_item",
-            "presentation_only"
+            "presentation_only",
+            "remove_condition"
           ]
         },
         "damage_type": {
@@ -2216,6 +2217,10 @@
         },
         "created_item": {
           "$ref": "#/$defs/ItemRef"
+        },
+        "removed_condition": {
+          "$ref": "#/$defs/conditionType",
+          "description": "remove_condition: every condition of this type on the target ends (Canary/Crystal COMBAT_PARAM_DISPEL, Creature::removeCombatCondition)."
         },
         "presentation": {
           "type": "object",
@@ -2480,6 +2485,43 @@
                 {
                   "required": [
                     "mitigated_by"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "remove_condition"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "removed_condition"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "removed_condition"
                   ]
                 }
               ]

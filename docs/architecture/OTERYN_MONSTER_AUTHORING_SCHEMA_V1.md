@@ -82,6 +82,8 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D15 | Where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it. So far this is applied to mitigation, `pushable`, loot items missing in Canary and loot probabilities. Loot rate rule: use the highest-version `Loot Statistics` block at the cut (the largest-sample source; other sites such as Tibiopedia are cross-checks only); estimate = drops / kills rounded half-even to 1 ppm, with a 95% Wilson interval recorded. At 10 or more drops the estimate replaces the Canary probability; below 10 the Canary probability is kept and marked low confidence (an item missing in Canary is still added, marked low confidence). An item the infobox lists but the statistics block does not show keeps its Canary probability (probably added after that version). An ambiguous item name is resolved by the item page `itemid`. | The wiki tracks Tibia Global more closely than OTS sources. Batch 1 comparison: `samples/canary-47dfd51f/wiki-2026-07-28.json`. |
 | D16 | A familiar is split three ways: the familiar creature (one per vocation) stays a monster with `is_familiar`; the summon parameters (vocation, level, mana, cooldown, duration) belong to the player summon `Ability`; the familiar looks are a character cosmetic catalogue with per-character unlocks and selection. The monster keeps `presentation.appearance.selection=owner_familiar_look` with the vocation default look as `asset_binding`. Moving the summon parameters out of the creature and the look catalogue are later admission work. | TibiaWiki: familiars of one vocation differ only by name and look, chosen in "Customize Character". Canary: `data/libs/systems/familiar.lua` `FAMILIAR_ID` default looks, set by `creaturescripts/familiar/on_login.lua`; per-character choice from `data/XML/familiars.xml`. |
 | D17 | Any Item can be a monster corpse; the validator no longer requires the Item capability `is_corpse`. | Canary drops whatever Item id the monster names (45 monster files use ashes, fish, remains and similar items without the corpse flag). |
+| D18 | Registered spell scripts with custom logic are expressed through the 19 shared, parameterized native behaviour patterns of §8.4; boss-specific logic (`boss_form_swap`, `boss_escape_utility`, `map_or_quest_specific`) belongs with the Encounter definitions (D9), not with monster behaviours. Wiki ability scenes stay review evidence (§9.2) and are not adopted for now. | Owner acceptance of the §8.4 grouping (93 blocking scripts, model-assisted with evidence lines). |
+| D19 | Plain combats get schema fields instead of behaviours: damage `mitigated_by` (§8.5) and the `remove_condition` operation for `COMBAT_PARAM_DISPEL`; the converter binds `setParameter` keys and values as the engine reads them (an undefined constant is 0). | `combat_functions.cpp luaCombatSetParameter`, `lua_functions_loader.hpp getNumber`, `combat.cpp setParam`/`CombatDispelFunc`, `monsters.cpp deserializeSpell`; the Crystal Server `monsters.cpp`, `combat.cpp` and `blockHit` paths were checked and match. |
 
 ## 4. Carried semantics
 
@@ -145,7 +147,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 202 focused positive/negative cases
+python verify_formal_schema.py     # 206 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -235,14 +237,16 @@ monster references the largest are `conditional_summon` (23 spells), `remove_mag
 effect trail plus one single-target hit, not a real chain) and `plain_combat_unsupported_schema`
 (9 spells: plain combats blocked only by `BLOCKARMOR`, `DISPEL`, `COMBAT_LIFEDRAINDAMAGE` or a
 custom area constant, which need schema fields rather than a behaviour; `BLOCKARMOR` is now covered
-by `mitigated_by`, §8.5). Boss-specific logic
+by `mitigated_by` and `DISPEL` by `remove_condition` (D19, §8.5); the two `COMBAT_LIFEDRAINDAMAGE`
+waves and `COMBAT_PHYSICALDAMAGEDAMAGE` are undefined constants, which the engine reads as 0,
+physical damage). Boss-specific logic
 (`boss_form_swap`, `boss_escape_utility`, `map_or_quest_specific`) belongs with the Encounter
 definitions of D9. Canary defects found on the way: `gorerilla small ring` uses the undefined
 `COMBAT_PHYSICALDAMAGEDAMAGE`, `metal gargoyle curse` has a one-step loop, `icicle heal` deals 100
 damage, and `gaz'haragoth summon` calls `setSummon` with an undefined value. The grouping is a
 proposal for owner review; no behaviour key is created by it.
 
-### 8.5 Armor and shield mitigation (`mitigated_by`)
+### 8.5 Plain combat fields (D19): `mitigated_by`, `remove_condition`, engine parameter binding
 
 A damage Effect may carry `mitigated_by: ["armor"]`, `["shield"]` or both: the target defences that
 reduce it. Absent means neither, which is the engine default for spells. The field records only
@@ -256,12 +260,22 @@ defense and armor (Crystal additionally lowers the armor by a player's weapon pr
 monsters do not have). The converter now emits the field from these three rules; before it, monster
 melee and physical attacks lost the armor and shield reduction silently.
 
+`COMBAT_PARAM_DISPEL` becomes a `remove_condition` Effect after the combat's damage or heal
+(`CombatDispelFunc` runs after the health change or on a combat without damage), for example
+`ultimate healing` (heal, then remove paralysis) and `djinn cancel invisibility`. `setParameter`
+keys and values are bound as the engine reads them: `luaCombatSetParameter` reads both as numbers,
+so an undefined global (nil) is 0 and a constant of another enum selects by its number. This turns
+`COMBAT_LIFEDRAINDAMAGE` (undefined) into `COMBAT_PHYSICALDAMAGE` (0), and `COMBAT_PARAM_SHOOT_EFFECT`
+(undefined) in `targetfirering` into a `COMBAT_PARAM_TYPE` call whose value `CONST_ANI_FIRE` (4) is
+`COMBAT_UNDEFINEDDAMAGE`; the converter had read that spell as fire damage and now leaves it
+unresolved with the other undefined-damage entries.
+
 ## 9. Import readiness of the Canary population
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,304 convert, validate and resolve every manifest row (1,103 before registered spells were
-converted, 1,315 before wiki adoption, 1,298 before `mitigated_by`); 346 are blocked; 6 do not convert (five Soul War bosses
+files, 1,308 convert, validate and resolve every manifest row (1,103 before registered spells were
+converted, 1,315 before wiki adoption, 1,298 before D19); 342 are blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 
