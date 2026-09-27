@@ -4,15 +4,15 @@
 task_id: OTV2-20260927-quest-door-gates
 title: Quest format slice 2 - Canary + CrystalServer door gates and wiki decisions for the chest conflicts
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 984
 base_sha: ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c
-head_sha: null
-final_head_sha: null
+head_sha: 6d1edb337adaf2c61004aceb6209b7398c39c384
+final_head_sha: 6d1edb337adaf2c61004aceb6209b7398c39c384
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-27

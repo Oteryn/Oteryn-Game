@@ -11,7 +11,7 @@ TOKEN = re.compile(r'''
   | (?P<lcomment>--\[(?P<lc_eq>=*)\[.*?\](?P=lc_eq)\])
   | (?P<comment>--[^\n]*)
   | (?P<lstring>\[(?P<ls_eq>=*)\[.*?\](?P=ls_eq)\])
-  | (?P<string>"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*')
+  | (?P<string>"(?:\\z\s*|\\.|[^"\\\n])*"|'(?:\\z\s*|\\.|[^'\\\n])*')
   | (?P<number>0[xX][0-9a-fA-F]+|\d+(?:\.\d+)?(?:[eE][+-]?\d+)?)
   | (?P<name>[A-Za-z_][A-Za-z0-9_]*)
   | (?P<symbol>[{}\[\]=,;.():#+\-*/<>~^%])
@@ -90,6 +90,8 @@ class Parser:
         if text == '-' and self.peek(1)[0] == 'number':
             self.next()
             return -self._number(self.next()[1])
+        if kind == 'name' and text == 'function':
+            return self.function()
         self.next()
         if kind == 'number':
             return self._number(text)
@@ -113,6 +115,32 @@ class Parser:
                 else:
                     return {'expr': '.'.join(parts), 'line': line}
         raise LuaError(f'line {line}: unsupported value {text!r}')
+
+    def function(self):
+        """A function literal is not evaluated: it becomes {'function', 'line', 'end_line', 'strings'}."""
+        start = self.next()[2]
+        depth, strings, body = 1, [], []
+        while depth:
+            kind, text, line = self.next()
+            body.append((kind, text))
+            if kind == 'name' and text in ('function', 'if', 'do', 'repeat'):
+                depth += 1
+            elif kind == 'name' and text in ('end', 'until'):
+                depth -= 1
+            elif kind in ('string', 'lstring'):
+                strings.append(_string((kind, text, line)))
+        # dotted `Storage.…` names the function reads, e.g. the kill counter behind a "%d/300" journal line
+        names, i = [], 0
+        while i < len(body):
+            if body[i] == ('name', 'Storage'):
+                parts, i = ['Storage'], i + 1
+                while i + 1 < len(body) and body[i][1] == '.' and body[i + 1][0] == 'name':
+                    parts.append(body[i + 1][1])
+                    i += 2
+                names.append('.'.join(parts))
+            else:
+                i += 1
+        return {'function': True, 'line': start, 'end_line': line, 'strings': strings, 'names': names}
 
     @staticmethod
     def _number(text):
@@ -181,4 +209,7 @@ def as_python(value):
         return {f['key']: as_python(f['value']) for f in fields}
     if isinstance(value, dict) and 'expr' in value:
         return {'expr': value['expr']}
+    if isinstance(value, dict) and value.get('function'):
+        return {'function': True, 'lines': [value['line'], value['end_line']], 'strings': value['strings'],
+                'names': value['names']}
     return value
