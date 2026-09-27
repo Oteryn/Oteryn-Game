@@ -4,19 +4,19 @@
 task_id: OTV2-20260927-dur03-native-one-item-audit-resource-evidence-513
 title: DUR-03 native one-item audit schema codec and resource evidence
 mode: AUDIT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/dur03-native-one-item-audit-evidence-513
 issue: 162
-pr: null
+pr: 1031
 base_sha: e422fc9d2962f63ccb6f0af9ee80ec5f449c2a31
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: bounded Luna author with root OTV2_WORK_DELIVERY_COORDINATOR control plane
 created_at: 2026-09-27T22:42:31+02:00
-updated_at: 2026-09-27T23:09:22+02:00
+updated_at: 2026-09-27T23:14:59+02:00
 execution_policy: continuous_progress
 owned_paths:
   - ADD docs/contracts/game-events/v1/native_one_item_transaction.proto
