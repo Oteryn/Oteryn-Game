@@ -96,6 +96,8 @@ SERVER_QUALIFICATION_CONTENT = (
     "apps/game-server/src/content/static_cell_engine.rs",
     "apps/game-server/src/content/reference_static_cell.rs",
     "apps/game-server/src/content/project/native_entry",
+    # The native entry room parses and validates through the WorldProject/v2 model.
+    "apps/game-server/src/content/project/v2",
 )
 DEGRADED_ROUTING_REASONS = {
     "classifier-input-failure",

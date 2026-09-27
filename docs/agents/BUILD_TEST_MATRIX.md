@@ -54,7 +54,7 @@ Current runtime selection:
 Physical server qualification is a separate selection. It runs the node boot and Server Seam qualifications against the real Platform (`Merge gate / Node boot against the real Platform`, `Merge gate / Server Seam over TCP+TLS`). These run when a change can reach the shipped server's boot, admission, transport, durability or reconnect paths:
 
 - `apps/game-server/src/**`, except `ability/`, `ai/`, `interaction/`, `combat.rs` and Content authoring;
-- the native entry room Content and its activation;
+- the native entry room Content, its WorldProject/v2 model and its activation;
 - `apps/game-server/migrations/**`;
 - `tools/qualification/**`;
 - `vendor/**`;

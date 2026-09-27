@@ -34,7 +34,7 @@ The node boot and Server Seam qualifications ran as standalone, path-filtered wo
 - **Classifier.** `server_qualification_required` in the trusted-base classifier selects the physical qualification from the complete changed-file evidence, including rename sources. The classifier emits it as `server_qualification`. It fails closed on incomplete or malformed evidence.
 - **Selected paths.** The lane runs when a change touches:
   - `apps/game-server/src/**`, except `ability/`, `ai/`, `interaction/`, `combat.rs` and Content authoring;
-  - the native entry room Content and its activation;
+  - the native entry room Content, its WorldProject/v2 model and its activation;
   - `apps/game-server/migrations/**`;
   - `tools/qualification/**`;
   - `vendor/**`;
