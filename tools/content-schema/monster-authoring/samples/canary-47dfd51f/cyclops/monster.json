@@ -17,8 +17,8 @@
       "defense": 20,
       "critical_chance_percent": 0,
       "mitigation_percent": {
-        "numerator": 31,
-        "denominator": 50
+        "numerator": 97,
+        "denominator": 100
       }
     },
     "resistances": [
@@ -250,23 +250,23 @@
       {
         "item": {
           "family": "Item",
-          "key": "canary:item/3012",
-          "revision": "canary-47dfd51f"
-        },
-        "min_count": 1,
-        "max_count": 1,
-        "probability_percent": 0.19,
-        "skip_later_same_item_after_success": false
-      },
-      {
-        "item": {
-          "family": "Item",
           "key": "canary:item/266",
           "revision": "canary-47dfd51f"
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 0.21,
+        "probability_percent": 0.152,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/3012",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 0.224,
         "skip_later_same_item_after_success": false
       },
       {
@@ -277,18 +277,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 0.22,
-        "skip_later_same_item_after_success": false
-      },
-      {
-        "item": {
-          "family": "Item",
-          "key": "canary:item/23986",
-          "revision": "canary-47dfd51f"
-        },
-        "min_count": 1,
-        "max_count": 1,
-        "probability_percent": 1,
+        "probability_percent": 0.232,
         "skip_later_same_item_after_success": false
       },
       {
@@ -299,7 +288,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 1.003,
+        "probability_percent": 0.984,
         "skip_later_same_item_after_success": false
       },
       {
@@ -310,7 +299,18 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 1.4,
+        "probability_percent": 1.552,
+        "skip_later_same_item_after_success": false
+      },
+      {
+        "item": {
+          "family": "Item",
+          "key": "canary:item/23986",
+          "revision": "canary-47dfd51f"
+        },
+        "min_count": 1,
+        "max_count": 1,
+        "probability_percent": 2.12,
         "skip_later_same_item_after_success": false
       },
       {
@@ -321,7 +321,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 2.5,
+        "probability_percent": 2.64,
         "skip_later_same_item_after_success": false
       },
       {
@@ -332,7 +332,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 4.93,
+        "probability_percent": 4.936,
         "skip_later_same_item_after_success": false
       },
       {
@@ -343,7 +343,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 8,
+        "probability_percent": 7.984,
         "skip_later_same_item_after_success": false
       },
       {
@@ -354,7 +354,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 30.07,
+        "probability_percent": 29.68,
         "skip_later_same_item_after_success": false
       },
       {
@@ -365,7 +365,7 @@
         },
         "min_count": 1,
         "max_count": 47,
-        "probability_percent": 82,
+        "probability_percent": 82.488,
         "skip_later_same_item_after_success": false
       }
     ]

@@ -3,6 +3,14 @@
     {
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Fire Elemental",
+      "page_id": 2042,
+      "revision_id": 1191708,
+      "content_sha256": "02839b5064f3075f63d6ef9856eb445546341706554e8e53a700580f6bb16913"
     }
   ],
   "entries": [
@@ -14,7 +22,7 @@
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/0",
-      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+      "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by). Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
     },
     {
       "source_index": 0,
@@ -231,9 +239,8 @@
       "source_line": 89,
       "source_field": "defenses.mitigation",
       "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/stats/mitigation_percent",
-      "resolution": "Canary float percent points as an exact decimal ratio."
+      "status": "approved_omission",
+      "resolution": "Canary value 0.51 superseded by the reference-date wiki value 0.80 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -262,6 +269,35 @@
       "kind": "dependency",
       "status": "approved_omission",
       "resolution": "Race \"fire\" leaves no death residue: creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Fire Elemental",
+      "source_line": 9,
+      "source_field": "Infobox Creature.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Wiki mitigation \"0.80\" (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+      "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 0,
+      "source_file": "data-otservbr-global/monster/elementals/fire_elemental.lua",
+      "source_line": 52,
+      "source_field": "flags.pushable",
+      "kind": "field",
+      "status": "approved_omission",
+      "resolution": "Canary value False superseded by the reference-date wiki value yes (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Fire Elemental",
+      "source_line": 31,
+      "source_field": "Infobox Creature.pushable",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Wiki pushable \"yes\" (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+      "destination": "/monster/behavior/movement/pushable"
     }
   ]
 }

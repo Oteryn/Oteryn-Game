@@ -42,8 +42,41 @@
     {"id": 14, "name": "ProtocolError", "direction": "SERVER_TO_CLIENT", "phase": "ANY", "sequencing": "NONE"}
   ],
   "capabilities": [],
-  "command_types": [],
-  "state_domains": [],
+  "command_types": [
+    {
+      "id": 1,
+      "name": "WORLD_ACTOR_STEP_INTENT",
+      "owner_decision": "#642 FIRST-CONTROL-WIRE-V1 (owner acceptance 5853424280)",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldActorStepIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldActorStepResultV1",
+      "max_payload_bytes": 4,
+      "max_result_payload_bytes": 4
+    }
+  ],
+  "state_domains": [
+    {
+      "id": 1,
+      "name": "WORLD_SPATIAL_VISIBILITY",
+      "owner_decision": "#642 FIRST-CONTROL-WIRE-V1 (owner acceptance 5853424280)",
+      "owner": "current ChannelRuntime",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "WORLD_SPATIAL_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialDeltaV1",
+          "max_payload_bytes": 64
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "WORLD_SPATIAL_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialSnapshotV1",
+          "max_payload_bytes": 64
+        }
+      ]
+    }
+  ],
   "error_codes": [
     {"code": 1001, "name": "MALFORMED_FRAME", "category": "INVALID_INPUT", "default_disposition": "TRANSPORT_FATAL"},
     {"code": 1002, "name": "FRAME_TOO_LARGE", "category": "CAPACITY_EXCEEDED", "default_disposition": "TRANSPORT_FATAL"},

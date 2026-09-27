@@ -1,0 +1,118 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_first_dragon",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The First Dragon",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "dragon_essence",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/dragon_essence",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_first_dragon",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_first_dragon",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "lair_centre",
+      "kind": "point",
+      "description": "Canary (33617, 31023, 14)."
+    },
+    {
+      "key": "lair",
+      "kind": "area",
+      "description": "Every tile within 14 tiles of Canary (33617, 31023, 14) on that floor."
+    },
+    {
+      "key": "lair_exit",
+      "kind": "point",
+      "description": "Canary (33617, 31020, 13)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "dragon_essence_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "dragon_essence"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "dragon_essence"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_first_dragon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_first_dragon",
+          "count": 1,
+          "at": {
+            "anchor": "lair_centre"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "dragon_essence"
+          },
+          "text": "BEWARE! THE FIRST DRAGON APROACHES!",
+          "mode": "say"
+        }
+      ]
+    },
+    {
+      "key": "the_first_dragon_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_first_dragon"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_first_dragon_defeated",
+          "credited": "players_in_anchor",
+          "anchor": "lair"
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "players_in": "lair"
+          },
+          "to": "lair_exit"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_first_dragon_defeated"
+  ]
+}

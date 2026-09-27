@@ -663,6 +663,89 @@ Minimum semantic evidence as applicable:
 
 Concrete ANL event IDs/protobuf payloads and numeric resource ceilings are registered before implementation conformance, not guessed here.
 
+### 39.1 Closed one-item MINT/TRANSFER audit aggregate
+
+This scoped representation decision resolves [#513 escalation 5854890321](https://github.com/Oteryn/Oteryn-Game/issues/513#issuecomment-5854890321)
+within the existing DUR-03/ANL-01 authority. It supplies the semantic basis for a
+candidate typed schema and separately allocated offline deterministic measurement;
+it does not register or activate a production event. The earlier
+[decision packet](reviews/OTERYN_DUR03_REFERENCE_ONE_ITEM_AUDIT_RESOURCE_DECISION_PACKET_2026-09-27.md)
+remains preserved as nonbinding proposal/evidence. General §39 remains binding.
+
+The selected narrow shape is a small existing ANL envelope plus one closed typed
+aggregate payload for each distinct logical transaction:
+
+- `MINT`: one fresh transaction-scoped ItemInstance lifecycle, absent before and
+  live after, established in typed `Ground` custody with applicable corpse
+  association/provenance;
+- `TRANSFER`: that already-existing live ItemInstance moves from typed `Ground`
+  custody to direct-root `CharacterInventory`, preserving identity, type and
+  quantity and leaving exactly one authoritative immediate location.
+
+MINT and the later TRANSFER are separate transactions, with separate
+TransactionIds, event candidates and atomic boundaries. Aggregation does not
+combine their sequence into one commit. This child does not support mint into an
+existing stack, multiple touched items, quantity redistribution, burn, transform,
+non-item accounts, nested containers or additional custody families. Unsupported
+shapes reject instead of acquiring meaning through a generic delta, metadata bag
+or unbounded repeated effects. The quantity-one private fixture is not an accepted
+Content definition or a production quantity ceiling.
+
+Each aggregate covers the complete applicable §39 semantic evidence. This includes
+typed item identity/lifecycle/type/quantity before and after; location/custody
+before and after; authorized source/occurrence/cause and conservation summary;
+WorldId and applicable concrete runtime scope; compatible interpretation and
+definition revisions; and safe applicable fence references without secrets.
+MINT absence is explicit semantic nonexistence, not a zero-quantity live item.
+TRANSFER represents complete removal and establishment, or an equivalent typed
+before/after pair, without partial or competing custody truth. Corpse association
+does not introduce a new generic location authority.
+
+Applicable ANL common correlation and durability fields stay in the envelope;
+domain state and provenance stay in the typed payload. Player-originated pickup
+uses its actual CommandRef. Server-originated mint does not invent a player command.
+OperationId is present only when the owning durable workflow requires it. Evidence
+references identify expected bindings; independently current session, lease,
+runtime and content facts remain necessary to authorize any future mutation.
+
+The selected design has one complete TransactionEventRef membership entry for
+the aggregate, with `ordinal=1` and `count=1` for its own TransactionId. These are
+design cardinality and complete-set semantics, not an accepted emitted count,
+numeric resource maximum or measurement. No applicable mandatory effect/evidence
+may be omitted to retain that cardinality. A shape needing additional mandatory
+evidence must reject or obtain a later reviewed semantic/membership decision before
+claiming conformance; it cannot hide an incomplete set under a separate count.
+
+The candidate family uses `DURABLE_AUDIT` and a candidate privacy floor of at least
+`RESTRICTED_PLAYER_LINKED`. Character/session linkage cannot be downgraded; an owning
+security purpose may require `SECURITY_SENSITIVE`. This floor does not accept an
+item purpose, retention profile, duration, roles, export/redaction, expiry or legal
+hold policy. The Character bootstrap profile and its duration are not inherited.
+Audit expiry and receipt/source-cause replay/non-reuse horizons remain distinct;
+expiry cannot reopen mint eligibility or authorize identity reuse.
+
+Before possible commit ambiguity, the EventId, complete TransactionEventRef,
+immutable semantic envelope values and exact payload bytes are fixed. Ambiguous
+retry/reconciliation reuses that frozen candidate and does not serialize mutable
+domain state or mint a guessed new TransactionId. Proven noncommit follows §23.2
+without weakening ANL immutable event-admission rules. Lost pickup acknowledgement
+cannot restore Ground custody; duplicate delivery has no second consumer effect;
+audit replay cannot mint, transfer or otherwise mutate gameplay.
+
+Missing schema, profile or numeric acceptance keeps canonical admission and
+implementation conformance gated. A fresh explicit allocation may measure an
+unregistered candidate offline with synthetic fixtures only, while retaining those
+gaps and separately reporting actual payload, envelope, aggregate count/bytes and
+retained carriers. Existing ANL ceilings remain conjunctive; fixture identifiers,
+synthetic budget probes and measured candidate sizes are not production acceptance.
+
+This decision selects no event type ID, protobuf field number, accepted schema,
+retention profile/policy, production hard maximum or registry entry. It grants no
+SQL/outbox/runtime implementation, PREPARE/COMMIT, collection, Combat activation,
+replay mutation, production or Reference-parity authority. Any successor requires
+fresh exact allocation and applicable DUR/ANL/data-integrity/privacy review;
+registry paths remain serialized under the live control plane.
+
 ## 40. Durable acknowledgement
 
 For a durable DUR-03 mutation:

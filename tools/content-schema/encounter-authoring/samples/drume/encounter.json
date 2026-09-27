@@ -1,0 +1,219 @@
+{
+  "identity": {
+    "key": "canary:encounter/drume",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The Order of the Lion: Drume",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "usurper_commander",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/usurper_commander",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "kesar",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/kesar",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "lion_commander",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/lion_commander",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "kesar_spawn",
+      "kind": "point",
+      "description": "Canary (32444, 32515, 7)."
+    },
+    {
+      "key": "drume_spawn",
+      "kind": "point",
+      "description": "Canary (32444, 32516, 7)."
+    },
+    {
+      "key": "skirmish",
+      "kind": "area",
+      "description": "Canary x 32417-32461, y 32507-32539, z 7 (22 and 16 tiles around (32439, 32523, 7))."
+    },
+    {
+      "key": "skirmish_exit",
+      "kind": "point",
+      "description": "Canary (32453, 32503, 7)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "usurper_commanders",
+        "initial": 3
+      },
+      {
+        "name": "lion_commanders",
+        "initial": 3
+      }
+    ],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "usurper_commander_falls",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "usurper_commander"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "usurper_commanders",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "usurper_commanders",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    },
+    {
+      "key": "kesar_and_drume_appear",
+      "trigger": {
+        "kind": "counter_reached",
+        "counter": "usurper_commanders",
+        "value": 0
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/kesar",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "kesar",
+          "count": 1,
+          "at": {
+            "anchor": "kesar_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/drume",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "drume_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "kesar_is_immortal",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "kesar"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "kesar",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "reset"
+        }
+      ]
+    },
+    {
+      "key": "skirmish_lost",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "lion_commander"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "lion_commanders",
+          "op": "<=",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "all_in": "skirmish",
+          "keep_summons": true
+        },
+        {
+          "kind": "message",
+          "to": {
+            "players_in": "skirmish"
+          },
+          "text": "You lost the skirmish."
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "players_in": "skirmish"
+          },
+          "to": "skirmish_exit"
+        }
+      ]
+    },
+    {
+      "key": "lion_commander_falls",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "lion_commander"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "lion_commanders",
+          "op": ">",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "lion_commanders",
+          "operation": "add",
+          "value": -1
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

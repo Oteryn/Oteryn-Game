@@ -203,7 +203,12 @@
           "revision": null
         },
         "interval_ms": null,
-        "chance_percent": null
+        "chance_percent": null,
+        "magnitude": {
+          "minimum": null,
+          "maximum": null
+        },
+        "range_tiles": null
       }
     ],
     "defenses": [
@@ -214,7 +219,12 @@
           "revision": null
         },
         "interval_ms": null,
-        "chance_percent": null
+        "chance_percent": null,
+        "magnitude": {
+          "minimum": null,
+          "maximum": null
+        },
+        "range_tiles": null
       }
     ],
     "voices": {
@@ -275,6 +285,7 @@
     },
     "appearance": {
       "asset_binding": null,
+      "selection": null,
       "palette_bindings": [
         {
           "slot": null,

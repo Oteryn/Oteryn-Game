@@ -1,0 +1,53 @@
+{
+  "identity": {
+    "key": "canary:encounter/maxxenius",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dream Courts: Maxxenius",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "maxxenius",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/maxxenius",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "maxxenius_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "maxxenius"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "maxxenius",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "maxxenius_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "maxxenius_defeated"
+  ]
+}

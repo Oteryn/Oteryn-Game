@@ -53,6 +53,59 @@
     },
     {
       "identity": {
+        "key": "canary:ability/spell/war_golem_electrify",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": true,
+      "needs_direction": false,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:ability/spell/war_golem_electrify/effect",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Effect",
+          "key": "canary:ability/spell/war_golem_electrify/effect-condition-1",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "identity": {
+        "key": "canary:ability/spell/war_golem_skill_reducer",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "spell",
+      "range_tiles": 0,
+      "needs_target": false,
+      "needs_direction": true,
+      "effects": [
+        {
+          "family": "Effect",
+          "key": "canary:ability/spell/war_golem_skill_reducer/effect",
+          "revision": "canary-47dfd51f"
+        }
+      ],
+      "area": {
+        "matrix": {
+          "north": [
+            ".....x.....",
+            ".....x.....",
+            ".....x.....",
+            ".....x.....",
+            ".....x.....",
+            ".....x.....",
+            ".....x.....",
+            ".....C....."
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
         "key": "canary:ability/war_golem/defense-1",
         "revision": "canary-47dfd51f"
       },
@@ -98,7 +151,11 @@
         "family": "Formula",
         "key": "canary:formula/war_golem/attack-1-1",
         "revision": "canary-47dfd51f"
-      }
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
     },
     {
       "identity": {
@@ -130,6 +187,55 @@
         }
       },
       "duration_ms": 3000
+    },
+    {
+      "identity": {
+        "key": "canary:ability/spell/war_golem_electrify/effect",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "damage",
+      "damage_type": "energy",
+      "formula": {
+        "family": "Formula",
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      },
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/energyhit",
+        "projectile_asset_binding": "canary.appearance:missile/energyball"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:ability/spell/war_golem_electrify/effect-condition-1",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "condition",
+      "condition": {
+        "type": "energy",
+        "lifetime": "damage_schedule",
+        "damage_over_time": {
+          "tick_profile": "fixed",
+          "first_tick": "after_interval",
+          "fixed_ticks": [
+            {
+              "count": 8,
+              "interval_ms": 10000,
+              "amount": 25
+            }
+          ]
+        }
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:ability/spell/war_golem_skill_reducer/effect",
+        "revision": "canary-47dfd51f"
+      },
+      "operation": "presentation_only",
+      "presentation": {
+        "impact_asset_binding": "canary.appearance:effect/stun"
+      }
     },
     {
       "identity": {
@@ -190,6 +296,13 @@
         "minimum": 165,
         "maximum": 220
       }
+    },
+    {
+      "identity": {
+        "key": "canary:formula/caster-magnitude",
+        "revision": "canary-47dfd51f"
+      },
+      "kind": "caster_magnitude"
     },
     {
       "identity": {

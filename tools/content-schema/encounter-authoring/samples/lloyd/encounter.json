@@ -1,0 +1,47 @@
+{
+  "identity": {
+    "key": "canary:encounter/lloyd",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: Lloyd",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "lloyd",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/lloyd",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "lloyd_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "lloyd"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "lloyd_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "lloyd_defeated"
+  ]
+}

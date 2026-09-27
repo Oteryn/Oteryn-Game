@@ -132,10 +132,13 @@
     }
   ],
   "assets": [
+    "canary.appearance:effect/energyhit",
     "canary.appearance:effect/magic_blue",
     "canary.appearance:effect/magic_red",
+    "canary.appearance:effect/stun",
     "canary.appearance:light-color/180",
     "canary.appearance:missile/energy",
+    "canary.appearance:missile/energyball",
     "canary.appearance:object/9089",
     "canary.appearance:object/9090",
     "canary.appearance:object/9091",

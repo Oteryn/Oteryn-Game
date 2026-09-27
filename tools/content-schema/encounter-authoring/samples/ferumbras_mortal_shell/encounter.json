@@ -1,0 +1,142 @@
+{
+  "identity": {
+    "key": "canary:encounter/ferumbras_mortal_shell",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Ferumbras Ascension: Ferumbras Mortal Shell",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "ferumbras_mortal_shell",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ferumbras_mortal_shell",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "ferumbras_soul_splinter",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ferumbras_soul_splinter",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "ferumbras_essence",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ferumbras_essence",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33392, 31485, 14)."
+    },
+    {
+      "key": "godbreaker",
+      "kind": "point",
+      "description": "Godbreaker destination; Canary (33388, 31414, 14)."
+    },
+    {
+      "key": "ascendant_exit",
+      "kind": "point",
+      "description": "Default teleporter destination; Canary (33319, 32318, 13)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "ferumbras_mortal_shell_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "ferumbras_mortal_shell"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "ferumbras_mortal_shell_defeated",
+          "credited": "damage_contributors"
+        },
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "godbreaker",
+          "effect": "canary.appearance:effect/thunder",
+          "revert_after_ms": 60000,
+          "revert_destination": "ascendant_exit"
+        }
+      ]
+    },
+    {
+      "key": "soul_splinter_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "ferumbras_soul_splinter"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ferumbras_essence",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ferumbras_essence",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "ferumbras_essence_is_immortal",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "ferumbras_essence"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "ferumbras_essence",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "reset"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "ferumbras_mortal_shell_defeated"
+  ]
+}

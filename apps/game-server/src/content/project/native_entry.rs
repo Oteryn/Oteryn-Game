@@ -243,6 +243,7 @@ pub struct NativeEntryRng {
 pub struct NativeEntryProject {
     project: WorldProject,
     source: FirstProductionContentSource,
+    frame: NativeEntryFrame,
 }
 
 impl NativeEntryProject {
@@ -263,8 +264,296 @@ impl NativeEntryProject {
         // The existing FirstProduction validators (cardinality, key uniqueness, population,
         // references) apply before a source counts as qualified (#937 §4).
         compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
-        Ok(Self { project, source })
+        Ok(Self {
+            project,
+            source,
+            frame: overlay.frame,
+        })
     }
+
+    /// The qualified cells as a Movement lookup index bound to `server_generation`.
+    fn movement_cells(
+        &self,
+        server_generation: [u8; 32],
+    ) -> Result<NativeEntryMovementCells, ProjectError> {
+        use crate::content::static_cell_engine::{
+            EngineeringCollisionClaim, EngineeringStaticCellClaim, EngineeringStaticCellIndex,
+            EngineeringStaticCellScope,
+        };
+        let invalid = |_| ProjectError::InvalidProject("native entry movement cell scope");
+        let scope = EngineeringStaticCellScope {
+            world_id: self.source.world_id,
+            coordinate_frame: crate::content::CoordinateFrameRef::new(&self.frame.coordinate_frame)
+                .map_err(invalid)?,
+            map_revision: crate::content::MapRevisionRef::new(self.source.revisions.map.as_str())
+                .map_err(invalid)?,
+            generation_digest: server_generation,
+            content_lock: self.source.content_lock.clone(),
+        };
+        let claims = self
+            .source
+            .cells
+            .iter()
+            .map(|cell| EngineeringStaticCellClaim {
+                scope: scope.clone(),
+                cell: crate::content::LogicalCell {
+                    x: cell.x,
+                    y: cell.y,
+                    z: i32::from(cell.z),
+                },
+                collision: EngineeringCollisionClaim::Qualified(cell.collision),
+            })
+            .collect();
+        let index = EngineeringStaticCellIndex::from_claims(claims)
+            .map_err(|_| ProjectError::InvalidProject("native entry movement cell index"))?;
+        Ok(NativeEntryMovementCells { index, scope })
+    }
+
+    /// The qualified start cell of this project (#935). It must exist in the qualified source and
+    /// be Walkable; otherwise there is no first-entry start.
+    pub fn entry_start(&self) -> Result<NativeEntryStart, ProjectError> {
+        self.source
+            .cells
+            .iter()
+            .find(|cell| {
+                cell.key.as_str() == accepted::START_CELL
+                    && cell.collision == crate::content::CollisionClass::Walkable
+            })
+            .map(|cell| NativeEntryStart {
+                x: cell.x,
+                y: cell.y,
+                floor: cell.z,
+            })
+            .ok_or(ProjectError::InvalidProject(
+                "native entry start cell is missing or not walkable",
+            ))
+    }
+
+    /// The source-qualified native frame binding of this project (#935): the qualified frame and
+    /// its digest over the World, source manifest and map revision it was qualified with.
+    pub fn frame_binding(&self) -> NativeEntryFrameBinding {
+        let mut bytes = Vec::with_capacity(256);
+        bytes.extend_from_slice(NATIVE_ENTRY_FRAME_BINDING_DOMAIN);
+        bytes.extend_from_slice(self.source.world_id.as_bytes());
+        for part in [
+            self.source
+                .package_manifest
+                .source_manifest_digest
+                .as_str()
+                .as_bytes(),
+            self.source.revisions.map.as_str().as_bytes(),
+            self.frame.coordinate_profile.as_bytes(),
+            self.frame.coordinate_frame.as_bytes(),
+        ] {
+            bytes.extend_from_slice(&(part.len() as u64).to_be_bytes());
+            bytes.extend_from_slice(part);
+        }
+        bytes.extend_from_slice(&self.frame.contract_revision.to_be_bytes());
+        bytes.extend_from_slice(&self.frame.origin.x.to_be_bytes());
+        bytes.extend_from_slice(&self.frame.origin.y.to_be_bytes());
+        bytes.extend_from_slice(&self.frame.origin.floor.to_be_bytes());
+        // The axes are closed canonical enums (East/South/Up); the domain tag binds them.
+        NativeEntryFrameBinding {
+            frame: self.frame.clone(),
+            digest: crate::content::digest::sha256(&bytes),
+        }
+    }
+}
+
+const NATIVE_ENTRY_FRAME_BINDING_DOMAIN: &[u8] =
+    b"OTERYN_NATIVE_ENTRY_FRAME_BINDING/v1;axes=east,south,up\0";
+
+/// The qualified native frame of one bound entry room and its binding digest. It is produced only
+/// from a natively qualified project; activation, the Channel pin and later location issuance
+/// carry it unchanged (#935 "Activation issuer and current pin").
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeEntryFrameBinding {
+    frame: NativeEntryFrame,
+    digest: [u8; 32],
+}
+
+impl NativeEntryFrameBinding {
+    pub fn frame(&self) -> &NativeEntryFrame {
+        &self.frame
+    }
+
+    pub const fn digest(&self) -> [u8; 32] {
+        self.digest
+    }
+}
+
+/// The committed entry room bound to one WorldId, qualified natively and compiled to its
+/// deterministic ordinary-release pair, with the frame binding of the same qualification.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QualifiedNativeEntryRoom {
+    compiled: crate::content::CompiledFirstProductionContent,
+    frame_binding: NativeEntryFrameBinding,
+    entry_start: NativeEntryStart,
+    map_revision_digest: [u8; 32],
+    movement_cells: NativeEntryMovementCells,
+}
+
+/// The qualified room's cells as the Movement kernel's direct-lookup index, scoped to the exact
+/// World, frame, map revision, content lock and compiled server generation they were qualified
+/// with (#935: "Positive evidence must prove the actual qualified native frame through loaded
+/// cells"). The index grants no active status; the Channel's pin supplies the current scope.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeEntryMovementCells {
+    index: crate::content::static_cell_engine::EngineeringStaticCellIndex,
+    scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
+}
+
+impl NativeEntryMovementCells {
+    pub(crate) const fn index(
+        &self,
+    ) -> &crate::content::static_cell_engine::EngineeringStaticCellIndex {
+        &self.index
+    }
+
+    pub(crate) const fn scope(
+        &self,
+    ) -> &crate::content::static_cell_engine::EngineeringStaticCellScope {
+        &self.scope
+    }
+}
+
+/// The first-entry start cell selected by the Game-owned first-entry source (#935): the accepted
+/// `oteryn:cell/entry-start`, attested by the qualified source to exist and be Walkable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NativeEntryStart {
+    pub x: i32,
+    pub y: i32,
+    pub floor: i16,
+}
+
+impl QualifiedNativeEntryRoom {
+    pub fn compiled(&self) -> &crate::content::CompiledFirstProductionContent {
+        &self.compiled
+    }
+
+    pub fn frame_binding(&self) -> &NativeEntryFrameBinding {
+        &self.frame_binding
+    }
+
+    pub const fn entry_start(&self) -> NativeEntryStart {
+        self.entry_start
+    }
+
+    pub const fn movement_cells(&self) -> &NativeEntryMovementCells {
+        &self.movement_cells
+    }
+
+    /// SHA-256 of the qualified map revision this room was compiled with.
+    pub const fn map_revision_digest(&self) -> [u8; 32] {
+        self.map_revision_digest
+    }
+}
+
+/// Rebuilds the committed entry room for `world_id` from its genuine source: bind, re-admit through
+/// the native parser under the fixed limits, qualify and compile. Every caller (the activation
+/// issuer and the node) derives digests and frame binding this way; none is supplied externally.
+pub fn qualify_native_entry_room(
+    world_id: crate::foundation::WorldId,
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    let documents = native_entry_room_documents(world_id)?;
+    let snapshot = ProjectSnapshot::new(
+        documents.documents().clone(),
+        native_entry_first_slice_limits().project,
+    )?;
+    let project = snapshot.parse_native_entry()?;
+    if project.source().world_id != world_id {
+        return Err(ProjectError::InvalidProject(
+            "native entry room WorldId does not match its binding",
+        ));
+    }
+    let compiled = compile_first_production(
+        project.source(),
+        FirstProductionCompileTarget::OrdinaryRelease,
+    )?;
+    let movement_cells = project.movement_cells(compiled.server_digest())?;
+    Ok(QualifiedNativeEntryRoom {
+        compiled,
+        frame_binding: project.frame_binding(),
+        entry_start: project.entry_start()?,
+        movement_cells,
+        map_revision_digest: crate::content::digest::sha256(
+            project.source().revisions.map.as_str().as_bytes(),
+        ),
+    })
+}
+
+/// Committed native entry-room source (#822 path). It deliberately carries no WorldId: the
+/// canonical WorldId is issued per qualification run by the owning Platform World Registry issuer
+/// and bound only through [`native_entry_room_documents`] (owner decision, #162).
+pub const NATIVE_ENTRY_ROOM_SOURCE: &[u8] = include_bytes!("native_entry_room.json");
+pub const NATIVE_ENTRY_ROOM_SOURCE_SCHEMA: &str = "OTERYN_NATIVE_ENTRY_ROOM_SOURCE/v1";
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct NativeEntryRoomSource {
+    schema: String,
+    licensing: String,
+    records: Vec<ProjectReferenceRecord>,
+    declarations: Vec<ProjectV2Declaration>,
+    world: serde_json::Map<String, serde_json::Value>,
+    placements: Vec<ProjectV2Placement>,
+    native_first_entry: NativeFirstEntryDocument,
+}
+
+/// Binds the committed entry-room source to one issued canonical WorldId and writes the native
+/// project documents. The writer re-admits its own output through the native parser, so the
+/// result is qualified or refused; a WorldId already present in the source refuses.
+pub fn native_entry_room_documents(
+    world_id: crate::foundation::WorldId,
+) -> Result<CanonicalProjectDocuments, ProjectError> {
+    let source: NativeEntryRoomSource = serde_json::from_slice(NATIVE_ENTRY_ROOM_SOURCE)
+        .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+    if source.schema != NATIVE_ENTRY_ROOM_SOURCE_SCHEMA {
+        return Err(ProjectError::InvalidProject(
+            "native entry-room source schema mismatch",
+        ));
+    }
+    let world_id = crate::content::production::encode_world_id(world_id);
+    let mut world = source.world;
+    if world
+        .insert(
+            "world_id".to_owned(),
+            serde_json::Value::String(world_id.clone()),
+        )
+        .is_some()
+    {
+        return Err(ProjectError::InvalidProject(
+            "native entry-room source must not carry a WorldId",
+        ));
+    }
+    let world: ProjectV2World = serde_json::from_value(serde_json::Value::Object(world))
+        .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+    let draft = ProjectV2Draft {
+        core: ProjectDraft {
+            project_revision: accepted::PACKAGE_REVISION.to_owned(),
+            package_key: accepted::PACKAGE_KEY.to_owned(),
+            semantic_schema_version: accepted::SEMANTIC_SCHEMA.to_owned(),
+            licensing_metadata: source.licensing,
+            world_id,
+            coordinate_frame: world.coordinate_frame.clone(),
+            records: source.records,
+            imports: vec![],
+            metadata: vec![],
+        },
+        state: ProjectV2State {
+            declarations: source.declarations,
+            item_authoring: vec![],
+            authoring_profiles: vec![],
+            worlds: vec![world],
+            placements: source.placements,
+            appearance_bindings: vec![],
+            assets: vec![],
+            sources: vec![],
+            source_identity_bindings: vec![],
+            editor: vec![],
+        },
+    };
+    CanonicalProjectDocuments::from_native_entry_draft(draft, source.native_first_entry)
 }
 
 /// Owner-accepted values of `NATIVE-ENTRY-ROOM-PRODUCT-BINDINGS-V1` (#940 §1–§3) and the authored
@@ -318,6 +607,8 @@ pub mod accepted {
     ];
     pub const SPAWN: &str = "oteryn:spawn/entry-rat";
     pub const SPAWN_CELL: &str = "oteryn:cell/entry-east";
+    /// First-entry start cell (#935).
+    pub const START_CELL: &str = "oteryn:cell/entry-start";
     pub const FORMULA: &str = "oteryn:formula/entry-melee-r1";
     pub const EFFECT: &str = "oteryn:effect/bite";
     pub const ABILITY: &str = "oteryn:ability/bite";

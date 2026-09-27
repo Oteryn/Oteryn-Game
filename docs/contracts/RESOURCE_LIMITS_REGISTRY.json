@@ -4830,6 +4830,158 @@
         "isolated, unactivated production Movement local-step kernel"
       ],
       "notes": "Accepted by resource owner in #139 comment 5829651359 for the #889 ENGINE_READINESS proof, under the VSL-MOVE-01 owner baseline. This per-decision limit does not admit or activate the July-28 Reference data target (#483), certify Reference parity, bound the static-cell index population, or close other Movement resource rows."
+    },
+    {
+      "id": "MOVE-RL-02",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Movement step inputs applied for one actor in one Channel owner work cycle",
+      "unit": "step inputs per actor per work cycle",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one step input is applied per actor per Channel owner work cycle; further inputs remain outstanding FND-02 commands bounded by FND02-OUTSTANDING-COMMANDS, processed FIFO per session and round-robin across actors.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one step input for an actor is applied in a work cycle",
+        "max+1=2: a second step input for the same actor is not applied in the same work cycle; it stays outstanding and the 65th outstanding command is refused under the existing FND-02 rule"
+      ],
+      "consumers": [
+        "first connected Movement child: own-actor cardinal step (FIRST-CONTROL-WIRE-V1)"
+      ],
+      "notes": "Accepted by the resource owner in #139 comment 5853424970 (FIRST-CONTROLLED-STEP-LIMITS-V1). Speed and timing semantics are not decided; occupancy, visibility, relocation, Interaction and pathfinding rows are fail-closed exclusions in this child."
+    },
+    {
+      "id": "MOVE-RL-11",
+      "owner_contract": "OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md",
+      "resource": "Semantic entities in one WORLD_SPATIAL_VISIBILITY snapshot or delta",
+      "unit": "entities per snapshot or delta",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The first child carries only the session's own actor; a second entity is refused before encoding.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=1: the own actor is carried in a snapshot or delta",
+        "max+1=2: a second entity cannot be encoded by the first-child payload schema"
+      ],
+      "consumers": [
+        "WORLD_SPATIAL_VISIBILITY state domain 1, delta type 1, snapshot type 1"
+      ],
+      "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
+    },
+    {
+      "id": "FND04B-LIVENESS-IDLE-PROBE-MS",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Out-of-combat LivenessProbe cadence of one admitted positioned connection",
+      "unit": "milliseconds",
+      "hard_maximum": 5000,
+      "configurable_range": {
+        "minimum": 5000,
+        "maximum": 5000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One outstanding probe per connection; one probe frame per cadence tick; no per-probe allocation beyond one frame.",
+      "client_visible": false,
+      "boundary_tests": [
+        "5000 ms: a probe is sent one cadence after the baseline snapshot and then every cadence",
+        "An answered probe resets the missed count; a late ack of an older probe restores nothing"
+      ],
+      "consumers": [
+        "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Out-of-combat loss is declared three cadences after the first unanswered probe (four after the baseline snapshot)."
+    },
+    {
+      "id": "FND04B-LIVENESS-IDLE-MISSED",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Consecutive unanswered out-of-combat probes that prove playable control lost",
+      "unit": "probes",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reaching the limit ends the admitted transport as control lost; no durable session mutation in this child.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=3: the third consecutive unanswered probe ends the transport as control lost at the next cadence",
+        "max-1=2 unanswered probes followed by an answered probe keep control"
+      ],
+      "consumers": [
+        "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss."
+    },
+    {
+      "id": "FND04B-LIVENESS-COMBAT-PROBE-MS",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "In-combat LivenessProbe cadence of one admitted positioned connection",
+      "unit": "milliseconds",
+      "hard_maximum": 1000,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One outstanding probe per connection; one probe frame per cadence tick.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1000 ms: in combat a probe is sent every cadence"
+      ],
+      "consumers": [
+        "combat state (not composed yet)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+    },
+    {
+      "id": "FND04B-LIVENESS-COMBAT-MISSED",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Consecutive unanswered in-combat probes that prove playable control lost",
+      "unit": "probes",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reaching the limit ends the admitted transport as control lost (about one 2 s combat tick).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: the second consecutive unanswered in-combat probe ends the transport as control lost"
+      ],
+      "consumers": [
+        "combat state (not composed yet)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+    },
+    {
+      "id": "FND04B-SAME-SESSION-GRACE-S",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Same-session grace from the authoritative ControlLossEpoch boundary to the original grace deadline",
+      "unit": "seconds",
+      "hard_maximum": 60,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One original grace deadline per loss epoch, fixed at the loss decision and never restarted or extended; a RECONNECTABLE session keeps its present, uncontrolled actor and its claims until the deadline.",
+      "client_visible": false,
+      "boundary_tests": [
+        "The committed loss records original_grace_deadline = decision time + 60 s",
+        "A replayed identical loss decision keeps the original deadline"
+      ],
+      "consumers": [
+        "gameplay_transport control-loss commit (OTV2-20260927-control-loss-lifecycle)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 \u00a74 (#822 comments 5854525644 and 5854565314); matches the Tibia 60 s logout block; to be measured and tuned before release. Expiry release and positive resume are later children."
     }
   ]
 }

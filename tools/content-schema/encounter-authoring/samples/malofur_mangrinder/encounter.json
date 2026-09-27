@@ -1,0 +1,53 @@
+{
+  "identity": {
+    "key": "canary:encounter/malofur_mangrinder",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dream Courts: Malofur Mangrinder",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "malofur_mangrinder",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/malofur_mangrinder",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "malofur_mangrinder_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "malofur_mangrinder"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "malofur_mangrinder",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "malofur_mangrinder_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "malofur_mangrinder_defeated"
+  ]
+}

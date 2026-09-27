@@ -120,6 +120,20 @@
       {
         "ability": {
           "family": "Ability",
+          "key": "canary:ability/spell/sudden_death_rune",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 17,
+        "magnitude": {
+          "minimum": 300,
+          "maximum": 350
+        },
+        "range_tiles": 7
+      },
+      {
+        "ability": {
+          "family": "Ability",
           "key": "canary:ability/knight_familiar/attack-3",
           "revision": "canary-47dfd51f"
         },
@@ -152,6 +166,20 @@
         },
         "interval_ms": 2000,
         "chance_percent": 15
+      },
+      {
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/ice_strike",
+          "revision": "canary-47dfd51f"
+        },
+        "interval_ms": 2000,
+        "chance_percent": 17,
+        "magnitude": {
+          "minimum": 300,
+          "maximum": 350
+        },
+        "range_tiles": 5
       }
     ],
     "defenses": [
@@ -173,10 +201,11 @@
       "revision": "canary-47dfd51f"
     },
     "appearance": {
-      "asset_binding": "canary.appearance:outfit/0",
+      "asset_binding": "canary.appearance:outfit/991",
       "palette_bindings": [],
       "attachment_bindings": [],
-      "visual_effect_bindings": []
+      "visual_effect_bindings": [],
+      "selection": "owner_familiar_look"
     },
     "light": {
       "level": 0

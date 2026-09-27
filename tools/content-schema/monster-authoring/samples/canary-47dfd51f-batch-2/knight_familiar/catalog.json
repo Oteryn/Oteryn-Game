@@ -8,9 +8,12 @@
   ],
   "assets": [
     "canary.appearance:effect/icearea",
+    "canary.appearance:effect/iceattack",
     "canary.appearance:effect/icetornado",
     "canary.appearance:effect/magic_green",
     "canary.appearance:effect/mortarea",
-    "canary.appearance:outfit/0"
+    "canary.appearance:missile/smallice",
+    "canary.appearance:missile/suddendeath",
+    "canary.appearance:outfit/991"
   ]
 }

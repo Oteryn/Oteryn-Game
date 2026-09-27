@@ -17,8 +17,8 @@
       "defense": 15,
       "critical_chance_percent": 0,
       "mitigation_percent": {
-        "numerator": 51,
-        "denominator": 100
+        "numerator": 4,
+        "denominator": 5
       }
     },
     "resistances": [
@@ -123,7 +123,7 @@
     "movement": {
       "can_walk": true,
       "pass_through": false,
-      "pushable": false,
+      "pushable": true,
       "push_items": true,
       "push_creatures": false,
       "field_permissions": {

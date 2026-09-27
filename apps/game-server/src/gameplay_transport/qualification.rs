@@ -8,6 +8,12 @@
 //!
 //! This is Server Seam integration evidence, not ADR-0007 QA Tier 1/Tier 2.
 
+use super::world_spatial::{
+    ActorPosition, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
+    SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
+    StepDisposition, WorldSpatialObservation, encode_step_intent, encode_step_result,
+    encode_world_spatial,
+};
 use crate::admission_evidence::{self, Facts, Request, Response, decode_response, encode_request};
 use crate::character_bootstrap_intent::read_authenticated_intent;
 use crate::character_recovery_fence::CharacterRecoveryStore;
@@ -29,8 +35,9 @@ use crate::foundation::admission_authority_publication::{
     AdmissionPublicationSourceV1,
 };
 use crate::foundation::{
-    ChannelId, CharacterId, FoundationProtocolError, MessageType, NodeId, RuntimeScopeRefV1,
-    WorldId, decode_wire_envelope, encode_protocol_error,
+    ChannelId, CharacterId, CommandStatus, DomainSnapshot, FoundationProtocolError, MessageType,
+    NodeId, RuntimeScopeRefV1, WorldId, decode_wire_envelope, encode_command_protocol_error,
+    encode_command_result, encode_protocol_error, encode_single_chunk_snapshot, encode_state_delta,
 };
 use crate::native_admission_source::{self, TransientCapacity, descriptor::ProducerDescriptor};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
@@ -650,6 +657,66 @@ fn frames(output: &[u8]) -> Reply {
     }
 }
 
+fn client_command(id: u64, command_type: u64, payload: &[u8]) -> Vec<u8> {
+    let mut body = Vec::new();
+    scalar(&mut body, 1, id);
+    scalar(&mut body, 2, command_type);
+    bytes_field(&mut body, 4, payload);
+    envelope(7, 1, &body)
+}
+
+/// The exact frames after `ServerAccepted` for the first-control scenario, from the committed
+/// room of `world`: start (0,0,0), east (1,0,0) walkable, north blocked, south absent.
+fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
+    let room = crate::content::qualify_native_entry_room(world)
+        .map_err(|e| format!("native entry room: {e}"))?;
+    let at = |x| {
+        encode_world_spatial(&WorldSpatialObservation {
+            content_generation: room.compiled().client_digest(),
+            actor_position: ActorPosition { x, y: 0, floor: 0 },
+        })
+    };
+    let result = |sequence, id, status, disposition| {
+        encode_command_result(1, sequence, id, status, &encode_step_result(disposition))
+    };
+    let delta = |sequence, from, x| {
+        encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            from,
+            from + 1,
+            DELTA_TYPE_WORLD_SPATIAL_V1,
+            &at(x),
+        )
+    };
+    let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+        1,
+        1,
+        0,
+        &[DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            revision: 1,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            payload: &at(0),
+        }],
+    )?
+    .into();
+    frames.extend([
+        result(1, 1, CommandStatus::Accepted, StepDisposition::Moved)?,
+        delta(2, 1, 1)?,
+        result(3, 2, CommandStatus::Accepted, StepDisposition::Moved)?,
+        delta(4, 2, 0)?,
+        result(5, 3, CommandStatus::Accepted, StepDisposition::Blocked)?,
+        result(6, 4, CommandStatus::Accepted, StepDisposition::Blocked)?,
+        // An unregistered command type: REJECTED with no type-owned payload.
+        encode_command_result(1, 7, 5, CommandStatus::Rejected, &[])?,
+        // Command 7 after 5: a gap naming the offending and the expected ID.
+        encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 1, 7, 6)?,
+    ]);
+    Ok(frames)
+}
+
 fn accepted_session(reply: &Reply) -> Option<[u8; 16]> {
     let Reply::Frames(frames) = reply else {
         return None;
@@ -854,6 +921,26 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         other => return Err(format!("assign: {other:?}").into()),
     };
     let scope_generation = assigned.assignment.ownership_generation;
+    // #935: activate the genuine committed entry room for this World, as `serve` does, so the
+    // Channel pin and the Movement cells come from the same qualified generation.
+    let room = crate::content::qualify_native_entry_room(world)
+        .map_err(|e| format!("native entry room: {e}"))?;
+    let issuance = crate::content::NativeEntryActivationIssuance {
+        world_id: world,
+        activation_sequence: 1,
+        server_artifact_digest: room.compiled().server_digest(),
+        client_artifact_digest: room.compiled().client_digest(),
+        frame_binding_digest: room.frame_binding().digest(),
+    };
+    let mut content_controller = crate::content::ContentActivationController::new();
+    let (channel_pin, movement_cells) = crate::content::activate_native_entry_room(
+        &mut content_controller,
+        &crate::content::NodeBootQuiescence::before_channel_runtime(),
+        world,
+        &issuance,
+    )
+    .map_err(|e| format!("native entry activation: {e}"))?
+    .into_channel_parts();
     // KAN-26: the Channel runtime is composed from this exact committed
     // assignment before readiness, as `serve` does.
     let runtime = tokio::sync::Mutex::new(
@@ -866,6 +953,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             assigned.assignment.source_revision,
             &assigned.assignment.decision_identity,
             usize::try_from(crate::node::config::PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY)?,
+            channel_pin,
         )
         .map_err(|e| format!("channel runtime: {e:?}"))?,
     );
@@ -956,6 +1044,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             world_id: world,
             channel_id: channel,
             runtime: &runtime,
+            movement_cells: &movement_cells,
         },
         &shutdown,
     );
@@ -1002,13 +1091,32 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     // KAN-26: every committed fresh admission holds exactly one player actor;
     // refused, replayed and losing attempts leave no reservation behind; and
     // ordinary disconnect (every client has closed by now) removes nothing.
+    // #822: the two lost actors were removed only by their durable grace-expiry
+    // release; the re-admitted character holds the one remaining actor, and a
+    // plain disconnect removed nothing (its loss window was cut by shutdown).
     let (committed_players, pending) = runtime.lock().await.player_slot_counts();
-    if committed_players != 2 || pending != 0 || committed_admissions(&url).await? != 2 {
+    if committed_players != 1 || pending != 0 || committed_admissions(&url).await? != 3 {
         return Err(
             format!("channel runtime committed={committed_players} pending={pending}").into(),
         );
     }
-    evidence("channel_runtime committed_players=2 pending_reservations=0 disconnect_removed=0");
+    evidence(
+        "channel_runtime committed_players=1 pending_reservations=0 released_after_grace=2 disconnect_removed=0",
+    );
+    // #935: the remaining committed actor was positioned once, by the Channel
+    // owner, at the pinned generation's start cell under the pinned context,
+    // and never stepped.
+    let revisions = runtime.lock().await.entry_start_player_revisions();
+    if revisions != [1] {
+        return Err(format!("entry-start player revisions={revisions:?}").into());
+    }
+    evidence("first_entry positioned_players=1 start=entry-start context=pinned revisions=1");
+    // Released actors leave no control-loss mark behind.
+    let marks = runtime.lock().await.player_control_loss_epochs();
+    if !marks.is_empty() {
+        return Err(format!("runtime control-loss marks={marks:?}").into());
+    }
+    evidence("grace_expiry runtime_released_actors=2 marks_left=0");
     evidence("shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED");
     Ok(())
 }
@@ -1240,30 +1348,50 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
 
     evidence("stage=admission");
     // Positive: the real owners admit on evidence fetched by this attempt
-    // (the pre-seeded S2 observations are older than five seconds);
-    // post-admission input fails closed.
+    // (the pre-seeded S2 observations are older than five seconds). The
+    // positioned actor receives its baseline snapshot, then the first-control
+    // steps (#822): east moves, west returns, north (Blocked cell) and south
+    // (outside the room) are blocked, an unknown command type is rejected and
+    // a command-id gap closes the connection.
     let admitted_token = sign_grant(&grant.borrowed(), now_seconds()?);
     let mut raw = framed(&bootstrap(1, 1, &characters[0], &admitted_token));
-    raw.extend_from_slice(&framed(&envelope(7, 1, &[])));
+    for (id, command_type, direction) in [
+        (1, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection::East),
+        (2, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection::West),
+        (
+            3,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            StepDirection::North,
+        ),
+        (
+            4,
+            COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            StepDirection::South,
+        ),
+        (5, 0x7fff, StepDirection::East),
+        (7, COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, StepDirection::East),
+    ] {
+        raw.extend_from_slice(&framed(&client_command(
+            id,
+            u64::from(command_type),
+            &encode_step_intent(direction),
+        )));
+    }
     let reply = exchange_must_close(address, &exact, &raw).await?;
     let session =
         accepted_session(&reply).ok_or_else(|| format!("admission refused: {reply:?}"))?;
     let Reply::Frames(frames) = &reply else {
         return Err("missing frames".into());
     };
-    if frames.get(1)
-        != Some(&encode_protocol_error(
-            FoundationProtocolError::UnknownMessageType,
-            1,
-        )?)
-    {
-        return Err(format!("post-admission input not closed: {reply:?}").into());
+    let expected = first_control_frames(WorldId::decode(&world)?)?;
+    if frames.get(1..) != Some(expected.as_slice()) {
+        return Err(format!("first-control steps diverged: {reply:?}").into());
     }
     if session[6] >> 4 != 7 || committed_admissions(url).await? != 1 {
         return Err("admission did not commit exactly one GameSession".into());
     }
     evidence(
-        "admission=committed server_accepted=1 post_admission_command=closed_unknown_message admissions=1",
+        "admission=committed server_accepted=1 snapshot=baseline_0_0_0_rev1 step_east=moved_1_0_0_rev2 step_west=moved_0_0_0_rev3 step_north=blocked step_south=blocked unknown_command=rejected command_gap=closed_sequence_gap admissions=1",
     );
 
     // The fresh GameSession is durably committed and its first TLS socket has
@@ -1323,15 +1451,89 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         exchange(address, &exact, &raw),
     )
     .await;
-    let accepted = [left?, right?]
+    let concurrent: Vec<[u8; 16]> = [left?, right?]
         .iter()
-        .filter(|reply| accepted_session(reply).is_some())
-        .count();
+        .filter_map(accepted_session)
+        .collect();
+    let accepted = concurrent.len();
     if accepted != 1 || committed_admissions(url).await? != 2 {
         return Err(format!("concurrent same-grant admission accepted {accepted}").into());
     }
     evidence("concurrent_same_grant accepted=1 admissions=2");
+
+    evidence("stage=control_loss");
+    // DISCONNECT-PROTECTION-V1: the admission-stage transport closed on a command gap and the
+    // concurrent-stage transport went silent. Neither answers liveness, so each durable
+    // GameSession becomes RECONNECTABLE with loss epoch 1 and a 60 s same-session grace.
+    for (label, id) in [("closed", session), ("silent", concurrent[0])] {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+        loop {
+            if let Some((1, epoch, grace)) = session_loss_row(url, id).await? {
+                if epoch != "1" || !(58..=62).contains(&grace) {
+                    return Err(format!("{label} loss epoch={epoch} grace={grace}").into());
+                }
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("{label} session never became reconnectable").into());
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+    if committed_admissions(url).await? != 2 {
+        return Err("control loss changed the admission count".into());
+    }
+    evidence(
+        "control_loss closed_transport=reconnectable silent_transport=reconnectable epoch=1 grace_s=60 admissions=2",
+    );
+
+    evidence("stage=grace_expiry");
+    // FND-04B §6: with no resumed control, each lost session is terminally released once its
+    // original grace deadline passes; the released claims let the character enter again.
+    for (label, id) in [("closed", session), ("silent", concurrent[0])] {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(80);
+        while !matches!(session_loss_row(url, id).await?, Some((3, _, _))) {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("{label} session was not released after grace").into());
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+    let generation = platform_generation(descriptor, &accounts[0]).await?;
+    let again = next_grant(&accounts[0], characters[0], generation);
+    let token = sign_grant(&again.borrowed(), now_seconds()?);
+    let reply = exchange(
+        address,
+        &exact,
+        &framed(&bootstrap(1, 1, &characters[0], &token)),
+    )
+    .await?;
+    if accepted_session(&reply).is_none() || committed_admissions(url).await? != 3 {
+        return Err(format!("released character was not admitted again: {reply:?}").into());
+    }
+    evidence(
+        "grace_expiry closed=terminal silent=terminal readmitted_after_release=1 admissions=3",
+    );
     Ok(())
+}
+
+/// Durable session state, loss epoch and grace seconds counted from the loss decision.
+async fn session_loss_row(url: &str, session: [u8; 16]) -> TestResult<Option<(i16, String, i64)>> {
+    let mut connection = sqlx::PgConnection::connect(url).await?;
+    let row: Option<(i16, Option<String>, Option<i64>)> = sqlx::query_as(
+        "SELECT s.session_state, s.control_loss_epoch::text, \
+         s.original_grace_deadline - r.decided_at \
+         FROM game_durability_reconnect_sessions s \
+         LEFT JOIN game_durability_admission_lifecycle_receipts r \
+           ON r.operation_key = 'owning-loss-v1'::bytea || uuid_send(s.game_session_id) \
+              || int8send(1) \
+         WHERE s.game_session_id = encode($1, 'hex')::uuid",
+    )
+    .bind(session.as_slice())
+    .fetch_optional(&mut connection)
+    .await?;
+    connection.close().await?;
+    Ok(row.map(|(state, epoch, grace)| (state, epoch.unwrap_or_default(), grace.unwrap_or(-1))))
 }
 
 /// Owned account for a grant built inside a closure.

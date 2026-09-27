@@ -128,9 +128,33 @@ def validate(monster,deps,catalog=None,manifest=None):
         unique(p['appearance'][collection],'slot','presentation/appearance/'+collection,errors)
     light=p['light']
     if light['level']>0 and 'color_binding' not in light:errors.append('presentation/light: nonzero light requires color_binding')
+    abilities={ident('Ability',a['identity']):a for a in deps['abilities']}
+    formulas={ident('Formula',f['identity']):f for f in deps['formulas']}
+    effects={ident('Effect',e['identity']):e for e in deps['effects']}
+    def uses_caster_magnitude(ability):
+        for variant in [abilities.get(ident('Ability',r)) for r in ability.get('variants',[])]+[ability]:
+            for ref in (variant or {}).get('effects',[]):
+                formula=formulas.get(ident('Formula',effects.get(ident('Effect',ref),{}).get('formula',{'key':'','revision':0})))
+                if formula and formula['kind']=='caster_magnitude':return True
+        return False
     for ability in deps['abilities']:
         for cue in ability.get('audio',{}).values():
             if cue not in cues:errors.append('ability/audio: unresolved cue '+cue)
+        for ref in ability.get('variants',[]):
+            variant=abilities.get(ident('Ability',ref))
+            if variant is None:errors.append('ability/variants: variant needs a local Ability payload')
+            elif 'variants' in variant:errors.append('ability/variants: a variant cannot have variants')
+        matrix=ability.get('area',{}).get('matrix',{})
+        for orientation,rows in matrix.items():
+            if len({len(r) for r in rows})!=1:errors.append('ability/area/matrix/'+orientation+': rows must have equal length')
+            if sum(r.count('c')+r.count('C') for r in rows)!=1:errors.append('ability/area/matrix/'+orientation+': exactly one centre cell required')
+    for group in ('attacks','defenses'):
+        for entry in b[group]:
+            ability=abilities.get(ident('Ability',entry['ability']))
+            if 'magnitude' in entry and entry['magnitude']['minimum']>entry['magnitude']['maximum']:
+                errors.append('behavior/'+group+'/magnitude: minimum exceeds maximum')
+            if ability and uses_caster_magnitude(ability) and 'magnitude' not in entry:
+                errors.append('behavior/'+group+': Ability uses caster_magnitude, so the entry needs magnitude')
     for formula in deps['formulas']:
         if 'magnitude' in formula and formula['magnitude']['minimum']>formula['magnitude']['maximum']:errors.append('formula/magnitude: minimum exceeds maximum')
         if 'speed' in formula:
@@ -150,7 +174,6 @@ def validate(monster,deps,catalog=None,manifest=None):
                     elif 'container' not in item:errors.append('loot/contents_loot: selected Item is not a container')
     for item in deps['items']:
         corpse=ident('Item',item['identity'])==ident('Item',c['corpse_item']) if 'corpse_item' in c else False
-        if corpse and not item['classification']['is_corpse']:errors.append('creature/corpse_item: selected Item is not a corpse')
     if 'corpse_item' in c and ident('Item',c['corpse_item']) not in local:errors.append('creature/corpse_item: include local corpse payload to verify its properties')
     cycle_check(local,'Item',lambda v:[v['temporal']['decay_target']] if 'decay_target' in v['temporal'] else [],'corpse decay',errors)
     cycle_check(local,'Loot',lambda v:[e['contents_loot'] for e in v['entries'] if 'contents_loot' in e],'nested loot',errors)

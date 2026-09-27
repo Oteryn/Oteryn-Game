@@ -4,7 +4,7 @@
   "kind": "import_provenance",
   "owner": "Migration tooling",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Canary hypothesis/test-discovery evidence only."
+  "notes": "Canary hypothesis evidence only: creature admission source, import batch and monster-file bindings; no source IDs become gameplay identity."
 }

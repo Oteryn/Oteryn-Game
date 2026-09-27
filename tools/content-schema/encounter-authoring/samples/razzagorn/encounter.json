@@ -1,0 +1,82 @@
+{
+  "identity": {
+    "key": "canary:encounter/razzagorn",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Ferumbras Ascension: Razzagorn",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "razzagorn",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/razzagorn",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33413, 32467, 14)."
+    },
+    {
+      "key": "godbreaker",
+      "kind": "point",
+      "description": "Godbreaker destination; Canary (33357, 32440, 13)."
+    },
+    {
+      "key": "ascendant_exit",
+      "kind": "point",
+      "description": "Default teleporter destination; Canary (33319, 32318, 13)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "razzagorn_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "razzagorn"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "razzagorn_defeated",
+          "credited": "damage_contributors"
+        },
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "godbreaker",
+          "effect": "canary.appearance:effect/thunder",
+          "revert_after_ms": 60000,
+          "revert_destination": "ascendant_exit"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "razzagorn_defeated"
+  ]
+}

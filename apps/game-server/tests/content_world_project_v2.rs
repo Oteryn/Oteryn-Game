@@ -100,6 +100,7 @@ fn candidate() -> ProjectV2Draft {
                     identity: identity("service.courier"),
                     offers: vec![],
                     recipes: vec![],
+                    routes: vec![],
                     fields: vec![],
                 },
                 ProjectV2Declaration::Interaction {
@@ -756,8 +757,11 @@ fn item_candidate() -> ProjectV2Draft {
                 direction: ProjectV2ServiceOfferDirection::SellToPlayer,
                 unit_price: 125_000,
                 currency: None,
+                count: None,
+                sub_type: None,
             }],
             recipes: vec![],
+            routes: vec![],
             fields: vec![],
         });
     draft.state.item_authoring.push(ProjectV2ItemAuthoring {
@@ -1188,6 +1192,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
                     mana_cost: Some(300),
                     owner_speed_bonus: Some(10),
                 }),
+                details: None,
                 fields: vec![],
             }),
         },
@@ -1210,6 +1215,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
                 damage_type: Some("Physical".into()),
                 acquisition_interactions: vec![interaction.clone()],
                 augments: vec![],
+                details: None,
                 fields: vec![],
             }),
         },

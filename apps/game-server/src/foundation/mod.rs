@@ -14,15 +14,22 @@ mod runtime_actor_carrier;
 pub(crate) use runtime_actor_carrier::MovementActorFixture;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    CarrierError, ChannelRuntimeV1, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
-    CurrentOwnerMovementPosition, ExactActorRef, MovementLocalPosition, MovementPositionContext,
-    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation,
+    CarrierError, ChannelContentPin, ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark,
+    CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
+    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
+    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
+    OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
 };
 #[cfg(test)]
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
 #[path = "../ability/mod.rs"]
 mod exact_actor_test_ability;
+#[cfg(test)]
+#[allow(dead_code)]
+#[allow(clippy::duplicate_mod)] // Standalone Foundation test crates lack the library root.
+#[path = "../combat.rs"]
+mod exact_actor_test_combat;
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{

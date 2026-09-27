@@ -14,7 +14,7 @@
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/0",
-      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+      "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by). Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
     },
     {
       "source_index": 0,
@@ -54,7 +54,7 @@
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/4",
-      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+      "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR on an inline physical combat, so its damage is reduced by the target armor (mitigated_by)."
     },
     {
       "source_index": 0,
@@ -468,11 +468,12 @@
     {
       "source_index": 0,
       "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
-      "source_line": 6,
-      "source_field": "outfit.lookAddons/lookMount",
+      "source_line": 12,
+      "source_field": "outfit.lookAddons",
       "kind": "field",
-      "status": "unresolved_semantics",
-      "resolution": "Addon/mount attachments are not mapped by this batch converter."
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/attachment_bindings",
+      "resolution": "lookAddons 3 is a bit mask of the outfit addons (1 first, 2 second, 3 both); each shown addon is a declared attachment binding of the outfit."
     },
     {
       "source_index": 0,
@@ -641,7 +642,7 @@
       "source_field": "events=ForgottenKnowledgeBossDeath",
       "kind": "script",
       "status": "approved_omission",
-      "resolution": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua sets the per-player boss cooldown storage on death. Owner decision D9: boss encounter bookkeeping belongs to the Encounter definition, not the monster bundle."
+      "resolution": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua sets the per-player boss cooldown storage on death. Relocated to Encounter canary:encounter/the_enraged_thorn_knight (encounter-authoring/samples/the_enraged_thorn_knight), whose manifest covers this creature for the whole event; the monster keeps no copy of the logic (D20, D28)."
     },
     {
       "source_index": 0,

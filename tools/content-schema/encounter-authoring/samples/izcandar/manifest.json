@@ -1,0 +1,228 @@
+{
+  "encounter": "canary:encounter/izcandar",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "dreamCourtsDeath": [
+      "canary:creature/izcandar_the_banished",
+      "canary:creature/izcandar_champion_of_winter",
+      "canary:creature/izcandar_champion_of_summer"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_dream_courts/bosses/izcandar_the_banished.lua",
+      "blob_sha1": "fb4b27530eed74c11f815150c131dc42237c9762"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_dreamCourtsDeath.lua",
+      "blob_sha1": "6dff8c6d7a217993f67965de7349ceffeb1cee2a"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/bosses/izcandar_champion_of_winter.lua",
+      "blob_sha1": "9ede1095581dacb26f87ffa45114d4631fb26a87"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/bosses/izcandar_champion_of_summer.lua",
+      "blob_sha1": "af2b7d549aa998ab634da210267280688462fdb4"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        29
+      ],
+      "status": "mapped",
+      "resolution": "Izcandar the Banished is the izcandar_the_banished participant; its file registers dreamCourtsDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        92,
+        105
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the questlog boss \"Izcandar the Banished\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a non-monster or a creature with a master.",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        23,
+        29
+      ],
+      "status": "mapped",
+      "resolution": "Every player in creature:getDamageMap() is credited (D27): the quest domain raises Storage TheDreamCourts.DreamScar.BossCount by 1 while it is <= 5, and the reward domain sets the IzcandarTimer cooldown to 20 hours.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Izcandar Champion of Winter is the izcandar_champion_of_winter participant; its file registers dreamCourtsDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        92,
+        105
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the questlog boss \"Izcandar Champion of Winter\".",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a non-monster or a creature with a master.",
+      "destination": "/encounter/rules/1/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        30,
+        36
+      ],
+      "status": "mapped",
+      "resolution": "Every player in creature:getDamageMap() is credited (D27): the quest domain raises Storage TheDreamCourts.DreamScar.BossCount by 1 while it is <= 5, and the reward domain sets the IzcandarTimer cooldown to 20 hours.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Izcandar Champion of Summer is the izcandar_champion_of_summer participant; its file registers dreamCourtsDeath.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        92,
+        105
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the questlog boss \"Izcandar Champion of Summer\".",
+      "destination": "/encounter/rules/2/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        93,
+        94,
+        95
+      ],
+      "status": "mapped",
+      "resolution": "Returns without effect for a non-monster or a creature with a master.",
+      "destination": "/encounter/rules/2/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        37,
+        43
+      ],
+      "status": "mapped",
+      "resolution": "Every player in creature:getDamageMap() is credited (D27): the quest domain raises Storage TheDreamCourts.DreamScar.BossCount by 1 while it is <= 5, and the reward domain sets the IzcandarTimer cooldown to 20 hours.",
+      "destination": "/encounter/rules/2/actions/0"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "izcandar_the_banished_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScar.BossCount",
+        "increment": 1,
+        "only_while_at_most": 5
+      },
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScarGlobal.IzcandarTimer",
+        "cooldown_seconds": 72000
+      }
+    },
+    {
+      "outcome": "izcandar_champion_of_winter_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScar.BossCount",
+        "increment": 1,
+        "only_while_at_most": 5
+      },
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScarGlobal.IzcandarTimer",
+        "cooldown_seconds": 72000
+      }
+    },
+    {
+      "outcome": "izcandar_champion_of_summer_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScar.BossCount",
+        "increment": 1,
+        "only_while_at_most": 5
+      },
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U12_00.TheDreamCourts.DreamScarGlobal.IzcandarTimer",
+        "cooldown_seconds": 72000
+      }
+    }
+  ]
+}

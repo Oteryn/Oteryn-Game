@@ -165,7 +165,120 @@ if __name__=='__main__':
     case('condition damage requires tick interval',lambda m,d,c:(condition(m,d,c),d['effects'][-1]['condition']['damage_over_time'].pop('tick_interval_ms')))
     case('create item operation resolves',lambda m,d,c:d['effects'].append({'identity':ident('field'),'operation':'create_item','created_item':ref('Item','coin')}),True)
     case('transform needs duration and target',lambda m,d,c:d['effects'].append({'identity':ident('outfit'),'operation':'appearance_transform'}))
-    case('corpse must identify corpse Item',set_value(['d','items',0,'classification','is_corpse'],False))
+    def spell_area(area):
+        def mutate(m,d,c):
+            d['abilities'][0].update(kind='spell',area=area)
+        return mutate
+    case('area matrix accepted (D12)',spell_area({'matrix':{'north':['.x.','xCx','.x.'],'diagonal':['xx.','xC.','...']}}),True)
+    case('area matrix needs exactly one centre',spell_area({'matrix':{'north':['xCx','.C.']}}))
+    case('area matrix rows must be rectangular',spell_area({'matrix':{'north':['xCx','x']}}))
+    case('area matrix excludes radius',spell_area({'matrix':{'north':['C']},'radius_tiles':2}))
+    case('area matrix cell alphabet',spell_area({'matrix':{'north':['1C1']}}))
+    def dot(damage_over_time):
+        def mutate(m,d,c):
+            d['effects'].append({'identity':ident('dot'),'operation':'condition',
+                'condition':{'type':'energy','lifetime':'damage_schedule','damage_over_time':damage_over_time}})
+            d['abilities'][0]['effects'].append(ref('Effect','dot'))
+        return mutate
+    fixed={'tick_profile':'fixed','first_tick':'after_interval','fixed_ticks':[{'count':8,'interval_ms':10000,'amount':25}]}
+    case('fixed-tick DoT accepted (D12)',dot(fixed),True)
+    case('fixed-tick DoT forbids total range',dot({**fixed,'total_damage_range':{'minimum':1,'maximum':2}}))
+    case('decreasing DoT forbids fixed ticks',dot({'tick_profile':'decreasing','first_tick':'immediate','fixed_ticks':fixed['fixed_ticks'],
+        'total_damage_range':{'minimum':1,'maximum':2},'tick_interval_ms':2000,'initial_tick':{'mode':'automatic'}}))
+    geometric={'tick_profile':'geometric','first_tick':'after_interval','geometric':{'base_range':{'minimum':40,'maximum':170},
+        'factor':{'numerator':6,'denominator':5},'tick_counts':[5,6,7],'tick_interval_ms':4000}}
+    case('geometric DoT accepted (D21)',dot(geometric),True)
+    case('geometric DoT forbids a total range',dot({**geometric,'total_damage_range':{'minimum':1,'maximum':2}}))
+    case('geometric DoT needs tick counts',dot({**geometric,'geometric':{k:v for k,v in geometric['geometric'].items() if k!='tick_counts'}}))
+    case('decreasing DoT forbids geometric ticks',dot({'tick_profile':'decreasing','first_tick':'immediate','geometric':geometric['geometric'],
+        'total_damage_range':{'minimum':1,'maximum':2},'tick_interval_ms':2000,'initial_tick':{'mode':'automatic'}}))
+    def attributes(modifiers):
+        def mutate(m,d,c):
+            d['effects'].append({'identity':ident('weak'),'operation':'condition','duration_ms':8000,
+                'condition':{'type':'attributes','lifetime':'fixed_duration','attribute_modifiers':modifiers}})
+            d['abilities'][0]['effects'].append(ref('Effect','weak'))
+        return mutate
+    case('attribute modifiers accepted (D12)',attributes([{'attribute':'skill_shield','mode':'percent_of_base','value':40}]),True)
+    case('attribute modifier mode is closed',attributes([{'attribute':'skill_shield','mode':'multiply','value':40}]))
+    case('damage mitigated by armor and shield accepted',set_value(('d','effects',0,'mitigated_by'),['armor','shield']),True)
+    case('mitigation defence is closed',set_value(('d','effects',0,'mitigated_by'),['armor','magic_shield']))
+    case('mitigation defences are unique',set_value(('d','effects',0,'mitigated_by'),['armor','armor']))
+    case('mitigation list is not empty',set_value(('d','effects',0,'mitigated_by'),[]))
+    def healed(m,d,c):
+        d['effects'][0].update({'operation':'heal','damage_type':'healing','mitigated_by':['armor']})
+    case('heal cannot be mitigated by armor',healed)
+    def dispel(body):
+        def mutate(m,d,c):
+            d['effects'].append({'identity':ident('dispel'),'operation':'remove_condition',**body})
+            d['abilities'][0]['effects'].append(ref('Effect','dispel'))
+        return mutate
+    case('remove condition accepted (DISPEL)',dispel({'removed_condition':'paralyze'}),True)
+    case('remove condition names its condition',dispel({}))
+    case('remove condition has no duration',dispel({'removed_condition':'paralyze','duration_ms':1000}))
+    case('damage cannot remove a condition',set_value(('d','effects',0,'removed_condition'),'paralyze'))
+    def extra_effect(body):
+        def mutate(m,d,c):
+            d['effects'].append({'identity':ident('extra'),**body})
+            d['abilities'][0]['effects'].append(ref('Effect','extra'))
+            c['definitions'].append(ref('Creature','minion'))
+        return mutate
+    summon={'creatures':[ref('Creature','minion')],'count_mode':'fill_to_limit','count':4,'only_below_summons':4,'owned':True,'max_offset_tiles':0}
+    case('summon creature accepted (D18)',extra_effect({'operation':'summon_creature','summon':summon}),True)
+    def undeclared(m,d,c):
+        d['effects'].append({'identity':ident('extra'),'operation':'summon_creature','summon':{**summon,'creatures':[ref('Creature','ghost')]}})
+        d['abilities'][0]['effects'].append(ref('Effect','extra'))
+    case('summoned creature must be declared',undeclared)
+    case('summon count mode is closed',extra_effect({'operation':'summon_creature','summon':{**summon,'count_mode':'random'}}))
+    case('summon needs a creature',extra_effect({'operation':'summon_creature','summon':{**summon,'creatures':[]}}))
+    case('summon requires its parameters',extra_effect({'operation':'summon_creature'}))
+    case('only summon_creature carries summon',extra_effect({'operation':'presentation_only','presentation':{'impact_asset_binding':'oteryn:body_sprite'},'summon':summon}))
+    removal={'items':[ref('Item','coin')],'selection':'first_listed_per_tile'}
+    case('remove items accepted (D18)',extra_effect({'operation':'remove_items','removed_items':removal}),True)
+    case('remove items selection is closed',extra_effect({'operation':'remove_items','removed_items':{**removal,'selection':'all'}}))
+    affects={'kind':'masterless_monsters','top_creature_only':False,'excludes_caster_name':False,'includes_caster':True}
+    case('heal affects allies accepted (D18)',set_value(('d','effects',0,'affects'),affects),True)
+    case('named affects need creatures',set_value(('d','effects',0,'affects'),{**affects,'kind':'named_creatures'}))
+    case('named affects accepted',set_value(('d','effects',0,'affects'),{**affects,'kind':'named_creatures','creatures':[ref('Creature','creature')]}),True)
+    case('group affects forbid creatures',set_value(('d','effects',0,'affects'),{**affects,'creatures':[ref('Creature','creature')]}))
+    case('path requirement accepted (D18)',set_value(('d','abilities',0,'path_requirement'),{'max_search_tiles':8,'clear_sight':True}),True)
+    case('path requirement needs its search distance',set_value(('d','abilities',0,'path_requirement'),{'clear_sight':True}))
+    case('path trail presentation accepted',set_value(('d','effects',0,'presentation'),{'path_asset_binding':'oteryn:body_sprite'}),True)
+    def invisible(extra=None):
+        def mutate(m,d,c):
+            appearance=m['presentation']['appearance']
+            appearance.pop('asset_binding'); appearance['selection']='invisible'
+            if extra: appearance.update(extra)
+        return mutate
+    case('invisible appearance accepted (D24)',invisible(),True)
+    case('invisible appearance forbids an asset',invisible({'asset_binding':'oteryn:creature_sprite'}))
+    case('visible appearance needs an asset',lambda m,d,c:m['presentation']['appearance'].pop('asset_binding'))
+    case('affects kind is closed',set_value(('d','effects',0,'affects'),{**affects,'kind':'everyone'}))
+    def variants(nested=False,with_effects=False):
+        def mutate(m,d,c):
+            base=d['abilities'][0]
+            for n in (1,2):
+                variant={**base,'identity':ident(f'melee-{n}')}
+                if nested:variant={k:v for k,v in variant.items() if k!='effects'}|{'variants':[ref('Ability','melee'),ref('Ability','melee')]}
+                d['abilities'].append(variant)
+            d['abilities'][0]={k:v for k,v in base.items() if with_effects or k!='effects'}|{'variants':[ref('Ability','melee-1'),ref('Ability','melee-2')]}
+        return mutate
+    case('ability variants accepted (D12)',variants(),True)
+    case('ability variants exclude effects',variants(with_effects=True))
+    case('ability variant cannot nest variants',variants(nested=True))
+    def caster(magnitude):
+        def mutate(m,d,c):
+            d['formulas'][0]={'identity':d['formulas'][0]['identity'],'kind':'caster_magnitude'}
+            if magnitude:m['behavior']['attacks'][0]['magnitude']=magnitude
+        return mutate
+    case('caster magnitude with schedule magnitude (D11)',caster({'minimum':100,'maximum':210}),True)
+    case('caster magnitude requires schedule magnitude',caster(None))
+    case('schedule magnitude minimum must not exceed maximum',caster({'minimum':300,'maximum':210}))
+    case('chain targeting accepted (D12)',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False}),True)
+    case('any local Item may be the corpse (D17)',set_value(['d','items',0,'classification','is_corpse'],False),True)
+    case('change_target interval 0 disables timed changes',
+        lambda m,d,c:m['behavior']['targeting'].__setitem__('change_target',{'interval_ms':0,'chance_percent':8}),True)
+    case('familiar look selection accepted (D16)',lambda m,d,c:m['presentation']['appearance'].__setitem__('selection','owner_familiar_look'),True)
+    case('unknown appearance selection rejected',lambda m,d,c:m['presentation']['appearance'].__setitem__('selection','random'))
     case('decay transform needs target',lambda m,d,c:d['items'][0]['temporal'].pop('decay_target'))
     case('remove decay forbids target',set_value(['d','items',1,'temporal','decay_target'],ref('Item','coin')))
     case('decay cycle rejected',lambda m,d,c:d['items'][1]['temporal'].update(decay_action='transform',decay_target=ref('Item','body')))
@@ -178,6 +291,14 @@ if __name__=='__main__':
     case('partial original prose blocks readiness',lambda m,d,c:manifest('partial_text','original_text'))
     case('script cannot be hidden as metadata',lambda m,d,c:manifest('metadata_only','script'))
     case('manifest missing destination',lambda m,d,c:manifest(destination='/monster/creature/missing'))
+    wiki={'kind':'mediawiki','api':'https://tibia.fandom.com/api.php','title':'Synthetic page','page_id':1,'revision_id':1,
+          'content_sha256':'0'*64}
+    case('mediawiki revision source accepted',lambda m,d,c:{**manifest(),'sources':manifest()['sources']+[wiki]},True)
+    case('mediawiki source requires content hash',
+        lambda m,d,c:{**manifest(),'sources':manifest()['sources']+[{k:v for k,v in wiki.items() if k!='content_sha256'}]})
+    case('mediawiki source rejects unpinned revision',lambda m,d,c:{**manifest(),'sources':manifest()['sources']+[{**wiki,'revision_id':0}]})
+    case('git source rejects abbreviated revision',
+        lambda m,d,c:{**manifest(),'sources':[{'repository':'opentibiabr/canary','revision':'47dfd51f'}]})
     case('manifest source index valid',lambda m,d,c:{**manifest(),'entries':[{**manifest()['entries'][0],'source_index':9}]} )
 
     for percent in (0.0003,0.29,1.4,4.93):

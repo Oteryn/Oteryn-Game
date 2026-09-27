@@ -16,6 +16,10 @@ use super::operator_files::{
 use super::secure_file::{FileClass, effective_uid};
 use super::{StartupError, connect_root, read_file, uuid_text};
 use crate::character_recovery_fence::CharacterRecoveryStore;
+use crate::content::{
+    ContentActivationController, NativeEntryActivationError, NativeEntryActivationIssuance,
+    NativeEntryContentPin, NodeBootQuiescence, activate_native_entry_room,
+};
 use crate::durability::DurabilityRoot;
 use crate::durability::admission_authority_guards::{
     AdmissionGuardStore, GuardPublicationDisposition,
@@ -80,6 +84,7 @@ pub enum BootError {
     Readiness(&'static str),
     ClockSkew,
     Serve,
+    ContentActivation(&'static str),
 }
 
 impl BootError {
@@ -96,6 +101,7 @@ impl BootError {
             Self::Bind(_) => 16,
             Self::Readiness(_) | Self::ClockSkew => 17,
             Self::Serve => 18,
+            Self::ContentActivation(_) => 19,
         }
     }
 }
@@ -112,6 +118,12 @@ impl std::fmt::Display for BootError {
             Self::Readiness(stage) => write!(formatter, "readiness failed at {stage}"),
             Self::ClockSkew => formatter.write_str("clock skew beyond the uncertainty bound"),
             Self::Serve => formatter.write_str("gameplay listener configuration rejected"),
+            Self::ContentActivation(stage) => {
+                write!(
+                    formatter,
+                    "native entry Content activation refused at {stage}"
+                )
+            }
         }
     }
 }
@@ -489,6 +501,52 @@ async fn establish_custody(
         }
     }
     Err(BootError::SourceCustody("retained publication slots"))
+}
+
+/// #935 activation issuer: before the Channel runtime, listener or control socket exists, activate
+/// the scope's current control-plane issuance of the committed native entry room. A missing,
+/// stale or mismatching issuance refuses readiness; nothing is guessed or reset.
+async fn activate_content(
+    root: &DurabilityRoot,
+    world: WorldId,
+    channel: ChannelId,
+) -> Result<(ContentActivationController, NativeEntryContentPin), BootError> {
+    let record = root
+        .read_current_content_activation(world, channel)
+        .await
+        .map_err(|_| BootError::ContentActivation("issuance read"))?
+        .ok_or(BootError::ContentActivation("no issuance for this scope"))?;
+    let issuance = NativeEntryActivationIssuance {
+        world_id: world,
+        activation_sequence: record.activation_sequence,
+        server_artifact_digest: record.server_artifact_digest,
+        client_artifact_digest: record.client_artifact_digest,
+        frame_binding_digest: record.frame_binding_digest,
+    };
+    let mut controller = ContentActivationController::new();
+    let pin = activate_native_entry_room(
+        &mut controller,
+        &NodeBootQuiescence::before_channel_runtime(),
+        world,
+        &issuance,
+    )
+    .map_err(|error| {
+        BootError::ContentActivation(match error {
+            NativeEntryActivationError::Qualification(_) => "qualification",
+            NativeEntryActivationError::Activation(_) => "activation",
+            NativeEntryActivationError::WorldMismatch => "world",
+            NativeEntryActivationError::DigestMismatch => "digest",
+            NativeEntryActivationError::FrameBindingMismatch => "frame binding",
+        })
+    })?;
+    event(&format!(
+        "event=content_activated activation_sequence={} server_digest={} client_digest={} frame_binding={}",
+        pin.activation_sequence(),
+        hex(&pin.identity().server_artifact_digest()),
+        hex(&pin.identity().client_artifact_digest()),
+        hex(&pin.frame_binding().digest()),
+    ));
+    Ok((controller, pin))
 }
 
 /// D3 step 6: the operator assigns exactly this incarnation within the wait.
@@ -1000,6 +1058,11 @@ async fn boot_and_serve(
     let assignment = generation?;
     let generation = assignment.ownership_generation;
     let fact = proof.fact();
+    // The controller holds the active generation for the whole serve lifetime; the Channel
+    // runtime pins exactly that generation.
+    let (_active_content, content) =
+        activate_content(root, material.world, material.channel).await?;
+    let (channel_pin, movement_cells) = content.into_channel_parts();
     let runtime = Mutex::new(
         ChannelRuntimeV1::from_committed_assignment(
             material.world,
@@ -1011,6 +1074,7 @@ async fn boot_and_serve(
             &assignment.decision_identity,
             usize::try_from(config.scope.preproduction_actor_capacity)
                 .map_err(|_| BootError::Readiness("channel runtime capacity"))?,
+            channel_pin,
         )
         .map_err(|_| BootError::Readiness("channel runtime composition"))?,
     );
@@ -1076,6 +1140,7 @@ async fn boot_and_serve(
         world_id: material.world,
         channel_id: material.channel,
         runtime: &runtime,
+        movement_cells: &movement_cells,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(
@@ -1252,6 +1317,7 @@ mod tests {
             BootError::Bind("x").exit_code(),
             BootError::Readiness("x").exit_code(),
             BootError::Serve.exit_code(),
+            BootError::ContentActivation("x").exit_code(),
         ];
         let unique: std::collections::BTreeSet<_> = codes.iter().collect();
         assert_eq!(unique.len(), codes.len());

@@ -3,6 +3,22 @@
     {
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Scorpion",
+      "page_id": 1487,
+      "revision_id": 1192273,
+      "content_sha256": "5b23deebf85f26690c45f495f7303dda3fc6d6d293637ec559e8a93cbfa24b07"
+    },
+    {
+      "kind": "mediawiki",
+      "api": "https://tibia.fandom.com/api.php",
+      "title": "Loot Statistics:Scorpion",
+      "page_id": 40542,
+      "revision_id": 1197779,
+      "content_sha256": "4f47a381954f5dfa62bb64abe7fde36c2099f2eed9a764b3ba1fbe8121932b91"
     }
   ],
   "entries": [
@@ -14,7 +30,7 @@
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/0",
-      "resolution": "monsters.cpp deserializeSpell: |min|,|max| totals, max=0 -> min, startDamage>min -> 0, tick default 2000 ms. Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+      "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by). monsters.cpp deserializeSpell: |min|,|max| totals, max=0 -> min, startDamage>min -> 0, tick default 2000 ms. Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
     },
     {
       "source_index": 0,
@@ -34,7 +50,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9651 \"scorpion tail\" is a declared source-scoped reference, not an admitted canonical Item."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9651 \"scorpion tail\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 4.93% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -221,9 +237,8 @@
       "source_line": 91,
       "source_field": "defenses.mitigation",
       "kind": "field",
-      "status": "mapped",
-      "destination": "/monster/creature/stats/mitigation_percent",
-      "resolution": "Canary float percent points as an exact decimal ratio."
+      "status": "approved_omission",
+      "resolution": "Canary value 0.13 superseded by the reference-date wiki value 0.20 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -253,6 +268,26 @@
       "status": "mapped",
       "destination": "/monster/creature/death_residue",
       "resolution": "Race \"venom\": creature.cpp dropCorpse (identical in Crystal be61cdd/ac447fef): venom/blood/ink/chocolate/candy create ITEM_FULLSPLASH=2886 with that fluid; undead/fire/energy/none create nothing; summons drop no corpse."
+    },
+    {
+      "source_index": 1,
+      "source_file": "Scorpion",
+      "source_line": 9,
+      "source_field": "Infobox Creature.mitigation",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Wiki mitigation \"0.20\" (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+      "destination": "/monster/creature/stats/mitigation_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Scorpion",
+      "source_line": 8,
+      "source_field": "Loot2.scorpion tail",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "4222 drops / 82763 kills in the version 8.6 block of Loot Statistics:Scorpion (82763 kills): 5.101313%, 95% Wilson interval 4.9535-5.2533%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/0/probability_percent"
     }
   ]
 }

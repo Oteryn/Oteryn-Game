@@ -16,6 +16,7 @@ pub(crate) enum CarrierError {
     AllocationFailed,
     CapacityExceeded,
     InvalidAssignmentBinding,
+    ContentPinWorldMismatch,
     PlayerReservationMismatch,
     WrongScope,
     InvalidActorIdentity,
@@ -26,6 +27,7 @@ pub(crate) enum CarrierError {
     ContinuityGenerationNotNewer,
     PositionUnavailable,
     PositionAlreadyInitialized,
+    ControlLossConflict,
     InvalidPreProductionPositionContext,
     PositionContextMismatch,
     PositionSnapshotMismatch,
@@ -45,6 +47,11 @@ pub(crate) enum CarrierError {
     OccurrenceConflict,
     PlanConflict,
     InjectedCommitFailure,
+    CommittedLethalUnavailable,
+    CorpseReceiptMismatch,
+    CorpseProjectionConflict,
+    InjectedCorpseProjectionFailure,
+    InjectedCorpseResponseFailure,
 }
 
 impl std::fmt::Display for CarrierError {
@@ -136,6 +143,47 @@ struct ActorRef {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ExactActorRef(ActorRef);
 
+impl ExactActorRef {
+    /// Stable opaque placement identity: a domain-separated digest of the exact actor
+    /// reference in its runtime scope. It carries no position and reveals no slot layout.
+    pub(crate) fn placement_identity(self) -> [u8; 16] {
+        use sha2::{Digest, Sha256};
+        let ActorRef {
+            world_id,
+            channel_id,
+            scope_generation,
+            actor_local_id,
+            actor_local_generation,
+        } = self.0;
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:runtime-player-placement:v1")
+            .chain_update(world_id.as_bytes())
+            .chain_update(channel_id.as_bytes())
+            .chain_update(scope_generation.get().to_be_bytes())
+            .chain_update(actor_local_id.0.to_be_bytes())
+            .chain_update(actor_local_generation.0.to_be_bytes())
+            .finalize();
+        let mut identity = [0_u8; 16];
+        identity.copy_from_slice(&digest[..16]);
+        identity
+    }
+}
+
+impl ExactActorRef {
+    /// Transport test fixture: an actor reference that names no runtime slot.
+    #[cfg(test)]
+    #[allow(clippy::expect_used, dead_code)]
+    pub(crate) fn transport_fixture(world_id: WorldId, channel_id: ChannelId) -> Self {
+        Self(ActorRef {
+            world_id,
+            channel_id,
+            scope_generation: ScopeOwnershipGeneration::new(1).expect("generation"),
+            actor_local_id: ActorLocalId(1),
+            actor_local_generation: ActorLocalGeneration(1),
+        })
+    }
+}
+
 /// One fixed-slot reservation for a fresh GameSession. It is not a playable
 /// actor until the owning durable admission is proven committed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -164,6 +212,15 @@ impl ChannelRuntimeAssignmentBinding {
 
     pub(crate) const fn channel_id(self) -> ChannelId {
         self.channel_id
+    }
+
+    pub(crate) const fn scope_generation(self) -> ScopeOwnershipGeneration {
+        self.scope_generation
+    }
+
+    /// The committed assignment decision revision this runtime was composed from.
+    pub(crate) const fn source_revision(self) -> u64 {
+        self.source_revision
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -201,6 +258,14 @@ pub(crate) struct CurrentOwnerExactActorLookup<'a> {
 /// capability: the carrier checks independent continuity and slot generation
 /// again at the sole write.
 pub(crate) struct CurrentOwnerExactActorCommit<'a> {
+    carrier: &'a mut ChannelActorCarrier,
+    continuity: &'a NamespaceContinuityGuard,
+}
+
+/// Short-lived current-owner authority for the fixed one-creature death
+/// projection. It cannot commit Ability damage, move actors, admit actors or
+/// issue continuity.
+pub(crate) struct CurrentOwnerCombatDeath<'a> {
     carrier: &'a mut ChannelActorCarrier,
     continuity: &'a NamespaceContinuityGuard,
 }
@@ -305,6 +370,77 @@ struct OwnerCommitRecord {
     result: OwnerDamageResult,
 }
 
+/// Stable identity of the one committed lethal occurrence. Construction stays
+/// private to the physical Channel owner; callers cannot supply occurrence
+/// bytes, HP facts or actor generation.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct CreatureDeathOccurrenceRef {
+    actor: ExactActorRef,
+    commit_binding: Box<[u8]>,
+    damage: i64,
+    health_before: i64,
+}
+
+impl CreatureDeathOccurrenceRef {
+    pub(crate) const fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
+
+    pub(crate) fn commit_binding(&self) -> &[u8] {
+        &self.commit_binding
+    }
+
+    pub(crate) const fn damage(&self) -> i64 {
+        self.damage
+    }
+
+    pub(crate) const fn health_before(&self) -> i64 {
+        self.health_before
+    }
+}
+
+/// One runtime-owned, non-persistent corpse projection. The position is the
+/// immutable current-owner position captured by the same slot state that holds
+/// the lethal commit; dead creatures cannot mutate or initialize it later.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct RuntimeCorpseProjection {
+    occurrence: CreatureDeathOccurrenceRef,
+    position: VersionedPosition,
+}
+
+impl RuntimeCorpseProjection {
+    pub(crate) const fn occurrence(&self) -> &CreatureDeathOccurrenceRef {
+        &self.occurrence
+    }
+
+    pub(crate) const fn position(&self) -> MovementLocalPosition {
+        MovementLocalPosition {
+            x: self.position.position.x,
+            y: self.position.position.y,
+            floor: self.position.position.floor,
+        }
+    }
+
+    pub(crate) const fn position_revision(&self) -> u64 {
+        self.position.revision
+    }
+
+    pub(crate) const fn context_markers(&self) -> (u64, u64, u64) {
+        (
+            self.position.context.coordinate_frame_marker,
+            self.position.context.map_revision_marker,
+            self.position.context.content_generation_marker,
+        )
+    }
+}
+
+/// Opaque, single-use handoff from the owner commit record to Combat. It is
+/// deliberately neither Clone nor Copy and has no caller-visible constructor.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct CommittedLethalReceipt {
+    projection: RuntimeCorpseProjection,
+}
+
 /// 4096 is the registered Ability plan bound; the owner still independently
 /// checks the actual complete encoding before allocating its one receipt.
 const MAX_OWNER_COMMIT_BINDING_BYTES: usize = 4_096;
@@ -317,6 +453,39 @@ impl CurrentOwnerExactActorCommit<'_> {
     ) -> Result<OwnerDamageResult, CarrierError> {
         self.carrier
             .commit_creature_damage_inner(self.continuity, actor.0, command, false)
+    }
+}
+
+impl CurrentOwnerCombatDeath<'_> {
+    pub(crate) fn committed_lethal_receipt(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<CommittedLethalReceipt, CarrierError> {
+        self.carrier
+            .committed_lethal_receipt_inner(self.continuity, actor.0)
+    }
+
+    pub(crate) fn project_committed_lethal(
+        &mut self,
+        receipt: CommittedLethalReceipt,
+    ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        self.carrier
+            .project_committed_lethal_inner(self.continuity, receipt, false, false)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn project_committed_lethal_with_failures(
+        &mut self,
+        receipt: CommittedLethalReceipt,
+        fail_before_write: bool,
+        fail_after_write: bool,
+    ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        self.carrier.project_committed_lethal_inner(
+            self.continuity,
+            receipt,
+            fail_before_write,
+            fail_after_write,
+        )
     }
 }
 
@@ -344,9 +513,11 @@ impl CurrentOwnerExactActorLookup<'_> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ActorState(u64);
 
-/// These opaque numeric markers are fixture inputs, not Content/Reference
-/// activation evidence. Production composition must provide its own accepted
-/// context binding before this private carrier can be used by gameplay.
+/// The binding a position is valid under. In production the Channel's fixed
+/// Content pin (#935) holds the full binding once; each slot keeps only this
+/// compact per-runtime reference to it (the measured 192-byte slot footprint
+/// is unchanged): the frame-binding and map-revision digest prefixes and the
+/// activation sequence. Test fixtures use synthetic values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PreProductionPositionContext {
     world_id: WorldId,
@@ -395,6 +566,9 @@ enum Slot {
         /// False while capacity is reserved but durable fresh admission is unresolved.
         committed: bool,
         position: Option<VersionedPosition>,
+        /// Present while the committed player's durable GameSession is RECONNECTABLE
+        /// after an authoritative control loss (`DISCONNECT-PROTECTION-V1`).
+        control_loss: Option<ControlLossMark>,
     },
     CreatureOccupied {
         generation: u64,
@@ -409,6 +583,24 @@ enum Slot {
     },
 }
 
+/// The durable loss decision mirrored by the Channel owner for its present, uncontrolled
+/// player actor. Epoch and grace deadline are the committed `ControlLossEpoch` values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ControlLossMark {
+    pub(crate) epoch: u64,
+    pub(crate) grace_deadline: i64,
+}
+
+/// Channel-owner facts about one committed, present player actor of an exact GameSession.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PlayerControlFacts {
+    /// Stable opaque identity of this actor's placement in this runtime scope.
+    pub(crate) placement_identity: [u8; 16],
+    /// The actor's local generation: non-zero and unchanged while it stays placed.
+    pub(crate) placement_revision: u64,
+    pub(crate) control_loss: Option<ControlLossMark>,
+}
+
 #[derive(Debug, PartialEq, Eq)]
 struct ChannelActorCarrier {
     world_id: WorldId,
@@ -417,6 +609,84 @@ struct ChannelActorCarrier {
     slots: Box<[Slot]>,
     free_head: Option<u32>,
     has_creature: bool,
+    corpse_projection: Option<RuntimeCorpseProjection>,
+}
+
+/// The exact active Content generation a Channel runtime is created with (#935 "Activation issuer
+/// and current pin"): scope World, activation sequence, pair digests and the source-qualified
+/// frame binding digest. In production it is minted only by the Content activation path from an
+/// activated native entry generation; it is fixed for the runtime's lifetime.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct ChannelContentPin {
+    world_id: WorldId,
+    activation_sequence: u64,
+    server_artifact_digest: [u8; 32],
+    client_artifact_digest: [u8; 32],
+    frame_binding_digest: [u8; 32],
+    map_revision_digest: [u8; 32],
+    /// The first-entry start cell the active generation attests as Walkable.
+    entry_start: LocalPosition,
+}
+
+impl ChannelContentPin {
+    pub(crate) const fn from_activation(
+        world_id: WorldId,
+        activation_sequence: u64,
+        server_artifact_digest: [u8; 32],
+        client_artifact_digest: [u8; 32],
+        frame_binding_digest: [u8; 32],
+        map_revision_digest: [u8; 32],
+        entry_start: (i32, i32, i16),
+    ) -> Self {
+        Self {
+            world_id,
+            activation_sequence,
+            server_artifact_digest,
+            client_artifact_digest,
+            frame_binding_digest,
+            map_revision_digest,
+            entry_start: LocalPosition {
+                x: entry_start.0,
+                y: entry_start.1,
+                floor: entry_start.2,
+            },
+        }
+    }
+
+    /// Synthetic pin for runtime tests that do not exercise Content activation.
+    #[cfg(test)]
+    pub(crate) const fn test(world_id: WorldId) -> Self {
+        Self::from_activation(world_id, 1, [1; 32], [2; 32], [3; 32], [4; 32], (0, 0, 0))
+    }
+
+    pub(crate) const fn world_id(&self) -> WorldId {
+        self.world_id
+    }
+
+    pub(crate) const fn activation_sequence(&self) -> u64 {
+        self.activation_sequence
+    }
+
+    pub(crate) const fn server_artifact_digest(&self) -> [u8; 32] {
+        self.server_artifact_digest
+    }
+
+    pub(crate) const fn client_artifact_digest(&self) -> [u8; 32] {
+        self.client_artifact_digest
+    }
+
+    pub(crate) const fn frame_binding_digest(&self) -> [u8; 32] {
+        self.frame_binding_digest
+    }
+}
+
+/// Outcome of a first-entry position initialization.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FirstEntryPosition {
+    /// This call wrote the start position.
+    Initialized(MovementPositionSnapshot),
+    /// The same initialization had already completed; nothing was written.
+    Reconciled(MovementPositionSnapshot),
 }
 
 /// The first composed Channel runtime. The fixed-slot carrier is the only actor
@@ -426,6 +696,7 @@ pub(crate) struct ChannelRuntimeV1 {
     binding: ChannelRuntimeAssignmentBinding,
     continuity: NamespaceContinuityGuard,
     carrier: ChannelActorCarrier,
+    content: ChannelContentPin,
 }
 
 impl ChannelRuntimeV1 {
@@ -439,9 +710,13 @@ impl ChannelRuntimeV1 {
         source_revision: u64,
         decision_identity: &str,
         explicit_capacity: usize,
+        content: ChannelContentPin,
     ) -> Result<Self, CarrierError> {
         if node_registration_revision == 0 || source_revision == 0 {
             return Err(CarrierError::InvalidAssignmentBinding);
+        }
+        if content.world_id != world_id {
+            return Err(CarrierError::ContentPinWorldMismatch);
         }
         let decision_revision = decision_identity
             .strip_prefix("runtime-scope-assignment:")
@@ -470,6 +745,7 @@ impl ChannelRuntimeV1 {
             },
             continuity,
             carrier,
+            content,
         })
     }
 
@@ -477,11 +753,107 @@ impl ChannelRuntimeV1 {
         self.binding
     }
 
+    pub(crate) const fn content_pin(&self) -> &ChannelContentPin {
+        &self.content
+    }
+
     /// Unactivated Movement proof: one exclusive borrow of the composed Channel owner.
     /// This grants neither initial position authority nor an owner scheduler.
     pub(crate) fn borrow_movement_position(&mut self) -> CurrentOwnerMovementPosition<'_> {
         self.carrier
             .current_owner_movement_position(&self.continuity)
+    }
+
+    /// The Movement owner context of this runtime's fixed Content pin; a step is eligible only
+    /// for a position initialized under exactly this context.
+    pub(crate) fn pinned_movement_context(&self) -> MovementPositionContext {
+        MovementPositionContext(self.pinned_position_context())
+    }
+
+    /// Unactivated Combat proof: one exclusive borrow of the physical Channel
+    /// owner. It grants no scheduler, production activation or corpse lifetime.
+    pub(crate) fn borrow_combat_death(&mut self) -> CurrentOwnerCombatDeath<'_> {
+        self.carrier.current_owner_combat_death(&self.continuity)
+    }
+
+    /// The compact position context of this runtime's fixed Content pin.
+    fn pinned_position_context(&self) -> PreProductionPositionContext {
+        let prefix = |digest: &[u8; 32]| {
+            u64::from_be_bytes([
+                digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6],
+                digest[7],
+            ])
+        };
+        PreProductionPositionContext {
+            world_id: self.binding.world_id,
+            channel_id: self.binding.channel_id,
+            scope_generation: self.binding.scope_generation,
+            coordinate_frame_marker: prefix(&self.content.frame_binding_digest),
+            map_revision_marker: prefix(&self.content.map_revision_digest),
+            content_generation_marker: self.content.activation_sequence,
+        }
+    }
+
+    /// #935 first-entry position initialization: the Channel owner writes the
+    /// pinned generation's start cell for one committed, unpositioned player
+    /// actor. The context comes only from this runtime's assignment binding and
+    /// Content pin. An exact retry reconciles the completed initialization
+    /// without another write (later Movement is not undone); a stale or
+    /// recycled actor, or one positioned under another context, gets no write.
+    pub(crate) fn initialize_first_entry_position(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<FirstEntryPosition, CarrierError> {
+        let context = self.pinned_position_context();
+        match self.carrier.initialize_position(
+            &self.continuity,
+            actor.0,
+            context,
+            self.content.entry_start,
+        ) {
+            Ok(snapshot) => Ok(FirstEntryPosition::Initialized(MovementPositionSnapshot(
+                snapshot,
+            ))),
+            Err(CarrierError::PositionAlreadyInitialized) => {
+                let current = self.carrier.read_position(&self.continuity, actor.0)?;
+                if current.version.context == context {
+                    Ok(FirstEntryPosition::Reconciled(MovementPositionSnapshot(
+                        current,
+                    )))
+                } else {
+                    Err(CarrierError::PositionAlreadyInitialized)
+                }
+            }
+            Err(error) => Err(error),
+        }
+    }
+
+    /// Facts of the committed player actor bound to exactly this GameSession.
+    pub(crate) fn player_control_facts(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Result<PlayerControlFacts, CarrierError> {
+        let control_loss =
+            self.carrier
+                .player_control_loss(&self.continuity, actor.0, game_session_id)?;
+        Ok(PlayerControlFacts {
+            placement_identity: actor.placement_identity(),
+            placement_revision: actor.0.actor_local_generation.0,
+            control_loss,
+        })
+    }
+
+    /// Mirror one committed durable control loss onto the still-present player actor.
+    /// Recording the identical decision again is a no-op; a different one conflicts.
+    pub(crate) fn record_control_loss(
+        &mut self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        mark: ControlLossMark,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .record_player_control_loss(&self.continuity, actor.0, game_session_id, mark)
     }
 
     /// Synthetic context is confined to tests. A committed session still goes through
@@ -570,6 +942,73 @@ impl ChannelRuntimeV1 {
             })
     }
 
+    /// Test-only census: the position revisions of committed player actors that
+    /// stand at the pinned start cell under the pinned context, ascending.
+    #[cfg(test)]
+    pub(crate) fn entry_start_player_revisions(&self) -> Vec<u64> {
+        let mut revisions: Vec<u64> = self
+            .carrier
+            .slots
+            .iter()
+            .filter_map(|slot| match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    position: Some(version),
+                    ..
+                } if version.position == self.content.entry_start
+                    && version.context == self.pinned_position_context() =>
+                {
+                    Some(version.revision)
+                }
+                _ => None,
+            })
+            .collect();
+        revisions.sort_unstable();
+        revisions
+    }
+
+    /// Test-only census: the recorded control-loss epochs of committed players, ascending.
+    #[cfg(test)]
+    pub(crate) fn player_control_loss_epochs(&self) -> Vec<u64> {
+        let mut epochs: Vec<u64> = self
+            .carrier
+            .slots
+            .iter()
+            .filter_map(|slot| match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    control_loss: Some(mark),
+                    ..
+                } => Some(mark.epoch),
+                _ => None,
+            })
+            .collect();
+        epochs.sort_unstable();
+        epochs
+    }
+
+    /// Test-only census: committed player actors positioned at the pinned
+    /// start cell under the pinned context by one initialization (revision 1).
+    #[cfg(test)]
+    pub(crate) fn players_positioned_at_entry_start(&self) -> usize {
+        self.carrier
+            .slots
+            .iter()
+            .filter(|slot| {
+                matches!(slot, Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    position: Some(version),
+                    ..
+                } if version.position == self.content.entry_start
+                    && version.revision == 1
+                    && version.context == self.pinned_position_context())
+            })
+            .count()
+    }
+
     #[cfg(test)]
     fn contains_committed_session(
         &self,
@@ -582,6 +1021,16 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelActorCarrier {
+    fn current_owner_combat_death<'a>(
+        &'a mut self,
+        continuity: &'a NamespaceContinuityGuard,
+    ) -> CurrentOwnerCombatDeath<'a> {
+        CurrentOwnerCombatDeath {
+            carrier: self,
+            continuity,
+        }
+    }
+
     fn current_owner_movement_position<'a>(
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
@@ -670,6 +1119,7 @@ impl ChannelActorCarrier {
             slots: slots.into_boxed_slice(),
             free_head: Some(0),
             has_creature: false,
+            corpse_projection: None,
         })
     }
 
@@ -693,7 +1143,7 @@ impl ChannelActorCarrier {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         self.validate_current_continuity(continuity)?;
-        if self.has_creature {
+        if self.has_creature || self.corpse_projection.is_some() {
             return Err(CarrierError::CapacityExceeded);
         }
         if target_identity.is_empty()
@@ -885,6 +1335,7 @@ impl ChannelActorCarrier {
                 game_session_id,
                 committed,
                 position: None,
+                control_loss: None,
             }
         };
         self.free_head = next_free;
@@ -906,10 +1357,18 @@ impl ChannelActorCarrier {
                 actor,
                 committed: true,
                 ..
-            }
-            | Slot::CreatureOccupied {
-                generation, actor, ..
             } if *generation == actor_ref.actor_local_generation.0 => Ok(actor),
+            Slot::CreatureOccupied {
+                generation,
+                actor,
+                health,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 && *health > 0 => Ok(actor),
+            Slot::CreatureOccupied {
+                generation, health, ..
+            } if *generation == actor_ref.actor_local_generation.0 && *health == 0 => {
+                Err(CarrierError::CreatureNotActionable)
+            }
             Slot::Occupied { .. }
             | Slot::CreatureOccupied { .. }
             | Slot::VacantReusable { .. }
@@ -1067,6 +1526,138 @@ impl ChannelActorCarrier {
         Ok(result)
     }
 
+    fn committed_lethal_receipt_inner(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<CommittedLethalReceipt, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        if let Some(existing) = self
+            .corpse_projection
+            .as_ref()
+            .filter(|projection| projection.occurrence.actor == ExactActorRef(actor_ref))
+        {
+            return Ok(CommittedLethalReceipt {
+                projection: RuntimeCorpseProjection {
+                    occurrence: CreatureDeathOccurrenceRef {
+                        actor: existing.occurrence.actor,
+                        commit_binding: copy_bounded_binding(&existing.occurrence.commit_binding)?,
+                        damage: existing.occurrence.damage,
+                        health_before: existing.occurrence.health_before,
+                    },
+                    position: existing.position,
+                },
+            });
+        }
+        let Slot::CreatureOccupied {
+            generation,
+            position,
+            health,
+            committed: Some(committed),
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        if *health != 0
+            || !committed.result.applied
+            || committed.result.health_before <= 0
+            || committed.result.health_after != 0
+        {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        let position = position.ok_or(CarrierError::PositionUnavailable)?;
+        Ok(CommittedLethalReceipt {
+            projection: RuntimeCorpseProjection {
+                occurrence: CreatureDeathOccurrenceRef {
+                    actor: ExactActorRef(actor_ref),
+                    commit_binding: copy_bounded_binding(&committed.binding)?,
+                    damage: committed.damage,
+                    health_before: committed.result.health_before,
+                },
+                position,
+            },
+        })
+    }
+
+    fn validate_lethal_receipt(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        receipt: &CommittedLethalReceipt,
+    ) -> Result<(), CarrierError> {
+        let projection = &receipt.projection;
+        let actor_ref = projection.occurrence.actor.0;
+        let index = self.validate_ref(continuity, actor_ref)?;
+        let Slot::CreatureOccupied {
+            generation,
+            position: Some(position),
+            health,
+            committed: Some(committed),
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::StaleActorGeneration);
+        };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        if *health != 0
+            || !committed.result.applied
+            || committed.result.health_before <= 0
+            || committed.result.health_after != 0
+            || committed.binding.as_ref() != projection.occurrence.commit_binding.as_ref()
+            || committed.damage != projection.occurrence.damage
+            || committed.result.health_before != projection.occurrence.health_before
+            || *position != projection.position
+        {
+            return Err(CarrierError::CorpseReceiptMismatch);
+        }
+        Ok(())
+    }
+
+    fn project_committed_lethal_inner(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        receipt: CommittedLethalReceipt,
+        fail_before_write: bool,
+        fail_after_write: bool,
+    ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        self.validate_ref(continuity, receipt.projection.occurrence.actor.0)?;
+        if self.corpse_projection.is_some() {
+            return self.existing_corpse_projection(&receipt);
+        }
+        self.validate_lethal_receipt(continuity, &receipt)?;
+        if fail_before_write {
+            return Err(CarrierError::InjectedCorpseProjectionFailure);
+        }
+        let projected = receipt.projection;
+        self.corpse_projection = Some(projected);
+        if fail_after_write {
+            return Err(CarrierError::InjectedCorpseResponseFailure);
+        }
+        self.corpse_projection
+            .as_ref()
+            .ok_or(CarrierError::CorpseProjectionConflict)
+    }
+
+    fn existing_corpse_projection(
+        &self,
+        receipt: &CommittedLethalReceipt,
+    ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        let existing = self
+            .corpse_projection
+            .as_ref()
+            .ok_or(CarrierError::CorpseProjectionConflict)?;
+        if existing == &receipt.projection {
+            Ok(existing)
+        } else {
+            Err(CarrierError::CorpseProjectionConflict)
+        }
+    }
+
     fn validate_position_context(
         &self,
         context: PreProductionPositionContext,
@@ -1095,6 +1686,13 @@ impl ChannelActorCarrier {
         let index = self.validate_ref(continuity, actor_ref)?;
         self.validate_position_context(context)?;
         match &mut self.slots[index] {
+            Slot::CreatureOccupied {
+                generation,
+                health: 0,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 => {
+                Err(CarrierError::CreatureNotActionable)
+            }
             Slot::Occupied {
                 generation,
                 committed: true,
@@ -1104,6 +1702,7 @@ impl ChannelActorCarrier {
             | Slot::CreatureOccupied {
                 generation,
                 position: stored @ None,
+                health: 1..,
                 ..
             } if *generation == actor_ref.actor_local_generation.0 => {
                 let version = VersionedPosition {
@@ -1190,6 +1789,16 @@ impl ChannelActorCarrier {
         next_position: LocalPosition,
     ) -> Result<PositionSnapshot, CarrierError> {
         let index = self.validate_ref(continuity, expected.actor_ref)?;
+        if matches!(
+            &self.slots[index],
+            Slot::CreatureOccupied {
+                generation,
+                health: 0,
+                ..
+            } if *generation == expected.actor_ref.actor_local_generation.0
+        ) {
+            return Err(CarrierError::CreatureNotActionable);
+        }
         self.validate_position_context(next_context)?;
         if next_context != expected.version.context {
             return Err(CarrierError::PositionContextMismatch);
@@ -1236,6 +1845,71 @@ impl ChannelActorCarrier {
             actor_ref: expected.actor_ref,
             version,
         })
+    }
+
+    fn player_slot_index(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+    ) -> Result<usize, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        match &self.slots[index] {
+            Slot::Occupied {
+                generation,
+                game_session_id: Some(bound),
+                committed: true,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 && *bound == game_session_id => {
+                Ok(index)
+            }
+            Slot::Occupied { generation, .. } | Slot::CreatureOccupied { generation, .. }
+                if *generation == actor_ref.actor_local_generation.0 =>
+            {
+                Err(CarrierError::PlayerReservationMismatch)
+            }
+            _ => Err(CarrierError::StaleActorGeneration),
+        }
+    }
+
+    fn player_control_loss(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+    ) -> Result<Option<ControlLossMark>, CarrierError> {
+        let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+        match &self.slots[index] {
+            Slot::Occupied { control_loss, .. } => Ok(*control_loss),
+            _ => Err(CarrierError::PlayerReservationMismatch),
+        }
+    }
+
+    fn record_player_control_loss(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+        mark: ControlLossMark,
+    ) -> Result<(), CarrierError> {
+        if mark.epoch == 0 {
+            return Err(CarrierError::ControlLossConflict);
+        }
+        let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+        match &mut self.slots[index] {
+            Slot::Occupied {
+                control_loss: stored @ None,
+                ..
+            } => {
+                *stored = Some(mark);
+                Ok(())
+            }
+            Slot::Occupied {
+                control_loss: Some(existing),
+                ..
+            } if *existing == mark => Ok(()),
+            _ => Err(CarrierError::ControlLossConflict),
+        }
     }
 
     fn validate_ref(
@@ -1492,6 +2166,11 @@ mod channel_owner_ability_commit_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
+#[path = "channel_owner_combat_death_tests.rs"]
+mod channel_owner_combat_death_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
 #[path = "channel_actor_position_tests.rs"]
 mod channel_actor_position_tests;
 
@@ -1572,6 +2251,7 @@ mod tests {
             11,
             "runtime-scope-assignment:11",
             capacity,
+            ChannelContentPin::test(WorldId::decode(&uuid_v7(20)).expect("world")),
         )
         .expect("runtime")
     }
@@ -1643,6 +2323,169 @@ mod tests {
     }
 
     #[test]
+    fn control_loss_is_recorded_once_for_the_exact_committed_player() {
+        let mut runtime = runtime(2);
+        let reservation = runtime.reserve_fresh_session(session(64)).expect("reserve");
+        // An uncommitted reservation has no player facts and cannot lose control.
+        let _pending = runtime.reserve_fresh_session(session(65)).expect("reserve");
+        let actor = runtime.commit_fresh_session(reservation).expect("commit");
+        let mark = ControlLossMark {
+            epoch: 1,
+            grace_deadline: 160,
+        };
+        let facts = runtime
+            .player_control_facts(actor, session(64))
+            .expect("facts");
+        assert_eq!(facts.control_loss, None);
+        assert_ne!(facts.placement_identity, [0; 16]);
+        assert_eq!(facts.placement_revision, actor.0.actor_local_generation.0);
+        // Another session never reads or marks this actor.
+        assert_eq!(
+            runtime.player_control_facts(actor, session(66)),
+            Err(CarrierError::PlayerReservationMismatch)
+        );
+        assert_eq!(
+            runtime.record_control_loss(actor, session(66), mark),
+            Err(CarrierError::PlayerReservationMismatch)
+        );
+        assert_eq!(
+            runtime.record_control_loss(actor, session(64), ControlLossMark { epoch: 0, ..mark }),
+            Err(CarrierError::ControlLossConflict)
+        );
+        assert_eq!(
+            runtime.record_control_loss(actor, session(64), mark),
+            Ok(())
+        );
+        // The identical decision replays; a different one conflicts and changes nothing.
+        assert_eq!(
+            runtime.record_control_loss(actor, session(64), mark),
+            Ok(())
+        );
+        assert_eq!(
+            runtime.record_control_loss(
+                actor,
+                session(64),
+                ControlLossMark {
+                    grace_deadline: 161,
+                    ..mark
+                }
+            ),
+            Err(CarrierError::ControlLossConflict)
+        );
+        let after = runtime
+            .player_control_facts(actor, session(64))
+            .expect("facts");
+        assert_eq!(after.control_loss, Some(mark));
+        assert_eq!(after.placement_identity, facts.placement_identity);
+        assert_eq!(runtime.player_control_loss_epochs(), vec![1]);
+        // The actor stays present: the committed player count is unchanged.
+        assert_eq!(runtime.player_slot_counts(), (1, 1));
+    }
+
+    #[test]
+    fn first_entry_position_is_written_once_and_retry_reconciles() {
+        let mut runtime = runtime(2);
+        let reservation = runtime.reserve_fresh_session(session(60)).expect("reserve");
+        let actor = runtime.commit_fresh_session(reservation).expect("commit");
+        let outcome = runtime
+            .initialize_first_entry_position(actor)
+            .expect("initialize");
+        assert!(matches!(outcome, FirstEntryPosition::Initialized(_)));
+        let first = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("positioned");
+        assert_eq!(
+            first.position(),
+            MovementLocalPosition {
+                x: 0,
+                y: 0,
+                floor: 0
+            }
+        );
+        assert_eq!(first.revision(), 1);
+        assert_eq!(runtime.players_positioned_at_entry_start(), 1);
+        // Exact retry: same actor generation, same pin -> no second write.
+        assert_eq!(
+            runtime.initialize_first_entry_position(actor),
+            Ok(FirstEntryPosition::Reconciled(first))
+        );
+        assert_eq!(runtime.players_positioned_at_entry_start(), 1);
+    }
+
+    #[test]
+    fn first_entry_position_refuses_other_context_and_stale_actor() {
+        let mut runtime = runtime(2);
+        // An actor positioned under another context never gets a replacement.
+        let reservation = runtime.reserve_fresh_session(session(61)).expect("reserve");
+        let other = runtime.commit_fresh_session(reservation).expect("commit");
+        let synthetic = runtime
+            .initialize_movement_test_position(
+                other,
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+            )
+            .expect("synthetic position");
+        assert_eq!(
+            runtime.initialize_first_entry_position(other),
+            Err(CarrierError::PositionAlreadyInitialized)
+        );
+        assert_eq!(
+            runtime.borrow_movement_position().read(other),
+            Ok(synthetic)
+        );
+        // A removed (stale) actor reference gets no write.
+        let reservation = runtime.reserve_fresh_session(session(62)).expect("reserve");
+        let stale = runtime.commit_fresh_session(reservation).expect("commit");
+        runtime
+            .remove_terminal_session(session(62), stale)
+            .expect("terminal cleanup");
+        assert!(runtime.initialize_first_entry_position(stale).is_err());
+        assert_eq!(runtime.players_positioned_at_entry_start(), 0);
+    }
+
+    #[test]
+    fn first_entry_position_refuses_wrong_scope_and_recycled_reference() {
+        // A reference from another Channel runtime is refused without a write.
+        let mut runtime = runtime(1);
+        let mut other = ChannelRuntimeV1::from_committed_assignment(
+            WorldId::decode(&uuid_v7(70)).expect("world"),
+            ChannelId::decode(&uuid_v7(71)).expect("channel"),
+            node(72),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            1,
+            ChannelContentPin::test(WorldId::decode(&uuid_v7(70)).expect("world")),
+        )
+        .expect("other runtime");
+        let reservation = other.reserve_fresh_session(session(73)).expect("reserve");
+        let foreign = other.commit_fresh_session(reservation).expect("commit");
+        assert!(runtime.initialize_first_entry_position(foreign).is_err());
+        assert_eq!(runtime.players_positioned_at_entry_start(), 0);
+
+        // A recycled slot: the old reference is refused; the new actor starts
+        // unpositioned and gets its own first write.
+        let reservation = runtime.reserve_fresh_session(session(74)).expect("reserve");
+        let old = runtime.commit_fresh_session(reservation).expect("commit");
+        runtime
+            .remove_terminal_session(session(74), old)
+            .expect("terminal cleanup");
+        let reservation = runtime.reserve_fresh_session(session(75)).expect("reserve");
+        let recycled = runtime.commit_fresh_session(reservation).expect("commit");
+        assert!(runtime.initialize_first_entry_position(old).is_err());
+        assert!(matches!(
+            runtime.initialize_first_entry_position(recycled),
+            Ok(FirstEntryPosition::Initialized(_))
+        ));
+        assert_eq!(runtime.players_positioned_at_entry_start(), 1);
+    }
+
+    #[test]
     fn runtime_rejects_invalid_assignment_identity_and_zero_provenance() {
         let world = WorldId::decode(&uuid_v7(50)).expect("world");
         let channel = ChannelId::decode(&uuid_v7(51)).expect("channel");
@@ -1656,6 +2499,7 @@ mod tests {
                 1,
                 "runtime-scope-assignment:1",
                 1,
+                ChannelContentPin::test(world),
             ),
             Err(CarrierError::InvalidAssignmentBinding)
         ));
@@ -1669,9 +2513,38 @@ mod tests {
                 2,
                 "runtime-scope-assignment:1",
                 1,
+                ChannelContentPin::test(world),
             ),
             Err(CarrierError::InvalidAssignmentBinding)
         ));
+        let other_world = WorldId::decode(&uuid_v7(53)).expect("other world");
+        assert!(matches!(
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node(52),
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                1,
+                ChannelContentPin::test(other_world),
+            ),
+            Err(CarrierError::ContentPinWorldMismatch)
+        ));
+        let runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node(52),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            1,
+            ChannelContentPin::test(world),
+        )
+        .expect("pinned runtime");
+        assert_eq!(runtime.content_pin(), &ChannelContentPin::test(world));
         assert_eq!(
             size_of::<Slot>(),
             192,

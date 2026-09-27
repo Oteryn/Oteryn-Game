@@ -8,6 +8,11 @@ extern crate self as oteryn_game_server;
 #[allow(dead_code)]
 #[allow(clippy::duplicate_mod)] // Foundation's standalone tests include Ability source.
 mod ability;
+#[allow(
+    dead_code,
+    reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
+)]
+mod combat;
 
 pub mod character_bootstrap_intent;
 pub mod character_recovery_fence;

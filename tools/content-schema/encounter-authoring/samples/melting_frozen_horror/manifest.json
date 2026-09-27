@@ -1,0 +1,92 @@
+{
+  "encounter": "canary:encounter/melting_frozen_horror",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {},
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/melting_frozen_horror.lua",
+      "blob_sha1": "5f50a0c3e2289e35075b62ed6e1f2fdea2ef2d9d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "00ced55f16d363011cad6cc00bc14ea07fbdd253"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Melting Frozen Horror is the melting_frozen_horror participant.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        16,
+        18,
+        19,
+        20,
+        21,
+        22,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"Melting Frozen Horror\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets Storage ForgottenKnowledge.HorrorKilled to now + 72000 seconds.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48
+      ],
+      "status": "unresolved_semantics",
+      "resolution": "On its death the top creature on tile (32269, 31084, 14) is removed and a baby dragon is created in its place, and the top creature on (32267, 31071, 14) is removed. Which creatures stand on those tiles is map state, not visible in the script; modelling it needs those roles confirmed (D25: wiki or map evidence)."
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "melting_frozen_horror_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U11_02.ForgottenKnowledge.HorrorKilled",
+        "cooldown_seconds": 72000
+      }
+    }
+  ]
+}

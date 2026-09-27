@@ -87,7 +87,11 @@
         "family": "Formula",
         "key": "canary:formula/sand_vortex/attack-1-1",
         "revision": "canary-47dfd51f"
-      }
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
     },
     {
       "identity": {
@@ -101,6 +105,9 @@
         "key": "canary:formula/sand_vortex/attack-2-1",
         "revision": "canary-47dfd51f"
       },
+      "mitigated_by": [
+        "armor"
+      ],
       "presentation": {
         "impact_asset_binding": "canary.appearance:effect/poff"
       }

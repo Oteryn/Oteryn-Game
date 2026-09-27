@@ -1,0 +1,69 @@
+{
+  "encounter": "canary:encounter/rupture",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "HeartMinionDeath": [
+      "canary:creature/damage_resonance"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/actions_rupture.lua",
+      "blob_sha1": "506a5afe93f9c08f3ab0f510199f103a76ede6d8"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/heart_of_destruction/damage_resonance.lua",
+      "blob_sha1": "91c5f73e03acb1acb7ff11da9688447aeb2b9bd8"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_heart_minion_death.lua",
+      "blob_sha1": "0c5901d5861e0a5ac8bb5fb137bad149434721e2"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        25
+      ],
+      "status": "mapped",
+      "resolution": "The Rupture lever starts the fight with RuptureResonanceActive at -1.",
+      "destination": "/encounter/state/counters/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        50
+      ],
+      "status": "mapped",
+      "resolution": "Damage Resonance is the damage_resonance participant; its file registers HeartMinionDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        10,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "The death of the damage resonance sets RuptureResonanceActive to 0.",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": []
+}
