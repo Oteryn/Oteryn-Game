@@ -4,6 +4,7 @@ temp dir; no network and no dependency on any real pinned upstream checkout."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import tempfile
 from pathlib import Path
@@ -1283,6 +1284,387 @@ def test_family_profile_fallbacks():
     check("family_profile_unresolved" in report["blockers"], report)
 
 
+# --- wiki-evidence family fallback (items-family-fallback.json) --------------------
+
+
+def sample_wiki_source(**overrides):
+    base = {
+        "wiki_title": "Test Page",
+        "page_id": 1,
+        "revision_id": 1,
+        "revision_timestamp": "2026-01-01T00:00:00Z",
+        "url": "https://tibia.fandom.com/wiki/Test_Page",
+        "revision_sha1": "a" * 40,
+        "content_sha256": "b" * 64,
+        "captured_at": "2026-01-01T00:00:00Z",
+    }
+    base.update(overrides)
+    return base
+
+
+def synthetic_wiki_fallback_entry(
+    profile, matched_names, field=None, value=None, candidates=None
+):
+    """Build one already-resolved fallback entry, exactly the shape
+    `load_wiki_family_fallback` would return, for injecting straight into
+    `sources["wiki_family_fallback"]` without a round trip through a JSON file."""
+    if candidates is None:
+        evidence = {
+            "resolution": "direct",
+            "field": field,
+            "value": value,
+            "wiki_source": {"source_id": "fandom", **sample_wiki_source()},
+        }
+    else:
+        evidence = {"resolution": "disambiguation", "candidates": candidates}
+    return {
+        "profile": profile,
+        "matched_names": set(matched_names),
+        "evidence": evidence,
+    }
+
+
+def convert_with_fallback(item_records, wiki_fallback, item_id=200, engine="crystal"):
+    sources = synthetic_sources(engine, item_records)
+    sources["wiki_family_fallback"] = wiki_fallback
+    return engine_items.convert_item(sources, item_id)
+
+
+def build_wiki_fallback_payload(records, schema=None):
+    digest = hashlib.sha256(
+        json.dumps(
+            records, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+    return {
+        "schema": schema or engine_items.WIKI_FAMILY_FALLBACK_SCHEMA,
+        "batch_id": "test-batch",
+        "family": "Item",
+        "source": {"source_key": "oteryn:source.tibiawiki"},
+        "captured_at": "2026-01-01T00:00:00Z",
+        "records": records,
+        "snapshot_sha256": digest,
+    }
+
+
+def test_wiki_fallback_direct_hit():
+    key = engine_items.build_identity_index()[406][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "decoration",
+            ["ancient bonelord santa"],
+            field="primarytype",
+            value="Decorations",
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {406: {"name": "Ancient Bonelord Santa", "attrs": {}}}, fallback, item_id=406
+    )
+    check(item is not None, report)
+    check(item["family_profile"] == "decoration", item)
+    check(item["family_profile_basis"] == "wiki_evidence_fallback", item)
+    check(item["family_profile_evidence"]["field"] == "primarytype", item)
+    check(item["family_profile_evidence"]["value"] == "Decorations", item)
+    check(report["family_profile_basis"] == "wiki_evidence_fallback", report)
+
+
+def test_wiki_fallback_name_mismatch_is_ignored():
+    # The snapshot resolved a match for a *different* engine name than this item's own;
+    # it must never be borrowed for a same-key-but-different-name item.
+    key = engine_items.build_identity_index()[407][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "decoration", ["some other name"], field="primarytype", value="Decorations"
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {407: {"name": "Completely Different Name", "attrs": {}}}, fallback, item_id=407
+    )
+    check(item is None, report)
+    check(report["converted"] is False, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_engine_attribute_always_wins_over_wiki_fallback():
+    key = engine_items.build_identity_index()[408][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "decoration", ["engine wins item"], field="primarytype", value="Decorations"
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {408: {"name": "Engine Wins Item", "attrs": {"primarytype": "valuables"}}},
+        fallback,
+        item_id=408,
+    )
+    check(item["family_profile"] == "material_valuable", item)
+    check("family_profile_basis" not in item, item)
+    check("family_profile_basis" not in report, report)
+
+
+def test_wiki_fallback_disambiguation_accepted_when_candidates_agree():
+    key = engine_items.build_identity_index()[409][0]
+    candidates = [
+        {
+            "field": "primarytype",
+            "value": "Decorations",
+            "wiki_source": {"source_id": "fandom", **sample_wiki_source(page_id=1)},
+        },
+        {
+            "field": "primarytype",
+            "value": "Decorations",
+            "wiki_source": {"source_id": "fandom", **sample_wiki_source(page_id=2)},
+        },
+    ]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "decoration", ["ambiguous thing"], candidates=candidates
+        )
+    }
+    item, _deps, _report = convert_with_fallback(
+        {409: {"name": "Ambiguous Thing", "attrs": {}}}, fallback, item_id=409
+    )
+    check(item["family_profile"] == "decoration", item)
+    check(item["family_profile_evidence"]["resolution"] == "disambiguation", item)
+    check(len(item["family_profile_evidence"]["candidates"]) == 2, item)
+
+
+def test_wiki_fallback_loader_missing_file_is_empty():
+    resolved = engine_items.load_wiki_family_fallback(
+        Path("/nonexistent-does-not-exist/items-family-fallback.json"),
+        engine_items.build_identity_index(),
+    )
+    check(resolved == {}, resolved)
+
+
+def test_wiki_fallback_loader_accepts_valid_direct_record():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["a matched name"],
+        "resolution": "direct",
+        "field": "primarytype",
+        "value": "Decorations",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        resolved = engine_items.load_wiki_family_fallback(
+            path, engine_items.build_identity_index()
+        )
+        check(resolved[key]["profile"] == "decoration", resolved)
+        check(resolved[key]["matched_names"] == {"a matched name"}, resolved)
+        check(resolved[key]["evidence"]["wiki_source"]["page_id"] == 1, resolved[key])
+
+
+def test_wiki_fallback_loader_rejects_unadmitted_broad_bucket_value():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["some broad bucket item"],
+        "resolution": "direct",
+        "field": "primarytype",
+        "value": "Others",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        try:
+            engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        except SystemExit as exc:
+            check("not in the admitted wiki mapping" in str(exc), exc)
+        else:
+            raise AssertionError(
+                "an unadmitted broad-bucket value must be a hard error"
+            )
+
+
+def test_wiki_fallback_loader_rejects_divergent_disambiguation_candidates():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["divergent thing"],
+        "resolution": "disambiguation",
+        "candidates": [
+            {
+                "field": "primarytype",
+                "value": "Decorations",
+                **sample_wiki_source(page_id=1),
+            },
+            {
+                "field": "primarytype",
+                "value": "Quest Items",
+                **sample_wiki_source(page_id=2),
+            },
+        ],
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        try:
+            engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        except SystemExit as exc:
+            check("do not all resolve to the same profile" in str(exc), exc)
+        else:
+            raise AssertionError(
+                "divergent disambiguation candidates must be a hard error"
+            )
+
+
+def test_wiki_fallback_loader_rejects_unknown_registry_key():
+    fake_key = "oteryn:item.registry.i99999999"
+    record = {
+        "registry_key": fake_key,
+        "matched_names": ["ghost item"],
+        "resolution": "direct",
+        "field": "primarytype",
+        "value": "Decorations",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({fake_key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        try:
+            engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        except SystemExit as exc:
+            check("not a known Item key" in str(exc), exc)
+        else:
+            raise AssertionError("an unknown registry_key must be a hard error")
+
+
+def test_wiki_fallback_loader_rejects_digest_mismatch():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["digest test item"],
+        "resolution": "direct",
+        "field": "primarytype",
+        "value": "Decorations",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    payload["snapshot_sha256"] = "0" * 64
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        try:
+            engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        except SystemExit as exc:
+            check("snapshot_sha256 mismatch" in str(exc), exc)
+        else:
+            raise AssertionError("a snapshot_sha256 mismatch must be a hard error")
+
+
+def test_wiki_fallback_loader_rejects_unknown_top_level_key():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["extra key item"],
+        "resolution": "direct",
+        "field": "primarytype",
+        "value": "Decorations",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    payload["extra_top_level_key"] = 1
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        try:
+            engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        except SystemExit as exc:
+            check("unknown top-level key" in str(exc), exc)
+        else:
+            raise AssertionError("an unknown top-level key must be a hard error")
+
+
+def test_wiki_fallback_loader_rejects_duplicate_json_key():
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        # Built by hand: json.dumps can never emit a duplicate key.
+        path.write_text(
+            '{"schema": ' + json.dumps(engine_items.WIKI_FAMILY_FALLBACK_SCHEMA) + ", "
+            '"schema": ' + json.dumps(engine_items.WIKI_FAMILY_FALLBACK_SCHEMA) + ", "
+            '"batch_id": "x", "family": "Item", "source": {}, '
+            '"captured_at": "2026-01-01T00:00:00Z", "records": {}, '
+            '"snapshot_sha256": "' + "0" * 64 + '"}',
+            encoding="utf-8",
+        )
+        try:
+            engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        except SystemExit as exc:
+            check("duplicate JSON key" in str(exc), exc)
+        else:
+            raise AssertionError("a duplicate top-level JSON key must be a hard error")
+
+
+def test_resolve_wiki_family_value_admitted_mapping():
+    # `primarytype` "others" and the owner-decision-pending values never resolve for
+    # either field. The broad `objectclass` buckets ("utilities" included: as an
+    # `objectclass` bucket it is one of Fandom's broad groupings, unlike the engine's
+    # own unrelated `primarytype` "utilities" -> tool entry, which is correct and
+    # pre-existing) never resolve as `objectclass` either.
+    for value in ("others", "fireworks", "blessing charms", "clothing accessories", ""):
+        check(
+            engine_items.resolve_wiki_family_value("primarytype", value) is None,
+            f"primarytype={value!r} must never resolve",
+        )
+        check(
+            engine_items.resolve_wiki_family_value("objectclass", value) is None,
+            f"objectclass={value!r} must never resolve",
+        )
+    for value in (
+        "other items",
+        "household items",
+        "tools and other equipment",
+        "utilities",
+        "plants, animal products, food and drink",
+        "other objects",
+    ):
+        check(
+            engine_items.resolve_wiki_family_value("objectclass", value) is None,
+            f"objectclass={value!r} (broad bucket) must never resolve",
+        )
+    check(
+        engine_items.resolve_wiki_family_value("primarytype", "Decorations")
+        == "decoration",
+        "case-folded 'decorations' alias",
+    )
+    check(
+        engine_items.resolve_wiki_family_value("primarytype", "Tools (Objects)")
+        == "tool",
+        "'tools (objects)' alias",
+    )
+    check(
+        engine_items.resolve_wiki_family_value("primarytype", "Lamps")
+        == "light_source",
+        "'lamps' alias (same profile as illumination)",
+    )
+    check(
+        engine_items.resolve_wiki_family_value("objectclass", "Imbuement Scrolls")
+        == "progression_material",
+        "objectclass fallback admitted mapping",
+    )
+
+
 def test_lf_and_crlf_text_fixtures_byte_identical():
     for engine in ("crystal", "canary"):
         with (
@@ -1802,6 +2184,19 @@ def main():
         test_routed_non_item_corpse_and_placeholder_and_terrain,
         test_routed_non_item_unmove_map_geometry,
         test_family_profile_fallbacks,
+        test_wiki_fallback_direct_hit,
+        test_wiki_fallback_name_mismatch_is_ignored,
+        test_engine_attribute_always_wins_over_wiki_fallback,
+        test_wiki_fallback_disambiguation_accepted_when_candidates_agree,
+        test_wiki_fallback_loader_missing_file_is_empty,
+        test_wiki_fallback_loader_accepts_valid_direct_record,
+        test_wiki_fallback_loader_rejects_unadmitted_broad_bucket_value,
+        test_wiki_fallback_loader_rejects_divergent_disambiguation_candidates,
+        test_wiki_fallback_loader_rejects_unknown_registry_key,
+        test_wiki_fallback_loader_rejects_digest_mismatch,
+        test_wiki_fallback_loader_rejects_unknown_top_level_key,
+        test_wiki_fallback_loader_rejects_duplicate_json_key,
+        test_resolve_wiki_family_value_admitted_mapping,
         test_crystal_item_bindings_reject_duplicate_target_key,
     ]
     for test in tests:

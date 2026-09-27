@@ -177,6 +177,7 @@ def build_census(sources, engine, bundles_dir=None):
     """Return (result, bundles): the deterministic census dict and its {key: bundle} map."""
     outcome = Counter()
     by_profile = Counter()
+    family_profile_basis_counts = Counter()
     identity_basis_counts = Counter()
     delivery_observation_counts = Counter()
     delivery_decision_counts = Counter()
@@ -224,6 +225,9 @@ def build_census(sources, engine, bundles_dir=None):
             continue
 
         key = report["key"]
+        family_profile_basis_counts[
+            report.get("family_profile_basis") or "engine_attribute"
+        ] += 1
         delivery_task = report["delivery_task"]
         delivery_observation_counts[delivery_task["observation"]["member"]] += 1
         delivery_decision_counts[delivery_task["decision"]["eligible"]] += 1
@@ -283,6 +287,7 @@ def build_census(sources, engine, bundles_dir=None):
         ),
         "outcome": dict(sorted(outcome.items())),
         "by_profile": dict(sorted(by_profile.items())),
+        "family_profile_basis": dict(sorted(family_profile_basis_counts.items())),
         "identity_basis": dict(sorted(identity_basis_counts.items())),
         "routed_non_item": [
             {
@@ -371,6 +376,11 @@ def main():
         type=Path,
         help="delivery-task-overrides.json to use instead of the committed one",
     )
+    parser.add_argument(
+        "--wiki-fallback",
+        type=Path,
+        help="items-family-fallback.json snapshot to use instead of the committed one",
+    )
     args = parser.parse_args()
 
     sources = load_engine_sources(
@@ -378,6 +388,7 @@ def main():
         args.source,
         rule_source=args.rule_source,
         overrides_path=args.overrides,
+        wiki_fallback_path=args.wiki_fallback,
     )
     out_path = args.out or ROOT / "samples" / DEFAULT_SAMPLE_NAMES[args.engine]
 

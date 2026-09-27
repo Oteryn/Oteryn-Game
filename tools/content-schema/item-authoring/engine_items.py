@@ -774,6 +774,21 @@ PRIMARYTYPE_PROFILE = {
     "mushrooms": "plant",
     "soul cores": "material_valuable",
 }
+# English TibiaWiki (tibia.fandom.com) infobox `primarytype` uses a handful of exact
+# vocabulary variants of the values above (case-folding and pluralization only, verified
+# by hand against `PRIMARYTYPE_PROFILE`); each alias is admitted only because it names the
+# identical family, never a new one. Extending the one shared table means an engine
+# `items.xml` `primarytype` attribute that happens to carry one of these same variant
+# spellings resolves identically, which is correct and not wiki-specific; the wiki-only
+# surface is `resolve_wiki_family_value` below, which folds a Fandom value's case before
+# looking it up here.
+PRIMARYTYPE_PROFILE.update(
+    {
+        "decorations": PRIMARYTYPE_PROFILE["decoration"],
+        "tools (objects)": PRIMARYTYPE_PROFILE["tools"],
+        "lamps": PRIMARYTYPE_PROFILE["illumination"],
+    }
+)
 PROFILE_ITEM_CLASS = {
     "equipment_armor": "equipment",
     "equipment_offhand": "equipment",
@@ -870,6 +885,290 @@ def classify_family_profile(attrs, primarytype, clothes_slot=None):
     if any(field in attrs for field in READABLE_FALLBACK_ATTRS):
         return "document"
     return None
+
+
+# --- wiki-evidence family fallback (English TibiaWiki, tibia.fandom.com) -----------
+#
+# `classify_family_profile` above resolves a family from the engine's own attributes;
+# most `family_profile_unresolved` items simply carry none. `tools/content-census/
+# item_wiki_family_capture.py` captures pinned, reviewed English TibiaWiki infobox
+# evidence for those items' engine names into `imports/tibiawiki/facts/
+# items-family-fallback.json`; `load_wiki_family_fallback` below strictly validates that
+# snapshot and is the only way its evidence ever reaches `convert_item`. Only `objectclass`
+# gets its own admitted dict (`WIKI_OBJECTCLASS_PROFILE`): Fandom's `primarytype` uses the
+# same vocabulary as the engine's own attribute (folded to lower case), so it is resolved
+# through the one shared `PRIMARYTYPE_PROFILE` table instead of a duplicate. Every value
+# not explicitly admitted here -- including the broad `objectclass` buckets ("other
+# items", "household items", "plants, animal products, food and drink", "tools and other
+# equipment", "utilities", "other objects") and primarytype `others` -- stays unresolved;
+# none of those name one real family, so none is ever admitted. `fireworks`, `blessing
+# charms` and `clothing accessories` are likewise deliberately left unmapped pending an
+# explicit owner decision.
+WIKI_OBJECTCLASS_PROFILE = {
+    # "Itens de Imbuements" is the profile-catalog.json navigation_families entry unique
+    # to `progression_material` (verified: no other profile lists it).
+    "imbuement scrolls": "progression_material",
+}
+
+
+def resolve_wiki_family_value(field, value):
+    """Resolve one Fandom infobox `field`/`value` pair to a `family_profile` using only
+    the admitted mapping above; `None` when the value is not admitted."""
+    folded = (value or "").strip().lower()
+    if not folded:
+        return None
+    if field == "primarytype":
+        return PRIMARYTYPE_PROFILE.get(folded)
+    if field == "objectclass":
+        return WIKI_OBJECTCLASS_PROFILE.get(folded)
+    return None
+
+
+WIKI_FAMILY_FALLBACK_SCHEMA = "OTERYN_ITEM_FAMILY_FALLBACK_SNAPSHOT/v1"
+WIKI_FAMILY_FALLBACK_PATH = (
+    ROOT.parents[2] / "imports/tibiawiki/facts/items-family-fallback.json"
+)
+
+
+def _canonical_records_bytes(records):
+    return json.dumps(
+        records, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode("utf-8")
+
+
+def _wiki_evidence_source_from_record(row):
+    """Read one direct record's or candidate's flat `wiki_title`/`page_id`/... keys
+    into the schema's `wikiEvidenceSource` shape."""
+    return {
+        "source_id": "fandom",
+        "page_id": row["page_id"],
+        "title": row["wiki_title"],
+        "url": row["url"],
+        "revision": str(row["revision_id"]),
+        "revision_timestamp": row["revision_timestamp"],
+        "captured_at": row["captured_at"],
+        "revision_sha1": row["revision_sha1"],
+        "content_sha256": row["content_sha256"],
+    }
+
+
+def load_wiki_family_fallback(path, identity_index):
+    """Strictly parse, validate and resolve the wiki-evidence family fallback snapshot.
+
+    Returns `{item_key: {"profile": family_profile, "matched_names": {lower-cased
+    engine name, ...}, "evidence": <family_profile_evidence value>}}`. Every check here
+    is fail-closed, exactly like `load_delivery_overrides`: an unknown top-level or
+    record key, a duplicate JSON key, a `snapshot_sha256` that does not match the
+    recomputed digest of `records`, a `registry_key` absent from the identity index, a
+    `field`/`value` (or, for a disambiguation, any candidate's `field`/`value`) that the
+    admitted mapping does not resolve to exactly one profile, or a profile absent from
+    `PROFILE_ITEM_CLASS` (the converter's own admitted family_profile set) is a hard
+    error. A missing file is not an error: the fallback is then simply empty, since the
+    capture tool is run manually and its snapshot may not exist yet in every checkout.
+    """
+    if not path.is_file():
+        return {}
+
+    def unique_object(pairs):
+        keys = [pair_key for pair_key, _value in pairs]
+        duplicates = sorted({k for k in keys if keys.count(k) > 1})
+        if duplicates:
+            raise SystemExit(f"duplicate JSON key(s) in {path}: {duplicates}")
+        return dict(pairs)
+
+    try:
+        payload = json.loads(
+            path.read_text(encoding="utf-8"), object_pairs_hook=unique_object
+        )
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"invalid JSON in wiki family fallback file {path}: {exc}")
+
+    if not isinstance(payload, dict):
+        raise SystemExit(f"wiki family fallback file {path} must be a JSON object")
+    allowed_top_keys = {
+        "schema",
+        "batch_id",
+        "family",
+        "source",
+        "captured_at",
+        "records",
+        "snapshot_sha256",
+    }
+    unknown_top = sorted(set(payload) - allowed_top_keys)
+    if unknown_top:
+        raise SystemExit(f"unknown top-level key(s) in {path}: {unknown_top}")
+    missing_top = sorted(allowed_top_keys - set(payload))
+    if missing_top:
+        raise SystemExit(f"missing required key(s) in {path}: {missing_top}")
+    if payload["schema"] != WIKI_FAMILY_FALLBACK_SCHEMA:
+        raise SystemExit(
+            f"unexpected 'schema' in {path}: {payload['schema']!r} "
+            f"(expected {WIKI_FAMILY_FALLBACK_SCHEMA!r})"
+        )
+    if payload["family"] != "Item":
+        raise SystemExit(f"unexpected 'family' in {path}: {payload['family']!r}")
+
+    records = payload["records"]
+    if not isinstance(records, dict):
+        raise SystemExit(f"'records' in {path} must be a JSON object")
+    recomputed = hashlib.sha256(_canonical_records_bytes(records)).hexdigest()
+    if recomputed != payload["snapshot_sha256"]:
+        raise SystemExit(
+            f"snapshot_sha256 mismatch in {path}: recorded "
+            f"{payload['snapshot_sha256']!r}, recomputed {recomputed!r}"
+        )
+
+    valid_keys = {key for key, _basis in identity_index.values()}
+    allowed_record_keys = {
+        "registry_key",
+        "matched_names",
+        "resolution",
+        "wiki_title",
+        "page_id",
+        "revision_id",
+        "revision_timestamp",
+        "url",
+        "revision_sha1",
+        "content_sha256",
+        "captured_at",
+        "field",
+        "value",
+        "candidates",
+    }
+    allowed_candidate_keys = {
+        "wiki_title",
+        "page_id",
+        "revision_id",
+        "revision_timestamp",
+        "url",
+        "revision_sha1",
+        "content_sha256",
+        "captured_at",
+        "field",
+        "value",
+    }
+
+    def require_str(value, where):
+        if not isinstance(value, str) or not value:
+            raise SystemExit(f"{where} must be a non-empty string")
+        return value
+
+    def require_int(value, where):
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            raise SystemExit(f"{where} must be a positive integer")
+        return value
+
+    def wiki_source_fields(row, where):
+        require_str(row.get("wiki_title"), f"{where}.wiki_title")
+        require_int(row.get("page_id"), f"{where}.page_id")
+        require_int(row.get("revision_id"), f"{where}.revision_id")
+        require_str(row.get("revision_timestamp"), f"{where}.revision_timestamp")
+        require_str(row.get("url"), f"{where}.url")
+        revision_sha1 = require_str(row.get("revision_sha1"), f"{where}.revision_sha1")
+        if len(revision_sha1) != 40:
+            raise SystemExit(f"{where}.revision_sha1 must be a 40-char hex SHA-1")
+        content_sha256 = require_str(
+            row.get("content_sha256"), f"{where}.content_sha256"
+        )
+        if len(content_sha256) != 64:
+            raise SystemExit(f"{where}.content_sha256 must be a 64-char hex SHA-256")
+        require_str(row.get("captured_at"), f"{where}.captured_at")
+
+    def resolve_field_value(row, where):
+        field = require_str(row.get("field"), f"{where}.field")
+        if field not in ("primarytype", "objectclass"):
+            raise SystemExit(f"{where}.field must be primarytype or objectclass")
+        value = require_str(row.get("value"), f"{where}.value")
+        profile = resolve_wiki_family_value(field, value)
+        if profile is None:
+            raise SystemExit(
+                f"{where}: {field}={value!r} is not in the admitted wiki mapping"
+            )
+        return profile
+
+    resolved = {}
+    for registry_key, record in records.items():
+        where = f"{path}:{registry_key}"
+        if not isinstance(record, dict):
+            raise SystemExit(f"{where}: record must be a JSON object")
+        unknown_record = sorted(set(record) - allowed_record_keys)
+        if unknown_record:
+            raise SystemExit(f"{where}: unknown key(s): {unknown_record}")
+        if record.get("registry_key") != registry_key:
+            raise SystemExit(f"{where}: 'registry_key' must equal its own map key")
+        if registry_key not in valid_keys:
+            raise SystemExit(f"{where}: registry_key is not a known Item key")
+        matched_names = record.get("matched_names")
+        if (
+            not isinstance(matched_names, list)
+            or not matched_names
+            or any(not isinstance(n, str) or not n for n in matched_names)
+            or len(set(matched_names)) != len(matched_names)
+            or any(n != n.lower() for n in matched_names)
+        ):
+            raise SystemExit(
+                f"{where}: 'matched_names' must be a non-empty list of unique "
+                "lower-cased strings"
+            )
+        resolution = record.get("resolution")
+        if resolution not in ("direct", "disambiguation"):
+            raise SystemExit(f"{where}: 'resolution' must be direct or disambiguation")
+
+        if resolution == "direct":
+            wiki_source_fields(record, where)
+            profile = resolve_field_value(record, where)
+            evidence = {
+                "resolution": "direct",
+                "field": record["field"],
+                "value": record["value"],
+                "wiki_source": _wiki_evidence_source_from_record(record),
+            }
+        else:
+            candidates = record.get("candidates")
+            if not isinstance(candidates, list) or len(candidates) < 2:
+                raise SystemExit(
+                    f"{where}: a disambiguation record needs 2+ 'candidates'"
+                )
+            profiles = set()
+            evidence_candidates = []
+            for index, candidate in enumerate(candidates):
+                cwhere = f"{where}.candidates[{index}]"
+                if not isinstance(candidate, dict):
+                    raise SystemExit(f"{cwhere}: candidate must be a JSON object")
+                unknown_candidate = sorted(set(candidate) - allowed_candidate_keys)
+                if unknown_candidate:
+                    raise SystemExit(f"{cwhere}: unknown key(s): {unknown_candidate}")
+                wiki_source_fields(candidate, cwhere)
+                profiles.add(resolve_field_value(candidate, cwhere))
+                evidence_candidates.append(
+                    {
+                        "field": candidate["field"],
+                        "value": candidate["value"],
+                        "wiki_source": _wiki_evidence_source_from_record(candidate),
+                    }
+                )
+            if len(profiles) != 1:
+                raise SystemExit(
+                    f"{where}: disambiguation candidates do not all resolve to the "
+                    f"same profile: {sorted(profiles)}"
+                )
+            (profile,) = profiles
+            evidence = {
+                "resolution": "disambiguation",
+                "candidates": evidence_candidates,
+            }
+
+        if profile not in PROFILE_ITEM_CLASS:
+            raise SystemExit(
+                f"{where}: profile {profile!r} is not an admitted family_profile"
+            )
+
+        resolved[registry_key] = {
+            "profile": profile,
+            "matched_names": set(matched_names),
+            "evidence": evidence,
+        }
+    return resolved
 
 
 # --- non-Item routing (corpses, placeholder sprite slots, Terrain/WorldObject types) ---
@@ -1465,6 +1764,7 @@ def load_engine_sources(
     rule_source=None,
     rule_source_digest=None,
     overrides_path=None,
+    wiki_fallback_path=None,
 ):
     """digests overrides the pinned production SHA-256 map; used only by fixture tests.
 
@@ -1475,7 +1775,8 @@ def load_engine_sources(
     error rather than an empty (silently all-ineligible) rule. `rule_source_digest`
     overrides the pinned production SHA-256 for that list; used only by fixture tests.
     `overrides_path` overrides the committed `delivery-task-overrides.json`; used only by
-    fixture tests.
+    fixture tests. `wiki_fallback_path` overrides the committed `items-family-fallback.json`
+    wiki-evidence snapshot; used only by fixture tests.
     """
     config = ENGINES[engine]
     profile = config["profile"]
@@ -1526,6 +1827,14 @@ def load_engine_sources(
         overrides_path if overrides_path is not None else DELIVERY_OVERRIDES_PATH
     )
     delivery_overrides = load_delivery_overrides(resolved_overrides_path, valid_keys)
+    resolved_wiki_fallback_path = (
+        wiki_fallback_path
+        if wiki_fallback_path is not None
+        else WIKI_FAMILY_FALLBACK_PATH
+    )
+    wiki_family_fallback = load_wiki_family_fallback(
+        resolved_wiki_fallback_path, identity_index
+    )
 
     return {
         "engine": engine,
@@ -1540,6 +1849,7 @@ def load_engine_sources(
         "crystal_list_ids": crystal_list_ids,
         "crystal_list_entries": crystal_list_entries,
         "delivery_overrides": delivery_overrides,
+        "wiki_family_fallback": wiki_family_fallback,
         "disposition": load_disposition_catalog(profile),
         "artifact_digests": {
             "data/items/items.xml": {
@@ -1691,10 +2001,17 @@ def convert_item(sources, item_id):
             },
         )
 
+    name = (
+        (xml_record["name"] if xml_record else None)
+        or (appearance.get("name") if appearance else None)
+        or f"item {item_id}"
+    )
     primarytype = attrs.get("primarytype")
     family_profile = classify_family_profile(
         attrs, primarytype, flags.get("clothes.slot")
     )
+    family_profile_basis = None
+    family_profile_evidence = None
     if family_profile is None:
         immovable_route = immovable_non_item_route(flags)
         if immovable_route is not None:
@@ -1712,25 +2029,34 @@ def convert_item(sources, item_id):
                     "field_status": field_status,
                 },
             )
-        blockers.append("family_profile_unresolved")
-        return (
-            None,
-            None,
-            {
-                "item_id": item_id,
-                "key": key,
-                "identity_basis": identity_basis,
-                "converted": False,
-                "blockers": blockers,
-                "field_status": field_status,
-            },
-        )
+        # Engine-attribute classification always wins; the wiki-evidence fallback only
+        # ever applies once every engine signal above has already failed to resolve a
+        # family, and only when this exact item's own lower-cased engine name is one the
+        # reviewed snapshot actually resolved (else it is ignored and stays unresolved,
+        # never guessed from a same-named-but-different item's evidence).
+        fallback_entry = sources.get("wiki_family_fallback", {}).get(key)
+        if (
+            fallback_entry is not None
+            and name.strip().lower() in fallback_entry["matched_names"]
+        ):
+            family_profile = fallback_entry["profile"]
+            family_profile_basis = "wiki_evidence_fallback"
+            family_profile_evidence = fallback_entry["evidence"]
+        else:
+            blockers.append("family_profile_unresolved")
+            return (
+                None,
+                None,
+                {
+                    "item_id": item_id,
+                    "key": key,
+                    "identity_basis": identity_basis,
+                    "converted": False,
+                    "blockers": blockers,
+                    "field_status": field_status,
+                },
+            )
 
-    name = (
-        (xml_record["name"] if xml_record else None)
-        or (appearance.get("name") if appearance else None)
-        or f"item {item_id}"
-    )
     item = {
         "identity": {"key": key, "revision": DEFINITION_REVISION},
         "display_name": name,
@@ -1740,6 +2066,9 @@ def convert_item(sources, item_id):
             "primary": primarytype or attrs.get("weapontype") or family_profile,
         },
     }
+    if family_profile_basis is not None:
+        item["family_profile_basis"] = family_profile_basis
+        item["family_profile_evidence"] = family_profile_evidence
     # `RULE_ID`: eligible iff the Crystal id sharing this Item's allocator key is a
     # member of the pinned Crystal delivery list, unless a per-item override applies.
     # This engine's own pool membership is kept as observation only; it never decides.
@@ -2366,6 +2695,11 @@ def convert_item(sources, item_id):
     if definitions:
         dependencies["definitions"] = [definitions[k] for k in sorted(definitions)]
 
+    report_family_profile_basis = (
+        {"family_profile_basis": family_profile_basis}
+        if family_profile_basis is not None
+        else {}
+    )
     return (
         item,
         dependencies,
@@ -2374,6 +2708,7 @@ def convert_item(sources, item_id):
             "key": key,
             "identity_basis": identity_basis,
             "family_profile": family_profile,
+            **report_family_profile_basis,
             "delivery_task": delivery_task_report,
             "converted": True,
             "blockers": blockers,
@@ -2400,12 +2735,18 @@ if __name__ == "__main__":
         type=Path,
         help="delivery-task-overrides.json to use instead of the committed one",
     )
+    parser.add_argument(
+        "--wiki-fallback",
+        type=Path,
+        help="items-family-fallback.json snapshot to use instead of the committed one",
+    )
     cli_args = parser.parse_args()
     cli_sources = load_engine_sources(
         cli_args.engine,
         cli_args.source,
         rule_source=cli_args.rule_source,
         overrides_path=cli_args.overrides,
+        wiki_fallback_path=cli_args.wiki_fallback,
     )
     cli_item, cli_dependencies, cli_report = convert_item(cli_sources, cli_args.id)
     print(
