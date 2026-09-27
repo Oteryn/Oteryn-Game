@@ -1,5 +1,5 @@
 {
-  "classification": "NON_PRODUCTION_RESOURCE_EVIDENCE_ONLY",
+  "classification": "NONPRODUCTION_OFFLINE_CANDIDATE_SCHEMA_MEASUREMENT",
   "evidence_gaps": [
     "registered DUR-03 mandatory audit event contribution count and exact payload/envelope byte total",
     "production transaction identity allocator, PostgreSQL receipts/atomic commit/isolation/fencing and crash recovery",
@@ -15,7 +15,7 @@
     "participants": 1,
     "planning_work": 3,
     "reconciliation_records": 2,
-    "reconciliation_retained_bytes": 720,
+    "reconciliation_retained_bytes": 1872,
     "record_encoded_bytes": 138,
     "synthetic_audit_contributions": 1,
     "synthetic_audit_encoded_bytes": 16
@@ -24,12 +24,14 @@
     "MINT_retry_work_units": 6,
     "TRANSFER_retry_work_units": 6,
     "authoritative_items": 1,
-    "fixed_model_retained_bytes_including_spare_slots": 816,
+    "fixed_model_retained_bytes_including_spare_slots": 1968,
     "immediate_locations": 1,
     "item_instance_id": "00000000000170008000000000000003",
     "location": "CharacterInventory/direct-root",
+    "model_inline_plus_retained_dynamic_bytes": 3470,
     "quantity": 1,
-    "retained_reconciliation_record_bytes": 720,
+    "retained_event_dynamic_vector_and_string_bytes": 1502,
+    "retained_reconciliation_record_bytes": 1872,
     "retained_reconciliation_records": 2
   },
   "fixture": "Gold Coin x1",
@@ -42,7 +44,7 @@
     "architecture": "x86_64",
     "build_toolchain_identity": "UNKNOWN",
     "build_toolchain_identity_reason": "This standalone example has no build-time compiler attestation",
-    "encoding": "explicit example-only big-endian record encoding",
+    "encoding": "prototype big-endian records and unregistered protobuf candidate measured separately",
     "os": "linux",
     "retained_size_basis": "size_of for the executable target, including padding"
   },
@@ -71,6 +73,29 @@
         "event_contribution_count": null,
         "reason": "No executable registered DUR-03 event family/payload exists in the consumed public substrate; ANL envelope semantics do not determine it"
       },
+      "offline_candidate_audit": {
+        "classification": "UNREGISTERED_OFFLINE_CANDIDATE",
+        "envelope_wire_vector_capacity_bytes": 346,
+        "event_id": "00000000000170008000000000000008",
+        "exact_envelope_hex": "08011210000000000001700080000000000000082001280230033a176f66666c696e655f6974656d5f756e616363657074656440014a10000000000001700080000000000000015210000000000001700080000000000000067a04080110019201160a100000000000017000800000000000000410011801ba01086669787475726531c201086669787475726531ca01076f66666c696e65d2019b0108011296010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128013001123e0a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c20012864306438071a26080112100000000000017000800000000000000c1a100000000000017000800000000000000ada0120d92805b6ed5196cb0f41844f9270b96f1730cda8b5b0659c818a0419fa1b2947",
+        "exact_payload_hex": "08011296010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128013001123e0a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c20012864306438071a26080112100000000000017000800000000000000c1a100000000000017000800000000000000a",
+        "frozen_carrier_inline_bytes": 576,
+        "full_envelope_encoded_bytes": 346,
+        "membership": {
+          "count": 1,
+          "ordinal": 1
+        },
+        "one_event_aggregate_count": 1,
+        "one_event_aggregate_encoded_bytes": 346,
+        "payload_encoded_bytes": 155,
+        "payload_sha256": "d92805b6ed5196cb0f41844f9270b96f1730cda8b5b0659c818a0419fa1b2947",
+        "payload_vector_capacity_bytes": 155,
+        "registered_event_type_id": null,
+        "retained_dynamic_vector_and_string_capacity_bytes": 643,
+        "retained_inline_plus_dynamic_bytes": 1219,
+        "retention_profile_accepted": false,
+        "transient_decode_or_allocator_overhead_measured": false
+      },
       "operation": "MINT",
       "participant_and_effect_encoded_bytes": 102,
       "participant_encoded_bytes": 44,
@@ -78,8 +103,9 @@
       "participant_retained_bytes": 44,
       "planning_work_units": 2,
       "quantity": 1,
+      "reconciliation_size_scope": "inline carrier including FrozenEvent; its dynamic vectors/strings are charged separately",
       "reconciliation_state_records": 1,
-      "reconciliation_state_retained_bytes": 360,
+      "reconciliation_state_retained_bytes": 936,
       "retry_reconcile_work_units_per_call": 3,
       "synthetic_audit_budget_probe_only": {
         "contributions": 1,
@@ -121,6 +147,29 @@
         "event_contribution_count": null,
         "reason": "No executable registered DUR-03 event family/payload exists in the consumed public substrate; ANL envelope semantics do not determine it"
       },
+      "offline_candidate_audit": {
+        "classification": "UNREGISTERED_OFFLINE_CANDIDATE",
+        "envelope_wire_vector_capacity_bytes": 462,
+        "event_id": "00000000000170008000000000000009",
+        "exact_envelope_hex": "08011210000000000001700080000000000000092001280230033a176f66666c696e655f6974656d5f756e616363657074656440014a10000000000001700080000000000000015210000000000001700080000000000000066a100000000000017000800000000000000770017a04080110028001029201160a100000000000017000800000000000000510011801a2011612140a10000000000001700080000000000000071002ba01086669787475726531c201086669787475726531ca01076f66666c696e65d201df0108011ada010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128013001122c0a100000000000017000800000000000000312100000000000017000800000000000000118012001280130011a3e0a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c200128643064380722140a100000000000017000800000000000000210012a26080112100000000000017000800000000000000c1a100000000000017000800000000000000bda0120139865089c9450ade078899260f69f620ca17e3969844906f288eee2729665ef",
+        "exact_payload_hex": "08011ada010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128013001122c0a100000000000017000800000000000000312100000000000017000800000000000000118012001280130011a3e0a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c200128643064380722140a100000000000017000800000000000000210012a26080112100000000000017000800000000000000c1a100000000000017000800000000000000b",
+        "frozen_carrier_inline_bytes": 576,
+        "full_envelope_encoded_bytes": 462,
+        "membership": {
+          "count": 1,
+          "ordinal": 1
+        },
+        "one_event_aggregate_count": 1,
+        "one_event_aggregate_encoded_bytes": 462,
+        "payload_encoded_bytes": 223,
+        "payload_sha256": "139865089c9450ade078899260f69f620ca17e3969844906f288eee2729665ef",
+        "payload_vector_capacity_bytes": 223,
+        "registered_event_type_id": null,
+        "retained_dynamic_vector_and_string_capacity_bytes": 859,
+        "retained_inline_plus_dynamic_bytes": 1435,
+        "retention_profile_accepted": false,
+        "transient_decode_or_allocator_overhead_measured": false
+      },
       "operation": "TRANSFER",
       "participant_and_effect_encoded_bytes": 138,
       "participant_encoded_bytes": 44,
@@ -128,8 +177,9 @@
       "participant_retained_bytes": 44,
       "planning_work_units": 3,
       "quantity": 1,
+      "reconciliation_size_scope": "inline carrier including FrozenEvent; its dynamic vectors/strings are charged separately",
       "reconciliation_state_records": 1,
-      "reconciliation_state_retained_bytes": 360,
+      "reconciliation_state_retained_bytes": 936,
       "retry_reconcile_work_units_per_call": 3,
       "synthetic_audit_budget_probe_only": {
         "contributions": 1,
@@ -152,10 +202,16 @@
     "DUR03-RL-04": "NOT_EXERCISED/0; transform capability rejects before planning",
     "DUR03-RL-05": "DIRECT_ROOT_ONLY/0; Container rejects before planning; no general container bound",
     "DUR03-RL-06": "MEASURED_PROTOTYPE_ONLY; counts derived from physically represented records",
-    "DUR03-RL-07": "EVIDENCE_GAP for actual mandatory count/payload bytes; synthetic budget preflight only",
+    "DUR03-RL-07": "MEASURED_UNREGISTERED_CANDIDATE separately; production mandatory count/bytes EVIDENCE_GAP; synthetic probe retained separately",
     "DUR03-RL-08": "MEASURED_IN_MEMORY_STATE_MACHINE_ONLY; stable transaction/output identities; no DB/restart proof"
   },
   "schema_version": 1,
-  "source_base_sha": "fd504f5659fe900861b6556751275488c2a22dec",
-  "task_id": "OTV2-20260917-dur03-reference-one-item-resource-evidence-513"
+  "source_base_sha": "a822326c9cf4607100e58bbc3673748f3fa299bb",
+  "source_revisions": {
+    "ANL01_foundation_resource_registry": "a822326c9cf4607100e58bbc3673748f3fa299bb",
+    "DUR03_section_39_1": "a822326c9cf4607100e58bbc3673748f3fa299bb",
+    "META_policy": "1bfb5ff98c8aa156e73669a14e083a1d464c29fb",
+    "prost": "0.14.4"
+  },
+  "task_id": "OTV2-20260927-dur03-one-item-audit-offline-measurement-513"
 }
