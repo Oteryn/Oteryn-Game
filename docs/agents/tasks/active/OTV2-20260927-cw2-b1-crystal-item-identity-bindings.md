@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 989
 base_sha: ccef9bbe8ecf75c4b1b99b07237c78ebf4642dce
 head_sha: null
 final_head_sha: null
@@ -133,7 +133,7 @@ last_progress: generated and verified imports/crystalserver/bindings/items.json 
 status: implementing
 branch: claude/compassionate-albattani-s29syw
 head_sha: null
-pr: null
+pr: 989
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
