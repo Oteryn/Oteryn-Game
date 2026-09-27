@@ -1,9 +1,9 @@
 """Validate an OTERYN_NPC_PROMOTION_CANDIDATES/v1 report (promotion_candidates.py output) against the
-schema doc (OTERYN_NPC_AUTHORING_SCHEMA_V1.md §3 D4-D6, §8).
+schema doc (OTERYN_NPC_AUTHORING_SCHEMA_V1.md §3 D4-D7, §8).
 
 Semantic rules:
 - schema == 'OTERYN_NPC_PROMOTION_CANDIDATES/v1', evidence == 'OTS_HYPOTHESIS_ONLY',
-  snapshot_sha256 is 64 hex chars;
+  decisions == ['D4', 'D5', 'D6', 'D7'], snapshot_sha256 and item_map_sha256 are 64 hex chars;
 - each candidate identity is family NPC, key `oteryn:npc.<slug>` (D4) and revision 'definition-r1';
   the key suffix equals the slug of `name` (same slug() as promotion_candidates.py);
 - candidate keys are unique and the candidates list is sorted by key;
@@ -11,19 +11,29 @@ Semantic rules:
   revision 'definition-r1', with >=1 route; every route has an in-range destination
   ({x,y,z}, x/y 0..65535, z 0..15), an integer price >= 0, and a destination_keyword unique within
   the candidate;
+- trade_service is null, or identity family Service, key `oteryn:service.trade.<same slug>`,
+  revision 'definition-r1' (O5), with >=1 offer; currency is null or an Item ref (family Item,
+  key matching `^oteryn:item\\.[a-z0-9_.]+$`, revision 'definition-r1'); every offer has an Item ref
+  (same key pattern), source_item_id (int > 0), direction in SellToPlayer/BuyFromPlayer, unit_price
+  (int >= 0), count (int >= 1 or null) and sub_type (int or null); the tuple
+  (source_item_id, count, sub_type, direction) is unique within a candidate; a source_item_id maps
+  to exactly one item key across the whole report (cross-candidate consistency);
 - every candidate has >=1 placement, with an in-range position, a compass direction
   (NORTH/EAST/SOUTH/WEST) and spawn_interval_s in 1..86400;
 - provenance has 1 or 2 of canary/crystal, each with a key namespaced to that source
   (`<source>:npc/...`) and a 64-hex sha256; a single-source candidate must carry a non-null `wiki`
   confirmation (D6: single-source NPCs need wiki confirmation);
 - arbitration rows all have rule 'WIKI_ARBITER', `chosen` in canary/crystal, and `chosen` is one of
-  the candidate's provenance sources;
-- left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED, and
-  no left_out travel keyword also appears among the candidate's promoted routes;
+  the candidate's provenance sources (a fact may be `travel.<id>...` or `trade.<id>...`);
+- left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
+  GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
+  CURRENCY_CONFLICT; trade facts start with `trade.`, route facts with `travel.`; no left_out
+  travel keyword also appears among the candidate's promoted routes;
 - no text anywhere (D5): no 'text', 'description', 'voices' or 'dialogue' key at any depth of a
   candidate;
-- totals.candidates == len(candidates) and totals.with_travel == the number of candidates with a
-  non-null travel_service;
+- totals.candidates == len(candidates), totals.with_travel == the number of candidates with a
+  non-null travel_service, totals.with_trade == the number of candidates with a non-null
+  trade_service, and totals.offers == the total number of offer rows across all candidates;
 - held rows carry a non-empty reason and name.
 
 Usage: python validate_promotion.py <report.json>
@@ -38,10 +48,15 @@ from promotion_candidates import slug
 
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 EVIDENCE = 'OTS_HYPOTHESIS_ONLY'
+DECISIONS = ['D4', 'D5', 'D6', 'D7']
 KEY_RE = re.compile(r'^oteryn:npc\.[a-z0-9]+(_[a-z0-9]+)*$')
+ITEM_KEY_RE = re.compile(r'^oteryn:item\.[a-z0-9_.]+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 DIRECTIONS = {'NORTH', 'EAST', 'SOUTH', 'WEST'}
-LEFT_OUT_REASONS = {'GATED_ROUTE', 'ROUTE_CONFLICT_WIKI_UNDECIDED', 'ROUTE_UNCONFIRMED'}
+TRADE_DIRECTIONS = {'SellToPlayer', 'BuyFromPlayer'}
+LEFT_OUT_REASONS = {'GATED_ROUTE', 'ROUTE_CONFLICT_WIKI_UNDECIDED', 'ROUTE_UNCONFIRMED',
+                     'GATED_OFFER', 'OFFER_UNCONFIRMED', 'OFFER_CONFLICT_WIKI_UNDECIDED',
+                     'ITEM_NOT_REGISTERED', 'CURRENCY_CONFLICT'}
 TEXT_KEYS = {'text', 'description', 'voices', 'dialogue'}
 PROVENANCE_PREFIX = {'canary': 'canary:npc/', 'crystal': 'crystal:npc/'}
 
@@ -90,6 +105,10 @@ def identity_errors(identity, label, family, key_re, expected_key):
 
 def _travel_key_re(name_slug):
     return re.compile(r'^oteryn:service\.travel\.' + re.escape(name_slug) + r'$')
+
+
+def _trade_key_re(name_slug):
+    return re.compile(r'^oteryn:service\.trade\.' + re.escape(name_slug) + r'$')
 
 
 def candidate_errors(candidate, index):
@@ -152,6 +171,41 @@ def candidate_errors(candidate, index):
                 errs.append(f'{rlabel}: duplicate destination_keyword {keyword!r}')
             route_keywords.add(keyword)
 
+    trade = candidate.get('trade_service')
+    if trade is not None:
+        tlabel = f'{label}.trade_service'
+        trade_expected_key = f'oteryn:service.trade.{name_slug}' if name_slug is not None else None
+        trade_key_re = _trade_key_re(name_slug) if name_slug is not None else re.compile(r'^oteryn:service\.trade\.')
+        errs += identity_errors(trade.get('identity'), tlabel, 'Service', trade_key_re, trade_expected_key)
+        currency = trade.get('currency')
+        if currency is not None:
+            errs += identity_errors(currency, f'{tlabel}.currency', 'Item', ITEM_KEY_RE, None)
+        offers = trade.get('offers') or []
+        if not offers:
+            errs.append(f'{tlabel}: no offers')
+        offer_tuples = set()
+        for j, offer in enumerate(offers):
+            olabel = f'{tlabel}.offers[{j}]'
+            errs += identity_errors(offer.get('item'), f'{olabel}.item', 'Item', ITEM_KEY_RE, None)
+            source_item_id = offer.get('source_item_id')
+            if not _is_int(source_item_id) or source_item_id <= 0:
+                errs.append(f'{olabel}: source_item_id {source_item_id!r} is not a positive integer')
+            if offer.get('direction') not in TRADE_DIRECTIONS:
+                errs.append(f"{olabel}: direction {offer.get('direction')!r} not in {sorted(TRADE_DIRECTIONS)}")
+            unit_price = offer.get('unit_price')
+            if not _is_int(unit_price) or unit_price < 0:
+                errs.append(f'{olabel}: unit_price {unit_price!r} is not a non-negative integer')
+            count = offer.get('count')
+            if count is not None and (not _is_int(count) or count < 1):
+                errs.append(f'{olabel}: count {count!r} is not None or an int >= 1')
+            sub_type = offer.get('sub_type')
+            if sub_type is not None and not _is_int(sub_type):
+                errs.append(f'{olabel}: sub_type {sub_type!r} is not None or an int')
+            offer_tuple = (source_item_id, count, sub_type, offer.get('direction'))
+            if offer_tuple in offer_tuples:
+                errs.append(f'{olabel}: duplicate offer tuple {offer_tuple!r} within candidate')
+            offer_tuples.add(offer_tuple)
+
     for i, row in enumerate(candidate.get('arbitration') or []):
         alabel = f'{label}.arbitration[{i}]'
         if row.get('rule') != 'WIKI_ARBITER':
@@ -197,15 +251,33 @@ def errors(report):
         errs.append(f"schema {report.get('schema')!r} != {SCHEMA!r}")
     if report.get('evidence') != EVIDENCE:
         errs.append(f"evidence {report.get('evidence')!r} != {EVIDENCE!r}")
+    if report.get('decisions') != DECISIONS:
+        errs.append(f"decisions {report.get('decisions')!r} != {DECISIONS!r}")
     snapshot_sha = report.get('snapshot_sha256')
     if not isinstance(snapshot_sha, str) or not SHA256_RE.match(snapshot_sha):
         errs.append(f'snapshot_sha256 {snapshot_sha!r} is not 64 hex chars')
+    item_map_sha = report.get('item_map_sha256')
+    if not isinstance(item_map_sha, str) or not SHA256_RE.match(item_map_sha):
+        errs.append(f'item_map_sha256 {item_map_sha!r} is not 64 hex chars')
 
     candidates = report.get('candidates') or []
     keys = []
+    item_key_by_source = {}
     for i, candidate in enumerate(candidates):
         errs += candidate_errors(candidate, i)
         keys.append(candidate.get('identity', {}).get('key'))
+        trade = candidate.get('trade_service')
+        for offer in (trade or {}).get('offers') or []:
+            source_item_id = offer.get('source_item_id')
+            item_key = (offer.get('item') or {}).get('key')
+            if not isinstance(source_item_id, int) or not isinstance(item_key, str):
+                continue
+            seen_key = item_key_by_source.get(source_item_id)
+            if seen_key is None:
+                item_key_by_source[source_item_id] = item_key
+            elif seen_key != item_key:
+                errs.append(f'candidates[{i}]: source_item_id {source_item_id} maps to item key '
+                            f'{item_key!r} but earlier mapped to {seen_key!r}')
     if len(keys) != len(set(keys)):
         dupes = sorted({k for k in keys if keys.count(k) > 1})
         errs.append(f'duplicate candidate key(s): {dupes}')
@@ -219,6 +291,12 @@ def errors(report):
     with_travel = sum(1 for c in candidates if c.get('travel_service'))
     if totals.get('with_travel') != with_travel:
         errs.append(f"totals.with_travel {totals.get('with_travel')!r} != {with_travel}")
+    with_trade = sum(1 for c in candidates if c.get('trade_service'))
+    if totals.get('with_trade') != with_trade:
+        errs.append(f"totals.with_trade {totals.get('with_trade')!r} != {with_trade}")
+    offers_total = sum(len((c.get('trade_service') or {}).get('offers') or []) for c in candidates)
+    if totals.get('offers') != offers_total:
+        errs.append(f"totals.offers {totals.get('offers')!r} != {offers_total}")
 
     for i, held in enumerate(report.get('held') or []):
         errs += held_errors(held, i)

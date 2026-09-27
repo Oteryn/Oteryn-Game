@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - Status: CANDIDATE / authoring schema with executable validation; native keys assigned in promotion candidates only; no `content/` population, no runtime
-- Tasks: `OTV2-20260927-npc-authoring-schema-v1` (PR #975), `OTV2-20260927-npc-promotion-candidates`
+- Tasks: `OTV2-20260927-npc-authoring-schema-v1` (PR #975), `OTV2-20260927-npc-promotion-candidates` (PR #983)
 - Programme: KAN-16 / #504 (content-world B5: NPC/services/dialogues/shops/travel)
 - Admission main: `a822326c9cf4607100e58bbc3673748f3fa299bb`
 - Machine artifacts: `tools/content-schema/npc-authoring/`
@@ -59,6 +59,7 @@ a text reference `{sha256, length, placeholders, links}` (§6).
 | D4 | Native NPC key `oteryn:npc.<slug>` (resolves O1). The slug is derived once from the registered name (ASCII fold, lower case, non-alphanumerics to `_`) and is frozen at promotion; a later rename keeps the key. Source names, file stems and numeric ids stay provenance only. Two NPCs with one slug are both held. A travel service is `oteryn:service.travel.<slug>`. Placements carry no identity yet. |
 | D5 | NPC text is authored by Oteryn (resolves O2). Canary/Crystal supply structure only (keywords, services, placeholders, links); no Tibia text is promoted. Description, voices and dialogue stay out of promotion until authored. |
 | D6 | TibiaWiki (Fandom) is the tie-breaker between Canary and Crystal (resolves O3 and O7): the source the wiki agrees with wins; without wiki agreement the fact stays open. The wiki never supplies a value itself. |
+| D7 | WorldProject/v2 is extended with typed travel routes and offer quantities before NPCs are admitted, as for monsters ("druga droga"); see `OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md`. |
 
 Decisions were taken in the owning session on 2026-09-27.
 
@@ -155,13 +156,11 @@ Open decisions before promotion:
 - **O3 conflicts:** resolved by D6; facts the wiki cannot decide stay held (§8).
 - **O4 scripted behaviour:** owner for Lua predicates/actions/handlers (quest state, storage gates),
   i.e. Interaction/Quest vs. NPC service.
-- **O5 item join:** offers → native Items through the G4 crosswalk.
+- **O5 item join:** resolved: offers resolve through the protected Item identity map (§8).
 - **O6 TibiaWiki BR:** access route (D3).
 - **O7 wiki disagreements:** resolved by D6.
-- **O8 content-tree family:** adding the NPC and Service families to the generated content tree
-  (`tools/content-migration/world_project_v2_to_tree.py`, `content/manifest.json`, `content/content.lock.json`,
-  `content/project.json`) and writing native identities there needs its own reviewed change (root `AGENTS.md`:
-  identity changes require an accepted owning contract and independent review).
+- **O8 admission route:** resolved: `OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md` admits NPCs through
+  WorldProject/v2, with the content tree regenerated from it.
 
 ## 8. Promotion candidates
 
@@ -175,23 +174,30 @@ promotion candidate (samples/promotion-candidates-v1.json)
 ├── placements[]      position, direction, spawn interval, spawn radius
 ├── travel_service    {identity: oteryn:service.travel.<slug>, routes[]: destination keyword,
 │                     position, price, premium, min level, discount} or null
+├── trade_service     {identity: oteryn:service.trade.<slug>, currency (null = gold, else Item),
+│                     offers[]: Item, source item id, direction, unit price, count, sub type} or null
 ├── provenance        source key + file SHA-256 per source; wiki page id + revision id
 ├── arbitration[]     facts decided by the wiki (D6) and the source chosen
-└── left_out[]        routes not promoted: GATED_ROUTE, ROUTE_CONFLICT_WIKI_UNDECIDED, ROUTE_UNCONFIRMED
+└── left_out[]        routes and offers not promoted: GATED_ROUTE, ROUTE_CONFLICT_WIKI_UNDECIDED,
+                      ROUTE_UNCONFIRMED, GATED_OFFER, OFFER_UNCONFIRMED, OFFER_CONFLICT_WIKI_UNDECIDED,
+                      ITEM_NOT_REGISTERED, CURRENCY_CONFLICT
 ```
 
 Definition fields both sources state identically, or only one states, are adopted. Placements and
 routes that differ, or exist in one source only, need the wiki (D6): placements go to the source with
 the better position match (MATCH over NEAR, never MISMATCH); routes go to the source whose price
 equals the wiki price, with one destination. A definition conflict holds the NPC, since the wiki has no
-outfit or movement facts. Description, voices, dialogue (D5), trade (O5), spells, blessings and
-promotion are not part of a candidate.
+outfit or movement facts. Offers follow the route rule, with the wiki's buy and sell price as
+tie-breaker; their Items resolve through the protected Item identity map (`--item-map`, the output of
+`export_reference_item_identity_map`, SHA-256 `83ba3c26…`), which resolves O5. Source `buy` becomes
+`SellToPlayer`, source `sell` becomes `BuyFromPlayer`. Description, voices, dialogue (D5), spells,
+blessings and promotion are not part of a candidate.
 
 Result at this revision (deterministic; snapshot SHA-256 recorded):
 
 | Outcome | NPCs |
 | --- | ---: |
-| candidates | 984 (53 with a travel service, 189 routes; 17 facts decided by the wiki) |
+| candidates | 984: 289 with a trade service (10,723 offer rows), 53 with a travel service (189 routes); 154 facts decided by the wiki |
 | held: unplaced in both sources | 91 |
 | held: single source, not on the wiki | 32 |
 | held: definition conflict (outfit/movement) | 7 |
@@ -200,8 +206,9 @@ Result at this revision (deterministic; snapshot SHA-256 recorded):
 | held: no slug (the NPC named `...`) | 1 |
 | not loadable in either source | 6 |
 
-67 routes are left out of candidates: 46 gated by Lua predicates, 15 conflicts the wiki cannot decide,
-4 one-sided routes the wiki does not confirm (plus 2 more in held NPCs).
+Left out of the candidates: 65 routes (46 gated by Lua predicates, 15 conflicts the wiki cannot
+decide, 4 one-sided routes the wiki does not confirm) and 218 offers (122 gated by player storage,
+52 one-sided and unconfirmed, 38 Items newer than the Oteryn Item registry, 6 conflicts).
 
 ## 9. Validation
 
@@ -218,6 +225,6 @@ bundles validate and two conversions are byte-identical.
 
 ## 10. Boundaries
 
-No `content/` or `rulesets/` change, native keys only inside candidate evidence (O8), no WorldProject/runtime change, no Lua
+No `content/` or `rulesets/` change, native keys only inside candidate evidence until the admission slices of `OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md`, no WorldProject/runtime change, no Lua
 transliteration into Oteryn behaviour, no committed Tibia text, no Reference-parity claim. Evidence is
 `OTS_HYPOTHESIS_ONLY`.

@@ -91,6 +91,49 @@ class PromotionValidatorTests(unittest.TestCase):
         self.assertEqual(promotion_candidates.slug("Ab'Dendriel Guard"), 'ab_dendriel_guard')
         self.assertEqual(promotion_candidates.slug('Éàçüö'), 'eacuo')
 
+    def test_trade_service_key_slug_mismatch_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates'] if c['trade_service'])
+        candidate['trade_service']['identity']['key'] = 'oteryn:service.trade.someone_else'
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('trade_service' in e and '!= expected' in e for e in errs))
+
+    def test_bad_offer_direction_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates'] if c['trade_service'])
+        candidate['trade_service']['offers'][0]['direction'] = 'Trade'
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('direction' in e and "not in ['BuyFromPlayer', 'SellToPlayer']" in e for e in errs))
+
+    def test_duplicate_offer_tuple_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates'] if c['trade_service'] and c['trade_service']['offers'])
+        candidate['trade_service']['offers'].append(dict(candidate['trade_service']['offers'][0]))
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('duplicate offer tuple' in e for e in errs))
+
+    def test_inconsistent_source_item_id_mapping_fails(self):
+        report = load_sample()
+        trade_candidates = [c for c in report['candidates'] if c['trade_service'] and c['trade_service']['offers']]
+        first, second = trade_candidates[0], trade_candidates[1]
+        first_offer, second_offer = first['trade_service']['offers'][0], second['trade_service']['offers'][0]
+        self.assertNotEqual(first_offer['item']['key'], second_offer['item']['key'])
+        second_offer['source_item_id'] = first_offer['source_item_id']  # same id, different item key
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('maps to item key' in e for e in errs))
+
+    def test_missing_item_map_sha256_fails(self):
+        report = load_sample()
+        del report['item_map_sha256']
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('item_map_sha256' in e for e in errs))
+
+    def test_with_trade_totals_mismatch_fails(self):
+        report = load_sample()
+        report['totals']['with_trade'] += 1
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('totals.with_trade' in e for e in errs))
+
 
 if __name__ == '__main__':
     unittest.main()

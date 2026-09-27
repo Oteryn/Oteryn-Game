@@ -66,9 +66,24 @@ def route_fact(row):
     return (json.dumps(row['destination'], sort_keys=True), row['price'], row['premium'], row['min_level'], row['gate'])
 
 
+def offer_key(offer):
+    item = offer['client_id'] if offer['client_id'] is not None else offer['server_item_id']
+    return (item, offer['count'], offer['sub_type'])
+
+
+def source_offers(bundle):
+    trade = bundle['services']['trade']
+    result = {}
+    for offer in (trade or {}).get('offers', []):
+        result.setdefault(offer_key(offer), offer)
+    return result
+
+
 class Builder:
-    def __init__(self, snapshot):
+    def __init__(self, snapshot, item_map):
         self.wiki = {normalize_name(npc['title']): npc for npc in snapshot['npcs']}
+        self.wiki_trade = snapshot.get('trade', {})
+        self.items = {row['source_item_id']: row for row in item_map['records']}
         self.held, self.stats = [], Counter()
 
     def hold(self, name, sources, reason, detail=None):
@@ -139,6 +154,62 @@ class Builder:
                            'premium': row['premium'], 'min_level': row['min_level'], 'discount': row['discount']})
         return merged
 
+    def item_ref(self, source_item_id):
+        row = self.items.get(source_item_id)
+        return row and {'family': 'Item', 'key': row['native_key'], 'revision': row['native_revision']}
+
+    def merge_offers(self, bundles, name, arbitration, left_out):
+        per_source = {source: source_offers(b) for source, b in bundles.items()}
+        wiki = {row['item'].lower(): row for row in self.wiki_trade.get(normalize_name(name), [])}
+        offers = []
+        for key in sorted(set().union(*per_source.values()), key=json.dumps):
+            present = {s: o[key] for s, o in per_source.items() if key in o}
+            facts = {s: (o['buy_price'], o['sell_price'], json.dumps(o['stock_gate'], sort_keys=True)) for s, o in present.items()}
+            label = f'trade.{key[0]}' + (f'x{key[1]}' if key[1] else '') + (f's{key[2]}' if key[2] is not None else '')
+            if len(present) == len(bundles) and len(set(facts.values())) == 1:
+                chosen = next(iter(present))
+            else:
+                row = wiki.get(str(next(iter(present.values()))['item_name']).lower())
+                agreeing = [s for s, o in present.items() if row
+                            and (o['buy_price'] is None or o['buy_price'] == row['buy_price'])
+                            and (o['sell_price'] is None or o['sell_price'] == row['sell_price'])]
+                if agreeing and len({facts[s] for s in agreeing}) == 1:
+                    chosen = sorted(agreeing)[0]
+                    arbitration.append({'fact': label, 'rule': 'WIKI_ARBITER', 'chosen': chosen})
+                else:
+                    left_out.append({'fact': label, 'reason': 'OFFER_UNCONFIRMED' if len(present) == 1
+                                     else 'OFFER_CONFLICT_WIKI_UNDECIDED'})
+                    continue
+            offer = present[chosen]
+            if offer['stock_gate']:
+                left_out.append({'fact': label, 'reason': 'GATED_OFFER'})
+                continue
+            item = self.item_ref(key[0])
+            if item is None:
+                left_out.append({'fact': label, 'reason': 'ITEM_NOT_REGISTERED'})
+                continue
+            # Canary `buy` is what the player pays the NPC; `sell` is what the NPC pays the player
+            for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
+                if price is not None:
+                    offers.append({'item': item, 'source_item_id': key[0], 'direction': direction, 'unit_price': price,
+                                   'count': offer['count'], 'sub_type': offer['sub_type']})
+        return offers
+
+    def currency(self, bundles, left_out):
+        values = {json.dumps(b['services']['trade']['currency'], sort_keys=True) for b in bundles.values()
+                  if b['services']['trade']}
+        if len(values) != 1:
+            left_out.append({'fact': 'trade.currency', 'reason': 'CURRENCY_CONFLICT'})
+            return None, False
+        currency = json.loads(values.pop())
+        if currency == 'GOLD':
+            return None, True
+        ref = self.item_ref(currency['client_id'])
+        if ref is None:
+            left_out.append({'fact': 'trade.currency', 'reason': 'ITEM_NOT_REGISTERED'})
+            return None, False
+        return ref, True
+
     def candidate(self, bundles):
         name = next(b['definition']['name'] for b in bundles.values())
         sources = {s: b['key'] for s, b in bundles.items()}
@@ -158,6 +229,13 @@ class Builder:
         if not key_slug:  # a punctuation-only name has no slug; it needs a hand-chosen key
             return self.hold(name, sources, 'EMPTY_SLUG')
         travel = self.merge_routes(bundles, wiki, arbitration, left_out)
+        trade = None
+        if any(b['services']['trade'] for b in bundles.values()):
+            currency, usable = self.currency(bundles, left_out)
+            offers = self.merge_offers(bundles, name, arbitration, left_out) if usable else []
+            if offers:
+                trade = {'identity': {'family': 'Service', 'key': f'oteryn:service.trade.{key_slug}',
+                                      'revision': 'definition-r1'}, 'currency': currency, 'offers': offers}
         record = {
             'identity': {'family': 'NPC', 'key': f'oteryn:npc.{key_slug}', 'revision': 'definition-r1'},
             'name': name, 'profession': definition['profession'],
@@ -166,14 +244,12 @@ class Builder:
             'placements': placements,
             'travel_service': ({'identity': {'family': 'Service', 'key': f'oteryn:service.travel.{key_slug}',
                                              'revision': 'definition-r1'}, 'routes': travel} if travel else None),
+            'trade_service': trade,
             'provenance': {s: {'key': b['key'], 'sha256': b['source']['sha256']} for s, b in sorted(bundles.items())},
             'wiki': {'pageid': wiki['pageid'], 'revid': wiki['revid']} if wiki else None,
             'arbitration': [a for a in arbitration if a['rule'] == 'WIKI_ARBITER'],
             'left_out': left_out,
         }
-        self.stats['arbitrated_facts'] += len(record['arbitration'])
-        self.stats['routes'] += len(travel)
-        self.stats['left_out_routes'] += len(left_out)
         return record
 
 
@@ -182,10 +258,15 @@ def main():
     parser.add_argument('--canary', required=True)
     parser.add_argument('--crystal', required=True)
     parser.add_argument('--snapshot', required=True)
+    parser.add_argument('--item-map', required=True, help='export_reference_item_identity_map output')
     parser.add_argument('--out', required=True)
     args = parser.parse_args()
     snapshot_bytes = Path(args.snapshot).read_bytes()
-    builder = Builder(json.loads(snapshot_bytes))
+    item_map_bytes = Path(args.item_map).read_bytes()
+    item_map = json.loads(item_map_bytes)
+    if item_map['schema'] != 'OTERYN_PROTECTED_ITEM_IDENTITY_MAP_EXPORT/v1':
+        raise SystemExit('unexpected item map schema')
+    builder = Builder(json.loads(snapshot_bytes), item_map)
     canary, crystal = source_diff.load(args.canary), source_diff.load(args.crystal)
     records = []
     for left, right in source_diff.pair(canary, crystal):
@@ -208,10 +289,18 @@ def main():
                 builder.hold(record['name'], {s: p['key'] for s, p in record['provenance'].items()}, 'KEY_COLLISION', key)
             continue
         promoted.append(group[0])
+    for record in promoted:  # counted over promoted candidates only, after key collisions are held
+        builder.stats['arbitrated_facts'] += len(record['arbitration'])
+        builder.stats['routes'] += len(record['travel_service']['routes']) if record['travel_service'] else 0
+        builder.stats['offers'] += len(record['trade_service']['offers']) if record['trade_service'] else 0
+        for row in record['left_out']:
+            builder.stats['left_out_offers' if row['fact'].startswith('trade.') else 'left_out_routes'] += 1
     report = {
-        'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY', 'decisions': ['D4', 'D5', 'D6'],
+        'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY', 'decisions': ['D4', 'D5', 'D6', 'D7'],
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
+        'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         'totals': {'candidates': len(promoted), 'with_travel': sum(1 for r in promoted if r['travel_service']),
+                   'with_trade': sum(1 for r in promoted if r['trade_service']),
                    **dict(sorted(builder.stats.items()))},
         'candidates': promoted,
         'held': sorted(builder.held, key=lambda h: (h['reason'], h['name'])),

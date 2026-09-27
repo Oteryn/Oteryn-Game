@@ -34,7 +34,8 @@ python wiki_fandom.py self-test
 python wiki_fandom.py fetch --cache out/fandom
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/canary/bundles --out samples/fandom-compare-canary-47dfd51f.json
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/crystal/bundles --out samples/fandom-compare-crystal-ff7ede59.json
-python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles --snapshot out/fandom/fandom-npc-snapshot.json --out samples/promotion-candidates-v1.json
+(cd ../../.. && cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$OLDPWD/out/native-map.json")
+python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json --out samples/promotion-candidates-v1.json
 python validate_promotion.py samples/promotion-candidates-v1.json
 ```
 
