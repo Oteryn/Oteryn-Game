@@ -7,6 +7,8 @@
 - ImplementationStatus: NOT_STARTED
 - Programme: KAN-16 / #504
 - Companion: `OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md` (monsters stay reusable; encounters bind them)
+- Machine artifacts: `tools/content-schema/encounter-authoring/` (schema, semantic validator,
+  focused checks, Canary transcription; first sample `samples/soul_war_taint_zones/`)
 - Evidence: `tools/content-schema/monster-authoring/samples/events-canary-47dfd51f.json`,
   `samples/population-canary-47dfd51f.json`
 
@@ -187,3 +189,11 @@ the encounter never writes it.
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
+
+## 11. First transcription
+
+`samples/soul_war_taint_zones/` transcribes `FourthTaintBossesPrepareDeath`: 15 participants read
+from the monster files that register it, one `channel_shared` rule, every source line mapped in the
+manifest, schema and semantic validation clean (`verify_encounter_schema.py` 29/29). The monster
+converter now records that event as relocated for those 15 monsters; 6 of them had no other
+blocker, so the population census rises from 1,377 to 1,383 fully resolved monsters.

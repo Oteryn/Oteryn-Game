@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 273,
-    "fully_resolved": 1377,
+    "blocked": 267,
+    "fully_resolved": 1383,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1041
+    "wiki_adopted_monsters": 1047
   },
   "wiki_adopted_rows": {
     "Loot2": 11595,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 215,
+      "monsters": 202,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -504,6 +504,7 @@
     "candy_floss_elemental",
     "candy_horror",
     "canopic_jar",
+    "capricious_phantom",
     "captain_jones",
     "captured_dwarf",
     "carniphila",
@@ -554,6 +555,7 @@
     "cosmic_energy_prism_c_invu",
     "cosmic_energy_prism_d_invu",
     "countess_sorrow",
+    "courage_leech",
     "crab",
     "crape_man",
     "crawler",
@@ -662,6 +664,7 @@
     "diseased_bill",
     "diseased_dan",
     "diseased_fred",
+    "distorted_phantom",
     "doctor_perhaps",
     "dog",
     "donkey",
@@ -956,7 +959,9 @@
     "incineron",
     "incredibly_old_witch",
     "infected_weeper",
+    "infernal_demon",
     "infernal_frog",
+    "infernal_phantom",
     "infernalist",
     "infernatil",
     "ink_blob",
@@ -1636,6 +1641,7 @@
     "vermin_swarm",
     "verminor",
     "vexclaw",
+    "vibrant_phantom",
     "vicious_manbat",
     "vicious_squire",
     "vile_grandmaster",
