@@ -13,7 +13,7 @@ The specialist lines may run in separate chats/Work tasks. Every direct implemen
 
 All lines inherit these Reference invariants:
 
-- first external target is the immutable post-2026-07-28 Global Tibia production-observable behavior cut;
+- first external target is the immutable post-2026-07-28 Global Tibia production-observable behavior cut; Superseded 2026-09-27: the target is now 2026-09-27, see `OTERYN_TARGET_DATE_20260927_DECISION.md`.
 - official/primary evidence first; OTS repositories are hypothesis/test-discovery only;
 - `UNKNOWN`/`CONFLICT` is never filled by convenience;
 - `Oteryn Reference` implements evidenced Global behavior in the native Oteryn stack;

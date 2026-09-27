@@ -15,7 +15,7 @@ const TRAVEL: &str = "oteryn:service.travel.captain_bluebear";
 const AXE: &str = "oteryn:item.registry.i00003155";
 const RUNE: &str = "oteryn:item.registry.i00003161";
 const TOKEN: &str = "oteryn:item.registry.i00021718";
-const FRAME: &str = "global-target-2026-07-28";
+const FRAME: &str = "global-target-2026-09-27";
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
