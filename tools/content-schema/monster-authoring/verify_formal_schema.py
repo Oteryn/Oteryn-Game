@@ -185,6 +185,13 @@ if __name__=='__main__':
     case('fixed-tick DoT forbids total range',dot({**fixed,'total_damage_range':{'minimum':1,'maximum':2}}))
     case('decreasing DoT forbids fixed ticks',dot({'tick_profile':'decreasing','first_tick':'immediate','fixed_ticks':fixed['fixed_ticks'],
         'total_damage_range':{'minimum':1,'maximum':2},'tick_interval_ms':2000,'initial_tick':{'mode':'automatic'}}))
+    geometric={'tick_profile':'geometric','first_tick':'after_interval','geometric':{'base_range':{'minimum':40,'maximum':170},
+        'factor':{'numerator':6,'denominator':5},'tick_counts':[5,6,7],'tick_interval_ms':4000}}
+    case('geometric DoT accepted (D21)',dot(geometric),True)
+    case('geometric DoT forbids a total range',dot({**geometric,'total_damage_range':{'minimum':1,'maximum':2}}))
+    case('geometric DoT needs tick counts',dot({**geometric,'geometric':{k:v for k,v in geometric['geometric'].items() if k!='tick_counts'}}))
+    case('decreasing DoT forbids geometric ticks',dot({'tick_profile':'decreasing','first_tick':'immediate','geometric':geometric['geometric'],
+        'total_damage_range':{'minimum':1,'maximum':2},'tick_interval_ms':2000,'initial_tick':{'mode':'automatic'}}))
     def attributes(modifiers):
         def mutate(m,d,c):
             d['effects'].append({'identity':ident('weak'),'operation':'condition','duration_ms':8000,

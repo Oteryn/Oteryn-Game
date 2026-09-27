@@ -165,11 +165,18 @@ d['damageOverTime']=obj({
                                                                'zero draw means the condition does not start (condition.cpp ConditionDamage::init).'),
                               'maximum':integer(1)},('minimum','maximum')),
     'tick_interval_ms':use('ms'),'initial_tick':use('initialTick'),
-    'tick_profile':enum('decreasing','fixed'),'first_tick':enum('after_interval','immediate')},
+    'geometric':obj({'base_range':obj({'minimum':integer(1),'maximum':integer(1)},('minimum','maximum')),'factor':use('ratio'),
+        'tick_counts':array(integer(1),1,True),'tick_interval_ms':use('ms')},('base_range','factor','tick_counts','tick_interval_ms'),
+        description='D21: each cast draws an integer base uniformly from base_range and a tick count uniformly from tick_counts; '
+            'tick k (from 0) deals the base multiplied k times by factor in double precision, truncated toward zero.'),
+    'tick_profile':enum('decreasing','fixed','geometric'),'first_tick':enum('after_interval','immediate')},
     ('tick_profile','first_tick'),allOf=[
     {'if':{'properties':{'tick_profile':{'const':'fixed'}},'required':['tick_profile']},
-     'then':{'required':['fixed_ticks'],**forbid('total_damage_range','tick_interval_ms','initial_tick')},
-     'else':{'required':['total_damage_range','tick_interval_ms','initial_tick'],**forbid('fixed_ticks')}}],
+     'then':{'required':['fixed_ticks'],**forbid('total_damage_range','tick_interval_ms','initial_tick','geometric')}},
+    {'if':{'properties':{'tick_profile':{'const':'geometric'}},'required':['tick_profile']},
+     'then':{'required':['geometric'],**forbid('total_damage_range','tick_interval_ms','initial_tick','fixed_ticks')}},
+    {'if':{'properties':{'tick_profile':{'const':'decreasing'}},'required':['tick_profile']},
+     'then':{'required':['total_damage_range','tick_interval_ms','initial_tick'],**forbid('fixed_ticks','geometric')}}],
     description='Nominal source damage budget, not per-tick magnitude or a promise of exact summed damage. Native schedule parity requires separate qualification.')
 d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration','damage_schedule'),
     'damage_over_time':use('damageOverTime'),'speed_formula':use('FormulaRef'),

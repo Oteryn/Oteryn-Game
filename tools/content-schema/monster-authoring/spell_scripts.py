@@ -13,7 +13,7 @@ SPELL_LIB = 'data/scripts/lib/register_spells.lua'
 ENGINE_DEFINITIONS = 'src/creatures/creatures_definitions.hpp'
 SCRIPT_DIRS = ('data/scripts', 'data-otservbr-global/scripts')
 SHARED_DIRS = ('data/scripts/spells/', 'data/scripts/runes/')
-MAX_RANDOM_RANGE = 64
+MAX_RANDOM_RANGE = 512
 
 LUA_SANDBOX = r'''
 local rec = {combats = {}, conditions = {}, spells = {}, executed = {}, randoms = {}}
@@ -213,9 +213,14 @@ class SpellScripts:
             if len(ranges) != 1:
                 return {**result, 'error': f'{len(ranges)} random draws per cast'}
             low, high = (1, ranges[0][0]) if len(ranges[0]) == 1 else ranges[0]
-            if not (isinstance(low, int) and isinstance(high, int)) or high - low > MAX_RANDOM_RANGE:
+            if low == high:
+                # LuaJIT math.random(m, n) returns floor(r * (n - m + 1)) + m, which is m itself when m == n.
+                values = [low]
+            elif not (isinstance(low, int) and isinstance(high, int)) or high - low > MAX_RANDOM_RANGE:
                 return {**result, 'error': f'random range {ranges[0]} is not a small integer range'}
-            for value in range(low, high + 1):
+            else:
+                values = range(low, high + 1)
+            for value in values:
                 ok, _ = cast(spell, value)
                 ran = [c['__n'] for c in rec['executed'].values()]
                 if not ok or len(ran) != 1:

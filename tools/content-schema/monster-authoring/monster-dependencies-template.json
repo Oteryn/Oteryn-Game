@@ -86,6 +86,20 @@
             "mode": null,
             "amount": null
           },
+          "geometric": {
+            "base_range": {
+              "minimum": null,
+              "maximum": null
+            },
+            "factor": {
+              "numerator": null,
+              "denominator": null
+            },
+            "tick_counts": [
+              null
+            ],
+            "tick_interval_ms": null
+          },
           "tick_profile": null,
           "first_tick": null
         },

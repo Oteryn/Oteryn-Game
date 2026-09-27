@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 279,
-    "fully_resolved": 1371,
+    "blocked": 274,
+    "fully_resolved": 1376,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1037
+    "wiki_adopted_monsters": 1040
   },
   "wiki_adopted_rows": {
     "Loot2": 11595,
@@ -161,17 +161,6 @@
         "the_hunger",
         "the_rage",
         "world_devourer"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics attacks[] -> escalating_dot_curse",
-      "monsters": 6,
-      "examples": [
-        "metal_gargoyle",
-        "ghastly_dragon",
-        "essence_of_malice",
-        "ethershreck",
-        "sharpclaw"
       ]
     },
     {
@@ -695,6 +684,7 @@
     "dragon_lord_hatchling",
     "dragon_servant",
     "dragon_warden",
+    "dragon_wrath",
     "dragonking_zyrtarch",
     "dragonling",
     "draken_abomination",
@@ -768,6 +758,7 @@
     "esmeralda",
     "essence_of_darkness",
     "eternal_guardian",
+    "ethershreck",
     "evil_mastermind",
     "evil_prospector",
     "evil_sheep",
@@ -846,6 +837,7 @@
     "gelidrazah_the_frozen",
     "general_murius",
     "generator",
+    "ghastly_dragon",
     "ghazbaran",
     "ghost",
     "ghost_wolf",
@@ -1138,6 +1130,7 @@
     "mercury_blob",
     "merikh_the_slaughterer",
     "merlkin",
+    "metal_gargoyle",
     "mezlon_the_defiler_stop",
     "midnight_asura",
     "midnight_panther",
@@ -1410,6 +1403,7 @@
     "shard_of_corruption",
     "shardhead",
     "shark",
+    "sharpclaw",
     "sharptooth",
     "sheep",
     "shiversleep",

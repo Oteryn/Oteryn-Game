@@ -2019,10 +2019,57 @@
         "initial_tick": {
           "$ref": "#/$defs/initialTick"
         },
+        "geometric": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "base_range": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "minimum": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "maximum": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "minimum",
+                "maximum"
+              ]
+            },
+            "factor": {
+              "$ref": "#/$defs/ratio"
+            },
+            "tick_counts": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "tick_interval_ms": {
+              "$ref": "#/$defs/ms"
+            }
+          },
+          "required": [
+            "base_range",
+            "factor",
+            "tick_counts",
+            "tick_interval_ms"
+          ],
+          "description": "D21: each cast draws an integer base uniformly from base_range and a tick count uniformly from tick_counts; tick k (from 0) deals the base multiplied k times by factor in double precision, truncated toward zero."
+        },
         "tick_profile": {
           "enum": [
             "decreasing",
-            "fixed"
+            "fixed",
+            "geometric"
           ]
         },
         "first_tick": {
@@ -2068,11 +2115,69 @@
                   "required": [
                     "initial_tick"
                   ]
+                },
+                {
+                  "required": [
+                    "geometric"
+                  ]
                 }
               ]
             }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tick_profile": {
+                "const": "geometric"
+              }
+            },
+            "required": [
+              "tick_profile"
+            ]
           },
-          "else": {
+          "then": {
+            "required": [
+              "geometric"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "total_damage_range"
+                  ]
+                },
+                {
+                  "required": [
+                    "tick_interval_ms"
+                  ]
+                },
+                {
+                  "required": [
+                    "initial_tick"
+                  ]
+                },
+                {
+                  "required": [
+                    "fixed_ticks"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "tick_profile": {
+                "const": "decreasing"
+              }
+            },
+            "required": [
+              "tick_profile"
+            ]
+          },
+          "then": {
             "required": [
               "total_damage_range",
               "tick_interval_ms",
@@ -2083,6 +2188,11 @@
                 {
                   "required": [
                     "fixed_ticks"
+                  ]
+                },
+                {
+                  "required": [
+                    "geometric"
                   ]
                 }
               ]

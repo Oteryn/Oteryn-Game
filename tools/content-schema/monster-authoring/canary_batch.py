@@ -1056,6 +1056,19 @@ class Converter:
         notes = [f'{where}, tier {info["tier"]}: resolved by name as Canary does (rune, instant, then built-in kind; D10).']
         notes += info.get('tier_reasons') or []
         existing = {a['identity']['key'] for a in deps['abilities']}
+        geometric = self.geometric_dot(info) if len(info['variants']) > 2 else None
+        if geometric and key not in existing:
+            template, body, summary = geometric
+            try:
+                uses_magnitude = self.combat_ability(key, template, geometry, range_tiles, deps, asset, notes,
+                                                     extra=[('-condition-1', body)])
+            except SpellUnresolved as exc:
+                return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.{tag}'
+            notes.append(summary)
+            return self.spell_result(key, spell, notes, uses_magnitude)
+        if geometric:
+            notes.append(geometric[2])
+            return self.spell_result(key, spell, notes, self.ability_uses_magnitude(key, deps))
         if len(info['variants']) > 1 and key not in existing:
             payloads = set()
             for combat in info['variants']:
@@ -1085,6 +1098,9 @@ class Converter:
                 notes.append(f'{len(variant_keys)} variants picked uniformly by math.random (D12).')
         except SpellUnresolved as exc:
             return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.{tag}'
+        return self.spell_result(key, spell, notes, uses_magnitude)
+
+    def spell_result(self, key, spell, notes, uses_magnitude):
         extras = {}
         if uses_magnitude:
             low, high = abs(spell.get('minDamage', 0)), abs(spell.get('maxDamage', 0))
@@ -1362,6 +1378,53 @@ class Converter:
         deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': 0, 'needs_target': False,
                                   'needs_direction': False, 'area': {'matrix': {'north': rows}},
                                   'effects': [ref('Effect', f'{key}/effect-remove')]})
+
+    def geometric_dot(self, info):
+        """D21: (template combat, condition Effect, note) when the random variants differ only in one damage-over-time whose
+        ticks grow geometrically from an integer base, every (base, tick count) pair appearing exactly once; else None."""
+        combats = [info['combats'][n] for n in info['variants']]
+        shape = {json.dumps({k: v for k, v in combats[0].items() if k != 'conditions'}, sort_keys=True, default=str)}
+        pairs, header, factor = [], set(), None
+        for combat in combats:
+            shape.add(json.dumps({k: v for k, v in combat.items() if k != 'conditions'}, sort_keys=True, default=str))
+            if len(shape) != 1 or len(combat['conditions']) != 1:
+                return None
+            condition = combat['conditions'][0]
+            damages = [a for m, a in condition['calls'] if m == 'addDamage']
+            others = tuple(tuple(a) for m, a in condition['calls'] if m != 'addDamage')
+            if any(m not in ('addDamage', 'setParameter') for m, _ in condition['calls']) or len(damages) < 2:
+                return None
+            if any(r != 1 or v >= 0 for r, _, v in damages) or len({ms for _, ms, _ in damages}) != 1:
+                return None
+            values = [-v for _, _, v in damages]
+            header.add((condition['type'], others, damages[0][1]))
+            factor = factor or values[1] / values[0]
+            expected, current = [values[0]], values[0]
+            for _ in values[1:]:
+                current = current * factor
+                expected.append(current)
+            if values != expected or values[0] != int(values[0]):
+                return None
+            pairs.append((int(values[0]), len(values)))
+        bases, counts = {b for b, _ in pairs}, {n for _, n in pairs}
+        full = {(b, n) for b in range(min(bases), max(bases) + 1) for n in counts}
+        if len(header) != 1 or len(pairs) != len(set(pairs)) or set(pairs) != full:
+            return None
+        kind, others, interval = header.pop()
+        params = dict(others)
+        delayed = params.pop('CONDITION_PARAM_DELAYED', 0)
+        params.pop('CONDITION_PARAM_SUBID', None)
+        if params:
+            return None
+        body = {'operation': 'condition', 'condition': {'type': kind[len('CONDITION_'):].lower(), 'lifetime': 'damage_schedule',
+                'damage_over_time': {'tick_profile': 'geometric', 'first_tick': 'after_interval' if delayed else 'immediate',
+                                     'geometric': {'base_range': {'minimum': min(bases), 'maximum': max(bases)},
+                                                   'factor': ratio(factor), 'tick_counts': sorted(counts),
+                                                   'tick_interval_ms': int(interval)}}}}
+        note = (f'{len(combats)} random variants differ only in a {kind} whose ticks start at an integer base '
+                f'{min(bases)}-{max(bases)} and grow by x{factor} for {sorted(counts)} ticks, each pair once, so they are '
+                'authored as one geometric damage over time (owner decision D21; Condition:addDamage truncates each tick).')
+        return {**combats[0], 'conditions': []}, body, note
 
     def ability_uses_magnitude(self, key, deps):
         ability = next(a for a in deps['abilities'] if a['identity']['key'] == key)
