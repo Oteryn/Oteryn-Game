@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: /root/dur03_513_writer
 created_at: 2026-09-27T08:24:36Z
-updated_at: 2026-09-27T08:33:07Z
+updated_at: 2026-09-27T08:45:30Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/examples/dur03_reference_one_item_resource_prototype.rs
@@ -89,16 +89,17 @@ labelled synthetic size-only probe proves budget check placement and emits no ev
 
 ## Validation
 
-Authoring delta in isolated LF Linux workspace `/home/mole/dur03-513.exAAuM/repo`:
+Authoring delta in fresh isolated LF Linux workspace `/home/mole/dur03-513-p2.9unFjx/repo`:
 
 - Focused offline/locked/no-default-features example tests: 16 passed, 0 failed.
 - Locked example build and strict example Clippy (`--no-deps -- -D warnings`): PASS.
 - `cargo fmt --all -- --check`: PASS after isolated formatting applied with apply_patch.
-- Two normal runs + `--reverse-fixtures`: byte equal; 6,825 bytes.
-- Output SHA-256: `aa29fc85442fefad1b4cb66808f477079427277a01010b1d82bcb30ee258d564`.
-- Qualified retained run: Linux x86_64, Rust 1.94.0. Report metadata separately
-  derives executable OS/architecture and observes `rustc --version` through PATH
-  at execution; this observation is not compile-time attestation.
+- Two normal runs + `--reverse-fixtures`: byte equal; 6,795 bytes.
+- Output SHA-256: `ea79b26bd3412f478b6ffe43ce277625e7afa513f68556d66b855fa67690920f`.
+- Qualified retained run: Linux x86_64 executable target. Report build toolchain
+  identity is `UNKNOWN`, with no build-time compiler attestation. Separately,
+  validation-environment rustc observation is `1.94.0 (4a4ef493e 2026-03-02)`;
+  it is not bound to the binary build identity.
 - Local governance: PASS (22 policy documents, 9 lanes); repository policy: PASS
   (23 files, 43 workflows and post-merge routing regressions).
 - Candidate-specific inherited-policy/routing: pending hosted PR CI after control-plane
@@ -119,12 +120,13 @@ known-abort budget rechecks, ambiguous replacement rejection and the acknowledge
 MINT barrier before TRANSFER. Focused tests cover those finding families. Final
 local candidate SHA/tree and changed-path readback are returned outside this commit.
 
-Independent-review P2: fixed in the local successor atop
-`5bca08c3e2d80a352be6eb91762f8c67c9c4eda6`. The fixed Linux/Rust label was replaced
-by executable target metadata and runtime rustc identity with explicit provenance.
+Independent-review P2 thread `4114686069`: fixed in the local successor atop
+`d561af69b4c57fd5b844b2810f9019cdf5ce7bd9`. Runtime rustc probing/identity is removed;
+dynamic executable target metadata remains and build toolchain identity is `UNKNOWN`
+with an explicit absent-attestation reason.
 The new focused regression plus 15 original tests pass; resource measurements
 are unchanged. Actual normalized JSON and this checkpoint use the successor digest.
-An executable check with rustc absent from PATH failed without emitting JSON.
+An executable check with rustc absent from PATH succeeds with byte-identical JSON.
 
 ## Independent review
 
@@ -147,7 +149,7 @@ Pre-existing untracked `.codex/` is preserved.
 ## Context checkpoint
 
 ```yaml
-last_progress: P2 target_label fixed; successor four-path authoring delta revalidated locally
+last_progress: P2 thread_4114686069 fixed; build_toolchain explicitly UNKNOWN; local successor checked
 status: blocked
 branch: codex/dur03-reference-one-item-resource-evidence-513
 head_sha: null
@@ -164,7 +166,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null

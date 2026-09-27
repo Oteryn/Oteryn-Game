@@ -17,7 +17,6 @@ use serde_json::{Value, json};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::mem::size_of;
-use std::process::Command;
 
 type Item = ItemInstance<u32, u32>;
 type Location = ItemLocationRef<u16, (), u16, GroundFixture, [i32; 3]>;
@@ -685,21 +684,15 @@ fn measurements(plan: &Plan) -> Result<Value, Failure> {
     }))
 }
 
-fn measurement_target() -> Result<Value, Box<dyn Error>> {
-    let output = Command::new("rustc").arg("--version").output()?;
-    let identity = String::from_utf8(output.stdout)?;
-    let identity = identity.trim();
-    if !output.status.success() || !identity.starts_with("rustc ") {
-        return Err(std::io::Error::other("cannot identify rustc at execution").into());
-    }
-    Ok(json!({
+fn measurement_target() -> Value {
+    json!({
         "os": std::env::consts::OS,
         "architecture": std::env::consts::ARCH,
-        "rustc_identity_at_execution": identity,
-        "toolchain_identity_scope": "rustc --version from PATH at execution; not compile-time attestation",
+        "build_toolchain_identity": "UNKNOWN",
+        "build_toolchain_identity_reason": "This standalone example has no build-time compiler attestation",
         "retained_size_basis": "size_of for the executable target, including padding",
         "encoding": "explicit example-only big-endian record encoding"
-    }))
+    })
 }
 
 fn normalized_report(reverse: bool) -> Result<String, Box<dyn Error>> {
@@ -759,7 +752,7 @@ fn normalized_report(reverse: bool) -> Result<String, Box<dyn Error>> {
         "natural_drop_probability": "UNKNOWN/NOT_ASSERTED",
         "production_maxima_selected": false,
         "production_durability_or_parity_proven": false,
-        "measurement_target": measurement_target()?,
+        "measurement_target": measurement_target(),
         "evidence_limits": DIMENSIONS.into_iter().zip(limits.0).collect::<std::collections::BTreeMap<_, _>>(),
         "operations": operations,
         "final_state": {
@@ -1344,22 +1337,17 @@ mod tests {
     }
 
     #[test]
-    fn measurement_target_identifies_executable_target_and_current_rustc()
-    -> Result<(), Box<dyn Error>> {
-        let target = measurement_target()?;
+    fn measurement_target_identifies_executable_target_without_build_attestation() {
+        let target = measurement_target();
         assert_eq!(target["os"], std::env::consts::OS);
         assert_eq!(target["architecture"], std::env::consts::ARCH);
-        let observed = Command::new("rustc").arg("--version").output()?;
-        assert!(observed.status.success());
+        assert_eq!(target["build_toolchain_identity"], "UNKNOWN");
         assert_eq!(
-            target["rustc_identity_at_execution"],
-            String::from_utf8(observed.stdout)?.trim()
+            target["build_toolchain_identity_reason"],
+            "This standalone example has no build-time compiler attestation"
         );
-        assert_eq!(
-            target["toolchain_identity_scope"],
-            "rustc --version from PATH at execution; not compile-time attestation"
-        );
-        Ok(())
+        assert!(target.get("rustc_identity_at_execution").is_none());
+        assert!(target.get("toolchain_identity_scope").is_none());
     }
 
     #[test]

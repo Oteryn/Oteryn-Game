@@ -40,11 +40,11 @@
   },
   "measurement_target": {
     "architecture": "x86_64",
+    "build_toolchain_identity": "UNKNOWN",
+    "build_toolchain_identity_reason": "This standalone example has no build-time compiler attestation",
     "encoding": "explicit example-only big-endian record encoding",
     "os": "linux",
-    "retained_size_basis": "size_of for the executable target, including padding",
-    "rustc_identity_at_execution": "rustc 1.94.0 (4a4ef493e 2026-03-02)",
-    "toolchain_identity_scope": "rustc --version from PATH at execution; not compile-time attestation"
+    "retained_size_basis": "size_of for the executable target, including padding"
   },
   "natural_drop_probability": "UNKNOWN/NOT_ASSERTED",
   "operations": [

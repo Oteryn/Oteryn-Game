@@ -31,14 +31,14 @@ attempt; TRANSFER uses that same item ID and a distinct logical transaction ID.
 
 ## Representation and measurements
 
-The retained qualified run is `PROVEN` for Linux x86_64, built and executed with
-Rust 1.94.0. The executable reports its own target OS/architecture from
-`std::env::consts` and observes `rustc --version` through PATH at execution.
-The retained report observes `rustc 1.94.0 (4a4ef493e 2026-03-02)`. That runtime
-toolchain observation is explicitly **not compile-time attestation**; another
-host/toolchain produces its own metadata rather than silently inheriting this
-run's qualification. Missing, failed or unusable rustc identification fails
-report generation instead of emitting a fixed target/toolchain claim.
+The retained qualified run is `PROVEN` for the Linux x86_64 executable target.
+The executable reports its own target OS/architecture from `std::env::consts`.
+`build_toolchain_identity = UNKNOWN`: this standalone example has no build-time
+compiler attestation. It neither probes runtime rustc nor binds a compiler found
+on PATH to the binary's build identity. Separately, the validation environment
+observed `rustc 1.94.0 (4a4ef493e 2026-03-02)`; that observation is not build
+compiler proof. Another target reports its own OS/architecture and retained
+sizes, while its build toolchain remains explicitly unknown without attestation.
 `size_of` includes the executable target's padding;
 these are retained carrier sizes, not peak process RSS, allocator high-water marks,
 SQL rows, protobuf events or production memory limits. Encoded bytes below are
@@ -150,7 +150,9 @@ check placement; it does not prove production mandatory audit atomicity.
 
 Use an isolated Linux checkout with LF files and the exact consumed base plus the
 four-file authoring delta. The validated Linux workspace was
-`/home/mole/dur03-513.exAAuM/repo`; tracked source showed `i/lf w/lf`. The earlier
+`/home/mole/dur03-513-p2.9unFjx/repo`, freshly cloned at local predecessor
+`d561af69b4c57fd5b844b2810f9019cdf5ce7bd9` plus the bounded authoring delta;
+tracked source showed `i/lf w/lf`. The earlier
 `/tmp` fixture directory was cleared between WSL sessions; the retained user-directory
 checkout is the completed validation source. A failed initial Windows-linked
 worktree clone led only to a nonmutating formatting check on CRLF files; it is
@@ -188,23 +190,23 @@ Local `workspace-boundaries: PASS`; staged `git diff --check: PASS` and exactly
 the four allocated paths are added. All four index blobs are LF, and the Rust
 source and isolated Rust validation checkout are LF.
 
-Normalized successor output: 6,825 bytes, including the final LF; SHA-256
-`aa29fc85442fefad1b4cb66808f477079427277a01010b1d82bcb30ee258d564`.
+Normalized successor output: 6,795 bytes, including the final LF; SHA-256
+`ea79b26bd3412f478b6ffe43ce277625e7afa513f68556d66b855fa67690920f`.
 Both repeated runs and reversed **presentation** fixtures are byte equal. Only
 presentation order is reversed, then normalized by mutation class; the required
 execution dependency MINT before TRANSFER remains intact. The retained JSON is
 the program's actual normalized output, not a hand-entered measurement summary.
 
-Independent-review P2 disposition: **fixed**. The former fixed platform/toolchain
-label was removed; target metadata now derives from the executable and runtime
-rustc observation, with explicit provenance. The added focused regression checks
-the emitted target and the current rustc observation. The 15 existing correctness
+Independent-review P2 thread `4114686069` disposition: **fixed**. Runtime rustc
+probing/identity was removed. Dynamic target metadata remains, and build toolchain
+identity is explicitly `UNKNOWN` with the absent-attestation reason. The focused
+regression checks these fields and excludes the former runtime identity fields.
+The 15 existing correctness
 tests still pass, and every physical count/retained-byte/encoding/work measurement
 is unchanged from the preceding authoring candidate. Determinism is qualified on
 this environment, not claimed across different toolchains/targets.
-An additional executable check with rustc absent from PATH failed as expected
-and emitted no JSON, confirming that missing identity cannot fall back to the
-old fixed label.
+An additional executable check with rustc absent from PATH succeeds with byte-identical
+JSON: normalized evidence no longer depends on finding a runtime compiler.
 
 These are authoring-delta checks. Exact remote candidate freeze, candidate-specific
 repository CI, independent review and Merge Queue remain control-plane work;
