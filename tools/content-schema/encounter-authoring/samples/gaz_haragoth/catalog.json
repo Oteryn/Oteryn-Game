@@ -2,17 +2,17 @@
   "definitions": [
     {
       "family": "Creature",
-      "key": "canary:creature/ravenous_hunger",
+      "key": "canary:creature/gaz_haragoth",
       "revision": "canary-47dfd51f"
     },
     {
       "family": "Creature",
-      "key": "canary:creature/wine_cask",
+      "key": "canary:creature/minion_of_gaz_haragoth",
       "revision": "canary-47dfd51f"
     },
     {
-      "family": "Creature",
-      "key": "canary:creature/liquor_spirit",
+      "family": "Item",
+      "key": "canary:item/20121",
       "revision": "canary-47dfd51f"
     }
   ]

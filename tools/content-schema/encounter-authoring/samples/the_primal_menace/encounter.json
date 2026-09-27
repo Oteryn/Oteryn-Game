@@ -1,0 +1,47 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_primal_menace",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The Primal Ordeal: The Primal Menace",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_primal_menace",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_primal_menace",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_primal_menace_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_primal_menace"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_primal_menace_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_primal_menace_defeated"
+  ]
+}

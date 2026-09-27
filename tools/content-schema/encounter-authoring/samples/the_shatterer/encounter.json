@@ -1,0 +1,75 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_shatterer",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Ferumbras Ascension: The Shatterer",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_shatterer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_shatterer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Canary (33393, 32438, 14)."
+    },
+    {
+      "key": "shatterer_exit",
+      "kind": "point",
+      "description": "Canary (33436, 32443, 15)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_shatterer_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_shatterer"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_shatterer_defeated",
+          "credited": "damage_contributors"
+        },
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "shatterer_exit",
+          "revert_after_ms": 120000
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_shatterer_defeated"
+  ]
+}

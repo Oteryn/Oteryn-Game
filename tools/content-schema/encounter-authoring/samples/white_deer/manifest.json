@@ -1,0 +1,191 @@
+{
+  "encounter": "canary:encounter/white_deer",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "WhiteDeerDeath": [
+      "canary:creature/white_deer"
+    ],
+    "WhiteDeerScoutsDeath": [
+      "canary:creature/enraged_white_deer"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/mammals/white_deer.lua",
+      "blob_sha1": "7c346ee69a6b7e57306c25cd44cc508a8b298d90"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/mammals/enraged_white_deer.lua",
+      "blob_sha1": "c0463050905b2d575546314b80df9664abbee260"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/scripts/creaturescripts/monster/white_deer_death.lua",
+      "blob_sha1": "cc9c9377a6e0263a6ca28e43dd271ec0ce517b0a"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/scripts/creaturescripts/monster/white_deer_scouts.lua",
+      "blob_sha1": "214c0ad5269a8b545467fefbd6a3d983df0f5723"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "White Deer is the white_deer participant; its file registers WhiteDeerDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        53
+      ],
+      "status": "mapped",
+      "resolution": "Enraged White Deer is the enraged_white_deer participant; its file registers WhiteDeerScoutsDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        6,
+        8
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a white deer.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        9,
+        10,
+        11,
+        12
+      ],
+      "status": "mapped",
+      "resolution": "A summoned white deer has no effect.",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        14,
+        15,
+        16,
+        22
+      ],
+      "status": "mapped",
+      "resolution": "One roll of math.random(100) walks the config in order and stops at the first match: 30% the first entry, otherwise the second. The flag, cleared first and set by the 30% rule, makes the two rules exclusive (rules run in listed order, §9.2).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        17,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "chance 30: an Enraged White Deer on the death position (extended, forced) and the message.",
+      "destination": "/encounter/rules/1"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        3,
+        17,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "Otherwise a Desperate White Deer and its message.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        18,
+        19
+      ],
+      "status": "approved_omission",
+      "resolution": "The teleport effect is cosmetic; the message only follows a successful spawn, and a forced spawn does not fail."
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of an enraged white deer.",
+      "destination": "/encounter/rules/3/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        4,
+        5,
+        6,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "A summoned deer has no effect.",
+      "destination": "/encounter/rules/3/conditions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        9,
+        10
+      ],
+      "status": "mapped",
+      "resolution": "math.random(100) <= 10: a 10% chance.",
+      "destination": "/encounter/rules/3/conditions/1"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        11,
+        12,
+        13,
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "Two Elf Scouts on the death position (extended, forced).",
+      "destination": "/encounter/rules/3/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        14
+      ],
+      "status": "approved_omission",
+      "resolution": "The teleport effect is cosmetic."
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "targetMonster:say(..., TALKTYPE_MONSTER_SAY).",
+      "destination": "/encounter/rules/3/actions/1"
+    }
+  ],
+  "outcome_evidence": []
+}

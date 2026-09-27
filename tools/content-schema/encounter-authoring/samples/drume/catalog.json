@@ -2,17 +2,17 @@
   "definitions": [
     {
       "family": "Creature",
-      "key": "canary:creature/ravenous_hunger",
+      "key": "canary:creature/usurper_commander",
       "revision": "canary-47dfd51f"
     },
     {
       "family": "Creature",
-      "key": "canary:creature/wine_cask",
+      "key": "canary:creature/kesar",
       "revision": "canary-47dfd51f"
     },
     {
       "family": "Creature",
-      "key": "canary:creature/liquor_spirit",
+      "key": "canary:creature/drume",
       "revision": "canary-47dfd51f"
     }
   ]
