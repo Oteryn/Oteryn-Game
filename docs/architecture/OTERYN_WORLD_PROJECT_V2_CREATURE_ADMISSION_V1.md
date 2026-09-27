@@ -29,13 +29,27 @@ The 1,656 Canary `47dfd51f` monster files break down as follows:
 
 | Group | Count | Status |
 |---|---:|---|
-| Fully resolved monsters (`population_census.py`) | 1,490 | resolved |
-| Covered by an Encounter manifest | 142 | their events live in an Encounter, and there is no Encounter runtime yet |
-| Resolved and not covered by any Encounter | 1,391 | candidates for wave A |
-| Of those, referencing an Item missing from the Oteryn Item registry | 59 | 68 Canary item ids newer than the Crystal registry |
-| **Admitted in wave A** | **1,332** | |
+| Fully resolved monsters (`population_census.py`, one digest each in its bundle index) | 1,490 | resolved |
+| Covered by an Encounter manifest | 101 | their events live in an Encounter, and there is no Encounter runtime yet |
+| Referencing an Item missing from the Oteryn Item registry | 59 | 68 Canary item ids newer than the Crystal registry |
+| With a loot entry whose minimum count is 0 | 1 | Duke Krule: the Reference Loot entry requires a count of at least 1 |
+| Referencing a creature or Ability that is not admitted | 14 | see below |
+| **Admitted in wave A** | **1,315** | |
 
-The 59 monsters wait until the Item domain registers the 68 items. The 142 monsters wait for an
+The staging tool (§6) computes these groups; its counts are the authority. Admission is closed over
+references: a monster is admitted only when every Creature, Ability, Effect and Formula it
+references is a record of an admitted monster. The tool repeats this check until nothing more is
+dropped. The 14 monsters dropped by the check are the following:
+
+- 10 summon or name a creature that is itself deferred, or not resolved by the census. Examples
+  are Devovorga, The Baron from Below and Wormling.
+- Grand Mother Foulscale is also dropped, because it summons `dragon hatchlings`, a name no Canary
+  monster type carries (the type is `Dragon Hatchling`). It waits for that source correction.
+- The knight, monk and paladin familiars reference their player summon spells, which are not admitted.
+
+The 59 monsters wait
+until the Item domain registers the 68 items. Duke Krule waits for an owned decision on zero-count
+loot entries. The 101 monsters wait for an
 Encounter runtime slice, because admitting them without their encounter rules would change the
 fight: Kesar would not be immortal, and Urmahlullu's forms would not follow one another.
 
@@ -68,9 +82,9 @@ semantics are changed.
 
 **Provenance.** Admission adds a source `oteryn:source.canary`: revision
 `47dfd51f45280a59a1d3e50ba7edd573d7234446`, evidence `OtsHypothesisOnly`. Each creature gets a
-source identity binding with namespace `canary/monster-type` whose external id is the Canary type
-name, disposition `EXACT`. Where the D15 wiki value was adopted, a second binding carries the
-TibiaWiki page id. The line-level import manifests stay regenerable evidence outside the
+source identity binding with namespace `canary/monster-file` whose external id is the path of its
+Canary monster file below `data-otservbr-global/monster`, disposition `EXACT`. Wiki values adopted under D15 are recorded row by row in the import
+manifests. The line-level import manifests stay regenerable evidence outside the
 repository. The writer records their digests in the import batch.
 
 ## 4. Executable Reference records
@@ -124,10 +138,14 @@ equal values or fails. Health admits `max_health` as `health`; every wave A mons
 
 ## 6. Writer and regeneration
 
-A deterministic writer (`tools/content-migration/`) reads the census bundles and emits the v2
-role documents and the Item identity map. It canonicalises the output, and a second run must
-produce identical bytes. The manifest and Content Lock are then rebuilt, and the content tree
-is regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
+`tools/content-migration/creature_admission_stage.py` reads the census bundles and checks each one
+against its digest in the bundle index. It also reads the protected Item identity map
+(`export_reference_item_identity_map`) and writes one canonical staged file. That file holds the
+Reference records, the authoring profiles and the source identity bindings, in the exact serde
+shapes of the game server. It also lists every deferred monster with its reason. The
+materializer (`materialize_content_world_project_v2`) pins the staged file by SHA-256, adds it
+to the project with the `oteryn:source.canary` import batch, and writes the canonical v2
+documents with their manifest and Content Lock. The content tree is then regenerated from v2. Rust admission (`ProjectV2Draft` load, validation and
 `link_reference_playable`) is the acceptance check, together with focused tests over one pilot
 monster of each profile shape.
 
@@ -136,11 +154,13 @@ monster of each profile shape.
 1. This decision.
 2. Rust: the §5 profiles, `canonicalize`, `validate_v2_authoring_profile` and focused positive
    and negative tests. No content change.
-3. Writer and pilot: about 20 monsters, including a shared spell, inline condition effects and
-   a skipped loot entry, through admission and linking.
-4. Wave A in bulk (1,332) and regeneration of the content tree.
-5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; the 142
-   encounter monsters with an Encounter runtime slice.
+3. Writer and pilot: 25 monsters through admission and linking. They include a shared spell,
+   inline condition effects, a skipped loot entry, and the four creatures the pilot monsters
+   summon.
+4. Wave A in bulk (1,315) and regeneration of the content tree.
+5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; Duke
+   Krule after a zero-count loot decision; the 101 encounter monsters with an Encounter runtime
+   slice; the 14 reference-blocked monsters as their references become admitted.
 
 Each slice runs the repository gates. A slice that changes `content/world/**` also gets one
 independent exact-head review before the Merge Queue (standing authorization in
