@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-monster-callbacks
 title: Resolve empty and reward-template inline monster callbacks in the Canary import
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 966
 jira: KAN-16
 base_sha: 87d01a9b3333edc721c07d4cea1e3bca8f31de72
 head_sha: null
