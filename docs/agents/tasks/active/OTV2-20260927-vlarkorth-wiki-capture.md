@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-vlarkorth-wiki-capture
 title: Count Vlarkorth and Dark Merudri from the 2026-09-27 wiki
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1047
 jira: KAN-16
 base_sha: 6fc6868ff8e5c8840c03d253049a6dc106c151e7
 head_sha: null
