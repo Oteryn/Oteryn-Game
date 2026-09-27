@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-npc-admission-pilot
 title: NPC admission slice 3 - staging writer and 20-NPC pilot into WorldProject/v2
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 1009
 jira: KAN-16
 base_sha: b48d61c687b11110de6df5c60fb5e3c166f117c6
 head_sha: null
