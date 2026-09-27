@@ -104,6 +104,9 @@ WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki
 LOW_CONFIDENCE_DROPS = 10
 LOOT_RATE_RULE = ('D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; '
                   'adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence')
+LOOT_AMOUNT_RULE = ('D32 loot amount: with an adopted wiki estimate (>= 10 drops) the Loot Statistics amount is the '
+                    'per-kill count observed when the item drops; a count outside the Canary range replaces the Canary '
+                    'min-max, and a Canary minimum of 0 becomes 1 because the estimate already counts kills without it')
 PASS_THROUGH_DEFAULT = 'Owner decision D5: imported monsters without a source counterpart default to pass_through=false.'
 QUEST_EVENT_OMISSION = ('Owner decision D6: creature event scripts that only feed quest/task progress belong to Quest/Interaction '
                         'and are omitted from the monster bundle.')
@@ -498,9 +501,19 @@ class Converter:
             if 'child' in entry:
                 row(f'loot[{position + 1}].child', 'unresolved_dependency', 'dependency', line=line,
                     resolution='Nested container loot needs a local container Item payload; not generated in this batch.')
+            zero_note = ''
+            if loot_entry['min_count'] == 0 and loot_entry['max_count'] >= 1:
+                # Canary draws the count uniformly from min..max after a successful chance roll and drops nothing on 0.
+                exact = Fraction(min(int(entry.get('chance', 0)), 100000), 1000) * loot_entry['max_count'] / (loot_entry['max_count'] + 1)
+                percent = (Decimal(exact.numerator) / Decimal(exact.denominator)).quantize(Decimal('0.0001'), ROUND_HALF_EVEN)
+                loot_entry['min_count'] = 1
+                loot_entry['probability_percent'] = int(percent) if percent == percent.to_integral_value() else float(percent)
+                zero_note = (f' Canary minCount 0: the count is drawn from 0-{loot_entry["max_count"]} and 0 drops nothing, so the '
+                             f'entry becomes count 1-{loot_entry["max_count"]} at chance x {loot_entry["max_count"]}/'
+                             f'{loot_entry["max_count"] + 1} ({float(exact):.6f}%, rounded half-even to 1 ppm; owner decision D32).')
             loot_entries.append(loot_entry)
             row(f'loot[{position + 1}]', 'mapped', 'dependency', f'/monster/loot/entries/{len(loot_entries) - 1}', line=line,
-                resolution=f'{RULES["loot_scale"]}. Item {item_id} "{self.names.get(item_id)}" is a declared source-scoped reference, not an admitted canonical Item.')
+                resolution=f'{RULES["loot_scale"]}. Item {item_id} "{self.names.get(item_id)}" is a declared source-scoped reference, not an admitted canonical Item.{zero_note}')
 
         # Creature.
         bestiary = m.get('Bestiary')
@@ -945,6 +958,22 @@ class Converter:
                          f'/monster/loot/entries/{index}/probability_percent',
                          f'{chance["times"]} drops / {stats["kills"]} kills in {block}: {float(exact):.6f}%, 95% Wilson interval '
                          f'{chance["interval_95_wilson"][0]}-{chance["interval_95_wilson"][1]}%, rounded half-even to 1 ppm ({LOOT_RATE_RULE}).')
+                entry = entries[index]
+                low, _, high = chance['wiki_amount'].partition('-')
+                low, high = int(low), int(high or low)
+                canary = (entry['min_count'], entry['max_count'])
+                if low < max(canary[0], 1) or high > canary[1]:
+                    entry['min_count'], entry['max_count'] = low, high
+                elif canary[0] == 0:
+                    entry['min_count'] = 1
+                if (entry['min_count'], entry['max_count']) != canary:
+                    canary_row['resolution'] += (f' Count {canary[0]}-{canary[1]} replaced by '
+                                                 f'{entry["min_count"]}-{entry["max_count"]} ({LOOT_AMOUNT_RULE}).')
+                    wiki_row(stat, stats['page_title'], chance['wiki_line'], f'Loot2.{chance["item"]}.amount',
+                             f'/monster/loot/entries/{index}/max_count' if entry['max_count'] != canary[1]
+                             else f'/monster/loot/entries/{index}/min_count',
+                             f'Observed amount {chance["wiki_amount"]} over {chance["times"]} drops in {block}; Canary '
+                             f'{canary[0]}-{canary[1]} ({LOOT_AMOUNT_RULE}).')
             elif chance['status'] in ('CONSISTENT', 'DIFF'):
                 canary_row['resolution'] += (f' Wiki {block}: {chance["times"]} drops, estimate {chance["wiki_percent"]}% (95% '
                                              f'interval {chance["interval_95_wilson"][0]}-{chance["interval_95_wilson"][1]}%), '

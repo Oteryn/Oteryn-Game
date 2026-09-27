@@ -32,9 +32,8 @@ The 1,656 Canary `47dfd51f` monster files break down as follows:
 | Fully resolved monsters (`population_census.py`, one digest each in its bundle index) | 1,490 | resolved |
 | Covered by an Encounter manifest | 101 | their events live in an Encounter, and there is no Encounter runtime yet |
 | Referencing an Item missing from the Oteryn Item registry | 59 | 68 Canary item ids newer than the Crystal registry |
-| With a loot entry whose minimum count is 0 | 1 | Duke Krule: the Reference Loot entry requires a count of at least 1 |
 | Referencing a creature or Ability that is not admitted | 14 | see below |
-| **Admitted in wave A** | **1,315** | |
+| **Admitted in wave A** | **1,316** | |
 
 The staging tool (§6) computes these groups; its counts are the authority. Admission is closed over
 references: a monster is admitted only when every Creature, Ability, Effect and Formula it
@@ -48,8 +47,8 @@ dropped. The 14 monsters dropped by the check are the following:
 - The knight, monk and paladin familiars reference their player summon spells, which are not admitted.
 
 The 59 monsters wait
-until the Item domain registers the 68 items. Duke Krule waits for an owned decision on zero-count
-loot entries. The 101 monsters wait for an
+until the Item domain registers the 68 items. Duke Krule, first deferred for its `minCount` 0
+entries, is admitted since D32 maps them to count 1..max. The 101 monsters wait for an
 Encounter runtime slice, because admitting them without their encounter rules would change the
 fight: Kesar would not be immortal, and Urmahlullu's forms would not follow one another.
 
@@ -163,9 +162,8 @@ monster of each profile shape.
    25 monsters) proved the route locally first: it covers a shared spell, inline condition effects,
    a skipped loot entry, and the four creatures the pilot monsters summon. The full wave then found
    two cases the pilot lacked: two addons sharing the attachment slot, and whitespace around texts.
-4. (Merged into slice 3.)
-5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; Duke
-   Krule after a zero-count loot decision; the 101 encounter monsters with an Encounter runtime
+4. (Merged into slice 3.) D32 loot counts then admit Duke Krule as well: 1,316 monsters.
+5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; the 101 encounter monsters with an Encounter runtime
    slice; the 14 reference-blocked monsters as their references become admitted.
 
 Each slice runs the repository gates. A slice that changes `content/world/**` also gets one

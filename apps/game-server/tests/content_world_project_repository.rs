@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         379,
-        "d83af50eee39e858ced6e694e77fc623ef5136087114d9d8641fad829a1b67ee",
+        "fc6207c4fdf95501ed2cb6b5703a2bf2a256e827b38eaee5f46233b8ee1e3868",
     ),
     (
         "definitions/declarations.json",
-        8_981_626,
-        "85434eca8612d53fc33aceeea96193c08e136f3e7f18819eb8741e0be155d470",
+        8_989_985,
+        "9ab1ea0f2e1ce2261148d2212428f56546cb23a60845151770493ead6d0dc802",
     ),
     (
         "definitions/reference.json",
-        13_502_340,
-        "f0ae3779fc17ab4b3952f8a0590c75d7f2d4ea41f847cd49ec6372b24fd70b28",
+        13_511_994,
+        "1726d987a2c977b769c3c07f325ddd8bfff3ca7987899be0495cd449c8fca0dd",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1939,
-        "76b68ef177aa692373c2ec2babef75ce041c5ddcb7de30ff5db659494c8f3c98",
+        "1a471cb2e5f0609bf084927e21770dcc87dc2bedb2b045c373e9cc3e57f112cb",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         395,
-        "f2e7c84bfa57a19494f4f1c7e6a851207a3357d987c62e2ca8c4c0b8647f01b9",
+        "d8a0933c3e89886b2b653972dab04af2d9df34983382af53bbb52ebc23037b92",
     ),
     (
         "provenance/imports.json",
         3275,
-        "bc427eb182acac5b53cbc30ce2fee0ed8ebf703d5feb880b64fed28312d45d59",
+        "d57b7e0d938201188e84a44dafea8457b108764a58be679b45b19826a729de34",
     ),
     (
         "provenance/sources.json",
-        587_506,
-        "1cd47210851d38e186e9c532b48aad4d36ed2fadde1d9d057cbf79c674f25918",
+        587_817,
+        "9f2970083a73bc80de761073b254f076601a183bd18b71da4dd3d72641016d5a",
     ),
     (
         "worlds/world.json",
@@ -84,13 +84,13 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "66671e2962d2ff5a6cd5ed669013e4f0ab14fd36c6918ddddeb7121bd8a42265";
+const TREE_SHA256: &str = "9a77a38594d52b84f32ad61f4374f57b08fc6a0fe01dc64068a292a5d24a8f5c";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1315;
-const CREATURE_RECORDS: usize = 18280;
-const CREATURE_PROFILES: usize = 17315;
+const CREATURES: usize = 1316;
+const CREATURE_RECORDS: usize = 18299;
+const CREATURE_PROFILES: usize = 17333;
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")

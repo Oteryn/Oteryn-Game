@@ -403,7 +403,7 @@ def compact(result):
         out['loot_chance_counts'] = dict(sorted(chance_counts.items()))
     # Every loot chance is kept (trimmed): canary_batch.py applies the D15 loot rate rule from it.
     keep = ('position', 'item', 'status', 'confidence', 'canary_percent', 'wiki_percent', 'interval_95_wilson', 'times', 'kills',
-            'wiki_line', 'note')
+            'wiki_line', 'canary_amount', 'wiki_amount', 'note')
     out['loot_chances'] = [{k: c[k] for k in keep if k in c} for c in result.get('loot_chances', [])]
     return out
 
