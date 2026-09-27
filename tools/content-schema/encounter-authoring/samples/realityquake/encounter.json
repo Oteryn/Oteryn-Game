@@ -1,0 +1,2166 @@
+{
+  "identity": {
+    "key": "canary:encounter/realityquake",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Heart of Destruction: Realityquake",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "realityquake",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/realityquake",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "foreshock",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/foreshock",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "aftershock",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/aftershock",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Every tile from Canary (32197, 31236, 14) to (32220, 31260, 14)."
+    },
+    {
+      "key": "exit_vortex",
+      "kind": "point",
+      "description": "Canary (32199, 31248, 14), the vortex of the room."
+    },
+    {
+      "key": "spark_spot_1",
+      "kind": "point",
+      "description": "Canary (32203, 31246, 14)."
+    },
+    {
+      "key": "spark_spot_2",
+      "kind": "point",
+      "description": "Canary (32205, 31251, 14)."
+    },
+    {
+      "key": "spark_spot_3",
+      "kind": "point",
+      "description": "Canary (32210, 31251, 14)."
+    },
+    {
+      "key": "spark_spot_4",
+      "kind": "point",
+      "description": "Canary (32212, 31246, 14)."
+    },
+    {
+      "key": "shock_spot",
+      "kind": "point",
+      "description": "Canary (32208, 31248, 14)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "foreshock_stage",
+        "initial": 0
+      },
+      {
+        "name": "aftershock_stage",
+        "initial": 0
+      }
+    ],
+    "flags": [
+      {
+        "name": "foreshock_defeated",
+        "initial": false
+      }
+    ],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "realityquake_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "realityquake"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23483",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23482",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_vortex",
+          "interaction": "canary:interaction/14325"
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "realityquake_defeated",
+          "credited": "players_in_anchor",
+          "anchor": "arena"
+        }
+      ]
+    },
+    {
+      "key": "foreshock_stage_0",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "foreshock",
+        "percent": 80
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "foreshock_stage_1",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "foreshock",
+        "percent": 60
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "foreshock_returns_at_stage_1",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "foreshock"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 1
+        },
+        {
+          "kind": "health_percent",
+          "role": "foreshock",
+          "op": "<=",
+          "value": 60
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "foreshock_stage_2",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "foreshock",
+        "percent": 40
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 2
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "foreshock_returns_at_stage_2",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "foreshock"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 2
+        },
+        {
+          "kind": "health_percent",
+          "role": "foreshock",
+          "op": "<=",
+          "value": 40
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "foreshock_stage_3",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "foreshock",
+        "percent": 20
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": "foreshock_returns_at_stage_3",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "foreshock"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 3
+        },
+        {
+          "kind": "health_percent",
+          "role": "foreshock",
+          "op": "<=",
+          "value": 20
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": "foreshock_stage_4",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "foreshock",
+        "percent": 10
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 4
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": "foreshock_returns_at_stage_4",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "foreshock"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "foreshock_stage",
+          "op": "==",
+          "value": 4
+        },
+        {
+          "kind": "health_percent",
+          "role": "foreshock",
+          "op": "<=",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "foreshock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "foreshock_stage",
+          "operation": "set",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": "aftershock_stage_0",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "aftershock",
+        "percent": 80
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 0
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "aftershock_stage_1",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "aftershock",
+        "percent": 60
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "aftershock_returns_at_stage_1",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "aftershock"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "aftershock",
+          "op": "<=",
+          "value": 60
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "key": "aftershock_stage_2",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "aftershock",
+        "percent": 40
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 2
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "aftershock_returns_at_stage_2",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "aftershock"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 2
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "aftershock",
+          "op": "<=",
+          "value": 40
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "key": "aftershock_stage_3",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "aftershock",
+        "percent": 20
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 3
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": "aftershock_returns_at_stage_3",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "aftershock"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 3
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "aftershock",
+          "op": "<=",
+          "value": 20
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "key": "aftershock_stage_4",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "aftershock",
+        "percent": 10
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 4
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": "aftershock_returns_at_stage_4",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "aftershock"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "aftershock_stage",
+          "op": "==",
+          "value": 4
+        },
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": false
+        },
+        {
+          "kind": "health_percent",
+          "role": "aftershock",
+          "op": "<=",
+          "value": 10
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/foreshock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "foreshock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "remove",
+          "role": "aftershock"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "aftershock_stage",
+          "operation": "set",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": "foreshock_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "foreshock"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "foreshock_defeated",
+          "value": true
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aftershock",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "aftershock",
+          "count": 1,
+          "at": {
+            "anchor": "shock_spot"
+          },
+          "owner": "none",
+          "health": "remembered"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "aftershock_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "aftershock"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/realityquake",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "realityquake",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_1"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_2"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_3"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_destruction",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "spark_spot_4"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "realityquake_defeated"
+  ]
+}

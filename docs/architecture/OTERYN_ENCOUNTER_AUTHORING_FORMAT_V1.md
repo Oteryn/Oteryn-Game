@@ -124,7 +124,7 @@ buff such as the cobra flask).
 
 | Action | Parameters |
 |---|---|
-| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, offset, or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent) |
+| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, offset, or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent, or `remembered`: the health the spawned role had when it last left the fight, full the first time (D31)) |
 | `remove` | role, `all_in(anchor)` (monsters only; players are never removed; `keep_summons` spares monsters with a master), or `triggering`: only the creature that fired the rule (D31) |
 | `transform` | role -> next stage, CreatureRef or `random_of` several CreatureRefs (uniform); health `keep_percent`/`keep_absolute`/`full` |
 | `heal` | role, amount, range (may start at 0, D31) or `full` |
@@ -196,7 +196,7 @@ buff such as the cobra flask).
    counts, heal and damage amounts, rule delays and timer durations) is drawn uniformly by the
    encounter instance, so a fight can be audited and replayed from its seed.
 4. Health carried by `transform`/`spawn` is explicit (`keep_percent`, `keep_absolute`, `full`,
-   percent); nothing is implied.
+   percent, or `remembered` for a spawn into a named role); nothing is implied.
 5. Anchors are typed (point or area) and must all be bound by the map project before admission;
    an unbound anchor blocks the encounter, never falls back to raw coordinates.
 6. Validation mirrors the monster schema: JSON Schema plus a semantic validator and an import
@@ -211,7 +211,7 @@ buff such as the cobra flask).
 | D28 | §4-6 plus phases is the v1 vocabulary under the rules of §9. Work starts with `FourthTaintBossesPrepareDeath` (15 Soul War hunting monsters, a `channel_shared` zone rule with a read-only quest-progress condition), then the largest death events. | Owner delegated the choice; the source shows the event is a zone rule, not a boss fight. |
 | D29 | Vocabulary extensions: `creature_spawned` and `ability_cast` triggers; the `world_state` read-only condition; fractional or absolute health thresholds; `creature_present` near a role; `{min, max}` ranges; a `damage` action; `component: primary`; `map_item.interaction`. Acting on whatever stands on a fixed tile is not added: each case names its role from wiki or map evidence. Scripted movement is deferred. State shared by all parties belongs to the quest domain, which the encounter reads through `world_state`. | Owner accepted the proposal ("kontynuuj tak jak uważasz za optymalne", 2026-09-27). |
 | D30 | Crystal Server (`zimbadev/crystalserver`, a Canary fork) is consulted as a second donor wherever a Canary script is broken, ambiguous or unresolved. It is evidence only: Canary stays the transcription source and the reference-date wiki still decides (D25). | Owner request 2026-09-27 ("sprawdzać też crystal jako donor"). |
-| D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage. Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
+| D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage; `remembered` spawn health (a boss that returns with the health it left with: Foreshock, Aftershock, Outburst). Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
@@ -343,3 +343,20 @@ cosmetically. Four differ in behaviour: nil guards and a Monk's Apparition branc
 none of which changes a transcription. Sixteen mechanics were removed in Crystal, most of them in
 Grave Danger. Crystal's lever for Ghulosh is the one fix that bears on a transcription.
 68 encounters validate, 62 manifests resolve fully; the census rises from 1,486 to 1,490.
+
+A ninth slice transcribes the five Heart of Destruction boss rooms and the World Devourer's death. Crystal carries the
+same eleven scripts.
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `HeartBossDeath` | 6 | 7 | The room vortex opens (action id 14325, 14354 for the World Devourer) and every player in the room is credited (D27); the World Devourer's room is emptied. Eradicator2 is also named "Eradicator". |
+| `AnomalyTransform`, `ChargedAnomalyDeath` | 1 | 2 | At 75, 50, 25 and 5% the anomaly gives way to a charged anomaly; its death brings the anomaly back at that health. |
+| `RuptureResonance`, `RuptureHeal` | 1 | 1 | Five resonance waves at 80, 60, 40, 25 and 10%; while a damage resonance lives, each player hit heals the rupture by 5,000-10,000. |
+| `ForeshockTransform`, `AftershockTransform`, `ShocksDeath` | 1 | 2 | The shocks swap at every threshold, each coming back with the health it left with; the aftershock's death brings Realityquake. The wiki spawns Realityquake after both are defeated, so a dead foreshock does not return (D25). |
+| `EradicatorTransform` | 1 | 2 | Timers: 74 s as Eradicator, then 9 s as Eradicator2 with four sparks, with the same health. |
+| `OutburstCharge`, `ChargingOutDeath` | 1 | 2 | At 80, 60, 40 and 20% the outburst gives way to a charging outburst; killing it brings the outburst back with the health it left with. |
+
+A threshold checked by `onThink` is a `health_crossed` rule, plus a `creature_spawned` rule when the boss can come back
+already below the threshold of its stage. Charged Anomaly, Charging Outburst and the World Devourer keep one unresolved
+spell script each. 72 encounters validate, 66 manifests resolve fully, `verify_encounter_schema.py` 87/87; the census
+rises from 1,490 to 1,498.

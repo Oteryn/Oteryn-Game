@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 160,
-    "fully_resolved": 1490,
+    "blocked": 152,
+    "fully_resolved": 1498,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1097
+    "wiki_adopted_monsters": 1102
   },
   "wiki_adopted_rows": {
     "Loot2": 12862,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 91,
+      "monsters": 80,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -333,6 +333,7 @@
     "adult_goanna",
     "adventurer",
     "afflicted_strider",
+    "aftershock",
     "aggressive_lava",
     "aggressive_matter",
     "agressive_chicken",
@@ -367,6 +368,7 @@
     "animated_stone_rhino",
     "animated_sword",
     "annihilon",
+    "anomaly",
     "antenna",
     "apocalypse",
     "apprentice_sheng",
@@ -744,6 +746,8 @@
     "enraged_white_deer",
     "enslaved_dwarf",
     "enthralled_demon",
+    "eradicator",
+    "eradicator2",
     "eshtaba_the_conjurer",
     "eshtaba_the_conjurer_stop",
     "esmeralda",
@@ -804,6 +808,7 @@
     "flying_book",
     "force_field",
     "foreman_kneebiter",
+    "foreshock",
     "forest_fury",
     "fox",
     "frazzlemaw",
@@ -1285,6 +1290,7 @@
     "orewalker",
     "organic_matter",
     "orshabaal",
+    "outburst",
     "overcharge",
     "overcharged_demon",
     "overcharged_disruption",
@@ -1367,6 +1373,7 @@
     "ravenous_hunger",
     "raxias",
     "reality_reaver",
+    "realityquake",
     "red_butterfly",
     "redeemed_soul",
     "reflection_of_mawhawk",
@@ -1409,6 +1416,7 @@
     "rotworm_queen",
     "rukor_zad",
     "running_elite_orc_guard",
+    "rupture",
     "rustheap_golem",
     "sabretooth",
     "sacred_snake",

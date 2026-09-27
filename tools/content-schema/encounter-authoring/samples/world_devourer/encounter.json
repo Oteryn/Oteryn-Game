@@ -75,9 +75,30 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "world_devourer",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/world_devourer",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
-  "anchors": [],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Every tile from Canary (32260, 31336, 14) to (32283, 31360, 14)."
+    },
+    {
+      "key": "exit_vortex",
+      "kind": "point",
+      "description": "Canary (32281, 31348, 14), the vortex of the room."
+    }
+  ],
   "phases": [],
   "state": {
     "counters": [
@@ -265,7 +286,45 @@
           "value": true
         }
       ]
+    },
+    {
+      "key": "world_devourer_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "world_devourer"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/23483",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/23482",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_vortex",
+          "interaction": "canary:interaction/14354"
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "world_devourer_defeated",
+          "credited": "players_in_anchor",
+          "anchor": "arena"
+        },
+        {
+          "kind": "remove",
+          "all_in": "arena"
+        }
+      ]
     }
   ],
-  "outcomes": []
+  "outcomes": [
+    "world_devourer_defeated"
+  ]
 }
