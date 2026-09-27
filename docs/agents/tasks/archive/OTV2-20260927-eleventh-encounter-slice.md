@@ -65,5 +65,5 @@ Authority: owner direction in this session (D31 consent for vocabulary additions
 
 ## Completion
 
-Merged as PR #1016 (`e422fc9d2962f63ccb6f0af9ee80ec5f449c2a31`) from final head `d8276cc`; required checks passed on that head.
+Merged as PR #1016 (`ee85b8086e4e37a731bad98e62fea14ffca69510`) from final head `d8276cc`; required checks passed on that head.
 Owner released.
