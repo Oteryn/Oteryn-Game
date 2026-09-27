@@ -410,4 +410,3 @@ Publicly visible game facts, wiki fields, OTS code and inferred Global behavior 
 `UNKNOWN`: broad Reference/Global behavior parity, production scheduler capacities, complete content provenance, full corpse/loot/pickup behavior and client journey remain unproven.
 
 `NO AUTHORITY`: this audit does not accept an architecture, activate content, select production resource numbers, copy upstream code, mutate runtime, merge a candidate or claim production readiness.
-
