@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-creature-admission-design
 title: WorldProject/v2 creature admission route for the resolved Canary monsters
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 981
 jira: KAN-16
 base_sha: 68d0ae0005a8bed45f2427dd7a0d762eeeaf7239
 head_sha: null
