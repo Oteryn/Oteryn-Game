@@ -20,11 +20,17 @@ Merge rules:
     wiki-origin placement (direction/spawn_interval_s/spawn_radius unknown, so null; marked
     `"origin": "wiki"`); arbitration records `{"fact": "placements", "rule": "WIKI_POSITION",
     "chosen": "wiki"}`. Still no wiki position (or no wiki page) stays held UNPLACED;
+  - wiki NPC lookup matches on normalised title, `name` or `actualname` (the wiki infobox's
+    in-game name, e.g. "Omniphant (NPC)"'s actualname "Omniphant"), title taking precedence on a
+    key claimed by more than one page;
   - a single-source NPC absent from the wiki under its own name is tried again under a base name
     (stripping a trailing ` (Day)`/` (Night)`, or ` Init`/` Vampires Lair`/` Back`); a wiki match
     on the base name confirms the NPC (records `{"fact": "identity", "rule": "WIKI_BASE_NAME",
-    "chosen": "wiki"}`); several name variants may then share one wiki page. No base-name match
-    stays held SINGLE_SOURCE_NOT_ON_WIKI;
+    "chosen": "wiki"}`); several name variants may then share one wiki page. Failing that, a
+    strict spelling match (name >=10 chars, exactly one wiki NPC's name/actualname within one
+    edit -- insertion, deletion, substitution or adjacent transposition) also confirms it
+    (`{"fact": "identity", "rule": "WIKI_SPELLING", "chosen": "wiki"}`). No match at all stays
+    held SINGLE_SOURCE_NOT_ON_WIKI;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -47,9 +53,10 @@ SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 POSITION_RANK = {'MATCH': 0, 'NEAR': 1, 'MISMATCH': 2}
 LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
-WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME')  # kept in a candidate's arbitration list
+WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
+SPELLING_MIN_LENGTH = 10
 
 
 def slug(name):
@@ -67,6 +74,49 @@ def base_name(name):
         if name.endswith(suffix) and len(name) > len(suffix):
             return name[:-len(suffix)]
     return None
+
+
+def build_wiki_index(npcs):
+    """D8: alias index for wiki NPC lookup. Normalised title is indexed first and always wins a
+    key two pages both claim; normalised `name`/`actualname` (the infobox in-game name, which may
+    differ from a disambiguated page title, e.g. "Omniphant (NPC)"'s actualname "Omniphant") are
+    then added only where they do not collide with a different page's key."""
+    index = {}
+    for npc in npcs:
+        key = normalize_name(npc['title'])
+        if key:
+            index.setdefault(key, npc)
+    for npc in npcs:
+        for field in ('name', 'actualname'):
+            key = normalize_name(npc.get(field))
+            if not key or (key in index and index[key]['pageid'] != npc['pageid']):
+                continue
+            index.setdefault(key, npc)
+    return index
+
+
+def within_one_edit(a, b):
+    """D8 WIKI_SPELLING: restricted Damerau-Levenshtein distance == 1 -- exactly one insertion,
+    deletion, substitution or adjacent transposition turns `a` into `b`. Equal strings are not
+    "one edit" (they are an exact match, handled elsewhere)."""
+    if a == b:
+        return False
+    la, lb = len(a), len(b)
+    if la == lb:
+        diffs = [i for i in range(la) if a[i] != b[i]]
+        if len(diffs) == 1:
+            return True
+        if len(diffs) == 2 and diffs[1] == diffs[0] + 1:
+            i, j = diffs
+            return a[i] == b[j] and a[j] == b[i]
+        return False
+    if abs(la - lb) != 1:
+        return False
+    shorter, longer = (a, b) if la < lb else (b, a)
+    i = 0
+    while i < len(shorter) and shorter[i] == longer[i]:
+        i += 1
+    return shorter[i:] == longer[i + 1:]
 
 
 def wiki_position_placement(wiki):
@@ -116,7 +166,8 @@ def source_offers(bundle):
 
 class Builder:
     def __init__(self, snapshot, item_map):
-        self.wiki = {normalize_name(npc['title']): npc for npc in snapshot['npcs']}
+        self.wiki_npcs = snapshot['npcs']
+        self.wiki = build_wiki_index(self.wiki_npcs)
         self.wiki_trade = snapshot.get('trade', {})
         self.items = {row['source_item_id']: row for row in item_map['records']}
         self.held, self.stats = [], Counter()
@@ -124,6 +175,19 @@ class Builder:
     def hold(self, name, sources, reason, detail=None):
         self.held.append({'name': name, 'sources': sources, 'reason': reason, 'detail': detail})
         self.stats[f'held:{reason}'] += 1
+
+    def fuzzy_wiki_matches(self, name_norm):
+        """D8 WIKI_SPELLING: every distinct wiki NPC whose normalised name or actualname is
+        exactly one edit away from `name_norm`."""
+        matches = {}
+        for npc in self.wiki_npcs:
+            for field in ('name', 'actualname'):
+                value = npc.get(field)
+                candidate = normalize_name(value) if value else ''
+                if candidate and within_one_edit(name_norm, candidate):
+                    matches[npc['pageid']] = npc
+                    break
+        return list(matches.values())
 
     def merge_definition(self, bundles, arbitration):
         facts = [definition_facts(b) for b in bundles.values()]
@@ -248,14 +312,21 @@ class Builder:
     def candidate(self, bundles):
         name = next(b['definition']['name'] for b in bundles.values())
         sources = {s: b['key'] for s, b in bundles.items()}
-        wiki = self.wiki.get(normalize_name(name))
+        name_norm = normalize_name(name)
+        wiki = self.wiki.get(name_norm)
         arbitration, left_out = [], []
         if len(bundles) == 1 and wiki is None:
             variant = base_name(name)
             wiki = self.wiki.get(normalize_name(variant)) if variant else None
+            if wiki is not None:
+                arbitration.append({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'})
+            elif len(name_norm) >= SPELLING_MIN_LENGTH:
+                fuzzy = self.fuzzy_wiki_matches(name_norm)
+                if len(fuzzy) == 1:
+                    wiki = fuzzy[0]
+                    arbitration.append({'fact': 'identity', 'rule': 'WIKI_SPELLING', 'chosen': 'wiki'})
             if wiki is None:
                 return self.hold(name, sources, 'SINGLE_SOURCE_NOT_ON_WIKI')
-            arbitration.append({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'})
         definition, conflicts = self.merge_definition(bundles, arbitration)
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))

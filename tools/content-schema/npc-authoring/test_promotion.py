@@ -21,6 +21,21 @@ def find_candidate(report, name):
     return next(c for c in report['candidates'] if c['name'] == name)
 
 
+def find_held(report, name):
+    return next(h for h in report['held'] if h['name'] == name)
+
+
+def make_builder(npcs):
+    return promotion_candidates.Builder({'npcs': npcs, 'trade': {}}, {'records': []})
+
+
+def make_bundle(name, source='crystal', sha='0' * 64):
+    return {'key': f'{source}:npc/{promotion_candidates.slug(name)}', 'status': 'RESOLVED',
+            'source': {'sha256': sha}, 'placements': [], 'services': {'travel': [], 'trade': None},
+            'definition': {'name': name, 'profession': 'None',
+                            'presentation': {'outfit': {}, 'speech_bubble': None}, 'movement': None}}
+
+
 class PromotionValidatorTests(unittest.TestCase):
     def test_committed_sample_is_valid(self):
         report = load_sample()
@@ -164,6 +179,14 @@ class PromotionValidatorTests(unittest.TestCase):
         errs = validate_promotion.errors(report)
         self.assertTrue(any('wiki-origin placement direction must be null' in e for e in errs))
 
+    def test_wiki_origin_placement_with_radius_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        candidate['placements'][0]['spawn_radius'] = 999
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('wiki-origin placement spawn_radius must be null' in e for e in errs))
+
     def test_bad_arbitration_rule_fails(self):
         report = load_sample()
         candidate = find_candidate(report, 'Uzon Back')
@@ -177,6 +200,54 @@ class PromotionValidatorTests(unittest.TestCase):
         self.assertTrue(held_unplaced)  # NPCs that are neither placed nor on the wiki with a position remain held
         self.assertNotIn('Uzon Back', held_unplaced)
         self.assertFalse(held_unplaced & {c['name'] for c in report['candidates']})
+
+    # -- D8: actualname aliasing and the strict spelling rule ----------------------------------
+
+    def test_within_one_edit_examples(self):
+        within = promotion_candidates.within_one_edit
+        self.assertTrue(within('awarness of the emperor', 'awareness of the emperor'))  # deletion
+        self.assertTrue(within('dahr-enpa rahng', 'dhar-enpa rahng'))  # adjacent transposition
+        self.assertTrue(within('cat', 'cats'))  # insertion
+        self.assertTrue(within('kitten', 'sitten'))  # substitution
+        self.assertFalse(within('abc', 'abc'))  # equal is not "one edit"
+        self.assertFalse(within('abcdefghij', 'abzdefyhij'))  # two substitutions
+
+    def test_wiki_spelling_promotes_typo_named_npc(self):
+        report = load_sample()
+        for name in ('Awarness Of The Emperor', 'Dahr-Enpa Rahng'):
+            candidate = find_candidate(report, name)
+            self.assertEqual(len(candidate['provenance']), 1)
+            self.assertIn({'fact': 'identity', 'rule': 'WIKI_SPELLING', 'chosen': 'wiki'}, candidate['arbitration'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_actualname_confirms_omniphant(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Omniphant')
+        self.assertEqual(len(candidate['provenance']), 1)
+        self.assertIsNotNone(candidate['wiki'])
+        # matched directly by actualname alias, not the fuzzy spelling rule
+        self.assertFalse(any(a['fact'] == 'identity' for a in candidate['arbitration']))
+
+    def test_fuzzy_match_ambiguous_between_two_wiki_names_is_not_unique(self):
+        builder = make_builder([
+            {'pageid': 1, 'title': 'Page A', 'name': 'aaaaaaaaab', 'actualname': None, 'position': None},
+            {'pageid': 2, 'title': 'Page B', 'name': 'baaaaaaaaa', 'actualname': None, 'position': None},
+        ])
+        matches = builder.fuzzy_wiki_matches('aaaaaaaaaa')
+        self.assertEqual(len(matches), 2)
+        result = builder.candidate({'crystal': make_bundle('Aaaaaaaaaa')})
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'SINGLE_SOURCE_NOT_ON_WIKI')
+
+    def test_short_name_is_not_tried_for_spelling(self):
+        builder = make_builder([
+            {'pageid': 1, 'title': 'Shortnyme', 'name': 'Shortnyme', 'actualname': None, 'position': None},
+        ])
+        # 'Shortnym' (8 chars, < SPELLING_MIN_LENGTH) is one deletion away from 'Shortnyme' but too short to try
+        self.assertEqual(len(promotion_candidates.normalize_name('Shortnym')), 8)
+        result = builder.candidate({'crystal': make_bundle('Shortnym')})
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'SINGLE_SOURCE_NOT_ON_WIKI')
 
 
 if __name__ == '__main__':

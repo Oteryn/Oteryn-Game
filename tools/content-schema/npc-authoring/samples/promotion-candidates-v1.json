@@ -6419,7 +6419,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 103161,
+    "revid": 1010600
+   }
   },
   {
    "arbitration": [],
@@ -15126,6 +15129,64 @@
     "crystal": {
      "key": "crystal:npc/awareness_of_the_emperor",
      "sha256": "6b7f72f767517c8effd137ed23ee26237daf5773a85e27d1c535efe15b6f422b"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 46903,
+    "revid": 1116742
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "identity",
+     "rule": "WIKI_SPELLING"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.awarness_of_the_emperor",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Awarness Of The Emperor",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 33062,
+      "y": 31153,
+      "z": 15
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 1
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 0,
+     "feet": 0,
+     "head": 0,
+     "legs": 0,
+     "look_type": 231,
+     "mount": null
+    },
+    "speech_bubble": "NORMAL"
+   },
+   "profession": "normal",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/awarness_of_the_emperor",
+     "sha256": "2511951425685751ca557ccfb9494f90b8930a6e47cb60f4b2f2a695fa525585"
     }
    },
    "trade_service": null,
@@ -38689,7 +38750,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 29170,
+    "revid": 1114653
+   }
   },
   {
    "arbitration": [],
@@ -41393,6 +41457,70 @@
    "arbitration": [
     {
      "chosen": "wiki",
+     "fact": "identity",
+     "rule": "WIKI_SPELLING"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_POSITION"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.dahr_enpa_rahng",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Dahr-Enpa Rahng",
+   "placements": [
+    {
+     "direction": null,
+     "origin": "wiki",
+     "position": {
+      "x": 33544,
+      "y": 31447,
+      "z": 5
+     },
+     "spawn_interval_s": null,
+     "spawn_radius": null
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 0,
+     "feet": 0,
+     "head": 0,
+     "legs": 0,
+     "look_type": 1820,
+     "mount": null
+    },
+    "speech_bubble": "NORMAL"
+   },
+   "profession": "normal",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/dahr-enpa_rahng",
+     "sha256": "48f3f02ce656bee6992e6e27f2ba0c299acf199b5ee256d709d0f465b58f26ff"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 108303,
+    "revid": 1098122
+   }
+  },
+  {
+   "arbitration": [
+    {
+     "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
     }
@@ -43310,7 +43438,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 65568,
+    "revid": 838967
+   }
   },
   {
    "arbitration": [],
@@ -52288,7 +52419,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 109196,
+    "revid": 1124889
+   }
   },
   {
    "arbitration": [],
@@ -121162,7 +121296,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 65046,
+    "revid": 1116810
+   }
   },
   {
    "arbitration": [],
@@ -131730,6 +131867,65 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_POSITION"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.omniphant",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Omniphant",
+   "placements": [
+    {
+     "direction": null,
+     "origin": "wiki",
+     "position": {
+      "x": 32551,
+      "y": 32623,
+      "z": 11
+     },
+     "spawn_interval_s": null,
+     "spawn_radius": null
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 0,
+     "feet": 0,
+     "head": 0,
+     "legs": 0,
+     "look_type": 1818,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/omniphant",
+     "sha256": "938e926b0ffc1bf08aa7395cf2d017dfa43210d94364431248769b3cef9c3109"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 108564,
+    "revid": 1124860
+   }
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -132939,7 +133135,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 31755,
+    "revid": 1164884
+   }
   },
   {
    "arbitration": [],
@@ -137048,7 +137247,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 20289,
+    "revid": 1114480
+   }
   },
   {
    "arbitration": [],
@@ -138828,6 +139030,58 @@
    "wiki": {
     "pageid": 3238,
     "revid": 1113940
+   }
+  },
+  {
+   "arbitration": [],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.quill",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Quill",
+   "placements": [
+    {
+     "direction": "NORTH",
+     "position": {
+      "x": 32538,
+      "y": 32574,
+      "z": 11
+     },
+     "spawn_interval_s": 60,
+     "spawn_radius": 5
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 108,
+     "feet": 114,
+     "head": 78,
+     "legs": 39,
+     "look_type": 1848,
+     "mount": null
+    },
+    "speech_bubble": null
+   },
+   "profession": null,
+   "provenance": {
+    "crystal": {
+     "key": "crystal:npc/quill",
+     "sha256": "d6215303143eaf01f3cc32ec35eb1dc7275ce6399f0746b81e8f41d2e27acbaa"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 108565,
+    "revid": 1119268
    }
   },
   {
@@ -172890,7 +173144,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 80453,
+    "revid": 1116869
+   }
   },
   {
    "arbitration": [],
@@ -193557,6 +193814,69 @@
    }
   },
   {
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "placements",
+     "rule": "WIKI_POSITION"
+    }
+   ],
+   "identity": {
+    "family": "NPC",
+    "key": "oteryn:npc.willow",
+    "revision": "definition-r1"
+   },
+   "left_out": [],
+   "movement": {
+    "floor_change": false,
+    "walk_interval_ms": 2000,
+    "walk_radius": 2
+   },
+   "name": "Willow",
+   "placements": [
+    {
+     "direction": null,
+     "origin": "wiki",
+     "position": {
+      "x": 32079,
+      "y": 32019,
+      "z": 7
+     },
+     "spawn_interval_s": null,
+     "spawn_radius": null
+    }
+   ],
+   "presentation": {
+    "outfit": {
+     "addons": 0,
+     "body": 24,
+     "feet": 0,
+     "head": 60,
+     "legs": 38,
+     "look_type": 140,
+     "mount": null
+    },
+    "speech_bubble": "NORMAL"
+   },
+   "profession": "normal",
+   "provenance": {
+    "canary": {
+     "key": "canary:npc/willow",
+     "sha256": "4890b62dd196b20a180a19cbb73545f5f498f2685a9e995571929dcd6be11272"
+    },
+    "crystal": {
+     "key": "crystal:npc/willow",
+     "sha256": "2880a73a5b220a3321fc55d8b55c8afa764024f92834eb500448c78059d69b8c"
+    }
+   },
+   "trade_service": null,
+   "travel_service": null,
+   "wiki": {
+    "pageid": 67083,
+    "revid": 1060365
+   }
+  },
+  {
    "arbitration": [],
    "identity": {
     "family": "NPC",
@@ -194810,7 +195130,10 @@
    },
    "trade_service": null,
    "travel_service": null,
-   "wiki": null
+   "wiki": {
+    "pageid": 31866,
+    "revid": 1116698
+   }
   },
   {
    "arbitration": [],
@@ -209806,26 +210129,10 @@
   },
   {
    "detail": null,
-   "name": "Awarness Of The Emperor",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "canary": "canary:npc/awarness_of_the_emperor"
-   }
-  },
-  {
-   "detail": null,
    "name": "Canary",
    "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
    "sources": {
     "canary": "canary:npc/canary"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Dahr-Enpa Rahng",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "canary": "canary:npc/dahr-enpa_rahng"
    }
   },
   {
@@ -209854,26 +210161,10 @@
   },
   {
    "detail": null,
-   "name": "Omniphant",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/omniphant"
-   }
-  },
-  {
-   "detail": null,
    "name": "Persevering Lion Archer",
    "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
    "sources": {
     "crystal": "crystal:npc/persevering_lion_archer"
-   }
-  },
-  {
-   "detail": null,
-   "name": "Quill",
-   "reason": "SINGLE_SOURCE_NOT_ON_WIKI",
-   "sources": {
-    "crystal": "crystal:npc/quill"
    }
   },
   {
@@ -210004,31 +210295,22 @@
     "canary": "canary:npc/santa_claus",
     "crystal": "crystal:npc/santa_claus"
    }
-  },
-  {
-   "detail": null,
-   "name": "Willow",
-   "reason": "UNPLACED",
-   "sources": {
-    "canary": "canary:npc/willow",
-    "crystal": "crystal:npc/willow"
-   }
   }
  ],
  "item_map_sha256": "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a",
  "schema": "OTERYN_NPC_PROMOTION_CANDIDATES/v1",
- "snapshot_sha256": "e8a040340f66036578cf275a37cd799ed11edb6e44fbadac2ddc20bdb8a9fb6f",
+ "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
  "totals": {
-  "arbitrated_facts": 270,
-  "candidates": 1082,
+  "arbitrated_facts": 275,
+  "candidates": 1087,
   "held:DEFINITION_CONFLICT": 7,
   "held:EMPTY_SLUG": 1,
   "held:KEY_COLLISION": 2,
   "held:NOT_LOADABLE": 6,
   "held:PLACEMENT_CONFLICT_NO_WIKI_POSITION": 1,
   "held:PLACEMENT_CONFLICT_WIKI_UNDECIDED": 5,
-  "held:SINGLE_SOURCE_NOT_ON_WIKI": 15,
-  "held:UNPLACED": 10,
+  "held:SINGLE_SOURCE_NOT_ON_WIKI": 11,
+  "held:UNPLACED": 9,
   "left_out_offers": 219,
   "left_out_routes": 65,
   "offers": 11732,

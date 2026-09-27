@@ -27,7 +27,7 @@ Semantic rules:
   confirmation (D6: single-source NPCs need wiki confirmation);
 - arbitration rows have rule 'WIKI_ARBITER' with `chosen` in canary/crystal and one of the
   candidate's provenance sources (a fact may be `travel.<id>...` or `trade.<id>...`), or rule
-  'WIKI_POSITION'/'WIKI_BASE_NAME' (D8) with `chosen` == 'wiki';
+  'WIKI_POSITION'/'WIKI_BASE_NAME'/'WIKI_SPELLING' (D8) with `chosen` == 'wiki';
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
   GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
   CURRENCY_CONFLICT; trade facts start with `trade.`, route facts with `travel.`; no left_out
@@ -145,6 +145,12 @@ def candidate_errors(candidate, index):
                 errs.append(f'{plabel}: wiki-origin placement spawn_interval_s must be null, got {interval!r}')
         elif not _is_int(interval) or not (1 <= interval <= 86400):
             errs.append(f'{plabel}: spawn_interval_s {interval!r} not an int in 1..86400')
+        radius = placement.get('spawn_radius')
+        if wiki_origin:
+            if radius is not None:
+                errs.append(f'{plabel}: wiki-origin placement spawn_radius must be null, got {radius!r}')
+        elif not _is_int(radius) or radius < 0:
+            errs.append(f'{plabel}: spawn_radius {radius!r} not a non-negative int')
 
     provenance = candidate.get('provenance') or {}
     if not isinstance(provenance, dict) or not (1 <= len(provenance) <= 2) \
@@ -229,11 +235,12 @@ def candidate_errors(candidate, index):
                 errs.append(f'{alabel}: chosen {chosen!r} not in canary/crystal')
             elif chosen not in provenance:
                 errs.append(f'{alabel}: chosen {chosen!r} is not one of this candidate\'s provenance sources')
-        elif rule in ('WIKI_POSITION', 'WIKI_BASE_NAME'):
+        elif rule in ('WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING'):
             if chosen != 'wiki':
                 errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
         else:
-            errs.append(f"{alabel}: rule {rule!r} not in ['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_POSITION']")
+            errs.append(f"{alabel}: rule {rule!r} not in "
+                         f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_POSITION', 'WIKI_SPELLING']")
 
     left_out_keywords = set()
     for i, row in enumerate(candidate.get('left_out') or []):
