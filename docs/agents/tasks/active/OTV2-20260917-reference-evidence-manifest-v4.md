@@ -11,12 +11,12 @@ branch: agent/reference-manifest-v4-514
 issue: 514
 pr: 640
 base_sha: b44fefe08f6aaf1b2c1c23dedd92bab0de87146e
-head_sha: f41ea1820bd9427384fece539d9dee5233fe2c24
+head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: REFERENCE_MANIFEST_V4_514
 created_at: 2026-09-17T07:14:16Z
-updated_at: 2026-09-17T08:10:12Z
+updated_at: 2026-09-27T18:17:08Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
@@ -37,7 +37,7 @@ external_repositories: []
 
 ## Outcome
 
-Advance the accepted Reference evidence/parity registry exactly once from manifest revision 3 to 4. Preserve schema v1 byte-for-byte, retain all revision-3 cases/history, add only seven bounded `DERIVED` cases supported by the allocated evidence packet, preserve `UNKNOWN`/`CONFLICT` ceilings, and make no runtime or parity-confirmed claim.
+Advance the accepted Reference evidence/parity registry exactly once from manifest revision 3 to 4. Preserve schema v1 byte-for-byte, retain all revision-3 cases/history, add six bounded `DERIVED` cases and one fail-closed `UNKNOWN` current-observation case from the allocated evidence packet, preserve `UNKNOWN`/`CONFLICT` ceilings, and make no runtime or parity-confirmed claim.
 
 ## Architecture and source of truth
 
@@ -45,7 +45,8 @@ Advance the accepted Reference evidence/parity registry exactly once from manife
 - `PROVEN`: #162 comment `5711026915` selects the bounded schema-v1 serialization `STRUCTURED_REFERENCE_DATA -> COMMUNITY_CORROBORATION` for external structured Rat wiki locators without evidence promotion.
 - `PROVEN`: `docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` freezes schema v1, the nine-domain inventory, independent target/implementation/parity axes, fail-closed classifications, and digest policy.
 - `PROVEN`: `docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_CONTRACT.md` requires validation against the exact normative schema.
-- `DERIVED`: seven bounded target claims are admitted at the field ceilings recorded in the public source packet.
+- `DERIVED`: six bounded target claims are admitted at the field ceilings recorded in the public source packet.
+- `UNKNOWN`: Goblin Intruder retaliation is retained only as a current post-target observation because target-cut continuity is unproven.
 - `UNKNOWN`: excluded formulas, mappings, timing edges, RNG/probabilities, identifiers, catalogues, exact retrieval instants not captured by protected evidence, and runtime behavior remain unregistered or explicitly outside each case.
 - `CONFLICT`: existing conflicts are not rewritten or resolved by this task.
 
@@ -79,7 +80,8 @@ Schema mutation/versioning; runtime/client/server/Content/Cargo/workflow/registr
 - Kept Oteryn implementation state `NOT_STARTED` and exact revision/test links empty for every added case.
 - Second repair generation narrowed `character.death.low_level_base_xp_skill_loss.v1` to Global progression-loss semantics only; the Oteryn difference remains parity-side through the accepted difference reference.
 - Second repair generation added explicit unique anchors for every manifest `artifact_id` and replaced unsupported synthetic midnight retrieval timestamps with `null` plus truthful date-precision notes.
-- Repair content heads: source packet `ad9ef95d0812a5f332c463795c2782da5e02c561`; manifest `f41ea1820bd9427384fece539d9dee5233fe2c24`.
+- Third repair generation adds the official 2009 death-history continuity source and lowers Goblin Intruder retaliation to fail-closed UNKNOWN after exact-head Luna review found two P1 evidence-classification gaps.
+- The reviewed predecessor is 40c12953bfc0862dd1d97eb947e139e26040cde8; the successor exact SHA is bound only by repository readback after atomic publication, so this packet does not self-assert its own commit ID.
 
 ## Validation
 
@@ -119,7 +121,7 @@ Required fresh checks for the resulting exact PR head:
 
 - exact head: pending readback after task-record publication
 - method/reviewer: whole diff against #162 allocation, manifest owner pin, schema-v1 contract, and independent-review findings
-- material findings closed by second repair generation: progression-scope P1; artifact-anchor P2; retrieval-time P2; lifecycle-generation P2
+- material findings closed before the next freeze: progression-scope P1; artifact-anchor P2; retrieval-time P2; lifecycle-generation P2; missing death-continuity source P1; unsupported Goblin target continuity P1
 - verdict: pending fresh exact-head readback
 
 ## Independent review
@@ -142,10 +144,10 @@ Required fresh checks for the resulting exact PR head:
 ## Context checkpoint
 
 ```yaml
-last_progress: second same-branch repair generation published source-locator/timestamp fixes and progression-only declared-difference semantics
+last_progress: third repair generation prepared to add the admitted official death-history source and lower Goblin retaliation to UNKNOWN
 status: validating
 branch: agent/reference-manifest-v4-514
-head_sha: f41ea1820bd9427384fece539d9dee5233fe2c24
+head_sha: null
 pr: 640
 final_head_sha: null
 final_head_frozen_at: null
@@ -159,10 +161,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: fresh-read PR #640 exact head, run/consume second-generation validation and hosted CI, then request one fresh independent whole-diff review on that exact head
+next_action: atomically publish the bounded third repair, freeze exact successor, rerun pinned validation and hosted CI, then require fresh independent whole-diff review
 ```

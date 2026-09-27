@@ -137,8 +137,8 @@ The official Radiant Skyhold `2000` threshold candidate is omitted. Its expected
 - Reviewed in the 2026-09-09 evidence generation; exact per-source retrieval instant was not recorded.
 - Source type: `OFFICIAL_PUBLIC`
 - Provenance/legal: `CLEARED / CLEARED` for public factual paraphrase
-- Supports: the tutorial Goblin Intruder fights back after being attacked; dated Newhaven production evidence makes this a bounded `DERIVED` continuity claim.
-- Uncertainty: HP, XP, attacks, damage, target/threat selection, reaction timer, pathfinding, spawn behavior, corpse, and loot remain `UNKNOWN`.
+- Supports only a current observation: the current Quickstart says the tutorial Goblin Intruder fights back after being attacked.
+- Uncertainty: the guide has no supplied effective date, and no dated pre-target source or target-valid observation establishes continuity to 2026-07-28; the manifest case remains UNKNOWN. HP, XP, attacks, damage, target/threat selection, reaction timer, pathfinding, spawn behavior, corpse, and loot also remain UNKNOWN.
 
 <a id="s12-rat-target-near-structured-record"></a>
 ### S12 — Target-near Rat structured record
@@ -177,6 +177,17 @@ The official Radiant Skyhold `2000` threshold candidate is omitted. Its expected
 - Supports: official creature-catalogue terminology anchor only.
 - Uncertainty: direct numeric Rat fields were not retrieved from the official catalogue and are not upgraded to `PROVEN`.
 
+<a id="s15-2009-death-penalty-history"></a>
+### S15 — Official 2009 death-penalty history
+
+- Locator: https://www.tibia.com/news/?id=944&subtopic=newsarchive
+- Effective date: 2009-03-10
+- Retrieved/index-verified: 2026-09-27T18:17:08Z
+- Source type: OFFICIAL_PUBLIC
+- Provenance/legal: CLEARED / CLEARED for public factual paraphrase
+- Supports: the historical low-level unpromoted/unblessed experience-loss and skill-loss family; the official article says characters below level 24 retained 10% skill and experience loss when the higher-level penalty was reduced.
+- Uncertainty: this historical source plus the current manual supports qualitative continuity only. It does not independently prove uninterrupted exact rates, thresholds, target-cut arithmetic, modifier ordering, or rounding.
+
 ## Per-case admission result
 
 | Case | Domain | Target evidence | Parity | Preserved ceiling |
@@ -186,7 +197,7 @@ The official Radiant Skyhold `2000` threshold candidate is omitted. Its expected
 | `character.death.low_level_base_xp_skill_loss.v1` | `CHARACTER` | `DERIVED` | `DECLARED_DIFFERENCE` | progression loss only; Global target evidence separated from accepted Oteryn difference |
 | `ability_combat.corpse_loot.authority_window_10s.v1` | `ABILITY_COMBAT` | `DERIVED` | `PARITY_PENDING_EVIDENCE` | qualitative ten-second family; exact tick/edges unknown |
 | `world_interaction.newhaven_npc.trade_widget_flow.v1` | `WORLD_INTERACTION` | `DERIVED` | `PARITY_PENDING_EVIDENCE` | product shape only |
-| `ai_spawn.newhaven.goblin_intruder_retaliates_when_attacked.v1` | `AI_SPAWN` | `DERIVED` | `PARITY_PENDING_EVIDENCE` | retaliation only |
+| `ai_spawn.newhaven.goblin_intruder_retaliates_when_attacked.v1` | `AI_SPAWN` | `UNKNOWN` | `PARITY_PENDING_EVIDENCE` | current post-target observation only; target continuity unknown |
 | `content_world.rat.first_creature_static.v1` | `CONTENT_WORLD` | `DERIVED` | `PARITY_PENDING_EVIDENCE` | exact bounded static tuple; RNG and final XP unknown |
 
 No case is `PARITY_CONFIRMED`. Every Oteryn implementation state remains `NOT_STARTED`, with no exact implementation revision or fixture/test link claimed.

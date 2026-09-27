@@ -504,9 +504,19 @@
             "retrieved_at": null,
             "provenance_state": "CLEARED",
             "uncertainty_notes": "Current official manual supports the bounded qualitative experience-loss and skill-loss family; exact target-cut arithmetic, thresholds, and related death behavior are not promoted."
+          },
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/news/?id=944&subtopic=newsarchive",
+            "artifact_id": "docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md#s15-2009-death-penalty-history",
+            "effective_date": "2009-03-10",
+            "observed_at": null,
+            "retrieved_at": "2026-09-27T18:17:08Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Official 2009 change history establishes that low-level unpromoted and unblessed characters retained the experience-loss and skill-loss family. It does not prove uninterrupted exact rates or target-cut arithmetic."
           }
         ],
-        "confidence_notes": "Official continuity supports the bounded Global progression-loss family.",
+        "confidence_notes": "Official 2009 history plus the current official manual support qualitative continuity of the bounded Global experience-loss and skill-loss family at DERIVED.",
         "uncertainty_notes": "Exact Global XP basis/rate, thresholds, blessing/promotion transforms, skill/magic arithmetic, ordering, rounding, level transition, item loss, respawn destination, and other death behavior remain UNKNOWN for this case.",
         "conflicts": []
       },
@@ -695,8 +705,8 @@
         }
       ],
       "target": {
-        "expected_observable_behavior": "The Newhaven tutorial Goblin Intruder fights back after it is attacked.",
-        "evidence_class": "DERIVED",
+        "expected_observable_behavior": "UNKNOWN for the immutable 2026-07-28 target cut. The current official Quickstart, observed after the target boundary, says the Newhaven tutorial Goblin Intruder fights back after it is attacked.",
+        "evidence_class": "UNKNOWN",
         "sources": [
           {
             "source_type": "OFFICIAL_PUBLIC",
@@ -706,11 +716,11 @@
             "observed_at": null,
             "retrieved_at": null,
             "provenance_state": "CLEARED",
-            "uncertainty_notes": "Current official Quickstart supports the qualitative retaliation statement; dated Newhaven production chronology supports continuity only at DERIVED."
+            "uncertainty_notes": "Current official Quickstart supports only a post-target current observation; publication/revision timing and continuity to the immutable target cut are not established."
           }
         ],
-        "confidence_notes": "Official tutorial material states the qualitative response and protected evidence separately establishes Newhaven as pre-target production content.",
-        "uncertainty_notes": "Exact HP, XP, attacks, damage, retarget/threat algorithm, reaction timer, pathfinding, spawn placement/interval, corpse, and loot remain UNKNOWN.",
+        "confidence_notes": "The current official Quickstart supports a present qualitative retaliation observation, but no dated pre-target source or target-valid controlled observation establishes continuity to 2026-07-28.",
+        "uncertainty_notes": "Target-cut continuity, exact HP, XP, attacks, damage, retarget/threat algorithm, reaction timer, pathfinding, spawn placement/interval, corpse, and loot remain UNKNOWN.",
         "conflicts": []
       },
       "oteryn": {
@@ -726,13 +736,13 @@
       "provenance": {
         "state": "CLEARED",
         "legal_review_state": "CLEARED",
-        "notes": "Public official facts and/or accepted Oteryn contract text are paraphrased with exact locators; no proprietary assets, restricted captures, or copied implementation material are included. Clearance applies only to the bounded claims in this case."
+        "notes": "The public official current observation is paraphrased with an exact locator and cleared provenance. Target-cut continuity is unresolved, so evidence remains UNKNOWN and parity pending."
       },
       "history": [
         {
           "date": "2026-09-17",
-          "summary": "Registered as a bounded DERIVED target case with no Oteryn implementation or parity confirmation.",
-          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
+          "summary": "Registered as a fail-closed UNKNOWN target case from a current official post-target observation with no Oteryn implementation or parity confirmation.",
+          "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; no dated pre-target source establishes the retaliation claim at the immutable target cut."
         }
       ]
     },
@@ -873,7 +883,7 @@
     {
       "manifest_revision": 4,
       "date": "2026-09-17",
-      "summary": "Register seven bounded DERIVED cases for Newhaven/Targuna chronology, Discovery movement reward range, the Global/Oteryn death progression distinction, corpse-loot authority, Newhaven trade and retaliation shapes, and target-near Rat static fields; preserve all revision-3 cases and fail-closed unknown boundaries; no parity is confirmed.",
+      "summary": "Register six bounded DERIVED cases for Newhaven/Targuna chronology, Discovery movement reward range, the Global/Oteryn death progression distinction, corpse-loot authority, Newhaven trade shape and target-near Rat static fields, plus one fail-closed UNKNOWN current Goblin retaliation observation; preserve all revision-3 cases and unknown boundaries; no parity is confirmed.",
       "issue": "#514"
     }
   ]
