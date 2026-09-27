@@ -20,10 +20,11 @@
       "source_index": 0,
       "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
       "source_line": 70,
-      "source_field": "attacks[2].name=sudden death rune",
-      "kind": "script",
-      "status": "unresolved_semantics",
-      "resolution": "Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision."
+      "source_field": "attacks[2]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/1",
+      "resolution": "registered rune spell \"sudden death rune\" (data/scripts/runes/sudden_death.lua), tier P1: resolved by name as Canary does (rune, instant, then built-in kind; D10). CALLBACK_PARAM_LEVELMAGICVALUE is the player formula; a monster caster uses its own values instead.  Damage/heal magnitude comes from this monster entry: combat.cpp Combat::getCombatDamage uses Monster::getCombatValues (D11); the script formula applies only to players."
     },
     {
       "source_index": 0,
@@ -32,7 +33,7 @@
       "source_field": "attacks[3]",
       "kind": "field",
       "status": "mapped",
-      "destination": "/monster/behavior/attacks/1",
+      "destination": "/monster/behavior/attacks/2",
       "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
     },
     {
@@ -42,7 +43,7 @@
       "source_field": "attacks[4]",
       "kind": "field",
       "status": "mapped",
-      "destination": "/monster/behavior/attacks/2",
+      "destination": "/monster/behavior/attacks/3",
       "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
     },
     {
@@ -52,7 +53,7 @@
       "source_field": "attacks[5]",
       "kind": "field",
       "status": "mapped",
-      "destination": "/monster/behavior/attacks/3",
+      "destination": "/monster/behavior/attacks/4",
       "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
     },
     {
@@ -62,17 +63,18 @@
       "source_field": "attacks[6]",
       "kind": "field",
       "status": "mapped",
-      "destination": "/monster/behavior/attacks/4",
+      "destination": "/monster/behavior/attacks/5",
       "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
     },
     {
       "source_index": 0,
       "source_file": "data-otservbr-global/monster/familiars/knight_familiar.lua",
       "source_line": 75,
-      "source_field": "attacks[7].name=ice strike",
-      "kind": "script",
-      "status": "unresolved_semantics",
-      "resolution": "Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision."
+      "source_field": "attacks[7]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/6",
+      "resolution": "registered instant spell \"ice strike\" (data/scripts/spells/attack/ice_strike.lua), tier P1: resolved by name as Canary does (rune, instant, then built-in kind; D10). CALLBACK_PARAM_LEVELMAGICVALUE is the player formula; a monster caster uses its own values instead.  Damage/heal magnitude comes from this monster entry: combat.cpp Combat::getCombatDamage uses Monster::getCombatValues (D11); the script formula applies only to players."
     },
     {
       "source_index": 0,

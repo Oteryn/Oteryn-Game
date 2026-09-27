@@ -915,6 +915,30 @@
         },
         "chance_percent": {
           "$ref": "#/$defs/percent"
+        },
+        "magnitude": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "minimum": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "maximum": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "minimum",
+            "maximum"
+          ],
+          "description": "D11: this monster's damage/heal magnitude for effects whose formula is caster_magnitude."
+        },
+        "range_tiles": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "D11: this monster's cast range for the shared Ability."
         }
       },
       "required": [
@@ -1587,6 +1611,16 @@
       ],
       "description": "Only the source-supported independent base table is in this schema. Other native algorithms retain their own accepted contracts."
     },
+    "areaMatrix": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[.xcC]+$"
+      },
+      "minItems": 1,
+      "description": "Rows of cells: '.' not hit, 'x' hit, 'c' centre not hit, 'C' centre hit; rectangular, exactly one centre."
+    },
     "area": {
       "type": "object",
       "additionalProperties": false,
@@ -1602,6 +1636,22 @@
         "radius_tiles": {
           "type": "integer",
           "minimum": 0
+        },
+        "matrix": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "north": {
+              "$ref": "#/$defs/areaMatrix"
+            },
+            "diagonal": {
+              "$ref": "#/$defs/areaMatrix"
+            }
+          },
+          "required": [
+            "north"
+          ],
+          "description": "D12: authored facing north (diagonal: facing north-west) and rotated to the direction from the centre to the target (combat.cpp AreaCombat::getArea); tiles need a clear line of sight from the caster."
         }
       },
       "required": [],
@@ -1616,6 +1666,11 @@
               {
                 "required": [
                   "radius_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "matrix"
                 ]
               }
             ]
@@ -1635,6 +1690,35 @@
               {
                 "required": [
                   "spread_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "matrix"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "matrix"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "length_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "spread_tiles"
+                ]
+              },
+              {
+                "required": [
+                  "radius_tiles"
                 ]
               }
             ]
@@ -1689,6 +1773,40 @@
             }
           },
           "required": []
+        },
+        "variants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/AbilityRef"
+          },
+          "minItems": 2,
+          "description": "D12: each cast runs one variant picked uniformly; variants have no variants."
+        },
+        "chain": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "max_targets": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "range_tiles": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "backtracking": {
+              "$ref": "#/$defs/bool"
+            },
+            "chain_asset_binding": {
+              "$ref": "#/$defs/assetBinding"
+            }
+          },
+          "required": [
+            "max_targets",
+            "range_tiles",
+            "backtracking"
+          ],
+          "description": "D12: the effect jumps between up to max_targets creatures."
         }
       },
       "required": [
@@ -1696,8 +1814,47 @@
         "kind",
         "range_tiles",
         "needs_target",
-        "needs_direction",
-        "effects"
+        "needs_direction"
+      ],
+      "oneOf": [
+        {
+          "required": [
+            "effects"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "variants"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "variants"
+          ],
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "effects"
+                ]
+              },
+              {
+                "required": [
+                  "area"
+                ]
+              },
+              {
+                "required": [
+                  "chain"
+                ]
+              }
+            ]
+          }
+        }
       ],
       "description": "For area casts, center precedence is required target position, facing-adjacent position when needs_direction, then caster position. Native execution and no-area target selection require separate qualification."
     },
@@ -1754,6 +1911,33 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "fixed_ticks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "interval_ms": {
+                "$ref": "#/$defs/ms"
+              },
+              "amount": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "count",
+              "interval_ms",
+              "amount"
+            ]
+          },
+          "minItems": 1,
+          "description": "D12: explicit ticks in order (Condition:addDamage rounds, time, value)."
+        },
         "total_damage_range": {
           "type": "object",
           "additionalProperties": false,
@@ -1781,21 +1965,74 @@
         },
         "tick_profile": {
           "enum": [
-            "decreasing"
+            "decreasing",
+            "fixed"
           ]
         },
         "first_tick": {
           "enum": [
-            "after_interval"
+            "after_interval",
+            "immediate"
           ]
         }
       },
       "required": [
-        "total_damage_range",
-        "tick_interval_ms",
-        "initial_tick",
         "tick_profile",
         "first_tick"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "tick_profile": {
+                "const": "fixed"
+              }
+            },
+            "required": [
+              "tick_profile"
+            ]
+          },
+          "then": {
+            "required": [
+              "fixed_ticks"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "total_damage_range"
+                  ]
+                },
+                {
+                  "required": [
+                    "tick_interval_ms"
+                  ]
+                },
+                {
+                  "required": [
+                    "initial_tick"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "required": [
+              "total_damage_range",
+              "tick_interval_ms",
+              "initial_tick"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "fixed_ticks"
+                  ]
+                }
+              ]
+            }
+          }
+        }
       ],
       "description": "Nominal source damage budget, not per-tick magnitude or a promise of exact summed damage. Native schedule parity requires separate qualification."
     },
@@ -1817,6 +2054,36 @@
         },
         "speed_formula": {
           "$ref": "#/$defs/FormulaRef"
+        },
+        "attribute_modifiers": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "attribute": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "mode": {
+                "enum": [
+                  "percent_of_base",
+                  "add"
+                ]
+              },
+              "value": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "attribute",
+              "mode",
+              "value"
+            ]
+          },
+          "minItems": 1,
+          "description": "D12: percent_of_base sets the attribute to value% of its base; add adds value."
         }
       },
       "required": [
@@ -2196,7 +2463,8 @@
           "enum": [
             "range",
             "melee_attack_skill",
-            "speed_modifier"
+            "speed_modifier",
+            "caster_magnitude"
           ]
         },
         "magnitude": {
@@ -2357,8 +2625,42 @@
               ]
             }
           }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "caster_magnitude"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "magnitude"
+                  ]
+                },
+                {
+                  "required": [
+                    "melee"
+                  ]
+                },
+                {
+                  "required": [
+                    "speed"
+                  ]
+                }
+              ]
+            }
+          }
         }
-      ]
+      ],
+      "description": "caster_magnitude (D11): the magnitude comes from the casting monster's schedule entry (Monster::getCombatValues)."
     },
     "document": {
       "type": "object",

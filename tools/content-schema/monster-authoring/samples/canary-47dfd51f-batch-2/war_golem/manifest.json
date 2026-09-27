@@ -40,19 +40,21 @@
       "source_index": 0,
       "source_file": "data-otservbr-global/monster/constructs/war_golem.lua",
       "source_line": 120,
-      "source_field": "attacks[4].name=war golem electrify",
-      "kind": "script",
-      "status": "unresolved_semantics",
-      "resolution": "Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision."
+      "source_field": "attacks[4]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/3",
+      "resolution": "registered instant spell \"war golem electrify\" (data-otservbr-global/scripts/spells/monster/war_golem_electrify.lua), tier P2: resolved by name as Canary does (rune, instant, then built-in kind; D10).  Damage/heal magnitude comes from this monster entry: combat.cpp Combat::getCombatDamage uses Monster::getCombatValues (D11); the script formula applies only to players."
     },
     {
       "source_index": 0,
       "source_file": "data-otservbr-global/monster/constructs/war_golem.lua",
       "source_line": 121,
-      "source_field": "attacks[5].name=war golem skill reducer",
-      "kind": "script",
-      "status": "unresolved_semantics",
-      "resolution": "Spell name is not an inline Canary branch; it resolves to a registered spell script that needs a native behaviour decision."
+      "source_field": "attacks[5]",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/monster/behavior/attacks/4",
+      "resolution": "registered instant spell \"war golem skill reducer\" (data-otservbr-global/scripts/spells/monster/war_golem_skill_reducer.lua), tier P3: resolved by name as Canary does (rune, instant, then built-in kind; D10). All 21 random variants convert to the same Ability, so they form one.  CONDITION_PARAM_SKILL_DEFENSEPERCENT is not a Canary constant (nil), so that setParameter has no effect. CONDITION_ATTRIBUTES with no recognised attribute changes nothing."
     },
     {
       "source_index": 0,

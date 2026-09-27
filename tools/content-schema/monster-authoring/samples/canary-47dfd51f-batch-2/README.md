@@ -25,12 +25,14 @@ exercised from this source.
 
 ## Result
 
-- 10/10 bundles pass `validate_monster.py`; 7/10 manifests resolve every declared row.
+- 10/10 bundles pass `validate_monster.py`; 9/10 manifests resolve every declared row (7/10
+  before registered spells were converted, see the schema document §8.3).
 - Blocked, as intended:
-  - `knight_familiar`: registered spells `sudden death rune` (the rune) and `ice strike` (P1,
-    D11). Its look is resolved by D16: the default Skullfrost look 991 with
-    `selection=owner_familiar_look`.
-  - `war_golem`: registered spells `war golem electrify` and `war golem skill reducer` (D12).
+  - `knight_familiar` and `war_golem` now resolve: `sudden death rune` and `ice strike` are
+    shared P1 Abilities with the monster magnitude; `war golem electrify` is energy damage plus a
+    fixed 8 x 25 energy DoT; `war golem skill reducer` is only a stun visual in Canary, because
+    its `CONDITION_PARAM_SKILL_DEFENSEPERCENT` is not an engine constant. The familiar look is
+    resolved by D16.
   - `the_enraged_thorn_knight`: `HealthForgotten` doubles damage taken unless a Possessed Tree is
     near (D9: Encounter mechanic). Its addons are now mapped as attachment bindings.
 - Schema change from this batch: bosstiary points are per stage (D8).

@@ -192,9 +192,9 @@ def loot_chances(source, stats):
     entries = source.get('loot', [])
     names = [(e.get('name') or cb.CONVERTER.names.get(int(e['id']), f'item {e["id"]}')).lower() for e in entries]
     rows = []
-    for entry, name in zip(entries, names):
+    for position, (entry, name) in enumerate(zip(entries, names)):
         low, high = entry.get('minCount', 1), entry.get('maxCount', 1)
-        row = {'item': name, 'canary_percent': float(cb.percent_from_chance(entry.get('chance', 0))),
+        row = {'position': position, 'item': name, 'canary_percent': float(cb.percent_from_chance(entry.get('chance', 0))),
                'canary_amount': str(low) if low == high else f'{low}-{high}'}
         wiki = by_name.get(name)
         if wiki is None:
@@ -203,6 +203,9 @@ def loot_chances(source, stats):
         if names.count(name) > 1:
             row['status'] = 'MULTI_ENTRY'
             row['note'] = 'Canary splits this item over several entries; the wiki counts kills with any drop, so they are not compared.'
+        elif wiki is not None and not 0 <= wiki['times'] <= stats['kills']:
+            row.update(status='INVALID_STATISTICS', times=wiki['times'], kills=stats['kills'],
+                       note='Wiki drop count exceeds the kill count of the block.')
         elif wiki is None:
             row.update(status='NOT_OBSERVED', times=0, kills=stats['kills'], interval_95_wilson=wilson(0, stats['kills']),
                        note='Not listed in the highest-version block.')
@@ -218,8 +221,11 @@ def loot_chances(source, stats):
 
 
 def number(value):
-    match = re.match(r'^\s*(-?\d+(?:\.\d+)?)', value or '')
-    return Fraction(match.group(1)) if match else None
+    """Exact number of a wiki field value, with thousands separators; None when absent, approximate or uncertain."""
+    if value is None or re.search(r'[?~]', value):
+        return None
+    match = re.match(r'^\s*(-?\d{1,3}(?:,\d{3})+|-?\d+)(\.\d+)?', value)
+    return Fraction(match.group(1).replace(',', '') + (match.group(2) or '')) if match else None
 
 
 def wiki_loot(value):
@@ -232,8 +238,8 @@ def wiki_loot(value):
     return names
 
 
-def compare(relative, canary, batch_dir, cache):
-    name, source, _ = cb.load_monster(canary / cb.MONSTER_DIR / (relative + '.lua'))
+def compare(relative, canary, _batch_dir, cache):
+    name, source, _ = cb.load_monster(canary / cb.MONSTER_DIR / (relative + '.lua'), [])
     slug = cb.slug(name)
     # Compare the plain Canary conversion, never a bundle that already carries adopted wiki values.
     cb.CONVERTER.wiki, cb.CONVERTER.pending_definitions = {}, set()
@@ -252,8 +258,12 @@ def compare(relative, canary, batch_dir, cache):
     rows = []
 
     def row(field, canary_value, wiki_raw, wiki_value, note=None, key=None):
-        if wiki_raw in (None, '', '?'):
+        if wiki_raw in (None, '', '?') or str(wiki_raw).strip().lower() == 'unknown':
             status = 'WIKI_UNKNOWN'
+        elif re.search(r'[?~]', str(wiki_raw)):
+            status = 'WIKI_UNCERTAIN'
+        elif wiki_value is None:
+            status = 'WIKI_UNPARSED'
         elif canary_value == wiki_value:
             status = 'MATCH'
         else:
@@ -277,14 +287,15 @@ def compare(relative, canary, batch_dir, cache):
     row('mitigation_percent', float(Fraction(mitigation['numerator'], mitigation['denominator'])) if mitigation else None,
         fields.get('mitigation'), as_number(number(fields.get('mitigation'))), key='mitigation')
     resist = {r['damage_type']: Fraction(r['reduction_percent']['numerator'], r['reduction_percent']['denominator']) for r in c['resistances']}
+    resist.update({damage: Fraction(100) for damage in c['immunities']['damage_types']})
     for element, key in ELEMENTS.items():
         taken = number(fields.get(key))
         row(f'resistance.{element}', as_number(resist.get(element, Fraction(0))), fields.get(key),
-            as_number(100 - taken) if taken is not None else None, 'Wiki lists damage taken; resistance = 100 - taken.', key)
+            as_number(100 - taken) if taken is not None else None, 'Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.', key)
     summoning = c['summoning']
     for field, key, flag in (('summon_mana_cost', 'summon', 'summonable'), ('convince_mana_cost', 'convince', 'convinceable')):
         raw = fields.get(key)
-        wiki_value = as_number(number(raw)) if number(raw) is not None else ('--' if raw and raw.strip() in ('--', '-') else None)
+        wiki_value = as_number(number(raw)) if number(raw) is not None else ('--' if raw and raw.strip().lower() in ('--', '-', 'no') else None)
         row(field, summoning.get('mana_cost') if summoning[flag] else '--', raw, wiki_value, key=key)
     for field, key, value in (('illusionable', 'illusionable', c['flags']['illusionable']),
                               ('pushable', 'pushable', b['movement']['pushable']),
@@ -328,10 +339,52 @@ def compare(relative, canary, batch_dir, cache):
     return result
 
 
+def totals(results):
+    """Totals over full results (before compact())."""
+    summary, chances, confidence, fields = {}, {}, {}, {}
+    for result in results:
+        for entry in result.get('rows', []):
+            summary[entry['status']] = summary.get(entry['status'], 0) + 1
+            if entry['status'] == 'DIFF':
+                fields[entry['field']] = fields.get(entry['field'], 0) + 1
+        for entry in result.get('loot_chances', []):
+            chances[entry['status']] = chances.get(entry['status'], 0) + 1
+            if 'confidence' in entry:
+                confidence[entry['confidence']] = confidence.get(entry['confidence'], 0) + 1
+    return (dict(sorted(summary.items())), dict(sorted(chances.items())), dict(sorted(confidence.items())),
+            dict(sorted(fields.items(), key=lambda kv: (-kv[1], kv[0]))))
+
+
+def compact(result):
+    """Population form: revisions, per-status counts and only the rows that are not MATCH/CONSISTENT."""
+    out = {k: v for k, v in result.items() if k not in ('rows', 'loot_chances', 'loot_statistics')}
+    counts = {}
+    for entry in result.get('rows', []):
+        counts[entry['status']] = counts.get(entry['status'], 0) + 1
+    out['row_counts'] = dict(sorted(counts.items()))
+    out['rows'] = [r for r in result.get('rows', []) if r['status'] == 'DIFF']
+    stats = result.get('loot_statistics')
+    if stats:
+        # Keep the statistics of wiki-only loot items: canary_batch.py adopts them (D15).
+        out['loot_statistics'] = {**{k: v for k, v in stats.items() if k != 'items'},
+                                  'items': [i for i in stats.get('items', []) if 'item_page' in i]}
+    chance_counts = {}
+    for entry in result.get('loot_chances', []):
+        chance_counts[entry['status']] = chance_counts.get(entry['status'], 0) + 1
+    if chance_counts:
+        out['loot_chance_counts'] = dict(sorted(chance_counts.items()))
+    # Every loot chance is kept (trimmed): canary_batch.py applies the D15 loot rate rule from it.
+    keep = ('position', 'item', 'status', 'confidence', 'canary_percent', 'wiki_percent', 'interval_95_wilson', 'times', 'kills',
+            'wiki_line', 'note')
+    out['loot_chances'] = [{k: c[k] for k in keep if k in c} for c in result.get('loot_chances', [])]
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     parser.add_argument('--batch', default=cb.REV, choices=sorted(cb.BATCHES))
+    parser.add_argument('--population', action='store_true', help='compare every Canary monster file (compact output)')
     parser.add_argument('--cache', type=Path, default=Path('/tmp/oteryn-wiki-cache'))
     args = parser.parse_args()
     args.cache.mkdir(parents=True, exist_ok=True)
@@ -339,28 +392,45 @@ def main():
     items = cb.load_items_xml(args.canary / 'data/items/items.xml')
     names, index = cb.name_index(objects, items)
     cb.CONVERTER = cb.Converter(args.canary, objects, items, names, index)
-    batch_dir = ROOT / 'samples' / args.batch
-    results = [compare(relative, args.canary, batch_dir, args.cache) for relative in cb.BATCHES[args.batch]]
-    summary, chances, confidence = {}, {}, {}
+    if args.population:
+        results, skipped = [], []
+        for path in sorted((args.canary / cb.MONSTER_DIR).rglob('*.lua')):
+            relative = str(path.relative_to(args.canary / cb.MONSTER_DIR))[:-4]
+            try:
+                results.append(compare(relative, args.canary, None, args.cache))
+            except Exception as exc:  # files the converter cannot convert (see population_census.py)
+                skipped.append({'file': relative, 'error': f'{type(exc).__name__}: {str(exc).splitlines()[0][:100]}'})
+        out = ROOT / 'samples' / 'wiki-population-2026-07-28.json'
+    else:
+        results, skipped = [compare(relative, args.canary, None, args.cache) for relative in cb.BATCHES[args.batch]], []
+        out = ROOT / 'samples' / args.batch / 'wiki-2026-07-28.json'
+    rows, chances, confidence, fields = totals(results)
+    statuses = {}
     for result in results:
-        for entry in result['rows']:
-            summary[entry['status']] = summary.get(entry['status'], 0) + 1
-        for entry in result.get('loot_chances', []):
-            chances[entry['status']] = chances.get(entry['status'], 0) + 1
-            if 'confidence' in entry:
-                confidence[entry['confidence']] = confidence.get(entry['confidence'], 0) + 1
+        statuses[result['status']] = statuses.get(result['status'], 0) + 1
+    if args.population:
+        results = [compact(result) for result in results]
     report = {'source': 'TibiaWiki (Fandom), CC BY-SA; only compared facts are recorded', 'api': API,
               'target_cut': TARGET_CUT, 'cut_rule': f'last revision at or before {CUT_TIMESTAMP}',
               'classification': 'Wiki = player-observed reference evidence; Canary = OTS_HYPOTHESIS_ONLY',
-              'row_status_totals': dict(sorted(summary.items())),
+              'row_status_totals': rows,
               'loot_chance_rule': f'highest-version Loot Statistics block at the cut; estimate = times / kills with a 95% Wilson interval; '
                                   f'fewer than {LOW_CONFIDENCE_DROPS} drops is low_confidence. CONSISTENT = Canary inside the interval',
-              'loot_chance_totals': dict(sorted(chances.items())), 'loot_chance_confidence': dict(sorted(confidence.items())),
-              'monsters': results}
-    out = batch_dir / 'wiki-2026-07-28.json'
-    out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
-    print(json.dumps({'out': str(out), 'totals': report['row_status_totals'], 'loot_chances': report['loot_chance_totals'],
-                      'confidence': report['loot_chance_confidence']}))
+              'loot_chance_totals': chances, 'loot_chance_confidence': confidence}
+    if args.population:
+        report.update({'scope': 'Every convertible Canary monster file. Per monster the DIFF rows (the only ones D15 '
+                                'adopts) and all loot chances (trimmed) are listed; other statuses are counted.',
+                       'monster_status_totals': dict(sorted(statuses.items())), 'diff_fields': fields, 'not_converted': skipped})
+    report['monsters'] = results
+    if args.population:
+        # One monster per line keeps the population file small and its Git diffs readable.
+        head = json.dumps({**report, 'monsters': []}, ensure_ascii=False, indent=2)[:-len('\n  "monsters": []\n}')]
+        lines = ',\n'.join('    ' + json.dumps(r, ensure_ascii=False, separators=(',', ':')) for r in results)
+        out.write_text(head + '\n  "monsters": [\n' + lines + '\n  ]\n}\n', encoding='utf-8', newline='\n')
+    else:
+        out.write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n', encoding='utf-8', newline='\n')
+    print(json.dumps({'out': str(out), 'totals': rows, 'loot_chances': chances, 'confidence': confidence,
+                      **({'monsters': statuses, 'top_diff_fields': dict(list(fields.items())[:12])} if args.population else {})}))
 
 
 if __name__ == '__main__':
