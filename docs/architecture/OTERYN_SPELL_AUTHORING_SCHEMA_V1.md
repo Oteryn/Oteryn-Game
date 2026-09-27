@@ -96,15 +96,25 @@ Formula findings:
 - The TibiaWiki `Formulae` page (section "Damage and Healing", revision in the facts file) defines the
   curve since patch 13.05.12657 (October 2022): +1 every 5 levels up to 500, then every 6 up to 1100,
   every 7 up to 1800, and so on, as `S = floor((sqrt(2L + 2025) + 5) / 10)`,
-  `B = floor((L + 1000) / S) + 50S - 450`. This is exactly Crystal's function (S5).
+  `B = floor((L + 1000) / S) + 50S - 450`. This is exactly Crystal's function (S5). The curve is
+  unchanged in the current client 15.30 (July 2026); the 15.25 vocation adjustment (June 2026,
+  `Updates/15.25.3a4a52`) changed per-spell base powers, not the curve.
+- Per-spell formulas: the `Formulae` section "Spell/Rune Damage/Healing" still lists the old
+  `floor(lvl * 0.2) + mlvl * x + y` coefficients and marks them as no longer correct since 2020, so it
+  is not a formula source. Crystal PR #797 (merged 2026-07-01, "15.25 Base Spell Power") implements
+  the base-power forms `avg = B(L) + (bp / 25) * mlvl + bp / 6` (magic) and
+  `avg = B(L) + (bp / 1000) * skill * atk + bp / 6` (skill), with base powers taken from TibiaWiki;
+  the PR itself marks the healing coefficients as not yet confirmed. Formula shapes therefore stay
+  source values under S4 (UNKNOWN parity until measured), while base powers follow the wiki (S3).
 - Both engines draw the final value with `normal_random(min, max)` after truncating each bound to an
   integer (`LuaScriptInterface::getNumber<int32_t>`, `ValueCallback::getMinMaxValues`).
 
-## 4. TibiaWiki (Fandom) comparison at the cut
+## 4. TibiaWiki (Fandom) comparison, as of 2026-09-27
 
-`samples/wiki-spell-compare-fandom-2026-07-28.json` (`wiki_spells.py`): 218 `Infobox Spell` pages and
-62 `Category:Runes` pages at the last revision before 2026-07-29. Instant and conjuring spells are
-joined by words (the wiki may append the parameter, `exura sio "name`), runes by item id.
+`samples/wiki-spell-compare-fandom-2026-09-27.json` (`wiki_spells.py`, S3): 217 `Infobox Spell` pages
+and 55 rune item pages (`Category:Runes`), each at its last revision on or before 2026-09-27, plus the
+`Formulae` page. Instant and conjuring spells are joined by words (the wiki may append the parameter,
+`exura sio "name`), runes by item id.
 
 | field (match / diff) | Canary | Crystal |
 |---|---:|---:|
@@ -114,17 +124,18 @@ joined by words (the wiki may append the parameter, `exura sio "name`), runes by
 | mana | 171 / 11 | 185 / 12 |
 | soul | 187 / 1 | 202 / 1 |
 | premium | 156 / 32 | 162 / 41 |
-| cooldown | 176 / 12 | 183 / 20 |
+| cooldown | 174 / 14 | 181 / 22 |
 | primary group cooldown | 183 / 5 | 202 / 1 |
-| base power | – (absent) | 85 / 6 |
+| base power | – (absent) | 84 / 7 |
 | rune magic level | 36 / 0 | 36 / 0 |
 | conjure amount | 34 / 0 | 34 / 0 |
 
 Compared: Canary 224 spells, Crystal 239; unmatched source spells are monster-only registrations and a
 few conjuring spells whose wiki page name differs. 14 wiki spell pages have no Crystal spell: 11 are
 `deprecated` or `ts-only`, the others are `Gift of Life` (Wheel), `Lesser Mystic Repulse` (15.12) and
-`Mentor Other` (removed by Crystal). Several Crystal values that differ from the cut (base power 170 vs 155 for the great beams,
-new Crystal-only spells) look like changes after the reference date.
+`Mentor Other` (removed by Crystal). Under S3/S4 the differences are adopted from the wiki, for
+example base power 155 instead of Crystal's 170 for the great beams, Spirit Mend 250 instead of 220,
+the familiar summon cooldown of 30 minutes (both sources register 0), and the premium flags.
 
 ## 5. Decisions
 

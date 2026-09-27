@@ -15,10 +15,10 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `validate_spell.py` | Structural plus semantic/reference validation (words, vocations, groups, formula inputs, formula range over a level/magic-level/skill grid). Import manifests use `../monster-authoring/monster-import-readiness.schema.json`. |
 | `verify_formal_schema.py` | Focused positive/negative cases; regenerates the `synthetic-*.json` fixtures (Light Healing, Sudden Death rune and its conjuring spell, from Crystal Server). |
 | `spell_census.py` | Loads every `data/scripts/spells/**` and `data/scripts/runes/**` script of a Canary and a Crystal Server checkout in a stubbed LuaJIT sandbox (needs `lupa==2.8`); records registrar calls, Combats, cast tier and the damage/heal formulas as exact expression trees; compares the two sources. |
-| `wiki_spells.py` | Fetches TibiaWiki (Fandom) `Infobox Spell` pages and `Category:Runes` at the 2026-07-28 cut, keeps allowlisted facts only, and compares them with the census. |
+| `wiki_spells.py` | Fetches TibiaWiki (Fandom) `Infobox Spell` pages and `Category:Runes` as of a given day (default today; owner decision S3), keeps allowlisted facts only, and compares them with the census. |
 | `samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json` | Output of `spell_census.py` (one spell per line). |
-| `samples/wiki-spell-facts-fandom-2026-07-28.json` | Output of `wiki_spells.py facts`: page id, revision id, wikitext SHA-256 and allowlisted infobox values. |
-| `samples/wiki-spell-compare-fandom-2026-07-28.json` | Output of `wiki_spells.py compare`: per-field counts and difference rows. |
+| `samples/wiki-spell-facts-fandom-2026-09-27.json` | Output of `wiki_spells.py facts`: page id, revision id, wikitext SHA-256, allowlisted infobox values and the `Formulae` level curve. |
+| `samples/wiki-spell-compare-fandom-2026-09-27.json` | Output of `wiki_spells.py compare`: per-field counts and difference rows. |
 
 ```text
 pip install -r requirements.txt
@@ -30,11 +30,11 @@ python spell_census.py self-test && python wiki_spells.py self-test
 # evidence regeneration (network / source checkouts)
 python spell_census.py --canary <canary@47dfd51f> --crystal <crystalserver@ff7ede5> \
     --out samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json
-python wiki_spells.py fetch --cache <dir>
-python wiki_spells.py facts --cache <dir> --out samples/wiki-spell-facts-fandom-2026-07-28.json
-python wiki_spells.py compare --facts samples/wiki-spell-facts-fandom-2026-07-28.json \
+python wiki_spells.py fetch --cut 2026-09-27 --cache <dir>
+python wiki_spells.py facts --cache <dir> --out samples/wiki-spell-facts-fandom-2026-09-27.json
+python wiki_spells.py compare --facts samples/wiki-spell-facts-fandom-2026-09-27.json \
     --census samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json \
-    --out samples/wiki-spell-compare-fandom-2026-07-28.json
+    --out samples/wiki-spell-compare-fandom-2026-09-27.json
 ```
 
 TibiaWiki BR (`tibiawiki.com.br`) answers HTTP 403 (Cloudflare) from the build container, as for

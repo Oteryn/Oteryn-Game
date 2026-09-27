@@ -173,7 +173,7 @@ def infobox(text, template):
 def level_curve(content):
     """The two <math> formulas of the Formulae page 'Damage and Healing' section (S5), verbatim."""
     start = content.find('The step size')
-    return re.findall(r'<math>(.*?)</math>', content[start:start + 800]) if start >= 0 else []
+    return re.findall(r'<math>(.*?)</math>', content[start:start + 800])[:2] if start >= 0 else []
 
 
 def facts(snapshot):
