@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 164,
-    "fully_resolved": 1486,
+    "blocked": 160,
+    "fully_resolved": 1490,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1093
+    "wiki_adopted_monsters": 1097
   },
   "wiki_adopted_rows": {
     "Loot2": 11595,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 95,
+      "monsters": 91,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -555,6 +555,9 @@
     "crystal_spider",
     "crystal_wolf",
     "crystalcrusher",
+    "cult_believer",
+    "cult_enforcer",
+    "cult_scholar",
     "cunning_werepanther",
     "cursed_ape",
     "cursed_book",
@@ -595,6 +598,7 @@
     "dazed_leaf_golem",
     "deadeye_devious",
     "death_blob",
+    "death_dragon",
     "death_priest",
     "death_priest_shargon",
     "deathbine",
