@@ -13,18 +13,18 @@
     "children_by_owner": {
       "Ability": 208,
       "Achievement": 30,
-      "Item": 160,
+      "Item": 343,
       "Movement": 800,
       "Presentation": 2668,
       "Quest": 944,
-      "WorldObject": 1117
+      "WorldObject": 891
     },
     "blocked_children": {
       "Movement": 800,
-      "WorldObject": 1117
+      "WorldObject": 891
     },
     "quest_children_naming_a_transition": 215,
-    "unresolved_lines": 2016,
+    "unresolved_lines": 2059,
     "unresolved_conditions": 1963,
     "by_status": {
       "mapped": 236,

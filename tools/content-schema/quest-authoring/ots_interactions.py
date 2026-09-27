@@ -71,6 +71,7 @@ class Script:
         params = re.search(r'\(([^)]*)\)', self.lines[number - 1]).group(1)
         names = [n.strip() for n in params.split(',')]
         self.roles = {n: r for n, r in zip(names, ROLES.get(callback, ())) if r}
+        self.callback = callback
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
         for line in self.lines[number:]:
@@ -161,7 +162,14 @@ class Script:
             found.append({'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED_MOVEMENT,
                           **({'to_anchor': self.anchor(pos.groups())} if pos else
                              {'to': 'previous_position'} if 'fromPosition' in raw else {'to_source_line': number})})
-        if re.search(r'[:.](transform|transformItem|createItem|removeItem|revertItem|remove|setActionId|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(', raw):
+        removal = re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(([^()]*)\)', raw)
+        consumed = removal and self.consumed(removal, number)
+        if consumed:
+            found.append(consumed)
+        elif removal and self.creature(removal.group(1)):
+            self.unresolved.append({'line': number, 'reason': 'creature removal without an accepted owner'})
+            return found
+        elif re.search(r'[:.](transform|transformItem|createItem|removeItem|revertItem|remove|setActionId|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(', raw):
             found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
         if (m := re.search(r'(\w+):addItem\(\s*(\d+)?\s*(?:,\s*(\d+)\s*)?', raw)) and m.group(1) in self.players | {'player'}:
             found.append({'owner': 'Item', 'request': 'hand_out',
@@ -183,6 +191,25 @@ class Script:
             if in_loop:
                 child['repeated'] = True
         return found
+
+    def consumed(self, removal, number):
+        """A removal that takes an item from its holder is DUR-03 consumption, never map state (D38): the player's
+        `removeItem`, or `remove` on the item used (`onUse`) or dropped onto the edge (`onAddItem`)."""
+        receiver, method, args = removal.groups()
+        if method == 'removeItem' and receiver in self.players | {'player'}:
+            m = re.fullmatch(r'\s*(\d+)\s*(?:,\s*(\d+)\s*)?', args)
+            return {'owner': 'Item', 'request': 'consume',
+                    **({'item': ref('Item', f'{self.namespace}:item/{m.group(1)}'), 'count': int(m.group(2) or 1)}
+                       if m else {'value_source_line': number})}
+        role = self.roles.get(receiver)
+        if method == 'remove' and ((role == 'source' and self.callback == 'onUse') or role == 'contact'):
+            return {'owner': 'Item', 'request': 'consume', 'object': 'used_item' if role == 'source' else 'contact'}
+        return None
+
+    def creature(self, receiver):
+        """A receiver that holds a creature, not an item."""
+        return (self.roles.get(receiver) == 'actor' or receiver in self.players
+                or re.search(r'(?i)creature|monster|boss|npc|summon|spectator', receiver) is not None)
 
     def convert(self, nodes):
         out = []

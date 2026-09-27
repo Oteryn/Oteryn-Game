@@ -1,9 +1,9 @@
 # Interaction relocation and world-object owners: proposal v1
 
 - Date: 2026-09-27
-- DecisionStatus: CANDIDATE. This is an owner decision package, not an accepted contract. Acceptance
-  needs the owner decisions in §6 and the independent review that authority and persistence changes
-  require.
+- DecisionStatus: CANDIDATE with owner decisions D37 and D38 taken (§6, 2026-09-27). The contract
+  text becomes accepted after the independent review that authority changes require; until then
+  the Movement and WorldObject children stay blocked.
 - DeliveryStatus: OPEN
 - ImplementationStatus: NOT_STARTED
 - Requested by: the owner (2026-09-27) after the quest interaction transcription
@@ -22,7 +22,7 @@ The block is large. In the transcription of both servers' quest scripts (`sample
 | Child | Count | Quest directories | Breakdown |
 |---|---:|---:|---|
 | Movement (`teleportTo`) | 800 | 93 | to a fixed anchor 219, back to the previous tile 209, to a computed target 372 |
-| WorldObject | 1,117 | 100 | transform 493, remove 407, create 141, action-id change 39, decay 32, timed revert 5 |
+| WorldObject | 891 | 89 | transform 493, remove 181, create 141, action-id change 39, decay 32, timed revert 5 |
 
 Without these owners most quests with map mechanics stay unplayable, even with complete quest
 data: seal walls, levers, boss-room entries and ejections.
@@ -114,8 +114,9 @@ keeps its lifetime and exclusions.
 - **Value boundary.**
   - An object a player can pick up, carry or trade is an item. Its creation is a DUR-03 hand-out
     or mint, and removing a carried item is DUR-03 consumption.
-  - Part of the 407 `remove` children are such consumptions: `item:remove()` on the item the player
-    used. The transcription must tell them apart before this proposal applies (§7).
+  - The transcription now tells them apart: 183 removals are DUR-03 consumption, not overlay
+    removals. They are the player's `removeItem`, and `remove` on the item used or dropped onto the
+    edge. A further 43 remove a creature, which is neither; they stay unresolved.
 - **Out of scope.**
   - Durable world-object state.
   - Multi-cell footprints.
@@ -132,20 +133,25 @@ keeps its lifetime and exclusions.
 - Once accepted, the D36 definitions need no new data: the blocked children become executable
   after their anchors bind to world placements.
 
-## 6. Owner decisions needed
+## 6. Owner decisions
 
-| # | Question | Recommendation |
+The owner accepted every recommendation below ("zgadzam się", 2026-09-27):
+- **D37** records R1-R3, the relocation owner;
+- **D38** records W1-W3, the world-object owner.
+
+| # | Question | Decision |
 |---|---|---|
-| R1 | Is the scope runtime (`ChannelRuntime`/`InstanceRuntime`) the owner of interaction relocation children, with the identity and fences of §3? | Yes; VSL-MOVE-01 already names it. |
-| R2 | Is a request not committed in its tick rejected (no queue, no timeout state)? | Yes. |
-| R3 | Does relocation to another Channel or Instance stay blocked until `SCOPE_HANDOFF` has a contract? | Yes. |
-| W1 | Is the scope runtime the owner of the world-object overlay, extending the local transition candidate to `TRANSFORM`, `CREATE`, `REMOVE`, `RETAG` with `revert_after`? | Yes. |
-| W2 | Is world-object state scope-ephemeral, with anything durable held as quest state (D35)? | Yes. |
-| W3 | Are pick-up-able objects and carried-item removal always DUR-03, never overlay state? | Yes. |
+| R1 (D37) | Is the scope runtime (`ChannelRuntime`/`InstanceRuntime`) the owner of interaction relocation children, with the identity and fences of §3? | Yes; VSL-MOVE-01 already names it. |
+| R2 (D37) | Is a request not committed in its tick rejected (no queue, no timeout state)? | Yes. |
+| R3 (D37) | Does relocation to another Channel or Instance stay blocked until `SCOPE_HANDOFF` has a contract? | Yes. |
+| W1 (D38) | Is the scope runtime the owner of the world-object overlay, extending the local transition candidate to `TRANSFORM`, `CREATE`, `REMOVE`, `RETAG` with `revert_after`? | Yes. |
+| W2 (D38) | Is world-object state scope-ephemeral, with anything durable held as quest state (D35)? | Yes. |
+| W3 (D38) | Are pick-up-able objects and carried-item removal always DUR-03, never overlay state? | Yes. |
 
-## 7. Follow-up once decided
+## 7. Follow-up
 
-1. The quest transcription splits `remove` into overlay removal and DUR-03 consumption.
+1. The quest transcription splits `remove` into overlay removal and DUR-03 consumption (done in
+   the same change as D37 and D38; see the quest format §6.3).
 2. Anchors bind to world placements.
 3. The GAME-INTERACTION-01 successor names these owners in §19.3.
 4. Independent review of the accepted text, then implementation in the scope runtime.

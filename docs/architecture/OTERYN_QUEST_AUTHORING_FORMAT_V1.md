@@ -149,10 +149,11 @@ point at these definitions.
 | `Game.setStorageValue` | Quest child: world state shared by all players (D29). |
 | `Game.createMonster` | Ability child: a summon effect (GAME-ABILITY-01) at a named anchor. |
 | `player:addItem` | Item child: a hand-out through the DUR-03 item transaction. |
+| `player:removeItem`; `remove` on the item used (`onUse`) or dropped onto the edge (`onAddItem`) | Item child: consumption through DUR-03 (D38), never map state. |
 | `addAchievement` | Achievement child: a grant by the Achievement domain. |
 | `sendMagicEffect`, `sendTextMessage`, `say`, `sendCancelMessage` | Presentation child, never authoritative; a message keeps its source line, never its text (LICENSE-ASSETS.md). |
 | `teleportTo` | Movement child, blocked: no movement owner contract yet (GAME-INTERACTION-01 §19.3). |
-| `transform`, `createItem`, `removeItem`, `revertItem`, `decay`, `setActionId` on map items (walls, levers, flames) | WorldObject child, blocked: no world-object state owner contract yet. |
+| `transform`, `createItem`, `remove`, `revertItem`, `decay`, `setActionId` on map objects (walls, levers, flames) | WorldObject child, blocked: no world-object state owner contract yet. |
 | Encounter scripts | Stay encounters; they emit outcomes only (D27). |
 
 Source positions become anchors (`p1`, `p2`, …) with the coordinates kept as evidence until world
@@ -342,10 +343,10 @@ joined by that key; `interaction.schema.json` and
 |---|---:|
 | Interactions | 1,221 |
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
-| Children: Quest / Ability / Item / Achievement / Presentation | 944 / 208 / 160 / 30 / 2,668 |
-| Children blocked: Movement / WorldObject | 800 / 1,117 |
+| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Presentation | 944 / 208 / 343 (160, 183) / 30 / 2,668 |
+| Children blocked: Movement / WorldObject | 800 / 891 |
 | Quest children naming a mission transition | 215 |
-| Unresolved statements / conditions | 2,016 / 1,963 |
+| Unresolved statements (of which creature removals) / conditions | 2,059 (43) / 1,963 |
 | Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 236 / 985 / 37 |
 
 An independent spot check of 56 randomly sampled classified lines against their source found no
@@ -435,8 +436,10 @@ transitions to slice 3. A file that shadows `Storage` itself keeps its full path
    dialogue (§3.2). Next, the NPC format binds `requested_by` to its dialogue nodes when it promotes
    dialogue; that work lives in the NPC-owned files.
 2. NPC-driven outfit and addon quests (under the NPC service boundary).
-3. Movement and world-object owners: the decision package
-   `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` waits for the owner.
+3. Movement and world-object owners: D37 and D38 are decided
+   (`OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md`). After the independent
+   review and the scope-runtime implementation, the blocked children become executable. The first
+   target is The Queen of the Banshees, played from start to end.
 4. The dedicated-script doors (vocation doors, Katana, Secret Service).
 5. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
    Cloudflare challenge.
@@ -450,3 +453,5 @@ transitions to slice 3. A file that shadows `Storage` itself keeps its full path
 | D34 | Storyline quests use staged missions (option A of `CONTENT-QUEST-01`): a quest has missions, each mission one integer progress track with a start and an end value and a journal text per stage; transitions are named events of their owners (NPC, interaction, gate, claim, encounter). A graph of typed, branching objectives (option B) is added only for a quest that staged missions cannot express. | Owner decision 2026-09-27 ("zróbmy A a potem jeśli będzie potrzeba to B"). Both servers already describe all 529 missions this way. |
 | D35 | Only the quest domain writes quest progress. Each mission declares named transitions (from a stage to a new value, a step or a computed value); NPC dialogue, movements, actions, creature events, encounters and claims request a transition, conditions read stages, and the quest domain validates the request against the current stage, applies it idempotently and session-generation fenced, and hands rewards to the reward and item owners. This settles the quest-state part of the NPC schema's open decision O4. | Owner accepted the proposal ("zgadzam się", 2026-09-27). Quest progress is character state shared across channels while NPC runtime is channel-local; both servers let any script write progress (1,616 transitions over 355 missions). |
 | D36 | Movement, action and creature-event scripts become interaction definitions in `content/interactions/`, compiled to GAME-INTERACTION-01 plans: an edge (`ON_ENTER`, `ON_LEAVE`, `ON_CONTACT`, `USE`, `ON_DEATH`, `ON_KILL`), read-only conditions and children executed by their existing owners: quest transitions and world state (D35, D29), ability effects such as summons (GAME-ABILITY-01), item handouts (DUR-03), achievement grants. Teleports and map-object changes stay in the definition as blocked children until a movement and a world-object owner contract exist; encounters keep emitting outcomes only (D27); what data cannot express becomes a DUR-04 component. Items (`use.interactions[]`) and monsters (event bindings, D6) reference these definitions. | Owner continued after the consistency check against GAME-INTERACTION-01, GAME-ABILITY-01, DUR-04, ADR-0019 and the item and monster schemas ("kontynuuj", 2026-09-27), replacing the earlier proposal of a shared rule core. |
+| D37 | Interaction relocation children (teleports) are owned by the current scope's `ChannelRuntime`/`InstanceRuntime`, as VSL-MOVE-01 accepts. They are identified by the GAME-INTERACTION child identity and fenced on World, scope, session generation, position revision and content generation. A request not committed in its tick is rejected, and relocation to another Channel or Instance stays blocked until `SCOPE_HANDOFF` has a contract. | Owner accepted proposals R1-R3 ("zgadzam się", 2026-09-27); the contract text awaits independent review (`OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md`). |
+| D38 | Map-object changes are a scope-ephemeral overlay owned by the same scope runtime, extending the local transition candidate. Operations are `TRANSFORM`, `CREATE`, `REMOVE` and `RETAG`, each optionally with `revert_after`. Anything durable is quest state (D35); pick-up-able objects and carried-item removal are always DUR-03. | Owner accepted proposals W1-W3 ("zgadzam się", 2026-09-27); the contract text awaits independent review. |

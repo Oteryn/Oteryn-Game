@@ -295,6 +295,9 @@ interaction_case('item, achievement and message children accepted',
 interaction_case('level condition accepted',
                  lambda i, c, m: i['rules'][0]['branch'][1].update(when={'actor_level': {'op': '>=', 'value': 100}, 'negate': False}),
                  expected=True)
+interaction_case('consumption of the used item accepted',
+                 lambda i, c, m: c.append({'owner': 'Item', 'request': 'consume', 'object': 'used_item'}), expected=True)
+interaction_case('a consumption names what it consumes', lambda i, c, m: c.append({'owner': 'Item', 'request': 'consume'}))
 interaction_case('a hand-out names an item', lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'count': 1}))
 interaction_case('a hand-out item is an Item',
                  lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Creature', 'creature/x'), 'count': 1}))

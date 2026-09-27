@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260927-quest-tracks-dialogue-owners
-title: Quest format - declared auxiliary tracks, NPC dialogue binding of transitions, relocation and world-object owner proposal
+title: Quest format - declared auxiliary tracks, NPC dialogue binding, relocation and world-object owners (D37-D38)
 mode: CONTRACT
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -39,8 +39,10 @@ Owner request (2026-09-27, this session): do three next steps.
    undeclared track any more. Storage aliases are expanded in both converters, which adds 216
    transitions to slice 3.
 2. **Owner proposal.** `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` is
-   an owner decision package (CANDIDATE). It covers the 800 Movement and 1,117 WorldObject children
-   that D36 blocks. It reuses VSL-MOVE-01 and the local transition candidate and adds no domain.
+   an owner decision package. It covers the 800 Movement and 891 WorldObject children that D36
+   blocks. It reuses VSL-MOVE-01 and the local transition candidate and adds no domain. The owner
+   took decisions D37 and D38 ("zgadzam się", 2026-09-27); the contract text awaits independent
+   review. The transcription moves 183 carried-item removals to DUR-03 consumption (D38 W3).
 3. **NPC dialogue binding.** NPC transitions (1,442) name their dialogue in `requested_by`: the NPC
    authoring bundle key, the player keywords and the dialogue topics. A longer phrase becomes a
    text reference. No NPC-owned file changes.
