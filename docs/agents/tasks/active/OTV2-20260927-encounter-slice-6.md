@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-encounter-slice-6
 title: Transcribe a sixth slice of Canary creature events into encounters; record Crystal as a second donor (D30)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 970
 jira: KAN-16
 base_sha: 6f3da2f4079d2f668b8aa7aec5199857422cde6e
 head_sha: null
