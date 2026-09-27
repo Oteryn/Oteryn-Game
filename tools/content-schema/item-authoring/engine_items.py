@@ -777,7 +777,9 @@ PRIMARYTYPE_PROFILE = {
 # English TibiaWiki (tibia.fandom.com) infobox `primarytype` uses a handful of exact
 # vocabulary variants of the values above (case-folding and pluralization only, verified
 # by hand against `PRIMARYTYPE_PROFILE`); each alias is admitted only because it names the
-# identical family, never a new one. Extending the one shared table means an engine
+# identical family, never a new one. `tools (objects)` is deliberately NOT an alias of
+# `tools`: TibiaWiki's "(Objects)" suffix names a map-object category, and the engine rows
+# carrying it (niche, buoy, buoy line, parasol) are fixed world objects, not portable tools. Extending the one shared table means an engine
 # `items.xml` `primarytype` attribute that happens to carry one of these same variant
 # spellings resolves identically, which is correct and not wiki-specific; the wiki-only
 # surface is `resolve_wiki_family_value` below, which folds a Fandom value's case before
@@ -785,7 +787,6 @@ PRIMARYTYPE_PROFILE = {
 PRIMARYTYPE_PROFILE.update(
     {
         "decorations": PRIMARYTYPE_PROFILE["decoration"],
-        "tools (objects)": PRIMARYTYPE_PROFILE["tools"],
         "lamps": PRIMARYTYPE_PROFILE["illumination"],
     }
 )

@@ -9,7 +9,7 @@
         "oteryn:item.registry.i00000038",
         "oteryn:item.registry.i00000039"
       ],
-      "items": 11560
+      "items": 11284
     },
     {
       "blocker": "family_profile_unresolved",
@@ -20,7 +20,7 @@
         "oteryn:item.registry.i00000028",
         "oteryn:item.registry.i00000031"
       ],
-      "items": 996
+      "items": 999
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -3116,14 +3116,14 @@
       "items": 1
     }
   ],
-  "bundle_digest": "d0369f4640e0d9329a0d761dfdeff3afbdc743bbdfb49bdd91f910f502a70742",
+  "bundle_digest": "cce43a54b8c8a41cc3d8518223c438ed77db5eee4dd3289b8996680559a7476e",
   "by_profile": {
     "container": 276,
     "container_equipment": 8,
     "decoration": 2877,
     "document": 429,
     "equipment_armor": 468,
-    "equipment_offhand": 445,
+    "equipment_offhand": 446,
     "event_collectible": 175,
     "fluid": 102,
     "food": 189,
@@ -3133,10 +3133,10 @@
     "plant": 872,
     "quest_item": 1043,
     "rune": 41,
-    "tool": 596,
+    "tool": 319,
     "transformation_item": 23,
     "trash": 196,
-    "unresolved": 26379,
+    "unresolved": 26655,
     "weapon_distance": 152,
     "weapon_magic": 88,
     "weapon_melee": 568
@@ -3151,19 +3151,19 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 11345,
+      "eligible_false": 11069,
       "eligible_true": 433,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 433,
-      "not_member": 11345,
+      "not_member": 11069,
       "source": "crystal_delivery_list"
     }
   },
   "family_profile_basis": {
-    "engine_attribute": 10950,
+    "engine_attribute": 10674,
     "wiki_evidence_fallback": 828
   },
   "field_coverage": {
@@ -4524,10 +4524,10 @@
   },
   "outcome": {
     "blocked": 901,
-    "fully_resolved": 10877,
+    "fully_resolved": 10601,
     "items": 38157,
-    "not_converted": 996,
-    "routed_non_item": 25383
+    "not_converted": 999,
+    "routed_non_item": 25656
   },
   "routed_non_item": [
     {
@@ -4538,7 +4538,7 @@
         "oteryn:item.registry.i00000068",
         "oteryn:item.registry.i00000069"
       ],
-      "items": 8214,
+      "items": 8450,
       "owner_reason": "WorldObject:immovable_unclassified"
     },
     {
@@ -4571,7 +4571,7 @@
         "oteryn:item.registry.i00000027",
         "oteryn:item.registry.i00000029"
       ],
-      "items": 3406,
+      "items": 3443,
       "owner_reason": "Terrain:ground_or_border"
     },
     {

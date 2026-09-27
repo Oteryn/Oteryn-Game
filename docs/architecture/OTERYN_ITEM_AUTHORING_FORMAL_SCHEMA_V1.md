@@ -392,24 +392,23 @@ TibiaWiki BR binding also exists it must agree.
 |---|---|---|
 | entries | 38,157 | 37,527 |
 | validator errors | 0 | 0 |
-| valid, only the sprite atlas pending | 10,877 | 10,544 |
+| valid, only the sprite atlas pending | 10,601 | 10,268 |
 | valid, other blockers | 901 | 876 |
-| routed to a non-Item owner | 25,383 | 24,920 |
-| not converted (no family, or no identity binding) | 996 | 1,187 |
+| routed to a non-Item owner | 25,656 | 25,193 |
+| not converted (no family, or no identity binding) | 999 | 1,190 |
 | Delivery Task eligible | 433 | 401 |
 
 Entries that are not portable Items are counted as `routed_non_item` with an owner and
-reason, not as failures (Crystal counts): WorldObject `immovable_unclassified` 8,214,
+reason, not as failures (Crystal counts): WorldObject `immovable_unclassified` 8,450,
 `appearance_placeholder_slot` 4,300, `corpse` 3,344, `primarytype_world_object` 981;
-Terrain `primarytype_world_object` 5,138, `ground_or_border` 3,406. An immovable entry
+Terrain `primarytype_world_object` 5,138, `ground_or_border` 3,443. An immovable entry
 that resolves an Item family stays an Item with `physical.movable = false`.
 
-`PRIMARYTYPE_PROFILE` also admits three case-fold/plural aliases of existing entries
-(`decorations`, `tools (objects)`, `lamps`), which apply to the engine's own `primarytype`
-attribute exactly like every other entry; recovering a small number of immovable
-`tools (objects)`-typed items (e.g. "niche") that were previously misrouted as
-`WorldObject: immovable_unclassified` for want of the alias accounts for part of the
-`routed_non_item` decrease above, not the wiki fallback below.
+`PRIMARYTYPE_PROFILE` also admits two case-fold/plural aliases of existing entries
+(`decorations`, `lamps`); neither occurs in either engine's `items.xml`, so they change no
+engine-attribute result. `tools (objects)` is deliberately not an alias of `tools`: the
+TibiaWiki "(Objects)" suffix names a map-object category, and the engine rows carrying it
+(niche, buoy, buoy line, parasol, ...) stay routed to WorldObject/Terrain, not portable tools.
 
 Every catalog-mapped field is converted and value-dependent routes are applied as pinned.
 `weapontype` `ammunition` is mapped; `ammo` and `rod` are pinned no-effect because both
@@ -420,19 +419,19 @@ identical in both engines) and mantra damage types (energy, fire, earth, ice). A
 with proficiency `238` cites both engines' admitted crosswalks.
 
 Remaining blockers (Crystal): `sprite_atlas_not_admitted` on every converted Item (no
-admitted sprite atlas yet); `family_profile_unresolved` 996 (no structural signal and no
+admitted sprite atlas yet); `family_profile_unresolved` 999 (no structural signal and no
 admitted wiki evidence either; editorial backlog); other proficiency ids 642, `augments`
 83 and `runespellname` 36 (need an Ability identity crosswalk); `flags.forceuse` 34
 (loaded but unused by both engines); and small data-quality residuals such as
 `stopduration` without decay or a container without `containersize`. Canary's own
-`family_profile_unresolved` is 951, plus 236 `identity_not_in_b1_catalog` (no Crystal
+`family_profile_unresolved` is 954, plus 236 `identity_not_in_b1_catalog` (no Crystal
 allocator key at all, so the wiki fallback below is never consulted for those).
 
 `family_profile_basis` distinguishes how each converted Item's `family_profile` was
 decided: `engine_attribute` (the engine's own `primarytype`/`weapontype`/slot/etc., as
 `classify_family_profile` always decides first) or `wiki_evidence_fallback` (§5b below,
-applied only when the engine carried no such signal at all). Crystal: 10,950
-`engine_attribute`, 828 `wiki_evidence_fallback`. Canary: 10,628 `engine_attribute`, 792
+applied only when the engine carried no such signal at all). Crystal: 10,674
+`engine_attribute`, 828 `wiki_evidence_fallback`. Canary: 10,352 `engine_attribute`, 792
 `wiki_evidence_fallback`.
 
 `delivery_task_eligible` follows the owner-approved authoring rule

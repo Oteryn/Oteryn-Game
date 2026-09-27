@@ -1650,8 +1650,8 @@ def test_resolve_wiki_family_value_admitted_mapping():
     )
     check(
         engine_items.resolve_wiki_family_value("primarytype", "Tools (Objects)")
-        == "tool",
-        "'tools (objects)' alias",
+        is None,
+        "'tools (objects)' names map objects and must not alias portable tools",
     )
     check(
         engine_items.resolve_wiki_family_value("primarytype", "Lamps")
