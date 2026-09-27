@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 13,
-  "checks": 233,
-  "passed": 233,
+  "checks": 234,
+  "passed": 234,
   "failed": 0,
   "results": [
     {
@@ -1285,6 +1285,10 @@
     },
     {
       "name": "real-source evidence covers empty capability containers",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence needs no proof for an empty list",
       "passed": true
     },
     {

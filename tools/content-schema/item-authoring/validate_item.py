@@ -820,7 +820,8 @@ def validate(item, dependencies, manifest=None):
 
 
 def leaf_pointers(value, path=()):
-    if isinstance(value, (dict, list)) and not value:
+    # An empty object still declares a capability; an empty list asserts nothing.
+    if isinstance(value, dict) and not value:
         yield pointer(path)
     elif isinstance(value, dict):
         for key, child in value.items():

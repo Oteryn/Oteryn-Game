@@ -2515,6 +2515,14 @@ def main():
         lambda example: example["item"].__setitem__("protection", {}),
         "exactly partition every authored Item leaf",
     )
+    example = deepcopy(real_examples["examples"][0])
+    example["item"]["taxonomy"]["tags"] = []
+    results.append(
+        {
+            "name": "real-source evidence needs no proof for an empty list",
+            "passed": not validate_real_example(example)[0],
+        }
+    )
     real_probe(
         "real-source evidence rejects boolean/number confusion",
         lambda example: next(
