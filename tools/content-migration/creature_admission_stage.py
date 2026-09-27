@@ -372,7 +372,8 @@ class Stage:
             details['bestiary'] = {'class': bestiary['class'], 'taxonomy': bestiary['taxonomy']}
             for field in ('stars', 'locations'):
                 if field in bestiary:
-                    details['bestiary'][field] = bestiary[field]
+                    value = bestiary[field]
+                    details['bestiary'][field] = value.strip() if isinstance(value, str) else value
         if 'bosstiary' in creature:
             details['bosstiary'] = creature['bosstiary']
         for field in ('corpse_item', 'soul_core_item', 'reward_encounter'):
@@ -424,7 +425,7 @@ class Stage:
         if 'voices' in behavior:
             voices = behavior['voices']
             result['voices'] = {'interval_ms': voices['interval_ms'], 'chance_ppm': ppm(voices['chance_percent']),
-                                'entries': [{'text': entry['text'], 'mode': {'say': 'Say', 'yell': 'Yell'}[entry['mode']]}
+                                'entries': [{'text': entry['text'].strip(), 'mode': {'say': 'Say', 'yell': 'Yell'}[entry['mode']]}
                                             for entry in voices['entries']]}
         if 'summons' in behavior:
             summons = behavior['summons']

@@ -1,10 +1,1 @@
-{
-  "schema": "OTERYN_GAME_TREE_DIRECTORY/v1",
-  "path": "content/behaviors/",
-  "kind": "static_content",
-  "owner": "Behavior",
-  "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
-  "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Reusable bounded behavior definitions."
-}
+{"attached_authoring_profiles":1315,"attached_source_bindings":0,"family":"Behavior","legacy_source":{"git_blob_sha":"28ae447d4bfd5216e18852178c70c306438b4d73","path":"content/world/definitions/reference.json","schema":"OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1"},"record_count":1315,"schema":"OTERYN_FAMILY_INDEX/v1","shard_size":500,"shards":["content/behaviors/behaviors-00000-00499.json","content/behaviors/behaviors-00500-00999.json","content/behaviors/behaviors-01000-01314.json"]}

@@ -6,10 +6,10 @@ use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
     CW2_B1_FULL_ITEM_FAMILY_COUNT, CanonicalProjectDocuments, ImportBatch, ProjectDraft,
-    ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2Declaration, ProjectV2DefinitionRef,
-    ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass, ProjectV2Family,
-    ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle,
-    ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
+    ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2Declaration,
+    ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass,
+    ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile,
+    ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
     ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
     ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
     ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
@@ -59,6 +59,21 @@ const OUTFIT_CROSSWALK_SHA256: &str =
     "1d3c8944bf68c63814942578ac07fe232eff900d6d261476d46bb742e64c5396";
 const OUTFIT_SOURCE_REVISION: &str = MOUNT_SOURCE_REVISION;
 const OUTFIT_SOURCE_SHA256: &str = MOUNT_SOURCE_SHA256;
+const CREATURE_STAGED: &[u8] = include_bytes!(
+    "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
+);
+const CREATURE_STAGED_SHA256: &str =
+    "7906c07996c6c01eb0da27adf03c7c86b4fa95b169d2498a677e22484b6ffb9b";
+const CREATURE_STAGE_TOOL_SHA256: &str =
+    "c8673e996664df14d079bd2638cf66498a7f14ca60972787b771cb8dcec9ce2e";
+const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
+const CANARY_BUNDLE_INDEX_SHA256: &str =
+    "73495f76e0ab4f731e7605f31b9a7816e9fdce0b55410b3e583059d216a9501d";
+const ITEM_ALLOCATION_SHA256: &str =
+    "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
+const CREATURE_COUNT: usize = 1315;
+const CREATURE_RECORDS: usize = 18280;
+const CREATURE_PROFILES: usize = 17315;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -70,8 +85,8 @@ fn limits() -> ProjectEvidenceLimits {
         max_string_bytes: FULL_FAMILY_MAX_STRING_BYTES,
         max_locator_bytes: 160,
         max_locator_segments: 8,
-        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT,
-        max_import_records: 4,
+        max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS,
+        max_import_records: 5,
         max_reimport_states: 1,
     }
 }
@@ -985,6 +1000,84 @@ fn populate_outfits(
     })
 }
 
+struct CreaturePopulation {
+    import: ImportBatch,
+    source: ProjectV2Source,
+    records: Vec<ProjectReferenceRecord>,
+    profiles: Vec<ProjectV2AuthoringProfile>,
+    bindings: Vec<ProjectV2SourceIdentityBinding>,
+}
+
+fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>> {
+    if hex_sha256(CREATURE_STAGED) != CREATURE_STAGED_SHA256 {
+        return Err("staged creature admission input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(CREATURE_STAGED)?;
+    let counts = &packet["counts"];
+    if packet["schema"] != "OTERYN_CREATURE_ADMISSION_STAGED/v1"
+        || packet["wave"] != "A"
+        || packet["source"]["repository"] != "opentibiabr/canary"
+        || packet["source"]["revision"] != CANARY_REVISION
+        || packet["source"]["census_index_sha256"] != CANARY_BUNDLE_INDEX_SHA256
+        || packet["source"]["item_allocation_sha256"] != ITEM_ALLOCATION_SHA256
+        || counts["creatures"] != CREATURE_COUNT
+        || counts["records"] != CREATURE_RECORDS
+        || counts["profiles"] != CREATURE_PROFILES
+    {
+        return Err("staged creature admission source identity drifted".into());
+    }
+    let records: Vec<ProjectReferenceRecord> = serde_json::from_value(packet["records"].clone())?;
+    let profiles: Vec<ProjectV2AuthoringProfile> =
+        serde_json::from_value(packet["authoring_profiles"].clone())?;
+    let bindings: Vec<ProjectV2SourceIdentityBinding> =
+        serde_json::from_value(packet["source_identity_bindings"].clone())?;
+    let creatures = records
+        .iter()
+        .filter(|record| matches!(record, ProjectReferenceRecord::Creature { .. }))
+        .count();
+    if records.len() != CREATURE_RECORDS
+        || profiles.len() != CREATURE_PROFILES
+        || creatures != CREATURE_COUNT
+        || bindings.len() != CREATURE_COUNT
+        || bindings.iter().any(|binding| {
+            binding.source_key != "oteryn:source.canary"
+                || binding.source_revision != CANARY_REVISION
+                || binding.identity_namespace != "canary/monster-file"
+                || binding.target.family != ProjectV2Family::Creature
+        })
+    {
+        return Err("staged creature admission counts drifted".into());
+    }
+    let import = ImportBatch {
+        batch_id: "g4-creature-canary-wave-a-r1".to_owned(),
+        source_repository: "opentibiabr/canary".to_owned(),
+        source_revision: CANARY_REVISION.to_owned(),
+        source_artifact_sha256: CANARY_BUNDLE_INDEX_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_MONSTER_AUTHORING_BUNDLE/v1".to_owned(),
+        importer: "OTERYN_CANARY_MONSTER_POPULATION_CENSUS/v1".to_owned(),
+        mapper: "OTERYN_CREATURE_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "creature-admission-r1".to_owned(),
+        mapper_sha256: CREATURE_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let source = ProjectV2Source {
+        key: "oteryn:source.canary".to_owned(),
+        import_batch_id: import.batch_id.clone(),
+        revision: import.source_revision.clone(),
+        sha256: import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
+    };
+    Ok(CreaturePopulation {
+        import,
+        source,
+        records,
+        profiles,
+        bindings,
+    })
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
     let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
@@ -1031,25 +1124,47 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     declarations.extend(outfit_declarations);
     bindings.extend(outfit_bindings);
     editor.extend(outfit_editor);
+    let CreaturePopulation {
+        import: creature_import,
+        source: creature_source,
+        records: creature_records,
+        profiles: authoring_profiles,
+        bindings: creature_bindings,
+    } = populate_creatures()?;
+    records.extend(creature_records);
+    bindings.extend(creature_bindings);
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-item-wave1-r1".to_owned(),
+                project_revision: "g4-creature-wave-a-r1".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
                 world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
                 coordinate_frame: "global-target-2026-07-28".to_owned(),
                 records,
-                imports: vec![provenance, wiki_import, wave1_import, mount_import],
+                imports: vec![
+                    provenance,
+                    wiki_import,
+                    wave1_import,
+                    mount_import,
+                    creature_import,
+                ],
                 metadata: Vec::new(),
             },
             state: ProjectV2State {
-                sources: vec![source, wiki_source, wave1_source, mount_source],
+                sources: vec![
+                    source,
+                    wiki_source,
+                    wave1_source,
+                    mount_source,
+                    creature_source,
+                ],
                 declarations,
                 source_identity_bindings: bindings,
                 editor,
                 item_authoring,
+                authoring_profiles,
                 ..ProjectV2State::default()
             },
         },
@@ -1060,7 +1175,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=526 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())

@@ -1016,11 +1016,20 @@ pub(super) fn validate_behavior(
     Ok(())
 }
 
+/// Palette slots carry one binding each; attachment and visual effect slots may carry several
+/// (an outfit's first and second addon share the addon slot), unique by slot and binding.
 fn slot_bindings<Slot: Ord + Copy>(
     values: &[ProjectV2SlotBinding<Slot>],
+    one_per_slot: bool,
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
-    if values.windows(2).any(|pair| pair[0].slot >= pair[1].slot) {
+    if values.windows(2).any(|pair| {
+        if one_per_slot {
+            pair[0].slot >= pair[1].slot
+        } else {
+            (pair[0].slot, &pair[0].asset_binding) >= (pair[1].slot, &pair[1].asset_binding)
+        }
+    }) {
         return Err(ProjectError::InvalidProject(
             "v2 presentation slots are not sorted and unique",
         ));
@@ -1057,9 +1066,9 @@ pub(super) fn validate_presentation(
     if let Some(binding) = &presentation.asset_binding {
         asset_binding(binding, limits)?;
     }
-    slot_bindings(&presentation.palette_bindings, limits)?;
-    slot_bindings(&presentation.attachment_bindings, limits)?;
-    slot_bindings(&presentation.visual_effect_bindings, limits)?;
+    slot_bindings(&presentation.palette_bindings, true, limits)?;
+    slot_bindings(&presentation.attachment_bindings, false, limits)?;
+    slot_bindings(&presentation.visual_effect_bindings, false, limits)?;
     if let Some(color) = &presentation.light_color_binding {
         asset_binding(color, limits)?;
     }
@@ -1509,9 +1518,12 @@ impl ProjectV2BehaviorAuthoring {
 impl ProjectV2PresentationAuthoring {
     pub(super) fn canonicalize(&mut self) {
         self.palette_bindings.sort_by_key(|binding| binding.slot);
-        self.attachment_bindings.sort_by_key(|binding| binding.slot);
-        self.visual_effect_bindings
-            .sort_by_key(|binding| binding.slot);
+        self.attachment_bindings.sort_by(|left, right| {
+            (left.slot, &left.asset_binding).cmp(&(right.slot, &right.asset_binding))
+        });
+        self.visual_effect_bindings.sort_by(|left, right| {
+            (left.slot, &left.asset_binding).cmp(&(right.slot, &right.asset_binding))
+        });
         self.audio_bindings
             .sort_by(|left, right| (left.event, &left.cue_id).cmp(&(right.event, &right.cue_id)));
     }

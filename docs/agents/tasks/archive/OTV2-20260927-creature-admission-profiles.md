@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-creature-admission-profiles
 title: Typed WorldProject/v2 creature admission profiles and the staging tool (admission slice 2)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 986
 jira: KAN-16
 base_sha: 12d96e0e6dff227145267deadddb0b085806e293
-head_sha: null
-final_head_sha: null
+head_sha: 50591315d4fb609564dd3a37f1645f9421ffc3d3
+final_head_sha: 50591315d4fb609564dd3a37f1645f9421ffc3d3
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -60,3 +60,8 @@ session, authority or persisted-recovery evidence is touched, and no runtime pat
   The pilot (25 monsters) is byte-identical across runs.
 - `cargo fmt`, `cargo clippy -p oteryn-game-server --all-targets -D warnings` and the full
   `oteryn-game-server` test suite pass; governance, repository policy and semantic audits pass.
+
+## Completion
+
+Merged as PR #986 (`017b69404070f5f4547e9102cbd98985e9aa1082`) from final head `5059131`; required checks passed on that head.
+Owner released.
