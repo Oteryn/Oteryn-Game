@@ -170,14 +170,20 @@ def storyline_fixture():
              'gates': [ref('Gate', 'door-gate/level/100')],
              'missions': [
                  {'key': 'the_hidden_seal', 'name': 'The Hidden Seal', 'progress': progress('first_seal'), 'start_value': 1,
-                  'end_value': 1, 'journal': {'kind': 'fixed', 'text_ref': TEXT}},
+                  'end_value': 1, 'journal': {'kind': 'fixed', 'text_ref': TEXT},
+                  'transitions': [{'key': 'movement_1', 'owner': 'movement', 'callback': 'onStepIn',
+                                   'from': {'op': '<', 'value': 1, 'exact': True}, 'to': 1, 'servers': ['canary', 'crystalserver']}]},
                  {'key': 'the_plague_seal', 'name': 'The Plague Seal', 'progress': progress('second_seal'), 'start_value': 1,
-                  'end_value': 3, 'journal': {'kind': 'per_stage', 'stages': [
+                  'end_value': 3, 'transitions': [{'key': 'npc_1', 'owner': 'npc', 'callback': None, 'from': None, 'increment': 1,
+                                                   'servers': ['canary']}],
+                  'journal': {'kind': 'per_stage', 'stages': [
                       {'value': 1, 'text_ref': TEXT},
                       {'value': 2, 'template': {'parts': [dict(TEXT, placeholders=['%d'])], 'reads': ['quest/kills']}}]}}]}
     tracks = {'progress': [
-        {'key': progress('first_seal'), 'missions': ['oteryn:quest/banshees#the_hidden_seal'], 'start_of': ['oteryn:quest/banshees']},
-        {'key': progress('second_seal'), 'missions': ['oteryn:quest/banshees#the_plague_seal'], 'start_of': []}]}
+        {'key': progress('first_seal'), 'missions': ['oteryn:quest/banshees#the_hidden_seal'], 'start_of': ['oteryn:quest/banshees'],
+         'transitions': [{'key': 'movement_1'}]},
+        {'key': progress('second_seal'), 'missions': ['oteryn:quest/banshees#the_plague_seal'], 'start_of': [],
+         'transitions': [{'key': 'npc_1'}]}]}
     return {'quests': [quest]}, gates, tracks, claims
 
 
@@ -206,6 +212,12 @@ storyline_case('stages stay in range', lambda q, t: q['missions'][1]['journal'][
 storyline_case('progress track lists the mission', lambda q, t: t[1]['missions'].clear())
 storyline_case('start track names the quest', lambda q, t: t[0]['start_of'].clear())
 storyline_case('quest names a known gate', lambda q, t: q['gates'].append(ref('Gate', 'door-gate/ghost')))
+storyline_case('a transition has one effect', lambda q, t: q['missions'][0]['transitions'][0].update(increment=1))
+storyline_case('a transition has an effect', lambda q, t: q['missions'][0]['transitions'][0].pop('to'))
+storyline_case('transition owner is closed', lambda q, t: q['missions'][0]['transitions'][0].update(owner='wizard'))
+storyline_case('increments are positive', lambda q, t: q['missions'][1]['transitions'][0].update(increment=0))
+storyline_case('transition keys are unique', lambda q, t: q['missions'][0]['transitions'].append(dict(q['missions'][0]['transitions'][0])))
+storyline_case('a transition has source evidence', lambda q, t: t[0]['transitions'].clear())
 storyline_case('progress names a quest-progress track', lambda q, t: q['missions'][0].update(progress='oteryn:storage/1'))
 
 failed = [r for r in results if not r['passed']]

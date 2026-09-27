@@ -1,8 +1,9 @@
 # Oteryn Quest Authoring Format v1
 
 - Date: 2026-09-27
-- DecisionStatus: CANDIDATE (owner decisions D32-D34 recorded in §9; slice 1 covers reward chests,
-  slice 2 quest, key and level doors, slice 3 the quest-log quests as staged missions)
+- DecisionStatus: CANDIDATE (owner decisions D32-D35 recorded in §9; slice 1 covers reward chests,
+  slice 2 quest, key and level doors, slice 3 the quest-log quests as staged missions with their
+  transitions)
 - DeliveryStatus: OPEN (design draft and offline transcription only)
 - ImplementationStatus: NOT_STARTED
 - Programme: CW2 B6 quests/interactions (`docs/agents/programs/OTV2_CONTENT_WORLD_BULK_CATALOG_IMPORT_PLAN.md`)
@@ -107,7 +108,16 @@ table (`lib/core/quests.lua`). Both describe a quest the same way:
 | A mission is shown while one storage lies between `startValue` and `endValue` | A mission is one progress track (an integer in Character persistence, shared across channels) with a start and an end value. |
 | `states[value]` gives the journal text for each storage value; `description` one text for all | `journal.per_stage` (a text reference per stage value) or `journal.fixed`. |
 | A journal function computes the text, e.g. "You already hunted %d/300 badgers" from a kill counter | `journal.template`: text references for the string pieces and the progress tracks the function reads; typed counters follow when a quest needs them. |
-| Scripts advance the storage: NPC dialogues, map movements, actions, creature events, chests (`setStorageValue`) | A transition is a named event from its owner (NPC dialogue, interaction, gate, claim, encounter outcome) that sets a mission's progress. The writer index in `progress.json` lists where each server sets each track; transcribing those writers is per-domain follow-up work. |
+| Scripts advance the storage directly: NPC dialogues, map movements, actions, creature events, chests (`setStorageValue`) | The quest domain alone writes quest progress (D35). Each mission declares its transitions (a new value, a step, or a computed value, with the stage it starts from); owners (NPC dialogue, movement, action, creature event, encounter outcome, claim) only request a named transition, and conditions read the stage. |
+
+Transitions are read from every `setStorageValue` on a mission's storage in both servers
+(`lua_writers.py`): the owner comes from the script object of the enclosing callback (`MoveEvent`,
+`Action`, `CreatureEvent`, …) or from the file (`npc/`, `lib/`). The effect is the literal value,
+a step on the same storage, or a computed value (a `timestamp` is a cooldown). The `from` stage is
+read from the nearest comparison of the same storage through its if-block: kept in the `then`
+branch, negated in `else` or after an early `return`, unknown otherwise, and not `exact` when the
+condition is compound. It is a line-level reading, not an evaluation; the transcription of each
+owner confirms it.
 
 Missions whose storage is a bare number (the 70 Killing in the Name of tasks) keep it as the track
 `storage/<n>`. A mission graph with typed, branching objectives (option B) is added only for a quest
@@ -154,13 +164,16 @@ Quest (kind storyline)               content/quests/definitions/ + missions/
     progress                         …:quest-progress/<track>
     start_value, end_value           the range in which the mission shows
     journal                          per_stage[{value, text_ref | template}] | fixed(text_ref) | template(parts, reads) | none
+    transitions[]                    key (<owner>_<n>), owner, callback, from {op, value, exact} | null,
+                                     to | increment | computed (timestamp | expression), servers
   gates[]                            Gate refs whose condition reads one of its tracks
 
 Progress track                       samples/questlog/progress.json (evidence for Character persistence)
   key                                …:quest-progress/<track>
   missions[], start_of[]             who uses the track
   read_by_gates[]
-  writers                            per server: count and first source lines that set it
+  writes                             per server: number of writes found
+  transitions[]                      key, script, per-server source path, line and registrations
 
 Gate                                 content/interactions/ (definition) + world placements
   identity                           key + revision (…:door-gate/progress|key|level/<rule>)
@@ -260,6 +273,10 @@ storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` t
 | Reward-only quests absorbed by a storyline quest / catalogue quests | 21 / 157 |
 | Gates / reward claims attached to storyline quests | 138 / 98 |
 | Missions mapped / in conflict | 494 / 35 |
+| Transitions / missions with at least one | 1,616 / 355 |
+| Transitions by owner: NPC / action / movement / creature event / library / other | 1,257 / 169 / 68 / 27 / 40 / 55 |
+| Effects: new value / step / computed | 1,513 / 61 / 42 |
+| Transitions with a known `from` stage (exact) / in both servers | 383 (312) / 1,298 |
 
 The 35 conflicts are mostly journal texts (21); the rest are storage names or value ranges
 (The Way of the Monk, Hot Cuisine, The Shattered Isles reputation, Bigfoot's Burden recruitment).
@@ -268,7 +285,8 @@ The Canary value is kept until the wiki decides (D25). "No literal writer" means
 as the task counters are.
 
 The Queen of the Banshees shows the whole chain. In both servers the seal-flame movement scripts
-set seven of its eight seal missions, and the quest's own script sets the last. Eight quest gates
+set seven of its eight seal missions, from an unset seal to 1, and the Queen's dialogue sets the
+last. Eight quest gates
 (the seal doors and the banshee door, each on its own door storage) belong to the quest, and six
 reward claims hand out the final chests.
 
@@ -283,14 +301,18 @@ reward claims hand out the final chests.
   door's lock is channel or instance world-object state.
 - Quest records: `content/quests/definitions/` (`reward_only`, `storyline`) and
   `content/quests/missions/`.
-- Mission progress: Character persistence (one integer per track), shared across channels, written
-  only by the transition events of its owners, session-generation fenced.
+- Mission progress: Character persistence (one integer per track), shared across channels. Only the
+  quest domain writes it, by validating a requested transition against the current stage (D35);
+  a repeated request is idempotent, and writes are session-generation fenced. Rewards of a
+  transition go through the reward and item transaction owners, once per transition.
 
 ## 8. Next slices
 
-1. Transitions: transcribe the writers of each progress track into named events of their owners,
-   starting with NPC dialogues (the NPC authoring schema) and map movements; then settle the ten
-   door conflicts and the 35 mission conflicts.
+1. Owner transcription: bind each transition to its owner's content, first the movement and action
+   scripts (tile and item interactions, e.g. the Queen of the Banshees seal flames), then NPC dialogue
+   nodes (the NPC schema's open decision O4 is settled by D35: dialogue requests transitions and reads
+   stages, the quest domain owns the state); then settle the ten door conflicts and the 35 mission
+   conflicts.
 2. NPC-driven outfit and addon quests (under the NPC service boundary).
 3. The dedicated-script doors (vocation doors, Katana, Secret Service).
 4. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
@@ -303,3 +325,4 @@ reward claims hand out the final chests.
 | D32 | A reward chest is modelled as a world interaction: a `RewardClaim` taken once per character (or on a cooldown), with a lightweight `reward_only` quest record for naming, wiki linkage, achievements and prerequisites. It gets no missions and no quest-log entry. A chest that is a step of a storyline quest becomes an objective or reward of that quest. | Owner accepted the proposal ("tak", 2026-09-27). Only 93 of 373 wiki quests appear in Tibia's quest log; both servers serve chests from one data table. |
 | D33 | Canary and CrystalServer are both reference sources for quests, extending D30 (Crystal as a second donor for encounters): for quests CrystalServer is a full source, not only a donor. Their mechanics are used as implemented; where they differ, the union is taken, joined by map position, and conflicts go to the reference-date wiki (D25). | Owner request ("pamiętaj żeby używać i crystal i canary jako reference", "canary i crystal mają pewnie mechaniki wdrożone więc możemy się nimi posiłkować", 2026-09-27). |
 | D34 | Storyline quests use staged missions (option A of `CONTENT-QUEST-01`): a quest has missions, each mission one integer progress track with a start and an end value and a journal text per stage; transitions are named events of their owners (NPC, interaction, gate, claim, encounter). A graph of typed, branching objectives (option B) is added only for a quest that staged missions cannot express. | Owner decision 2026-09-27 ("zróbmy A a potem jeśli będzie potrzeba to B"). Both servers already describe all 529 missions this way. |
+| D35 | Only the quest domain writes quest progress. Each mission declares named transitions (from a stage to a new value, a step or a computed value); NPC dialogue, movements, actions, creature events, encounters and claims request a transition, conditions read stages, and the quest domain validates the request against the current stage, applies it idempotently and session-generation fenced, and hands rewards to the reward and item owners. This settles the quest-state part of the NPC schema's open decision O4. | Owner accepted the proposal ("zgadzam się", 2026-09-27). Quest progress is character state shared across channels while NPC runtime is channel-local; both servers let any script write progress (1,616 transitions over 355 missions). |

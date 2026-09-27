@@ -123,14 +123,33 @@
       "type": "object", "additionalProperties": false, "required": ["parts", "reads"],
       "properties": {"parts": {"type": "array", "items": {"$ref": "#/$defs/text_ref"}}, "reads": {"type": "array", "items": {"type": "string"}}}
     },
+    "transition": {
+      "description": "A named change of a mission's progress track that one owner requests and the quest domain validates (D35).",
+      "type": "object", "additionalProperties": false, "required": ["key", "owner", "callback", "from", "servers"],
+      "properties": {
+        "key": {"type": "string", "pattern": "^[a-z_]+_[0-9]+$"},
+        "owner": {"enum": ["npc", "action", "movement", "creature_event", "global_event", "talk_action", "event_callback", "library", "other"]},
+        "callback": {"type": ["string", "null"]},
+        "from": {"oneOf": [{"type": "null"},
+                           {"type": "object", "additionalProperties": false, "required": ["op", "value", "exact"],
+                            "properties": {"op": {"enum": ["==", "~=", "<", "<=", ">", ">="]}, "value": {"type": "integer"},
+                                           "exact": {"type": "boolean"}}}]},
+        "to": {"type": "integer"},
+        "increment": {"type": "integer", "minimum": 1},
+        "computed": {"enum": ["timestamp", "expression"]},
+        "servers": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"enum": ["canary", "crystalserver"]}}
+      },
+      "oneOf": [{"required": ["to"]}, {"required": ["increment"]}, {"required": ["computed"]}]
+    },
     "mission": {
-      "type": "object", "additionalProperties": false, "required": ["key", "name", "progress", "start_value", "end_value", "journal"],
+      "type": "object", "additionalProperties": false, "required": ["key", "name", "progress", "start_value", "end_value", "journal", "transitions"],
       "properties": {
         "key": {"type": "string", "pattern": "^[a-z0-9_]+$"},
         "name": {"type": "string", "minLength": 1},
         "progress": {"$ref": "#/$defs/progress"},
         "start_value": {"type": "integer"},
         "end_value": {"type": "integer"},
+        "transitions": {"type": "array", "items": {"$ref": "#/$defs/transition"}},
         "journal": {
           "oneOf": [
             {"type": "object", "additionalProperties": false, "required": ["kind", "stages"],

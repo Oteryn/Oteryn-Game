@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260927-quest-staged-missions
-title: Quest format slice 3 - staged missions (D34) and the Canary + CrystalServer quest-log transcription
+title: Quest format slice 3 - staged missions (D34), transitions (D35) and the Canary + CrystalServer quest-log transcription
 mode: CONTRACT
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -36,7 +36,14 @@ Owner decision D34 (2026-09-27, this session): storyline quests use staged missi
 stage. Transitions are named events of their owners. A graph of typed objectives (option B) is
 added only when a quest needs it. The quest logs of both servers become 58 storyline quests with
 529 missions and a writer index per progress track. The output is one quest catalogue that
-absorbs the matching reward-only quests. Runtime, persistence and `content/**` stay unchanged.
+absorbs the matching reward-only quests.
+
+Owner decision D35 (2026-09-27, this session): only the quest domain writes quest progress. Each
+mission declares named transitions, and owners (NPC dialogue, movements, actions, creature events,
+encounters, claims) only request them. This also settles the quest-state part of NPC decision O4.
+The Lua writers of both servers become 1,616 candidate transitions over 355 missions, each with an
+owner, an effect and, where the if-block shows it, the stage it starts from. Runtime, persistence
+and `content/**` stay unchanged.
 
 ## Architecture and source of truth
 
@@ -53,7 +60,9 @@ fence, session, authority or persisted-recovery evidence is touched.
 
 ## Acceptance and evidence
 
-- `verify_quest_schema.py` 57/57 with the cause of each negative case checked.
+- `verify_quest_schema.py` 63/63 with the cause of each negative case checked.
+- The Queen of the Banshees seal transitions read correctly from both servers (movement, from an
+  unset seal to 1; the last seal from the Queen's dialogue without a stage guard).
 - Journal lines are text references only (LICENSE-ASSETS.md); no narrative text is committed.
 - `ots_chests.py`, `ots_doors.py` and `ots_questlog.py` are deterministic; the catalogue, claims,
   gates and progress tracks validate together.

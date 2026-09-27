@@ -190,8 +190,15 @@ def validate_storylines(quests_doc, gates_doc, progress_doc):
                     errors.append(f'{where}: stage values are not unique and ascending')
                 if any(v < mission['start_value'] or v > mission['end_value'] for v in values):
                     errors.append(f'{where}: a stage lies outside the mission range')
-            if where not in tracks.get(mission['progress'], {}).get('missions', []):
+            track = tracks.get(mission['progress'], {})
+            if where not in track.get('missions', []):
                 errors.append(f'{where}: progress track {mission["progress"]} does not list this mission')
+            keys = [t['key'] for t in mission['transitions']]
+            if len(keys) != len(set(keys)):
+                errors.append(f'{where}: duplicate transition key')
+            evidence = {t['key'] for t in track.get('transitions', [])}
+            for transition in sorted(set(keys) - evidence):
+                errors.append(f'{where}: transition {transition} has no source evidence on its progress track')
     return sorted(set(errors))
 
 

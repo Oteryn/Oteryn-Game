@@ -20,10 +20,9 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import lua_tables
+import lua_writers
 from ots_chests import REVISION, ROOT, SOURCES, check_checkout, git_blob, quest_key, ref, slug, text_ref, wiki_matcher
 
-WRITE = re.compile(r'setStorageValue\(\s*(Storage\.[A-Za-z0-9_.]+(?:\[\d+\])?|\d+)\s*,\s*([^)\n]*)\)')
-MAX_WRITERS = 4
 
 
 def norm(text):
@@ -96,19 +95,47 @@ def comparable_mission(mission):
     return {k: strip(mission.get(k)) for k in ('storageId', 'startValue', 'endValue', 'states', 'description')}
 
 
-def writer_index(repos):
-    writers = defaultdict(lambda: defaultdict(list))
+def script_of(path):
+    """A script path without its datapack, so the same script in both servers compares equal."""
+    return re.sub(r'^(data-otservbr-global|data-global|data-crystal|data)/', '', path)
+
+
+def effect_of(write):
+    return {k: write[k] for k in ('to', 'increment', 'computed') if k in write}
+
+
+def transition_index(repos):
+    """Per progress track: write counts per server and the union of both servers' candidate transitions (D35)."""
+    tracks = defaultdict(lambda: {'count': Counter(), 'transitions': {}})
     for name, repo in repos.items():
         packs = [SOURCES[name]['datapack'], 'data'] + (['data-crystal'] if name == 'crystalserver' else [])
         for pack in packs:
             for path in sorted(glob.glob(str(Path(repo) / pack / '**/*.lua'), recursive=True)):
-                text = Path(path).read_text(errors='replace')
-                for match in WRITE.finditer(text):
-                    line = text.count('\n', 0, match.start()) + 1
-                    target = int(match.group(1)) if match.group(1).isdigit() else match.group(1)
-                    writers[norm(track_of(target))][name].append(
-                        {'path': str(Path(path).relative_to(repo)), 'line': line, 'value': match.group(2).strip()[:60]})
-    return writers
+                rel = str(Path(path).relative_to(repo))
+                for write in lua_writers.scan(Path(path).read_text(errors='replace'), rel):
+                    target = int(write['target']) if write['target'].isdigit() else write['target']
+                    track = tracks[norm(track_of(target))]
+                    track['count'][name] += 1
+                    ident = json.dumps([script_of(rel), write['owner'], write['callback'], effect_of(write), write['from']],
+                                       sort_keys=True)
+                    entry = track['transitions'].setdefault(ident, {
+                        'owner': write['owner'], 'callback': write['callback'], 'from': write['from'], **effect_of(write),
+                        'script': script_of(rel), 'sources': {}})
+                    entry['sources'].setdefault(name, {'path': rel, 'line': write['line'],
+                                                       'registrations': write['registrations']})
+    return tracks
+
+
+def mission_transitions(found):
+    """Stable transition keys per track: owner and ordinal over the sorted script/line list."""
+    out, seen = [], Counter()
+    for entry in sorted(found['transitions'].values(),
+                        key=lambda e: (e['owner'], e['script'], min(s['line'] for s in e['sources'].values()))):
+        seen[entry['owner']] += 1
+        effect = {k: entry[k] for k in ('to', 'increment', 'computed') if k in entry}
+        out.append({'key': f'{entry["owner"]}_{seen[entry["owner"]]}', 'owner': entry['owner'], 'callback': entry['callback'],
+                    'from': entry['from'], **effect, 'servers': sorted(entry['sources']), '_entry': entry})
+    return out
 
 
 def build(repos, chests_dir, doors_dir, coverage):
@@ -117,7 +144,7 @@ def build(repos, chests_dir, doors_dir, coverage):
     reward_only = {q['identity']['key']: q for q in json.loads((chests_dir / 'quests.json').read_text())['quests']}
     gates = json.loads((doors_dir / 'gates.json').read_text())['gates']
     match_quest = wiki_matcher(coverage)
-    writers = writer_index(repos)
+    index = transition_index(repos)
 
     by_name = defaultdict(dict)
     for name, quests in logs.items():
@@ -153,8 +180,10 @@ def build(repos, chests_dir, doors_dir, coverage):
                 mission_key += '_2'
             seen.add(mission_key)
             start, end = mission.get('startValue'), mission.get('endValue')
+            transitions = mission_transitions(index.get(norm(track.split('/', 1)[1]), {'transitions': {}}))
             missions.append({'key': mission_key, 'name': mission['name'], 'progress': track,
-                             'start_value': start, 'end_value': end, 'journal': journal_of(mission)})
+                             'start_value': start, 'end_value': end, 'journal': journal_of(mission),
+                             'transitions': [{k: v for k, v in t.items() if k != '_entry'} for t in transitions]})
             tracks[track]['missions'].append(f'{key}#{mission_key}')
             status, resolution = 'mapped', 'present in both servers and identical'
             if server == 'crystalserver' and 'canary' in pair:
@@ -212,12 +241,14 @@ def build(repos, chests_dir, doors_dir, coverage):
 
     progress = []
     for track, info in sorted(tracks.items()):
-        found = writers.get(norm(track.split('/', 1)[1]), {})
+        found = index.get(norm(track.split('/', 1)[1]), {'count': Counter(), 'transitions': {}})
         progress.append({'key': track, 'missions': info['missions'], 'start_of': info['start_of'],
                          'read_by_gates': sorted(g['identity']['key'] for g in gates if g['condition'].get('progress')
                                                  and norm(g['condition']['progress'].split('/', 1)[1]) == norm(track.split('/', 1)[1])),
-                         'writers': {n: {'count': len(found.get(n, [])), 'first': found.get(n, [])[:MAX_WRITERS]}
-                                     for n in repos}})
+                         'writes': {n: found['count'][n] for n in repos},
+                         'transitions': [{'key': t['key'], 'script': t['_entry']['script'], 'sources': t['_entry']['sources']}
+                                         for t in mission_transitions(found)]})
+    all_transitions = [t for q in storyline.values() for m in q['missions'] for t in m['transitions']]
     counts = Counter(e['status'] for e in manifest_entries)
     manifest = {
         'classification': 'OTS_HYPOTHESIS_ONLY',
@@ -231,8 +262,14 @@ def build(repos, chests_dir, doors_dir, coverage):
             'missions': sum(len(q['missions']) for q in storyline.values()),
             'journals': dict(Counter(m['journal']['kind'] for q in storyline.values() for m in q['missions'])),
             'progress_tracks': len(progress),
-            'tracks_written_by_both_servers': sum(1 for p in progress if all(p['writers'][n]['count'] for n in repos)),
-            'tracks_without_a_writer': sum(1 for p in progress if not any(p['writers'][n]['count'] for n in repos)),
+            'tracks_written_by_both_servers': sum(1 for p in progress if all(p['writes'][n] for n in repos)),
+            'tracks_without_a_writer': sum(1 for p in progress if not any(p['writes'][n] for n in repos)),
+            'transitions': len(all_transitions),
+            'transitions_by_owner': dict(sorted(Counter(t['owner'] for t in all_transitions).items())),
+            'transitions_by_effect': dict(sorted(Counter(next(k for k in ('to', 'increment', 'computed') if k in t)
+                                                        for t in all_transitions).items())),
+            'transitions_with_known_from': sum(1 for t in all_transitions if t['from']),
+            'transitions_in_both_servers': sum(1 for t in all_transitions if len(t['servers']) == 2),
             'storyline_quests_linked_to_wiki': sum(1 for q in storyline.values() if 'wiki' in q),
             'reward_only_quests_absorbed': len(absorbed),
             'catalogue_quests': len(catalogue),
