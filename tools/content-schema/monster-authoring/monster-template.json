@@ -275,6 +275,7 @@
     },
     "appearance": {
       "asset_binding": null,
+      "selection": null,
       "palette_bindings": [
         {
           "slot": null,

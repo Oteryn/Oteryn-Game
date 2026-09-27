@@ -16,6 +16,7 @@ pub(crate) enum CarrierError {
     AllocationFailed,
     CapacityExceeded,
     InvalidAssignmentBinding,
+    ContentPinWorldMismatch,
     PlayerReservationMismatch,
     WrongScope,
     InvalidActorIdentity,
@@ -537,6 +538,63 @@ struct ChannelActorCarrier {
     corpse_projection: Option<RuntimeCorpseProjection>,
 }
 
+/// The exact active Content generation a Channel runtime is created with (#935 "Activation issuer
+/// and current pin"): scope World, activation sequence, pair digests and the source-qualified
+/// frame binding digest. In production it is minted only by the Content activation path from an
+/// activated native entry generation; it is fixed for the runtime's lifetime.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct ChannelContentPin {
+    world_id: WorldId,
+    activation_sequence: u64,
+    server_artifact_digest: [u8; 32],
+    client_artifact_digest: [u8; 32],
+    frame_binding_digest: [u8; 32],
+}
+
+impl ChannelContentPin {
+    pub(crate) const fn from_activation(
+        world_id: WorldId,
+        activation_sequence: u64,
+        server_artifact_digest: [u8; 32],
+        client_artifact_digest: [u8; 32],
+        frame_binding_digest: [u8; 32],
+    ) -> Self {
+        Self {
+            world_id,
+            activation_sequence,
+            server_artifact_digest,
+            client_artifact_digest,
+            frame_binding_digest,
+        }
+    }
+
+    /// Synthetic pin for runtime tests that do not exercise Content activation.
+    #[cfg(test)]
+    pub(crate) const fn test(world_id: WorldId) -> Self {
+        Self::from_activation(world_id, 1, [1; 32], [2; 32], [3; 32])
+    }
+
+    pub(crate) const fn world_id(&self) -> WorldId {
+        self.world_id
+    }
+
+    pub(crate) const fn activation_sequence(&self) -> u64 {
+        self.activation_sequence
+    }
+
+    pub(crate) const fn server_artifact_digest(&self) -> [u8; 32] {
+        self.server_artifact_digest
+    }
+
+    pub(crate) const fn client_artifact_digest(&self) -> [u8; 32] {
+        self.client_artifact_digest
+    }
+
+    pub(crate) const fn frame_binding_digest(&self) -> [u8; 32] {
+        self.frame_binding_digest
+    }
+}
+
 /// The first composed Channel runtime. The fixed-slot carrier is the only actor
 /// resource: no session map or second index is introduced.
 #[derive(Debug)]
@@ -544,6 +602,7 @@ pub(crate) struct ChannelRuntimeV1 {
     binding: ChannelRuntimeAssignmentBinding,
     continuity: NamespaceContinuityGuard,
     carrier: ChannelActorCarrier,
+    content: ChannelContentPin,
 }
 
 impl ChannelRuntimeV1 {
@@ -557,9 +616,13 @@ impl ChannelRuntimeV1 {
         source_revision: u64,
         decision_identity: &str,
         explicit_capacity: usize,
+        content: ChannelContentPin,
     ) -> Result<Self, CarrierError> {
         if node_registration_revision == 0 || source_revision == 0 {
             return Err(CarrierError::InvalidAssignmentBinding);
+        }
+        if content.world_id != world_id {
+            return Err(CarrierError::ContentPinWorldMismatch);
         }
         let decision_revision = decision_identity
             .strip_prefix("runtime-scope-assignment:")
@@ -588,11 +651,16 @@ impl ChannelRuntimeV1 {
             },
             continuity,
             carrier,
+            content,
         })
     }
 
     pub(crate) const fn binding(&self) -> ChannelRuntimeAssignmentBinding {
         self.binding
+    }
+
+    pub(crate) const fn content_pin(&self) -> &ChannelContentPin {
+        &self.content
     }
 
     /// Unactivated Movement proof: one exclusive borrow of the composed Channel owner.
@@ -1852,6 +1920,7 @@ mod tests {
             11,
             "runtime-scope-assignment:11",
             capacity,
+            ChannelContentPin::test(WorldId::decode(&uuid_v7(20)).expect("world")),
         )
         .expect("runtime")
     }
@@ -1936,6 +2005,7 @@ mod tests {
                 1,
                 "runtime-scope-assignment:1",
                 1,
+                ChannelContentPin::test(world),
             ),
             Err(CarrierError::InvalidAssignmentBinding)
         ));
@@ -1949,9 +2019,38 @@ mod tests {
                 2,
                 "runtime-scope-assignment:1",
                 1,
+                ChannelContentPin::test(world),
             ),
             Err(CarrierError::InvalidAssignmentBinding)
         ));
+        let other_world = WorldId::decode(&uuid_v7(53)).expect("other world");
+        assert!(matches!(
+            ChannelRuntimeV1::from_committed_assignment(
+                world,
+                channel,
+                node(52),
+                1,
+                1,
+                1,
+                "runtime-scope-assignment:1",
+                1,
+                ChannelContentPin::test(other_world),
+            ),
+            Err(CarrierError::ContentPinWorldMismatch)
+        ));
+        let runtime = ChannelRuntimeV1::from_committed_assignment(
+            world,
+            channel,
+            node(52),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            1,
+            ChannelContentPin::test(world),
+        )
+        .expect("pinned runtime");
+        assert_eq!(runtime.content_pin(), &ChannelContentPin::test(world));
         assert_eq!(
             size_of::<Slot>(),
             192,

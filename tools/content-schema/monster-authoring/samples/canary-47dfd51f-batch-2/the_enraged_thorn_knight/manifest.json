@@ -468,11 +468,12 @@
     {
       "source_index": 0,
       "source_file": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_enraged_thorn_knight.lua",
-      "source_line": 6,
-      "source_field": "outfit.lookAddons/lookMount",
+      "source_line": 12,
+      "source_field": "outfit.lookAddons",
       "kind": "field",
-      "status": "unresolved_semantics",
-      "resolution": "Addon/mount attachments are not mapped by this batch converter."
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance/attachment_bindings",
+      "resolution": "lookAddons 3 is a bit mask of the outfit addons (1 first, 2 second, 3 both); each shown addon is a declared attachment binding of the outfit."
     },
     {
       "source_index": 0,

@@ -165,7 +165,11 @@ if __name__=='__main__':
     case('condition damage requires tick interval',lambda m,d,c:(condition(m,d,c),d['effects'][-1]['condition']['damage_over_time'].pop('tick_interval_ms')))
     case('create item operation resolves',lambda m,d,c:d['effects'].append({'identity':ident('field'),'operation':'create_item','created_item':ref('Item','coin')}),True)
     case('transform needs duration and target',lambda m,d,c:d['effects'].append({'identity':ident('outfit'),'operation':'appearance_transform'}))
-    case('corpse must identify corpse Item',set_value(['d','items',0,'classification','is_corpse'],False))
+    case('any local Item may be the corpse (D17)',set_value(['d','items',0,'classification','is_corpse'],False),True)
+    case('change_target interval 0 disables timed changes',
+        lambda m,d,c:m['behavior']['targeting'].__setitem__('change_target',{'interval_ms':0,'chance_percent':8}),True)
+    case('familiar look selection accepted (D16)',lambda m,d,c:m['presentation']['appearance'].__setitem__('selection','owner_familiar_look'),True)
+    case('unknown appearance selection rejected',lambda m,d,c:m['presentation']['appearance'].__setitem__('selection','random'))
     case('decay transform needs target',lambda m,d,c:d['items'][0]['temporal'].pop('decay_target'))
     case('remove decay forbids target',set_value(['d','items',1,'temporal','decay_target'],ref('Item','coin')))
     case('decay cycle rejected',lambda m,d,c:d['items'][1]['temporal'].update(decay_action='transform',decay_target=ref('Item','body')))

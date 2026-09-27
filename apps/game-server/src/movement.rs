@@ -480,6 +480,7 @@ mod tests {
             11,
             "runtime-scope-assignment:11",
             capacity,
+            crate::foundation::ChannelContentPin::test(WorldId::decode(&uuid_v7(20))?),
         )?)
     }
 

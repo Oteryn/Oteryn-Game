@@ -243,6 +243,7 @@ pub struct NativeEntryRng {
 pub struct NativeEntryProject {
     project: WorldProject,
     source: FirstProductionContentSource,
+    frame: NativeEntryFrame,
 }
 
 impl NativeEntryProject {
@@ -263,8 +264,109 @@ impl NativeEntryProject {
         // The existing FirstProduction validators (cardinality, key uniqueness, population,
         // references) apply before a source counts as qualified (#937 §4).
         compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
-        Ok(Self { project, source })
+        Ok(Self {
+            project,
+            source,
+            frame: overlay.frame,
+        })
     }
+
+    /// The source-qualified native frame binding of this project (#935): the qualified frame and
+    /// its digest over the World, source manifest and map revision it was qualified with.
+    pub fn frame_binding(&self) -> NativeEntryFrameBinding {
+        let mut bytes = Vec::with_capacity(256);
+        bytes.extend_from_slice(NATIVE_ENTRY_FRAME_BINDING_DOMAIN);
+        bytes.extend_from_slice(self.source.world_id.as_bytes());
+        for part in [
+            self.source
+                .package_manifest
+                .source_manifest_digest
+                .as_str()
+                .as_bytes(),
+            self.source.revisions.map.as_str().as_bytes(),
+            self.frame.coordinate_profile.as_bytes(),
+            self.frame.coordinate_frame.as_bytes(),
+        ] {
+            bytes.extend_from_slice(&(part.len() as u64).to_be_bytes());
+            bytes.extend_from_slice(part);
+        }
+        bytes.extend_from_slice(&self.frame.contract_revision.to_be_bytes());
+        bytes.extend_from_slice(&self.frame.origin.x.to_be_bytes());
+        bytes.extend_from_slice(&self.frame.origin.y.to_be_bytes());
+        bytes.extend_from_slice(&self.frame.origin.floor.to_be_bytes());
+        // The axes are closed canonical enums (East/South/Up); the domain tag binds them.
+        NativeEntryFrameBinding {
+            frame: self.frame.clone(),
+            digest: crate::content::digest::sha256(&bytes),
+        }
+    }
+}
+
+const NATIVE_ENTRY_FRAME_BINDING_DOMAIN: &[u8] =
+    b"OTERYN_NATIVE_ENTRY_FRAME_BINDING/v1;axes=east,south,up\0";
+
+/// The qualified native frame of one bound entry room and its binding digest. It is produced only
+/// from a natively qualified project; activation, the Channel pin and later location issuance
+/// carry it unchanged (#935 "Activation issuer and current pin").
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeEntryFrameBinding {
+    frame: NativeEntryFrame,
+    digest: [u8; 32],
+}
+
+impl NativeEntryFrameBinding {
+    pub fn frame(&self) -> &NativeEntryFrame {
+        &self.frame
+    }
+
+    pub const fn digest(&self) -> [u8; 32] {
+        self.digest
+    }
+}
+
+/// The committed entry room bound to one WorldId, qualified natively and compiled to its
+/// deterministic ordinary-release pair, with the frame binding of the same qualification.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QualifiedNativeEntryRoom {
+    compiled: crate::content::CompiledFirstProductionContent,
+    frame_binding: NativeEntryFrameBinding,
+}
+
+impl QualifiedNativeEntryRoom {
+    pub fn compiled(&self) -> &crate::content::CompiledFirstProductionContent {
+        &self.compiled
+    }
+
+    pub fn frame_binding(&self) -> &NativeEntryFrameBinding {
+        &self.frame_binding
+    }
+}
+
+/// Rebuilds the committed entry room for `world_id` from its genuine source: bind, re-admit through
+/// the native parser under the fixed limits, qualify and compile. Every caller (the activation
+/// issuer and the node) derives digests and frame binding this way; none is supplied externally.
+pub fn qualify_native_entry_room(
+    world_id: crate::foundation::WorldId,
+) -> Result<QualifiedNativeEntryRoom, ProjectError> {
+    let documents = native_entry_room_documents(world_id)?;
+    let snapshot = ProjectSnapshot::new(
+        documents.documents().clone(),
+        native_entry_first_slice_limits().project,
+    )?;
+    let project = snapshot.parse_native_entry()?;
+    if project.source().world_id != world_id {
+        return Err(ProjectError::InvalidProject(
+            "native entry room WorldId does not match its binding",
+        ));
+    }
+    let compiled = compile_first_production(
+        project.source(),
+        FirstProductionCompileTarget::OrdinaryRelease,
+    )?;
+    Ok(QualifiedNativeEntryRoom {
+        compiled,
+        frame_binding: project.frame_binding(),
+    })
 }
 
 /// Committed native entry-room source (#822 path). It deliberately carries no WorldId: the

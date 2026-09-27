@@ -129,8 +129,9 @@
       "source_line": 6,
       "source_field": "outfit.lookType",
       "kind": "field",
-      "status": "unresolved_semantics",
-      "resolution": "Source outfit has no lookType (lookType 0 placeholder). Familiar looks are chosen per player in data/XML/familiars.xml (e.g. Skullfrost 991 or quest Snowbash 1365 for knights); needs a native decision."
+      "status": "mapped",
+      "destination": "/monster/presentation/appearance",
+      "resolution": "Owner decision D16: a familiar shows the look its owner selected (data/XML/familiars.xml, chosen per character); data/libs/systems/familiar.lua FAMILIAR_ID gives the default look per vocation, which creaturescripts/familiar/on_login.lua assigns to a character without a selection. The monster file has no lookType."
     },
     {
       "source_index": 0,

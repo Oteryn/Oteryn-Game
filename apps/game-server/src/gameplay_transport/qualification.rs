@@ -866,6 +866,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             assigned.assignment.source_revision,
             &assigned.assignment.decision_identity,
             usize::try_from(crate::node::config::PREPRODUCTION_FIRST_SLICE_ACTOR_CAPACITY)?,
+            crate::foundation::ChannelContentPin::test(world),
         )
         .map_err(|e| format!("channel runtime: {e:?}"))?,
     );
