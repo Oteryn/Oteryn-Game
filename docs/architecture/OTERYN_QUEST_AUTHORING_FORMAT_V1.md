@@ -1,7 +1,7 @@
 # Oteryn Quest Authoring Format v1: reward claims
 
 - Date: 2026-09-27
-- DecisionStatus: CANDIDATE (owner decisions D30-D31 recorded in §9; the first slice covers reward
+- DecisionStatus: CANDIDATE (owner decisions D32-D33 recorded in §9; the first slice covers reward
   chests only)
 - DeliveryStatus: OPEN (design draft and offline transcription only)
 - ImplementationStatus: NOT_STARTED
@@ -40,12 +40,12 @@ chests are not in that catalogue.
 
 ## 2. Principles
 
-1. A reward chest is a world interaction, not a storyline quest (D30). It has no missions and no
+1. A reward chest is a world interaction, not a storyline quest (D32). It has no missions and no
    quest-log entry. A lightweight `reward_only` quest record names it and links it to the wiki,
    achievements, prerequisites of other quests and analytics.
 2. Legacy storage keys, KV quest names, unique ids and action ids are not Oteryn identities
    (CW import plan B6). They are kept as source evidence in the manifest for reimport.
-3. Both reference servers are sources (D31). They number chests differently (unique id 6117 is the
+3. Both reference servers are sources (D33). They number chests differently (unique id 6117 is the
    Combat Knife chest in Canary and Captain Iglue's chest in CrystalServer), so chests are joined by
    map position.
 4. The source mechanics are the reference, including where the two servers differ. Source defects
@@ -172,5 +172,5 @@ entries below them. The four outlaw camp key chests, for example, sit under the 
 
 | # | Decision | Basis |
 |---|---|---|
-| D30 | A reward chest is modelled as a world interaction: a `RewardClaim` taken once per character (or on a cooldown), with a lightweight `reward_only` quest record for naming, wiki linkage, achievements and prerequisites. It gets no missions and no quest-log entry. A chest that is a step of a storyline quest becomes an objective or reward of that quest. | Owner accepted the proposal ("tak", 2026-09-27). Only 93 of 373 wiki quests appear in Tibia's quest log; both servers serve chests from one data table. |
-| D31 | Canary and CrystalServer are both reference sources. Their mechanics are used as implemented; where they differ, the union is taken, joined by map position, and conflicts go to the reference-date wiki (D25). | Owner request ("pamiętaj żeby używać i crystal i canary jako reference", "canary i crystal mają pewnie mechaniki wdrożone więc możemy się nimi posiłkować", 2026-09-27). |
+| D32 | A reward chest is modelled as a world interaction: a `RewardClaim` taken once per character (or on a cooldown), with a lightweight `reward_only` quest record for naming, wiki linkage, achievements and prerequisites. It gets no missions and no quest-log entry. A chest that is a step of a storyline quest becomes an objective or reward of that quest. | Owner accepted the proposal ("tak", 2026-09-27). Only 93 of 373 wiki quests appear in Tibia's quest log; both servers serve chests from one data table. |
+| D33 | Canary and CrystalServer are both reference sources for quests, extending D30 (Crystal as a second donor for encounters): for quests CrystalServer is a full source, not only a donor. Their mechanics are used as implemented; where they differ, the union is taken, joined by map position, and conflicts go to the reference-date wiki (D25). | Owner request ("pamiętaj żeby używać i crystal i canary jako reference", "canary i crystal mają pewnie mechaniki wdrożone więc możemy się nimi posiłkować", 2026-09-27). |

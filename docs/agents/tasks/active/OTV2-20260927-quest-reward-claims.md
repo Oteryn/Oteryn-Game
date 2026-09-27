@@ -2,14 +2,14 @@
 
 ```yaml
 task_id: OTV2-20260927-quest-reward-claims
-title: Quest authoring format v1 (reward claims, D30-D31) and the Canary + CrystalServer chest transcription
+title: Quest authoring format v1 (reward claims, D32-D33) and the Canary + CrystalServer chest transcription
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 976
 base_sha: 419a7cbc8539c9c98bd83d9220e331255e7e8f12
 head_sha: null
 final_head_sha: null
@@ -31,8 +31,8 @@ external_repositories: []
 
 ## Outcome
 
-Owner decisions D30 (a reward chest is a world interaction with a lightweight `reward_only` quest
-record) and D31 (Canary and CrystalServer are both reference sources, joined by map position),
+Owner decisions D32 (a reward chest is a world interaction with a lightweight `reward_only` quest
+record) and D33 (Canary and CrystalServer are both reference sources, joined by map position),
 accepted 2026-09-27 in this session. A CANDIDATE quest format covers reward claims. The first
 transcription covers the chests of both servers. A wiki coverage sample compares 373 Fandom quests
 with both servers. Runtime, persistence and `content/**` stay unchanged and unallocated.
