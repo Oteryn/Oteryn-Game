@@ -17,6 +17,8 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | `conflict_decisions.json` | D25 decisions for every Canary/CrystalServer conflict of the chest, door, quest-log and interaction transcriptions: chosen server, basis, the difference in our own words and the wiki revision when it decides; the converters apply it and fail on a stale decision. |
 | `track_owners.json` | Owning quest of the progress tracks quest scripts write outside missions, where no mission-track prefix or script directory names it; the quest-log converter fails on a missing or stale record. |
 | `interaction.schema.json` | JSON Schema of interaction definitions (D36). |
+| `ots_map_check.py` | Checks chest, door and interaction positions against Canary's `otservbr.otbm` and CrystalServer's `world.otbm` (not committed; sha256 pinned), reading Canary's startup id tables; writes `samples/map-check/report.json`. |
+| `ots_readiness.py` | Per quest, the engine features it needs and its data gaps, and the unlock order; reads only the committed samples. |
 | `validate_quest_content.py` | Schema plus semantic checks: unique keys and positions, non-empty rewards, text on a handed-out item, claim/quest links in both directions, gate conditions against the claims (progress marker, key source), one identity per quest, mission ranges and stages against the progress tracks, catalog and manifest coverage; for interactions: anchors, blocked reasons, named transitions against the missions, undeclared progress tracks, manifest status. |
 | `verify_quest_schema.py` | Focused positive/negative cases on synthetic fixtures (`--verbose` prints each case's first error). |
 | `samples/quest-coverage-2026-09-27.json` | The 373 wiki quests (facts only) with their status in each server. |
@@ -32,6 +34,8 @@ python ots_chests.py --canary <opentibiabr/canary at 47dfd51f> --crystal <zimbad
 python ots_doors.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_questlog.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_interactions.py --canary <canary checkout> --crystal <crystalserver checkout>
+python ots_readiness.py
+python ots_map_check.py <otservbr.otbm> --crystalserver <decompressed world.otbm> --canary <canary checkout>
 python validate_quest_content.py samples/chests/claims.json samples/questlog/quests.json \
   --catalog samples/chests/catalog.json --manifest samples/chests/manifest.json \
   --gates samples/doors/gates.json --gates-manifest samples/doors/manifest.json \
