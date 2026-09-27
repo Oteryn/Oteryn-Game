@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 1040
 base_sha: bab42d5c
 head_sha: null
 final_head_sha: null
@@ -184,7 +184,7 @@ last_progress: fallback implemented, tools (objects) alias removed, rebased on m
 status: implementing
 branch: claude/compassionate-albattani-s29syw
 head_sha: null
-pr: null
+pr: 1040
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
