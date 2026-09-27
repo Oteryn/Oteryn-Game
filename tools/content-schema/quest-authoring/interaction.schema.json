@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "oteryn:schema/interaction/v1",
+  "title": "Oteryn interaction definition v1 (CANDIDATE, D36): source edge, read-only conditions, owner-delegated children",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["interactions"],
+  "properties": {"interactions": {"type": "array", "items": {"$ref": "#/$defs/interaction"}}},
+  "$defs": {
+    "ref": {
+      "type": "object", "additionalProperties": false, "required": ["family", "key", "revision"],
+      "properties": {"family": {"enum": ["Creature", "Item"]}, "key": {"type": "string", "pattern": "^[a-z0-9_-]+:[a-z0-9_./-]+$"},
+                     "revision": {"type": "string", "minLength": 1}}
+    },
+    "progress": {"type": "string", "pattern": "^[a-z0-9_-]+:quest-progress/[a-z0-9_./-]+$"},
+    "world_state": {"type": "string", "pattern": "^[a-z0-9_-]+:world-state/[a-z0-9_]+$"},
+    "op": {"enum": ["==", "~=", "<", "<=", ">", ">="]},
+    "anchor_key": {"type": "string", "pattern": "^p[0-9]+$"},
+    "condition": {
+      "oneOf": [
+        {"type": "object", "additionalProperties": false, "required": ["quest_stage", "negate"],
+         "properties": {"negate": {"type": "boolean"},
+                        "quest_stage": {"type": "object", "additionalProperties": false, "required": ["progress", "op", "value"],
+                                        "properties": {"progress": {"$ref": "#/$defs/progress"}, "op": {"$ref": "#/$defs/op"},
+                                                       "value": {"type": "integer"}}}}},
+        {"type": "object", "additionalProperties": false, "required": ["world_state", "negate"],
+         "properties": {"negate": {"type": "boolean"},
+                        "world_state": {"type": "object", "additionalProperties": false, "required": ["key", "op", "value"],
+                                        "properties": {"key": {"$ref": "#/$defs/world_state"}, "op": {"$ref": "#/$defs/op"},
+                                                       "value": {"type": "integer"}}}}},
+        {"type": "object", "additionalProperties": false, "required": ["actor_is_player", "negate"],
+         "properties": {"actor_is_player": {"const": true}, "negate": {"type": "boolean"}}},
+        {"type": "object", "additionalProperties": false, "required": ["object", "negate"],
+         "properties": {"negate": {"type": "boolean"},
+                        "object": {"type": "object", "additionalProperties": false, "required": ["role", "field", "op"],
+                                   "properties": {"role": {"enum": ["source", "contact", "use_target"]},
+                                                  "field": {"enum": ["item_type", "unique_id", "action_id", "subtype"]},
+                                                  "op": {"enum": ["==", "~="]}, "item": {"$ref": "#/$defs/ref"},
+                                                  "value": {"type": "integer", "minimum": 0}},
+                                   "if": {"properties": {"field": {"const": "item_type"}}},
+                                   "then": {"required": ["item"], "not": {"required": ["value"]},
+                                            "properties": {"item": {"properties": {"family": {"const": "Item"}}}}},
+                                   "else": {"required": ["value"], "not": {"required": ["item"]}}}}},
+        {"type": "object", "additionalProperties": false, "required": ["all"],
+         "properties": {"all": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/condition"}}}},
+        {"type": "object", "additionalProperties": false, "required": ["any"],
+         "properties": {"any": {"type": "array", "minItems": 2, "items": {"$ref": "#/$defs/condition"}}}},
+        {"type": "object", "additionalProperties": false, "required": ["unresolved"],
+         "properties": {"unresolved": {"type": "object", "additionalProperties": false, "required": ["line"],
+                                       "properties": {"line": {"type": "integer", "minimum": 1}}}}}
+      ]
+    },
+    "child": {
+      "type": "object",
+      "required": ["owner"],
+      "properties": {"owner": {"enum": ["Quest", "Ability", "Movement", "WorldObject", "Presentation"]}, "repeated": {"const": true}},
+      "oneOf": [
+        {"properties": {"owner": {"const": "Quest"}, "request": {"const": "set_progress"}, "progress": {"$ref": "#/$defs/progress"},
+                        "to": {"type": "integer"}, "value_source_line": {"type": "integer"},
+                        "transition": {"type": "string", "pattern": "^[a-z0-9_-]+:quest/[a-z0-9_]+#[a-z0-9_]+:[a-z_]+_[0-9]+$"},
+                        "repeated": {"const": true}},
+         "required": ["request", "progress"], "additionalProperties": false},
+        {"properties": {"owner": {"const": "Quest"}, "request": {"const": "set_world_state"}, "key": {"$ref": "#/$defs/world_state"},
+                        "to": {"type": "integer"}, "value_source_line": {"type": "integer"}, "repeated": {"const": true}},
+         "required": ["request", "key"], "additionalProperties": false},
+        {"properties": {"owner": {"const": "Ability"}, "effect": {"const": "summon"}, "creature": {"$ref": "#/$defs/ref"},
+                        "anchor": {"$ref": "#/$defs/anchor_key"}, "anchor_source_line": {"type": "integer"}, "repeated": {"const": true}},
+         "required": ["effect", "creature"], "additionalProperties": false},
+        {"properties": {"owner": {"const": "Movement"}, "status": {"const": "blocked"}, "reason": {"type": "string"},
+                        "to_anchor": {"$ref": "#/$defs/anchor_key"}, "to": {"const": "previous_position"},
+                        "to_source_line": {"type": "integer"}, "repeated": {"const": true}},
+         "required": ["status", "reason"], "additionalProperties": false},
+        {"properties": {"owner": {"const": "WorldObject"}, "status": {"const": "blocked"}, "reason": {"type": "string"},
+                        "source_line": {"type": "integer"}, "repeated": {"const": true}},
+         "required": ["status", "reason", "source_line"], "additionalProperties": false},
+        {"properties": {"owner": {"const": "Presentation"}, "effect": {"const": "magic_effect"}, "authoritative": {"const": false},
+                        "repeated": {"const": true}},
+         "required": ["effect", "authoritative"], "additionalProperties": false}
+      ]
+    },
+    "rule": {
+      "oneOf": [
+        {"$ref": "#/$defs/child"},
+        {"type": "object", "additionalProperties": false, "required": ["branch"],
+         "properties": {
+           "branch": {"type": "array", "minItems": 1, "items": {
+             "type": "object", "additionalProperties": false, "required": ["when", "then"],
+             "properties": {"when": {"$ref": "#/$defs/condition"}, "then": {"type": "array", "items": {"$ref": "#/$defs/rule"}}}}},
+           "otherwise": {"type": "array", "items": {"$ref": "#/$defs/rule"}}}}
+      ]
+    },
+    "interaction": {
+      "type": "object", "additionalProperties": false, "required": ["identity", "source", "rules", "anchors", "unresolved"],
+      "properties": {
+        "identity": {"type": "object", "additionalProperties": false, "required": ["key", "revision"],
+                     "properties": {"key": {"type": "string", "pattern": "^[a-z0-9_-]+:interaction/[a-z0-9_]+$"},
+                                    "revision": {"type": "string", "minLength": 1}}},
+        "source": {"type": "object", "additionalProperties": false, "required": ["edge", "callback", "target_registrations"],
+                   "properties": {"edge": {"enum": ["ON_ENTER", "ON_LEAVE", "ON_CONTACT", "USE", "ON_DEATH", "ON_KILL"]},
+                                  "callback": {"type": "string"},
+                                  "target_registrations": {"type": "array", "items": {"type": "string"}}}},
+        "rules": {"type": "array", "items": {"$ref": "#/$defs/rule"}},
+        "anchors": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false, "required": ["key", "source_position"],
+          "properties": {"key": {"$ref": "#/$defs/anchor_key"},
+                         "source_position": {"type": "object", "additionalProperties": false, "required": ["x", "y", "z"],
+                                             "properties": {"x": {"type": "integer"}, "y": {"type": "integer"},
+                                                            "z": {"type": "integer", "minimum": 0, "maximum": 15}}}}}},
+        "unresolved": {"type": "array", "items": {
+          "type": "object", "additionalProperties": false, "required": ["line", "reason"],
+          "properties": {"line": {"type": "integer", "minimum": 1}, "reason": {"type": "string"}}}}
+      }
+    }
+  }
+}
