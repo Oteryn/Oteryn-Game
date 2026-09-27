@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-loot-wiki-counts
 title: Wiki loot counts for Canary monsters (D32) and the Duke Krule admission
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1006
 jira: KAN-16
 base_sha: ae8db236697bfc802dddb7162a43bca1b9b34429
 head_sha: null
