@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-encounter-d29
 title: Encounter vocabulary extensions (D29) and the Urmahlullu, Alptramun and Splinter of Madness transcriptions
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 967
 jira: KAN-16
 base_sha: 76c2da68bde1928ab35e4e0f7828c675133cd297
 head_sha: null
