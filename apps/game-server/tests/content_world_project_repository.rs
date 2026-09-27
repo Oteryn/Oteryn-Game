@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         361,
-        "33f167c3e20e6f745347998b8baccd66720f4f3078d0455d16e6ccebb347a5ad",
+        "eff919d5de86794515a415d11f4e51534046c6ed3b75b43bfa0ba38cdf8dde3e",
     ),
     (
         "definitions/declarations.json",
-        9_051_929,
-        "83161d824972d121b489f62773b9366e9f0b63147dc23a094ad64be8b9e5c6fc",
+        9_052_634,
+        "5bb242bc622cc7d2105cf28bfb20b76a87c6daa17a76cea0a4079f0e49ccc3e3",
     ),
     (
         "definitions/reference.json",
-        13_518_292,
-        "92fbd4f6f5c90e567ebec5a13bbc53e5b5325f34edaaac6ed92a8ea1e3839476",
+        13_518_878,
+        "92e6ab6679dfaf9169ba78e8722db49a5784ddd8bef11de7203302de30ba8205",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1933,
-        "51b9d7f446a0038f81ad6aa339a4475bac32e2d74b14af28edce7a4b519bbbb9",
+        "63fbf7797de67b0820b1210327b5b6bf4f7c30a2a53ae50f84e5ec2792895b70",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         389,
-        "59a549bc66a5548b9f552595d02ee2fcd0848925ffbc32882e38df8cc7076ecd",
+        "d3585413759a5bcc7348d3c358cd388750909a6f42c9e5386fdffd690d30861e",
     ),
     (
         "provenance/imports.json",
         3835,
-        "b42b71f6ae2fdb8d638eee30419e24d66a86430db5a6974b504d99bdf905c108",
+        "ee09ebfec360b6515cda2517c02463966ed6ecb8ad0d954d0442bc4ab99ed66a",
     ),
     (
         "provenance/sources.json",
         600_342,
-        "b5c24d906fa21c1d3766d0d639699a3c8ac8b06d60de06ff9de169b13ade297c",
+        "c4c2a8645f13e271d4f2f953f882742b3102f19c81a693f696726f5ae040e1b6",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "87df8c92ee46ddc9c168880078465050b1eb0f39c079509973a9101f12d7c639";
+const TREE_SHA256: &str = "cf3bb5fb896dfb971aa49ca1765868aad18eb7c3112e17a521658df015496e87";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).

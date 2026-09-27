@@ -226,7 +226,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 0.1252,
+        "probability_percent": 0.1324,
         "skip_later_same_item_after_success": false
       },
       {
@@ -237,7 +237,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 2.0217,
+        "probability_percent": 2.0346,
         "skip_later_same_item_after_success": false
       },
       {
@@ -259,7 +259,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 2.8981,
+        "probability_percent": 2.8996,
         "skip_later_same_item_after_success": false
       },
       {
@@ -270,7 +270,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 8.8612,
+        "probability_percent": 8.8225,
         "skip_later_same_item_after_success": false
       },
       {
@@ -281,7 +281,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 9.4732,
+        "probability_percent": 9.4624,
         "skip_later_same_item_after_success": false
       },
       {
@@ -292,7 +292,7 @@
         },
         "min_count": 1,
         "max_count": 1,
-        "probability_percent": 17.931,
+        "probability_percent": 17.9495,
         "skip_later_same_item_after_success": false
       },
       {
@@ -303,7 +303,7 @@
         },
         "min_count": 1,
         "max_count": 11,
-        "probability_percent": 24.3161,
+        "probability_percent": 24.402,
         "skip_later_same_item_after_success": false
       },
       {

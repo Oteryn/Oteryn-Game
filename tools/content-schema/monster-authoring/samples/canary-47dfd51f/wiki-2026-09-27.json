@@ -1,8 +1,8 @@
 {
   "source": "TibiaWiki (Fandom), CC BY-SA; only compared facts are recorded",
   "api": "https://tibia.fandom.com/api.php",
-  "target_cut": "2026-07-28",
-  "cut_rule": "last revision at or before 2026-07-29T00:00:00Z",
+  "target_cut": "2026-09-27",
+  "cut_rule": "last revision at or before 2026-09-28T00:00:00Z",
   "classification": "Wiki = player-observed reference evidence; Canary = OTS_HYPOTHESIS_ONLY",
   "row_status_totals": {
     "DIFF": 12,
@@ -12,13 +12,13 @@
   },
   "loot_chance_rule": "highest-version Loot Statistics block at the cut; estimate = times / kills with a 95% Wilson interval; fewer than 10 drops is low_confidence. CONSISTENT = Canary inside the interval",
   "loot_chance_totals": {
-    "CONSISTENT": 66,
-    "DIFF": 23,
+    "CONSISTENT": 64,
+    "DIFF": 25,
     "NOT_OBSERVED": 5
   },
   "loot_chance_confidence": {
-    "estimate": 79,
-    "low_confidence": 10
+    "estimate": 80,
+    "low_confidence": 9
   },
   "monsters": [
     {
@@ -32,33 +32,33 @@
       "current_revision_id": 1192053,
       "current_revision_timestamp": "2026-06-25T08:08:05Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:30Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Rat",
         "page_id": 40711,
-        "cut_revision_id": 1198087,
-        "cut_revision_timestamp": "2026-07-28T23:21:09Z",
-        "cut_content_sha256": "81f22c44b0ce75c116f2707b907339a63dfa4b65ec7f6c29c62a25c2f70aa5e8",
+        "cut_revision_id": 1206491,
+        "cut_revision_timestamp": "2026-09-18T20:51:27Z",
+        "cut_content_sha256": "9c2675b2e684233b404b29d305bd6ab42a2b76b44381bd794cd284fdc05665de",
         "current_revision_id": 1206491,
-        "edited_after_cut": true,
-        "retrieved_at": "2026-09-26T20:23:11Z",
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "9.63",
         "version_line": 4,
-        "kills": 28581,
+        "kills": 28990,
         "kills_line": 5,
         "items": [
           {
             "name": "gold coin",
             "wiki_name": "Gold Coin",
-            "times": 25770,
+            "times": 26179,
             "amount": "1-4",
             "line": 8
           },
           {
             "name": "cheese",
             "wiki_name": "Cheese",
-            "times": 10162,
+            "times": 10333,
             "amount": "1",
             "line": 9
           }
@@ -74,12 +74,12 @@
           "wiki_item": "Gold Coin",
           "wiki_line": 8,
           "wiki_amount": "1-4",
-          "times": 25770,
-          "kills": 28581,
-          "wiki_percent": 90.164795,
+          "times": 26179,
+          "kills": 28990,
+          "wiki_percent": 90.303553,
           "interval_95_wilson": [
-            89.8141,
-            90.5047
+            89.9576,
+            90.6389
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -92,12 +92,12 @@
           "wiki_item": "Cheese",
           "wiki_line": 9,
           "wiki_amount": "1",
-          "times": 10162,
-          "kills": 28581,
-          "wiki_percent": 35.555089,
+          "times": 10333,
+          "kills": 28990,
+          "wiki_percent": 35.643325,
           "interval_95_wilson": [
-            35.0021,
-            36.1119
+            35.0939,
+            36.1965
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -336,68 +336,68 @@
       "current_revision_id": 1191763,
       "current_revision_timestamp": "2026-06-25T06:52:47Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:32Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Cyclops",
         "page_id": 32767,
-        "cut_revision_id": 1195914,
-        "cut_revision_timestamp": "2026-07-13T22:50:26Z",
-        "cut_content_sha256": "50974c37e4c9b944482915d52132d93ac2f6e7dc0b1bb77edcf71812d7ee45af",
+        "cut_revision_id": 1204709,
+        "cut_revision_timestamp": "2026-09-01T21:20:04Z",
+        "cut_content_sha256": "78ef99fe73c3ba425c584e00672bb897b7c2d710876f5e68a44504b2bc09000a",
         "current_revision_id": 1204709,
-        "edited_after_cut": true,
-        "retrieved_at": "2026-09-26T20:23:12Z",
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "11.02",
         "version_line": 4,
-        "kills": 12500,
+        "kills": 12820,
         "kills_line": 5,
         "items": [
           {
             "name": "gold coin",
             "wiki_name": "Gold Coin",
-            "times": 10311,
+            "times": 10580,
             "amount": "1-47",
             "line": 8
           },
           {
             "name": "meat",
             "wiki_name": "Meat",
-            "times": 3710,
+            "times": 3805,
             "amount": "1",
             "line": 9
           },
           {
             "name": "short sword",
             "wiki_name": "Short Sword",
-            "times": 998,
+            "times": 1024,
             "amount": "1",
             "line": 10
           },
           {
             "name": "cyclops toe",
             "wiki_name": "Cyclops Toe",
-            "times": 617,
+            "times": 632,
             "amount": "1",
             "line": 11
           },
           {
             "name": "plate shield",
             "wiki_name": "Plate Shield",
-            "times": 330,
+            "times": 333,
             "amount": "1",
             "line": 12
           },
           {
             "name": "heavy old tome",
             "wiki_name": "Heavy Old Tome",
-            "times": 265,
+            "times": 269,
             "amount": "1",
             "line": 13
           },
           {
             "name": "battle shield",
             "wiki_name": "Battle Shield",
-            "times": 194,
+            "times": 201,
             "amount": "1",
             "line": 14
           },
@@ -411,7 +411,7 @@
           {
             "name": "dark helmet",
             "wiki_name": "Dark Helmet",
-            "times": 29,
+            "times": 30,
             "amount": "1",
             "line": 16
           },
@@ -432,7 +432,7 @@
           {
             "name": "health potion",
             "wiki_name": "Health Potion",
-            "times": 19,
+            "times": 20,
             "amount": "1",
             "line": 19
           },
@@ -463,11 +463,11 @@
           "wiki_line": 17,
           "wiki_amount": "1",
           "times": 28,
-          "kills": 12500,
-          "wiki_percent": 0.224,
+          "kills": 12820,
+          "wiki_percent": 0.218409,
           "interval_95_wilson": [
-            0.155,
-            0.3236
+            0.1512,
+            0.3155
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -480,12 +480,12 @@
           "wiki_item": "Gold Coin",
           "wiki_line": 8,
           "wiki_amount": "1-47",
-          "times": 10311,
-          "kills": 12500,
-          "wiki_percent": 82.488,
+          "times": 10580,
+          "kills": 12820,
+          "wiki_percent": 82.527301,
           "interval_95_wilson": [
-            81.8118,
-            83.1443
+            81.8603,
+            83.1749
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -499,11 +499,11 @@
           "wiki_line": 21,
           "wiki_amount": "1",
           "times": 5,
-          "kills": 12500,
-          "wiki_percent": 0.04,
+          "kills": 12820,
+          "wiki_percent": 0.039002,
           "interval_95_wilson": [
-            0.0171,
-            0.0936
+            0.0167,
+            0.0913
           ],
           "confidence": "low_confidence",
           "status": "CONSISTENT"
@@ -517,11 +517,11 @@
           "wiki_line": 15,
           "wiki_amount": "1",
           "times": 123,
-          "kills": 12500,
-          "wiki_percent": 0.984,
+          "kills": 12820,
+          "wiki_percent": 0.959438,
           "interval_95_wilson": [
-            0.8254,
-            1.1727
+            0.8048,
+            1.1435
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -534,12 +534,12 @@
           "wiki_item": "Short Sword",
           "wiki_line": 10,
           "wiki_amount": "1",
-          "times": 998,
-          "kills": 12500,
-          "wiki_percent": 7.984,
+          "times": 1024,
+          "kills": 12820,
+          "wiki_percent": 7.98752,
           "interval_95_wilson": [
-            7.5217,
-            8.4722
+            7.5307,
+            8.4695
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -552,12 +552,12 @@
           "wiki_item": "Dark Helmet",
           "wiki_line": 16,
           "wiki_amount": "1",
-          "times": 29,
-          "kills": 12500,
-          "wiki_percent": 0.232,
+          "times": 30,
+          "kills": 12820,
+          "wiki_percent": 0.234009,
           "interval_95_wilson": [
-            0.1616,
-            0.333
+            0.164,
+            0.3339
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -570,12 +570,12 @@
           "wiki_item": "Plate Shield",
           "wiki_line": 12,
           "wiki_amount": "1",
-          "times": 330,
-          "kills": 12500,
-          "wiki_percent": 2.64,
+          "times": 333,
+          "kills": 12820,
+          "wiki_percent": 2.597504,
           "interval_95_wilson": [
-            2.3732,
-            2.9359
+            2.336,
+            2.8874
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -588,12 +588,12 @@
           "wiki_item": "Battle Shield",
           "wiki_line": 14,
           "wiki_amount": "1",
-          "times": 194,
-          "kills": 12500,
-          "wiki_percent": 1.552,
+          "times": 201,
+          "kills": 12820,
+          "wiki_percent": 1.567863,
           "interval_95_wilson": [
-            1.3497,
-            1.7841
+            1.3669,
+            1.7979
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -606,12 +606,12 @@
           "wiki_item": "Meat",
           "wiki_line": 9,
           "wiki_amount": "1",
-          "times": 3710,
-          "kills": 12500,
-          "wiki_percent": 29.68,
+          "times": 3805,
+          "kills": 12820,
+          "wiki_percent": 29.680187,
           "interval_95_wilson": [
-            28.8855,
-            30.487
+            28.8956,
+            30.477
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -625,11 +625,11 @@
           "wiki_line": 20,
           "wiki_amount": "1",
           "times": 9,
-          "kills": 12500,
-          "wiki_percent": 0.072,
+          "kills": 12820,
+          "wiki_percent": 0.070203,
           "interval_95_wilson": [
-            0.0379,
-            0.1368
+            0.0369,
+            0.1334
           ],
           "confidence": "low_confidence",
           "status": "CONSISTENT"
@@ -642,12 +642,12 @@
           "wiki_item": "Health Potion",
           "wiki_line": 19,
           "wiki_amount": "1",
-          "times": 19,
-          "kills": 12500,
-          "wiki_percent": 0.152,
+          "times": 20,
+          "kills": 12820,
+          "wiki_percent": 0.156006,
           "interval_95_wilson": [
-            0.0973,
-            0.2373
+            0.101,
+            0.2409
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -660,12 +660,12 @@
           "wiki_item": "Cyclops Toe",
           "wiki_line": 11,
           "wiki_amount": "1",
-          "times": 617,
-          "kills": 12500,
-          "wiki_percent": 4.936,
+          "times": 632,
+          "kills": 12820,
+          "wiki_percent": 4.929797,
           "interval_95_wilson": [
-            4.5699,
-            5.3298
+            4.5684,
+            5.3182
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -678,12 +678,12 @@
           "wiki_item": "Heavy Old Tome",
           "wiki_line": 13,
           "wiki_amount": "1",
-          "times": 265,
-          "kills": 12500,
-          "wiki_percent": 2.12,
+          "times": 269,
+          "kills": 12820,
+          "wiki_percent": 2.098284,
           "interval_95_wilson": [
-            1.8818,
-            2.3876
+            1.8642,
+            2.3611
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -922,68 +922,68 @@
       "current_revision_id": 1191862,
       "current_revision_timestamp": "2026-06-25T07:16:54Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:33Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Orc Spearman",
         "page_id": 39160,
-        "cut_revision_id": 1198004,
-        "cut_revision_timestamp": "2026-07-27T22:09:51Z",
-        "cut_content_sha256": "68f00bbef0d2f2ade3bb55e65fdb68b7aa782936f5dee78781759c7dbf2aab25",
+        "cut_revision_id": 1206488,
+        "cut_revision_timestamp": "2026-09-18T20:50:45Z",
+        "cut_content_sha256": "97c44be10f3af2eb7ab8ff74fab55fe16a00515ec7d37b9c3deb0e776cede0be",
         "current_revision_id": 1206488,
-        "edited_after_cut": true,
-        "retrieved_at": "2026-09-26T20:23:13Z",
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "11.02",
         "version_line": 4,
-        "kills": 21566,
+        "kills": 22658,
         "kills_line": 5,
         "items": [
           {
             "name": "gold coin",
             "wiki_name": "Gold Coin",
-            "times": 5244,
+            "times": 5529,
             "amount": "1-11",
             "line": 9
           },
           {
             "name": "spear",
             "wiki_name": "Spear",
-            "times": 3867,
+            "times": 4067,
             "amount": "1",
             "line": 10
           },
           {
             "name": "studded legs",
             "wiki_name": "Studded Legs",
-            "times": 2043,
+            "times": 2144,
             "amount": "1",
             "line": 11
           },
           {
             "name": "studded helmet",
             "wiki_name": "Studded Helmet",
-            "times": 1911,
+            "times": 1999,
             "amount": "1",
             "line": 12
           },
           {
             "name": "machete",
             "wiki_name": "Machete",
-            "times": 625,
+            "times": 657,
             "amount": "1",
             "line": 13
           },
           {
             "name": "heavy old tome",
             "wiki_name": "Heavy Old Tome",
-            "times": 436,
+            "times": 461,
             "amount": "1",
             "line": 14
           },
           {
             "name": "orc tooth",
             "wiki_name": "Orc Tooth",
-            "times": 27,
+            "times": 30,
             "amount": "1",
             "line": 16
           }
@@ -999,12 +999,12 @@
           "wiki_item": "Gold Coin",
           "wiki_line": 9,
           "wiki_amount": "1-11",
-          "times": 5244,
-          "kills": 21566,
-          "wiki_percent": 24.316053,
+          "times": 5529,
+          "kills": 22658,
+          "wiki_percent": 24.401977,
           "interval_95_wilson": [
-            23.7481,
-            24.8931
+            23.8471,
+            24.9655
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -1017,15 +1017,15 @@
           "wiki_item": "Spear",
           "wiki_line": 10,
           "wiki_amount": "1",
-          "times": 3867,
-          "kills": 21566,
-          "wiki_percent": 17.931003,
+          "times": 4067,
+          "kills": 22658,
+          "wiki_percent": 17.94951,
           "interval_95_wilson": [
-            17.4247,
-            18.4487
+            17.4553,
+            18.4546
           ],
           "confidence": "estimate",
-          "status": "CONSISTENT"
+          "status": "DIFF"
         },
         {
           "position": 2,
@@ -1035,12 +1035,12 @@
           "wiki_item": "Machete",
           "wiki_line": 13,
           "wiki_amount": "1",
-          "times": 625,
-          "kills": 21566,
-          "wiki_percent": 2.89808,
+          "times": 657,
+          "kills": 22658,
+          "wiki_percent": 2.899638,
           "interval_95_wilson": [
-            2.6824,
-            3.1305
+            2.689,
+            3.1262
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1053,12 +1053,12 @@
           "wiki_item": "Studded Legs",
           "wiki_line": 11,
           "wiki_amount": "1",
-          "times": 2043,
-          "kills": 21566,
-          "wiki_percent": 9.473245,
+          "times": 2144,
+          "kills": 22658,
+          "wiki_percent": 9.462442,
           "interval_95_wilson": [
-            9.0896,
-            9.8713
+            9.0882,
+            9.8505
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -1071,12 +1071,12 @@
           "wiki_item": "Studded Helmet",
           "wiki_line": 12,
           "wiki_amount": "1",
-          "times": 1911,
-          "kills": 21566,
-          "wiki_percent": 8.86117,
+          "times": 1999,
+          "kills": 22658,
+          "wiki_percent": 8.822491,
           "interval_95_wilson": [
-            8.4892,
-            9.2478
+            8.4601,
+            9.1988
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1088,10 +1088,10 @@
           "canary_amount": "1",
           "status": "NOT_OBSERVED",
           "times": 0,
-          "kills": 21566,
+          "kills": 22658,
           "interval_95_wilson": [
             0.0,
-            0.0178
+            0.017
           ],
           "note": "Not listed in the highest-version block."
         },
@@ -1103,12 +1103,12 @@
           "wiki_item": "Orc Tooth",
           "wiki_line": 16,
           "wiki_amount": "1",
-          "times": 27,
-          "kills": 21566,
-          "wiki_percent": 0.125197,
+          "times": 30,
+          "kills": 22658,
+          "wiki_percent": 0.132404,
           "interval_95_wilson": [
-            0.0861,
-            0.1821
+            0.0928,
+            0.1889
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1120,10 +1120,10 @@
           "canary_amount": "1",
           "status": "NOT_OBSERVED",
           "times": 0,
-          "kills": 21566,
+          "kills": 22658,
           "interval_95_wilson": [
             0.0,
-            0.0178
+            0.017
           ],
           "note": "Not listed in the highest-version block."
         },
@@ -1135,12 +1135,12 @@
           "wiki_item": "Heavy Old Tome",
           "wiki_line": 14,
           "wiki_amount": "1",
-          "times": 436,
-          "kills": 21566,
-          "wiki_percent": 2.021701,
+          "times": 461,
+          "kills": 22658,
+          "wiki_percent": 2.034601,
           "interval_95_wilson": [
-            1.8422,
-            2.2183
+            1.8587,
+            2.2267
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -1379,26 +1379,26 @@
       "current_revision_id": 1192273,
       "current_revision_timestamp": "2026-06-25T08:33:46Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:34Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Scorpion",
         "page_id": 40542,
-        "cut_revision_id": 1197779,
-        "cut_revision_timestamp": "2026-07-26T16:15:11Z",
-        "cut_content_sha256": "4f47a381954f5dfa62bb64abe7fde36c2099f2eed9a764b3ba1fbe8121932b91",
+        "cut_revision_id": 1206764,
+        "cut_revision_timestamp": "2026-09-24T21:28:14Z",
+        "cut_content_sha256": "b6151e8e54e590d26c9c12565d32b733a522cb930745ffbeec7d91332cb0b4ff",
         "current_revision_id": 1206764,
-        "edited_after_cut": true,
-        "retrieved_at": "2026-09-26T20:23:14Z",
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "8.6",
         "version_line": 4,
-        "kills": 82763,
+        "kills": 83635,
         "kills_line": 5,
         "items": [
           {
             "name": "scorpion tail",
             "wiki_name": "Scorpion Tail",
-            "times": 4222,
+            "times": 4272,
             "amount": "1",
             "line": 8
           }
@@ -1414,12 +1414,12 @@
           "wiki_item": "Scorpion Tail",
           "wiki_line": 8,
           "wiki_amount": "1",
-          "times": 4222,
-          "kills": 82763,
-          "wiki_percent": 5.101313,
+          "times": 4272,
+          "kills": 83635,
+          "wiki_percent": 5.107909,
           "interval_95_wilson": [
-            4.9535,
-            5.2533
+            4.9608,
+            5.2592
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -1658,89 +1658,89 @@
       "current_revision_id": 1191856,
       "current_revision_timestamp": "2026-06-25T07:15:06Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:35Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Orc Shaman",
         "page_id": 39161,
-        "cut_revision_id": 1198003,
-        "cut_revision_timestamp": "2026-07-27T22:09:50Z",
-        "cut_content_sha256": "021d84d479bff254a122d1210fab6ac016180ac141e9e1a23e291337c5f6bcf4",
+        "cut_revision_id": 1204736,
+        "cut_revision_timestamp": "2026-09-01T22:12:12Z",
+        "cut_content_sha256": "8ae7c175f7a03c425e8291284fe54b7e94b1248701571ae6a642b9172a240a2a",
         "current_revision_id": 1204736,
-        "edited_after_cut": true,
-        "retrieved_at": "2026-09-26T20:23:16Z",
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "11.02",
         "version_line": 4,
-        "kills": 15813,
+        "kills": 16300,
         "kills_line": 5,
         "items": [
           {
             "name": "gold coin",
             "wiki_name": "Gold Coin",
-            "times": 14246,
+            "times": 14693,
             "amount": "1-5",
             "line": 8
           },
           {
             "name": "corncob",
             "wiki_name": "Corncob",
-            "times": 1762,
+            "times": 1827,
             "amount": "1-2",
             "line": 9
           },
           {
             "name": "broken shamanic staff",
             "wiki_name": "Broken Shamanic Staff",
-            "times": 1578,
+            "times": 1623,
             "amount": "1",
             "line": 10
           },
           {
             "name": "chain armor",
             "wiki_name": "Chain Armor",
-            "times": 1430,
+            "times": 1481,
             "amount": "1",
             "line": 11
           },
           {
             "name": "shamanic hood",
             "wiki_name": "Shamanic Hood",
-            "times": 1116,
+            "times": 1146,
             "amount": "1",
             "line": 12
           },
           {
             "name": "spear",
             "wiki_name": "Spear",
-            "times": 811,
+            "times": 840,
             "amount": "1",
             "line": 13
           },
           {
             "name": "orc tooth",
             "wiki_name": "Orc Tooth",
-            "times": 349,
+            "times": 358,
             "amount": "1",
             "line": 15
           },
           {
             "name": "heavy old tome",
             "wiki_name": "Heavy Old Tome",
-            "times": 342,
+            "times": 349,
             "amount": "1",
             "line": 16
           },
           {
             "name": "wand of decay",
             "wiki_name": "Wand of Decay",
-            "times": 167,
+            "times": 174,
             "amount": "1",
             "line": 17
           },
           {
             "name": "book (grey)",
             "wiki_name": "Book (Grey)",
-            "times": 67,
+            "times": 71,
             "amount": "1",
             "line": 18
           }
@@ -1756,12 +1756,12 @@
           "wiki_item": "Book (Grey)",
           "wiki_line": 18,
           "wiki_amount": "1",
-          "times": 67,
-          "kills": 15813,
-          "wiki_percent": 0.423702,
+          "times": 71,
+          "kills": 16300,
+          "wiki_percent": 0.435583,
           "interval_95_wilson": [
-            0.3338,
-            0.5377
+            0.3455,
+            0.549
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1774,12 +1774,12 @@
           "wiki_item": "Gold Coin",
           "wiki_line": 8,
           "wiki_amount": "1-5",
-          "times": 14246,
-          "kills": 15813,
-          "wiki_percent": 90.090432,
+          "times": 14693,
+          "kills": 16300,
+          "wiki_percent": 90.141104,
           "interval_95_wilson": [
-            89.6149,
-            90.5464
+            89.674,
+            90.5893
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1792,12 +1792,12 @@
           "wiki_item": "Wand of Decay",
           "wiki_line": 17,
           "wiki_amount": "1",
-          "times": 167,
-          "kills": 15813,
-          "wiki_percent": 1.056093,
+          "times": 174,
+          "kills": 16300,
+          "wiki_percent": 1.067485,
           "interval_95_wilson": [
-            0.9082,
-            1.2277
+            0.9208,
+            1.2372
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1810,12 +1810,12 @@
           "wiki_item": "Spear",
           "wiki_line": 13,
           "wiki_amount": "1",
-          "times": 811,
-          "kills": 15813,
-          "wiki_percent": 5.128692,
+          "times": 840,
+          "kills": 16300,
+          "wiki_percent": 5.153374,
           "interval_95_wilson": [
-            4.7957,
-            5.4835
+            4.8244,
+            5.5035
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1828,12 +1828,12 @@
           "wiki_item": "Chain Armor",
           "wiki_line": 11,
           "wiki_amount": "1",
-          "times": 1430,
-          "kills": 15813,
-          "wiki_percent": 9.043192,
+          "times": 1481,
+          "kills": 16300,
+          "wiki_percent": 9.08589,
           "interval_95_wilson": [
-            8.6061,
-            9.5002
+            8.6543,
+            9.5368
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1846,12 +1846,12 @@
           "wiki_item": "Corncob",
           "wiki_line": 9,
           "wiki_amount": "1-2",
-          "times": 1762,
-          "kills": 15813,
-          "wiki_percent": 11.142731,
+          "times": 1827,
+          "kills": 16300,
+          "wiki_percent": 11.208589,
           "interval_95_wilson": [
-            10.6617,
-            11.6426
+            10.7334,
+            11.7021
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -1864,12 +1864,12 @@
           "wiki_item": "Orc Tooth",
           "wiki_line": 15,
           "wiki_amount": "1",
-          "times": 349,
-          "kills": 15813,
-          "wiki_percent": 2.207045,
+          "times": 358,
+          "kills": 16300,
+          "wiki_percent": 2.196319,
           "interval_95_wilson": [
-            1.9894,
-            2.4479
+            1.9823,
+            2.4328
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1882,12 +1882,12 @@
           "wiki_item": "Broken Shamanic Staff",
           "wiki_line": 10,
           "wiki_amount": "1",
-          "times": 1578,
-          "kills": 15813,
-          "wiki_percent": 9.979131,
+          "times": 1623,
+          "kills": 16300,
+          "wiki_percent": 9.957055,
           "interval_95_wilson": [
-            9.5217,
-            10.456
+            9.5068,
+            10.4262
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1900,12 +1900,12 @@
           "wiki_item": "Shamanic Hood",
           "wiki_line": 12,
           "wiki_amount": "1",
-          "times": 1116,
-          "kills": 15813,
-          "wiki_percent": 7.057484,
+          "times": 1146,
+          "kills": 16300,
+          "wiki_percent": 7.030675,
           "interval_95_wilson": [
-            6.6686,
-            7.4672
+            6.6482,
+            7.4334
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -1917,10 +1917,10 @@
           "canary_amount": "1",
           "status": "NOT_OBSERVED",
           "times": 0,
-          "kills": 15813,
+          "kills": 16300,
           "interval_95_wilson": [
             0.0,
-            0.0243
+            0.0236
           ],
           "note": "Not listed in the highest-version block."
         },
@@ -1932,12 +1932,12 @@
           "wiki_item": "Heavy Old Tome",
           "wiki_line": 16,
           "wiki_amount": "1",
-          "times": 342,
-          "kills": 15813,
-          "wiki_percent": 2.162777,
+          "times": 349,
+          "kills": 16300,
+          "wiki_percent": 2.141104,
           "interval_95_wilson": [
-            1.9474,
-            2.4014
+            1.9299,
+            2.3749
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -2181,96 +2181,96 @@
       "current_revision_id": 1191780,
       "current_revision_timestamp": "2026-06-25T06:54:11Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:36Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Necromancer",
         "page_id": 32707,
-        "cut_revision_id": 1196114,
-        "cut_revision_timestamp": "2026-07-14T11:10:24Z",
-        "cut_content_sha256": "3013731e3da0a2f8c7825ea2561cbfa0f372ed2bbf175397c3196e6109a8cef0",
+        "cut_revision_id": 1205950,
+        "cut_revision_timestamp": "2026-09-12T11:15:13Z",
+        "cut_content_sha256": "7c795fa884950f3df4b6793f0713aac77008205b5f09c319cc8e89c16d3d059d",
         "current_revision_id": 1205950,
-        "edited_after_cut": true,
-        "retrieved_at": "2026-09-26T20:23:17Z",
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "8.6",
         "version_line": 4,
-        "kills": 71423,
+        "kills": 72289,
         "kills_line": 5,
         "items": [
           {
             "name": "gold coin",
             "wiki_name": "Gold Coin",
-            "times": 21486,
+            "times": 21745,
             "amount": "1-90",
             "line": 8
           },
           {
             "name": "poison arrow",
             "wiki_name": "Poison Arrow",
-            "times": 10676,
+            "times": 10815,
             "amount": "1-5",
             "line": 9
           },
           {
             "name": "book of necromantic rituals",
             "wiki_name": "Book of Necromantic Rituals",
-            "times": 7160,
+            "times": 7241,
             "amount": "1",
             "line": 10
           },
           {
             "name": "green mushroom",
             "wiki_name": "Green Mushroom",
-            "times": 1066,
+            "times": 1080,
             "amount": "1",
             "line": 11
           },
           {
             "name": "necromantic robe",
             "wiki_name": "Necromantic Robe",
-            "times": 732,
+            "times": 740,
             "amount": "1",
             "line": 12
           },
           {
             "name": "mystic turban",
             "wiki_name": "Mystic Turban",
-            "times": 351,
+            "times": 357,
             "amount": "1",
             "line": 13
           },
           {
             "name": "clerical mace",
             "wiki_name": "Clerical Mace",
-            "times": 269,
+            "times": 274,
             "amount": "1",
             "line": 14
           },
           {
             "name": "strong mana potion",
             "wiki_name": "Strong Mana Potion",
-            "times": 244,
+            "times": 251,
             "amount": "1",
             "line": 15
           },
           {
             "name": "boots of haste",
             "wiki_name": "Boots of Haste",
-            "times": 150,
+            "times": 152,
             "amount": "1",
             "line": 16
           },
           {
             "name": "spellbook of warding",
             "wiki_name": "Spellbook of Warding",
-            "times": 76,
+            "times": 77,
             "amount": "1",
             "line": 17
           },
           {
             "name": "skull staff",
             "wiki_name": "Skull Staff",
-            "times": 73,
+            "times": 75,
             "amount": "1",
             "line": 18
           },
@@ -2293,12 +2293,12 @@
           "wiki_item": "Gold Coin",
           "wiki_line": 8,
           "wiki_amount": "1-90",
-          "times": 21486,
-          "kills": 71423,
-          "wiki_percent": 30.082746,
+          "times": 21745,
+          "kills": 72289,
+          "wiki_percent": 30.080649,
           "interval_95_wilson": [
-            29.7475,
-            30.4202
+            29.7474,
+            30.416
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2311,11 +2311,11 @@
           "wiki_item": "Boots of Haste",
           "wiki_line": 16,
           "wiki_amount": "1",
-          "times": 150,
-          "kills": 71423,
-          "wiki_percent": 0.210016,
+          "times": 152,
+          "kills": 72289,
+          "wiki_percent": 0.210267,
           "interval_95_wilson": [
-            0.179,
+            0.1794,
             0.2464
           ],
           "confidence": "estimate",
@@ -2329,12 +2329,12 @@
           "wiki_item": "Clerical Mace",
           "wiki_line": 14,
           "wiki_amount": "1",
-          "times": 269,
-          "kills": 71423,
-          "wiki_percent": 0.376629,
+          "times": 274,
+          "kills": 72289,
+          "wiki_percent": 0.379034,
           "interval_95_wilson": [
-            0.3343,
-            0.4243
+            0.3368,
+            0.4265
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2347,12 +2347,12 @@
           "wiki_item": "Skull Staff",
           "wiki_line": 18,
           "wiki_amount": "1",
-          "times": 73,
-          "kills": 71423,
-          "wiki_percent": 0.102208,
+          "times": 75,
+          "kills": 72289,
+          "wiki_percent": 0.10375,
           "interval_95_wilson": [
-            0.0813,
-            0.1285
+            0.0828,
+            0.13
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2365,12 +2365,12 @@
           "wiki_item": "Poison Arrow",
           "wiki_line": 9,
           "wiki_amount": "1-5",
-          "times": 10676,
-          "kills": 71423,
-          "wiki_percent": 14.947566,
+          "times": 10815,
+          "kills": 72289,
+          "wiki_percent": 14.960782,
           "interval_95_wilson": [
-            14.688,
-            15.2109
+            14.7026,
+            15.2227
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2383,12 +2383,12 @@
           "wiki_item": "Mystic Turban",
           "wiki_line": 13,
           "wiki_amount": "1",
-          "times": 351,
-          "kills": 71423,
-          "wiki_percent": 0.491438,
+          "times": 357,
+          "kills": 72289,
+          "wiki_percent": 0.493851,
           "interval_95_wilson": [
-            0.4427,
-            0.5455
+            0.4453,
+            0.5476
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2401,12 +2401,12 @@
           "wiki_item": "Green Mushroom",
           "wiki_line": 11,
           "wiki_amount": "1",
-          "times": 1066,
-          "kills": 71423,
-          "wiki_percent": 1.492516,
+          "times": 1080,
+          "kills": 72289,
+          "wiki_percent": 1.494003,
           "interval_95_wilson": [
-            1.4062,
-            1.5841
+            1.4081,
+            1.585
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2420,11 +2420,11 @@
           "wiki_line": 19,
           "wiki_amount": "1",
           "times": 5,
-          "kills": 71423,
-          "wiki_percent": 0.007001,
+          "kills": 72289,
+          "wiki_percent": 0.006917,
           "interval_95_wilson": [
             0.003,
-            0.0164
+            0.0162
           ],
           "confidence": "low_confidence",
           "status": "CONSISTENT"
@@ -2437,12 +2437,12 @@
           "wiki_item": "Strong Mana Potion",
           "wiki_line": 15,
           "wiki_amount": "1",
-          "times": 244,
-          "kills": 71423,
-          "wiki_percent": 0.341627,
+          "times": 251,
+          "kills": 72289,
+          "wiki_percent": 0.347217,
           "interval_95_wilson": [
-            0.3014,
-            0.3872
+            0.3069,
+            0.3928
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -2455,12 +2455,12 @@
           "wiki_item": "Spellbook of Warding",
           "wiki_line": 17,
           "wiki_amount": "1",
-          "times": 76,
-          "kills": 71423,
-          "wiki_percent": 0.106408,
+          "times": 77,
+          "kills": 72289,
+          "wiki_percent": 0.106517,
           "interval_95_wilson": [
-            0.085,
-            0.1332
+            0.0852,
+            0.1331
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2473,12 +2473,12 @@
           "wiki_item": "Book of Necromantic Rituals",
           "wiki_line": 10,
           "wiki_amount": "1",
-          "times": 7160,
-          "kills": 71423,
-          "wiki_percent": 10.024782,
+          "times": 7241,
+          "kills": 72289,
+          "wiki_percent": 10.016738,
           "interval_95_wilson": [
-            9.8067,
-            10.2472
+            9.8,
+            10.2377
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2491,12 +2491,12 @@
           "wiki_item": "Necromantic Robe",
           "wiki_line": 12,
           "wiki_amount": "1",
-          "times": 732,
-          "kills": 71423,
-          "wiki_percent": 1.02488,
+          "times": 740,
+          "kills": 72289,
+          "wiki_percent": 1.023669,
           "interval_95_wilson": [
-            0.9536,
-            1.1014
+            0.9529,
+            1.0997
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -2734,7 +2734,7 @@
       "current_revision_id": 1191708,
       "current_revision_timestamp": "2026-06-25T06:42:38Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:38Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "status": "COMPARED",
       "rows": [
         {
@@ -2959,159 +2959,159 @@
       "current_revision_id": 1191689,
       "current_revision_timestamp": "2026-06-25T06:40:57Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:39Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Dragon",
         "page_id": 29034,
-        "cut_revision_id": 1197999,
-        "cut_revision_timestamp": "2026-07-27T22:09:46Z",
-        "cut_content_sha256": "a906095d92e1fe20c28a8b217edfd9a541e5e18d43862c6d13bc7246e71716da",
+        "cut_revision_id": 1206028,
+        "cut_revision_timestamp": "2026-09-12T19:06:37Z",
+        "cut_content_sha256": "319e70920e4459828731b8fd6d590c98ba3ed71f913bcdc928db1141117d71ba",
         "current_revision_id": 1206028,
-        "edited_after_cut": true,
-        "retrieved_at": "2026-09-26T20:02:22Z",
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "13.21.14040",
         "version_line": 4,
-        "kills": 15151,
+        "kills": 16156,
         "kills_line": 5,
         "items": [
           {
             "name": "gold coin",
             "wiki_name": "Gold Coin",
-            "times": 13671,
+            "times": 14549,
             "amount": "1-104",
             "line": 8
           },
           {
             "name": "dragon ham",
             "wiki_name": "Dragon Ham",
-            "times": 9860,
+            "times": 10509,
             "amount": "1-2",
             "line": 9
           },
           {
             "name": "steel shield",
             "wiki_name": "Steel Shield",
-            "times": 2286,
+            "times": 2426,
             "amount": "1",
             "line": 10
           },
           {
             "name": "dragon's tail",
             "wiki_name": "Dragon's Tail",
-            "times": 1529,
+            "times": 1629,
             "amount": "1",
             "line": 11
           },
           {
             "name": "crossbow",
             "wiki_name": "Crossbow",
-            "times": 1525,
+            "times": 1598,
             "amount": "1",
             "line": 12
           },
           {
             "name": "burst arrow",
             "wiki_name": "Burst Arrow",
-            "times": 1203,
+            "times": 1279,
             "amount": "1-10",
             "line": 13
           },
           {
             "name": "longsword",
             "wiki_name": "Longsword",
-            "times": 607,
+            "times": 647,
             "amount": "1",
             "line": 14
           },
           {
             "name": "steel helmet",
             "wiki_name": "Steel Helmet",
-            "times": 461,
+            "times": 492,
             "amount": "1",
             "line": 15
           },
           {
             "name": "plate legs",
             "wiki_name": "Plate Legs",
-            "times": 306,
+            "times": 322,
             "amount": "1",
             "line": 16
           },
           {
             "name": "broadsword",
             "wiki_name": "Broadsword",
-            "times": 262,
+            "times": 276,
             "amount": "1",
             "line": 17
           },
           {
             "name": "double axe",
             "wiki_name": "Double Axe",
-            "times": 159,
+            "times": 170,
             "amount": "1",
             "line": 18
           },
           {
             "name": "wand of inferno",
             "wiki_name": "Wand of Inferno",
-            "times": 158,
+            "times": 169,
             "amount": "1",
             "line": 19
           },
           {
             "name": "green dragon leather",
             "wiki_name": "Green Dragon Leather",
-            "times": 148,
+            "times": 160,
             "amount": "1",
             "line": 20
           },
           {
-            "name": "strong health potion",
-            "wiki_name": "Strong Health Potion",
-            "times": 142,
+            "name": "green dragon scale",
+            "wiki_name": "Green Dragon Scale",
+            "times": 153,
             "amount": "1",
             "line": 21
           },
           {
-            "name": "green dragon scale",
-            "wiki_name": "Green Dragon Scale",
-            "times": 136,
+            "name": "strong health potion",
+            "wiki_name": "Strong Health Potion",
+            "times": 148,
             "amount": "1",
             "line": 22
           },
           {
-            "name": "serpent sword",
-            "wiki_name": "Serpent Sword",
-            "times": 74,
+            "name": "small diamond",
+            "wiki_name": "Small Diamond",
+            "times": 79,
             "amount": "1",
             "line": 23
           },
           {
-            "name": "small diamond",
-            "wiki_name": "Small Diamond",
-            "times": 71,
+            "name": "serpent sword",
+            "wiki_name": "Serpent Sword",
+            "times": 78,
             "amount": "1",
             "line": 24
           },
           {
             "name": "dragon hammer",
             "wiki_name": "Dragon Hammer",
-            "times": 65,
+            "times": 69,
             "amount": "1",
             "line": 25
           },
           {
             "name": "dragon shield",
             "wiki_name": "Dragon Shield",
-            "times": 45,
+            "times": 49,
             "amount": "1",
             "line": 26
           },
           {
             "name": "dragon trophy",
             "wiki_name": "Dragon Trophy",
-            "times": 11,
+            "times": 13,
             "amount": "1",
             "line": 27,
             "item_page": {
@@ -3120,7 +3120,7 @@
               "cut_revision_id": 1040731,
               "cut_content_sha256": "58cf3f5d4aedb58c02c6838d82c01a452abf3ad73a062d17cd223f440b146249",
               "current_revision_id": 1040731,
-              "retrieved_at": "2026-09-26T20:03:57Z",
+              "retrieved_at": "2026-09-27T20:39:48Z",
               "status": "COMPARED",
               "itemid_line": 5,
               "item_ids": [
@@ -3158,12 +3158,12 @@
           "wiki_item": "Gold Coin",
           "wiki_line": 8,
           "wiki_amount": "1-104",
-          "times": 13671,
-          "kills": 15151,
-          "wiki_percent": 90.231668,
+          "times": 14549,
+          "kills": 16156,
+          "wiki_percent": 90.053231,
           "interval_95_wilson": [
-            89.7487,
-            90.6943
+            89.5822,
+            90.5053
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3176,12 +3176,12 @@
           "wiki_item": "Dragon Ham",
           "wiki_line": 9,
           "wiki_amount": "1-2",
-          "times": 9860,
-          "kills": 15151,
-          "wiki_percent": 65.078213,
+          "times": 10509,
+          "kills": 16156,
+          "wiki_percent": 65.047041,
           "interval_95_wilson": [
-            64.3154,
-            65.8334
+            64.3083,
+            65.7786
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3194,15 +3194,15 @@
           "wiki_item": "Steel Shield",
           "wiki_line": 10,
           "wiki_amount": "1",
-          "times": 2286,
-          "kills": 15151,
-          "wiki_percent": 15.088113,
+          "times": 2426,
+          "kills": 16156,
+          "wiki_percent": 15.016093,
           "interval_95_wilson": [
-            14.527,
-            15.6669
+            14.4736,
+            15.5752
           ],
           "confidence": "estimate",
-          "status": "CONSISTENT"
+          "status": "DIFF"
         },
         {
           "position": 3,
@@ -3212,12 +3212,12 @@
           "wiki_item": "Dragon's Tail",
           "wiki_line": 11,
           "wiki_amount": "1",
-          "times": 1529,
-          "kills": 15151,
-          "wiki_percent": 10.091743,
+          "times": 1629,
+          "kills": 16156,
+          "wiki_percent": 10.082941,
           "interval_95_wilson": [
-            9.6222,
-            10.5815
+            9.6281,
+            10.5568
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3230,12 +3230,12 @@
           "wiki_item": "Crossbow",
           "wiki_line": 12,
           "wiki_amount": "1",
-          "times": 1525,
-          "kills": 15151,
-          "wiki_percent": 10.065342,
+          "times": 1598,
+          "kills": 16156,
+          "wiki_percent": 9.891062,
           "interval_95_wilson": [
-            9.5963,
-            10.5546
+            9.4402,
+            10.361
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3248,12 +3248,12 @@
           "wiki_item": "Burst Arrow",
           "wiki_line": 13,
           "wiki_amount": "1-10",
-          "times": 1203,
-          "kills": 15151,
-          "wiki_percent": 7.94007,
+          "times": 1279,
+          "kills": 16156,
+          "wiki_percent": 7.916564,
           "interval_95_wilson": [
-            7.5202,
-            8.3813
+            7.5102,
+            8.343
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3266,12 +3266,12 @@
           "wiki_item": "Longsword",
           "wiki_line": 14,
           "wiki_amount": "1",
-          "times": 607,
-          "kills": 15151,
-          "wiki_percent": 4.006336,
+          "times": 647,
+          "kills": 16156,
+          "wiki_percent": 4.004704,
           "interval_95_wilson": [
-            3.7056,
-            4.3304
+            3.7131,
+            4.3181
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3284,12 +3284,12 @@
           "wiki_item": "Steel Helmet",
           "wiki_line": 15,
           "wiki_amount": "1",
-          "times": 461,
-          "kills": 15151,
-          "wiki_percent": 3.042703,
+          "times": 492,
+          "kills": 16156,
+          "wiki_percent": 3.045308,
           "interval_95_wilson": [
-            2.7809,
-            3.3283
+            2.7913,
+            3.3216
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3302,12 +3302,12 @@
           "wiki_item": "Broadsword",
           "wiki_line": 17,
           "wiki_amount": "1",
-          "times": 262,
-          "kills": 15151,
-          "wiki_percent": 1.729259,
+          "times": 276,
+          "kills": 16156,
+          "wiki_percent": 1.708344,
           "interval_95_wilson": [
-            1.5336,
-            1.9494
+            1.5197,
+            1.9199
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3320,12 +3320,12 @@
           "wiki_item": "Plate Legs",
           "wiki_line": 16,
           "wiki_amount": "1",
-          "times": 306,
-          "kills": 15151,
-          "wiki_percent": 2.019669,
+          "times": 322,
+          "kills": 16156,
+          "wiki_percent": 1.993068,
           "interval_95_wilson": [
-            1.8075,
-            2.2561
+            1.7887,
+            2.2203
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3338,12 +3338,12 @@
           "wiki_item": "Double Axe",
           "wiki_line": 18,
           "wiki_amount": "1",
-          "times": 159,
-          "kills": 15151,
-          "wiki_percent": 1.049436,
+          "times": 170,
+          "kills": 16156,
+          "wiki_percent": 1.052241,
           "interval_95_wilson": [
-            0.8991,
-            1.2246
+            0.9061,
+            1.2216
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3354,14 +3354,14 @@
           "canary_percent": 1.13,
           "canary_amount": "1",
           "wiki_item": "Strong Health Potion",
-          "wiki_line": 21,
+          "wiki_line": 22,
           "wiki_amount": "1",
-          "times": 142,
-          "kills": 15151,
-          "wiki_percent": 0.937232,
+          "times": 148,
+          "kills": 16156,
+          "wiki_percent": 0.916068,
           "interval_95_wilson": [
-            0.7958,
-            1.1036
+            0.7804,
+            1.0751
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3374,12 +3374,12 @@
           "wiki_item": "Green Dragon Leather",
           "wiki_line": 20,
           "wiki_amount": "1",
-          "times": 148,
-          "kills": 15151,
-          "wiki_percent": 0.976833,
+          "times": 160,
+          "kills": 16156,
+          "wiki_percent": 0.990344,
           "interval_95_wilson": [
-            0.8322,
-            1.1463
+            0.8489,
+            1.1551
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3390,14 +3390,14 @@
           "canary_percent": 1.01,
           "canary_amount": "1",
           "wiki_item": "Green Dragon Scale",
-          "wiki_line": 22,
+          "wiki_line": 21,
           "wiki_amount": "1",
-          "times": 136,
-          "kills": 15151,
-          "wiki_percent": 0.897631,
+          "times": 153,
+          "kills": 16156,
+          "wiki_percent": 0.947017,
           "interval_95_wilson": [
-            0.7594,
-            1.0608
+            0.8089,
+            1.1085
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3410,12 +3410,12 @@
           "wiki_item": "Wand of Inferno",
           "wiki_line": 19,
           "wiki_amount": "1",
-          "times": 158,
-          "kills": 15151,
-          "wiki_percent": 1.042835,
+          "times": 169,
+          "kills": 16156,
+          "wiki_percent": 1.046051,
           "interval_95_wilson": [
-            0.893,
-            1.2175
+            0.9004,
+            1.215
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3426,14 +3426,14 @@
           "canary_percent": 0.45,
           "canary_amount": "1",
           "wiki_item": "Small Diamond",
-          "wiki_line": 24,
+          "wiki_line": 23,
           "wiki_amount": "1",
-          "times": 71,
-          "kills": 15151,
-          "wiki_percent": 0.468616,
+          "times": 79,
+          "kills": 16156,
+          "wiki_percent": 0.488982,
           "interval_95_wilson": [
-            0.3717,
-            0.5906
+            0.3926,
+            0.6089
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3444,14 +3444,14 @@
           "canary_percent": 0.23,
           "canary_amount": "1",
           "wiki_item": "Serpent Sword",
-          "wiki_line": 23,
+          "wiki_line": 24,
           "wiki_amount": "1",
-          "times": 74,
-          "kills": 15151,
-          "wiki_percent": 0.488417,
+          "times": 78,
+          "kills": 16156,
+          "wiki_percent": 0.482793,
           "interval_95_wilson": [
-            0.3893,
-            0.6127
+            0.387,
+            0.6021
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3464,12 +3464,12 @@
           "wiki_item": "Dragon Hammer",
           "wiki_line": 25,
           "wiki_amount": "1",
-          "times": 65,
-          "kills": 15151,
-          "wiki_percent": 0.429015,
+          "times": 69,
+          "kills": 16156,
+          "wiki_percent": 0.427086,
           "interval_95_wilson": [
-            0.3368,
-            0.5464
+            0.3376,
+            0.5401
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3483,11 +3483,11 @@
           "wiki_line": 29,
           "wiki_amount": "1",
           "times": 9,
-          "kills": 15151,
-          "wiki_percent": 0.059402,
+          "kills": 16156,
+          "wiki_percent": 0.055707,
           "interval_95_wilson": [
-            0.0313,
-            0.1129
+            0.0293,
+            0.1058
           ],
           "confidence": "low_confidence",
           "status": "DIFF"
@@ -3501,11 +3501,11 @@
           "wiki_line": 28,
           "wiki_amount": "1",
           "times": 11,
-          "kills": 15151,
-          "wiki_percent": 0.072602,
+          "kills": 16156,
+          "wiki_percent": 0.068086,
           "interval_95_wilson": [
-            0.0405,
-            0.13
+            0.038,
+            0.1219
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3518,12 +3518,12 @@
           "wiki_item": "Dragon Shield",
           "wiki_line": 26,
           "wiki_amount": "1",
-          "times": 45,
-          "kills": 15151,
-          "wiki_percent": 0.29701,
+          "times": 49,
+          "kills": 16156,
+          "wiki_percent": 0.303293,
           "interval_95_wilson": [
-            0.2221,
-            0.3972
+            0.2295,
+            0.4007
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -3764,89 +3764,89 @@
       "current_revision_id": 1192179,
       "current_revision_timestamp": "2026-06-25T08:22:33Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:40Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Ghost",
         "page_id": 39528,
-        "cut_revision_id": 1197654,
-        "cut_revision_timestamp": "2026-07-25T09:25:16Z",
-        "cut_content_sha256": "12322da14ee6104d480c035a7aaff8cce10da4e5e86d8138007c365bd75a3fdc",
+        "cut_revision_id": 1205386,
+        "cut_revision_timestamp": "2026-09-07T18:07:16Z",
+        "cut_content_sha256": "c10d9896b36474da27605bf96f09d326742f5f3a59f5c70292592a0f92220a29",
         "current_revision_id": 1205386,
-        "edited_after_cut": true,
-        "retrieved_at": "2026-09-26T20:02:23Z",
+        "edited_after_cut": false,
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "14.12.5229e4",
         "version_line": 4,
-        "kills": 3314,
+        "kills": 3862,
         "kills_line": 5,
         "items": [
           {
             "name": "shadow herb",
             "wiki_name": "Shadow Herb",
-            "times": 488,
+            "times": 563,
             "amount": "1",
             "line": 8
           },
           {
             "name": "morning star",
             "wiki_name": "Morning Star",
-            "times": 356,
+            "times": 420,
             "amount": "1",
             "line": 9
           },
           {
             "name": "cape",
             "wiki_name": "Cape",
-            "times": 343,
+            "times": 392,
             "amount": "1",
             "line": 10
           },
           {
             "name": "combat knife",
             "wiki_name": "Combat Knife",
-            "times": 247,
+            "times": 283,
             "amount": "1",
             "line": 11
           },
           {
             "name": "ghostly tissue",
             "wiki_name": "Ghostly Tissue",
-            "times": 66,
+            "times": 80,
             "amount": "1",
             "line": 12
           },
           {
             "name": "white piece of cloth",
             "wiki_name": "White Piece of Cloth",
-            "times": 54,
+            "times": 63,
             "amount": "1",
             "line": 13
           },
           {
             "name": "book (orange)",
             "wiki_name": "Book (Orange)",
-            "times": 39,
+            "times": 48,
             "amount": "1",
             "line": 14
           },
           {
             "name": "ancient shield",
             "wiki_name": "Ancient Shield",
-            "times": 32,
+            "times": 33,
             "amount": "1",
             "line": 15
           },
           {
             "name": "stealth ring",
             "wiki_name": "Stealth Ring",
-            "times": 9,
+            "times": 11,
             "amount": "1",
             "line": 16
           },
           {
             "name": "stone skin amulet",
             "wiki_name": "Stone Skin Amulet",
-            "times": 2,
+            "times": 3,
             "amount": "1",
             "line": 17,
             "item_page": {
@@ -3855,7 +3855,7 @@
               "cut_revision_id": 1194185,
               "cut_content_sha256": "382b78db78d5390b3f9fe779cd897fd3ce166f6a0fed086f7807446c51e3681a",
               "current_revision_id": 1194185,
-              "retrieved_at": "2026-09-26T20:03:58Z",
+              "retrieved_at": "2026-09-27T20:39:48Z",
               "status": "COMPARED",
               "itemid_line": 5,
               "item_ids": [
@@ -3943,12 +3943,12 @@
           "wiki_item": "Book (Orange)",
           "wiki_line": 14,
           "wiki_amount": "1",
-          "times": 39,
-          "kills": 3314,
-          "wiki_percent": 1.176826,
+          "times": 48,
+          "kills": 3862,
+          "wiki_percent": 1.242879,
           "interval_95_wilson": [
-            0.8621,
-            1.6046
+            0.9387,
+            1.6439
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3961,14 +3961,14 @@
           "wiki_item": "Stealth Ring",
           "wiki_line": 16,
           "wiki_amount": "1",
-          "times": 9,
-          "kills": 3314,
-          "wiki_percent": 0.271575,
+          "times": 11,
+          "kills": 3862,
+          "wiki_percent": 0.284827,
           "interval_95_wilson": [
-            0.1429,
-            0.5154
+            0.1591,
+            0.5093
           ],
-          "confidence": "low_confidence",
+          "confidence": "estimate",
           "status": "CONSISTENT"
         },
         {
@@ -3979,12 +3979,12 @@
           "wiki_item": "Morning Star",
           "wiki_line": 9,
           "wiki_amount": "1",
-          "times": 356,
-          "kills": 3314,
-          "wiki_percent": 10.742305,
+          "times": 420,
+          "kills": 3862,
+          "wiki_percent": 10.875194,
           "interval_95_wilson": [
-            9.7331,
-            11.8424
+            9.9319,
+            11.8962
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -3997,12 +3997,12 @@
           "wiki_item": "Combat Knife",
           "wiki_line": 11,
           "wiki_amount": "1",
-          "times": 247,
-          "kills": 3314,
-          "wiki_percent": 7.453229,
+          "times": 283,
+          "kills": 3862,
+          "wiki_percent": 7.327809,
           "interval_95_wilson": [
-            6.6075,
-            8.3975
+            6.5477,
+            8.1928
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -4015,12 +4015,12 @@
           "wiki_item": "Ancient Shield",
           "wiki_line": 15,
           "wiki_amount": "1",
-          "times": 32,
-          "kills": 3314,
-          "wiki_percent": 0.9656,
+          "times": 33,
+          "kills": 3862,
+          "wiki_percent": 0.85448,
           "interval_95_wilson": [
-            0.6848,
-            1.3599
+            0.6091,
+            1.1975
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -4033,12 +4033,12 @@
           "wiki_item": "Cape",
           "wiki_line": 10,
           "wiki_amount": "1",
-          "times": 343,
-          "kills": 3314,
-          "wiki_percent": 10.35003,
+          "times": 392,
+          "kills": 3862,
+          "wiki_percent": 10.150181,
           "interval_95_wilson": [
-            9.3584,
-            11.4334
+            9.237,
+            11.1426
           ],
           "confidence": "estimate",
           "status": "DIFF"
@@ -4051,12 +4051,12 @@
           "wiki_item": "Shadow Herb",
           "wiki_line": 8,
           "wiki_amount": "1",
-          "times": 488,
-          "kills": 3314,
-          "wiki_percent": 14.725407,
+          "times": 563,
+          "kills": 3862,
+          "wiki_percent": 14.577939,
           "interval_95_wilson": [
-            13.5598,
-            15.9727
+            13.5002,
+            15.7261
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -4069,12 +4069,12 @@
           "wiki_item": "White Piece of Cloth",
           "wiki_line": 13,
           "wiki_amount": "1",
-          "times": 54,
-          "kills": 3314,
-          "wiki_percent": 1.629451,
+          "times": 63,
+          "kills": 3862,
+          "wiki_percent": 1.631279,
           "interval_95_wilson": [
-            1.251,
-            2.1199
+            1.2771,
+            2.0815
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -4087,12 +4087,12 @@
           "wiki_item": "Ghostly Tissue",
           "wiki_line": 12,
           "wiki_amount": "1",
-          "times": 66,
-          "kills": 3314,
-          "wiki_percent": 1.991551,
+          "times": 80,
+          "kills": 3862,
+          "wiki_percent": 2.071466,
           "interval_95_wilson": [
-            1.5685,
-            2.5258
+            1.6676,
+            2.5706
           ],
           "confidence": "estimate",
           "status": "CONSISTENT"
@@ -4339,7 +4339,7 @@
       "current_revision_id": 986288,
       "current_revision_timestamp": "2023-01-02T17:52:14Z",
       "edited_after_cut": false,
-      "retrieved_at": "2026-09-26T19:35:41Z",
+      "retrieved_at": "2026-09-27T20:39:48Z",
       "loot_statistics": {
         "page_title": "Loot Statistics:Demodras",
         "page_id": 44140,
@@ -4348,7 +4348,7 @@
         "cut_content_sha256": "a599120ada0036c91ab962b32e5938399b40ee87720795ec3332461f7a6bc927",
         "current_revision_id": 1183613,
         "edited_after_cut": false,
-        "retrieved_at": "2026-09-26T20:24:03Z",
+        "retrieved_at": "2026-09-27T20:39:48Z",
         "status": "COMPARED",
         "version": "8.6",
         "version_line": 4,

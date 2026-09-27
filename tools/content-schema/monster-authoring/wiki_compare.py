@@ -1,4 +1,4 @@
-"""Compare converted Canary monster bundles with TibiaWiki (Fandom) at the 2026-07-28 reference cut.
+"""Compare converted Canary monster bundles with TibiaWiki (Fandom) at the 2026-09-27 reference cut.
 
 Evidence tooling only. For each monster page it records the last revision at or before the cut and
 the current revision (to expose post-cut edits), the SHA-256 of the cut revision's wikitext and
@@ -26,9 +26,9 @@ ROOT = Path(__file__).resolve().parent
 API = 'https://tibia.fandom.com/api.php'
 PAGE_URL = 'https://tibia.fandom.com/wiki/'
 USER_AGENT = 'OterynEvidenceCollector/0.1 (+https://github.com/Oteryn/Oteryn-Game)'
-TARGET_CUT = '2026-07-28'
+TARGET_CUT = '2026-09-27'
 LOW_CONFIDENCE_DROPS = 10
-CUT_TIMESTAMP = '2026-07-29T00:00:00Z'
+CUT_TIMESTAMP = '2026-09-28T00:00:00Z'
 ELEMENTS = {'physical': 'physicalDmgMod', 'earth': 'earthDmgMod', 'fire': 'fireDmgMod', 'death': 'deathDmgMod',
             'energy': 'energyDmgMod', 'holy': 'holyDmgMod', 'ice': 'iceDmgMod', 'life_drain': 'hpDrainDmgMod',
             'drowning': 'drownDmgMod'}
@@ -428,10 +428,10 @@ def main():
                 results.append(compare(relative, args.canary, None, args.cache))
             except Exception as exc:  # files the converter cannot convert (see population_census.py)
                 skipped.append({'file': relative, 'error': f'{type(exc).__name__}: {str(exc).splitlines()[0][:100]}'})
-        out = ROOT / 'samples' / 'wiki-population-2026-07-28.json'
+        out = ROOT / 'samples' / 'wiki-population-2026-09-27.json'
     else:
         results, skipped = [compare(relative, args.canary, None, args.cache) for relative in cb.BATCHES[args.batch]], []
-        out = ROOT / 'samples' / args.batch / 'wiki-2026-07-28.json'
+        out = ROOT / 'samples' / args.batch / 'wiki-2026-09-27.json'
     rows, chances, confidence, fields = totals(results)
     statuses = {}
     for result in results:
