@@ -114,6 +114,18 @@ Formula findings:
   and has only been reworded since (last on 2025-04-05). The 15.25.bd5a04 hotfix lowered several base
   powers after 15.25.3a4a52 (great beams 170 → 155, Death Echo 85 → 75, Forked Glacier 97 → 90), which
   is why Crystal (15.25 values) differs from the current wikis there.
+- Balancing after 15.30, from the official news mirrored on tibiopedia.pl (topics 32500–32913, read
+  2026-09-27): "Vocation Adjustments Changes" (2026-07-07: knight healing mana Wound Cleansing 40 → 60,
+  Fair 90 → 135, Intense 200 → 300, several base damage reductions), balancing posts of 2026-07-28,
+  08-04, 08-05, 08-25 and 09-01 (hunting grounds, bosses, gold and XP only) and "Monk Adjustments"
+  (2026-09-01: Spirit Mend base power 210 → 240; Mystic Repulse and Thousand Fist Blows cooldown
+  12 → 8 s; Devastating Knockout cooldown 24 → 8 s and range 1 → 7). The only new level-dependent rule
+  is the monk Harmony base bonus, `7% + 0.005% × level` (level 200: 8%, level 700: 10.5%), raised by
+  50% by Virtue of Harmony (100% while Serene); it is a monk resource rule, not the damage/healing
+  curve. Neither Crystal nor Canary carries the 2026-09-01 changes yet (no spell commits since
+  Crystal ff7ede5 up to 9f5a72c or in Canary up to 04b83b5). The dated official news is the tie-breaker
+  evidence for the S3 BR/Fandom conflicts (for example the knight healing mana follows BR, the Mystic
+  Repulse cooldown follows Fandom).
 - Per-spell formulas: the `Formulae` section "Spell/Rune Damage/Healing" still lists the old
   `floor(lvl * 0.2) + mlvl * x + y` coefficients and marks them as no longer correct since 2020, so it
   is not a formula source. Crystal PR #797 (merged 2026-07-01, "15.25 Base Spell Power") implements
