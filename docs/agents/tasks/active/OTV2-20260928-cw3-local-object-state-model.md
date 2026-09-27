@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cw3-local-object-state-model
 issue: 162
-pr: null
+pr: 1046
 base_sha: dd209a1264e98f3d1f0f167ec3320124a071db53
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world build (session_01LphUANMfC2q2WKdfEb39eC)
 created_at: 2026-09-27T22:30:02Z
-updated_at: 2026-09-27T22:30:02Z
+updated_at: 2026-09-27T23:06:53Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
@@ -96,53 +96,52 @@ reason: >
 
 ## Implementation / findings
 
-- Added `LocalObjectCollisionPresence` (`Present | Absent`) and `LocalObjectStateDefinition`
-  (`{key: ProductionKey, collision: LocalObjectCollisionPresence}`) to `reference_playable.rs`;
-  `ReferenceDefinitionKind::LocalObjectStates` and `ClientSafeDefinitionKind::LocalObjectStates`
-  now hold `Vec<LocalObjectStateDefinition>` (was `Vec<ProductionKey>`).
-- `validate_definition_shape` duplicate/empty checks now operate on `.key` (state identity),
-  independent of collision presence.
-- `validate_transition` resolves state membership through `.key` and adds a RETAG invariant: when
-  `normalized_intent_family` equals the new `LOCAL_OBJECT_RETAG_INTENT_FAMILY` constant
-  (`oteryn:reference.intent.local-object-retag`), `source_state` and `target_state` must resolve to
-  the same `LocalObjectCollisionPresence`. No action-id field was added anywhere (D38 1c).
-- `PlacementRef` gains `local_object_initial_state: Option<ProductionKey>`. `validate_placement`
-  requires it `Some` and in-vocabulary exactly when the placement's definition is `LocalObject`,
-  and requires it absent otherwise (fail-closed both directions).
-- `project.rs`: authored `ProjectReferenceRecord::LocalObject.states` changed from `Vec<String>` to
-  `Vec<LocalObjectStateDocument>` (`{key: String, collision: LocalObjectCollisionDocument}`);
-  `.lower()` maps to the new typed state list.
-- `world_runtime.rs` mechanical adaptation (not owned; smallest possible, no semantic change) —
-  see PR description "world_runtime.rs mechanical adaptation" section for the exact diff:
-  - CW4 `bind()` reads `placement.local_object_initial_state` for the runtime's initial `state`
-    instead of deriving it from `open_transition.source_state`; `states.contains(&key)` calls
-    adapted to `states.iter().any(|s| s.key == ...)` for the new element type.
-  - The CW4 test-fixture builder's `LocalObjectStates(vec![closed, open])` literal became
-    `vec![LocalObjectStateDefinition{key: closed, collision: Present}, ...{key: open, collision:
-    Absent}]`, and its placement closure now sets `local_object_initial_state: Some(closed)` for
-    both fixture placements — preserving the exact prior runtime behavior (both instances start
-    Closed) with no observable behavior change.
-  - `prepare()`'s Open/Close `next_blocking` derivation (operation-keyed, not state-keyed) was left
-    untouched: wiring per-state collision presence into that path is runtime semantics excluded
-    from this task.
+- `reference_playable.rs`: added `LocalObjectCollisionPresence` (`Present|Absent`) and
+  `LocalObjectStateDefinition {key, collision}`; `ReferenceDefinitionKind::LocalObjectStates` /
+  `ClientSafeDefinitionKind::LocalObjectStates` hold `Vec<LocalObjectStateDefinition>` (was
+  `Vec<ProductionKey>`). Duplicate/empty checks now key off `.key`. `validate_transition` adds the
+  RETAG invariant on the new `LOCAL_OBJECT_RETAG_INTENT_FAMILY` constant (same collision class
+  required, no action-id field added). `PlacementRef` gains
+  `local_object_initial_state: Option<ProductionKey>`, required+in-vocabulary iff the placement's
+  definition is `LocalObject`, forbidden otherwise (fail-closed both directions).
+- `project.rs`: authored `LocalObject.states` mirrors the new per-state shape.
+- `world_runtime.rs` (not owned; smallest mechanical adaptation, reported per prompt): CW4 `bind()`
+  reads `placement.local_object_initial_state` instead of deriving it from the OPEN transition;
+  vocabulary-membership checks adapted to the new element type's `.key`. CW4 test fixture updated
+  to match, preserving prior observable behavior. `prepare()`'s Open/Close semantics untouched.
+
+### Repair round 1 (Codex review on frozen head 969e9867, PR #1046, returned to AUTHORING)
+
+- **P2 world_runtime.rs, fixed:** `bind()` used the authored initial state for `state` but still
+  unconditionally set `blocking_cells` to the full footprint, so an Absent/open initial state would
+  wrongly block movement. Fixed: look up the initial state's `LocalObjectCollisionPresence` in the
+  already-resolved `states` vocabulary (defensive `InvalidBinding` if absent) and set
+  `blocking_cells` to the footprint only when `Present`, empty when `Absent`. `prepare()` untouched.
+  New test `authored_open_initial_state_starts_unblocked_then_close_commits_and_blocks` covers it.
+- **P2 project.rs, fixed:** the `Vec<String>` → `Vec<LocalObjectStateDocument>` change broke
+  decoding any existing `OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1` `LocalObject` record under the
+  same `v1` label. Per coordinator decision (minimum sufficient, no schema-wide v2 bump): new
+  `LocalObjectStateEntryDocument` (`#[serde(untagged)]`, `Legacy(String) | Typed(...)`) is now the
+  `states` element type. `Legacy` decodes but `.lower()` fails closed with
+  `ContentError::InvalidArtifact("legacy v1 LocalObject state lacks collision presence; re-author
+  with {key, collision}")` — never defaults a collision. The writer never emits `Legacy`.
+  Documented on both types. Tests: legacy string decodes; legacy lowering rejected; typed form
+  round-trips; a full legacy `LocalObject` JSON record decodes under `v1` and only fails at
+  `.lower()`. `tests/content_world_project.rs` (not owned; same principle) updated its one fixture.
 
 ## Validation
 
-### Focused
+Commands (run after each round, all under
+`CARGO_TARGET_DIR=/home/user/.cargo-shared-target flock /home/user/.cargo-build.lock` for cargo):
+`cargo fmt --check`; `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`;
+`cargo test -p oteryn-game-server --test content_reference_playable --test content_world_project`;
+`cargo test -p oteryn-game-server world_runtime`; `python3 tools/agents/validate_governance.py`;
+`python3 tools/repository/validate_repository_policy.py`.
 
-- command/run: `cargo fmt --check`; `cargo clippy -p oteryn-game-server --all-targets -- -D warnings` (both under `CARGO_TARGET_DIR=/home/user/.cargo-shared-target flock /home/user/.cargo-build.lock`)
-- result: PASS (fmt clean after one `cargo fmt` pass on the mechanical `world_runtime.rs` edit; clippy exit 0, no warnings)
-
-### Component/integration
-
-- command/run: `CARGO_TARGET_DIR=/home/user/.cargo-shared-target flock /home/user/.cargo-build.lock cargo test -p oteryn-game-server --test content_reference_playable`
-- result: PASS — 38 passed; 0 failed (7 new tests for 1a/1b/1c; all prior Open/Close and evidence-ordering fixtures unchanged)
-- command/run: `CARGO_TARGET_DIR=/home/user/.cargo-shared-target flock /home/user/.cargo-build.lock cargo test -p oteryn-game-server world_runtime`
-- result: PASS — 18 passed; 0 failed (all CW4 first-child Open/Close tests, including `open_close_then_replay_open_preserves_current_closed_state` and `occupied_multicell_close_is_atomic_and_open_removes_only_own_contribution`, pass unchanged after the mechanical bind-site adaptation)
-- command/run: `python3 tools/agents/validate_governance.py`
-- result: PASS
-- command/run: `python3 tools/repository/validate_repository_policy.py`
-- result: PASS
+Latest (repair round 1) result: all PASS. `content_reference_playable` 38/38 (cross-checked
+against `grep -c '^#\[test\]'`); `content_world_project` 22/22 (cross-checked; 4 new legacy-
+compatibility tests over the prior 18); `world_runtime` unittests 19/19 (18 prior CW4 Open/Close +
+1 new). Both governance/policy validators clean. fmt/clippy clean with zero warnings.
 
 ### E2E
 
@@ -192,11 +191,11 @@ reason: >
 ## Context checkpoint
 
 ```yaml
-last_progress: task record created, branch cut from origin/main at dd209a1
+last_progress: repair round 1 (Codex review, frozen head 969e9867) pushed; both P2 findings fixed
 status: implementing
 branch: claude/cw3-local-object-state-model
 head_sha: null
-pr: null
+pr: 1046
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -214,5 +213,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: implement 1a/1b/1c in reference_playable.rs, project.rs, and tests
+next_action: await coordinator's repair round 2 (if any) or PR review/merge
 ```

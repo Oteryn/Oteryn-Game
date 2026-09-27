@@ -609,7 +609,7 @@ pub enum ProjectReferenceRecord {
     LocalObject {
         identity: DefinitionIdentityDocument,
         client_projection: ProjectionDocument,
-        states: Vec<LocalObjectStateDocument>,
+        states: Vec<LocalObjectStateEntryDocument>,
     },
 }
 
@@ -798,7 +798,7 @@ impl ProjectReferenceRecord {
                     kind: ReferenceDefinitionKind::LocalObjectStates(
                         states
                             .iter()
-                            .map(LocalObjectStateDocument::lower)
+                            .map(LocalObjectStateEntryDocument::lower)
                             .collect::<Result<_, ProjectError>>()?,
                     ),
                     client_projection: client_projection.lower(),
@@ -810,6 +810,16 @@ impl ProjectReferenceRecord {
 
 /// D38 W1a authored form: one entry of a `LocalObject`'s declared state vocabulary, carrying the
 /// per-state collision presence alongside the state key.
+///
+/// Compatibility rule for `OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1`: this schema predates
+/// per-state collision presence, so `#[serde(untagged)]` on
+/// [`LocalObjectStateEntryDocument`] keeps decoding a legacy bare state-key string
+/// (`"oteryn:reference.state.closed"`) accepted under the same `v1` schema label. A legacy entry
+/// carries no collision presence and none may be defaulted (that would silently promote a state
+/// this task never validated), so `LocalObjectStateEntryDocument`'s own lowering fails closed for
+/// it.
+/// The writer (`CanonicalProjectDocuments::from_draft`) only ever encodes the typed object form;
+/// nothing in this codebase re-emits the legacy shape.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct LocalObjectStateDocument {
@@ -823,6 +833,28 @@ impl LocalObjectStateDocument {
             key: ProductionKey::new(&self.key)?,
             collision: self.collision.lower(),
         })
+    }
+}
+
+/// One `states` array entry as `OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1` may decode it: either
+/// the typed `{key, collision}` object new authoring always uses, or (read-only) a legacy bare
+/// state-key string from before per-state collision presence existed. See the compatibility rule
+/// documented on [`LocalObjectStateDocument`].
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum LocalObjectStateEntryDocument {
+    Legacy(String),
+    Typed(LocalObjectStateDocument),
+}
+
+impl LocalObjectStateEntryDocument {
+    fn lower(&self) -> Result<LocalObjectStateDefinition, ProjectError> {
+        match self {
+            Self::Legacy(_) => Err(ProjectError::from(ContentError::InvalidArtifact(
+                "legacy v1 LocalObject state lacks collision presence; re-author with {key, collision}",
+            ))),
+            Self::Typed(typed) => typed.lower(),
+        }
     }
 }
 
@@ -2421,5 +2453,91 @@ mod project_resource_tests {
                 limit: usize::MAX,
             })
         ));
+    }
+}
+
+#[cfg(test)]
+mod local_object_state_entry_tests {
+    use super::*;
+
+    #[test]
+    fn legacy_string_state_still_decodes_under_v1() -> Result<(), serde_json::Error> {
+        let entry: LocalObjectStateEntryDocument =
+            serde_json::from_str("\"oteryn:reference.state.closed\"")?;
+        assert_eq!(
+            entry,
+            LocalObjectStateEntryDocument::Legacy("oteryn:reference.state.closed".to_owned())
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_string_state_fails_closed_on_lowering() {
+        let entry =
+            LocalObjectStateEntryDocument::Legacy("oteryn:reference.state.closed".to_owned());
+        assert!(matches!(
+            entry.lower(),
+            Err(ProjectError::Content(ContentError::InvalidArtifact(
+                "legacy v1 LocalObject state lacks collision presence; re-author with {key, collision}"
+            )))
+        ));
+    }
+
+    #[test]
+    fn typed_object_state_round_trips_and_lowers() -> Result<(), ProjectError> {
+        let entry = LocalObjectStateEntryDocument::Typed(LocalObjectStateDocument {
+            key: "oteryn:reference.state.open".to_owned(),
+            collision: LocalObjectCollisionDocument::Absent,
+        });
+
+        let encoded = serde_json::to_string(&entry)
+            .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+        let decoded: LocalObjectStateEntryDocument = serde_json::from_str(&encoded)
+            .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+        assert_eq!(decoded, entry);
+
+        let lowered = entry.lower()?;
+        assert_eq!(lowered.key.as_str(), "oteryn:reference.state.open");
+        assert_eq!(lowered.collision, LocalObjectCollisionPresence::Absent);
+        Ok(())
+    }
+
+    #[test]
+    fn legacy_local_object_record_decodes_and_fails_closed_on_lower() -> Result<(), ProjectError> {
+        // Proves the coordinator's exact finding: a full `OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1`
+        // `LocalObject` record authored before per-state collision presence existed (bare state-key
+        // strings) still decodes under the same `v1` schema label, and fails closed only at
+        // `.lower()`, never silently defaulting a collision presence.
+        let json = r#"{
+            "kind": "LocalObject",
+            "identity": {
+                "family": "LocalObject",
+                "key": "oteryn:reference.object.legacy-door",
+                "revision": "definition-r1"
+            },
+            "client_projection": "ClientSafe",
+            "states": ["oteryn:reference.state.closed", "oteryn:reference.state.open"]
+        }"#;
+        let record: ProjectReferenceRecord = serde_json::from_str(json)
+            .map_err(|error| ProjectError::InvalidJson(error.to_string()))?;
+        let ProjectReferenceRecord::LocalObject { states, .. } = &record else {
+            return Err(ProjectError::InvalidProject(
+                "legacy decode probe changed record kind",
+            ));
+        };
+        assert_eq!(
+            states,
+            &vec![
+                LocalObjectStateEntryDocument::Legacy("oteryn:reference.state.closed".to_owned()),
+                LocalObjectStateEntryDocument::Legacy("oteryn:reference.state.open".to_owned()),
+            ]
+        );
+        assert!(matches!(
+            record.lower(),
+            Err(ProjectError::Content(ContentError::InvalidArtifact(
+                "legacy v1 LocalObject state lacks collision presence; re-author with {key, collision}"
+            )))
+        ));
+        Ok(())
     }
 }

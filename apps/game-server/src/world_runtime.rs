@@ -1,7 +1,8 @@
 use crate::content::{
     CanonicalReferencePlayableContent, ContentError, DefinitionFamily, FootprintRelation,
-    LocalObjectStateDefinition, LogicalCell, NonAuthoritativeReferenceStage, PlacementKey,
-    ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+    LocalObjectCollisionPresence, LocalObjectStateDefinition, LogicalCell,
+    NonAuthoritativeReferenceStage, PlacementKey, ProductionKey,
+    REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
     ReferenceDefinitionKind, ReferencePlayableContentSource, ReferencePlayableGenerationIdentity,
     ReferenceServerItem, TransitionBinding, TransitionKey, TypedDefinitionRef,
     link_reference_playable,
@@ -704,6 +705,20 @@ impl LocalObjectRuntime {
                 "placement lacks authored local object initial state",
             ),
         )?;
+        // The initial state's own collision presence — not the OPEN/CLOSE operation identity —
+        // decides whether the object starts blocking: an authored Absent (e.g. "open") start must
+        // not block movement, and an authored Present (e.g. "closed") start must.
+        let initial_collision = states
+            .iter()
+            .find(|state| state.key == initial_state)
+            .map(|state| state.collision)
+            .ok_or(WorldRuntimeError::InvalidBinding(
+                "placement's authored local object initial state is not declared by the local object",
+            ))?;
+        let initial_blocking = match initial_collision {
+            LocalObjectCollisionPresence::Present => collision_cells.clone(),
+            LocalObjectCollisionPresence::Absent => BTreeSet::new(),
+        };
         Ok(Self {
             scope,
             scope_generation,
@@ -712,7 +727,7 @@ impl LocalObjectRuntime {
             incarnation,
             state: initial_state,
             revision: 0,
-            blocking_cells: collision_cells.clone(),
+            blocking_cells: initial_blocking,
             collision_cells,
             open_transition,
             close_transition,
@@ -1128,7 +1143,6 @@ impl PreparedMutation {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::content::LocalObjectCollisionPresence;
     use crate::content::{
         CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION, CanonicalProjectDocuments, ClientProjectionClass,
         ContentActivationController, ContentLockBinding, ContentLockEntry, CoordinateFrameRef,
@@ -1573,6 +1587,34 @@ mod tests {
             "oteryn:reference.state.closed"
         );
         assert_eq!(runtime.revision(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn authored_open_initial_state_starts_unblocked_then_close_commits_and_blocks()
+    -> Result<(), WorldRuntimeError> {
+        let mut content = synthetic_content("package-r1")?;
+        let placement_a = content
+            .placements
+            .iter_mut()
+            .find(|placement| placement.key.as_str() == PLACEMENT_A)
+            .ok_or(fixture_error("placement a"))?;
+        placement_a.local_object_initial_state =
+            Some(ProductionKey::new("oteryn:reference.state.open")?);
+
+        let (authority, session, scope) = authority(40, 6, 1, 1)?;
+        let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
+        assert_eq!(runtime.state_key().as_str(), "oteryn:reference.state.open");
+        assert!(runtime.blocking_cells().is_empty());
+
+        let mut ingress = CommandIngress::new();
+        let empty = BTreeSet::new();
+        let close = command(&runtime, session, 1, 1, LocalObjectOperation::Close, 0)?;
+        let closed = runtime.apply(&authority, &close, &mut ingress, &empty)?;
+        assert_eq!(closed.disposition(), DISPOSITION_COMMITTED);
+        assert_eq!(closed.state(), "oteryn:reference.state.closed");
+        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
+        assert!(!runtime.blocking_cells().is_empty());
         Ok(())
     }
 
