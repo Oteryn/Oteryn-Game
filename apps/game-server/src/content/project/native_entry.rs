@@ -271,6 +271,44 @@ impl NativeEntryProject {
         })
     }
 
+    /// The qualified cells as a Movement lookup index bound to `server_generation`.
+    fn movement_cells(
+        &self,
+        server_generation: [u8; 32],
+    ) -> Result<NativeEntryMovementCells, ProjectError> {
+        use crate::content::static_cell_engine::{
+            EngineeringCollisionClaim, EngineeringStaticCellClaim, EngineeringStaticCellIndex,
+            EngineeringStaticCellScope,
+        };
+        let invalid = |_| ProjectError::InvalidProject("native entry movement cell scope");
+        let scope = EngineeringStaticCellScope {
+            world_id: self.source.world_id,
+            coordinate_frame: crate::content::CoordinateFrameRef::new(&self.frame.coordinate_frame)
+                .map_err(invalid)?,
+            map_revision: crate::content::MapRevisionRef::new(self.source.revisions.map.as_str())
+                .map_err(invalid)?,
+            generation_digest: server_generation,
+            content_lock: self.source.content_lock.clone(),
+        };
+        let claims = self
+            .source
+            .cells
+            .iter()
+            .map(|cell| EngineeringStaticCellClaim {
+                scope: scope.clone(),
+                cell: crate::content::LogicalCell {
+                    x: cell.x,
+                    y: cell.y,
+                    z: i32::from(cell.z),
+                },
+                collision: EngineeringCollisionClaim::Qualified(cell.collision),
+            })
+            .collect();
+        let index = EngineeringStaticCellIndex::from_claims(claims)
+            .map_err(|_| ProjectError::InvalidProject("native entry movement cell index"))?;
+        Ok(NativeEntryMovementCells { index, scope })
+    }
+
     /// The qualified start cell of this project (#935). It must exist in the qualified source and
     /// be Walkable; otherwise there is no first-entry start.
     pub fn entry_start(&self) -> Result<NativeEntryStart, ProjectError> {
@@ -352,6 +390,31 @@ pub struct QualifiedNativeEntryRoom {
     frame_binding: NativeEntryFrameBinding,
     entry_start: NativeEntryStart,
     map_revision_digest: [u8; 32],
+    movement_cells: NativeEntryMovementCells,
+}
+
+/// The qualified room's cells as the Movement kernel's direct-lookup index, scoped to the exact
+/// World, frame, map revision, content lock and compiled server generation they were qualified
+/// with (#935: "Positive evidence must prove the actual qualified native frame through loaded
+/// cells"). The index grants no active status; the Channel's pin supplies the current scope.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct NativeEntryMovementCells {
+    index: crate::content::static_cell_engine::EngineeringStaticCellIndex,
+    scope: crate::content::static_cell_engine::EngineeringStaticCellScope,
+}
+
+impl NativeEntryMovementCells {
+    pub(crate) const fn index(
+        &self,
+    ) -> &crate::content::static_cell_engine::EngineeringStaticCellIndex {
+        &self.index
+    }
+
+    pub(crate) const fn scope(
+        &self,
+    ) -> &crate::content::static_cell_engine::EngineeringStaticCellScope {
+        &self.scope
+    }
 }
 
 /// The first-entry start cell selected by the Game-owned first-entry source (#935): the accepted
@@ -374,6 +437,10 @@ impl QualifiedNativeEntryRoom {
 
     pub const fn entry_start(&self) -> NativeEntryStart {
         self.entry_start
+    }
+
+    pub const fn movement_cells(&self) -> &NativeEntryMovementCells {
+        &self.movement_cells
     }
 
     /// SHA-256 of the qualified map revision this room was compiled with.
@@ -403,10 +470,12 @@ pub fn qualify_native_entry_room(
         project.source(),
         FirstProductionCompileTarget::OrdinaryRelease,
     )?;
+    let movement_cells = project.movement_cells(compiled.server_digest())?;
     Ok(QualifiedNativeEntryRoom {
         compiled,
         frame_binding: project.frame_binding(),
         entry_start: project.entry_start()?,
+        movement_cells,
         map_revision_digest: crate::content::digest::sha256(
             project.source().revisions.map.as_str().as_bytes(),
         ),

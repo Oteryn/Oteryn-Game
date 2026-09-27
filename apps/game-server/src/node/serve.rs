@@ -1062,6 +1062,7 @@ async fn boot_and_serve(
     // runtime pins exactly that generation.
     let (_active_content, content) =
         activate_content(root, material.world, material.channel).await?;
+    let (channel_pin, movement_cells) = content.into_channel_parts();
     let runtime = Mutex::new(
         ChannelRuntimeV1::from_committed_assignment(
             material.world,
@@ -1073,7 +1074,7 @@ async fn boot_and_serve(
             &assignment.decision_identity,
             usize::try_from(config.scope.preproduction_actor_capacity)
                 .map_err(|_| BootError::Readiness("channel runtime capacity"))?,
-            content.into_channel_pin(),
+            channel_pin,
         )
         .map_err(|_| BootError::Readiness("channel runtime composition"))?,
     );
@@ -1139,6 +1140,7 @@ async fn boot_and_serve(
         world_id: material.world,
         channel_id: material.channel,
         runtime: &runtime,
+        movement_cells: &movement_cells,
     };
     let loops_stop = CancellationToken::new();
     let mut gameplay = pin!(serve_gameplay(

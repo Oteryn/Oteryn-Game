@@ -374,18 +374,16 @@ pub(crate) fn encode_liveness_probe(
     Ok(output)
 }
 
-// Composed by the first-control Server Seam child (M2, #822).
-#[allow(dead_code)]
 /// `CommandStatus` values of FND-02 `CommandResult`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u32)]
 pub(crate) enum CommandStatus {
     Accepted = 1,
+    // Constructed by the gameplay transport, which path-included test crates omit.
+    #[allow(dead_code)]
     Rejected = 2,
 }
 
-// Composed by the first-control Server Seam child (M2, #822).
-#[allow(dead_code)]
 /// One post-admission `ClientCommand` (FND-02): its command identity, registered type and the
 /// typed payload owned by that type. Expected revisions are validated and bounded but unused by
 /// the first registered command.
@@ -396,8 +394,6 @@ pub(crate) struct ClientCommandView<'a> {
     pub(crate) payload: &'a [u8],
 }
 
-// Composed by the first-control Server Seam child (M2, #822).
-#[allow(dead_code)]
 fn server_frame(
     message_type: MessageType,
     generation: u64,
@@ -412,8 +408,6 @@ fn server_frame(
     output
 }
 
-// Composed by the first-control Server Seam child (M2, #822).
-#[allow(dead_code)]
 /// Server-sequenced `CommandResult`. The typed payload is owned by the command type.
 pub(crate) fn encode_command_result(
     connection_generation: u64,
@@ -440,8 +434,6 @@ pub(crate) fn encode_command_result(
     ))
 }
 
-// Composed by the first-control Server Seam child (M2, #822).
-#[allow(dead_code)]
 /// Server-sequenced `StateDelta` from `base_revision` to `new_revision` of one domain.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn encode_state_delta(
@@ -478,8 +470,6 @@ pub(crate) fn encode_state_delta(
     ))
 }
 
-// Composed by the first-control Server Seam child (M2, #822).
-#[allow(dead_code)]
 /// One domain of a `SnapshotBody`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct DomainSnapshot<'a> {
@@ -489,8 +479,6 @@ pub(crate) struct DomainSnapshot<'a> {
     pub(crate) payload: &'a [u8],
 }
 
-// Composed by the first-control Server Seam child (M2, #822).
-#[allow(dead_code)]
 /// The three unsequenced frames of one single-chunk snapshot transfer (FND-02 §16):
 /// `SnapshotBegin`, `SnapshotChunk[0]` and `SnapshotCommit`. The body must fit one chunk.
 pub(crate) fn encode_single_chunk_snapshot(
@@ -563,7 +551,6 @@ pub(crate) fn encode_protocol_error(
 
 impl<'a> WireEnvelopeView<'a> {
     /// A post-admission `ClientCommand` of the current connection generation.
-    #[allow(dead_code)]
     pub(crate) fn client_command(
         &self,
         current_connection_generation: u64,

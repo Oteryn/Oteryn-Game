@@ -578,6 +578,12 @@ impl ChannelRuntimeV1 {
             .current_owner_movement_position(&self.continuity)
     }
 
+    /// The Movement owner context of this runtime's fixed Content pin; a step is eligible only
+    /// for a position initialized under exactly this context.
+    pub(crate) fn pinned_movement_context(&self) -> MovementPositionContext {
+        MovementPositionContext(self.pinned_position_context())
+    }
+
     /// The compact position context of this runtime's fixed Content pin.
     fn pinned_position_context(&self) -> PreProductionPositionContext {
         let prefix = |digest: &[u8; 32]| {
@@ -714,6 +720,32 @@ impl ChannelRuntimeV1 {
                 } => (committed, pending + 1),
                 _ => (committed, pending),
             })
+    }
+
+    /// Test-only census: the position revisions of committed player actors that
+    /// stand at the pinned start cell under the pinned context, ascending.
+    #[cfg(test)]
+    pub(crate) fn entry_start_player_revisions(&self) -> Vec<u64> {
+        let mut revisions: Vec<u64> = self
+            .carrier
+            .slots
+            .iter()
+            .filter_map(|slot| match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    position: Some(version),
+                    ..
+                } if version.position == self.content.entry_start
+                    && version.context == self.pinned_position_context() =>
+                {
+                    Some(version.revision)
+                }
+                _ => None,
+            })
+            .collect();
+        revisions.sort_unstable();
+        revisions
     }
 
     /// Test-only census: committed player actors positioned at the pinned

@@ -431,6 +431,7 @@ pub struct NativeEntryContentPin {
     frame_binding: super::NativeEntryFrameBinding,
     entry_start: super::NativeEntryStart,
     map_revision_digest: [u8; 32],
+    movement_cells: super::NativeEntryMovementCells,
 }
 
 impl NativeEntryContentPin {
@@ -450,9 +451,24 @@ impl NativeEntryContentPin {
         self.entry_start
     }
 
-    /// The digest-level pin the Channel runtime is created with. Consuming the activation pin
-    /// keeps one active generation per Channel creation.
+    /// The digest-level pin the Channel runtime is created with, and the qualified cells the
+    /// Channel's Movement reads. Consuming the activation pin keeps one active generation per
+    /// Channel creation.
+    pub(crate) fn into_channel_parts(
+        self,
+    ) -> (
+        crate::foundation::ChannelContentPin,
+        super::NativeEntryMovementCells,
+    ) {
+        (self.channel_pin(), self.movement_cells)
+    }
+
+    #[cfg(test)]
     pub(crate) fn into_channel_pin(self) -> crate::foundation::ChannelContentPin {
+        self.channel_pin()
+    }
+
+    fn channel_pin(&self) -> crate::foundation::ChannelContentPin {
         crate::foundation::ChannelContentPin::from_activation(
             self.identity.world_id(),
             self.activation_sequence,
@@ -574,6 +590,7 @@ pub fn activate_native_entry_room(
         frame_binding: room.frame_binding().clone(),
         entry_start: room.entry_start(),
         map_revision_digest: room.map_revision_digest(),
+        movement_cells: room.movement_cells().clone(),
     })
 }
 

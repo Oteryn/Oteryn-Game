@@ -11,6 +11,16 @@ use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
 
 use super::tcp_tls::{read_frame, write_frame};
+use super::world_spatial::{
+    COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
+    SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
+    StepDisposition, WorldSpatialObservation, decode_step_intent, encode_step_result,
+    encode_world_spatial,
+};
+use crate::foundation::{
+    CommandStatus, DomainSnapshot, encode_command_result, encode_single_chunk_snapshot,
+    encode_state_delta,
+};
 
 /// Foundation schema revision served by this build (FND-02 v1 contract).
 pub(crate) const SERVER_SCHEMA_REVISION: u32 = 1;
@@ -72,6 +82,40 @@ pub(crate) trait FreshAdmissionAuthority {
         &self,
         attempt: FreshAdmissionAttempt<'_>,
     ) -> impl Future<Output = Result<AdmittedSession, AdmissionRefusal>>;
+
+    /// The admitted actor's current own-actor observation for the initial snapshot, or `None`
+    /// when this authority serves no gameplay (transport-only fixtures).
+    fn observe(
+        &self,
+        _actor: ExactActorRef,
+    ) -> impl Future<Output = Option<WorldSpatialObservation>> {
+        async { None }
+    }
+
+    /// One `WORLD_ACTOR_STEP_INTENT` for the admitted actor, applied by the Channel owner.
+    fn step(
+        &self,
+        _actor: ExactActorRef,
+        _direction: StepDirection,
+    ) -> impl Future<Output = StepOutcome> {
+        async { StepOutcome::rejected() }
+    }
+}
+
+/// The outcome of one step: its disposition and, only when it moved, the new observation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct StepOutcome {
+    pub(crate) disposition: StepDisposition,
+    pub(crate) moved_to: Option<WorldSpatialObservation>,
+}
+
+impl StepOutcome {
+    pub(crate) const fn rejected() -> Self {
+        Self {
+            disposition: StepDisposition::Rejected,
+            moved_to: None,
+        }
+    }
 }
 
 /// Fresh identifiers for one connection attempt.
@@ -203,6 +247,156 @@ where
         }
         Ok(_) => FoundationProtocolError::UnknownMessageType,
     };
+    let _ = send_error(stream, error, ADMITTED_GENERATION).await;
+    ConnectionEnd::AdmittedThenClosed(admitted, error)
+}
+
+/// FIRST-CONTROL post-admission play (FND-02 §§14-16, #642/#139). A positioned actor gets the
+/// initial `WORLD_SPATIAL_VISIBILITY` snapshot (target sequence 0) before any command is accepted;
+/// each `ClientCommand` must carry the next CommandId. A step is one Channel-owner work item
+/// (`MOVE-RL-02` = 1) answered by a sequenced `CommandResult` and, when it moved, a sequenced
+/// `StateDelta`. An actor that is not positioned, or an authority without gameplay, keeps the
+/// admission-only behaviour.
+pub(crate) async fn serve_admitted<S, A>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    authority: &A,
+) -> ConnectionEnd
+where
+    S: AsyncRead + AsyncWrite + Unpin,
+    A: FreshAdmissionAuthority,
+{
+    let playable = matches!(
+        admitted.first_entry,
+        FirstEntryOutcome::Positioned | FirstEntryOutcome::Reconciled
+    );
+    let Some(actor) = admitted.runtime_actor.filter(|_| playable) else {
+        return hold_admitted(stream, admitted).await;
+    };
+    let Some(baseline) = authority.observe(actor).await else {
+        return hold_admitted(stream, admitted).await;
+    };
+    let mut revision = 1_u64;
+    let payload = encode_world_spatial(&baseline);
+    let snapshot = encode_single_chunk_snapshot(
+        ADMITTED_GENERATION,
+        1,
+        0,
+        &[DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            revision,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            payload: &payload,
+        }],
+    );
+    let Ok(snapshot) = snapshot else {
+        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+    };
+    for frame in &snapshot {
+        if write_frame(stream, frame).await.is_err() {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+    }
+    let mut sequence = 0_u64;
+    let mut next_command = 1_u64;
+    loop {
+        let Ok(frame) = read_frame(stream).await else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        let command = match decode_wire_envelope(&frame) {
+            Err(error) => return close_admitted(stream, admitted, error).await,
+            Ok(envelope) if envelope.connection_generation() != ADMITTED_GENERATION => {
+                return close_admitted(
+                    stream,
+                    admitted,
+                    FoundationProtocolError::StaleConnectionGeneration,
+                )
+                .await;
+            }
+            Ok(envelope) if envelope.message_type() != MessageType::ClientCommand => {
+                return close_admitted(
+                    stream,
+                    admitted,
+                    FoundationProtocolError::UnknownMessageType,
+                )
+                .await;
+            }
+            Ok(envelope) => match envelope.client_command(ADMITTED_GENERATION) {
+                Ok(command) => command,
+                Err(error) => return close_admitted(stream, admitted, error).await,
+            },
+        };
+        if command.command_id != next_command {
+            return close_admitted(
+                stream,
+                admitted,
+                FoundationProtocolError::CommandSequenceGap,
+            )
+            .await;
+        }
+        // Unknown command types and malformed step payloads have no effect.
+        let outcome = match (
+            command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
+            decode_step_intent(command.payload),
+        ) {
+            (true, Ok(direction)) => authority.step(actor, direction).await,
+            _ => StepOutcome::rejected(),
+        };
+        let (Some(result_sequence), Some(following)) =
+            (sequence.checked_add(1), next_command.checked_add(1))
+        else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        sequence = result_sequence;
+        next_command = following;
+        let status = if outcome.disposition == StepDisposition::Rejected {
+            CommandStatus::Rejected
+        } else {
+            CommandStatus::Accepted
+        };
+        let Ok(result) = encode_command_result(
+            ADMITTED_GENERATION,
+            sequence,
+            command.command_id,
+            status,
+            &encode_step_result(outcome.disposition),
+        ) else {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        };
+        if write_frame(stream, &result).await.is_err() {
+            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        }
+        if let Some(observation) = outcome.moved_to {
+            let (Some(delta_sequence), Some(new_revision)) =
+                (sequence.checked_add(1), revision.checked_add(1))
+            else {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            };
+            let Ok(delta) = encode_state_delta(
+                ADMITTED_GENERATION,
+                delta_sequence,
+                STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision,
+                new_revision,
+                DELTA_TYPE_WORLD_SPATIAL_V1,
+                &encode_world_spatial(&observation),
+            ) else {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            };
+            sequence = delta_sequence;
+            revision = new_revision;
+            if write_frame(stream, &delta).await.is_err() {
+                return ConnectionEnd::AdmittedThenDisconnected(admitted);
+            }
+        }
+    }
+}
+
+async fn close_admitted<S: AsyncWrite + Unpin>(
+    stream: &mut S,
+    admitted: AdmittedSession,
+    error: FoundationProtocolError,
+) -> ConnectionEnd {
     let _ = send_error(stream, error, ADMITTED_GENERATION).await;
     ConnectionEnd::AdmittedThenClosed(admitted, error)
 }
