@@ -4874,6 +4874,92 @@
         "WORLD_SPATIAL_VISIBILITY state domain 1, delta type 1, snapshot type 1"
       ],
       "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
+    },
+    {
+      "id": "FND04B-LIVENESS-IDLE-PROBE-MS",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Out-of-combat LivenessProbe cadence of one admitted positioned connection",
+      "unit": "milliseconds",
+      "hard_maximum": 5000,
+      "configurable_range": {
+        "minimum": 5000,
+        "maximum": 5000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One outstanding probe per connection; one probe frame per cadence tick; no per-probe allocation beyond one frame.",
+      "client_visible": false,
+      "boundary_tests": [
+        "5000 ms: a probe is sent one cadence after the baseline snapshot and then every cadence",
+        "An answered probe resets the missed count; a late ack of an older probe restores nothing"
+      ],
+      "consumers": [
+        "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Out-of-combat detection is about three cadences."
+    },
+    {
+      "id": "FND04B-LIVENESS-IDLE-MISSED",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Consecutive unanswered out-of-combat probes that prove playable control lost",
+      "unit": "probes",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reaching the limit ends the admitted transport as control lost; no durable session mutation in this child.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=3: the third consecutive unanswered probe ends the transport as control lost at the next cadence",
+        "max-1=2 unanswered probes followed by an answered probe keep control"
+      ],
+      "consumers": [
+        "gameplay_transport serve_admitted (OTV2-20260927-liveness-control-loss)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. "
+    },
+    {
+      "id": "FND04B-LIVENESS-COMBAT-PROBE-MS",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "In-combat LivenessProbe cadence of one admitted positioned connection",
+      "unit": "milliseconds",
+      "hard_maximum": 1000,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One outstanding probe per connection; one probe frame per cadence tick.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1000 ms: in combat a probe is sent every cadence"
+      ],
+      "consumers": [
+        "combat state (not composed yet)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+    },
+    {
+      "id": "FND04B-LIVENESS-COMBAT-MISSED",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Consecutive unanswered in-combat probes that prove playable control lost",
+      "unit": "probes",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Reaching the limit ends the admitted transport as control lost (about one 2 s combat tick).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: the second consecutive unanswered in-combat probe ends the transport as control lost"
+      ],
+      "consumers": [
+        "combat state (not composed yet)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
     }
   ]
 }

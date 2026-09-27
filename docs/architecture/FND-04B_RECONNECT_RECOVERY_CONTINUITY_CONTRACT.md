@@ -76,6 +76,17 @@ The following values must be finite before implementation but are deliberately n
 
 Historical `2s/5s/15s` values from superseded #109 are non-canonical.
 
+Provisional registered values (owner decision `DISCONNECT-PROTECTION-V1` §1, Oteryn/Oteryn-Game #822 comments 5854525644 and 5854565314). They are to be measured and tuned before release, and changing them does not reopen the mechanism:
+
+| Row | Value | Consumed by |
+|---|---|---|
+| `FND04B-LIVENESS-IDLE-PROBE-MS` | 5000 ms | admitted positioned connection, out of combat |
+| `FND04B-LIVENESS-IDLE-MISSED` | 3 consecutive unanswered probes | same |
+| `FND04B-LIVENESS-COMBAT-PROBE-MS` | 1000 ms | combat state, not composed yet |
+| `FND04B-LIVENESS-COMBAT-MISSED` | 2 consecutive unanswered probes | same |
+
+Only the ack of the current outstanding probe, received at the authoritative server on the current generation, clears the missed count. A late ack of an older probe restores nothing, and an ack of a probe never sent is a protocol violation. Reaching the missed limit proves playable-control loss for the transport. `ControlLossEpoch` state, grace, cleanup and protection are composed by later children. The client answers probes from its game loop, so a frozen game stops acknowledging.
+
 ## 5. ControlLossEpoch
 
 `ControlLossEpoch` is logical server-authoritative continuity state, not a new public foundation identity.

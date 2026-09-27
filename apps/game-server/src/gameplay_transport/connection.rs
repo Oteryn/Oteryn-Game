@@ -10,7 +10,7 @@ use crate::foundation::{
 use std::future::Future;
 use tokio::io::{AsyncRead, AsyncWrite};
 
-use super::tcp_tls::{read_frame, write_frame};
+use super::tcp_tls::{FrameReader, read_frame, write_frame};
 use super::world_spatial::{
     COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, DELTA_TYPE_WORLD_SPATIAL_V1,
     SNAPSHOT_TYPE_WORLD_SPATIAL_V1, STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, StepDirection,
@@ -19,7 +19,7 @@ use super::world_spatial::{
 };
 use crate::foundation::{
     CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
-    encode_single_chunk_snapshot, encode_state_delta,
+    encode_liveness_probe, encode_single_chunk_snapshot, encode_state_delta,
 };
 
 /// Foundation schema revision served by this build (FND-02 v1 contract).
@@ -137,12 +137,89 @@ pub(crate) enum ConnectionEnd {
     AdmittedThenClosed(AdmittedSession, FoundationProtocolError),
     /// Admitted, then the peer closed or the transport failed.
     AdmittedThenDisconnected(AdmittedSession),
+    /// Admitted, then the authenticated liveness cadence proved playable control lost
+    /// (`DISCONNECT-PROTECTION-V1` §1). No durable session state is changed here.
+    AdmittedThenControlLost(AdmittedSession),
     /// The transport failed before admission.
     TransportFailed,
 }
 
 /// Admitted connection generation issued with `ServerAccepted`.
 const ADMITTED_GENERATION: u64 = 1;
+
+/// FND-02 §17 liveness cadence of one admitted connection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LivenessPolicy {
+    pub(crate) interval: std::time::Duration,
+    /// Consecutive unanswered probes that prove playable control lost.
+    pub(crate) missed_limit: u32,
+}
+
+/// Out-of-combat cadence: `FND04B-LIVENESS-IDLE-PROBE-MS` and `FND04B-LIVENESS-IDLE-MISSED`
+/// (`DISCONNECT-PROTECTION-V1` §1, provisional until measured). The combat cadence is registered
+/// but not composed: no combat state exists yet.
+pub(crate) const IDLE_LIVENESS: LivenessPolicy = LivenessPolicy {
+    interval: std::time::Duration::from_millis(5_000),
+    missed_limit: 3,
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum LivenessEnd {
+    /// `missed_limit` consecutive probes went unanswered.
+    ControlLost,
+    /// Probe IDs never wrap; exhaustion ends this transport generation (FND-02 §17).
+    ProbesExhausted,
+}
+
+/// Server-authoritative probe/ack state: only the receipt of the current probe's ack at this
+/// server counts; a late ack of an older probe restores nothing.
+#[derive(Debug)]
+struct Liveness {
+    missed_limit: u32,
+    last_sent: u64,
+    awaiting: Option<u64>,
+    missed: u32,
+}
+
+impl Liveness {
+    const fn new(policy: LivenessPolicy) -> Self {
+        Self {
+            missed_limit: policy.missed_limit,
+            last_sent: 0,
+            awaiting: None,
+            missed: 0,
+        }
+    }
+
+    /// One cadence tick: an unanswered previous probe is missed. Returns the next probe ID.
+    fn tick(&mut self) -> Result<u64, LivenessEnd> {
+        if self.awaiting.is_some() {
+            self.missed = self.missed.saturating_add(1);
+            if self.missed >= self.missed_limit {
+                return Err(LivenessEnd::ControlLost);
+            }
+        }
+        let next = self
+            .last_sent
+            .checked_add(1)
+            .ok_or(LivenessEnd::ProbesExhausted)?;
+        self.last_sent = next;
+        self.awaiting = Some(next);
+        Ok(next)
+    }
+
+    /// An ack of a probe never sent is a protocol violation.
+    fn ack(&mut self, probe_id: u64) -> Result<(), FoundationProtocolError> {
+        if probe_id == 0 || probe_id > self.last_sent {
+            return Err(FoundationProtocolError::InvalidWireIdentifier);
+        }
+        if self.awaiting == Some(probe_id) {
+            self.awaiting = None;
+            self.missed = 0;
+        }
+        Ok(())
+    }
+}
 
 /// Whole connection lifecycle without resource policy; the listener runs the
 /// same phases under its budgets.
@@ -261,6 +338,7 @@ pub(crate) async fn serve_admitted<S, A>(
     stream: &mut S,
     admitted: AdmittedSession,
     authority: &A,
+    policy: LivenessPolicy,
 ) -> ConnectionEnd
 where
     S: AsyncRead + AsyncWrite + Unpin,
@@ -299,9 +377,55 @@ where
     }
     let mut sequence = 0_u64;
     let mut next_command = 1_u64;
+    let mut frames = FrameReader::default();
+    let mut liveness = Liveness::new(policy);
+    let mut cadence = tokio::time::interval_at(
+        tokio::time::Instant::now() + policy.interval,
+        policy.interval,
+    );
+    cadence.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
     loop {
-        let Ok(frame) = read_frame(stream).await else {
-            return ConnectionEnd::AdmittedThenDisconnected(admitted);
+        enum Next {
+            Frame(std::io::Result<Vec<u8>>),
+            Probe,
+        }
+        // Both futures are cancel-safe: the frame reader keeps partial bytes and a dropped
+        // interval tick is not consumed.
+        let next = {
+            let mut read = std::pin::pin!(frames.next(stream));
+            let mut tick = std::pin::pin!(cadence.tick());
+            std::future::poll_fn(|context| {
+                if let std::task::Poll::Ready(read) = read.as_mut().poll(context) {
+                    return std::task::Poll::Ready(Next::Frame(read));
+                }
+                if tick.as_mut().poll(context).is_ready() {
+                    return std::task::Poll::Ready(Next::Probe);
+                }
+                std::task::Poll::Pending
+            })
+            .await
+        };
+        let frame = match next {
+            Next::Frame(Ok(frame)) => frame,
+            Next::Frame(Err(_)) => return ConnectionEnd::AdmittedThenDisconnected(admitted),
+            Next::Probe => {
+                let probe = match liveness.tick() {
+                    Ok(probe_id) => encode_liveness_probe(ADMITTED_GENERATION, probe_id),
+                    Err(LivenessEnd::ControlLost) => {
+                        return ConnectionEnd::AdmittedThenControlLost(admitted);
+                    }
+                    Err(LivenessEnd::ProbesExhausted) => {
+                        return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                    }
+                };
+                let Ok(probe) = probe else {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                };
+                if write_frame(stream, &probe).await.is_err() {
+                    return ConnectionEnd::AdmittedThenDisconnected(admitted);
+                }
+                continue;
+            }
         };
         let command = match decode_wire_envelope(&frame) {
             Err(error) => return close_admitted(stream, admitted, error).await,
@@ -312,6 +436,15 @@ where
                     FoundationProtocolError::StaleConnectionGeneration,
                 )
                 .await;
+            }
+            Ok(envelope) if envelope.message_type() == MessageType::LivenessAck => {
+                match envelope
+                    .liveness_ack(ADMITTED_GENERATION)
+                    .and_then(|ack| liveness.ack(ack.probe_id))
+                {
+                    Ok(()) => continue,
+                    Err(error) => return close_admitted(stream, admitted, error).await,
+                }
             }
             Ok(envelope) if envelope.message_type() != MessageType::ClientCommand => {
                 return close_admitted(
@@ -664,7 +797,7 @@ mod tests {
             client.write_all(&framed(frame)).await?;
         }
         client.shutdown().await?;
-        let end = serve_admitted(&mut server, admitted, authority).await;
+        let end = serve_admitted(&mut server, admitted, authority, IDLE_LIVENESS).await;
         drop(server);
         let mut output = Vec::new();
         client.read_to_end(&mut output).await?;
@@ -692,6 +825,202 @@ mod tests {
         )
         .expect("snapshot")
         .into()
+    }
+
+    const FAST: LivenessPolicy = LivenessPolicy {
+        interval: std::time::Duration::from_millis(20),
+        missed_limit: 3,
+    };
+
+    fn ack(generation: u64, probe_id: u64) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, probe_id);
+        envelope(6, generation, &payload)
+    }
+
+    fn positioned() -> Result<AdmittedSession, Box<dyn Error>> {
+        let world_id = WorldId::decode(&WORLD)?;
+        let channel_id = ChannelId::decode(&CHANNEL)?;
+        Ok(AdmittedSession {
+            game_session_id: GameSessionId::decode(&SESSION)?,
+            world_id,
+            channel_id,
+            runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+            first_entry: FirstEntryOutcome::Positioned,
+        })
+    }
+
+    fn split_frames(output: &[u8]) -> Result<Vec<Vec<u8>>, Box<dyn Error>> {
+        let mut frames = Vec::new();
+        let mut cursor = 0;
+        while cursor < output.len() {
+            let length = u32::from_be_bytes(output[cursor..cursor + 4].try_into()?) as usize;
+            frames.push(output[cursor + 4..cursor + 4 + length].to_vec());
+            cursor += 4 + length;
+        }
+        Ok(frames)
+    }
+
+    #[test]
+    fn liveness_counts_only_the_current_probe_and_refuses_unsent_ids() {
+        let mut liveness = Liveness::new(FAST);
+        assert_eq!(
+            liveness.ack(1),
+            Err(FoundationProtocolError::InvalidWireIdentifier)
+        );
+        assert_eq!(liveness.tick(), Ok(1));
+        assert_eq!(liveness.tick(), Ok(2));
+        // A late ack of probe 1 restores nothing; probe 2 is still missed.
+        assert_eq!(liveness.ack(1), Ok(()));
+        assert_eq!(liveness.tick(), Ok(3));
+        assert_eq!(liveness.ack(3), Ok(()));
+        assert_eq!(liveness.ack(3), Ok(()));
+        assert_eq!(
+            liveness.ack(0),
+            Err(FoundationProtocolError::InvalidWireIdentifier)
+        );
+        // After an answered probe the count restarts: three more misses are needed.
+        assert_eq!(liveness.tick(), Ok(4));
+        assert_eq!(liveness.tick(), Ok(5));
+        assert_eq!(liveness.tick(), Ok(6));
+        assert_eq!(liveness.tick(), Err(LivenessEnd::ControlLost));
+        let mut exhausted = Liveness::new(FAST);
+        exhausted.last_sent = u64::MAX;
+        assert_eq!(exhausted.tick(), Err(LivenessEnd::ProbesExhausted));
+    }
+
+    #[test]
+    fn silent_admitted_client_loses_control_after_the_missed_limit() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = StepAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            let (mut server, mut client) = tokio::io::duplex(1 << 16);
+            // The client keeps its transport open but never answers.
+            let end = serve_admitted(&mut server, positioned()?, &authority, FAST).await;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenControlLost(_)));
+            drop(server);
+            let mut output = Vec::new();
+            client.read_to_end(&mut output).await?;
+            let mut expected = baseline();
+            for probe_id in 1..=3 {
+                expected.push(encode_liveness_probe(ADMITTED_GENERATION, probe_id)?);
+            }
+            assert_eq!(split_frames(&output)?, expected);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn answering_client_keeps_control_and_steps_between_probes() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = StepAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            let (mut server, client) = tokio::io::duplex(1 << 16);
+            let (mut client_read, mut client_write) = tokio::io::split(client);
+            let served = serve_admitted(&mut server, positioned()?, &authority, FAST);
+            let client = async {
+                let mut frames = super::super::tcp_tls::FrameReader::default();
+                let mut probes = 0;
+                while probes < 6 {
+                    let frame = frames.next(&mut client_read).await?;
+                    let envelope = decode_wire_envelope(&frame)?;
+                    if envelope.message_type() == MessageType::LivenessProbe {
+                        probes += 1;
+                        // Answer each probe as it arrives; a step between probes is served.
+                        client_write.write_all(&framed(&ack(1, probes))).await?;
+                        if probes == 3 {
+                            client_write
+                                .write_all(&framed(&command(
+                                    1,
+                                    1,
+                                    u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT),
+                                    StepDirection::East,
+                                )))
+                                .await?;
+                        }
+                    }
+                }
+                client_write.shutdown().await?;
+                Ok::<_, Box<dyn Error>>(())
+            };
+            let (mut served, mut client) = (std::pin::pin!(served), std::pin::pin!(client));
+            let (mut end, mut client_done) = (None, None);
+            std::future::poll_fn(|context| {
+                if end.is_none()
+                    && let std::task::Poll::Ready(value) = served.as_mut().poll(context)
+                {
+                    end = Some(value);
+                }
+                if client_done.is_none()
+                    && let std::task::Poll::Ready(value) = client.as_mut().poll(context)
+                {
+                    client_done = Some(value);
+                }
+                if end.is_some() && client_done.is_some() {
+                    std::task::Poll::Ready(())
+                } else {
+                    std::task::Poll::Pending
+                }
+            })
+            .await;
+            let (Some(end), Some(client)) = (end, client_done) else {
+                return Err("join incomplete".into());
+            };
+            client?;
+            assert!(matches!(end, ConnectionEnd::AdmittedThenDisconnected(_)));
+            assert_eq!(*authority.steps.borrow(), [StepDirection::East]);
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn ack_of_an_unsent_probe_closes_the_admitted_session() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = StepAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            let (end, frames) = drive_admitted(&authority, &[ack(1, 9)]).await?;
+            let mut expected = baseline();
+            expected.push(error_frame(
+                FoundationProtocolError::InvalidWireIdentifier,
+                1,
+            ));
+            assert_eq!(frames, expected);
+            assert!(matches!(
+                end,
+                ConnectionEnd::AdmittedThenClosed(
+                    _,
+                    FoundationProtocolError::InvalidWireIdentifier
+                )
+            ));
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn idle_liveness_matches_the_registered_provisional_rows() -> Result<(), Box<dyn Error>> {
+        let registry: serde_json::Value = serde_json::from_str(include_str!(
+            "../../../../docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+        ))?;
+        let row = |id: &str| {
+            registry["entries"]
+                .as_array()
+                .and_then(|entries| entries.iter().find(|entry| entry["id"] == id))
+                .and_then(|entry| entry["hard_maximum"].as_u64())
+        };
+        assert_eq!(
+            row("FND04B-LIVENESS-IDLE-PROBE-MS"),
+            u64::try_from(IDLE_LIVENESS.interval.as_millis()).ok()
+        );
+        assert_eq!(
+            row("FND04B-LIVENESS-IDLE-MISSED"),
+            Some(u64::from(IDLE_LIVENESS.missed_limit))
+        );
+        assert_eq!(row("FND04B-LIVENESS-COMBAT-PROBE-MS"), Some(1_000));
+        assert_eq!(row("FND04B-LIVENESS-COMBAT-MISSED"), Some(2));
+        Ok(())
     }
 
     #[test]
