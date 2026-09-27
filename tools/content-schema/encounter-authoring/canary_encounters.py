@@ -25,6 +25,7 @@ SOUL_WAR_MECHANICS = 'data-otservbr-global/scripts/quests/soul_war/soul_war_mech
 SOUL_WAR_LIB = 'data-otservbr-global/lib/quests/soul_war.lua'
 DREAM_COURTS_DEATH = 'data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_dreamCourtsDeath.lua'
 ALPTRAMUN_SUMMON = 'data-otservbr-global/scripts/spells/monster/alptramun_summon.lua'
+DREAM_COURTS_LEVERS = 'data-otservbr-global/scripts/quests/the_dream_courts_quest/actions_dreamscarLevers.lua'
 
 
 def slug(name):
@@ -190,8 +191,7 @@ def dream_courts(build):
     for boss, name, display, lines, questline, cap, timer in DREAM_COURTS_BOSSES:
         item = build.get(name, f'Dream Courts: {display}', 'instance_per_party')
         role = slug(boss)
-        covered = boss != 'Alptramun'
-        build.participant(item, role, boss, event if covered else None)
+        build.participant(item, role, boss, event)
         outcome = f'{role}_defeated'
         item['encounter']['outcomes'].append(outcome)
         path = build.rule(item, {'key': f'{role}_death_outcome', 'trigger': {'kind': 'creature_died', 'role': role},
@@ -225,17 +225,38 @@ def dream_courts(build):
     build.entry(plagueroot, DREAM_COURTS_DEATH, [99, 100, 101, 102], 'mapped', path + '/actions/0',
                 'Game.createMonster("plant attendant", death position): a new unowned plant attendant with full health.')
     alptramun = build.items['alptramun']
-    for dream in DREAMS:
-        build.participant(alptramun, 'dream', dream)
-    build.entry(alptramun, DREAM_COURTS_DEATH, [117, 118, 119, 123, 124, 125, 126, 127, 128, 129, 130, 131], 'unresolved_semantics', None,
-                'Alptramun escalation: its death resets the global AlptramunSummonsKilled counter and each dream death raises it '
-                'within its band; alptramun_summon.lua picks the dream type from that counter. Canary never counts: the summon '
-                'spell sets Alptramun as master (line 45) and this script returns early for creatures with a master (line 93), '
-                'so only unpleasant dreams appear, while the reference-date wiki lists all four dreams in the fight (D25). '
-                'Modelling it needs an ability-cast trigger outside the v1 vocabulary (D28): owner decision.')
-    build.entry(alptramun, ALPTRAMUN_SUMMON, [20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 45, 46], 'unresolved_semantics',
-                None, 'The dream type chosen from the escalation counter; see the entry above.')
-
+    build.participant(alptramun, 'alptramun', 'Alptramun', event)
+    alptramun['encounter']['state']['counters'].append({'name': 'dreams_killed', 'initial': 0})
+    build.entry(alptramun, DREAM_COURTS_LEVERS, [87], 'mapped', '/encounter/state/counters/0',
+                'The Dream Scar lever starts the Alptramun fight with AlptramunSummonsKilled at 0.')
+    path = build.rule(alptramun, {'key': 'alptramun_resets_dreams', 'trigger': {'kind': 'creature_died', 'role': 'alptramun'},
+                                  'conditions': [{'kind': 'has_master', 'role': 'alptramun', 'value': False}],
+                                  'actions': [{'kind': 'counter', 'counter': 'dreams_killed', 'operation': 'set', 'value': 0}]})
+    build.entry(alptramun, DREAM_COURTS_DEATH, [117, 118, 119], 'mapped', path + '/actions/0',
+                'The death of Alptramun sets AlptramunSummonsKilled back to 0.')
+    for dream, band in zip(DREAMS, ((0, 9), (9, 18), (18, 27), (27, 36))):
+        role = slug(dream)
+        build.participant(alptramun, role, dream, event)
+        path = build.rule(alptramun, {
+            'key': f'{role}_killed', 'trigger': {'kind': 'creature_died', 'role': role},
+            'conditions': [{'kind': 'has_master', 'role': role, 'value': False},
+                           {'kind': 'counter_compare', 'counter': 'dreams_killed', 'op': '>=', 'value': band[0]},
+                           {'kind': 'counter_compare', 'counter': 'dreams_killed', 'op': '<=', 'value': band[1]}],
+            'actions': [{'kind': 'counter', 'counter': 'dreams_killed', 'operation': 'add', 'value': 1}]})
+        build.entry(alptramun, DREAM_COURTS_DEATH, [92, 93, 94, 95], 'mapped', path + '/conditions/0',
+                    'Returns without effect for a creature with a master.')
+        build.entry(alptramun, DREAM_COURTS_DEATH, [67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
+                                                    86, 87, 88, 123, 124, 125, 126, 127, 128, 129, 130, 131], 'mapped',
+                    path + '/actions/0',
+                    f'The death of an unmastered {dream.lower()} raises AlptramunSummonsKilled by one while it is within '
+                    f'{band[0]}-{band[1]}.')
+    build.entry(alptramun, ALPTRAMUN_SUMMON, list(range(1, 60)), 'unresolved_semantics', None,
+                'The escalation that reads the counter: alptramun_summon.lua summons 1-4 dreams (up to 5 summons, as Alptramun\'s '
+                'summons) whose type rises with AlptramunSummonsKilled in bands of nine. No Canary monster casts this spell '
+                '(it is not in Alptramun\'s attacks or defenses), and summoned dreams have a master, so this script would not '
+                'count them. The reference-date wiki says Alptramun "will initially appear with several summons. These '
+                'summons, when killed, will be replaced by even stronger summons" without numbers; defining that ability '
+                '(an ability_cast rule, D29) needs its exact rule from the owner or further evidence.')
 
 FORGOTTEN_KNOWLEDGE_KILL = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua'
 # boss, encounter, display, config line, storage, cooldown seconds
@@ -935,12 +956,47 @@ def small_boss_events(build):
     build.entry(item, feroxa_path, [8, 15], 'approved_omission', None, 'The poff effect is cosmetic.')
 
 
+
+URMAHLULLU = 'data-otservbr-global/scripts/quests/kilmaresh_quest/creaturescripts_urmahlullu_change.lua'
+URMAHLULLU_STAGES = ['Urmahlullu the Immaculate', 'Wildness of Urmahlullu', 'Urmahlullu the Tamed', 'Wisdom of Urmahlullu',
+                     'Urmahlullu the Weakened']
+
+
+def urmahlullu(build):
+    """UrmahlulluChanges: five forms killed one after another (the wiki decides the shape, D25)."""
+    item = build.get('urmahlullu', 'Kilmaresh: Urmahlullu', 'instance_per_party')
+    for index, form in enumerate(URMAHLULLU_STAGES[:-1]):
+        role, following = slug(form), URMAHLULLU_STAGES[index + 1]
+        build.participant(item, role, form, 'UrmahlulluChanges')
+        build.define(item, creature(following))
+        path = build.rule(item, {'key': f'{role}_changes', 'trigger': {'kind': 'lethal_damage', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'prevent_death', 'role': role},
+                                             {'kind': 'transform', 'role': role, 'into': creature(following), 'health': 'full'}]})
+        build.entry(item, URMAHLULLU, [9, 11, 12, 13, 14, 15, 16, 17, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60,
+                                       64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 86, 87, 90],
+                    'mapped', path,
+                    f'{form} becomes {following} with full health. Canary changes forms at absolute thresholds of one '
+                    '512000-health scale (515000 * RATE_BOSS_HEALTH for the first, a typo against the 512000 monster files). '
+                    'The reference-date wiki gives each form its own health (130,000, then 70,000, ...), no experience or loot '
+                    'for the first four and describes the fight as killing the five forms one after another (Kilmaresh '
+                    'Quest/Spoiler); with the wiki health adopted (D15) the forms change on the lethal hit (D25).')
+    build.entry(item, URMAHLULLU, [1, 2, 19, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
+                                   42, 43, 44, 45, 61, 83, 84, 85, 86], 'approved_omission', None,
+                'Canary reverts a form to the previous one when the next threshold is not reached within 60 s (its second '
+                'revert reads the id of the removed creature and never runs). The reverted form comes back with full health on '
+                'the shared 512000 scale; the wiki, whose per-form health replaces that scale (D15), describes five '
+                'consecutive kills and no revert, so the revert is not reproduced (D25).')
+    build.entry(item, URMAHLULLU, [4, 6, 7], 'approved_omission', None,
+                'RATE_BOSS_HEALTH scales both the thresholds and the monster health on the Canary server; Oteryn has no such '
+                'server rate.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu):
         transcribe(build)
     print(json.dumps(build.write()))
 
