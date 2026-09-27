@@ -48,7 +48,7 @@ def walk(actions, where):
 
 
 CREATURE_TRIGGERS = ('creature_died', 'lethal_damage', 'health_crossed', 'creature_spawned', 'ability_cast', 'damage_taken',
-                     'heal_received', 'damage_accumulated')
+                     'heal_received', 'damage_accumulated', 'item_used')
 
 
 def semantic(e, catalog):
@@ -205,6 +205,13 @@ def semantic(e, catalog):
                 need('flag', action['flag'], flags, at)
             if ak == 'timer':
                 need('timer', action['timer'], timers, at)
+                if (action['operation'] == 'add') != ('ms' in action):
+                    errors.append(f'{at}: a timer add needs exactly its ms')
+            if ak == 'attribute':
+                if (action['operation'] == 'add') != ('value' in action):
+                    errors.append(f'{at}: an attribute add needs a value, a reset takes none')
+                if isinstance(action.get('value'), dict):
+                    need('counter', action['value']['counter'], counters, at)
             if ak == 'set_phase':
                 need('phase', action['phase'], e['phases'], at)
             if ak == 'damage_modifier' and (action['until'] == 'timer') != ('timer' in action):

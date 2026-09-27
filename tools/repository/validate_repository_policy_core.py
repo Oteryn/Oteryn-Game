@@ -52,7 +52,7 @@ EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a8765
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
 EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "be8c77c0d9a267c582a3bcfbdbc45005055a6e827af6af66fd4a1799cfa76d4f"
 EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "66eb857be0512adc4df0b6854074deda5b4c323d5f7054996d0cb3d354f20095"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "83c0af24697c49c43a083e8430df23cc4886ebec"
 EXPECTED_POST_MERGE_RUST_SHA256 = "9447349d9129155ab5acd545a3e18d34547840e925da456057e8a273df546494"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -73,6 +73,8 @@ EXPECTED_MERGE_GROUP_JOB_KEYS = [
     "durability_postgres",
     "rust_windows",
     "rust_supply_chain",
+    "node_boot",
+    "server_seam",
     "game_gate",
 ]
 
@@ -552,10 +554,26 @@ def main() -> int:
                 "      command: check\n",
                 "      arguments: --all-features\n",
             ),
+            "node_boot": (
+                "    name: Merge Queue / Node boot against the real Platform\n",
+                "    if: needs.candidate.outputs.server_qualification != 'false'\n",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01",
+                "bash tools/qualification/node_boot/run.sh | tee \"$evidence\"",
+                "grep -Fxq 'NODE_BOOT_RESULT=NODE_BOOT_PASS' \"$evidence\"",
+            ),
+            "server_seam": (
+                "    name: Merge Queue / Server Seam over TCP+TLS\n",
+                "    if: needs.candidate.outputs.server_qualification != 'false'\n",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "ref: 9147bfd3a771762a6646fd87b9172cdb3a6c9a01",
+                "WP5_QUALIFICATION=seam bash tools/qualification/wp5_s3b/run.sh | tee \"$evidence\"",
+                "grep -Fxq 'S3B_RESULT=SEAM_PASS' \"$evidence\"",
+            ),
             "game_gate": (
                 "    name: game-gate\n",
                 "    if: always()\n",
-                "    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain]\n",
+                "    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n",
                 "          CANDIDATE: ${{ needs.candidate.result }}\n",
                 "          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}\n",
                 "          CODEQL: ${{ needs.codeql.result }}\n",
@@ -563,6 +581,9 @@ def main() -> int:
                 "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\n",
                 "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",
                 "          RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}\n",
+                "          SERVER_QUALIFICATION_REQUIRED: ${{ needs.candidate.outputs.server_qualification }}\n",
+                "          NODE_BOOT: ${{ needs.node_boot.result }}\n",
+                "          SERVER_SEAM: ${{ needs.server_seam.result }}\n",
                 "            test \"$result\" = success\n",
             ),
         }
