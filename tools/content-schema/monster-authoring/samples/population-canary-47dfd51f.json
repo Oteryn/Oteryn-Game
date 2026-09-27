@@ -6,7 +6,7 @@
   },
   "wiki_reference": {
     "file": "samples/wiki-population-2026-07-28.json",
-    "sha256": "2cd5e2f8a284e1f325c14e41b4eb0c5856baa42105ac6302d309f38b70dbd464"
+    "sha256": "eca8ae8c179b02a5b8a463b49ec9655f3f153e33df85b6bd0e647447b0d5e6c8"
   },
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
@@ -17,7 +17,7 @@
     "wiki_adopted_monsters": 1097
   },
   "wiki_adopted_rows": {
-    "Loot2": 11595,
+    "Loot2": 12862,
     "Infobox Creature.mitigation": 739,
     "Infobox Creature.runsat": 122,
     "Infobox Creature.exp": 110,
