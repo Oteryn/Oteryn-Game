@@ -237,4 +237,3 @@ transition, queue and integration remain with the active control plane.
 or runtime behavior and supplies no runtime E2E proof. Hosted candidate gates
 remain required on its own exact frozen head. Independent #981/#986 task paths
 and Jira synchronization remain outside this closeout allocation.
-
