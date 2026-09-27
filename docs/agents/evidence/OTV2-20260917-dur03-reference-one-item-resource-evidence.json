@@ -1,0 +1,161 @@
+{
+  "classification": "NON_PRODUCTION_RESOURCE_EVIDENCE_ONLY",
+  "evidence_gaps": [
+    "registered DUR-03 mandatory audit event contribution count and exact payload/envelope byte total",
+    "production transaction identity allocator, PostgreSQL receipts/atomic commit/isolation/fencing and crash recovery",
+    "production resource maxima, replay/retention horizon and connected Combat/loot/pickup integration",
+    "real Content definition mapping, natural Rat loot probability and Reference parity"
+  ],
+  "evidence_limits": {
+    "application_work": 3,
+    "cumulative_retry_work": 6,
+    "effect_retained_bytes": 144,
+    "effects": 2,
+    "participant_retained_bytes": 44,
+    "participants": 1,
+    "planning_work": 3,
+    "reconciliation_records": 2,
+    "reconciliation_retained_bytes": 720,
+    "record_encoded_bytes": 138,
+    "synthetic_audit_contributions": 1,
+    "synthetic_audit_encoded_bytes": 16
+  },
+  "final_state": {
+    "MINT_retry_work_units": 6,
+    "TRANSFER_retry_work_units": 6,
+    "authoritative_items": 1,
+    "fixed_model_retained_bytes_including_spare_slots": 816,
+    "immediate_locations": 1,
+    "item_instance_id": "00000000000170008000000000000003",
+    "location": "CharacterInventory/direct-root",
+    "quantity": 1,
+    "retained_reconciliation_record_bytes": 720,
+    "retained_reconciliation_records": 2
+  },
+  "fixture": "Gold Coin x1",
+  "item_definition_ref": {
+    "key": 1,
+    "revision": 1,
+    "scope": "private fixture mapping only; no Content catalog resolution"
+  },
+  "measurement_target": {
+    "architecture": "x86_64",
+    "build_toolchain_identity": "UNKNOWN",
+    "build_toolchain_identity_reason": "This standalone example has no build-time compiler attestation",
+    "encoding": "explicit example-only big-endian record encoding",
+    "os": "linux",
+    "retained_size_basis": "size_of for the executable target, including padding"
+  },
+  "natural_drop_probability": "UNKNOWN/NOT_ASSERTED",
+  "operations": [
+    {
+      "application_work_units": 2,
+      "container_expansion_work": 0,
+      "custody_effect_encoded_bytes": 58,
+      "custody_effect_records": 1,
+      "custody_effect_retained_bytes": 72,
+      "effects": [
+        {
+          "encoded_bytes": 58,
+          "kind": "ESTABLISH",
+          "location": "Ground/corpse fixture",
+          "retained_bytes": 72
+        }
+      ],
+      "fixed_plan_retained_bytes_including_spare_slots_and_intent": 344,
+      "item_instance_id": "00000000000170008000000000000003",
+      "logical_transaction_identity": "00000000000170008000000000000004",
+      "mandatory_audit": {
+        "aggregate_encoded_bytes": null,
+        "classification": "EVIDENCE_GAP",
+        "event_contribution_count": null,
+        "reason": "No executable registered DUR-03 event family/payload exists in the consumed public substrate; ANL envelope semantics do not determine it"
+      },
+      "operation": "MINT",
+      "participant_and_effect_encoded_bytes": 102,
+      "participant_encoded_bytes": 44,
+      "participant_records": 1,
+      "participant_retained_bytes": 44,
+      "planning_work_units": 2,
+      "quantity": 1,
+      "reconciliation_state_records": 1,
+      "reconciliation_state_retained_bytes": 360,
+      "retry_reconcile_work_units_per_call": 3,
+      "synthetic_audit_budget_probe_only": {
+        "contributions": 1,
+        "encoded_bytes": 16,
+        "event_emitted": false
+      },
+      "touched_items": 1,
+      "transaction_identity_retained_bytes": 16,
+      "transform_inputs_outputs": 0,
+      "value_account_lines": 0,
+      "work_definition": "one unit per participant/effect during planning; one per effect plus receipt during application; excludes serialization, lookup implementation cost and wall time"
+    },
+    {
+      "application_work_units": 3,
+      "container_expansion_work": 0,
+      "custody_effect_encoded_bytes": 94,
+      "custody_effect_records": 2,
+      "custody_effect_retained_bytes": 144,
+      "effects": [
+        {
+          "encoded_bytes": 58,
+          "kind": "REMOVE",
+          "location": "Ground/corpse fixture",
+          "retained_bytes": 72
+        },
+        {
+          "encoded_bytes": 36,
+          "kind": "ESTABLISH",
+          "location": "CharacterInventory/direct-root",
+          "retained_bytes": 72
+        }
+      ],
+      "fixed_plan_retained_bytes_including_spare_slots_and_intent": 344,
+      "item_instance_id": "00000000000170008000000000000003",
+      "logical_transaction_identity": "00000000000170008000000000000005",
+      "mandatory_audit": {
+        "aggregate_encoded_bytes": null,
+        "classification": "EVIDENCE_GAP",
+        "event_contribution_count": null,
+        "reason": "No executable registered DUR-03 event family/payload exists in the consumed public substrate; ANL envelope semantics do not determine it"
+      },
+      "operation": "TRANSFER",
+      "participant_and_effect_encoded_bytes": 138,
+      "participant_encoded_bytes": 44,
+      "participant_records": 1,
+      "participant_retained_bytes": 44,
+      "planning_work_units": 3,
+      "quantity": 1,
+      "reconciliation_state_records": 1,
+      "reconciliation_state_retained_bytes": 360,
+      "retry_reconcile_work_units_per_call": 3,
+      "synthetic_audit_budget_probe_only": {
+        "contributions": 1,
+        "encoded_bytes": 16,
+        "event_emitted": false
+      },
+      "touched_items": 1,
+      "transaction_identity_retained_bytes": 16,
+      "transform_inputs_outputs": 0,
+      "value_account_lines": 0,
+      "work_definition": "one unit per participant/effect during planning; one per effect plus receipt during application; excludes serialization, lookup implementation cost and wall time"
+    }
+  ],
+  "production_durability_or_parity_proven": false,
+  "production_maxima_selected": false,
+  "rows": {
+    "DUR03-RL-01": "ONE_ITEM_SEMANTIC_FIXTURE; multiple-item capability rejects before planning",
+    "DUR03-RL-02": "MEASURED_PROTOTYPE_ONLY; one establish MINT; remove+establish TRANSFER; one custody tuple publication",
+    "DUR03-RL-03": "NOT_EXERCISED/0; value/account capability rejects before planning",
+    "DUR03-RL-04": "NOT_EXERCISED/0; transform capability rejects before planning",
+    "DUR03-RL-05": "DIRECT_ROOT_ONLY/0; Container rejects before planning; no general container bound",
+    "DUR03-RL-06": "MEASURED_PROTOTYPE_ONLY; counts derived from physically represented records",
+    "DUR03-RL-07": "EVIDENCE_GAP for actual mandatory count/payload bytes; synthetic budget preflight only",
+    "DUR03-RL-08": "MEASURED_IN_MEMORY_STATE_MACHINE_ONLY; stable transaction/output identities; no DB/restart proof"
+  },
+  "schema_version": 1,
+  "source_base_sha": "fd504f5659fe900861b6556751275488c2a22dec",
+  "task_id": "OTV2-20260917-dur03-reference-one-item-resource-evidence-513"
+}
