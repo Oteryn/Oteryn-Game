@@ -1433,10 +1433,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 14,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 24,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -5912,10 +5908,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 36,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 39,
           "reason": "delayed callback (addEvent) without a scheduler owner"
         },
@@ -6507,10 +6499,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 44,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 42,
           "reason": "loop with its own control flow"
@@ -8239,14 +8227,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 8,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 11,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 13,
           "reason": "creature removal without an accepted owner"
         },
@@ -8881,9 +8861,16 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 10
-                            }
+                            "actor_item_count": {
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/14682",
+                                "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                              },
+                              "op": "<",
+                              "value": 1
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -9104,9 +9091,27 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 10
-                            }
+                            "all": [
+                              {
+                                "actor_item_count": {
+                                  "item": {
+                                    "family": "Item",
+                                    "key": "canary:item/14682",
+                                    "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                  },
+                                  "op": ">=",
+                                  "value": 1
+                                },
+                                "negate": false
+                              },
+                              {
+                                "actor_level": {
+                                  "op": ">=",
+                                  "value": 40
+                                },
+                                "negate": false
+                              }
+                            ]
                           },
                           "then": [
                             {
@@ -10673,9 +10678,13 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 245
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 5500
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -10833,9 +10842,13 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 298
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 5503
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -10903,9 +10916,13 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 343
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 5504
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -11044,9 +11061,13 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 430
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 5505
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -11127,9 +11148,13 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 486
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 5506
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -11511,14 +11536,6 @@
           "reason": "loop with its own control flow"
         },
         {
-          "line": 173,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 174,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 177,
           "reason": "creature removal without an accepted owner"
         },
@@ -11553,14 +11570,6 @@
         {
           "line": 205,
           "reason": "loop with its own control flow"
-        },
-        {
-          "line": 220,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 221,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 224,
@@ -11603,14 +11612,6 @@
           "reason": "loop with its own control flow"
         },
         {
-          "line": 267,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 268,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 271,
           "reason": "creature removal without an accepted owner"
         },
@@ -11637,14 +11638,6 @@
         {
           "line": 305,
           "reason": "loop with its own control flow"
-        },
-        {
-          "line": 320,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 321,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 324,
@@ -11679,14 +11672,6 @@
           "reason": "loop with its own control flow"
         },
         {
-          "line": 365,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 366,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 369,
           "reason": "creature removal without an accepted owner"
         },
@@ -11700,14 +11685,6 @@
         },
         {
           "line": 378,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 384,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 391,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -11763,20 +11740,8 @@
           "reason": "loop with its own control flow"
         },
         {
-          "line": 453,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 454,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 457,
           "reason": "creature removal without an accepted owner"
-        },
-        {
-          "line": 462,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 452,
@@ -11799,10 +11764,6 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 503,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 507,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -11811,20 +11772,8 @@
           "reason": "loop with its own control flow"
         },
         {
-          "line": 518,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 519,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 522,
           "reason": "creature removal without an accepted owner"
-        },
-        {
-          "line": 527,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 517,
@@ -13064,14 +13013,6 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 32,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 33,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 37,
           "reason": "creature removal without an accepted owner"
         },
@@ -13307,14 +13248,6 @@
         }
       ],
       "unresolved": [
-        {
-          "line": 9,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 10,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 8,
           "reason": "loop with its own control flow"
@@ -15144,9 +15077,13 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 130
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 5531
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -15211,9 +15148,13 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 141
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 5530
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -15495,9 +15436,13 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 13
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 57300
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -15527,9 +15472,13 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 31
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 57302
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -15559,9 +15508,13 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 49
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 57301
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -17730,10 +17683,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 12,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 8,
           "reason": "loop with its own control flow"
         },
@@ -18439,28 +18388,12 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 13,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 14,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 12,
           "reason": "loop with its own control flow"
         },
         {
           "line": 34,
           "reason": "creature removal without an accepted owner"
-        },
-        {
-          "line": 37,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 38,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 36,
@@ -18570,14 +18503,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 13,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 14,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 12,
           "reason": "loop with its own control flow"
@@ -19460,9 +19385,28 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 12
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u10_50/dark_trails/mission10",
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "actor_item_count": {
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/21124",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "op": ">",
+                          "value": 0
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -19578,10 +19522,6 @@
       "unresolved": [
         {
           "line": 20,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 24,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -21315,9 +21255,16 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 23
-                                    }
+                                    "actor_item_count": {
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "canary:item/9388",
+                                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                      },
+                                      "op": "==",
+                                      "value": 0
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -21361,9 +21308,16 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 32
-                                    }
+                                    "actor_item_count": {
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "canary:item/919",
+                                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                      },
+                                      "op": "==",
+                                      "value": 0
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -23474,9 +23428,16 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 10
-                            }
+                            "actor_item_count": {
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/3595",
+                                "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                              },
+                              "op": ">",
+                              "value": 0
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -24149,6 +24110,11 @@
                       "status": "blocked",
                       "reason": "no accepted movement owner contract (GAME-INTERACTION-01 §19.3)",
                       "to_anchor": "p1"
+                    },
+                    {
+                      "owner": "Presentation",
+                      "effect": "magic_effect",
+                      "authoritative": false
                     }
                   ]
                 },
@@ -24214,6 +24180,11 @@
                           "status": "blocked",
                           "reason": "no accepted movement owner contract (GAME-INTERACTION-01 §19.3)",
                           "to_anchor": "p3"
+                        },
+                        {
+                          "owner": "Presentation",
+                          "effect": "magic_effect",
+                          "authoritative": false
                         }
                       ]
                     }
@@ -24271,16 +24242,7 @@
           }
         }
       ],
-      "unresolved": [
-        {
-          "line": 10,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 18,
-          "reason": "statement outside the transcribed vocabulary"
-        }
-      ]
+      "unresolved": []
     },
     {
       "identity": {
@@ -25047,10 +25009,6 @@
         {
           "line": 150,
           "reason": "loop with its own control flow"
-        },
-        {
-          "line": 158,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 157,
@@ -26665,14 +26623,6 @@
         },
         {
           "line": 7,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 11,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 15,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -32709,12 +32659,7 @@
         }
       ],
       "anchors": [],
-      "unresolved": [
-        {
-          "line": 6,
-          "reason": "statement outside the transcribed vocabulary"
-        }
-      ]
+      "unresolved": []
     },
     {
       "identity": {
@@ -32863,10 +32808,6 @@
         {
           "line": 38,
           "reason": "creature removal without an accepted owner"
-        },
-        {
-          "line": 39,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 23,
@@ -33364,9 +33305,13 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 35
-                        }
+                        "object": {
+                          "role": "source",
+                          "field": "action_id",
+                          "op": "==",
+                          "value": 24837
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -33410,9 +33355,13 @@
                     },
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 45
-                        }
+                        "object": {
+                          "role": "source",
+                          "field": "action_id",
+                          "op": "==",
+                          "value": 24838
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -37520,16 +37469,8 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 33,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 32,
           "reason": "loop with its own control flow"
-        },
-        {
-          "line": 55,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 65,
@@ -47071,10 +47012,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 13,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 14,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -49380,10 +49317,6 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 80,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 81,
           "reason": "delayed callback (addEvent) without a scheduler owner"
         },
@@ -50138,9 +50071,16 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 37
-                        }
+                        "actor_item_count": {
+                          "item": {
+                            "family": "Item",
+                            "key": "canary:item/8775",
+                            "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                          },
+                          "op": "<",
+                          "value": 4
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -58175,10 +58115,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 33,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 39,
           "reason": "delayed callback (addEvent) without a scheduler owner"
         },
@@ -62438,14 +62374,6 @@
           "reason": "loop with its own control flow"
         },
         {
-          "line": 87,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 89,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 91,
           "reason": "delayed callback (addEvent) without a scheduler owner"
         },
@@ -62585,9 +62513,13 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 39
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 55000
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -63116,9 +63048,16 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 10
-                    }
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/32594",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": "<",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -63282,19 +63221,7 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 24,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 39,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 40,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 42,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -63408,10 +63335,6 @@
       "unresolved": [
         {
           "line": 63,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 67,
           "reason": "statement outside the transcribed vocabulary"
         }
       ]
@@ -64172,35 +64095,7 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 28,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 31,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 35,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 39,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 44,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 46,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 51,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 56,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -64216,40 +64111,8 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 65,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 71,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 79,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 85,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 90,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 96,
           "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
-        {
-          "line": 99,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 107,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 113,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 122,
@@ -64260,23 +64123,7 @@
           "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
-          "line": 129,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 137,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 143,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 152,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 159,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -64288,27 +64135,11 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 188,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 201,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 203,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 204,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 205,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 208,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -66936,14 +66767,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 68,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 72,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 73,
           "reason": "statement outside the transcribed vocabulary"
         }
@@ -67401,10 +67224,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 96,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 103,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -67542,10 +67361,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 948,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 952,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -67558,19 +67373,7 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 972,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 978,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 979,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 980,
           "reason": "statement outside the transcribed vocabulary"
         }
       ]
@@ -68210,15 +68013,7 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 563,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 569,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 570,
           "reason": "statement outside the transcribed vocabulary"
         }
       ]
@@ -68387,10 +68182,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 842,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 847,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -68403,19 +68194,7 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 866,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 872,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 873,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 874,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -68856,10 +68635,6 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 714,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 725,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -69127,10 +68902,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 899,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 902,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -69310,10 +69081,6 @@
       "unresolved": [
         {
           "line": 364,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 365,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -69959,10 +69726,6 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 102,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 103,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -69979,19 +69742,7 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 113,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 114,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 115,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 116,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -76650,6 +76401,11 @@
                               "source_line": 20
                             },
                             {
+                              "owner": "Presentation",
+                              "effect": "magic_effect",
+                              "authoritative": false
+                            },
+                            {
                               "owner": "WorldObject",
                               "status": "blocked",
                               "reason": "no accepted world-object state owner contract",
@@ -76722,6 +76478,11 @@
                                   "effect": "message",
                                   "authoritative": false,
                                   "source_line": 40
+                                },
+                                {
+                                  "owner": "Presentation",
+                                  "effect": "magic_effect",
+                                  "authoritative": false
                                 },
                                 {
                                   "owner": "Item",
@@ -76845,16 +76606,8 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 22,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 24,
           "reason": "delayed callback (addEvent) without a scheduler owner"
-        },
-        {
-          "line": 41,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 47,
@@ -77391,6 +77144,11 @@
                               "source_line": 14
                             },
                             {
+                              "owner": "Presentation",
+                              "effect": "magic_effect",
+                              "authoritative": false
+                            },
+                            {
                               "owner": "WorldObject",
                               "status": "blocked",
                               "reason": "no accepted world-object state owner contract",
@@ -77409,10 +77167,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 16,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 18,
           "reason": "delayed callback (addEvent) without a scheduler owner"
@@ -78854,9 +78608,16 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 16
-                                    }
+                                    "actor_item_count": {
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "crystalserver:item/29351",
+                                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                      },
+                                      "op": ">=",
+                                      "value": 2
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -80342,10 +80103,6 @@
         {
           "line": 74,
           "reason": "function literal outside the transcribed vocabulary"
-        },
-        {
-          "line": 90,
-          "reason": "statement outside the transcribed vocabulary"
         },
         {
           "line": 95,
@@ -82158,9 +81915,16 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 16
-                                    }
+                                    "actor_item_count": {
+                                      "item": {
+                                        "family": "Item",
+                                        "key": "canary:item/29351",
+                                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                                      },
+                                      "op": ">=",
+                                      "value": 2
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -83545,10 +83309,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 106,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 111,
           "reason": "statement outside the transcribed vocabulary"
@@ -86551,10 +86311,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 14,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 5,
           "reason": "loop with its own control flow"
@@ -89938,10 +89694,6 @@
       "anchors": [],
       "unresolved": [
         {
-          "line": 29,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 22,
           "reason": "loop with its own control flow"
         }
@@ -90316,10 +90068,6 @@
         },
         {
           "line": 89,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 163,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -92313,10 +92061,6 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 30,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 31,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -92431,10 +92175,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 20,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 19,
           "reason": "loop with its own control flow"
@@ -94051,10 +93791,6 @@
           "reason": "delayed callback (addEvent) without a scheduler owner"
         },
         {
-          "line": 81,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 82,
           "reason": "delayed callback (addEvent) without a scheduler owner"
         },
@@ -95227,9 +94963,13 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 3
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 59602
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -95280,9 +95020,13 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 12
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 59603
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -95881,9 +95625,13 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 3
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 59602
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -95934,9 +95682,13 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 12
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 59603
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -99618,9 +99370,16 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 14
-                    }
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/2836",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": "<",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -105858,10 +105617,6 @@
           "reason": "statement outside the transcribed vocabulary"
         },
         {
-          "line": 290,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
           "line": 291,
           "reason": "statement outside the transcribed vocabulary"
         },
@@ -107507,10 +107262,6 @@
       "unresolved": [
         {
           "line": 29,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 32,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -109470,9 +109221,13 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 38
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 4920
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -109500,9 +109255,13 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 51
-                }
+                "object": {
+                  "role": "source",
+                  "field": "action_id",
+                  "op": "==",
+                  "value": 4921
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -109727,9 +109486,13 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 16
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 4920
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -109807,9 +109570,13 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 28
-                    }
+                    "object": {
+                      "role": "source",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 4921
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -110174,10 +109941,6 @@
         },
         {
           "line": 22,
-          "reason": "statement outside the transcribed vocabulary"
-        },
-        {
-          "line": 24,
           "reason": "statement outside the transcribed vocabulary"
         },
         {
@@ -114172,9 +113935,56 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 4
-                }
+                "all": [
+                  {
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/24943",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
+                  },
+                  {
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/24944",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
+                  },
+                  {
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/24945",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
+                  },
+                  {
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "crystalserver:item/24946",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -116710,9 +116520,30 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 12
-                        }
+                        "all": [
+                          {
+                            "object": {
+                              "role": "use_target",
+                              "field": "action_id",
+                              "op": "==",
+                              "value": 4001
+                            },
+                            "negate": false
+                          },
+                          {
+                            "object": {
+                              "role": "use_target",
+                              "field": "item_type",
+                              "op": "==",
+                              "item": {
+                                "family": "Item",
+                                "key": "canary:item/132",
+                                "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                              }
+                            },
+                            "negate": false
+                          }
+                        ]
                       },
                       "then": [
                         {
@@ -118885,9 +118716,52 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 3
-                }
+                "all": [
+                  {
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/11368",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
+                  },
+                  {
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/11369",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
+                  },
+                  {
+                    "actor_item_count": {
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/11370",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      },
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/questline",
+                      "op": "==",
+                      "value": 10
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -120084,10 +119958,6 @@
       ],
       "anchors": [],
       "unresolved": [
-        {
-          "line": 252,
-          "reason": "statement outside the transcribed vocabulary"
-        },
         {
           "line": 255,
           "reason": "statement outside the transcribed vocabulary"

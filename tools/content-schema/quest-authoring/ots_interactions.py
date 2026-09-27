@@ -10,15 +10,17 @@ item used, a creature killed), read-only conditions, and children that each go t
 - `Game.setStorageValue` -> Quest world state (state shared by all players, as encounters read it, D29);
 - `Game.createMonster` -> Ability summon effect (GAME-ABILITY-01);
 - `player:addItem` -> Item hand-out (DUR-03 item transaction); `addAchievement` -> Achievement grant;
-- `sendMagicEffect` and player messages -> presentation only (a message keeps its source line, never its text);
+- `sendMagicEffect` (method or procedural `doSendMagicEffect`) and player messages -> presentation only (a message
+  keeps its source line, never its text); debug/telemetry logging (`logger.*`) is dropped, never an effect;
 - teleports -> Movement, blocked until a movement owner contract exists (GAME-INTERACTION-01 §19.3);
 - map item create/remove/transform -> world object state, blocked until an owner contract exists.
 Storage aliases (`local X = Storage.…`) are expanded; a track resolves to the catalogue's track whichever server
 declared it (D33). A function literal passed to a call (`addEvent(function() … end)`) runs later and stays one
-unresolved entry. Conditions read quest stages, world state, whether the actor is a player, its level, and the item type, unique id, action id
-or subtype of the edge source (the registered target), the object in contact with it or the use target. Any other
-line or condition stays unresolved with its source line. Source positions become named anchors with the
-coordinates kept as evidence. Every output is OTS_HYPOTHESIS_ONLY.
+unresolved entry. Conditions read quest stages, world state, whether the actor is a player, its level, its item
+count of a literal item, and the item type, unique id, action id or subtype of the edge source (the registered
+target), the object in contact with it or the use target (by field access or, for action id/unique id/subtype,
+the equivalent getter method). Any other line or condition stays unresolved with its source line. Source
+positions become named anchors with the coordinates kept as evidence. Every output is OTS_HYPOTHESIS_ONLY.
 """
 import argparse
 import glob
@@ -46,13 +48,22 @@ NOOP = re.compile(r'^(local\s+\w+(\s*,\s*\w+)*\s*=\s*[\w.:]+\([^()]*\)|local\s+\
 ROLES = {'onUse': ('actor', 'source', None, 'use_target'), 'onStepIn': ('actor', 'source'),
          'onStepOut': ('actor', 'source'), 'onAddItem': ('contact', 'source')}
 FIELDS = {'itemid': 'item_type', 'uid': 'unique_id', 'actionid': 'action_id', 'type': 'subtype'}
+# method-call equivalents of the dot-field checks above, restricted to methods that only exist on an Item (never a
+# Creature), so the role need not be proven to hold an item first; `getId()` is left out because it is ambiguous
+# between an item type id and a creature id and stays unresolved.
+METHOD_FIELDS = {'getActionId': 'action_id', 'getUniqueId': 'unique_id', 'getSubType': 'subtype'}
 # calls that only read state: a local assignment made of these is not an effect
 READ_ONLY = re.compile(r'^(get\w*|is\w*|has\w*|can\w*|Tile|Position|Player|Creature|Monster|Item|Npc|Container|lower|upper|'
                        r'random|max|min|floor|ceil|abs|contains|find|match|sub|gsub|format|len|kv|scoped|time|pairs|ipairs|'
                        r'type|tostring|tonumber|unpack|getn)$')
 TABLE_LINE = re.compile(r'^(\{.*\}?,?|\}\)?,?|\[?[\w"\']+\]?\s*=\s*[^()]*,?)$')
 MESSAGE = re.compile(r':(sendTextMessage|say|sendCancelMessage|sendChannelMessage|popupFYI)\(')
-CONTROL = re.compile(r'^(if|elseif|else|end|return|break)\b')
+# a nested loop inside a loop body is itself control structure, not an effect statement: its header/footer must not
+# leak into the flat per-line statement pass that `convert()` runs over a loop's body (`block` nodes are not
+# reparsed by lua_blocks, so a nested `for`/`while`/`repeat` is only ever told apart from its body here).
+CONTROL = re.compile(r'^(if|elseif|else|end|return|break|for|while|repeat|until)\b')
+# debug/telemetry logging: never a gameplay effect, so it is dropped rather than left unresolved.
+LOGGER = re.compile(r'^logger\.\w+\(.*\)$')
 BLOCKED_MOVEMENT, BLOCKED_WORLD_OBJECT = BLOCKED['Movement'], BLOCKED['WorldObject']
 
 
@@ -124,11 +135,18 @@ class Script:
                          else {'value': int(m.group(4))})
                 out.append({'object': {'role': self.roles[m.group(1)], 'field': field, 'op': m.group(3), **value},
                             'negate': negate})
+            elif (m := re.fullmatch(r'(\w+):(getActionId|getUniqueId|getSubType)\(\)\s*(==|~=)\s*(\d+)', body)) and m.group(1) in self.roles:
+                out.append({'object': {'role': self.roles[m.group(1)], 'field': METHOD_FIELDS[m.group(2)],
+                                       'op': m.group(3), 'value': int(m.group(4))}, 'negate': negate})
             elif body in self.players or ((m := re.fullmatch(r'(\w+):isPlayer\(\)', body))
                                           and self.roles.get(m.group(1)) == 'actor'):
                 out.append({'actor_is_player': True, 'negate': negate})
             elif (m := re.fullmatch(r'(\w+):getLevel\(\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) and m.group(1) in self.players:
                 out.append({'actor_level': {'op': m.group(2), 'value': int(m.group(3))}, 'negate': negate})
+            elif (m := re.fullmatch(r'(\w+):getItemCount\(\s*(\d+)\s*\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) \
+                    and m.group(1) in self.players:
+                out.append({'actor_item_count': {'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'),
+                                                 'op': m.group(3), 'value': int(m.group(4))}, 'negate': negate})
             else:
                 return {'unresolved': {'line': number}}
         if len(out) == 1:
@@ -178,13 +196,16 @@ class Script:
         if (m := re.search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
             found.append({'owner': 'Achievement', 'request': 'grant',
                           'achievement': ref('Achievement', f'{self.namespace}:achievement/{slug(m.group(1))}')})
-        if 'sendMagicEffect(' in code:
+        if re.search(r'(?i)sendmagiceffect\(', code):
+            # both the method (`:sendMagicEffect(`) and the procedural (`doSendMagicEffect(`) forms
             found.append({'owner': 'Presentation', 'effect': 'magic_effect', 'authoritative': False})
         if MESSAGE.search(code):
             # the text itself is reserved (LICENSE-ASSETS.md); only its source line is kept
             found.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': number})
         if not found and re.search(r'\baddEvent\(', code):
             self.unresolved.append({'line': number, 'reason': 'delayed callback (addEvent) without a scheduler owner'})
+        elif not found and LOGGER.match(code):
+            pass  # debug/telemetry logging, never a gameplay effect
         elif not found and not NOOP.match(code) and not self.read_only(code):
             self.unresolved.append({'line': number, 'reason': 'statement outside the transcribed vocabulary'})
         for child in found:
