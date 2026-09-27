@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 1018
 base_sha: f404eedb3acef2a0d5ba50ce1f15c34cec118c05
 head_sha: null
 final_head_sha: null
@@ -234,7 +234,7 @@ six real-source examples or their evidence.
 last_progress: review follow-ups (A) and the v1 lowering candidate (B) implemented and locally validated; predecessor task record archived (C)
 status: implementing
 branch: claude/compassionate-albattani-s29syw
-pr: null
+pr: 1018
 final_head_sha: null
 owner_action_required: null
 blocker: null
