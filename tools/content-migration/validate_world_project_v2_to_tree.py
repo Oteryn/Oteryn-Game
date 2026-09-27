@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1316, "Presentation": 1316, "Behavior": 1316, "Loot": 977, "Ability": 5245, "Effect": 3913, "Formula": 4216,
+    "Creature": 1316, "Presentation": 1336, "Behavior": 1336, "Loot": 977, "Ability": 5245, "Effect": 3913, "Formula": 4216,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",

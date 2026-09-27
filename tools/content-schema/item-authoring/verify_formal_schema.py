@@ -28,12 +28,15 @@ ROOT = Path(__file__).resolve().parent
 build()
 
 from validate_item import (
+    ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES,
+    FORGE_CLASSIFICATION_MAX_TIER,
     SOURCE_CATALOGS,
     catalog_rules,
     read,
     uses_wiki_base_rule,
     validate,
     validate_catalog_disposition,
+    validate_non_source_default,
     validate_real_example,
     validate_routed_destination_value,
     validate_source_identity,
@@ -2792,6 +2795,127 @@ def main():
         {
             "name": "real-source defaults reject unadmitted Item leaves",
             "passed": any("state is not admitted" in error for error in probe_errors),
+        }
+    )
+    # ENGINE_CLASSIFICATION_TABLE_MAX_TIER and ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES are
+    # exercised directly against validate_non_source_default: "missing classification"
+    # cannot occur through a structurally valid Item (forge.classification and max_tier
+    # are both required together), so a real-example probe cannot reach it.
+    classification, expected_max_tier = next(
+        iter(FORGE_CLASSIFICATION_MAX_TIER.items())
+    )
+    default_probe_errors = []
+    validate_non_source_default(
+        {
+            "destination": "/item/forge/max_tier",
+            "state": "ENGINE_CLASSIFICATION_TABLE_MAX_TIER",
+        },
+        expected_max_tier,
+        {"forge": {"classification": classification, "max_tier": expected_max_tier}},
+        default_probe_errors,
+    )
+    results.append(
+        {
+            "name": "non-source default accepts the pinned engine classification max_tier",
+            "passed": not default_probe_errors,
+        }
+    )
+    default_probe_errors = []
+    validate_non_source_default(
+        {
+            "destination": "/item/forge/max_tier",
+            "state": "ENGINE_CLASSIFICATION_TABLE_MAX_TIER",
+        },
+        expected_max_tier + 1,
+        {
+            "forge": {
+                "classification": classification,
+                "max_tier": expected_max_tier + 1,
+            }
+        },
+        default_probe_errors,
+    )
+    results.append(
+        {
+            "name": "non-source default rejects the wrong max_tier for a classification",
+            "passed": any(
+                "pinned engine classification table" in error
+                for error in default_probe_errors
+            ),
+        }
+    )
+    default_probe_errors = []
+    validate_non_source_default(
+        {
+            "destination": "/item/forge/max_tier",
+            "state": "ENGINE_CLASSIFICATION_TABLE_MAX_TIER",
+        },
+        expected_max_tier,
+        {"forge": {"max_tier": expected_max_tier}},
+        default_probe_errors,
+    )
+    results.append(
+        {
+            "name": "non-source default rejects a missing forge classification",
+            "passed": any(
+                "pinned engine classification table" in error
+                for error in default_probe_errors
+            ),
+        }
+    )
+    default_probe_errors = []
+    validate_non_source_default(
+        {
+            "destination": "/item/modifiers/mantra/damage_types/2",
+            "state": "ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES",
+        },
+        ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES[2],
+        {},
+        default_probe_errors,
+    )
+    results.append(
+        {
+            "name": "non-source default accepts the fixed mantra damage_types element",
+            "passed": not default_probe_errors,
+        }
+    )
+    default_probe_errors = []
+    validate_non_source_default(
+        {
+            "destination": "/item/modifiers/mantra/damage_types/0",
+            "state": "ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES",
+        },
+        ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES[1],
+        {},
+        default_probe_errors,
+    )
+    results.append(
+        {
+            "name": "non-source default rejects the wrong mantra damage_types element",
+            "passed": any(
+                "fixed engine constant" in error for error in default_probe_errors
+            ),
+        }
+    )
+    default_probe_errors = []
+    validate_non_source_default(
+        {
+            "destination": (
+                "/item/modifiers/mantra/damage_types/"
+                + str(len(ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES))
+            ),
+            "state": "ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES",
+        },
+        ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES[0],
+        {},
+        default_probe_errors,
+    )
+    results.append(
+        {
+            "name": "non-source default rejects an out-of-range mantra damage_types index",
+            "passed": any(
+                "fixed engine constant" in error for error in default_probe_errors
+            ),
         }
     )
     evidence_probe = deepcopy(real_examples["examples"][0])

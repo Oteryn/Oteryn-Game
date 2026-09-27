@@ -1,0 +1,247 @@
+{
+  "identity": {
+    "key": "canary:encounter/goshnars_greed",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Soul War: Goshnar's Greed",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "greedbeast",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/greedbeast",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "soulsnatcher",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/soulsnatcher",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "weak_soul",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/weak_soul",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "strong_soul",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/strong_soul",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "powerful_soul",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/powerful_soul",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "greedbeast_return",
+      "kind": "point",
+      "description": "Canary (33744, 31666, 14)."
+    },
+    {
+      "key": "soulsnatcher_return",
+      "kind": "point",
+      "description": "Canary (33747, 31668, 14)."
+    },
+    {
+      "key": "weak_soul_return",
+      "kind": "point",
+      "description": "Canary (33750, 31666, 14)."
+    },
+    {
+      "key": "strong_soul_return",
+      "kind": "point",
+      "description": "Canary (33750, 31666, 14)."
+    },
+    {
+      "key": "powerful_soul_return",
+      "kind": "point",
+      "description": "Canary (33750, 31666, 14)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "greedbeast_kills",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "greedbeast_killed",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "greedbeast"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "greedbeast_kills",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "greedbeast_returns",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "greedbeast"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/greedbeast",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "greedbeast",
+          "count": 1,
+          "at": {
+            "anchor": "greedbeast_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "soulsnatcher_returns",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "soulsnatcher"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/soulsnatcher",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "soulsnatcher",
+          "count": 1,
+          "at": {
+            "anchor": "soulsnatcher_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "weak_soul_returns",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "weak_soul"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/weak_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "weak_soul",
+          "count": 1,
+          "at": {
+            "anchor": "weak_soul_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "strong_soul_returns",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "strong_soul"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/strong_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "strong_soul",
+          "count": 1,
+          "at": {
+            "anchor": "strong_soul_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "powerful_soul_returns",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "powerful_soul"
+      },
+      "delay_ms": 10000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/powerful_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "powerful_soul",
+          "count": 1,
+          "at": {
+            "anchor": "powerful_soul_return"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

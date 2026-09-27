@@ -841,6 +841,129 @@ Field/event IDs, source/root domains, gameplay limits and physical mechanisms
 remain deliberately undecided. Fresh exact allocations and independent
 DUR/ANL/data-integrity/privacy review remain required for all successors.
 
+### 39.3 Generic native one-item binding and staged destination admission
+
+This generic Game specialization records the native semantic bindings needed by
+the B1 allocation on #162. It supplies no production event or implementation
+authority and applies across item families and gameplay domains. Rat, Gold Coin
+and cheese may be named only as deterministic fixtures; no identity-specific
+branch or production roster follows from them.
+
+Evidence classification for this specialization:
+
+- **PROVEN** — existing DUR-03 §§39.1-39.2, GAME-ITEM-01, ANL-01, VSL-COMBAT-01,
+  and Content typed-definition rules supply the inherited invariants stated
+  below; migration 0009 supplies the stated conditional Character progression
+  guards.
+- **DERIVED** — the native bindings and admission gates proposed below specialize
+  those invariants for the allocated generic one-item path; they are not by
+  themselves production admission or runtime permission.
+- **CONFLICT** — migration 0009 does not specify how a non-XP CharacterInventory
+  transfer participates in its global CharacterRevision/XP-receipt chain.
+- **UNKNOWN** — source-reference/receipt grammar, position/capacity policy,
+  physical schema and runtime composition remain with their owning allocations.
+
+**Native item definition and state.** The canonical item definition uses the
+existing Content typed-definition shape:
+
+```text
+TypedDefinitionRef = (DefinitionFamily, ProductionKey, DefinitionRevisionRef)
+```
+
+For an item, that reference resolves to the stable namespaced `ItemTypeKey` and
+an explicit compatible immutable definition/revision context under GAME-ITEM-01
+and DUR-04. A private numeric ID or compiled handle is revision-local and cannot
+replace this identity. MINT binds semantic absence before and one fresh
+transaction-scoped live ItemInstance after, including the complete typed
+capability state allowed by that exact definition and compatible ruleset/content
+revisions. Semantic absence is not a nil ID, zero quantity, or an incomplete
+state. Non-stackable presence and stack quantity follow the accepted item
+definition; this decision supplies no quantity value. Unsupported capability,
+shape, incompatible revision, or unknown required state fails closed rather than
+being accepted through a generic metadata field.
+
+**Committed death and output cause.** A MINT source is a deterministic loot
+output occurrence descended from one committed `CreatureDeathOccurrenceRef`,
+bound to the applicable typed output definition and exact compatible loot,
+content, ruleset and SIM revisions. The owning Combat/SIM source determines
+eligibility and a stable semantic output occurrence; a caller-provided UUID,
+audit EventId, or arbitrary source label cannot create that authority. Retry,
+reconciliation and process restart must resolve the same committed death and
+output cause to the same terminal mint result. The same one-shot output cannot
+mint again after restart or after audit expiry. Event and item IDs remain owned
+by their existing authorities and are not substitutes for the semantic cause.
+This contract does not choose a new source identifier grammar, receipt schema,
+physical non-reuse mechanism, or retention duration; those remain owner and
+registry gates.
+
+**Actual native Ground context.** MINT establishes the item in the actual typed
+Ground for the same `WorldId` and `ChannelId` that own the native runtime
+placement. The binding includes the accepted map and content revisions, native
+room/placement context, and typed spatial position under their owning Content,
+FND and runtime contracts. Corpse association is provenance/projection only,
+never a competing item location. A fixture coordinate, caller-selected room,
+stale map/content binding, or unsupported runtime scope is not sufficient.
+Current runtime-scope ownership and other applicable live fences are evaluated
+independently at mutation time.
+
+**CharacterInventory destination.** The later TRANSFER binds the real direct-root
+`CharacterInventory` as the existing semantic pair `CharacterId + typed
+inventory position`, with position legality supplied by GAME-ITEM-01 and the
+Character/pickup owner. No `InventoryRootId`, new root domain, slot family, or
+numeric capacity is introduced. MINT-first work remains admissible while
+TRANSFER placement policy is unresolved, as §39.2 permits; TRANSFER itself is
+not admissible until a legal destination position and all applicable capacity,
+placement and current-authority rules are accepted and proven.
+
+**Expected bindings versus current authority.** The immutable MINT/TRANSFER
+candidate binds expected item definition/state, source occurrence, WorldId,
+ChannelId, content/map/runtime context, destination and safe fence references.
+Those expected values do not authorize a write. Admission independently checks
+current compatible Content, Character/session and CharacterLease, runtime-scope
+owner/generation, source eligibility, item legality and operation preconditions.
+For player pickup, the current CommandRef and applicable current fences remain
+required; no client claim or stored binding substitutes for them. ANL-01
+immutability, exact payload-byte reuse for same-EventId ambiguity, complete
+TransactionEventRef membership, and DUR-03 non-reuse/idempotency continue to
+apply.
+
+**Separate Character readiness and composition dependency.** Character-owned
+progression initialization/readiness remains a separate prerequisite before
+Combat D/E admission and any later Combat XP settlement, under its authorized
+owner route and fresh, separately allocated Character revision/policy binding.
+Migration `0009_character_progression.sql` is a
+conditional composition dependency: it permits bootstrap-only revision one,
+then requires every global CharacterRevision successor to match typed
+progression state and an immutable XP receipt. It does not specify how a
+non-XP inventory TRANSFER composes with that XP-only receipt chain. This is an
+explicit unresolved Character-owner conflict for destination mutation/readiness;
+this decision neither invents an XP receipt for inventory work nor joins XP and
+item transfer into one transaction. MINT does not touch Character state and is
+not blocked by this destination composition question.
+
+**Decision test.** Must decide now: **YES** for definition/state, source, and
+actual Ground bindings, so native MINT cannot inherit synthetic fixture
+identity; **NO** for unresolved TRANSFER destination composition, which remains
+gated at the Character-owner boundary. The realistic alternatives for MINT are
+to admit only with the complete typed native bindings above, or keep MINT closed
+until every later Character destination question is settled. The first preserves
+the already selected MINT-first staging without weakening any MINT invariant;
+the second unnecessarily couples a Character-independent creation to pickup.
+**Recommendation:** use the complete generic native bindings above for later
+MINT qualification, while leaving TRANSFER closed until Character position,
+capacity and global-revision composition are resolved by their owners. The main
+risk is that a weak or expiring source-cause record could permit a repeated mint;
+late changes to definition/source semantics would require retained evidence and
+receipt interpretation to migrate. No broad new identity, receipt, or authority
+abstraction is selected.
+Supersession requires accepted owner contracts, compatibility or security
+findings, or measured native qualification evidence.
+
+This section does not decide quantity, probability, stack maximum, inventory
+capacity, loot or XP formulas, HP/damage, XP values, protocol/event IDs, registry
+ceilings, SQL/runtime permission, production retention configuration, or
+physical implementation. Unknown or unsupported native input remains closed.
+
 ## 40. Durable acknowledgement
 
 For a durable DUR-03 mutation:

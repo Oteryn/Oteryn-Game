@@ -211,7 +211,7 @@ buff such as the cobra flask).
 | D28 | §4-6 plus phases is the v1 vocabulary under the rules of §9. Work starts with `FourthTaintBossesPrepareDeath` (15 Soul War hunting monsters, a `channel_shared` zone rule with a read-only quest-progress condition), then the largest death events. | Owner delegated the choice; the source shows the event is a zone rule, not a boss fight. |
 | D29 | Vocabulary extensions: `creature_spawned` and `ability_cast` triggers; the `world_state` read-only condition; fractional or absolute health thresholds; `creature_present` near a role; `{min, max}` ranges; a `damage` action; `component: primary`; `map_item.interaction`. Acting on whatever stands on a fixed tile is not added: each case names its role from wiki or map evidence. Scripted movement is deferred. State shared by all parties belongs to the quest domain, which the encounter reads through `world_state`. | Owner accepted the proposal ("kontynuuj tak jak uważasz za optymalne", 2026-09-27). |
 | D30 | Crystal Server (`zimbadev/crystalserver`, a Canary fork) is consulted as a second donor wherever a Canary script is broken, ambiguous or unresolved. It is evidence only: Canary stays the transcription source and the reference-date wiki still decides (D25). | Owner request 2026-09-27 ("sprawdzać też crystal jako donor"). |
-| D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage; `remembered` spawn health (a boss that returns with the health it left with: Foreshock, Aftershock, Outburst). Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
+| D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage; `remembered` spawn health (a boss that returns with the health it left with: Foreshock, Aftershock, Outburst); in a `heal_received` rule a `this_hit` `damage_modifier` scales that heal (`HealthForgotten` doubles heals as well as damage); a `non_player` source for `damage_taken` and `heal_received` (a change by another creature; one without an attacker is not included); an optional `slot` for `attacker_wears`, which with `killer_progress` also reads the healer in a `heal_received` rule (`AsurasMechanic`). Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
@@ -360,3 +360,39 @@ A threshold checked by `onThink` is a `health_crossed` rule, plus a `creature_sp
 already below the threshold of its stage. Charged Anomaly, Charging Outburst and the World Devourer keep one unresolved
 spell script each. 72 encounters validate, 66 manifests resolve fully, `verify_encounter_schema.py` 87/87; the census
 rises from 1,490 to 1,498.
+
+A tenth slice completes the Forgotten Knowledge fights. Crystal carries the same scripts; its Lloyd script only adds nil
+guards.
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `HealthForgotten` | 2 | 4 | Without a shadow tentacle (Lady Tenebris) or a possessed tree (the Thorn Knight forms) within 7 tiles, the primary part of every health change is doubled, heals included. |
+| `ThornKnightDeath` | 1 | 2 | The mounted knight becomes the shielded knight and a thorn steed, then the enraged knight. |
+| `LloydPrepareDeath`, `EnergyPrismDeath`, `EnergyPrismHealthChange` | 1 | 5 | Four times Lloyd survives, stands between the prisms at full health and makes the next prism killable for 10 s; a prism heals 10,000 on every change while he is away from the centre. The wiki's Lloyd page describes the same five kills. |
+
+Lady Tenebris and the Mounted Thorn Knight keep unresolved spell rows. 72 encounters validate, 66 manifests resolve
+fully, `verify_encounter_schema.py` 88/88; the census rises from 1,498 to 1,505.
+
+An eleventh slice. Crystal carries the same scripts.
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `facelessHealth` | 2 | 2 | Primary death damage heals Alptramun, primary earth damage heals Plagueroot. |
+| `AsurasMechanic` | 3 | 3 | Only a prepared player hurts or heals an Asura: one of twelve red armours in the armour slot (The Diamond Blossom), silver chimes in the right hand (The Blazing Rose), an active fragrance (The Lily of Night, read-only quest progress). Changes by other creatures are zeroed. The wiki describes none of it. |
+| `GreedMonsterDeath` | 1 | 5 | Each greed creature returns to its tile 10 s after its death; greedbeast deaths are counted for Goshnar's Greed. |
+
+`BurningChangeForm` changes a boss attribute (the Hatred damage multiplier), which D31 does not add. `izcandarThink` and the
+King Zelos events stay for a later slice. 76 encounters validate, 70 manifests resolve fully, `verify_encounter_schema.py`
+91/91; the census rises from 1,505 to 1,511.
+
+A twelfth slice. Crystal carries the same scripts.
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `DisruptionTransform`, `ChargedDisruptionTransform` | 1 | 2 | Counted thinks: a disruption becomes a charged disruption 12-13 s after it appears, a charged one becomes overcharged after 18-19 s (a rule delay range, D29). |
+| `CracklerTransform`, `DepolarizedTransform` | 1 | 2 | On every think (a repeating 1 s timer) cracklers turn depolarized while the room is polarized and back when it is not, keeping their health. The polarization is written by the vortex tiles (`movements_vortex_crackler.lua`), a stepped-on mechanic transcribed with the room. |
+| `ReplicaServantDeath` | 1 | 2 | A `channel_shared` outcome: the quest domain counts the servants for the world and for the top damage dealer, and opens the teleport at five of each. |
+
+The King Zelos events stay unresolved: King Zelos's damage scales with the time the knights took, the Magnor shards share
+one life, and two deaths explode as authored areas. `UglyMonsterSpawn` draws its chance from the damage dealt. 78 encounters
+validate, 72 manifests resolve fully; the census rises from 1,511 to 1,517.

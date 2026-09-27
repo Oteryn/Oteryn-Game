@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-npc-promotion-candidates
 title: NPC promotion candidates with native keys and Item join; WorldProject/v2 NPC admission route (D4-D7)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
@@ -13,7 +13,7 @@ pr: 983
 jira: KAN-16
 base_sha: ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c
 head_sha: null
-final_head_sha: null
+final_head_sha: 3f29e7d9384b3e21b27032aaf8bdfbc27dae5a09
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-27

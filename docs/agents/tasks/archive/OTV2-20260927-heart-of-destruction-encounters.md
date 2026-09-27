@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-heart-of-destruction-encounters
 title: Heart of Destruction boss encounters (ninth encounter slice)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1011
 jira: KAN-16
 base_sha: 3c9aef87a4dff22b9a8308d82a55f5bfe8469bf6
-head_sha: null
-final_head_sha: null
+head_sha: 343bdbc5e24b64daf3b603361ce5c3bcdc27736b
+final_head_sha: 343bdbc5e24b64daf3b603361ce5c3bcdc27736b
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -65,3 +65,8 @@ authority or persisted-recovery evidence is touched.
 - `population_census.py` reports 1,498 resolved, 152 blocked and 6 not converted.
 - All eleven scripts are byte-identical in Crystal (D30).
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1011 (`420bdf0d4a0940e1417eab8b352ed65b62420c28`) from final head `343bdbc`; required checks passed on that head.
+Owner released.

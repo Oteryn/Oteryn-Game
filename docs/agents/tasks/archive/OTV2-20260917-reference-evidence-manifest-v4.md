@@ -4,24 +4,25 @@
 task_id: OTV2-20260917-reference-evidence-manifest-v4
 title: Register bounded Reference evidence manifest revision 4
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/reference-manifest-v4-514
 issue: 514
 pr: 640
 base_sha: 0e48ae518842fafc8b9e0867eb8ce041dc1a4332
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 8606227ff45cebcef7b9ea64a47ba9dbc49e1a2b
+final_head_sha: 8606227ff45cebcef7b9ea64a47ba9dbc49e1a2b
+final_head_frozen_at: 2026-09-27T18:41:16Z
+completed_at: 2026-09-27T19:08:11Z
 owner: REFERENCE_MANIFEST_V4_514
 created_at: 2026-09-17T07:14:16Z
-updated_at: 2026-09-27T18:39:00Z
+updated_at: 2026-09-27T19:08:55Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
   - docs/agents/evidence/OTV2-20260917-reference-manifest-v4-source-packet.md
-  - docs/agents/tasks/active/OTV2-20260917-reference-evidence-manifest-v4.md
+  - docs/agents/tasks/archive/OTV2-20260917-reference-evidence-manifest-v4.md
 public_contracts:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
 depends_on:
@@ -65,7 +66,7 @@ Advance the accepted Reference evidence/parity registry exactly once from manife
 - [x] Every declared difference names the accepted Oteryn Reference death contract and the declared-difference case is scoped only to progression loss.
 - [x] Public-safe source packet records exact locators/source types, explicit unique evidence anchors, truthful date/timestamp precision, provenance/legal dispositions, and uncertainty.
 - [x] Exact repaired manifest/source generation passes pinned SourceMeta schema validation, JSON parse, semantic invariants, and diff checks; successor repository governance remains exact-head gated.
-- [ ] Exact-head hosted CI and whole-diff review complete with zero unresolved material threads.
+- [x] Exact-head hosted CI and whole-diff review complete with zero unresolved material threads.
 
 ## Excluded scope
 
@@ -88,7 +89,7 @@ Schema mutation/versioning; runtime/client/server/Content/Cargo/workflow/registr
 
 ### Focused
 
-Exact reconciled predecessor `3708e5b01d06d083e2eb7ff12a6ca3514dc96414` passed pinned SourceMeta Draft 2020-12 metaschema/instance validation on exact Git blobs, JSON parse, semantic invariants, LF/no-CR byte checks and `git diff --check`. The task-checkpoint repair changes no manifest, schema or source-packet byte; its successor still requires fresh exact-head repository governance, hosted CI and independent review.
+Exact reconciled predecessor `3708e5b01d06d083e2eb7ff12a6ca3514dc96414` passed pinned SourceMeta Draft 2020-12 metaschema/instance validation on exact Git blobs, JSON parse, semantic invariants, LF/no-CR byte checks and `git diff --check`. The task-checkpoint repair changed no manifest, schema or source-packet byte. At that predecessor stage, successor qualification remained pending; the terminal exact-head governance, hosted CI and independent-review results for the successor are recorded below.
 
 Required fresh checks for the resulting exact PR head:
 
@@ -111,57 +112,63 @@ Required fresh checks for the resulting exact PR head:
 
 ### Exact-head CI
 
-- final head: authoritative in live PR #640 and the corresponding #162 freeze comment after publication; intentionally not self-referential here
-- trigger source: PR branch mutation or metadata event as recorded by GitHub
-- workflow/run/job: authoritative in live exact-head checks
-- runner assignment: authoritative in live exact-head checks
-- classification: authoritative in live exact-head checks
-- result: pending successor qualification at task-checkpoint authoring time; use live checks for current status
+- source head/tree: `8606227ff45cebcef7b9ea64a47ba9dbc49e1a2b` / `55f47fd0edacbd96e9d773e66e814ee60cf8aff3`
+- freeze record: #162 comment `5858656767`, 2026-09-27T18:41:16Z
+- PR Merge Gate: run `36341598597`, `SUCCESS`
+- canonical PR aggregate: `game-gate` job `108685105199`, `SUCCESS`
+- Agent Governance, Architecture Semantic Audit, routing, supply-chain, exact-head Rust workspace and required aggregate checks all passed for the frozen source head.
 
 ## Self-review
 
-- exact head: authoritative in live PR #640 and the corresponding #162 freeze comment after publication
+- exact source head: `8606227ff45cebcef7b9ea64a47ba9dbc49e1a2b`
 - method/reviewer: whole diff against #162 allocation, manifest owner pin, schema-v1 contract, and independent-review findings
 - material findings closed before the next freeze: progression-scope P1; artifact-anchor P2; retrieval-time P2; lifecycle-generation P2; missing death-continuity source P1; unsupported Goblin target continuity P1; stale checkpoint P2
-- verdict: pending fresh exact-head review of the successor containing this checkpoint repair
+- verdict: PASS; final exact-head review reported no remaining P0/P1/P2/P3 findings
 
 ## Independent review
 
 - required: YES; allocation requires fresh whole-diff evidence/architecture review on every exact successor head
-- exact head: authoritative in live PR #640 and the corresponding #162 freeze comment after publication
-- method/auditor: repository PR review/check surface
-- material findings: prior generation findings are stale after repair
-- verdict: pending
+- exact source head/tree/base: `8606227ff45cebcef7b9ea64a47ba9dbc49e1a2b` / `55f47fd0edacbd96e9d773e66e814ee60cf8aff3` / `0e48ae518842fafc8b9e0867eb8ce041dc1a4332`
+- method/auditor: fresh GPT-6 Luna whole-diff evidence, provenance and lifecycle review recorded in PR #640 comment `5858678503`
+- findings: P0=0, P1=0, P2=0, P3=0; unresolved material review threads=0
+- verdict: PASS
 
 ## PR and closeout
 
-- changed-file review: exactly the three allocated paths; pending exact-head readback
-- unresolved review threads: prior threads must be resolved only after exact-head evidence proves their findings repaired
-- related/superseded PRs: PR #640 is the one existing PR for this branch
-- protected auto-merge: forbidden by this task; return `READY_FOR_INTEGRATION`
-- merge commit/result: not requested
-- ownership release: pending integration control-plane handoff
+- changed-file review: exactly the three allocated R7 evidence/task paths, 906 additions / 5 deletions; no Combat, Server Seam, Movement, native-room, loot-runtime, DUR-03, protocol, client, SQL or production path
+- unresolved review threads: 0
+- governed Merge Queue request: META #196 comment `5858775752`
+- executor run: `36342554687`; receipt/readback UUID `d5958fc7-cf85-4e87-8353-f40147ac71cb`, sequence `1 -> 2`, same PR/head/base action confirmed
+- merge-group head/run: `085c75dd64b4053fc99b04d641334217a9d5c2fc` / `36342582695`
+- merge-group aggregate: `game-gate` job `108687254645`, `SUCCESS`
+- merged PR #640: 2026-09-27T19:08:11Z, merge commit `085c75dd64b4053fc99b04d641334217a9d5c2fc`
+- protected `main` readback: commit `085c75dd64b4053fc99b04d641334217a9d5c2fc`, tree `1d49ea879d608282c45f3977887d817381c1ba00`
+- protected blob readback: manifest `7a9119ab29071a1d6e7504af44f09335e9e826eb`; source packet `976ee2328677d3e75c4b4c85a5f94e4aaaaa542c`; source task packet `88301ad968e588c9b67e0ff05d3c6c722a18d58e`
+- terminal integration record: #162 comment `5858873616`
+- ownership release: complete when this archive-only lifecycle move is protected-integrated
 
 ## Context checkpoint
 
 ```yaml
-last_progress: third evidence repair and current-gate reconciliation are complete; this packet routes subsequent exact-head lifecycle state to live PR/check/Issue authority
-status: validating
+last_progress: PR #640 passed exact-head review and CI, entered governed native Merge Queue, passed the real merge-group gate, and was read back byte-exact on protected main
+status: completed
 branch: agent/reference-manifest-v4-514
-head_sha: null  # live PR #640 and #162 freeze comment after publication
+head_sha: 8606227ff45cebcef7b9ea64a47ba9dbc49e1a2b
 pr: 640
-final_head_sha: null  # intentionally not self-referential
-final_head_frozen_at: null  # authoritative in #162 freeze comment
+final_head_sha: 8606227ff45cebcef7b9ea64a47ba9dbc49e1a2b
+final_head_frozen_at: 2026-09-27T18:41:16Z
 ci_trigger_source: live_github_pr_events
-ci_check_generation: live_pr_exact_head
-ci_checks_for_current_head: live_pr_authoritative
+ci_check_generation: exact_source_head_and_merge_group
+ci_checks_for_current_head: success
 ci_run_ids:
-  - live_pr_640
+  - 36341598597
+  - 36342582695
 ci_job_ids:
-  - live_pr_640
-runner_assignment_state: live_pr_authoritative
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: live_pr_authoritative
+  - 108685105199
+  - 108687254645
+runner_assignment_state: completed
+terminal_ci_wait_started_at: 2026-09-27T18:42:23Z
+terminal_ci_checks_for_current_generation: success
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 5
@@ -169,5 +176,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: follow live PR #640 exact-head qualification and independent review through READY_FOR_INTEGRATION; do not amend this packet solely to copy transient SHA/run status
+next_action: none
 ```

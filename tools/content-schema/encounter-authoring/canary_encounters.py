@@ -1155,6 +1155,320 @@ def heart_bosses(build):
 
 
 
+FORGOTTEN = 'data-otservbr-global/scripts/quests/forgotten_knowledge/'
+
+
+def forgotten_knowledge_fights(build):
+    """HealthForgotten, ThornKnightDeath, LloydPrepareDeath and the energy prism events: the fight mechanics of Lady Tenebris,
+    the Thorn Knight and Lloyd."""
+    health = FORGOTTEN + 'creaturescripts_healthchange_forgotten.lua'
+    for encounter, bosses, guard, guard_lines in (
+            ('lady_tenebris', ['Lady Tenebris'], 'Shadow Tentacle', [4, 5, 6, 7, 8, 9, 10, 11]),
+            ('the_enraged_thorn_knight', ['Mounted Thorn Knight', 'The Shielded Thorn Knight', 'The Enraged Thorn Knight'],
+             'Possessed Tree', [12, 13, 14, 15, 16, 17, 18, 19, 20])):
+        item = build.items[encounter]
+        build.participant(item, slug(guard), guard)
+        for boss in bosses:
+            role = slug(boss)
+            build.participant(item, role, boss, 'HealthForgotten')
+            rules = []
+            for source_kind in ('damage_taken', 'heal_received'):
+                rules.append(build.rule(item, {
+                    'key': f'{role}_unguarded_{source_kind}', 'trigger': {'kind': source_kind, 'role': role, 'source': 'any'},
+                    'conditions': [{'kind': 'creature_present', 'role': slug(guard), 'near': {'role': role, 'radius': 7}, 'present': False}],
+                    'actions': [{'kind': 'damage_modifier', 'role': role, 'multiplier_percent': 200, 'component': 'primary', 'sources': 'any',
+                                 'until': 'this_hit'}]}))
+            build.entry(item, health, [1, 2, 3, 21, 22, 23, 25], 'mapped', rules[0],
+                        f'onHealthChange of {boss}: the primary part of every change is doubled (primary + 100/100 * primary).')
+            build.entry(item, health, [1, 2], 'mapped', rules[1],
+                        'The same handler runs for heals (game.cpp combatChangeHealth), so a heal of the boss is doubled too; in a '
+                        'heal_received rule the this_hit modifier scales that heal (D31).')
+            build.entry(item, health, guard_lines, 'mapped', rules[0] + '/conditions/0',
+                        f'Unless a {guard.lower()} stands within 7 tiles on the same floor (getSpectators 7/7/7/7, not multi-floor); '
+                        'the spectator is found by name, which only that creature carries.')
+            build.entry(item, health, guard_lines, 'mapped', rules[1] + '/conditions/0', 'The same guard for heals.')
+
+    # The Thorn Knight dismounts, then loses its shield.
+    item = build.items['the_enraged_thorn_knight']
+    death = FORGOTTEN + 'creaturescripts_thorn_knight_death.lua'
+    build.define(item, creature('Thorn Steed'))
+    for boss, following, extra, lines in (
+            ('Mounted Thorn Knight', 'The Shielded Thorn Knight', True, [13, 14, 15, 16, 18]),
+            ('The Shielded Thorn Knight', 'The Enraged Thorn Knight', False, [19, 20, 22])):
+        role = slug(boss)
+        build.participant(item, role, boss, 'ThornKnightDeath')
+        actions = [{'kind': 'spawn', 'creature': creature(following), 'role': slug(following), 'count': 1, 'at': 'death_position',
+                    'owner': 'none', 'health': 'full'}]
+        if extra:
+            actions = [{'kind': 'say', 'subject': {'role': role}, 'text': 'The thorn knight unmounts!', 'mode': 'say'}, *actions,
+                       {'kind': 'spawn', 'creature': creature('Thorn Steed'), 'count': 1, 'at': 'death_position', 'owner': 'none',
+                        'health': 'full'}]
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': actions})
+        build.entry(item, death, [11, 12, 23, 24, 25, 27] + lines, 'mapped', path,
+                    f'onDeath of {boss.lower()}: {following} appears (forced) where it died'
+                    + (', after its line, with a thorn steed.' if extra else '.'))
+    build.entry(item, death, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 17, 21], 'approved_omission', None,
+                'checkBlood removes the unmovable items (the blood splash) from the death tile 1 ms later; cosmetic.')
+
+    # Lloyd: four times he refocuses on a prism instead of dying; the prism can be killed for 10 s.
+    item = build.items['lloyd']
+    prepare, prism_health, prism_death = (FORGOTTEN + name for name in ('creaturescripts_lloyd_preparedeath.lua',
+                                                                        'creaturescripts_energy_prism.lua',
+                                                                        'creaturescripts_energy_prism_death.lua'))
+    spots = [('a', 32801, 32827, 2), ('b', 32798, 32827, 3), ('c', 32803, 32826, 4), ('d', 32796, 32826, 5)]
+    item['encounter']['anchors'] += [
+        {'key': 'lloyd_center', 'kind': 'point', 'description': 'Canary (32799, 32826, 14), between the four prisms.'},
+        {'key': 'lloyd_center_tile', 'kind': 'area', 'description': 'Exactly the one tile Canary (32799, 32826, 14).'},
+        {'key': 'lloyd_return', 'kind': 'point', 'description': 'Canary (32799, 32829, 14).'}]
+    item['encounter']['anchors'] += [{'key': f'prism_spot_{letter}', 'kind': 'point', 'description': f'Canary ({x}, {y}, 14).'}
+                                     for letter, x, y, _ in spots]
+    item['encounter']['state']['counters'].append({'name': 'prisms_destroyed', 'initial': 0})
+    item['encounter']['state']['timers'].append({'name': 'lloyd_refocus', 'duration_ms': 10000, 'repeat': False})
+    build.entry(item, prepare, [32, 33, 34, 35, 36, 37, 38], 'mapped', '/encounter/state/counters/0',
+                'prismCount is 1 plus the prism tiles left empty: the prisms killed so far. The lever places the four invulnerable '
+                'prisms.')
+    build.participant(item, 'lloyd', 'Lloyd', 'LloydPrepareDeath')
+    for index, (letter, x, y, line) in enumerate(spots):
+        prism, invulnerable = f'cosmic_energy_prism_{letter}', f'cosmic_energy_prism_{letter}_invu'
+        build.participant(item, invulnerable, f'Cosmic Energy Prism {letter.upper()} Invu')
+        path = build.rule(item, {
+            'key': f'lloyd_refocuses_on_prism_{letter}', 'trigger': {'kind': 'lethal_damage', 'role': 'lloyd'},
+            'conditions': [{'kind': 'counter_compare', 'counter': 'prisms_destroyed', 'op': '==', 'value': index}],
+            'actions': [{'kind': 'prevent_death', 'role': 'lloyd'}, {'kind': 'remove', 'role': invulnerable},
+                        {'kind': 'spawn', 'creature': creature(f'Cosmic Energy Prism {letter.upper()}'), 'role': prism, 'count': 1,
+                         'at': {'anchor': f'prism_spot_{letter}'}, 'owner': 'none', 'health': 'full'},
+                        {'kind': 'teleport', 'who': {'role': 'lloyd'}, 'to': 'lloyd_center'},
+                        {'kind': 'heal', 'subject': {'role': 'lloyd'}, 'amount': 'full'},
+                        {'kind': 'say', 'subject': {'role': 'lloyd'}, 'text': 'The cosmic energies in the chamber refocus on Lloyd.',
+                         'mode': 'say'},
+                        {'kind': 'timer', 'timer': 'lloyd_refocus', 'operation': 'start'}]})
+        build.entry(item, prepare, [1, line, 6, 30, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 57], 'mapped', path,
+                    f'onPrepareDeath with {index} prisms killed: the invulnerable prism {letter.upper()} becomes the normal one, '
+                    'Lloyd is teleported between the prisms and healed by 300000 (more than his 64000 health) and says his line; '
+                    'the revert follows 10 s later.')
+        path = build.rule(item, {
+            'key': f'lloyd_returns_from_prism_{letter}', 'trigger': {'kind': 'timer_elapsed', 'timer': 'lloyd_refocus'},
+            'conditions': [{'kind': 'counter_compare', 'counter': 'prisms_destroyed', 'op': '==', 'value': index}],
+            'actions': [{'kind': 'teleport', 'who': {'role': 'lloyd'}, 'to': 'lloyd_return'}, {'kind': 'remove', 'role': prism},
+                        {'kind': 'spawn', 'creature': creature(f'Cosmic Energy Prism {letter.upper()} Invu'), 'role': invulnerable,
+                         'count': 1, 'at': {'anchor': f'prism_spot_{letter}'}, 'owner': 'none', 'health': 'full'}]})
+        build.entry(item, prepare, [8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28], 'mapped', path,
+                    f'revertLloyd: Lloyd (the creature on the centre tile) goes back to (32799, 32829, 14) and prism {letter.upper()} '
+                    'becomes invulnerable again.')
+        build.participant(item, prism, f'Cosmic Energy Prism {letter.upper()}', 'EnergyPrismDeath')
+        path = build.rule(item, {'key': f'prism_{letter}_death', 'trigger': {'kind': 'creature_died', 'role': prism}, 'conditions': [],
+                                 'actions': [{'kind': 'timer', 'timer': 'lloyd_refocus', 'operation': 'stop'},
+                                             {'kind': 'counter', 'counter': 'prisms_destroyed', 'operation': 'add', 'value': 1},
+                                             {'kind': 'teleport', 'who': {'role': 'lloyd'}, 'to': 'lloyd_return'}]})
+        build.entry(item, prism_death, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 16], 'mapped', path,
+                    'onDeath of the prism: the revert is cancelled and Lloyd goes back to (32799, 32829, 14); the empty tile counts '
+                    'as a killed prism.')
+        build.participant(item, prism, f'Cosmic Energy Prism {letter.upper()}', 'EnergyPrismHealthChange')
+        rules = []
+        for source_kind in ('damage_taken', 'heal_received'):
+            rules.append(build.rule(item, {
+                'key': f'prism_{letter}_recharges_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': prism, 'source': 'any'},
+                'conditions': [{'kind': 'creature_present', 'role': 'lloyd', 'anchor': 'lloyd_center_tile', 'present': False},
+                               {'kind': 'health_percent', 'role': prism, 'op': '<', 'value': 100}],
+                'actions': [{'kind': 'say', 'subject': {'role': prism}, 'text': '*zap!*', 'mode': 'say'},
+                            {'kind': 'heal', 'subject': {'role': prism}, 'amount': 10000}]}))
+        build.entry(item, prism_health, [1, 2, 4, 5, 7, 8, 9, 10, 11, 13], 'mapped', rules[0],
+                    'onHealthChange of the prism, read before the change: when not at full health it says "*zap!*" and heals 10000 '
+                    '(ten times its 1000 health).')
+        build.entry(item, prism_health, [1, 2], 'mapped', rules[1], 'The same handler for heals.')
+        build.entry(item, prism_health, [3], 'mapped', rules[0] + '/conditions/0',
+                    'Only while the centre tile is empty. The creature there is Lloyd: his wiki page (2026-07-28) says a prism can only '
+                    'be killed after he teleports between them (D29, D25).')
+        build.entry(item, prism_health, [6], 'approved_omission', None, 'The energy hit effect is cosmetic.')
+    build.entry(item, prepare, [14, 49], 'approved_omission', None, 'The teleport effects are cosmetic.')
+    build.entry(item, prism_death, [11], 'approved_omission', None, 'The teleport effect is cosmetic.')
+
+
+
+ASURAS = 'data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/creaturescripts_asuras_mechanic.lua'
+ASURA_RED_ARMORS = [3566, 3379, 3388, 8039, 8053, 8064, 22534, 3381, 7991, 3380, 10439, 3564]
+FACELESS = 'data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_facelessBane.lua'
+
+
+def eleventh_slice(build):
+    """facelessHealth (Alptramun, Plagueroot), AsurasMechanic and GreedMonsterDeath."""
+    for boss, damage_type, lines in (('Alptramun', 'death', [48, 49, 50, 51, 52]), ('Plagueroot', 'earth', [55, 56, 57, 58, 59])):
+        role = slug(boss)
+        item = build.items[role]
+        build.participant(item, role, boss, 'facelessHealth')
+        rules = []
+        for source_kind in ('damage_taken', 'heal_received'):
+            rules.append(build.rule(item, {
+                'key': f'{role}_absorbs_{damage_type}_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': role, 'source': 'any'},
+                'conditions': [], 'actions': [{'kind': 'convert_damage_to_heal', 'role': role, 'damage_types': [damage_type],
+                                               'component': 'primary'}]}))
+        build.entry(item, FACELESS, [36, 37, 38, 39, 40, 41, 42, 60, 61, 62, 63, 65] + lines, 'mapped', rules[0],
+                    f'onHealthChange of {boss}: primary {damage_type} damage heals it by that amount and deals none; the secondary '
+                    'part is unchanged.')
+        build.entry(item, FACELESS, [36, 37, 38], 'mapped', rules[1],
+                    'The same handler for heals; a heal is never typed as damage, so it passes unchanged.')
+
+    # The three Asura queens take damage only from a player carrying their counter.
+    names = {'The Diamond Blossom': 'the_diamond_blossom', 'The Blazing Rose': 'the_blazing_rose', 'The Lily of Night': 'the_lily_of_night'}
+    armors = [ref('Item', f'canary:item/{item_id}') for item_id in ASURA_RED_ARMORS]
+    chimes = ref('Item', 'canary:item/28494')
+    counters = {
+        'The Diamond Blossom': ([{'kind': 'attacker_wears', 'item': armor, 'wears': False, 'slot': 'armor'} for armor in armors],
+                                [24, 25, 26, 27, 28, 29, 30, 31, 32, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                                'a player without one of the twelve red armours in the armour slot (red robe, doublet, demon armor, '
+                                'dragon robe, fireborn giant armor, ethno coat, firemind raiment, crown armor, magician\'s robe, '
+                                'noble armor, Zaoan robe, red tunic)'),
+        'The Blazing Rose': ([{'kind': 'attacker_wears', 'item': chimes, 'wears': False, 'slot': 'right_hand'}],
+                             [33, 34, 35, 36, 37], 'a player without silver chimes (28494) in the right hand'),
+        'The Lily of Night': ([{'kind': 'killer_progress', 'progress': 'canary:quest-progress/secret_library_asura_fragrance',
+                                'op': '==', 'value': True}], [38, 39, 40, 41, 42],
+                              'a player whose fragrance has run out')}
+    for boss, (conditions, lines, who) in counters.items():
+        role = names[boss]
+        item = build.get(role, f'The Secret Library: {boss}', 'instance_per_party')
+        build.participant(item, role, boss, 'AsurasMechanic')
+        if boss == 'The Diamond Blossom':
+            for armor in armors:
+                build.define(item, armor)
+        elif boss == 'The Blazing Rose':
+            build.define(item, chimes)
+        else:
+            # The fragrance is the only condition, so the rule acts when it is absent.
+            conditions = [{**conditions[0], 'value': False}]
+        immune = [{'kind': 'damage_modifier', 'role': role, 'multiplier_percent': 0, 'sources': 'any', 'until': 'this_hit'}]
+        first = None
+        for source_kind in ('damage_taken', 'heal_received'):
+            path = build.rule(item, {'key': f'{role}_ignores_{source_kind}_from_unprepared_players',
+                                     'trigger': {'kind': source_kind, 'role': role, 'source': 'player'},
+                                     'conditions': conditions, 'actions': immune})
+            build.entry(item, ASURAS, [16, 17, 18, 19, 20, 21, 22, 23, 43, 44, 45, 46, 47, 48, 50] + lines, 'mapped', path,
+                        f'onHealthChange of {boss}: a {"hit" if source_kind == "damage_taken" else "heal"} by {who} is zeroed, '
+                        'both parts' + ('; Canary runs the handler for heals too, with the healer as attacker.'
+                                        if source_kind == 'heal_received' else '.'))
+            first = first or path
+            path = build.rule(item, {'key': f'{role}_ignores_{source_kind}_from_creatures',
+                                     'trigger': {'kind': source_kind, 'role': role, 'source': 'non_player'},
+                                     'conditions': [], 'actions': immune})
+            build.entry(item, ASURAS, [18, 19, 20, 21, 23, 43, 45, 46, 47, 48], 'mapped', path,
+                        'A change by any other creature (a summon, a monster) is zeroed too; one without an attacker passes.')
+        if boss == 'The Lily of Night':
+            build.entry(item, ASURAS, [39], 'mapped', first + '/conditions/0',
+                        'Storage Asuras.Fragrance holds the end of the fragrance (actions_fragrance.lua: now + 10 minutes); the '
+                        'quest domain publishes whether it is still active, read-only (D27).')
+
+    # Goshnar's Greed: each greed creature returns 10 s after its death; greedbeast deaths feed the boss's immunity.
+    item = build.get('goshnars_greed', "Soul War: Goshnar's Greed", 'instance_per_party')
+    positions = {'Greedbeast': (33744, 31666), 'Soulsnatcher': (33747, 31668), 'Weak Soul': (33750, 31666),
+                 'Strong Soul': (33750, 31666), 'Powerful Soul': (33750, 31666)}
+    item['encounter']['state']['counters'].append({'name': 'greedbeast_kills', 'initial': 0})
+    build.entry(item, SOUL_WAR_LIB, [885], 'mapped', '/encounter/state/counters/0',
+                "GreedbeastKills starts at 0; goshnars_greed.lua reads and resets it (transcribed with Goshnar's Greed).")
+    for name, (x, y) in positions.items():
+        role = slug(name)
+        anchor = f'{role}_return'
+        item['encounter']['anchors'].append({'key': anchor, 'kind': 'point', 'description': f'Canary ({x}, {y}, 14).'})
+        build.participant(item, role, name, 'GreedMonsterDeath')
+        if name == 'Greedbeast':
+            path = build.rule(item, {'key': 'greedbeast_killed', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                     'actions': [{'kind': 'counter', 'counter': 'greedbeast_kills', 'operation': 'add', 'value': 1}]})
+            build.entry(item, SOUL_WAR_MECHANICS, [196, 198, 200, 201, 202, 205, 207], 'mapped', path,
+                        'onDeath of a greedbeast raises GreedbeastKills.')
+        path = build.rule(item, {'key': f'{role}_returns', 'trigger': {'kind': 'creature_died', 'role': role}, 'delay_ms': 10000,
+                                 'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature(name), 'role': role, 'count': 1,
+                                                                'at': {'anchor': anchor}, 'owner': 'none', 'health': 'full'}]})
+        build.entry(item, SOUL_WAR_MECHANICS, [196, 198, 199, 204, 205, 207], 'mapped', path,
+                    f'onDeath: CreateGoshnarsGreedMonster brings a new {name.lower()} to its fixed tile 10 s later.')
+        build.entry(item, SOUL_WAR_LIB, [905, 906, 907, 908, 909, 910, 911, 913, 918, 919, 920, 921, 927, 928], 'mapped', path + '/actions/0',
+                    f'GreedMonsters places the {name.lower()} on ({x}, {y}, 14); createMonster(name, position, true, false) '
+                    'is extended, not forced.')
+    build.entry(item, SOUL_WAR_LIB, [914, 915, 916, 923, 924, 925], 'approved_omission', None,
+                'The teleport effects at 7, 8 and 9 s are cosmetic.')
+
+
+
+def heart_minion_forms(build):
+    """DisruptionTransform, ChargedDisruptionTransform, CracklerTransform and DepolarizedTransform: minions that change form
+    after a number of thinks, or while the crackler room is polarized."""
+    item = build.items['world_devourer']
+    for minion, following, event, script, seconds, lines in (
+            ('Disruption', 'Charged Disruption', 'DisruptionTransform', 'creaturescripts_disruption_transform.lua', 12,
+             [1, 2, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 30]),
+            ('Charged Disruption', 'Overcharged Disruption', 'ChargedDisruptionTransform',
+             'creaturescripts_charged_disruption_transform.lua', 18,
+             [1, 2, 4, 5, 6, 7, 9, 10, 12, 13, 14, 15, 17, 18, 19, 20, 21, 22, 23, 25, 26, 27, 28, 30])):
+        role = slug(minion)
+        build.participant(item, role, minion, event)
+        build.define(item, creature(following))
+        path = build.rule(item, {'key': f'{role}_charges', 'trigger': {'kind': 'creature_spawned', 'role': role},
+                                 'delay_ms': {'min': seconds * 1000, 'max': seconds * 1000 + 1000}, 'conditions': [],
+                                 'actions': [{'kind': 'transform', 'role': role, 'into': creature(following), 'health': 'full'}]})
+        build.entry(item, HEART + script, lines, 'mapped', path,
+                    f'onThink counts the thinks of each {minion.lower()} (one per second); the first think records 1 and at '
+                    f'{seconds} a fresh {following.lower()} replaces it on its tile. The first think falls within the first second, '
+                    f'so the change comes {seconds}-{seconds + 1} s after the {minion.lower()} appears.')
+
+    # Cracklers: the room's polarization is read on every think.
+    item = build.get('heart_cracklers', 'Heart of Destruction: crackler room', 'instance_per_party')
+    state = item['encounter']['state']
+    state['flags'].append({'name': 'room_polarized', 'initial': False})
+    state['timers'].append({'name': 'crackler_think', 'duration_ms': 1000, 'repeat': True})
+    lever = HEART + 'actions_cracklers_lever.lua'
+    build.entry(item, lever, [125], 'mapped', '/encounter/state/flags/0',
+                'The lever and every new vortex pattern clear cracklerTransform. movements_vortex_crackler.lua sets it while '
+                'players hold all four vortex tiles of the current pattern and clears it when one steps off; that stepped-on '
+                'mechanic is transcribed with the room (D31 adds no stepped-on trigger yet).')
+    path = build.rule(item, {'key': 'crackler_think_starts', 'trigger': {'kind': 'encounter_started'}, 'conditions': [],
+                             'actions': [{'kind': 'timer', 'timer': 'crackler_think', 'operation': 'start'}]})
+    build.entry(item, lever, [125], 'mapped', path, 'Creature thinks run once per second for the whole fight.')
+    for minion, following, event, script, value, lines in (
+            ('Crackler', 'Depolarized Crackler', 'CracklerTransform', 'creaturescripts_crackler_transform.lua', True,
+             [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 16]),
+            ('Depolarized Crackler', 'Crackler', 'DepolarizedTransform', 'creaturescripts_depolarized_transform.lua', False,
+             [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 15])):
+        role = slug(minion)
+        build.participant(item, role, minion, event)
+        build.define(item, creature(following))
+        path = build.rule(item, {'key': f'{role}_turns', 'trigger': {'kind': 'timer_elapsed', 'timer': 'crackler_think'},
+                                 'conditions': [{'kind': 'flag', 'flag': 'room_polarized', 'value': value}],
+                                 'actions': [{'kind': 'transform', 'role': role, 'into': creature(following), 'health': 'keep_absolute'}]})
+        build.entry(item, HEART + script, lines, 'mapped', path,
+                    f'onThink: while cracklerTransform is {str(value).lower()}, every {minion.lower()} is replaced on its tile by a '
+                    f'{following.lower()} with the same health.')
+
+
+def replica_servants(build):
+    """ReplicaServantDeath: each golden or diamond servant replica counts for the world and for its top damage dealer."""
+    path_ = FORGOTTEN + 'creaturescripts_replica_servants.lua'
+    item = build.get('replica_servants', 'Forgotten Knowledge: servant replicas', 'channel_shared')
+    for servant, storage, counter, config in (('Golden Servant Replica', 'GoldenServant', 'GoldenServantCounter', [2, 3, 4, 5]),
+                                               ('Diamond Servant Replica', 'DiamondServant', 'DiamondServantCounter', [6, 7, 8, 9])):
+        role = slug(servant)
+        outcome = f'{role}_defeated'
+        build.participant(item, role, servant, 'ReplicaServantDeath')
+        item['encounter']['outcomes'].append(outcome)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'emit_outcome', 'outcome': outcome, 'credited': 'damage_contributors'}]})
+        build.entry(item, path_, [1, 10, 11, 12, 13, 14, 15, 16, 37, 38, 40] + config, 'mapped', path + '/trigger',
+                    f'onDeath of a {servant.lower()}.')
+        build.entry(item, path_, [18, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36], 'mapped',
+                    path + '/actions/0',
+                    f'The quest domain raises the world count ForgottenKnowledge.{storage}, opens the teleport (item 10840, action '
+                    '26665) on (32815, 32870, 13) once both world counts reach 5, and raises '
+                    f'ForgottenKnowledge.{counter} of the top damage dealer (D27).')
+        item['manifest']['outcome_evidence'].append({
+            'outcome': outcome, 'credited': 'damage_contributors',
+            'quest_domain': {'world_counter': f'Storage.Quest.U11_02.ForgottenKnowledge.{storage}',
+                             'player_counter': f'Storage.Quest.U11_02.ForgottenKnowledge.{counter}',
+                             'player': 'the top damage contributor (Canary mostDamageKiller)',
+                             'teleport': 'item 10840 with action id 26665 on Canary (32815, 32870, 13) once GoldenServant and '
+                                         'DiamondServant both reach 5'}})
+    build.entry(item, path_, [17, 19], 'approved_omission', None,
+                'The guard compares the storage key, not its value, with 0, so it never runs; the world count starts at 0 in the '
+                'quest domain.')
+
+
+
 def small_boss_events(build):
     """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
     glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
@@ -1970,7 +2284,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants):
         transcribe(build)
     print(json.dumps(build.write()))
 

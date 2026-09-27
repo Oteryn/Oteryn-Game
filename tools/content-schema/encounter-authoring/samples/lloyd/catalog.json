@@ -4,6 +4,46 @@
       "family": "Creature",
       "key": "canary:creature/lloyd",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cosmic_energy_prism_a_invu",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cosmic_energy_prism_a",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cosmic_energy_prism_b_invu",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cosmic_energy_prism_b",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cosmic_energy_prism_c_invu",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cosmic_energy_prism_c",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cosmic_energy_prism_d_invu",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/cosmic_energy_prism_d",
+      "revision": "canary-47dfd51f"
     }
   ]
 }
