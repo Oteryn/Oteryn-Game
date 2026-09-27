@@ -258,3 +258,13 @@ A fourth slice:
 
 50 encounters validate, 45 manifests resolve fully, `verify_encounter_schema.py` 45/45; the census rises
 from 1,427 to 1,442.
+
+A fifth slice uses the D29 vocabulary:
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `UrmahlulluChanges` | 1 | 4 | Canary changes forms at thresholds of one 512000-health scale and reverts a form after 60 s. The wiki gives each form its own health and describes five consecutive kills, so each form becomes the next on its lethal hit (D15, D25). |
+| `dreamCourtsDeath` (Alptramun) | 1 | 5 | Unmastered dream deaths raise the dream counter in bands of nine; Alptramun's death resets it. The escalation spell that reads the counter is never cast by any Canary monster; the wiki says killed summons are replaced by stronger ones without numbers, so that ability stays unresolved. |
+| `mType.onSpawn` (Splinters of Madness) | 1 | 2 | Each stage grows into the next after 120 s (`creature_spawned` + `delay_ms`). Canary never lets a grown splinter grow again; the wiki says they do (D25). The mighty splinter's absorption into the boss stays unresolved. |
+
+Inline callbacks covered by an encounter manifest are relocated by the monster converter like events.
