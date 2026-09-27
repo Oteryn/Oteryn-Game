@@ -11,12 +11,12 @@ branch: codex/r7-p03-character-xp-commit
 issue: 162
 pr: 998
 base_sha: 5ecf841c7b849a252ec239226361e6e76ac05239
-head_sha: 18d50d1fc7da667ed2422af6f9490703fbf4d8da
+head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: /root
 created_at: 2026-09-27T14:25:00Z
-updated_at: 2026-09-27T16:22:30Z
+updated_at: 2026-09-27T16:29:46Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_progression.rs
@@ -224,8 +224,8 @@ previously unseen occurrence.
 - required: YES; durable Character mutation and recovery/session fencing
 - exact head: pending remote freeze
 - method/auditor: independent GPT-6 Luna subagent
-- material findings: earlier P2 terminal-session coverage gap fixed; `18d50d1f`
-  review found readiness was not republished after assignment, fixed in AUTHORING
+- material findings: terminal-session coverage and post-assignment readiness fixed;
+  review of `32294d77` found a stale task-packet head pointer, removed in AUTHORING
 - verdict: pending
 
 ## PR and closeout
@@ -240,10 +240,10 @@ previously unseen occurrence.
 ## Context checkpoint
 
 ```yaml
-last_progress: removed the raw Runtime guard and now assign then publish holder readiness through production APIs
+last_progress: removed stale candidate pointer; next exact SHA will be bound externally after this metadata commit
 status: implementing
 branch: codex/r7-p03-character-xp-commit
-head_sha: 18d50d1fc7da667ed2422af6f9490703fbf4d8da
+head_sha: null
 pr: 998
 final_head_sha: null
 final_head_frozen_at: null
@@ -257,8 +257,8 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 6
-ci_recovery_actions_for_current_head: 4
+repair_cycles_for_current_gate: 7
+ci_recovery_actions_for_current_head: 5
 stall_warnings: 0
 owner_action_required: null
 blocker: null
