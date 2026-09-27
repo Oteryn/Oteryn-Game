@@ -16,18 +16,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        361,
-        "33f167c3e20e6f745347998b8baccd66720f4f3078d0455d16e6ccebb347a5ad",
+        364,
+        "1f43d0c26a74f56e8b52e6039864d2fd8d2de1bcd33ecb95b79908829dac170e",
     ),
     (
         "definitions/declarations.json",
-        9_051_929,
-        "83161d824972d121b489f62773b9366e9f0b63147dc23a094ad64be8b9e5c6fc",
+        11_979_084,
+        "91db0875c0a0c0c1321267c58bcceefd7f3cc2aa60e067ca924c9d7430cee188",
     ),
     (
         "definitions/reference.json",
-        13_518_292,
-        "92fbd4f6f5c90e567ebec5a13bbc53e5b5325f34edaaac6ed92a8ea1e3839476",
+        13_814_218,
+        "9d36eb6ca8efddba0bdca93dd49ee42a13147b3e13ef79487b166657d5520859",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1933,
-        "51b9d7f446a0038f81ad6aa339a4475bac32e2d74b14af28edce7a4b519bbbb9",
+        1936,
+        "79fe31c21ee5e8b4eafdda4447c1601337136626242d03e516b0ab929960e044",
     ),
     (
         "presentations/bindings.json",
@@ -46,18 +46,18 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        389,
-        "59a549bc66a5548b9f552595d02ee2fcd0848925ffbc32882e38df8cc7076ecd",
+        390,
+        "308454bfbbb87d4f351b96514d6633cf1a37f99c053e670a78b0188329845a3c",
     ),
     (
         "provenance/imports.json",
-        3835,
-        "b42b71f6ae2fdb8d638eee30419e24d66a86430db5a6974b504d99bdf905c108",
+        3836,
+        "d3228707b332dc8ded1f768ff0d774ad86e9fe86234dd96ab7f7598be19a8d00",
     ),
     (
         "provenance/sources.json",
-        600_342,
-        "b5c24d906fa21c1d3766d0d639699a3c8ac8b06d60de06ff9de169b13ade297c",
+        1_144_933,
+        "bc134c471ca2dcdb0be9799e46f1797fed3062bdd0651a48d73fc1d0c3b9747a",
     ),
     (
         "worlds/world.json",
@@ -84,18 +84,18 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "87df8c92ee46ddc9c168880078465050b1eb0f39c079509973a9101f12d7c639";
+const TREE_SHA256: &str = "3ee13eab6ef9794c95cb8a22bcab1517f5e916dd572430b5a5226b240e5b6735";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
 const CREATURES: usize = 1316;
 const CREATURE_RECORDS: usize = 18299;
 const CREATURE_PROFILES: usize = 17333;
-/// NPC admission pilot (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 3).
-const NPCS: usize = 20;
-const NPC_RECORDS: usize = 40;
-const NPC_DECLARATIONS: usize = 26;
-const NPC_BINDINGS: usize = 44;
+/// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
+const NPCS: usize = 983;
+const NPC_RECORDS: usize = 1966;
+const NPC_DECLARATIONS: usize = 1325;
+const NPC_BINDINGS: usize = 2035;
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -273,7 +273,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-pilot-r1");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r1");
     assert_eq!(project.imports().len(), 6);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -448,7 +448,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[4].sha256, mount_import.source_artifact_sha256);
     assert_eq!(v2.sources[4].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[5];
-    assert_eq!(npc_import.batch_id, "g4-npc-pilot-tibiawiki-r1");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r1");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[5].key, v2.sources[2].key);
     assert_eq!(v2.sources[5].import_batch_id, npc_import.batch_id);

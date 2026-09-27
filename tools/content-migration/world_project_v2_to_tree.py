@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 ITEM_SHARD_SIZE = 500
 ADMISSION_MAIN = "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c"
-REVISION = "tree-creature-wave-a-r1"
+REVISION = "tree-npc-wave-a-r1"
 FIELD_CENSUS = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enrichment-wave1-staged.json"
 # Creature admission families (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1): family -> (tree node, shard stem).
@@ -25,6 +25,11 @@ CREATURE_FAMILIES = {
     "Ability": ("content/abilities/definitions/", "abilities"),
     "Effect": ("content/abilities/effects/", "effects"),
     "Formula": ("content/abilities/formulas/", "formulas"),
+}
+# Service declaration shard families (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1): tree family -> (node, shard stem, discriminating field).
+SERVICE_FAMILIES = {
+    "Service.Trade": ("content/services/trade/", "trade", "offers"),
+    "Service.Travel": ("content/services/travel/", "travel", "routes"),
 }
 # Canonical capability relations: a known typed fact names the ruleset that governs it.
 CAPABILITY_RULES = (
@@ -104,6 +109,8 @@ def main() -> int:
             "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
             "records": rows,
         })
+
+    declarations_blob_sha = git_blob_sha(LEGACY / "definitions" / "declarations.json")
 
     mount_declarations = [row for row in declarations["records"] if row.get("kind") == "Mount"]
     if len(mount_declarations) != 252:
@@ -258,17 +265,98 @@ def main() -> int:
         "shards": [mount_relative],
         "legacy_source": {
             "path": "content/world/definitions/declarations.json",
-            "git_blob_sha": git_blob_sha(LEGACY / "definitions" / "declarations.json"),
+            "git_blob_sha": declarations_blob_sha,
             "schema": declarations["schema"],
         },
         "attached_editor_entries": sum(row["target"]["family"] == "Mount" for row in editor["entries"]),
         "attached_source_bindings": len(mount_bindings),
     })
 
+    npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
+    if len(npc_declarations) != 983:
+        raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
+
+    npc_rows = []
+    for declaration in npc_declarations:
+        target = {"family": "NPC", "key": declaration["identity"]["key"], "revision": declaration["identity"]["revision"]}
+        key = target_id(target)
+        row = {"declaration": declaration}
+        if key in bindings:
+            row["source_bindings"] = bindings[key]
+        npc_rows.append(row)
+
+    npc_shards: list[str] = []
+    for start in range(0, len(npc_rows), ITEM_SHARD_SIZE):
+        rows = npc_rows[start:start + ITEM_SHARD_SIZE]
+        end = start + len(rows) - 1
+        relative = f"content/npcs/definitions/npcs-{start:05d}-{end:05d}.json"
+        npc_shards.append(relative)
+        write(relative, {
+            "schema": "OTERYN_NPC_AUTHORING_SHARD/v1",
+            "family": "NPC",
+            "source_legacy_role": "content/world/definitions/declarations.json",
+            "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
+            "records": rows,
+        })
+    npc_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "NPC"]
+    write("content/npcs/definitions/index.json", {
+        "schema": "OTERYN_FAMILY_INDEX/v1",
+        "family": "NPC",
+        "record_count": len(npc_rows),
+        "shard_size": ITEM_SHARD_SIZE,
+        "shards": npc_shards,
+        "legacy_source": {
+            "path": "content/world/definitions/declarations.json",
+            "git_blob_sha": declarations_blob_sha,
+            "schema": declarations["schema"],
+        },
+        "attached_source_bindings": sum(len(row.get("source_bindings", [])) for row in npc_rows),
+    })
+
+    service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
+    if len(service_records) != 342:
+        raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
+
+    service_shards: dict[str, list[str]] = {}
+    service_counts: dict[str, int] = {}
+    for family, (node, stem, field) in SERVICE_FAMILIES.items():
+        records = [row for row in service_records if field in row]
+        service_counts[family] = len(records)
+        service_shards[family] = []
+        for start in range(0, len(records), ITEM_SHARD_SIZE):
+            rows = [{"declaration": declaration} for declaration in records[start:start + ITEM_SHARD_SIZE]]
+            end = start + len(rows) - 1
+            relative = f"{node}{stem}-{start:05d}-{end:05d}.json"
+            service_shards[family].append(relative)
+            write(relative, {
+                "schema": "OTERYN_SERVICE_AUTHORING_SHARD/v1",
+                "family": family,
+                "source_legacy_role": "content/world/definitions/declarations.json",
+                "shard": {"index": start // ITEM_SHARD_SIZE, "start": start, "end": end, "count": len(rows)},
+                "records": rows,
+            })
+        write(f"{node}index.json", {
+            "schema": "OTERYN_FAMILY_INDEX/v1",
+            "family": family,
+            "record_count": len(records),
+            "shard_size": ITEM_SHARD_SIZE,
+            "shards": service_shards[family],
+            "legacy_source": {
+                "path": "content/world/definitions/declarations.json",
+                "git_blob_sha": declarations_blob_sha,
+                "schema": declarations["schema"],
+            },
+        })
+    if sum(service_counts.values()) != len(service_records):
+        raise RuntimeError(f"SERVICE_FIELD_SPLIT_MISMATCH:{service_counts}")
+
     creature_managed = [path for shards in creature_shards.values() for path in shards]
     creature_managed += [f"{node}index.json" for node, _ in CREATURE_FAMILIES.values()]
+    service_managed = [path for shards in service_shards.values() for path in shards]
+    service_managed += [f"{node}index.json" for node, _, _ in SERVICE_FAMILIES.values()]
     managed = sorted([*item_shards, mount_relative, "content/items/index.json", "content/cosmetics/mounts/index.json",
-                      *creature_managed, *outputs.keys()])
+                      *creature_managed, *npc_shards, "content/npcs/definitions/index.json",
+                      *service_managed, *outputs.keys()])
     write("content/manifest.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
         "project_revision": REVISION,
@@ -279,6 +367,9 @@ def main() -> int:
             "Mount": {"records": len(mount_rows), "index": "content/cosmetics/mounts/index.json"},
             **{family: {"records": creature_counts[family], "index": f"{node}index.json"}
                for family, (node, _) in CREATURE_FAMILIES.items()},
+            "NPC": {"records": len(npc_rows), "index": "content/npcs/definitions/index.json"},
+            **{family: {"records": service_counts[family], "index": f"{node}index.json"}
+               for family, (node, _, _) in SERVICE_FAMILIES.items()},
         },
         "compatibility": {"legacy_root": "content/world", "legacy_mutated": False, "runtime_switch_authorized": False},
     })
@@ -288,14 +379,16 @@ def main() -> int:
         "admission_main": ADMISSION_MAIN,
         "legacy_blobs": {
             "reference": git_blob_sha(LEGACY / "definitions" / "reference.json"),
-            "declarations": git_blob_sha(LEGACY / "definitions" / "declarations.json"),
+            "declarations": declarations_blob_sha,
             "editor": git_blob_sha(LEGACY / "editor" / "author.json"),
             "sources": git_blob_sha(LEGACY / "provenance" / "sources.json"),
             "imports": git_blob_sha(LEGACY / "provenance" / "imports.json"),
         },
-        "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts},
+        "family_counts": {"Item": len(item_records), "Mount": len(mount_rows), **creature_counts,
+                           "NPC": len(npc_rows), **service_counts},
         "item_authoring_counts": {"authoring": len(authoring_by_target), "taxonomy": len(taxonomy_rows), "relation_sources": len(relation_rows)},
-        "source_binding_counts": {"Item": len(item_bindings), "Mount": len(mount_bindings), "Creature": len(creature_bindings)},
+        "source_binding_counts": {"Item": len(item_bindings), "Mount": len(mount_bindings), "Creature": len(creature_bindings),
+                                   "NPC": len(npc_bindings)},
         "authoring_profile_counts": dict(sorted(Counter(family for family, _, _ in profiles).items())),
         "editor_entry_counts": {
             "Item": sum(row["target"]["family"] == "Item" for row in editor["entries"]),
@@ -307,14 +400,14 @@ def main() -> int:
         "project_revision": REVISION,
         "manifest": "content/manifest.json",
         "content_lock": "content/content.lock.json",
-        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES],
+        "migrated_families": ["Item", "Mount", *CREATURE_FAMILIES, "NPC", "Service"],
         "legacy_compatibility_root": "content/world",
         "runtime_source": "legacy_until_separately_qualified",
         "next_population_families": [
-            "NPC", "Dialogue", "Service", "Quest", "Achievement", "Outfit", "Charm", "Encounter", "Area", "House", "WorldObject",
+            "Dialogue", "Quest", "Achievement", "Outfit", "Charm", "Encounter", "Area", "House", "WorldObject",
         ],
     })
-    print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)}")
+    print(f"PASS items={len(item_records)} creatures={creature_counts['Creature']} creature_records={sum(creature_counts.values())} creature_profiles={len(profiles)} item_shards={len(item_shards)} mounts={len(mount_rows)} authoring={len(authoring_by_target)} taxonomy={len(taxonomy_rows)} relation_sources={len(relation_rows)} relations={sum(len(row['relations']) for row in relation_rows)} npcs={len(npc_rows)} npc_bindings={len(npc_bindings)} service_trade={service_counts['Service.Trade']} service_travel={service_counts['Service.Travel']}")
     return 0
 
 if __name__ == "__main__":

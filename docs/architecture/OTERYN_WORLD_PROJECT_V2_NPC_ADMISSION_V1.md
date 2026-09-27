@@ -133,6 +133,9 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    candidates. The one NPC whose sources declare no walk configuration is deferred rather than given the
    engine default.
 4. Wave A in bulk (984 NPCs) and regeneration of the content tree with the NPC and Service families.
+   Done in `OTV2-20260927-npc-admission-wave-a`: 983 NPCs, 289 trade and 53 travel Services, 2,035 source
+   bindings; the successor tree gains `content/npcs/definitions` and `content/services/{trade,travel}`.
+   Dragon Ancestor Spirit is deferred (`MOVEMENT_UNDECLARED`): neither source declares its walk configuration.
 5. Later: placements after World admission; dialogue after Oteryn-authored text; held NPCs, offers and
    routes as their blockers close.
 
