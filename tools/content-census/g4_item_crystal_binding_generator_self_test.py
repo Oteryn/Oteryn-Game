@@ -157,6 +157,38 @@ def main() -> None:
         {"oteryn:item.registry.i00003167": {"5810"}},
     )
 
+    # Identity promotions: parsed from `<PREFIX>_{SOURCE_ITEM_ID,OLD_KEY,KEY}` constants.
+    rust = (
+        "pub const R7_P04_GOLD_COIN_SOURCE_ITEM_ID: u64 = 3_031;\n"
+        'pub const R7_P04_GOLD_COIN_OLD_KEY: &str = "oteryn:item.registry.i00002921";\n'
+        'pub const R7_P04_GOLD_COIN_KEY: &str = "oteryn:item.currency.gold_coin";\n'
+    )
+    promotions = MODULE.parse_identity_promotions(rust)
+    assert promotions == {
+        3031: ("oteryn:item.registry.i00002921", "oteryn:item.currency.gold_coin")
+    }, promotions
+    assert MODULE.apply_identity_promotions(
+        [
+            (3030, "oteryn:item.registry.i00002920"),
+            (3031, "oteryn:item.registry.i00002921"),
+        ],
+        promotions,
+    ) == [
+        (3030, "oteryn:item.registry.i00002920"),
+        (3031, "oteryn:item.currency.gold_coin"),
+    ]
+    expect_error(
+        "IDENTITY_PROMOTION_OLD_KEY_MISMATCH",
+        MODULE.apply_identity_promotions,
+        [(3031, "oteryn:item.registry.i00009999")],
+        promotions,
+    )
+    expect_error(
+        "IDENTITY_PROMOTION_INCOMPLETE",
+        MODULE.parse_identity_promotions,
+        'pub const X_OLD_KEY: &str = "a";\n',
+    )
+
     # build_bindings: deterministic canonical-bytes ordering and exact field shape.
     bindings = MODULE.build_bindings(
         [(30, "oteryn:item.b"), (7, "oteryn:item.a")], "deadbeef"

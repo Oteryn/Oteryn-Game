@@ -2,7 +2,7 @@
 import json
 import sys
 
-from validate_quest_content import validate, validate_gates
+from validate_quest_content import validate, validate_gates, validate_storylines
 
 
 def ref(family, name):
@@ -155,6 +155,70 @@ gate_case('progress door names a known claim', lambda g, c, m: g[0]['condition']
 gate_case('key comes from a chest that hands it out', lambda g, c, m: g[2]['condition'].update(key_binding='oteryn:door-key/1'))
 gate_case('gate link basis without a quest', lambda g, c, m: g[0].update(quest=None))
 gate_case('every gate is mapped from a source', lambda g, c, m: m['entries'].pop())
+
+
+
+TEXT = {'sha256': '1' * 64, 'length': 25, 'placeholders': []}
+
+
+def storyline_fixture():
+    gates, claims, _ = gate_fixture()
+    progress = lambda name: f'oteryn:quest-progress/{name}'
+    quest = {'identity': {'key': 'oteryn:quest/banshees', 'revision': 'r1'}, 'display_name': 'The Queen of the Banshees',
+             'kind': 'storyline', 'shown_in_quest_log': True, 'source_name': 'The Queen of the Banshees',
+             'start': {'progress': progress('first_seal'), 'at_least': 1}, 'claims': [],
+             'gates': [ref('Gate', 'door-gate/level/100')],
+             'missions': [
+                 {'key': 'the_hidden_seal', 'name': 'The Hidden Seal', 'progress': progress('first_seal'), 'start_value': 1,
+                  'end_value': 1, 'journal': {'kind': 'fixed', 'text_ref': TEXT},
+                  'transitions': [{'key': 'movement_1', 'owner': 'movement', 'callback': 'onStepIn',
+                                   'from': {'op': '<', 'value': 1, 'exact': True}, 'to': 1, 'servers': ['canary', 'crystalserver']}]},
+                 {'key': 'the_plague_seal', 'name': 'The Plague Seal', 'progress': progress('second_seal'), 'start_value': 1,
+                  'end_value': 3, 'transitions': [{'key': 'npc_1', 'owner': 'npc', 'callback': None, 'from': None, 'increment': 1,
+                                                   'servers': ['canary']}],
+                  'journal': {'kind': 'per_stage', 'stages': [
+                      {'value': 1, 'text_ref': TEXT},
+                      {'value': 2, 'template': {'parts': [dict(TEXT, placeholders=['%d'])], 'reads': ['quest/kills']}}]}}]}
+    tracks = {'progress': [
+        {'key': progress('first_seal'), 'missions': ['oteryn:quest/banshees#the_hidden_seal'], 'start_of': ['oteryn:quest/banshees'],
+         'transitions': [{'key': 'movement_1'}]},
+        {'key': progress('second_seal'), 'missions': ['oteryn:quest/banshees#the_plague_seal'], 'start_of': [],
+         'transitions': [{'key': 'npc_1'}]}]}
+    return {'quests': [quest]}, gates, tracks, claims
+
+
+def storyline_case(name, mutate=None, expected=False):
+    quests, gates, tracks, claims = storyline_fixture()
+    if mutate:
+        mutate(quests['quests'][0], tracks['progress'])
+    errors = validate({'claims': []}, quests) + validate_storylines(quests, gates, tracks)
+    results.append({'name': name, 'expected_valid': expected, 'passed': (not errors) == expected,
+                    'first_error': errors[0] if errors else None})
+
+
+storyline_case('storyline fixture accepted', expected=True)
+storyline_case('storyline without a start accepted', lambda q, t: (q.update(start=None), t[0].update(start_of=[])) and None, expected=True)
+storyline_case('storyline needs missions', lambda q, t: q.pop('missions'))
+storyline_case('reward-only quest has no missions', lambda q, t: q.update(kind='reward_only', claims=[ref('RewardClaim', 'x')]))
+storyline_case('journal kind is closed', lambda q, t: q['missions'][0].update(journal={'kind': 'video'}))
+storyline_case('a stage has text or a template', lambda q, t: q['missions'][1]['journal']['stages'][0].pop('text_ref'))
+storyline_case('a stage has not both', lambda q, t: q['missions'][1]['journal']['stages'][0].update(template={'parts': [], 'reads': []}))
+storyline_case('no committed journal text', lambda q, t: q['missions'][0]['journal'].update(text='You broke the first seal.'))
+storyline_case('mission keys are unique', lambda q, t: (q['missions'][1].update(key='the_hidden_seal'),
+                                                        t[1]['missions'].append('oteryn:quest/banshees#the_hidden_seal')) and None)
+storyline_case('start not above end', lambda q, t: q['missions'][0].update(start_value=2))
+storyline_case('stages ascend', lambda q, t: q['missions'][1]['journal']['stages'].reverse())
+storyline_case('stages stay in range', lambda q, t: q['missions'][1]['journal']['stages'][1].update(value=9))
+storyline_case('progress track lists the mission', lambda q, t: t[1]['missions'].clear())
+storyline_case('start track names the quest', lambda q, t: t[0]['start_of'].clear())
+storyline_case('quest names a known gate', lambda q, t: q['gates'].append(ref('Gate', 'door-gate/ghost')))
+storyline_case('a transition has one effect', lambda q, t: q['missions'][0]['transitions'][0].update(increment=1))
+storyline_case('a transition has an effect', lambda q, t: q['missions'][0]['transitions'][0].pop('to'))
+storyline_case('transition owner is closed', lambda q, t: q['missions'][0]['transitions'][0].update(owner='wizard'))
+storyline_case('increments are positive', lambda q, t: q['missions'][1]['transitions'][0].update(increment=0))
+storyline_case('transition keys are unique', lambda q, t: q['missions'][0]['transitions'].append(dict(q['missions'][0]['transitions'][0])))
+storyline_case('a transition has source evidence', lambda q, t: t[0]['transitions'].clear())
+storyline_case('progress names a quest-progress track', lambda q, t: q['missions'][0].update(progress='oteryn:storage/1'))
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:
