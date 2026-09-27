@@ -46,6 +46,11 @@ pub(crate) enum CarrierError {
     OccurrenceConflict,
     PlanConflict,
     InjectedCommitFailure,
+    CommittedLethalUnavailable,
+    CorpseReceiptMismatch,
+    CorpseProjectionConflict,
+    InjectedCorpseProjectionFailure,
+    InjectedCorpseResponseFailure,
 }
 
 impl std::fmt::Display for CarrierError {
@@ -210,6 +215,14 @@ pub(crate) struct CurrentOwnerExactActorCommit<'a> {
     continuity: &'a NamespaceContinuityGuard,
 }
 
+/// Short-lived current-owner authority for the fixed one-creature death
+/// projection. It cannot commit Ability damage, move actors, admit actors or
+/// issue continuity.
+pub(crate) struct CurrentOwnerCombatDeath<'a> {
+    carrier: &'a mut ChannelActorCarrier,
+    continuity: &'a NamespaceContinuityGuard,
+}
+
 /// Borrowed, current-owner position capability for one ordinary actor slot.
 /// It cannot admit/remove an actor, issue continuity, or commit Ability damage.
 pub(crate) struct CurrentOwnerMovementPosition<'a> {
@@ -310,6 +323,77 @@ struct OwnerCommitRecord {
     result: OwnerDamageResult,
 }
 
+/// Stable identity of the one committed lethal occurrence. Construction stays
+/// private to the physical Channel owner; callers cannot supply occurrence
+/// bytes, HP facts or actor generation.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct CreatureDeathOccurrenceRef {
+    actor: ExactActorRef,
+    commit_binding: Box<[u8]>,
+    damage: i64,
+    health_before: i64,
+}
+
+impl CreatureDeathOccurrenceRef {
+    pub(crate) const fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
+
+    pub(crate) fn commit_binding(&self) -> &[u8] {
+        &self.commit_binding
+    }
+
+    pub(crate) const fn damage(&self) -> i64 {
+        self.damage
+    }
+
+    pub(crate) const fn health_before(&self) -> i64 {
+        self.health_before
+    }
+}
+
+/// One runtime-owned, non-persistent corpse projection. The position is the
+/// immutable current-owner position captured by the same slot state that holds
+/// the lethal commit; dead creatures cannot mutate or initialize it later.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct RuntimeCorpseProjection {
+    occurrence: CreatureDeathOccurrenceRef,
+    position: VersionedPosition,
+}
+
+impl RuntimeCorpseProjection {
+    pub(crate) const fn occurrence(&self) -> &CreatureDeathOccurrenceRef {
+        &self.occurrence
+    }
+
+    pub(crate) const fn position(&self) -> MovementLocalPosition {
+        MovementLocalPosition {
+            x: self.position.position.x,
+            y: self.position.position.y,
+            floor: self.position.position.floor,
+        }
+    }
+
+    pub(crate) const fn position_revision(&self) -> u64 {
+        self.position.revision
+    }
+
+    pub(crate) const fn context_markers(&self) -> (u64, u64, u64) {
+        (
+            self.position.context.coordinate_frame_marker,
+            self.position.context.map_revision_marker,
+            self.position.context.content_generation_marker,
+        )
+    }
+}
+
+/// Opaque, single-use handoff from the owner commit record to Combat. It is
+/// deliberately neither Clone nor Copy and has no caller-visible constructor.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct CommittedLethalReceipt {
+    projection: RuntimeCorpseProjection,
+}
+
 /// 4096 is the registered Ability plan bound; the owner still independently
 /// checks the actual complete encoding before allocating its one receipt.
 const MAX_OWNER_COMMIT_BINDING_BYTES: usize = 4_096;
@@ -322,6 +406,39 @@ impl CurrentOwnerExactActorCommit<'_> {
     ) -> Result<OwnerDamageResult, CarrierError> {
         self.carrier
             .commit_creature_damage_inner(self.continuity, actor.0, command, false)
+    }
+}
+
+impl CurrentOwnerCombatDeath<'_> {
+    pub(crate) fn committed_lethal_receipt(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<CommittedLethalReceipt, CarrierError> {
+        self.carrier
+            .committed_lethal_receipt_inner(self.continuity, actor.0)
+    }
+
+    pub(crate) fn project_committed_lethal(
+        &mut self,
+        receipt: CommittedLethalReceipt,
+    ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        self.carrier
+            .project_committed_lethal_inner(self.continuity, receipt, false, false)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn project_committed_lethal_with_failures(
+        &mut self,
+        receipt: CommittedLethalReceipt,
+        fail_before_write: bool,
+        fail_after_write: bool,
+    ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        self.carrier.project_committed_lethal_inner(
+            self.continuity,
+            receipt,
+            fail_before_write,
+            fail_after_write,
+        )
     }
 }
 
@@ -424,6 +541,7 @@ struct ChannelActorCarrier {
     slots: Box<[Slot]>,
     free_head: Option<u32>,
     has_creature: bool,
+    corpse_projection: Option<RuntimeCorpseProjection>,
 }
 
 /// The exact active Content generation a Channel runtime is created with (#935 "Activation issuer
@@ -576,6 +694,12 @@ impl ChannelRuntimeV1 {
     pub(crate) fn borrow_movement_position(&mut self) -> CurrentOwnerMovementPosition<'_> {
         self.carrier
             .current_owner_movement_position(&self.continuity)
+    }
+
+    /// Unactivated Combat proof: one exclusive borrow of the physical Channel
+    /// owner. It grants no scheduler, production activation or corpse lifetime.
+    pub(crate) fn borrow_combat_death(&mut self) -> CurrentOwnerCombatDeath<'_> {
+        self.carrier.current_owner_combat_death(&self.continuity)
     }
 
     /// The compact position context of this runtime's fixed Content pin.
@@ -748,6 +872,16 @@ impl ChannelRuntimeV1 {
 }
 
 impl ChannelActorCarrier {
+    fn current_owner_combat_death<'a>(
+        &'a mut self,
+        continuity: &'a NamespaceContinuityGuard,
+    ) -> CurrentOwnerCombatDeath<'a> {
+        CurrentOwnerCombatDeath {
+            carrier: self,
+            continuity,
+        }
+    }
+
     fn current_owner_movement_position<'a>(
         &'a mut self,
         continuity: &'a NamespaceContinuityGuard,
@@ -836,6 +970,7 @@ impl ChannelActorCarrier {
             slots: slots.into_boxed_slice(),
             free_head: Some(0),
             has_creature: false,
+            corpse_projection: None,
         })
     }
 
@@ -859,7 +994,7 @@ impl ChannelActorCarrier {
             return Err(CarrierError::InvalidCreatureHealth);
         }
         self.validate_current_continuity(continuity)?;
-        if self.has_creature {
+        if self.has_creature || self.corpse_projection.is_some() {
             return Err(CarrierError::CapacityExceeded);
         }
         if target_identity.is_empty()
@@ -1072,10 +1207,18 @@ impl ChannelActorCarrier {
                 actor,
                 committed: true,
                 ..
-            }
-            | Slot::CreatureOccupied {
-                generation, actor, ..
             } if *generation == actor_ref.actor_local_generation.0 => Ok(actor),
+            Slot::CreatureOccupied {
+                generation,
+                actor,
+                health,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 && *health > 0 => Ok(actor),
+            Slot::CreatureOccupied {
+                generation, health, ..
+            } if *generation == actor_ref.actor_local_generation.0 && *health == 0 => {
+                Err(CarrierError::CreatureNotActionable)
+            }
             Slot::Occupied { .. }
             | Slot::CreatureOccupied { .. }
             | Slot::VacantReusable { .. }
@@ -1233,6 +1376,138 @@ impl ChannelActorCarrier {
         Ok(result)
     }
 
+    fn committed_lethal_receipt_inner(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+    ) -> Result<CommittedLethalReceipt, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        if let Some(existing) = self
+            .corpse_projection
+            .as_ref()
+            .filter(|projection| projection.occurrence.actor == ExactActorRef(actor_ref))
+        {
+            return Ok(CommittedLethalReceipt {
+                projection: RuntimeCorpseProjection {
+                    occurrence: CreatureDeathOccurrenceRef {
+                        actor: existing.occurrence.actor,
+                        commit_binding: copy_bounded_binding(&existing.occurrence.commit_binding)?,
+                        damage: existing.occurrence.damage,
+                        health_before: existing.occurrence.health_before,
+                    },
+                    position: existing.position,
+                },
+            });
+        }
+        let Slot::CreatureOccupied {
+            generation,
+            position,
+            health,
+            committed: Some(committed),
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        if *health != 0
+            || !committed.result.applied
+            || committed.result.health_before <= 0
+            || committed.result.health_after != 0
+        {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        let position = position.ok_or(CarrierError::PositionUnavailable)?;
+        Ok(CommittedLethalReceipt {
+            projection: RuntimeCorpseProjection {
+                occurrence: CreatureDeathOccurrenceRef {
+                    actor: ExactActorRef(actor_ref),
+                    commit_binding: copy_bounded_binding(&committed.binding)?,
+                    damage: committed.damage,
+                    health_before: committed.result.health_before,
+                },
+                position,
+            },
+        })
+    }
+
+    fn validate_lethal_receipt(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        receipt: &CommittedLethalReceipt,
+    ) -> Result<(), CarrierError> {
+        let projection = &receipt.projection;
+        let actor_ref = projection.occurrence.actor.0;
+        let index = self.validate_ref(continuity, actor_ref)?;
+        let Slot::CreatureOccupied {
+            generation,
+            position: Some(position),
+            health,
+            committed: Some(committed),
+            ..
+        } = &self.slots[index]
+        else {
+            return Err(CarrierError::StaleActorGeneration);
+        };
+        if *generation != actor_ref.actor_local_generation.0 {
+            return Err(CarrierError::StaleActorGeneration);
+        }
+        if *health != 0
+            || !committed.result.applied
+            || committed.result.health_before <= 0
+            || committed.result.health_after != 0
+            || committed.binding.as_ref() != projection.occurrence.commit_binding.as_ref()
+            || committed.damage != projection.occurrence.damage
+            || committed.result.health_before != projection.occurrence.health_before
+            || *position != projection.position
+        {
+            return Err(CarrierError::CorpseReceiptMismatch);
+        }
+        Ok(())
+    }
+
+    fn project_committed_lethal_inner(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        receipt: CommittedLethalReceipt,
+        fail_before_write: bool,
+        fail_after_write: bool,
+    ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        self.validate_ref(continuity, receipt.projection.occurrence.actor.0)?;
+        if self.corpse_projection.is_some() {
+            return self.existing_corpse_projection(&receipt);
+        }
+        self.validate_lethal_receipt(continuity, &receipt)?;
+        if fail_before_write {
+            return Err(CarrierError::InjectedCorpseProjectionFailure);
+        }
+        let projected = receipt.projection;
+        self.corpse_projection = Some(projected);
+        if fail_after_write {
+            return Err(CarrierError::InjectedCorpseResponseFailure);
+        }
+        self.corpse_projection
+            .as_ref()
+            .ok_or(CarrierError::CorpseProjectionConflict)
+    }
+
+    fn existing_corpse_projection(
+        &self,
+        receipt: &CommittedLethalReceipt,
+    ) -> Result<&RuntimeCorpseProjection, CarrierError> {
+        let existing = self
+            .corpse_projection
+            .as_ref()
+            .ok_or(CarrierError::CorpseProjectionConflict)?;
+        if existing == &receipt.projection {
+            Ok(existing)
+        } else {
+            Err(CarrierError::CorpseProjectionConflict)
+        }
+    }
+
     fn validate_position_context(
         &self,
         context: PreProductionPositionContext,
@@ -1261,6 +1536,13 @@ impl ChannelActorCarrier {
         let index = self.validate_ref(continuity, actor_ref)?;
         self.validate_position_context(context)?;
         match &mut self.slots[index] {
+            Slot::CreatureOccupied {
+                generation,
+                health: 0,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 => {
+                Err(CarrierError::CreatureNotActionable)
+            }
             Slot::Occupied {
                 generation,
                 committed: true,
@@ -1270,6 +1552,7 @@ impl ChannelActorCarrier {
             | Slot::CreatureOccupied {
                 generation,
                 position: stored @ None,
+                health: 1..,
                 ..
             } if *generation == actor_ref.actor_local_generation.0 => {
                 let version = VersionedPosition {
@@ -1356,6 +1639,16 @@ impl ChannelActorCarrier {
         next_position: LocalPosition,
     ) -> Result<PositionSnapshot, CarrierError> {
         let index = self.validate_ref(continuity, expected.actor_ref)?;
+        if matches!(
+            &self.slots[index],
+            Slot::CreatureOccupied {
+                generation,
+                health: 0,
+                ..
+            } if *generation == expected.actor_ref.actor_local_generation.0
+        ) {
+            return Err(CarrierError::CreatureNotActionable);
+        }
         self.validate_position_context(next_context)?;
         if next_context != expected.version.context {
             return Err(CarrierError::PositionContextMismatch);
@@ -1655,6 +1948,11 @@ mod ability_exact_actor_resolution_tests;
 #[allow(clippy::expect_used)]
 #[path = "channel_owner_ability_commit_tests.rs"]
 mod channel_owner_ability_commit_tests;
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+#[path = "channel_owner_combat_death_tests.rs"]
+mod channel_owner_combat_death_tests;
 
 #[cfg(test)]
 #[allow(clippy::expect_used)]
