@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-quest-tracks-dialogue-owners
 title: Quest format - declared tracks, NPC dialogue binding, owner decisions D37-D42
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 1029
 base_sha: 9367bb33e91a8f3c74b1eba70fc0c9db6f8534e6
 head_sha: null
 final_head_sha: null
