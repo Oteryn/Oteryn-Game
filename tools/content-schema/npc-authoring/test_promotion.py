@@ -249,6 +249,54 @@ class PromotionValidatorTests(unittest.TestCase):
         self.assertIsNone(result)
         self.assertEqual(builder.held[-1]['reason'], 'SINGLE_SOURCE_NOT_ON_WIKI')
 
+    # -- Codex review: alias collisions and per-rule arbitration checks ------------------------
+
+    def test_ambiguous_alias_without_exact_title_leaves_npc_held(self):
+        # two different pages both expose actualname 'Twinname'; neither's title is 'Twinname'
+        builder = make_builder([
+            {'pageid': 1, 'title': 'Page One', 'name': 'Page One', 'actualname': 'Twinname',
+             'position': {'x': 1, 'y': 1, 'z': 1}},
+            {'pageid': 2, 'title': 'Page Two', 'name': 'Page Two', 'actualname': 'Twinname',
+             'position': {'x': 2, 'y': 2, 'z': 2}},
+        ])
+        self.assertNotIn('twinname', builder.wiki)  # ambiguous alias: dropped, not bound to whichever came first
+        result = builder.candidate({'crystal': make_bundle('Twinname')})
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'SINGLE_SOURCE_NOT_ON_WIKI')
+
+    def test_exact_title_wins_over_colliding_alias(self):
+        # 'Real Page' is an exact title match; another page's alias collides with it but must not win
+        builder = make_builder([
+            {'pageid': 1, 'title': 'Real Page', 'name': 'Real Page', 'actualname': None, 'position': None},
+            {'pageid': 2, 'title': 'Other Page', 'name': 'Other Page', 'actualname': 'Real Page', 'position': None},
+        ])
+        self.assertEqual(builder.wiki['real page']['pageid'], 1)
+
+    def test_identity_rule_on_two_source_candidate_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates'] if len(c['provenance']) == 2)
+        candidate['arbitration'].append({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'})
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('requires a single-source candidate' in e for e in errs))
+
+    def test_wiki_position_with_identity_fact_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        row = next(a for a in candidate['arbitration'] if a['rule'] == 'WIKI_POSITION')
+        row['fact'] = 'identity'
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any("fact 'identity' != 'placements'" in e for e in errs))
+
+    def test_wiki_placement_without_wiki_position_row_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        candidate['arbitration'] = [a for a in candidate['arbitration'] if a['rule'] != 'WIKI_POSITION']
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('wiki-origin placement present without a WIKI_POSITION arbitration row' in e
+                             for e in errs))
+
 
 if __name__ == '__main__':
     unittest.main()

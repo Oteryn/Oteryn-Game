@@ -78,20 +78,28 @@ def base_name(name):
 
 def build_wiki_index(npcs):
     """D8: alias index for wiki NPC lookup. Normalised title is indexed first and always wins a
-    key two pages both claim; normalised `name`/`actualname` (the infobox in-game name, which may
+    key an alias also claims. Normalised `name`/`actualname` (the infobox in-game name, which may
     differ from a disambiguated page title, e.g. "Omniphant (NPC)"'s actualname "Omniphant") are
-    then added only where they do not collide with a different page's key."""
+    then added, but only when exactly one distinct page produces that alias key: a key two or
+    more different pages expose (and no exact title owns) is ambiguous and left out entirely,
+    rather than silently bound to whichever page happened to be seen first."""
     index = {}
     for npc in npcs:
         key = normalize_name(npc['title'])
         if key:
             index.setdefault(key, npc)
+    alias_pageids = defaultdict(set)
+    alias_npc = {}
     for npc in npcs:
         for field in ('name', 'actualname'):
             key = normalize_name(npc.get(field))
-            if not key or (key in index and index[key]['pageid'] != npc['pageid']):
+            if not key or key in index:  # an exact title already owns this key; title wins
                 continue
-            index.setdefault(key, npc)
+            alias_pageids[key].add(npc['pageid'])
+            alias_npc[key] = npc
+    for key, pageids in alias_pageids.items():
+        if len(pageids) == 1:
+            index[key] = alias_npc[key]
     return index
 
 

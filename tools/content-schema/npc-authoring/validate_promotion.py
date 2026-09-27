@@ -26,8 +26,11 @@ Semantic rules:
   (`<source>:npc/...`) and a 64-hex sha256; a single-source candidate must carry a non-null `wiki`
   confirmation (D6: single-source NPCs need wiki confirmation);
 - arbitration rows have rule 'WIKI_ARBITER' with `chosen` in canary/crystal and one of the
-  candidate's provenance sources (a fact may be `travel.<id>...` or `trade.<id>...`), or rule
-  'WIKI_POSITION'/'WIKI_BASE_NAME'/'WIKI_SPELLING' (D8) with `chosen` == 'wiki';
+  candidate's provenance sources (a fact may be `travel.<id>...` or `trade.<id>...`); or (D8)
+  rule 'WIKI_POSITION' with `chosen` == 'wiki', `fact` == 'placements' and exactly one placement
+  with `origin` == 'wiki' (and, conversely, any such placement requires this row); or rule
+  'WIKI_BASE_NAME'/'WIKI_SPELLING' with `chosen` == 'wiki', `fact` == 'identity', a single-source
+  candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
   GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
   CURRENCY_CONFLICT; trade facts start with `trade.`, route facts with `travel.`; no left_out
@@ -125,6 +128,7 @@ def candidate_errors(candidate, index):
     placements = candidate.get('placements') or []
     if not placements:
         errs.append(f'{label}: no placements')
+    wiki_placements = [p for p in placements if isinstance(p, dict) and p.get('origin') == 'wiki']
     for i, placement in enumerate(placements):
         plabel = f'{label}.placements[{i}]'
         if not in_range_point(placement.get('position')):
@@ -230,17 +234,36 @@ def candidate_errors(candidate, index):
         alabel = f'{label}.arbitration[{i}]'
         rule = row.get('rule')
         chosen = row.get('chosen')
+        fact = row.get('fact')
         if rule == 'WIKI_ARBITER':
             if chosen not in ('canary', 'crystal'):
                 errs.append(f'{alabel}: chosen {chosen!r} not in canary/crystal')
             elif chosen not in provenance:
                 errs.append(f'{alabel}: chosen {chosen!r} is not one of this candidate\'s provenance sources')
-        elif rule in ('WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING'):
+        elif rule == 'WIKI_POSITION':
             if chosen != 'wiki':
                 errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
+            if fact != 'placements':
+                errs.append(f"{alabel}: fact {fact!r} != 'placements' for rule {rule!r}")
+            if len(wiki_placements) != 1:
+                errs.append(f"{alabel}: rule 'WIKI_POSITION' requires exactly one wiki-origin "
+                             f"placement, found {len(wiki_placements)}")
+        elif rule in ('WIKI_BASE_NAME', 'WIKI_SPELLING'):
+            if chosen != 'wiki':
+                errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
+            if fact != 'identity':
+                errs.append(f"{alabel}: fact {fact!r} != 'identity' for rule {rule!r}")
+            if len(provenance) != 1:
+                errs.append(f"{alabel}: rule {rule!r} requires a single-source candidate, "
+                             f"provenance has {sorted(provenance)}")
+            if candidate.get('wiki') is None:
+                errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
         else:
             errs.append(f"{alabel}: rule {rule!r} not in "
                          f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_POSITION', 'WIKI_SPELLING']")
+
+    if wiki_placements and not any(row.get('rule') == 'WIKI_POSITION' for row in candidate.get('arbitration') or []):
+        errs.append(f'{label}: wiki-origin placement present without a WIKI_POSITION arbitration row')
 
     left_out_keywords = set()
     for i, row in enumerate(candidate.get('left_out') or []):
