@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-creature-admission-profiles
 title: Typed WorldProject/v2 creature admission profiles and the staging tool (admission slice 2)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 986
 jira: KAN-16
 base_sha: 12d96e0e6dff227145267deadddb0b085806e293
 head_sha: null
