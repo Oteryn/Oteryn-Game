@@ -271,6 +271,22 @@ interaction_case('unresolved interaction accepted',
 interaction_case('undeclared track listed in the manifest accepted',
                  lambda i, c, m: (c[0].pop('transition'), c[0].update(progress=progress('door')),
                                   m.update(undeclared_progress_tracks=[progress('door')])) and None, expected=True)
+interaction_case('item, achievement and message children accepted',
+                 lambda i, c, m: c.extend([{'owner': 'Item', 'request': 'hand_out', 'item': ref('Item', 'item/key'), 'count': 1},
+                                           {'owner': 'Achievement', 'request': 'grant', 'achievement': ref('Achievement', 'achievement/x')},
+                                           {'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': 4}]),
+                 expected=True)
+interaction_case('level condition accepted',
+                 lambda i, c, m: i['rules'][0]['branch'][1].update(when={'actor_level': {'op': '>=', 'value': 100}, 'negate': False}),
+                 expected=True)
+interaction_case('a hand-out names an item', lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'count': 1}))
+interaction_case('a hand-out item is an Item',
+                 lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Creature', 'creature/x'), 'count': 1}))
+interaction_case('a message keeps no text',
+                 lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': 4,
+                                           'text': 'Hello.'}))
+interaction_case('a message keeps its source line',
+                 lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False}))
 interaction_case('edge is closed', lambda i, c, m: i['source'].update(edge='ON_WHISPER'))
 interaction_case('child owner is closed', lambda i, c, m: c[2].update(owner='Script'))
 interaction_case('no committed text in presentation', lambda i, c, m: c[2].update(text='The seal breaks.'))

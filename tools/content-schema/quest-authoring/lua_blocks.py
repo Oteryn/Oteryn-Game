@@ -24,7 +24,8 @@ def function_body(lines, start):
 
 
 def parse(lines, numbers):
-    """A list of nodes: ('stmt', line) | ('block', [lines]) | ('if', [(condition, line, [nodes])], else_nodes)."""
+    """A list of nodes: ('stmt', line) | ('block', [lines]) | ('deferred', [lines]) |
+    ('if', [(condition, line, [nodes])], else_nodes)."""
     nodes, i = [], 0
     while i < len(numbers):
         number = numbers[i]
@@ -77,6 +78,19 @@ def parse(lines, numbers):
                 if depth <= 0:
                     break
             nodes.append(('block', block))
+            continue
+        if len(OPENER.findall(code)) > len(CLOSER.findall(code)):
+            # a statement that opens a function literal, e.g. `addEvent(function() ... end, 1000)`: its body
+            # runs later, never inline, so it stays one deferred block
+            depth, block = 0, []
+            while i < len(numbers):
+                inner = strip_code(lines[numbers[i] - 1])
+                depth += len(OPENER.findall(inner)) - len(CLOSER.findall(inner))
+                block.append(numbers[i])
+                i += 1
+                if depth <= 0:
+                    break
+            nodes.append(('deferred', block))
             continue
         if re.fullmatch(r'return\b.*', code):
             nodes.append(('return',))

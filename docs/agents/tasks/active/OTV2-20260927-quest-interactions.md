@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260927-quest-interactions
-title: Quest format slice 4 - interaction definitions (D36) and The Queen of the Banshees pilot from Canary + CrystalServer scripts
+title: Quest format slice 4 - interaction definitions (D36) from every Canary + CrystalServer quest script
 mode: CONTRACT
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -39,18 +39,18 @@ children executed by their existing owners: quest transitions and world state (D
 summons (GAME-ABILITY-01), item handouts (DUR-03). Teleports and map-object changes stay as blocked
 children until movement and world-object owner contracts exist; encounters keep D27 outcomes.
 
-The pilot transcribes the 16 scripts of The Queen of the Banshees in both servers into 18
-interactions; the seven seal flames request the seven movement transitions of slice 3. Runtime,
-persistence and `content/**` stay unchanged.
+Every script under `scripts/quests/` of both servers (130 quest directories) becomes 1,219
+interactions; 194 quest children name a slice-3 mission transition. The Queen of the Banshees is
+the worked example. Runtime, persistence and `content/**` stay unchanged.
 
 ## Architecture and source of truth
 
 - `PROVEN`: the pinned Canary and CrystalServer revisions of slices 1-3; script blob ids in
   `samples/interactions/the_queen_of_the_banshees/manifest.json`.
 - `DERIVED`: transition names through the slice-3 quest-log sample.
-- `CONFLICT`: 3 interactions (first seal lever item ids, first seal magic walls) until the wiki decides.
-- `UNKNOWN`: 6 statements and 15 conditions outside the transcribed vocabulary; 9 progress tracks
-  written but not yet declared by the quest catalogue.
+- `CONFLICT`: 60 interactions differ between the servers until the wiki decides.
+- `UNKNOWN`: 2,018 statements and 1,957 conditions outside the transcribed vocabulary; 373 progress
+  tracks written but not yet declared by the quest catalogue.
 
 ## High-risk authority/recovery qualification
 
@@ -59,7 +59,8 @@ fence, session, authority or persisted-recovery evidence is touched.
 
 ## Acceptance and evidence
 
-- `verify_quest_schema.py` 90/90 with the cause of each negative case checked.
+- `verify_quest_schema.py` 96/96 with the cause of each negative case checked.
+- An independent spot check of 56 random classified lines against the source: no misclassification.
 - `ots_interactions.py` is deterministic; interactions validate against the quest catalogue and
   progress tracks together with the claims and gates; slices 1-3 regenerate unchanged.
 - No narrative text is committed (LICENSE-ASSETS.md).

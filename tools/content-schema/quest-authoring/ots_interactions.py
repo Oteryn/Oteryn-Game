@@ -1,7 +1,7 @@
 """Transcribe quest scripts of Canary and CrystalServer into candidate interaction definitions (D36).
 
 Usage: python ots_interactions.py --canary <opentibiabr/canary at 47dfd51f> --crystal <zimbadev/crystalserver at ff7ede59>
-                                  [--scripts scripts/quests/the_queen_of_the_banshees] [--questlog samples/questlog]
+                                  [--scripts scripts/quests] [--questlog samples/questlog]
                                   [--out samples/interactions]
 
 An interaction definition is what GAME-INTERACTION-01 plans run: a source edge on a target (a tile entered, an
@@ -9,10 +9,13 @@ item used, a creature killed), read-only conditions, and children that each go t
 - player storage writes -> Quest (D35), named by the mission transition when one matches;
 - `Game.setStorageValue` -> Quest world state (state shared by all players, as encounters read it, D29);
 - `Game.createMonster` -> Ability summon effect (GAME-ABILITY-01);
-- `sendMagicEffect` -> presentation only;
+- `player:addItem` -> Item hand-out (DUR-03 item transaction); `addAchievement` -> Achievement grant;
+- `sendMagicEffect` and player messages -> presentation only (a message keeps its source line, never its text);
 - teleports -> Movement, blocked until a movement owner contract exists (GAME-INTERACTION-01 §19.3);
 - map item create/remove/transform -> world object state, blocked until an owner contract exists.
-Conditions read quest stages, world state, whether the actor is a player and the item type, unique id, action id
+Storage aliases (`local X = Storage.…`) are expanded; a track resolves to the catalogue's track whichever server
+declared it (D33). A function literal passed to a call (`addEvent(function() … end)`) runs later and stays one
+unresolved entry. Conditions read quest stages, world state, whether the actor is a player, its level, and the item type, unique id, action id
 or subtype of the edge source (the registered target), the object in contact with it or the use target. Any other
 line or condition stays unresolved with its source line. Source positions become named anchors with the
 coordinates kept as evidence. Every output is OTS_HYPOTHESIS_ONLY.
@@ -43,18 +46,27 @@ NOOP = re.compile(r'^(local\s+\w+(\s*,\s*\w+)*\s*=\s*[\w.:]+\([^()]*\)|local\s+\
 ROLES = {'onUse': ('actor', 'source', None, 'use_target'), 'onStepIn': ('actor', 'source'),
          'onStepOut': ('actor', 'source'), 'onAddItem': ('contact', 'source')}
 FIELDS = {'itemid': 'item_type', 'uid': 'unique_id', 'actionid': 'action_id', 'type': 'subtype'}
+# calls that only read state: a local assignment made of these is not an effect
+READ_ONLY = re.compile(r'^(get\w*|is\w*|has\w*|can\w*|Tile|Position|Player|Creature|Monster|Item|Npc|Container|lower|upper|'
+                       r'random|max|min|floor|ceil|abs|contains|find|match|sub|gsub|format|len|kv|scoped|time|pairs|ipairs|'
+                       r'type|tostring|tonumber|unpack|getn)$')
+TABLE_LINE = re.compile(r'^(\{.*\}?,?|\}\)?,?|\[?[\w"\']+\]?\s*=\s*[^()]*,?)$')
+MESSAGE = re.compile(r':(sendTextMessage|say|sendCancelMessage|sendChannelMessage|popupFYI)\(')
 CONTROL = re.compile(r'^(if|elseif|else|end|return|break)\b')
 BLOCKED_MOVEMENT, BLOCKED_WORLD_OBJECT = BLOCKED['Movement'], BLOCKED['WorldObject']
 
 
 class Script:
-    def __init__(self, server, repo, path, transitions):
-        self.server, self.path = server, path
+    def __init__(self, server, repo, path, transitions, name):
+        self.server, self.path, self.name = server, path, name
         self.namespace = 'canary' if server == 'canary' else 'crystalserver'
         self.lines = (Path(repo) / path).read_text(errors='replace').split('\n')
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
-        self.roles, self.players = {}, set()
+        self.roles, self.players, self.declared = {}, set(), {}
+        # `local ThreatenedDreams = Storage.Quest.U11_40.ThreatenedDreams` and the like, expanded in every line
+        self.aliases = {m.group(1): m.group(2) for line in self.lines
+                        if (m := re.match(r'\s*local\s+(\w+)\s*=\s*((?:Global)?Storage\.[\w.\[\]]+)\s*(--.*)?$', line))}
 
     def bind(self, number, callback):
         """Name the callback parameters by their role and note the locals that hold the acting player."""
@@ -76,8 +88,24 @@ class Script:
         self.anchors.append({'key': key, 'source_position': {'x': x, 'y': y, 'z': z}})
         return key
 
+    def track(self, storage):
+        """The catalogue's progress track for a storage, whichever server declared it (D33), else this server's."""
+        path = track_of(storage)
+        return self.declared.get(norm(path), f'{self.namespace}:quest-progress/{path}')
+
     def raw(self, number):
-        return re.sub(r'--.*$', '', self.lines[number - 1]).strip()
+        text = re.sub(r'--.*$', '', self.lines[number - 1]).strip()
+        for alias, path in self.aliases.items():
+            text = re.sub(rf'(?<![\w.]){alias}(?=[.\[\s,)])', path, text)
+        return text
+
+    def read_only(self, code):
+        """A local assignment or table-constructor line whose calls only read state."""
+        if TABLE_LINE.match(code):
+            return True
+        if not re.match(r'local\s+\w+(\s*,\s*\w+)*\s*=', code):
+            return False
+        return all(READ_ONLY.match(name) for name in re.findall(r'(\w+)\s*\(', code))
 
     def condition(self, text, number):
         parts = re.split(r'\s+(and|or)\s+', text)
@@ -89,7 +117,7 @@ class Script:
             negate = term.startswith('not ')
             body = term[4:] if negate else term
             if (m := re.fullmatch(r'\w+:getStorageValue\(\s*(Storage\.[\w.\[\]]+)\s*\)\s*(==|~=|<=|>=|<|>)\s*(-?\d+)', body)):
-                out.append({'quest_stage': {'progress': f'{self.namespace}:quest-progress/{track_of(m.group(1))}',
+                out.append({'quest_stage': {'progress': self.track(m.group(1)),
                                             'op': m.group(2), 'value': int(m.group(3))}, 'negate': negate})
             elif (m := re.fullmatch(r'Game\.getStorageValue\(\s*"?([\w.]+)"?\s*\)\s*(==|~=|<=|>=|<|>)\s*(-?\d+)', body)):
                 out.append({'world_state': {'key': f'{self.namespace}:world-state/{slug(m.group(1))}',
@@ -100,8 +128,11 @@ class Script:
                          else {'value': int(m.group(4))})
                 out.append({'object': {'role': self.roles[m.group(1)], 'field': field, 'op': m.group(3), **value},
                             'negate': negate})
-            elif body in self.players:
+            elif body in self.players or ((m := re.fullmatch(r'(\w+):isPlayer\(\)', body))
+                                          and self.roles.get(m.group(1)) == 'actor'):
                 out.append({'actor_is_player': True, 'negate': negate})
+            elif (m := re.fullmatch(r'(\w+):getLevel\(\)\s*(==|~=|<=|>=|<|>)\s*(\d+)', body)) and m.group(1) in self.players:
+                out.append({'actor_level': {'op': m.group(2), 'value': int(m.group(3))}, 'negate': negate})
             else:
                 return {'unresolved': {'line': number}}
         if len(out) == 1:
@@ -113,7 +144,7 @@ class Script:
         found = []
         for m in re.finditer(r'(\w+):setStorageValue\(\s*(Storage\.[\w.\[\]]+|\d+)\s*,', raw):
             target = int(m.group(2)) if m.group(2).isdigit() else m.group(2)
-            track = f'{self.namespace}:quest-progress/{track_of(target)}'
+            track = self.track(target)
             value = raw[m.end():].split(')')[0].strip()
             child = {'owner': 'Quest', 'request': 'set_progress', 'progress': track,
                      **({'to': int(value)} if re.fullmatch(r'-?\d+', value) else {'value_source_line': number})}
@@ -135,11 +166,23 @@ class Script:
             found.append({'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED_MOVEMENT,
                           **({'to_anchor': self.anchor(pos.groups())} if pos else
                              {'to': 'previous_position'} if 'fromPosition' in raw else {'to_source_line': number})})
-        if re.search(r':(transform|transformItem|createItem|removeItem|revertItem|remove)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(', raw):
+        if re.search(r'[:.](transform|transformItem|createItem|removeItem|revertItem|remove|setActionId|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(', raw):
             found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+        if (m := re.search(r'(\w+):addItem\(\s*(\d+)?\s*(?:,\s*(\d+)\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+            found.append({'owner': 'Item', 'request': 'hand_out',
+                          **({'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)}
+                             if m.group(2) and raw[m.end():m.end() + 1] == ')' else {'value_source_line': number})})
+        if (m := re.search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
+            found.append({'owner': 'Achievement', 'request': 'grant',
+                          'achievement': ref('Achievement', f'{self.namespace}:achievement/{slug(m.group(1))}')})
         if 'sendMagicEffect(' in code:
             found.append({'owner': 'Presentation', 'effect': 'magic_effect', 'authoritative': False})
-        if not found and not NOOP.match(code):
+        if MESSAGE.search(code):
+            # the text itself is reserved (LICENSE-ASSETS.md); only its source line is kept
+            found.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': number})
+        if not found and re.search(r'\baddEvent\(', code):
+            self.unresolved.append({'line': number, 'reason': 'delayed callback (addEvent) without a scheduler owner'})
+        elif not found and not NOOP.match(code) and not self.read_only(code):
             self.unresolved.append({'line': number, 'reason': 'statement outside the transcribed vocabulary'})
         for child in found:
             if in_loop:
@@ -159,6 +202,10 @@ class Script:
                         out.extend(self.children(number, in_loop=True))
                 if control:
                     self.unresolved.append({'line': node[1][0], 'reason': 'loop with its own control flow'})
+            elif node[0] == 'deferred':
+                reason = ('delayed callback (addEvent) without a scheduler owner'
+                          if re.search(r'\baddEvent\(', self.raw(node[1][0])) else 'function literal outside the transcribed vocabulary')
+                self.unresolved.append({'line': node[1][0], 'reason': reason})
             elif node[0] == 'if':
                 branches = [{'when': self.condition(re.sub(r'^(else)?if\s+|\s+then.*$', '', self.raw(line)), line),
                              'then': self.convert(body)} for _, line, body in node[1]]
@@ -171,7 +218,7 @@ class Script:
         callback takes the registrations that follow it up to the next object definition."""
         starts = [n for n, line in enumerate(self.lines, 1) if CALLBACK.match(line)]
         objects = [n for n, line in enumerate(self.lines, 1) if OBJECT_LINE.match(line)]
-        out, stem = [], slug(Path(self.path).stem)
+        out, stem = [], self.name
         for index, number in enumerate(starts):
             m = CALLBACK.match(self.lines[number - 1])
             end = next((o for o in objects if o > number), len(self.lines) + 1)
@@ -247,16 +294,22 @@ def unresolved_conditions(interaction):
 
 def build(repos, scripts, questlog_dir):
     keys = transition_keys(questlog_dir)
+    declared_by_path = {norm(t['key'].split('/', 1)[1]): t['key']
+                        for t in json.loads((questlog_dir / 'progress.json').read_text())['progress']}
     by_script = {}
     for name, repo in repos.items():
         pack = SOURCES[name]['datapack']
-        for path in sorted(glob.glob(str(Path(repo) / pack / scripts / '*.lua'))):
+        root = Path(repo) / pack / scripts
+        for path in sorted(glob.glob(str(root / '**/*.lua'), recursive=True)):
             rel = str(Path(path).relative_to(repo))
-            for interaction in Script(name, repo, rel, keys).interactions():
+            # the key keeps the quest directory, e.g. the_queen_of_the_banshees/action_1_first_seal_lever
+            local = Path(path).relative_to(root).with_suffix('')
+            script = Script(name, repo, rel, keys, '/'.join(slug(part) for part in local.parts))
+            script.declared = declared_by_path
+            for interaction in script.interactions():
                 by_script.setdefault(interaction['identity']['key'].split(':', 1)[1], {})[name] = interaction
     interactions, manifest_entries = [], []
     for _, pair in sorted(by_script.items()):
-        script = next(iter(pair.values()))['script']
         primary = pair.get('canary') or pair['crystalserver']
         agree = len(pair) == 2 and comparable(pair['canary']) == comparable(pair['crystalserver'])
         status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
@@ -266,9 +319,9 @@ def build(repos, scripts, questlog_dir):
             status = 'conflict'
         interactions.append({k: v for k, v in primary.items() if k not in ('script', 'callback_line')})
         manifest_entries.append({'destination': primary['identity']['key'], 'status': status, 'resolution': resolution,
-                                 'sources': [{'source': n, 'path': SOURCES[n]['datapack'] + '/' + script,
+                                 'sources': [{'source': n, 'path': SOURCES[n]['datapack'] + '/' + i['script'],
                                               'callback_line': i['callback_line'],
-                                              'blob_sha1': git_blob(repos[n], SOURCES[n]['datapack'] + '/' + script)}
+                                              'blob_sha1': git_blob(repos[n], SOURCES[n]['datapack'] + '/' + i['script'])}
                                              for n, i in pair.items()]})
     children = [c for i in interactions for c in walk(i['rules'])]
     declared = {t['key'] for t in json.loads((questlog_dir / 'progress.json').read_text())['progress']}
@@ -296,9 +349,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--canary', required=True, type=Path)
     parser.add_argument('--crystal', required=True, type=Path)
-    parser.add_argument('--scripts', default='scripts/quests/the_queen_of_the_banshees')
+    parser.add_argument('--scripts', default='scripts/quests')
     parser.add_argument('--questlog', type=Path, default=ROOT / 'samples/questlog')
-    parser.add_argument('--out', type=Path, default=ROOT / 'samples/interactions/the_queen_of_the_banshees')
+    parser.add_argument('--out', type=Path, default=ROOT / 'samples/interactions')
     args = parser.parse_args()
     repos = {'canary': args.canary, 'crystalserver': args.crystal}
     for name, repo in repos.items():
