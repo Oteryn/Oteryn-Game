@@ -137,8 +137,9 @@ the encounter never writes it.
 - `FourthTaintBossesPrepareDeath` (15 monsters): despite its name these are the ordinary Soul War
   hunting monsters, not bosses (`soul_war_mechanics.lua` lines 66-84). It is a zone rule:
   `lethal_damage(any participant)` + `killer_progress(soul war taint >= 4)` + in the Soul War zone
-  anchor + `chance_percent 10` -> `say`, `heal(full)`; the damage still applies, so the creature
-  survives with its health restored.
+  anchor + `chance_percent 10` -> `say`, `heal(full)`. `Game::combatChangeHealth` then still drains
+  the lethal hit, capped at the health the creature had before the heal (`realDamage` is taken
+  before `onPrepareDeath`), so it survives with maximum health minus that amount.
 - `UrmahlulluChanges`: `health_crossed(boss, N)` -> `transform(boss -> next stage, keep_absolute)`.
 - `HeartBossDeath`: `creature_died(boss)` -> `map_item(transform vortex at anchor)`, and for the
   final boss `remove(all_in(arena))`.
