@@ -4,19 +4,20 @@
 task_id: OTV2-20260927-r7-p03-character-xp-commit
 title: R7 P03 durable Character XP commit
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/r7-p03-character-xp-commit
 issue: 162
 pr: 998
 base_sha: 5ecf841c7b849a252ec239226361e6e76ac05239
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 0f7b74370fbc07bb5d894cf142b61f9a07611225
+final_head_sha: 0f7b74370fbc07bb5d894cf142b61f9a07611225
+final_head_frozen_at: 2026-09-27T16:47:31Z
+completed_at: 2026-09-27T17:20:06Z
 owner: /root
 created_at: 2026-09-27T14:25:00Z
-updated_at: 2026-09-27T16:44:30Z
+updated_at: 2026-09-27T17:20:06Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_progression.rs
@@ -116,7 +117,7 @@ finding_family_sweep:
   protocol_versions: typed v1 command and policy digests
   direct_and_reconciled_paths: covered
   fenced_durable_writes: covered
-  restart_retry_replay_concurrency_pg_reload: focused target present; configured PostgreSQL run pending
+  restart_retry_replay_concurrency_pg_reload: focused target and configured hosted PostgreSQL passed
   evidence:
     - apps/game-server/tests/character_progression_postgres.rs
     - apps/game-server/tests/support/character_progression_postgres_cases.rs
@@ -142,8 +143,8 @@ finding_dispositions:
 - [x] Root revision, typed state and immutable receipt commit atomically with a deferred DB constraint.
 - [x] Missing initial progression remains valid but XP commit fails closed.
 - [x] Focused target covers replay, stale facts, rollback, concurrency and restart readback.
-- [ ] Configured PostgreSQL 17.6 execution passes on the frozen exact head.
-- [ ] Independent exact-head GPT-6 Luna review and hosted checks pass before MQ.
+- [x] Configured PostgreSQL 17.6 execution passes on the frozen exact head.
+- [x] Independent exact-head GPT-6 Luna review and hosted checks pass before MQ.
 
 ## Excluded scope
 
@@ -188,16 +189,22 @@ previously unseen occurrence.
 
 - Focused PostgreSQL wrapper: `apps/game-server/tests/character_progression_postgres.rs`.
 - Protected PostgreSQL 17.6 routing: shared cases are included by registered `character_authority_postgres`.
-- Local configured PostgreSQL: pending; no `OTERYN_TEST_POSTGRES_ADMIN_URL` and
-  the installed Docker Desktop engine failed to initialize.
+- Local configured PostgreSQL was unavailable in the authoring environment; no
+  `OTERYN_TEST_POSTGRES_ADMIN_URL` was configured and the installed Docker Desktop
+  engine failed to initialize. Hosted PostgreSQL is the terminal execution proof.
 - Hosted PostgreSQL 17.6: `36329970211` exposed the insecure `/tmp` parent;
   `36331164655` proved its `0700` repair, then rejected the direct scope insert.
-  `36332161320` then exposed raw-guard assignment ambiguity. On `1ce4eefa`, run
+  `36332161320` exposed raw-guard assignment ambiguity. On `1ce4eefa`, run
   `36333519659` passed build, Clippy and workspace tests; the real PG target passed
   replay/restart and stale-fence cases. Both concurrent cases committed exactly
   once, while their simultaneous loser correctly hit the root's max-one-holder
-  backpressure. The successor now retries after holder release and proves exact
+  backpressure. The final successor retries after holder release and proves exact
   replay or stale-predecessor rejection.
+- Frozen source `0f7b74370fbc07bb5d894cf142b61f9a07611225`: exact-head run
+  `36334520143` passed all required source checks. Its registered PostgreSQL target
+  passed all four P03 cases and reported `464 passed; 0 failed`.
+- Actual merge-group run `36335855136`, job `108666618739`: PostgreSQL 17.6 passed
+  all four P03 cases again on composed SHA `650dd6484a443fbc39e4b5dfb0686b24c72cbcd5`.
 
 ### E2E
 
@@ -205,54 +212,71 @@ previously unseen occurrence.
 
 ### Exact-head CI
 
-- final head: pending remote freeze
-- trigger source: pending PR
-- workflow/run/job: pending
-- runner assignment: pending
+- final head: `0f7b74370fbc07bb5d894cf142b61f9a07611225`
+- trigger source: PR #998 `synchronize`
+- workflow/run: canonical Merge gate `36334520143`
+- decisive jobs: Rust Linux `108662817793`, validate `108665037846`,
+  `game-gate` `108665053000`
+- runner assignment: hosted Linux; required source jobs completed
 - classification: server + PostgreSQL
-- result: pending
+- result: PASS; exact-head checks terminal without pending or failure
 
 ## Self-review
 
-- exact head: pending remote freeze
-- method/reviewer: `/root`, complete allocated-delta and authority-family review
-- material findings: immutable root/bootstrap-receipt assumptions repaired before freeze
-- verdict: local authoring candidate remains under validation
+- exact head: `0f7b74370fbc07bb5d894cf142b61f9a07611225`
+- method/reviewer: `/root`, complete nine-path delta and authority-family review
+- material findings: immutable root/bootstrap-receipt assumptions and all later
+  exact-head fixture/authority defects were repaired before the final freeze
+- verdict: PASS; no unresolved material finding
 
 ## Independent review
 
 - required: YES; durable Character mutation and recovery/session fencing
-- exact head: pending remote freeze
+- exact head: `0f7b74370fbc07bb5d894cf142b61f9a07611225`
 - method/auditor: independent GPT-6 Luna subagent
-- material findings: terminal-session coverage and post-assignment readiness fixed;
-  `32294d77` stale head pointer fixed; `1ce4eefa` re-review found no P0/P1/P2
-- verdict: pending
+- material findings: terminal-session coverage, readiness ordering, stale task-head
+  metadata and the max-one-holder fixture expectation were repaired in superseded
+  candidates; fresh final-head review found no P0/P1/P2
+- verdict: PASS
 
 ## PR and closeout
 
-- changed-file review: pending final staged candidate
-- unresolved review threads: pending PR
+- changed-file review: complete for all nine allocated source paths
+- unresolved review threads: none
 - related/superseded PRs: none adopted
-- protected auto-merge: pending native Merge Queue
-- merge commit/result: pending
-- ownership release: pending protected-main readback and archive packet
+- protected integration: native exact-head `merge-async` with
+  `merge_action=merge_queue`; UUID `5a9a98cb-ec7f-48e9-8cba-90573c03dbc4`,
+  receipt sequence 1 and same-target readback sequence 2
+- actual Merge Queue: run `36335855136`, aggregate `game-gate` job
+  `108668316671` SUCCESS
+- merge commit/result: PR #998 MERGED at `2026-09-27T17:20:06Z` as
+  `650dd6484a443fbc39e4b5dfb0686b24c72cbcd5`
+- protected readback: `main` equals the successful merge-group SHA; eight allocated
+  blobs equal the frozen source and `durability/mod.rs` preserves the complete P03
+  delta plus only the independent reconnect linkage from the composed base
+- ownership release: terminal after protected archive readback; the lifecycle
+  receipt is recorded externally on Issue #162 to avoid self-referential closeout data
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PostgreSQL proved 2/4 directly; concurrent losers now retry after root-holder release
-status: implementing
+last_progress: "PR #998 merged through successful Merge Queue and protected main readback; task archived"
+status: completed
 branch: codex/r7-p03-character-xp-commit
-head_sha: null
+head_sha: 0f7b74370fbc07bb5d894cf142b61f9a07611225
 pr: 998
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+final_head_sha: 0f7b74370fbc07bb5d894cf142b61f9a07611225
+final_head_frozen_at: 2026-09-27T16:47:31Z
+ci_trigger_source: pull_request/synchronize
+ci_check_generation: 36334520143
+ci_checks_for_current_head: 14
+ci_run_ids: [36334520143]
+ci_job_ids: [108662817793, 108665037846, 108665053000]
+runner_assignment_state: success
+merge_group_run_id: 36335855136
+merge_group_sha: 650dd6484a443fbc39e4b5dfb0686b24c72cbcd5
+merge_group_game_gate_job: 108668316671
+merge_group_postgres_job: 108666618739
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -262,5 +286,5 @@ ci_recovery_actions_for_current_head: 6
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: freeze concurrency-assertion repair and rerun exact-head review plus PostgreSQL 17.6
+next_action: "none for P03; excluded gameplay, initialization and Reference-parity work require separate allocations"
 ```
