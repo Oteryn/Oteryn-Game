@@ -11,6 +11,14 @@ source `zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a`
 semantic key, every other row gets `oteryn:item.registry.i%08d`. That mapping
 is currently only implicit in the allocator's own logic.
 
+A later protected identity promotion may rename one allocated key in place
+(e.g. R7 P04: Crystal `3031` `oteryn:item.registry.i00002921` ->
+`oteryn:item.currency.gold_coin`). Each promotion is declared in the same Rust
+source as a `<PREFIX>_SOURCE_ITEM_ID` / `<PREFIX>_OLD_KEY` / `<PREFIX>_KEY`
+constant triple; this script applies every such triple after allocation and
+fails closed unless the allocator assigned exactly `<PREFIX>_OLD_KEY` to that
+source id.
+
 Per `docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md`
 section 3, an external identifier must become an explicit, typed
 `(target, source, identity_namespace, external_id, disposition)` binding
@@ -132,6 +140,40 @@ def parse_native_batch(text: str) -> dict[int, str]:
             raise GeneratorError(f"NATIVE_ITEM_BATCH_DUPLICATE_SOURCE_ID:{source_id}")
         mapping[source_id] = native_key
     return mapping
+
+
+def parse_identity_promotions(text: str) -> dict[int, tuple[str, str]]:
+    """Return `{source_item_id: (old_key, new_key)}` for every declared promotion."""
+    promotions: dict[int, tuple[str, str]] = {}
+    for prefix, old_key in re.findall(
+        r'pub const (\w+)_OLD_KEY: &str = "([^"]+)";', text
+    ):
+        new_match = re.search(rf'pub const {prefix}_KEY: &str = "([^"]+)";', text)
+        id_match = re.search(
+            rf"pub const {prefix}_SOURCE_ITEM_ID: u64 = ([0-9_]+);", text
+        )
+        if not new_match or not id_match:
+            raise GeneratorError(f"IDENTITY_PROMOTION_INCOMPLETE:{prefix}")
+        source_id = int(id_match.group(1).replace("_", ""))
+        if source_id in promotions:
+            raise GeneratorError(f"IDENTITY_PROMOTION_DUPLICATE_SOURCE_ID:{source_id}")
+        promotions[source_id] = (old_key, new_match.group(1))
+    return promotions
+
+
+def apply_identity_promotions(
+    allocations: list[tuple[int, str]], promotions: dict[int, tuple[str, str]]
+) -> list[tuple[int, str]]:
+    by_source = dict(allocations)
+    for source_id, (old_key, _new_key) in promotions.items():
+        if by_source.get(source_id) != old_key:
+            raise GeneratorError(
+                f"IDENTITY_PROMOTION_OLD_KEY_MISMATCH:{source_id}:{by_source.get(source_id)}"
+            )
+    return [
+        (source_id, promotions[source_id][1] if source_id in promotions else key)
+        for source_id, key in allocations
+    ]
 
 
 def opaque_item_key(namespace: str, sequence: int) -> str:
@@ -268,7 +310,10 @@ def generate() -> tuple[dict[str, Any], bytes]:
     namespace = parse_opaque_namespace(text)
     native_batch = parse_native_batch(text)
     records = load_identity_records()
-    allocations = allocate_keys(records, native_batch, namespace)
+    allocations = apply_identity_promotions(
+        allocate_keys(records, native_batch, namespace),
+        parse_identity_promotions(text),
+    )
     definition_keys = load_definition_keys()
     tibiawiki_targets = load_tibiawiki_targets()
     verify_allocations(allocations, definition_keys, tibiawiki_targets)

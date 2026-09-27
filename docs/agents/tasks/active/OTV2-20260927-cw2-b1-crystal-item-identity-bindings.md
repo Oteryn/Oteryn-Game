@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: 989
+pr: 996
 base_sha: ccef9bbe8ecf75c4b1b99b07237c78ebf4642dce
 head_sha: null
 final_head_sha: null
@@ -61,6 +61,7 @@ only (Canary is out of scope). No canonical identity is minted; no
 
 - [x] `tools/content-census/g4_item_crystal_binding_generator.py` independently re-derives the allocator's mapping (parsing `NATIVE_ITEM_BATCH` from the Rust source, never hand-copied) and fails closed on: wrong evidence digest/bytes, non-ascending/duplicate `source_item_id`, wrong opaque/native counts, duplicate native key, an allocated key absent from `content/items/definitions/*.json`, a definitions key with no allocation, or the Magic Sword golden cross-check (Crystal `3288` -> `oteryn:item.registry.i00003167`, matching TibiaWiki page `5810`) disagreeing.
 - [x] Generated `imports/crystalserver/bindings/items.json` has exactly 38,157 `EXACT` bindings, `identity_namespace: ots/item_server_id`, `source_key: oteryn:source.crystalserver`, `source_revision: ff7ede593c69d4c658b382c97443e8155926924a`, every `target.key` present in `content/items/definitions/*.json`.
+- [x] Protected identity promotions declared in the allocator source (`<PREFIX>_SOURCE_ITEM_ID`/`_OLD_KEY`/`_KEY`, currently R7 P04 Gold Coin: Crystal `3031` -> `oteryn:item.currency.gold_coin`) are applied after allocation, failing closed unless the allocator assigned exactly the old key.
 - [x] `tools/content-census/g4_item_crystal_binding_generator_self_test.py` exercises the fail-closed paths above at small scale.
 - [x] `python tools/agents/validate_governance.py`, the content-tree migration validators and ruff pass (see Validation).
 - [x] `.github/workflows/g4-item-crystal-bindings.yml` re-runs the self-test and `--check` whenever the generator, its output, `content/items/definitions/**`, the Rust allocator, the evidence catalogue or the TibiaWiki bindings change, so drift cannot land silently.
@@ -100,7 +101,12 @@ only (Canary is out of scope). No canonical identity is minted; no
 - head `de14e8a2` (before the drift-guard workflow): Merge gate (scope, governance,
   routing contract, dependency review, CodeQL, trusted-base risk lanes, validate) and
   `game-gate` success; classification `auxiliary` (Rust/Windows lanes skipped)
-- final head: pending (successor head adds the workflow and this record update)
+- head `60dac2d9`: all checks green, including the new drift guard
+- head `d62d32c4` (owner merged `main`): the drift guard failed with
+  `ALLOCATED_KEY_MISSING_FROM_DEFINITIONS:[i00002921]` because #987 promoted Gold Coin;
+  #989 merged from the queue as `0c7098eb` before the repair could land; the repair
+  (declared identity promotions) follows in PR #996
+- final head: pending
 
 ## Self-review
 
@@ -133,16 +139,16 @@ only (Canary is out of scope). No canonical identity is minted; no
 - unresolved review threads: none
 - related/superseded PRs: none
 - protected auto-merge: NOT_AUTHORIZED (owner merges)
-- merge commit/result: pending
+- merge commit/result: #989 merged as `0c7098eb`; follow-up repair #996 pending
 - ownership release: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: drift-guard workflow added; independent review APPROVE; record and PR text updated
+last_progress: drift guard caught the #987 Gold Coin promotion after the main merge; generator now applies declared identity promotions
 status: validating
 branch: claude/compassionate-albattani-s29syw
-pr: 989
+pr: 996
 final_head_sha: null
 owner_action_required: "merge after exact-head CI is green"
 blocker: null
