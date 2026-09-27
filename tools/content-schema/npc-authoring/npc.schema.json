@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://oteryn.invalid/schemas/npc-authoring-candidate-v1.json",
+  "title": "OTERYN_NPC_AUTHORING_CANDIDATE/v1",
+  "description": "Candidate NPC authoring bundle converted from a pinned OTS datapack. Source-scoped key, OTS_HYPOTHESIS_ONLY evidence, never Game truth. See docs/architecture/OTERYN_NPC_AUTHORING_SCHEMA_V1.md.",
+  "type": "object",
+  "required": ["schema", "key", "evidence", "source", "status"],
+  "properties": {
+    "schema": {"const": "OTERYN_NPC_AUTHORING_CANDIDATE/v1"},
+    "key": {"type": "string", "pattern": "^(canary|crystal):npc/[a-z0-9_'.-]+$"},
+    "evidence": {"const": "OTS_HYPOTHESIS_ONLY"},
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "revision", "path", "sha256"],
+      "properties": {
+        "repository": {"enum": ["opentibiabr/canary", "zimbadev/crystalserver"]},
+        "revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "path": {"type": "string"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "status": {"enum": ["RESOLVED", "PARTIAL", "LOAD_ERROR", "NOT_AN_NPC"]},
+    "error": {"type": "string"},
+    "definition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "display_name", "description", "profession", "presentation", "movement", "vitals", "respawn"],
+      "properties": {
+        "name": {"type": ["string", "null"]},
+        "display_name": {"type": ["string", "null"]},
+        "description": {"$ref": "#/$defs/text"},
+        "profession": {"type": ["string", "null"]},
+        "presentation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["outfit", "speech_bubble", "light"],
+          "properties": {
+            "outfit": {
+              "oneOf": [
+                {"type": "null"},
+                {"type": "object", "additionalProperties": false, "required": ["item_look"],
+                 "properties": {"item_look": {"type": "integer", "minimum": 0}}},
+                {"type": "object", "additionalProperties": false,
+                 "required": ["look_type", "head", "body", "legs", "feet", "addons", "mount"],
+                 "properties": {
+                   "look_type": {"type": ["integer", "null"], "minimum": 0},
+                   "head": {"type": "integer", "minimum": 0}, "body": {"type": "integer", "minimum": 0},
+                   "legs": {"type": "integer", "minimum": 0}, "feet": {"type": "integer", "minimum": 0},
+                   "addons": {"type": "integer", "minimum": 0, "maximum": 3},
+                   "mount": {"type": ["integer", "null"], "minimum": 0}
+                 }}
+              ]
+            },
+            "speech_bubble": {"type": ["string", "integer", "null"]},
+            "light": {"type": ["object", "null"]}
+          }
+        },
+        "movement": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["walk_interval_ms", "walk_radius", "floor_change"],
+          "properties": {
+            "walk_interval_ms": {"type": ["integer", "null"], "minimum": 0},
+            "walk_radius": {"type": ["integer", "null"], "minimum": -1},
+            "floor_change": {"type": ["boolean", "null"]}
+          }
+        },
+        "vitals": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["health", "max_health"],
+          "properties": {"health": {"type": ["integer", "null"]}, "max_health": {"type": ["integer", "null"]}}
+        },
+        "respawn": {}
+      }
+    },
+    "voices": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object", "additionalProperties": false, "required": ["interval_ms", "chance_percent", "lines"],
+         "properties": {
+           "interval_ms": {"type": ["integer", "null"], "minimum": 0},
+           "chance_percent": {"type": ["integer", "null"], "minimum": 0, "maximum": 100},
+           "lines": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["text", "yell"],
+                                                   "properties": {"text": {"$ref": "#/$defs/text"}, "yell": {"type": "boolean"}}}}
+         }}
+      ]
+    },
+    "dialogue": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["messages", "keywords", "scripted_handlers", "dialog_option_calls"],
+      "properties": {
+        "messages": {"type": "object", "additionalProperties": {"$ref": "#/$defs/text"}},
+        "keywords": {"type": "array", "items": {"$ref": "#/$defs/keyword"}},
+        "scripted_handlers": {"type": "array", "items": {"type": "string"}},
+        "dialog_option_calls": {"type": "integer", "minimum": 0}
+      }
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["trade", "travel", "spells", "blessings", "promotion", "kick"],
+      "properties": {
+        "trade": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "object", "additionalProperties": false, "required": ["currency", "offers", "engine_trade_events"],
+             "properties": {
+               "currency": {"oneOf": [{"const": "GOLD"},
+                                      {"type": "object", "additionalProperties": false, "required": ["client_id"],
+                                       "properties": {"client_id": {"type": "integer"}}}]},
+               "offers": {"type": "array", "items": {"$ref": "#/$defs/offer"}},
+               "engine_trade_events": {"type": "array", "items": {"enum": ["onBuyItem", "onCheckItem", "onSellItem"]}}
+             }}
+          ]
+        },
+        "travel": {"type": "array", "items": {"$ref": "#/$defs/travel"}},
+        "spells": {"type": "array", "items": {"$ref": "#/$defs/spell"}},
+        "blessings": {"type": "array", "items": {"type": "object", "required": ["keyword", "blessing", "price", "gate", "dialogue_path"]}},
+        "promotion": {"type": "array", "items": {"type": "object", "required": ["keyword", "price", "min_level", "promotion", "gate", "dialogue_path"]}},
+        "kick": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["destinations", "dialogue_path"],
+                                             "properties": {"destinations": {"type": "array"}, "dialogue_path": {"type": "string"}}}}
+      }
+    },
+    "placements": {"type": "array", "items": {"$ref": "#/$defs/placement"}},
+    "unresolved": {"type": "array", "items": {"$ref": "#/$defs/unresolved"}}
+  },
+  "allOf": [
+    {"if": {"properties": {"status": {"enum": ["RESOLVED", "PARTIAL"]}}},
+     "then": {"required": ["definition", "voices", "dialogue", "services", "placements", "unresolved"]},
+     "else": {"required": ["error"]}}
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "position": {"type": "object", "additionalProperties": false, "required": ["x", "y", "z"],
+                 "properties": {"x": {"type": "integer", "minimum": 0, "maximum": 65535},
+                                "y": {"type": "integer", "minimum": 0, "maximum": 65535},
+                                "z": {"type": "integer", "minimum": 0, "maximum": 15}}},
+    "text": {
+      "description": "A text reference. `text` is present only in local --include-text output and must never be committed.",
+      "oneOf": [
+        {"type": "null"},
+        {"type": "object", "additionalProperties": false, "required": ["sha256", "length", "placeholders", "links"],
+         "properties": {"sha256": {"$ref": "#/$defs/sha256"}, "length": {"type": "integer", "minimum": 0},
+                        "placeholders": {"type": "array", "items": {"type": "string", "pattern": "^\\|[A-Z_]+\\|$"}},
+                        "links": {"type": "array", "items": {"type": "string"}},
+                        "text": {"type": "string"}}},
+        {"type": "object", "additionalProperties": false, "required": ["parts"],
+         "properties": {"parts": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/text"}}}}
+      ]
+    },
+    "keyword": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keywords", "kind", "text", "flags", "gate", "effect", "children"],
+      "properties": {
+        "keywords": {"type": "array", "items": {"type": "string"}},
+        "kind": {"enum": ["say", "travel", "learn_spell", "bless", "kick", "promote", "rookgaard_hints", "script", "none", "unknown_module"]},
+        "text": {"$ref": "#/$defs/text"},
+        "flags": {"type": "object", "additionalProperties": false,
+                  "properties": {"only_focus": {"type": "boolean"}, "only_unfocus": {"type": "boolean"},
+                                 "reset": {"type": "boolean"}, "ungreet": {"type": "boolean"}, "move_up": {"type": "integer"}}},
+        "gate": {"enum": ["NONE", "LUA_PREDICATE"]},
+        "effect": {"enum": ["NONE", "LUA_ACTION"]},
+        "children": {"type": "array", "items": {"$ref": "#/$defs/keyword"}}
+      }
+    },
+    "offer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["item_name", "client_id", "server_item_id", "buy_price", "sell_price", "count", "sub_type", "stock_gate"],
+      "properties": {
+        "item_name": {"type": ["string", "null"]},
+        "client_id": {"type": ["integer", "null"], "minimum": 0},
+        "server_item_id": {"type": ["integer", "null"], "minimum": 0},
+        "buy_price": {"type": ["integer", "null"], "minimum": 0},
+        "sell_price": {"type": ["integer", "null"], "minimum": 0},
+        "count": {"type": ["integer", "null"], "minimum": 0},
+        "sub_type": {"type": ["integer", "null"]},
+        "stock_gate": {"type": ["object", "null"]}
+      }
+    },
+    "travel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyword", "destination", "price", "premium", "min_level", "discount", "gate", "effect", "dialogue_path"],
+      "properties": {
+        "keyword": {"type": ["string", "null"]},
+        "destination": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/position"}]},
+        "price": {"type": ["integer", "null"], "minimum": 0},
+        "premium": {"type": ["boolean", "null"]},
+        "min_level": {"type": ["integer", "null"], "minimum": 0},
+        "discount": {},
+        "gate": {"enum": ["NONE", "LUA_PREDICATE"]},
+        "effect": {"enum": ["NONE", "LUA_ACTION"]},
+        "dialogue_path": {"type": "string"}
+      }
+    },
+    "spell": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["keyword", "spell_name", "price", "min_level", "premium", "vocations", "gate", "dialogue_path"],
+      "properties": {
+        "keyword": {"type": ["string", "null"]},
+        "spell_name": {"type": ["string", "null"]},
+        "price": {"type": ["integer", "null"], "minimum": 0},
+        "min_level": {"type": ["integer", "null"], "minimum": 0},
+        "premium": {"type": ["boolean", "null"]},
+        "vocations": {},
+        "gate": {"enum": ["NONE", "LUA_PREDICATE"]},
+        "dialogue_path": {"type": "string"}
+      }
+    },
+    "placement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["position", "direction", "spawn_interval_s", "engine_spawns", "spawn_radius", "placement_file"],
+      "properties": {
+        "position": {"$ref": "#/$defs/position"},
+        "direction": {"enum": ["NORTH", "EAST", "SOUTH", "WEST"]},
+        "spawn_interval_s": {"type": "integer"},
+        "engine_spawns": {"type": "boolean"},
+        "spawn_radius": {"type": "integer", "minimum": -1},
+        "placement_file": {"type": "string"}
+      }
+    },
+    "unresolved": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "reason", "detail"],
+      "properties": {
+        "path": {"type": "string"},
+        "reason": {"enum": ["LUA_CALLBACK", "LUA_PREDICATE", "LUA_ACTION", "NON_STATIC_TEXT", "NON_STATIC_DESTINATION",
+                            "NON_STATIC_SHOP_ROW", "NON_SEQUENTIAL_SHOP_TABLE", "PLAYER_STORAGE_GATE", "NO_ITEM_REFERENCE",
+                            "NO_PLACEMENT", "SPAWN_INTERVAL_OUT_OF_RANGE", "UNMAPPED_CONFIG_FIELD", "UNMAPPED_ENGINE_CALL",
+                            "UNKNOWN_MODULE", "MULTIPLE_REGISTRATIONS", "MULTIPLE_KEYWORD_HANDLERS", "ERROR_AFTER_REGISTER",
+                            "MISSING"]},
+        "detail": {"type": ["string", "null"]}
+      }
+    }
+  }
+}
