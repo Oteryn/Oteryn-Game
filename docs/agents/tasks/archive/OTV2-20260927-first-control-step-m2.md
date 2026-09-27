@@ -52,13 +52,17 @@ Allocation: #162 5854087291. Builds on M1 (#958).
   - An unknown command type, a malformed step payload or a stale binding gets `REJECTED`, with
     no effect.
   - A stale generation, a non-command message or a command-id gap closes the connection with
-    the matching FND-02 `ProtocolError`.
+    the matching FND-02 `ProtocolError`. A gap names the offending and the expected command
+    ID. A lower (replayed) ID is never re-executed; it closes with `COMMAND_OUTCOME_EXPIRED`,
+    because no outcome is retained.
+  - An unregistered command type gets REJECTED with no type-owned payload.
 
   Actors without a position keep the previous hold behaviour.
 - **Movement composition.** `ComposedFreshAdmission::step` runs one `MovementOwnerTurn` with a
   single-input budget (`MOVE-RL-02` = 1) over the Channel runtime. The selection is the actor's
   pinned position context and the active room's cell scope. A read position whose context is
-  not the Channel pin is never observed or moved.
+  not the Channel pin is never observed or moved. Every step also checks that the cells belong
+  to the pinned generation: the same World and server artifact digest.
 - **Qualification.** The Server Seam and node-boot `stage=admission` runs this whole sequence
   on one connection and compares every frame byte for byte:
   1. baseline (0,0,0) at revision 1;
@@ -70,6 +74,9 @@ Allocation: #162 5854087291. Builds on M1 (#958).
   7. command-id gap `CommandSequenceGap`.
 
   It then checks that exactly one GameSession committed.
+- Unit tests drive `serve_admitted` over an in-memory stream. They cover sequencing, the
+  delta after a move, the empty payload for an unregistered type, expiry of a replayed ID,
+  and the close on a gap, a non-command message or a stale generation.
 - The M1 `dead_code` allowances on the composed server codecs are removed. The client-side
   codecs stay test-only on the server.
 

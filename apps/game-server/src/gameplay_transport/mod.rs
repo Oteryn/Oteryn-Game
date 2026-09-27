@@ -408,6 +408,13 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         };
         use std::num::NonZeroUsize;
         let mut runtime = self.runtime.lock().await;
+        // The cells must be the pinned generation's own: same World and server artifact.
+        let scope = self.movement_cells.scope();
+        if scope.world_id != self.world_id
+            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
+        {
+            return StepOutcome::rejected();
+        }
         let owner_context = runtime.pinned_movement_context();
         let cardinal = match direction {
             StepDirection::North => CardinalStep::North,
@@ -422,7 +429,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             };
             let selection = MovementEngineeringSelection {
                 owner_context,
-                content_scope: self.movement_cells.scope(),
+                content_scope: scope,
             };
             turn.try_step(
                 actor,

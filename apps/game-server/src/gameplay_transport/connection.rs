@@ -18,8 +18,8 @@ use super::world_spatial::{
     encode_world_spatial,
 };
 use crate::foundation::{
-    CommandStatus, DomainSnapshot, encode_command_result, encode_single_chunk_snapshot,
-    encode_state_delta,
+    CommandStatus, DomainSnapshot, encode_command_protocol_error, encode_command_result,
+    encode_single_chunk_snapshot, encode_state_delta,
 };
 
 /// Foundation schema revision served by this build (FND-02 v1 contract).
@@ -327,18 +327,28 @@ where
             },
         };
         if command.command_id != next_command {
-            return close_admitted(
-                stream,
-                admitted,
-                FoundationProtocolError::CommandSequenceGap,
-            )
-            .await;
+            // FND-02 §13.2: a lower ID is never re-executed and no outcome is retained; a
+            // higher ID is a gap that names the expected ID.
+            let (error, expected) = if command.command_id < next_command {
+                (FoundationProtocolError::CommandOutcomeExpired, 0)
+            } else {
+                (FoundationProtocolError::CommandSequenceGap, next_command)
+            };
+            let _ = match encode_command_protocol_error(
+                error,
+                ADMITTED_GENERATION,
+                command.command_id,
+                expected,
+            ) {
+                Ok(frame) => write_frame(stream, &frame).await,
+                Err(_) => Ok(()),
+            };
+            return ConnectionEnd::AdmittedThenClosed(admitted, error);
         }
-        // Unknown command types and malformed step payloads have no effect.
-        let outcome = match (
-            command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT,
-            decode_step_intent(command.payload),
-        ) {
+        // Unknown command types and malformed step payloads have no effect. The result payload
+        // belongs to the command type, so an unregistered type gets none.
+        let registered = command.command_type == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT;
+        let outcome = match (registered, decode_step_intent(command.payload)) {
             (true, Ok(direction)) => authority.step(actor, direction).await,
             _ => StepOutcome::rejected(),
         };
@@ -359,7 +369,11 @@ where
             sequence,
             command.command_id,
             status,
-            &encode_step_result(outcome.disposition),
+            &if registered {
+                encode_step_result(outcome.disposition)
+            } else {
+                Vec::new()
+            },
         ) else {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         };
@@ -576,6 +590,206 @@ mod tests {
 
     fn error_frame(error: FoundationProtocolError, generation: u64) -> Vec<u8> {
         encode_protocol_error(error, generation).expect("error frame")
+    }
+
+    /// A positioned actor on a one-row room: east of the start is walkable, every other
+    /// direction is blocked.
+    struct StepAuthority {
+        steps: RefCell<Vec<StepDirection>>,
+    }
+
+    impl FreshAdmissionAuthority for StepAuthority {
+        async fn admit(
+            &self,
+            _attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            Err(AdmissionRefusal::Rejected)
+        }
+
+        async fn observe(&self, _actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+            Some(at(0))
+        }
+
+        async fn step(&self, _actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
+            self.steps.borrow_mut().push(direction);
+            if direction == StepDirection::East {
+                StepOutcome {
+                    disposition: StepDisposition::Moved,
+                    moved_to: Some(at(1)),
+                }
+            } else {
+                StepOutcome {
+                    disposition: StepDisposition::Blocked,
+                    moved_to: None,
+                }
+            }
+        }
+    }
+
+    fn at(x: i32) -> WorldSpatialObservation {
+        WorldSpatialObservation {
+            content_generation: [0x5c; 32],
+            actor_position: super::super::world_spatial::ActorPosition { x, y: 0, floor: 0 },
+        }
+    }
+
+    fn command(generation: u64, id: u64, command_type: u64, direction: StepDirection) -> Vec<u8> {
+        let mut payload = Vec::new();
+        scalar(&mut payload, 1, id);
+        scalar(&mut payload, 2, command_type);
+        bytes(
+            &mut payload,
+            4,
+            &super::super::world_spatial::encode_step_intent(direction),
+        );
+        envelope(7, generation, &payload)
+    }
+
+    /// Serve one positioned admitted session over the given client frames.
+    async fn drive_admitted(
+        authority: &StepAuthority,
+        client_frames: &[Vec<u8>],
+    ) -> Result<(ConnectionEnd, Vec<Vec<u8>>), Box<dyn Error>> {
+        let world_id = WorldId::decode(&WORLD)?;
+        let channel_id = ChannelId::decode(&CHANNEL)?;
+        let admitted = AdmittedSession {
+            game_session_id: GameSessionId::decode(&SESSION)?,
+            world_id,
+            channel_id,
+            runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+            first_entry: FirstEntryOutcome::Positioned,
+        };
+        let (mut server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 21);
+        for frame in client_frames {
+            client.write_all(&framed(frame)).await?;
+        }
+        client.shutdown().await?;
+        let end = serve_admitted(&mut server, admitted, authority).await;
+        drop(server);
+        let mut output = Vec::new();
+        client.read_to_end(&mut output).await?;
+        let mut frames = Vec::new();
+        let mut cursor = 0;
+        while cursor < output.len() {
+            let length = u32::from_be_bytes(output[cursor..cursor + 4].try_into()?) as usize;
+            frames.push(output[cursor + 4..cursor + 4 + length].to_vec());
+            cursor += 4 + length;
+        }
+        Ok((end, frames))
+    }
+
+    fn baseline() -> Vec<Vec<u8>> {
+        encode_single_chunk_snapshot(
+            ADMITTED_GENERATION,
+            1,
+            0,
+            &[DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 1,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &encode_world_spatial(&at(0)),
+            }],
+        )
+        .expect("snapshot")
+        .into()
+    }
+
+    #[test]
+    fn admitted_steps_are_sequenced_and_a_replayed_id_expires() -> Result<(), Box<dyn Error>> {
+        run(async {
+            let authority = StepAuthority {
+                steps: RefCell::new(Vec::new()),
+            };
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            let (end, frames) = drive_admitted(
+                &authority,
+                &[
+                    command(1, 1, step, StepDirection::East),
+                    command(1, 2, step, StepDirection::North),
+                    command(1, 3, 0x7fff, StepDirection::East),
+                    command(1, 2, step, StepDirection::East),
+                ],
+            )
+            .await?;
+            let mut expected = baseline();
+            let moved = encode_step_result(StepDisposition::Moved);
+            let blocked = encode_step_result(StepDisposition::Blocked);
+            expected.extend([
+                encode_command_result(1, 1, 1, CommandStatus::Accepted, &moved)?,
+                encode_state_delta(
+                    1,
+                    2,
+                    STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                    1,
+                    2,
+                    DELTA_TYPE_WORLD_SPATIAL_V1,
+                    &encode_world_spatial(&at(1)),
+                )?,
+                encode_command_result(1, 3, 2, CommandStatus::Accepted, &blocked)?,
+                encode_command_result(1, 4, 3, CommandStatus::Rejected, &[])?,
+                encode_command_protocol_error(
+                    FoundationProtocolError::CommandOutcomeExpired,
+                    1,
+                    2,
+                    0,
+                )?,
+            ]);
+            assert_eq!(frames, expected);
+            assert!(matches!(
+                end,
+                ConnectionEnd::AdmittedThenClosed(
+                    _,
+                    FoundationProtocolError::CommandOutcomeExpired
+                )
+            ));
+            // The unregistered type and the replayed ID never reached Movement.
+            assert_eq!(
+                *authority.steps.borrow(),
+                [StepDirection::East, StepDirection::North]
+            );
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn admitted_session_closes_on_gap_foreign_message_and_stale_generation()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+            for (frame, error, expected) in [
+                (
+                    command(1, 3, step, StepDirection::East),
+                    FoundationProtocolError::CommandSequenceGap,
+                    encode_command_protocol_error(
+                        FoundationProtocolError::CommandSequenceGap,
+                        1,
+                        3,
+                        1,
+                    )?,
+                ),
+                (
+                    envelope(99, 1, &[]),
+                    FoundationProtocolError::UnknownMessageType,
+                    error_frame(FoundationProtocolError::UnknownMessageType, 1),
+                ),
+                (
+                    command(2, 1, step, StepDirection::East),
+                    FoundationProtocolError::StaleConnectionGeneration,
+                    error_frame(FoundationProtocolError::StaleConnectionGeneration, 1),
+                ),
+            ] {
+                let authority = StepAuthority {
+                    steps: RefCell::new(Vec::new()),
+                };
+                let (end, frames) = drive_admitted(&authority, &[frame]).await?;
+                let mut all = baseline();
+                all.push(expected);
+                assert_eq!(frames, all);
+                assert!(matches!(end, ConnectionEnd::AdmittedThenClosed(_, e) if e == error));
+                assert!(authority.steps.borrow().is_empty());
+            }
+            Ok(())
+        })
     }
 
     #[test]

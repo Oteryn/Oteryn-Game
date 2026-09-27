@@ -142,6 +142,21 @@ struct ActorRef {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ExactActorRef(ActorRef);
 
+impl ExactActorRef {
+    /// Transport test fixture: an actor reference that names no runtime slot.
+    #[cfg(test)]
+    #[allow(clippy::expect_used, dead_code)]
+    pub(crate) fn transport_fixture(world_id: WorldId, channel_id: ChannelId) -> Self {
+        Self(ActorRef {
+            world_id,
+            channel_id,
+            scope_generation: ScopeOwnershipGeneration::new(1).expect("generation"),
+            actor_local_id: ActorLocalId(1),
+            actor_local_generation: ActorLocalGeneration(1),
+        })
+    }
+}
+
 /// One fixed-slot reservation for a fresh GameSession. It is not a playable
 /// actor until the owning durable admission is proven committed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

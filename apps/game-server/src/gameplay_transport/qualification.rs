@@ -36,8 +36,8 @@ use crate::foundation::admission_authority_publication::{
 };
 use crate::foundation::{
     ChannelId, CharacterId, CommandStatus, DomainSnapshot, FoundationProtocolError, MessageType,
-    NodeId, RuntimeScopeRefV1, WorldId, decode_wire_envelope, encode_command_result,
-    encode_protocol_error, encode_single_chunk_snapshot, encode_state_delta,
+    NodeId, RuntimeScopeRefV1, WorldId, decode_wire_envelope, encode_command_protocol_error,
+    encode_command_result, encode_protocol_error, encode_single_chunk_snapshot, encode_state_delta,
 };
 use crate::native_admission_source::{self, TransientCapacity, descriptor::ProducerDescriptor};
 use crate::{GameplayListenerConfig, GameplaySeamOwners, serve_gameplay};
@@ -709,8 +709,10 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
         delta(4, 2, 0)?,
         result(5, 3, CommandStatus::Accepted, StepDisposition::Blocked)?,
         result(6, 4, CommandStatus::Accepted, StepDisposition::Blocked)?,
-        result(7, 5, CommandStatus::Rejected, StepDisposition::Rejected)?,
-        encode_protocol_error(FoundationProtocolError::CommandSequenceGap, 1)?,
+        // An unregistered command type: REJECTED with no type-owned payload.
+        encode_command_result(1, 7, 5, CommandStatus::Rejected, &[])?,
+        // Command 7 after 5: a gap naming the offending and the expected ID.
+        encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 1, 7, 6)?,
     ]);
     Ok(frames)
 }

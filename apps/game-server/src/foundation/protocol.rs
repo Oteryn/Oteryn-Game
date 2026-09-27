@@ -540,9 +540,22 @@ pub(crate) fn encode_protocol_error(
     error: FoundationProtocolError,
     generation: u64,
 ) -> Result<Vec<u8>, FoundationProtocolError> {
+    encode_command_protocol_error(error, generation, 0, 0)
+}
+
+/// `ProtocolError` with its optional command correlation (zero means not applicable): the
+/// offending `related_command_id` and, for a gap, the `expected_command_id` (FND-02 §13.2).
+pub(crate) fn encode_command_protocol_error(
+    error: FoundationProtocolError,
+    generation: u64,
+    related_command_id: u64,
+    expected_command_id: u64,
+) -> Result<Vec<u8>, FoundationProtocolError> {
     let mut payload = Vec::new();
     push_scalar(&mut payload, 1, u64::from(error.code()));
     push_scalar(&mut payload, 2, u64::from(error.disposition() as u32));
+    push_scalar(&mut payload, 3, related_command_id);
+    push_scalar(&mut payload, 4, expected_command_id);
     let mut output = vec![8, 14];
     push_scalar(&mut output, 2, generation);
     push_bytes(&mut output, 4, &payload);
