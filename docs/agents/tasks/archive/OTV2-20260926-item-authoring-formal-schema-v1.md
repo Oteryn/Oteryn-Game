@@ -240,3 +240,41 @@ owner_action_required: null
 blocker: null
 next_action: owner selects the v4 repair branch for #952, then freeze and exact-head review
 ```
+
+## Terminal lifecycle closeout — 2026-09-27
+
+This section supersedes the historical implementing/pending metadata and checkpoint
+above. The complete delivery record remains verbatim as historical evidence; this
+archive is not an active dispatch surface.
+
+`PROVEN`: [PR #952](https://github.com/Oteryn/Oteryn-Game/pull/952)
+("feat(content): formalize Item authoring schema v1") merged into protected `main`
+at `2026-09-27T19:00:39Z`, merged by `blakinio`. Its exact merge commit is
+`f404eedb3acef2a0d5ba50ce1f15c34cec118c05`, sole parent
+`3c9aef87a4dff22b9a8308d82a55f5bfe8469bf6` (protected `main` immediately before
+merge) and tree `c965756959b1be5118d24a33c020e2624d544f00`. The PR's own head
+commit was `9e8949a27f938e9b8d52b9c21653f2e98f023468` against base `main`; it carried
+117 commits, 49 changed files and 45,399 additions. Protected `main` is at this
+exact merge commit as of this closeout.
+
+`PROVEN`: all 24 checks GitHub recorded for that PR head completed without failure
+(`success` or `skipped`, none `failure`/`cancelled`/`timed_out`), including
+[`item-authoring` job 108683773331](https://github.com/Oteryn/Oteryn-Game/actions/runs/36341997532/job/108683773331),
+[`game-gate` job 108684085761](https://github.com/Oteryn/Oteryn-Game/actions/runs/36341997535/job/108684085761),
+`Merge gate / governance`, `Merge gate / scope`, `Agent governance / validate`,
+`Architecture semantic audit / validate` and `Merge authority audit / protected-base
+validate`. This closeout itself performs no fresh exact-head independent review; the
+"Independent review" section above records what was reviewed before freeze, and the
+review's own accepted follow-ups (formal-schema negative probes, a Crystal-binding
+loader fail-closed check, a CI-scope doc note, and a v1 semantic-promotion lowering
+candidate) are tracked by the new task record this closeout creates,
+`OTV2-20260927-item-authoring-followups-lowering-v1`.
+
+The delivery task status is `completed`: PR #952 formalized the Item authoring
+schema v1 package (`tools/content-schema/item-authoring/**`,
+`docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md`,
+`.github/workflows/item-authoring-schema.yml`) and merged clean into protected
+`main`. This closeout performs no code, schema or content mutation of its own; it
+only moves this record from `docs/agents/tasks/active/` to
+`docs/agents/tasks/archive/`. Aggregate issue #162 and Jira `KAN-16` remain open for
+the follow-up work and any later Item authoring changes.

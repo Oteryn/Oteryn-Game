@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 13,
-  "checks": 236,
-  "passed": 236,
+  "checks": 242,
+  "passed": 242,
   "failed": 0,
   "results": [
     {
@@ -1361,6 +1361,30 @@
     },
     {
       "name": "real-source defaults reject unadmitted Item leaves",
+      "passed": true
+    },
+    {
+      "name": "non-source default accepts the pinned engine classification max_tier",
+      "passed": true
+    },
+    {
+      "name": "non-source default rejects the wrong max_tier for a classification",
+      "passed": true
+    },
+    {
+      "name": "non-source default rejects a missing forge classification",
+      "passed": true
+    },
+    {
+      "name": "non-source default accepts the fixed mantra damage_types element",
+      "passed": true
+    },
+    {
+      "name": "non-source default rejects the wrong mantra damage_types element",
+      "passed": true
+    },
+    {
+      "name": "non-source default rejects an out-of-range mantra damage_types index",
       "passed": true
     },
     {

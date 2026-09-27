@@ -58,6 +58,9 @@ jobs:
       - name: Converter fixture tests
         run: python test_engine_items.py
 
+      - name: Semantic promotion lowering fixture tests
+        run: python test_lower_promotion_packet.py
+
       - name: Item Master census
         working-directory: .
         run: |
