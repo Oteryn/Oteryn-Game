@@ -1,7 +1,7 @@
 use crate::content::{
     CanonicalReferencePlayableContent, ContentError, DefinitionFamily, FootprintRelation,
-    LogicalCell, NonAuthoritativeReferenceStage, PlacementKey, ProductionKey,
-    REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+    LocalObjectStateDefinition, LogicalCell, NonAuthoritativeReferenceStage, PlacementKey,
+    ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
     ReferenceDefinitionKind, ReferencePlayableContentSource, ReferencePlayableGenerationIdentity,
     ReferenceServerItem, TransitionBinding, TransitionKey, TypedDefinitionRef,
     link_reference_playable,
@@ -658,8 +658,8 @@ impl LocalObjectRuntime {
                 "OPEN/CLOSE transitions are not an exact two-state inverse pair",
             ));
         }
-        if !states.contains(&open_transition.source_state)
-            || !states.contains(&open_transition.target_state)
+        if !local_object_states_contain(states, &open_transition.source_state)
+            || !local_object_states_contain(states, &open_transition.target_state)
         {
             return Err(WorldRuntimeError::InvalidBinding(
                 "OPEN/CLOSE transition states are not declared by the local object",
@@ -696,13 +696,21 @@ impl LocalObjectRuntime {
         }
 
         let collision_cells = absolute_collision_cells(placement)?;
+        // D38 W1b mechanical adaptation: the linker now requires every LocalObject placement to
+        // carry an authored initial state validated against this same `states` vocabulary, so the
+        // runtime reads it from the placement instead of deriving it from the OPEN transition.
+        let initial_state = placement.local_object_initial_state.clone().ok_or(
+            WorldRuntimeError::InvalidBinding(
+                "placement lacks authored local object initial state",
+            ),
+        )?;
         Ok(Self {
             scope,
             scope_generation,
             content_generation,
             placement: placement.key.clone(),
             incarnation,
-            state: open_transition.source_state.clone(),
+            state: initial_state,
             revision: 0,
             blocking_cells: collision_cells.clone(),
             collision_cells,
@@ -1016,6 +1024,10 @@ fn unique_transition<'a>(
     Ok(transition)
 }
 
+fn local_object_states_contain(states: &[LocalObjectStateDefinition], key: &ProductionKey) -> bool {
+    states.iter().any(|state| &state.key == key)
+}
+
 fn absolute_collision_cells(
     placement: &crate::content::PlacementRef,
 ) -> Result<BTreeSet<LogicalCell>, WorldRuntimeError> {
@@ -1116,6 +1128,7 @@ impl PreparedMutation {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::content::LocalObjectCollisionPresence;
     use crate::content::{
         CW2_B1_VASE_KEY, CW2_B1_VASE_REVISION, CanonicalProjectDocuments, ClientProjectionClass,
         ContentActivationController, ContentLockBinding, ContentLockEntry, CoordinateFrameRef,
@@ -1335,8 +1348,14 @@ mod tests {
             definitions: vec![ReferenceDefinition {
                 definition: object_ref.clone(),
                 kind: ReferenceDefinitionKind::LocalObjectStates(vec![
-                    closed.clone(),
-                    open.clone(),
+                    LocalObjectStateDefinition {
+                        key: closed.clone(),
+                        collision: LocalObjectCollisionPresence::Present,
+                    },
+                    LocalObjectStateDefinition {
+                        key: open.clone(),
+                        collision: LocalObjectCollisionPresence::Absent,
+                    },
                 ]),
                 client_projection: ClientProjectionClass::ClientSafe,
             }],
@@ -1357,11 +1376,11 @@ mod tests {
                 TransitionBinding {
                     key: TransitionKey::new(CLOSE_TRANSITION)?,
                     definition: object_ref.clone(),
-                    source_state: open,
+                    source_state: open.clone(),
                     normalized_intent_family: ProductionKey::new(
                         "oteryn:reference.intent.local-object-close",
                     )?,
-                    target_state: closed,
+                    target_state: closed.clone(),
                     owner_capability: capability,
                     policy_guard_refs: vec![],
                 },
@@ -1412,6 +1431,10 @@ mod tests {
                     members: collision_members.clone(),
                     evidence: evidence.clone(),
                 },
+                // D38 W1b mechanical adaptation: both CW4 fixture placements author the same
+                // starting state the runtime previously derived from the OPEN transition, so
+                // existing CW4 test assertions (both instances start Closed) are unchanged.
+                local_object_initial_state: Some(closed.clone()),
             })
         };
         canonical.placements = vec![placement(PLACEMENT_A)?, placement(PLACEMENT_B)?];

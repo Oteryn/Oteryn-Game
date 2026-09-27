@@ -12,10 +12,11 @@ pub use v2::*;
 
 use super::{
     CanonicalReferencePlayableContent, ClientProjectionClass, ContentError, ContentLockBinding,
-    ContentLockEntry, DefinitionFamily, DefinitionRevisionRef, PackageManifestBinding,
-    ProductionAtom, ProductionKey, REFERENCE_PLAYABLE_CAPABILITY_PROFILE,
-    REFERENCE_PLAYABLE_CONTENT_PROFILE_ID, ReferenceAbilityDefinition, ReferenceCreatureDefinition,
-    ReferenceDefinition, ReferenceDefinitionKind, ReferenceEffectDefinition, ReferenceEffectFamily,
+    ContentLockEntry, DefinitionFamily, DefinitionRevisionRef, LocalObjectCollisionPresence,
+    LocalObjectStateDefinition, PackageManifestBinding, ProductionAtom, ProductionKey,
+    REFERENCE_PLAYABLE_CAPABILITY_PROFILE, REFERENCE_PLAYABLE_CONTENT_PROFILE_ID,
+    ReferenceAbilityDefinition, ReferenceCreatureDefinition, ReferenceDefinition,
+    ReferenceDefinitionKind, ReferenceEffectDefinition, ReferenceEffectFamily,
     ReferenceFormulaDefinition, ReferenceItemDefinition, ReferenceItemDestination,
     ReferenceItemPhysicalClass, ReferenceItemSemantics, ReferenceItemStackClass,
     ReferenceLootDefinition, ReferenceLootEntry, ReferenceLootSelectionAlgorithm,
@@ -608,7 +609,7 @@ pub enum ProjectReferenceRecord {
     LocalObject {
         identity: DefinitionIdentityDocument,
         client_projection: ProjectionDocument,
-        states: Vec<String>,
+        states: Vec<LocalObjectStateDocument>,
     },
 }
 
@@ -797,12 +798,45 @@ impl ProjectReferenceRecord {
                     kind: ReferenceDefinitionKind::LocalObjectStates(
                         states
                             .iter()
-                            .map(|state| ProductionKey::new(state).map_err(ProjectError::from))
-                            .collect::<Result<_, _>>()?,
+                            .map(LocalObjectStateDocument::lower)
+                            .collect::<Result<_, ProjectError>>()?,
                     ),
                     client_projection: client_projection.lower(),
                 })
             }
+        }
+    }
+}
+
+/// D38 W1a authored form: one entry of a `LocalObject`'s declared state vocabulary, carrying the
+/// per-state collision presence alongside the state key.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LocalObjectStateDocument {
+    pub key: String,
+    pub collision: LocalObjectCollisionDocument,
+}
+
+impl LocalObjectStateDocument {
+    fn lower(&self) -> Result<LocalObjectStateDefinition, ProjectError> {
+        Ok(LocalObjectStateDefinition {
+            key: ProductionKey::new(&self.key)?,
+            collision: self.collision.lower(),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum LocalObjectCollisionDocument {
+    Present,
+    Absent,
+}
+
+impl LocalObjectCollisionDocument {
+    fn lower(self) -> LocalObjectCollisionPresence {
+        match self {
+            Self::Present => LocalObjectCollisionPresence::Present,
+            Self::Absent => LocalObjectCollisionPresence::Absent,
         }
     }
 }
