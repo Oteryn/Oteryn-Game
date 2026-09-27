@@ -54,8 +54,15 @@ def revision(title, start=None):
             'revision_timestamp': rev['timestamp'], 'content': rev['slots']['main']['content']}
 
 
+def cut_cache(cache):
+    """The cache directory of the current target date: a record is valid only for the cut it was fetched at."""
+    directory = cache / TARGET_CUT
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory
+
+
 def fetch(title, cache):
-    path = cache / (cb.slug(title) + '.json')
+    path = cut_cache(cache) / (cb.slug(title) + '.json')
     if path.exists():
         return json.loads(path.read_text(encoding='utf-8'))
     record = {'cut': revision(title, CUT_TIMESTAMP), 'current': revision(title),
@@ -121,7 +128,7 @@ def version_key(version):
 
 def subpages(title, cache):
     """Titles `<title> (...)` for a disambiguation page, from the MediaWiki prefix index (cached)."""
-    path = cache / (cb.slug('subpages ' + title) + '.json')
+    path = cut_cache(cache) / (cb.slug('subpages ' + title) + '.json')
     if path.exists():
         return json.loads(path.read_text(encoding='utf-8'))
     pages = api({'action': 'query', 'list': 'allpages', 'apprefix': title + ' (', 'aplimit': 50})['query']['allpages']
