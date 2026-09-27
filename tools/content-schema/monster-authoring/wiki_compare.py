@@ -192,9 +192,9 @@ def loot_chances(source, stats):
     entries = source.get('loot', [])
     names = [(e.get('name') or cb.CONVERTER.names.get(int(e['id']), f'item {e["id"]}')).lower() for e in entries]
     rows = []
-    for entry, name in zip(entries, names):
+    for position, (entry, name) in enumerate(zip(entries, names)):
         low, high = entry.get('minCount', 1), entry.get('maxCount', 1)
-        row = {'item': name, 'canary_percent': float(cb.percent_from_chance(entry.get('chance', 0))),
+        row = {'position': position, 'item': name, 'canary_percent': float(cb.percent_from_chance(entry.get('chance', 0))),
                'canary_amount': str(low) if low == high else f'{low}-{high}'}
         wiki = by_name.get(name)
         if wiki is None:
@@ -221,8 +221,11 @@ def loot_chances(source, stats):
 
 
 def number(value):
-    match = re.match(r'^\s*(-?\d+(?:\.\d+)?)', value or '')
-    return Fraction(match.group(1)) if match else None
+    """Exact number of a wiki field value, with thousands separators; None when absent, approximate or uncertain."""
+    if value is None or re.search(r'[?~]', value):
+        return None
+    match = re.match(r'^\s*(-?\d{1,3}(?:,\d{3})+|-?\d+)(\.\d+)?', value)
+    return Fraction(match.group(1).replace(',', '') + (match.group(2) or '')) if match else None
 
 
 def wiki_loot(value):
@@ -255,8 +258,12 @@ def compare(relative, canary, _batch_dir, cache):
     rows = []
 
     def row(field, canary_value, wiki_raw, wiki_value, note=None, key=None):
-        if wiki_raw in (None, '', '?'):
+        if wiki_raw in (None, '', '?') or str(wiki_raw).strip().lower() == 'unknown':
             status = 'WIKI_UNKNOWN'
+        elif re.search(r'[?~]', str(wiki_raw)):
+            status = 'WIKI_UNCERTAIN'
+        elif wiki_value is None:
+            status = 'WIKI_UNPARSED'
         elif canary_value == wiki_value:
             status = 'MATCH'
         else:
@@ -280,14 +287,15 @@ def compare(relative, canary, _batch_dir, cache):
     row('mitigation_percent', float(Fraction(mitigation['numerator'], mitigation['denominator'])) if mitigation else None,
         fields.get('mitigation'), as_number(number(fields.get('mitigation'))), key='mitigation')
     resist = {r['damage_type']: Fraction(r['reduction_percent']['numerator'], r['reduction_percent']['denominator']) for r in c['resistances']}
+    resist.update({damage: Fraction(100) for damage in c['immunities']['damage_types']})
     for element, key in ELEMENTS.items():
         taken = number(fields.get(key))
         row(f'resistance.{element}', as_number(resist.get(element, Fraction(0))), fields.get(key),
-            as_number(100 - taken) if taken is not None else None, 'Wiki lists damage taken; resistance = 100 - taken.', key)
+            as_number(100 - taken) if taken is not None else None, 'Wiki lists damage taken; resistance = 100 - taken; a Canary damage immunity counts as 100.', key)
     summoning = c['summoning']
     for field, key, flag in (('summon_mana_cost', 'summon', 'summonable'), ('convince_mana_cost', 'convince', 'convinceable')):
         raw = fields.get(key)
-        wiki_value = as_number(number(raw)) if number(raw) is not None else ('--' if raw and raw.strip() in ('--', '-') else None)
+        wiki_value = as_number(number(raw)) if number(raw) is not None else ('--' if raw and raw.strip().lower() in ('--', '-', 'no') else None)
         row(field, summoning.get('mana_cost') if summoning[flag] else '--', raw, wiki_value, key=key)
     for field, key, value in (('illusionable', 'illusionable', c['flags']['illusionable']),
                               ('pushable', 'pushable', b['movement']['pushable']),
@@ -357,15 +365,18 @@ def compact(result):
     out['rows'] = [r for r in result.get('rows', []) if r['status'] == 'DIFF']
     stats = result.get('loot_statistics')
     if stats:
-        out['loot_statistics'] = {k: v for k, v in stats.items() if k != 'items'}
+        # Keep the statistics of wiki-only loot items: canary_batch.py adopts them (D15).
+        out['loot_statistics'] = {**{k: v for k, v in stats.items() if k != 'items'},
+                                  'items': [i for i in stats.get('items', []) if 'item_page' in i]}
     chance_counts = {}
     for entry in result.get('loot_chances', []):
         chance_counts[entry['status']] = chance_counts.get(entry['status'], 0) + 1
     if chance_counts:
         out['loot_chance_counts'] = dict(sorted(chance_counts.items()))
-    keep = ('item', 'status', 'confidence', 'canary_percent', 'wiki_percent', 'interval_95_wilson', 'times', 'kills', 'wiki_line')
-    out['loot_chances'] = [{k: c[k] for k in keep if k in c} for c in result.get('loot_chances', [])
-                           if c['status'] in ('DIFF', 'NOT_OBSERVED', 'INVALID_STATISTICS')]
+    # Every loot chance is kept (trimmed): canary_batch.py applies the D15 loot rate rule from it.
+    keep = ('position', 'item', 'status', 'confidence', 'canary_percent', 'wiki_percent', 'interval_95_wilson', 'times', 'kills',
+            'wiki_line', 'note')
+    out['loot_chances'] = [{k: c[k] for k in keep if k in c} for c in result.get('loot_chances', [])]
     return out
 
 
@@ -407,8 +418,8 @@ def main():
                                   f'fewer than {LOW_CONFIDENCE_DROPS} drops is low_confidence. CONSISTENT = Canary inside the interval',
               'loot_chance_totals': chances, 'loot_chance_confidence': confidence}
     if args.population:
-        report.update({'scope': 'Every convertible Canary monster file. Per monster only DIFF rows and non-consistent loot '
-                                'chances are listed; MATCH, WIKI_UNKNOWN and CONSISTENT are counted.',
+        report.update({'scope': 'Every convertible Canary monster file. Per monster the DIFF rows (the only ones D15 '
+                                'adopts) and all loot chances (trimmed) are listed; other statuses are counted.',
                        'monster_status_totals': dict(sorted(statuses.items())), 'diff_fields': fields, 'not_converted': skipped})
     report['monsters'] = results
     if args.population:

@@ -4,12 +4,41 @@
     "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
     "monster_dir": "data-otservbr-global/monster"
   },
-  "scope": "In-memory conversion of every monster file; structure validation plus open manifest rows. Not runtime qualification and no wiki comparison.",
+  "wiki_reference": {
+    "file": "samples/wiki-population-2026-07-28.json",
+    "sha256": "f99beb40b2086075d37b309c8b7b9f6e022a9b5b76c8967c3f97cc949fc1e31a"
+  },
+  "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 335,
-    "fully_resolved": 1315,
-    "not_converted": 6
+    "blocked": 352,
+    "fully_resolved": 1298,
+    "not_converted": 6,
+    "wiki_adopted_monsters": 988
+  },
+  "wiki_adopted_rows": {
+    "Loot2": 11547,
+    "Infobox Creature.mitigation": 739,
+    "Infobox Creature.runsat": 122,
+    "Infobox Creature.exp": 110,
+    "Infobox Creature.paraimmune": 85,
+    "Infobox Creature.pushobjects": 65,
+    "Infobox Creature.hp": 61,
+    "Infobox Creature.fire modifier": 60,
+    "Infobox Creature.energy modifier": 50,
+    "Infobox Creature.ice modifier": 49,
+    "Infobox Creature.armor": 48,
+    "Infobox Creature.earth modifier": 46,
+    "Infobox Creature.senseinvis": 42,
+    "Infobox Creature.death modifier": 35,
+    "Infobox Creature.holy modifier": 34,
+    "Infobox Creature.physical modifier": 33,
+    "Infobox Creature.occurrence": 29,
+    "Infobox Creature.pushable": 26,
+    "Infobox Creature.illusionable": 18,
+    "Infobox Creature.bestiarylevel": 12,
+    "Infobox Creature.life_drain modifier": 8,
+    "Infobox Creature.drowning modifier": 4
   },
   "blockers_by_monster_count": [
     {
@@ -90,6 +119,17 @@
       ]
     },
     {
+      "blocker": "unresolved_dependency Loot2.giant shimmering pearl",
+      "monsters": 14,
+      "examples": [
+        "memory_of_a_carnisylvan",
+        "essence_of_malice",
+        "ancient_spawn_of_morgathla",
+        "melting_frozen_horror",
+        "the_blazing_time_guardian"
+      ]
+    },
+    {
       "blocker": "unresolved_semantics mType.onSay",
       "monsters": 14,
       "examples": [
@@ -134,6 +174,17 @@
       ]
     },
     {
+      "blocker": "unresolved_semantics Infobox Creature.loot",
+      "monsters": 5,
+      "examples": [
+        "bones",
+        "minishabaal",
+        "undead_minion",
+        "irgix_the_flimsy",
+        "overcharged_energy_elemental"
+      ]
+    },
+    {
       "blocker": "unresolved_semantics outfit.lookType",
       "monsters": 4,
       "examples": [
@@ -141,6 +192,64 @@
         "wild_fury_magic",
         "wild_nature_magic",
         "wild_water_magic"
+      ]
+    },
+    {
+      "blocker": "unresolved_dependency Loot2.die",
+      "monsters": 2,
+      "examples": [
+        "memory_of_a_faun",
+        "dark_faun"
+      ]
+    },
+    {
+      "blocker": "unresolved_dependency Loot2.insectoid egg",
+      "monsters": 2,
+      "examples": [
+        "salamander",
+        "troll_trained_salamander"
+      ]
+    },
+    {
+      "blocker": "unresolved_dependency Loot2.book (orange)",
+      "monsters": 1,
+      "examples": [
+        "hand_of_cursed_fate"
+      ]
+    },
+    {
+      "blocker": "unresolved_dependency Loot2.magma coat",
+      "monsters": 1,
+      "examples": [
+        "the_freezing_time_guardian"
+      ]
+    },
+    {
+      "blocker": "unresolved_dependency Loot2.part of a rune",
+      "monsters": 1,
+      "examples": [
+        "the_blazing_time_guardian"
+      ]
+    },
+    {
+      "blocker": "unresolved_dependency Loot2.ring of souls",
+      "monsters": 1,
+      "examples": [
+        "the_pale_worm"
+      ]
+    },
+    {
+      "blocker": "unresolved_dependency Loot2.the spatial warp almanac",
+      "monsters": 1,
+      "examples": [
+        "grand_master_oberon"
+      ]
+    },
+    {
+      "blocker": "unresolved_dependency Loot2.watermelon tourmaline",
+      "monsters": 1,
+      "examples": [
+        "the_monster"
       ]
     },
     {
@@ -203,7 +312,6 @@
     "ancient_lion_knight",
     "ancient_lion_warlock",
     "ancient_scarab",
-    "ancient_spawn_of_morgathla",
     "angry_adventurer",
     "angry_demon",
     "animated_clomp",
@@ -291,7 +399,6 @@
     "bone_jaw",
     "bonebeast",
     "bonelord",
-    "bones",
     "bonny_bunny",
     "boogey",
     "boogy",
@@ -411,7 +518,6 @@
     "dark_apprentice",
     "dark_carnisylvan",
     "dark_druid",
-    "dark_faun",
     "dark_knight",
     "dark_knowledge",
     "dark_magician",
@@ -678,7 +784,6 @@
     "gorger_inferniarch",
     "gorgo",
     "gozzler",
-    "grand_canon_dominus",
     "grand_chaplain_gaunder",
     "grand_commander_soeren",
     "grand_mother_foulscale",
@@ -702,7 +807,6 @@
     "guzzlemaw",
     "hacker",
     "hairman_the_huge",
-    "hand_of_cursed_fate",
     "hardened_usurper_archer",
     "harpy",
     "hateful_soul",
@@ -765,7 +869,6 @@
     "instable_breach_brood",
     "instable_sparkion",
     "invading_demon",
-    "irgix_the_flimsy",
     "iron_servant",
     "ironblight",
     "island_troll",
@@ -849,7 +952,6 @@
     "lovely_scorpion",
     "lovely_snake",
     "lovely_yielothax",
-    "lucifuga_aranea",
     "lumbering_carnivor",
     "mad_mage",
     "mad_scientist",
@@ -888,9 +990,7 @@
     "megasylvan_yselda",
     "memory_of_a_banshee",
     "memory_of_a_book",
-    "memory_of_a_carnisylvan",
     "memory_of_a_dwarf",
-    "memory_of_a_faun",
     "memory_of_a_frazzlemaw",
     "memory_of_a_fungus",
     "memory_of_a_golem",
@@ -922,7 +1022,6 @@
     "midnight_spawn",
     "mimic",
     "minion_of_versperoth",
-    "minishabaal",
     "minotaur",
     "minotaur_amazon",
     "minotaur_archer",
@@ -1041,7 +1140,6 @@
     "orshabaal",
     "overcharge",
     "overcharged_demon",
-    "overcharged_energy_elemental",
     "paiz_the_pauperizer",
     "paladin_familiar",
     "paladin_s_apparition",
@@ -1114,7 +1212,6 @@
     "red_butterfly",
     "redeemed_soul",
     "reflection_of_mawhawk",
-    "reflection_of_obujos",
     "regenerating_mass",
     "renegade_knight",
     "renegade_orc",
@@ -1138,7 +1235,6 @@
     "ripper_spectre",
     "risen_soldier",
     "roaring_lion",
-    "roaring_water_elemental",
     "robby_the_reckless",
     "rocko",
     "rocky",
@@ -1155,7 +1251,6 @@
     "rustheap_golem",
     "sacred_snake",
     "sacred_spider",
-    "salamander",
     "sand_brood",
     "sand_vortex",
     "sandcrawler",
@@ -1326,7 +1421,6 @@
     "the_obliverator",
     "the_old_widow",
     "the_pale_count",
-    "the_pale_worm",
     "the_percht_queen",
     "the_pit_lord",
     "the_plasmother",
@@ -1365,7 +1459,6 @@
     "troll_guard",
     "troll_legionnaire",
     "troll_marauder",
-    "troll_trained_salamander",
     "tromphonyte",
     "true_dawnfire_asura",
     "true_frost_flower_asura",
@@ -1387,7 +1480,6 @@
     "undead_elite_gladiator",
     "undead_gladiator",
     "undead_mine_worker",
-    "undead_minion",
     "undead_prospector",
     "undertaker",
     "ungreez",

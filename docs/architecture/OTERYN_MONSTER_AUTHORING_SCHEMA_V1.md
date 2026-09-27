@@ -227,10 +227,11 @@ conjuring spell; `ice strike` is P1); its per-player familiar look is a separate
 
 ## 9. Import readiness of the Canary population
 
-`population_census.py` converts every Canary `47dfd51f` monster file in memory and records the
-result in `samples/population-canary-47dfd51f.json`: of 1,656 files, 1,315 convert, validate and
-resolve every manifest row (1,103 before registered spells were converted); 335 are blocked; 6 do not convert (five Soul War bosses need quest
-configuration at load and one file is a helper library, not a monster). No bundle fails
+`population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
+wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
+files, 1,298 convert, validate and resolve every manifest row (1,103 before registered spells were
+converted, 1,315 before wiki adoption); 352 are blocked; 6 do not convert (five Soul War bosses
+need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 
 Converter rules transcribed from the engine for this result (all recorded in `sources.json`
@@ -251,20 +252,38 @@ stay unresolved.
 
 Remaining blockers by affected monsters: encounter-mechanic events (215), registered spells with
 custom logic or an unsupported parameter in attacks (91) and defenses (40), inline `mType` callbacks (up to 28 per callback kind), a
-top-level script call after registration (11), Bestiary without a valid race (5) and non-familiar
-monsters without a look type (4). These need D12/D13 spell work, Encounter definitions (D9) or
-native behaviour decisions; none is solved by relaxing validation.
+top-level script call after registration (11), Bestiary without a valid race (5), non-familiar
+monsters without a look type (4) and wiki loot that names no single Canary item (29 monsters;
+14 of them list `giant shimmering pearl`, which is two items, 281 green and 282 brown). These
+need D12/D13 spell work, Encounter definitions (D9), native behaviour decisions or an item
+decision; none is solved by relaxing validation.
+
+Population bundles are not committed (about 67 MB). `population_census.py --bundles DIR` writes
+the four files of each fully resolved monster under `DIR`, and
+`samples/population-bundles-canary-47dfd51f.json` records one SHA-256 per bundle (name, byte
+length and content of the four files in order) together with the SHA-256 of the pinned wiki
+reference, so a regenerated population is checked with `git diff --exit-code` on the index.
 
 ### 9.1 Population wiki comparison
 
 `samples/wiki-population-2026-07-28.json` (`wiki_compare.py --population`) compares the plain
 Canary conversion of every convertible monster with its TibiaWiki (Fandom) page at the
 2026-07-28 cut: 1,569 monsters compared and 81 without a page under the Canary name. Over the
-infobox facts: 29,550 MATCH, 2,972 DIFF, 7,842 unknown on the wiki. The most frequent differences
-are mitigation (739 monsters), the loot item list (650), flee health (181), experience (122) and
-element modifiers (about 70-110 each). Over 14,894 Canary loot entries: 7,136 inside the 95%
-interval of the wiki estimate, 5,170 outside it, 2,092 not observed in the highest-version
-statistics block, 490 split over several Canary entries and 6 with invalid wiki counts.
+infobox facts: 24,153 MATCH, 2,442 DIFF, 5,864 uncertain on the wiki (`?` or `~`, mostly
+`100%?` element modifiers), 61 unparsed and 7,844 unknown. The most frequent differences are
+mitigation (739 monsters), the loot item list (650), flee health (122), experience (110),
+paralysis immunity (85), `pushobjects` (65), health (62) and element modifiers (about 30-70 each).
+A Canary damage immunity counts as a 100% element modifier. Over 14,894 Canary loot entries: 7,136
+inside the 95% interval of the wiki estimate, 5,170 outside it, 2,092 not observed in the
+highest-version statistics block, 490 split over several Canary entries and 6 with invalid wiki
+counts.
 
-This is evidence for D15; population bundles are not written by this change, so no value is
-adopted from it yet.
+The converter adopts only DIFF rows (D15): health, experience, armor, mitigation, element
+modifiers, `pushable`, `pushobjects`, `senseinvis`, paralysis immunity, `illusionable`, flee health
+and Bestiary difficulty/occurrence; speed (the wiki lists observed speed, Canary the engine value),
+Bestiary class and summon/convince costs are not adopted. Every adopted value keeps the superseded
+Canary row as an `approved_omission` and adds a MediaWiki-sourced row. Wiki loot missing in Canary
+is added only when its name resolves to one item: by name, by the item page `itemid`, or by
+dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
+monsters 739 mitigations and 11,547 loot rows (probabilities and added items) are adopted; 988 of
+the fully resolved monsters carry at least one adopted value.

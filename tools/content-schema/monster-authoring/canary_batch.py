@@ -74,7 +74,9 @@ RULES = {
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-07-28.json'
 WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces '
-                 'it; applied to mitigation, pushable, loot items missing in Canary and loot probabilities')
+                 'it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary '
+                 'difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain '
+                 '(? or ~) or unparsed wiki value')
 LOW_CONFIDENCE_DROPS = 10
 LOOT_RATE_RULE = ('D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; '
                   'adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence')
@@ -762,24 +764,76 @@ class Converter:
 
         title = record['wiki_title']
         page = source(title, record['page_id'], record['cut_revision_id'], record['cut_content_sha256'])
+        creature, behavior = monster['creature'], monster['behavior']
+
+        def supersede(canary_field, pattern, diff):
+            text = superseded(diff['canary'], diff['wiki_raw'])
+            for entry in rows:
+                if entry['source_index'] == 0 and entry['source_field'] == canary_field and entry['status'] == 'mapped':
+                    entry['status'] = 'approved_omission'
+                    entry.pop('destination', None)
+                    entry['resolution'] = text
+                    return
+            rows.append({'source_index': 0, 'source_file': rows[0]['source_file'], 'source_line': line_of(pattern),
+                         'source_field': canary_field, 'kind': 'field', 'status': 'approved_omission', 'resolution': text})
+
+        def adopt(diff, destination, canary_field, pattern, label):
+            supersede(canary_field, pattern, diff)
+            wiki_row(page, title, diff.get('wiki_line', 1), f'Infobox Creature.{label}', destination,
+                     f'Wiki {label} "{diff["wiki_raw"]}" ({WIKI_ADOPTION}).')
+
         for diff in (r for r in record['rows'] if r['status'] == 'DIFF'):
-            if diff['field'] == 'mitigation_percent':
-                raw = diff['wiki_raw'].strip()
-                monster['creature']['stats']['mitigation_percent'] = fraction_ratio(Fraction(Decimal(raw)))
-                for entry in rows:
-                    if entry['source_index'] == 0 and entry['source_field'] == 'defenses.mitigation':
-                        entry['status'] = 'approved_omission'
-                        entry.pop('destination', None)
-                        entry['resolution'] = superseded(diff['canary'], raw)
-                wiki_row(page, title, diff['wiki_line'], 'Infobox Creature.mitigation', '/monster/creature/stats/mitigation_percent',
-                         f'Wiki mitigation {raw} percent points as an exact decimal ratio ({WIKI_ADOPTION}).')
-            elif diff['field'] == 'pushable':
-                monster['behavior']['movement']['pushable'] = diff['wiki']
-                rows.append({'source_index': 0, 'source_file': rows[0]['source_file'], 'source_line': line_of(r'^\s*pushable\s*='),
-                             'source_field': 'flags.pushable', 'kind': 'field', 'status': 'approved_omission',
-                             'resolution': superseded(diff['canary'], diff['wiki_raw'])})
-                wiki_row(page, title, diff['wiki_line'], 'Infobox Creature.pushable', '/monster/behavior/movement/pushable',
-                         f'Wiki pushable "{diff["wiki_raw"]}" ({WIKI_ADOPTION}).')
+            field, value = diff['field'], diff.get('wiki')
+            if field == 'mitigation_percent' and isinstance(value, (int, float)) and 0 <= value <= 100:
+                creature['stats']['mitigation_percent'] = ratio(value)
+                adopt(diff, '/monster/creature/stats/mitigation_percent', 'defenses.mitigation', r'mitigation\s*=', 'mitigation')
+            elif field == 'max_health' and isinstance(value, int) and value > 0:
+                creature['stats']['max_health'] = creature['stats']['initial_health'] = value
+                behavior['targeting']['flee_health'] = min(behavior['targeting']['flee_health'], value)
+                adopt(diff, '/monster/creature/stats/max_health', 'maxHealth', r'^monster\.maxHealth', 'hp')
+                supersede('health', r'^monster\.health', diff)
+            elif field == 'experience' and isinstance(value, int):
+                creature['stats']['experience'] = value
+                adopt(diff, '/monster/creature/stats/experience', 'experience', r'^monster\.experience', 'exp')
+            elif field == 'armor' and isinstance(value, int):
+                creature['stats']['armor'] = value
+                adopt(diff, '/monster/creature/stats/armor', 'defenses.armor', r'armor\s*=', 'armor')
+            elif field.startswith('resistance.') and isinstance(value, (int, float)) and value <= 100:
+                damage = field.split('.', 1)[1]
+                creature['resistances'] = [r for r in creature['resistances'] if r['damage_type'] != damage]
+                creature['immunities']['damage_types'] = [d for d in creature['immunities']['damage_types'] if d != damage]
+                if value == 100:
+                    creature['immunities']['damage_types'] = sorted(creature['immunities']['damage_types'] + [damage])
+                elif value:
+                    creature['resistances'].append({'damage_type': damage, 'reduction_percent': ratio(value)})
+                    creature['resistances'].sort(key=lambda r: r['damage_type'])
+                adopt(diff, '/monster/creature/resistances', f'elements.{damage}', r'^monster\.elements', f'{damage} modifier')
+            elif field == 'pushable' and isinstance(value, bool):
+                behavior['movement']['pushable'] = value
+                adopt(diff, '/monster/behavior/movement/pushable', 'flags.pushable', r'^\s*pushable\s*=', 'pushable')
+            elif field == 'push_items' and isinstance(value, bool):
+                behavior['movement']['push_items'] = value
+                adopt(diff, '/monster/behavior/movement/push_items', 'flags.canPushItems', r'canPushItems', 'pushobjects')
+            elif field == 'sense_invisible' and isinstance(value, bool):
+                behavior['targeting']['sense_invisible'] = value
+                adopt(diff, '/monster/behavior/targeting/sense_invisible', 'immunities.invisible', r'"invisible"', 'senseinvis')
+            elif field == 'paralyze_immune' and isinstance(value, bool):
+                conditions = set(creature['immunities']['conditions']) - {'paralyze'} | ({'paralyze'} if value else set())
+                creature['immunities']['conditions'] = sorted(conditions)
+                adopt(diff, '/monster/creature/immunities/conditions', 'immunities.paralyze', r'"paralyze"', 'paraimmune')
+            elif field == 'illusionable' and isinstance(value, bool):
+                creature['flags']['illusionable'] = value
+                adopt(diff, '/monster/creature/flags/illusionable', 'flags.illusionable', r'illusionable\s*=', 'illusionable')
+            elif field == 'flee_health' and isinstance(value, int):
+                behavior['targeting']['flee_health'] = min(value, creature['stats']['max_health'])
+                adopt(diff, '/monster/behavior/targeting/flee_health', 'flags.runHealth', r'runHealth', 'runsat')
+            elif field in ('bestiary.difficulty', 'bestiary.occurrence') and 'bestiary' in creature and isinstance(value, str):
+                key = field.split('.')[1]
+                allowed = DIFFICULTY.values() if key == 'difficulty' else OCCURRENCE.values()
+                if value in allowed:
+                    creature['bestiary'][key] = value
+                    adopt(diff, f'/monster/creature/bestiary/{key}', f'Bestiary.{key}', r'^monster\.Bestiary',
+                          'bestiarylevel' if key == 'difficulty' else 'occurrence')
         self.adopt_wiki_loot(record, monster, rows, source, wiki_row, definitions)
 
     def adopt_wiki_loot(self, record, monster, rows, source, wiki_row, definitions):
@@ -804,7 +858,8 @@ class Converter:
             percent = (Decimal(exact.numerator) / Decimal(exact.denominator)).quantize(Decimal('0.0001'), ROUND_HALF_EVEN)
             return exact, int(percent) if percent == percent.to_integral_value() else float(percent)
 
-        for position, chance in enumerate(record.get('loot_chances', [])):
+        for index, chance in enumerate(record.get('loot_chances', [])):
+            position = chance.get('position', index)
             canary_row = next((r for r in rows if r['source_index'] == 0 and r['source_field'] == f'loot[{position + 1}]'
                                and r['status'] == 'mapped'), None)
             if canary_row is None:
@@ -843,6 +898,23 @@ class Converter:
                 candidates = narrowed
             elif len(candidates) == 1 and page_ids and candidates[0] not in page_ids:
                 candidates = []
+            elif not candidates and len(page_ids) == 1 and page_ids[0] in self.names:
+                page_info = item['item_page']
+                page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
+                                     page_info['cut_content_sha256'])
+                id_note = (f' No Canary item has the wiki name; the item page (source {page_source}, line '
+                           f'{page_info["itemid_line"]}) declares itemid {page_ids[0]}.')
+                candidates = page_ids
+            if len(candidates) > 1:
+                pool = narrowed or candidates
+                # MoveEvent equip transforms the dropped item into its transformEquipTo id; that id never drops.
+                worn = {int(self.items[i]['attributes']['transformequipto']) for i in pool
+                        if 'transformequipto' in self.items.get(i, {}).get('attributes', {})}
+                unworn = [i for i in pool if i not in worn]
+                if len(unworn) == 1:
+                    id_note += (f' Ids {sorted(pool)} share the name; {sorted(worn & set(pool))} is the equipped state '
+                                f'(items.xml transformEquipTo), so the dropped item is {unworn[0]}.')
+                    candidates = unworn
             if item['times'] == 0 or len(candidates) != 1:
                 wiki_row(stat, stats['page_title'], item['line'] or stats['kills_line'], f'Loot2.{item["name"]}', None,
                          status='unresolved_dependency',

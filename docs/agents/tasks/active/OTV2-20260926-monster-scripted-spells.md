@@ -49,5 +49,10 @@ fence, session, authority or persisted-recovery evidence is touched.
   `verify_formal_schema.py` 197/197 with each new negative case failing for its own reason.
 - `spell_scripts.py` evaluates registered spells; `spell_census.py` output is unchanged after its
   classification moved into that module.
-- `population_census.py`: 1,315 of 1,656 fully resolved (1,103 before), 335 blocked, 6 not
-  converted, 0 structure-invalid. Batch 1 10/10, batch 2 9/10 manifests resolve.
+- `population_census.py` without wiki adoption: 1,315 of 1,656 fully resolved (1,103 before).
+- Owner request (population step 1): D15 wiki values applied across the population. With the
+  adoption 1,298 fully resolved, 352 blocked, 6 not converted, 0 structure-invalid; 988 resolved
+  monsters carry adopted values. Bundles are written outside the repository with `--bundles`; the
+  committed index holds one SHA-256 per bundle. Batch 1 10/10, batch 2 9/10 manifests resolve.
+- `wiki_compare.py --population` parses thousands separators and marks `?`/`~` values as
+  WIKI_UNCERTAIN (never adopted) and non-numeric values as WIKI_UNPARSED.
