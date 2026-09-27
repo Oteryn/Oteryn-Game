@@ -251,9 +251,12 @@ previously unseen occurrence.
   `108668316671` SUCCESS
 - merge commit/result: PR #998 MERGED at `2026-09-27T17:20:06Z` as
   `650dd6484a443fbc39e4b5dfb0686b24c72cbcd5`
-- protected readback: `main` equals the successful merge-group SHA; eight allocated
-  blobs equal the frozen source and `durability/mod.rs` preserves the complete P03
-  delta plus only the independent reconnect linkage from the composed base
+- protected readback at source integration, before this archive rewrite: `main` equaled
+  the successful merge-group SHA; eight of nine source-allocated paths were
+  blob-identical, while `durability/mod.rs` preserved the complete P03 delta plus
+  only the independent reconnect linkage from the composed base. This closeout
+  intentionally moves and rewrites the task packet, so seven unchanged source blobs
+  are expected after archive integration
 - ownership release: terminal after protected archive readback; the lifecycle
   receipt is recorded externally on Issue #162 to avoid self-referential closeout data
 
