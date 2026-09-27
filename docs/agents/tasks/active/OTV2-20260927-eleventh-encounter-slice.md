@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-eleventh-encounter-slice
 title: Dream Courts, Asura and Goshnar's Greed encounter rules (eleventh encounter slice)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1016
 jira: KAN-16
 base_sha: 2bbeaaeb9857f22199dc585387339f4f658400bc
 head_sha: null
