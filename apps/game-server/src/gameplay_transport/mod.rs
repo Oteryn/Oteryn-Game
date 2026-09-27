@@ -5,6 +5,7 @@ mod connection;
 pub(crate) mod fresh_evidence;
 #[cfg(test)]
 mod qualification;
+mod resume;
 mod tcp_tls;
 pub(crate) mod world_spatial;
 
@@ -49,7 +50,7 @@ use crate::foundation::{
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, ControlLossResult, ControllerBinding,
     FirstEntryOutcome, FreshAdmissionAttempt, FreshAdmissionAuthority, GraceExpiryResult,
-    IDLE_LIVENESS, StepOutcome, admit_frame, serve_admitted,
+    IDLE_LIVENESS, SessionContinuity, StepOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -225,6 +226,9 @@ where
     let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
     drop(unit);
     let (end, served) = match admitted {
+        // A durably admitted or resumed session whose acceptance could not be delivered
+        // still has a controller that is gone: it enters the loss lifecycle, never limbo.
+        Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),
         Err(end) => (end, false),
         Ok(admitted) => match first(
             serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
@@ -272,8 +276,16 @@ async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
     shutdown: &CancellationToken,
 ) {
     let lifecycle = async {
-        if authority.lose_control(lost.session, lost.wait).await == ControlLossResult::Recorded {
-            let _ = authority.expire_control_loss(lost.session).await;
+        match authority.lose_control(lost.session, lost.wait).await {
+            ControlLossResult::Recorded => {
+                let _ = authority.expire_control_loss(lost.session).await;
+            }
+            ControlLossResult::ResumedHistory => {
+                let _ = authority.release_abandoned(lost.session).await;
+            }
+            ControlLossResult::NotApplicable
+            | ControlLossResult::Refused
+            | ControlLossResult::Unknown => {}
         }
     };
     let _ = first(lifecycle, shutdown.cancelled()).await;
@@ -376,6 +388,7 @@ pub async fn serve_gameplay(
         channel_id: owners.channel_id,
         runtime: owners.runtime,
         movement_cells: owners.movement_cells,
+        lost: std::sync::Mutex::default(),
     };
     serve_listener(
         listener,
@@ -439,9 +452,67 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) channel_id: ChannelId,
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
     pub(crate) movement_cells: &'a NativeEntryMovementCells,
+    /// Ended admitted sessions whose loss is durably recorded and whose grace has not ended:
+    /// the only sessions a `ClientResume` can name. At most one entry per admitted session.
+    pub(crate) lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Drop the lost entry of `session` only if it is still the one that ended at
+    /// `generation`; a later resumed and lost again connection keeps its own entry.
+    fn forget_lost(&self, session: GameSessionId, generation: u64) {
+        if let Ok(mut lost) = self.lost.lock()
+            && lost
+                .get(&session)
+                .is_some_and(|entry| entry.continuity.connection_generation == generation)
+        {
+            lost.remove(&session);
+        }
+    }
+
+    async fn release_after_grace(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+            return GraceExpiryResult::NotApplicable;
+        };
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let account_id = canonical_uuid(&controller.account_id);
+        // The deadline is fixed, so waiting converges; store failures back off
+        // exponentially, and the bounds only guard an owner that never recovers.
+        let mut backoff = RECONCILE_BACKOFF;
+        for _ in 0..EXPIRY_ATTEMPTS {
+            let pause = match store
+                .release_expired_loss(admitted.game_session_id, &account_id)
+                .await
+            {
+                Ok(ExpiredLossReleaseV1::NotApplicable) => return GraceExpiryResult::NotApplicable,
+                Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
+                    Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
+                        .saturating_add(EXPIRY_SLACK)
+                }
+                Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
+                    // The durable TERMINAL session is the authoritative fact that
+                    // allows removing the exact actor.
+                    return match self
+                        .runtime
+                        .lock()
+                        .await
+                        .remove_terminal_session(admitted.game_session_id, actor)
+                    {
+                        Ok(()) => GraceExpiryResult::Released,
+                        Err(_) => GraceExpiryResult::Unknown,
+                    };
+                }
+                Err(_) => {
+                    let pause = backoff;
+                    backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                    pause
+                }
+            };
+            tokio::time::sleep(pause).await;
+        }
+        GraceExpiryResult::Unknown
+    }
+
     fn observation(
         runtime: &ChannelRuntimeV1,
         position: crate::foundation::MovementLocalPosition,
@@ -532,32 +603,42 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return ControlLossResult::NotApplicable;
         };
         tokio::time::sleep(wait).await;
-        self.commit_control_loss(admitted.game_session_id, actor, controller)
-            .await
+        let result = self
+            .commit_control_loss(admitted.game_session_id, actor, controller)
+            .await;
+        if result == ControlLossResult::Recorded
+            && let Ok(mut lost) = self.lost.lock()
+        {
+            lost.insert(admitted.game_session_id, admitted);
+        }
+        result
     }
 
-    async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+    async fn resume(
+        &self,
+        attempt: connection::ResumeAttempt<'_>,
+    ) -> Result<AdmittedSession, AdmissionRefusal> {
+        self.resume_lost(attempt).await
+    }
+
+    async fn release_abandoned(&self, admitted: AdmittedSession) -> GraceExpiryResult {
         let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
             return GraceExpiryResult::NotApplicable;
         };
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let account_id = canonical_uuid(&controller.account_id);
-        // The deadline is fixed, so waiting converges; store failures back off
-        // exponentially, and the bounds only guard an owner that never recovers.
         let mut backoff = RECONCILE_BACKOFF;
         for _ in 0..EXPIRY_ATTEMPTS {
-            let pause = match store
-                .release_expired_loss(admitted.game_session_id, &account_id)
+            match store
+                .release_abandoned_session(
+                    admitted.game_session_id,
+                    &account_id,
+                    controller.transport,
+                )
                 .await
             {
                 Ok(ExpiredLossReleaseV1::NotApplicable) => return GraceExpiryResult::NotApplicable,
-                Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
-                    Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
-                        .saturating_add(EXPIRY_SLACK)
-                }
                 Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
-                    // The durable TERMINAL session is the authoritative fact that
-                    // allows removing the exact actor.
                     return match self
                         .runtime
                         .lock()
@@ -568,15 +649,23 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                         Err(_) => GraceExpiryResult::Unknown,
                     };
                 }
-                Err(_) => {
-                    let pause = backoff;
+                Ok(ExpiredLossReleaseV1::NotExpired { .. }) | Err(_) => {
+                    tokio::time::sleep(backoff).await;
                     backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
-                    pause
                 }
-            };
-            tokio::time::sleep(pause).await;
+            }
         }
         GraceExpiryResult::Unknown
+    }
+
+    async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let result = self.release_after_grace(admitted).await;
+        // Resumed, released or unprovable: this lost connection can no longer be resumed.
+        self.forget_lost(
+            admitted.game_session_id,
+            admitted.continuity.connection_generation,
+        );
+        result
     }
 
     async fn admit(
@@ -722,6 +811,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 transport: attempt.transport,
                 account_id: *record.account_id.as_bytes(),
             }),
+            continuity: SessionContinuity::FRESH,
         })
     }
 }
@@ -791,11 +881,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         // already reconnectable session is not this connection's to lose.
         if session.session_state() != GameSessionState::Active
             || session.current_transport() != Some(controller.transport)
-            || session.current_control_loss_epoch().is_some()
             || session.current_runtime_scope()
                 != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
         {
             return ControlLossResult::NotApplicable;
+        }
+        if session.current_control_loss_epoch().is_some() {
+            // This controller resumed a lost session; loss after a resume is not recorded.
+            return ControlLossResult::ResumedHistory;
         }
         let Some(grace_deadline) = now.checked_add(SAME_SESSION_GRACE_SECONDS) else {
             return ControlLossResult::Unknown;
@@ -1224,6 +1317,7 @@ mod tests {
                 runtime_actor: None,
                 first_entry: FirstEntryOutcome::NotApplicable,
                 controller: None,
+                continuity: SessionContinuity::FRESH,
             })
         }
     }
