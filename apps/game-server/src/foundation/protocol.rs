@@ -502,9 +502,18 @@ pub(crate) fn encode_single_chunk_snapshot(
     if connection_generation == 0 || snapshot_id == 0 || domains.is_empty() {
         return Err(FoundationProtocolError::MalformedEnvelope);
     }
+    // The receiver's SnapshotBody validation refuses these; never emit them.
+    if domains.len() > MAX_STATE_DOMAINS_PER_SYNC {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
     let mut body = Vec::new();
-    for domain in domains {
-        if domain.domain_id == 0 || domain.snapshot_type == 0 {
+    for (index, domain) in domains.iter().enumerate() {
+        if domain.domain_id == 0
+            || domain.snapshot_type == 0
+            || domains[..index]
+                .iter()
+                .any(|earlier| earlier.domain_id == domain.domain_id)
+        {
             return Err(FoundationProtocolError::MalformedEnvelope);
         }
         let mut entry = Vec::with_capacity(domain.payload.len() + 24);
@@ -3046,6 +3055,42 @@ mod tests {
             );
             view.validate(Direction::ServerToClient, true)?;
         }
+        // The receiver assembles and commits the transfer (FND-02 §16).
+        let chunk_view = decode_wire_envelope(&frames[1])?;
+        let chunk_payload = chunk_view.payload();
+        let mut cursor = 0;
+        let mut data = None;
+        while cursor < chunk_payload.len() {
+            let key = read_varint(chunk_payload, &mut cursor)?;
+            match key {
+                0x1a => {
+                    data = Some(bounded_length_delimited(
+                        chunk_payload,
+                        &mut cursor,
+                        MAX_SNAPSHOT_CHUNK_BYTES,
+                        FoundationProtocolError::PayloadLimitExceeded,
+                    )?)
+                }
+                _ => skip_field(chunk_payload, &mut cursor, (key & 7) as u8)?,
+            }
+        }
+        let data = data.ok_or(FoundationProtocolError::MalformedEnvelope)?;
+        // The facade barrier also validates the committed SnapshotBody.
+        let mut barrier = super::super::snapshot_facade::SnapshotBarrier::new();
+        barrier.begin(1, 1, data.len() as u64, 0, 3)?;
+        barrier.chunk(1, 0, data, 3)?;
+        barrier.commit(1, 3)?;
+        let domain = DomainSnapshot {
+            domain_id: 1,
+            revision: 1,
+            snapshot_type: 1,
+            payload: &[0x0a, 0x00],
+        };
+        assert!(encode_single_chunk_snapshot(3, 2, 0, &[domain, domain]).is_err());
+        assert!(
+            encode_single_chunk_snapshot(3, 2, 0, &vec![domain; MAX_STATE_DOMAINS_PER_SYNC + 1])
+                .is_err()
+        );
         // Invalid values refuse before any frame is built.
         assert!(encode_command_result(0, 1, 7, CommandStatus::Accepted, &[]).is_err());
         assert!(encode_command_result(3, 0, 7, CommandStatus::Accepted, &[]).is_err());
