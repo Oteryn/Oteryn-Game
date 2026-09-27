@@ -4,19 +4,20 @@
 task_id: OTV2-20260927-dur03-signed-offline-candidate-resource-evidence-513
 title: DUR-03 signed offline revision-2 candidate and finite resource evidence
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/dur03-signed-candidate-evidence-513
 issue: 513
-pr: null
+pr: 997
 base_sha: 56e5c8a39bf2d899cbbc24735d2d7440d4ecaec1
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: f7b835899e250fe3bcb9a85a11fa2a88bb2dae2a
+final_head_sha: f7b835899e250fe3bcb9a85a11fa2a88bb2dae2a
+final_head_frozen_at: 2026-09-27T15:07:14Z
+completed_at: 2026-09-27T15:46:09Z
 owner: /root/dur03_max_shape_writer-local; root-sole-api-publisher
 created_at: 2026-09-27T14:56:58Z
-updated_at: 2026-09-27T14:56:58Z
+updated_at: 2026-09-27T15:46:09Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/game-events/v2/item_transaction.proto
@@ -37,7 +38,7 @@ external_repositories: []
 and [custody refinement 5856742846](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856742846)
 authorize exactly this five-path unregistered offline successor. Local writer
 cannot commit/push/API-write/comment/review/PR/MQ; root publishes and binds the head.
-No authoring check below is candidate-specific CI or final review.
+The authoring checks recorded below are not candidate-specific CI or final review.
 
 ## Architecture and source of truth
 
@@ -74,10 +75,12 @@ policy is selected. Writer is not independent reviewer of its own code.
 - [x] Actual semantic-payload/wire copies and vector/string capacities; fixed
   two-record signed custody/retry model and exact frozen ambiguous candidate.
 - [x] Explicit RL-01..08 and preserved production `EVIDENCE_GAP`.
-- [ ] Parent-published exact-head freeze, delta readback, CI and independent review.
+- [x] Parent-published exact-head freeze, delta readback, CI and independent review.
 
-Excluded: Content/registries/accepted contracts/v1 IDL/production src/Cargo/SQL,
-allocator/RSS/SQL claims, product limits, runtime activation, final readiness or merge.
+Excluded from implementation scope: Content/registries/accepted contracts/v1
+IDL/production src/Cargo/SQL, allocator/RSS/SQL claims, product limits and runtime
+activation. PR integration is recorded below; this candidate does not claim
+production readiness.
 
 ## Implementation and self-review
 
@@ -95,8 +98,9 @@ default-type raw-wire charge gap by closed tag3 rejection, capacity versus lengt
 accounting (including excess proposed capacities) and explicit work exclusions.
 Root's source-binding substitution and writer's excess-capacity findings were
 reproduced RED, then repaired minimally and swept across World/definition/channel/
-corpse/revision/geometry families. No unresolved material local finding.
-Final exact-remote-head whole-diff self-review remains root's responsibility.
+corpse/revision/geometry families. No unresolved material local finding. The
+subsequent exact-frozen-head independent review passed in PR comment `5857079329`;
+the final remote lifecycle is recorded below.
 
 ## Authoring validation
 
@@ -121,34 +125,59 @@ SHA-256 `6f714ed7fb6baaec1176adb49955fa9a4a6bd0aee7208e7724c82365cf0bf6db`.
 String and wire/payload/membership Vec excess-capacity cases all reject before
 publication. External handoff binds final results, not a self-referential SHA.
 E2E/PG/runtime:
-`NOT_APPLICABLE` to offline candidate, no production claim. Exact-head CI:
-pending parent freeze. Candidate2 byte evidence does not close production #513.
+`NOT_APPLICABLE` to offline candidate, no production claim. At authoring-validation
+time exact-head CI awaited the parent freeze; post-freeze source, architecture and
+Merge Queue results are recorded below. Candidate2 byte evidence does not close
+production #513.
 
-## Independent review and lifecycle
+## Protected integration and terminal disposition
 
-Required: `YES`, separate exact-frozen-head code/semantic review per allocation;
-parent controls dispatch/deduplication and policy. Independent literal/algebraic
-oracle is authoring evidence, not whole-PR approval. Reviewer/head/verdict pending.
-PR is null truthfully; current status stays implementing. Root may create DRAFT
-only after exact byte/delta verification; no ready/review-trigger/enqueue/merge
-authority is granted by this packet. Do not mutate the frozen head to add metadata.
+- Frozen source candidate: `f7b835899e250fe3bcb9a85a11fa2a88bb2dae2a`, sole parent
+  `56e5c8a39bf2d899cbbc24735d2d7440d4ecaec1`, frozen at
+  `2026-09-27T15:07:14Z` under Issue #162 comment `5857035880`.
+- PR #997 received independent PASS review in PR comment `5857079329`.
+- Source CI workflow `36328434157`, `game-gate` check `108647776448`: success.
+  Post-ready architecture workflow `36330000127`: success.
+- Native Merge Queue request receipt UUID `3004d599-a669-42d0-9054-69e5dc96900e`
+  was read back; aggregate workflow `36330129323` ran on the queued branch/head.
+  Its `game-gate` check
+  `108652064201`: all required Linux, Windows, PostgreSQL, CodeQL and governance
+  checks succeeded. PR #997 merged at `2026-09-27T15:46:09Z`; protected main is
+  merge commit `a139c51e871027b5800c497d754a91a707af930f`.
+- After merge, root verified the five blobs on protected main
+  `a139c51e871027b5800c497d754a91a707af930f`; protected main remained unchanged
+  before and after those five content reads. Pre-merge composition used the
+  Merge Queue group diff, not a claim that V2 was already on protected main.
+  Terminal Issue #162 comment is `5857383323`.
+- Post-merge main Rust push workflow `36330770148` succeeded. Agent governance
+  workflow `36330769998` failed only on four foreign active packet PRs
+  #989/#994/#983/#984. They are outside this allocation; no foreign paths were
+  touched and no full-main-health claim is made.
+
+The allocation's candidate work is completed and this record is archived. PR #997
+is terminally merged; aggregate Issue #513 remains open. The candidate remains an
+unregistered synthetic offline measurement: no production schema/profile/resource
+acceptance, canonical runtime, DB/restart conformance, or gameplay authority is
+claimed. This archive closeout authorizes no further implementation or external
+action. Closeout-head/PR identity is not asserted here; it is control-plane output.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: coherent signed candidate authored; authoring qualification underway
-status: implementing
+last_progress: "PR #997 merged and protected main readback verified; allocation archived"
+status: completed
 branch: codex/dur03-signed-candidate-evidence-513
-head_sha: null
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
+head_sha: f7b835899e250fe3bcb9a85a11fa2a88bb2dae2a
+pr: 997
+final_head_sha: f7b835899e250fe3bcb9a85a11fa2a88bb2dae2a
+final_head_frozen_at: 2026-09-27T15:07:14Z
+ci_trigger_source: pull_request/opened and ready_for_review
+ci_check_generation: 36330000127
+ci_checks_for_current_head: 2
+ci_run_ids: [36328434157, 36330000127]
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: success
+merge_group_run_id: 36330129323
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -158,5 +187,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: return completed local qualification packet to root for API publication and freeze
+next_action: none for this archived allocation; no further implementation authority
 ```
