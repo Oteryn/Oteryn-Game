@@ -4,15 +4,15 @@
 task_id: OTV2-20260927-quest-reward-claims
 title: Quest authoring format v1 (reward claims, D32-D33) and the Canary + CrystalServer chest transcription
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 976
 base_sha: 419a7cbc8539c9c98bd83d9220e331255e7e8f12
-head_sha: null
-final_head_sha: null
+head_sha: 5a4423d5d2c26e487ef8c2f80f3b092b88374813
+final_head_sha: 5a4423d5d2c26e487ef8c2f80f3b092b88374813
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-27
@@ -60,3 +60,16 @@ fence, session, authority or persisted-recovery evidence is touched.
   manifest: 336 claims, 359 placements, 2 conflicts, 134 approved omissions.
 - `validate_governance.py` and `validate_repository_policy.py` pass.
 - Jira: mapping to a programme Story not resolved in this session (pending).
+
+## Postmerge closeout
+
+`PROVEN`: [PR #976](https://github.com/Oteryn/Oteryn-Game/pull/976) merged
+`5a4423d5d2c26e487ef8c2f80f3b092b88374813` as
+`46666ef527cb63836f660a3b2e12a23bcdb7ea12` at `2026-09-27T11:19:47Z`.
+[Reconciliation allocation](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5855464134)
+confirms the prior lease is terminal/released and allocates this separate archive move.
+The bounded authoring delivery is completed; earlier acceptance results, provenance,
+conflicts, unknowns and owned paths remain historical evidence. Runtime, persistence
+and `content/**` remain unallocated; the recorded Jira mapping remains pending.
+`final_head_sha` identifies the merged PR head; its original freeze timestamp is
+`UNKNOWN` and stays null. No new review, MQ, E2E or runtime qualification is claimed.
