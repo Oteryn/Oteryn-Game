@@ -325,6 +325,18 @@
           "required": [
             "killer"
           ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "spawned": {
+              "const": true
+            }
+          },
+          "required": [
+            "spawned"
+          ]
         }
       ]
     },
@@ -385,6 +397,24 @@
           },
           "required": [
             "random_in"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "role_position": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "otherwise": {
+              "enum": [
+                "death_position"
+              ]
+            }
+          },
+          "required": [
+            "role_position"
           ]
         },
         {
@@ -508,6 +538,30 @@
           "properties": {
             "kind": {
               "const": "damage_taken"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "source": {
+              "enum": [
+                "player",
+                "any"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "role",
+            "source"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "heal_received"
             },
             "role": {
               "type": "string",
@@ -784,6 +838,12 @@
                 "radius": {
                   "type": "integer",
                   "minimum": 0
+                },
+                "shape": {
+                  "enum": [
+                    "square",
+                    "circle"
+                  ]
                 }
               },
               "required": [
@@ -1060,6 +1120,12 @@
             "all_in": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "triggering": {
+              "const": true
+            },
+            "keep_summons": {
+              "type": "boolean"
             }
           },
           "required": [
@@ -1151,11 +1217,11 @@
                       "properties": {
                         "min": {
                           "type": "integer",
-                          "minimum": 1
+                          "minimum": 0
                         },
                         "max": {
                           "type": "integer",
-                          "minimum": 1
+                          "minimum": 0
                         }
                       },
                       "required": [
@@ -1624,6 +1690,75 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "message"
+            },
+            "to": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "players_in": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                }
+              },
+              "required": [
+                "players_in"
+              ]
+            },
+            "text": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "kind",
+            "to",
+            "text"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "one_of"
+            },
+            "branches": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "weight": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "actions": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/action"
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "weight",
+                  "actions"
+                ]
+              },
+              "minItems": 2
+            }
+          },
+          "required": [
+            "kind",
+            "branches"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "emit_outcome"
             },
             "outcome": {
@@ -1634,7 +1769,8 @@
               "enum": [
                 "damage_contributors",
                 "killer",
-                "players_in_anchor"
+                "players_in_anchor",
+                "party"
               ]
             },
             "anchor": {
@@ -1710,5 +1846,5 @@
       ]
     }
   },
-  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D29)."
+  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31)."
 }

@@ -38,6 +38,19 @@ def ranges(value, where=''):
             yield from ranges(child, f'{where}/{index}')
 
 
+def walk(actions, where):
+    """Every action with its path, including the actions inside one_of branches (D31)."""
+    for n, action in enumerate(actions):
+        at = f'{where}/{n}'
+        yield at, action
+        for b, branch in enumerate(action.get('branches', [])):
+            yield from walk(branch['actions'], f'{at}/branches/{b}/actions')
+
+
+CREATURE_TRIGGERS = ('creature_died', 'lethal_damage', 'health_crossed', 'creature_spawned', 'ability_cast', 'damage_taken',
+                     'heal_received', 'damage_accumulated')
+
+
 def semantic(e, catalog):
     errors = [f'{where}: range min exceeds max' for where, r in ranges(e) if r['min'] > r['max']]
     roles = [p['role'] for p in e['participants']]
@@ -50,7 +63,7 @@ def semantic(e, catalog):
         duplicates = sorted({n for n in names if names.count(n) > 1})
         if duplicates:
             errors.append(f'duplicate {label} {duplicates}')
-    spawned = {a['role'] for r in e['rules'] for a in r['actions'] if a['kind'] == 'spawn' and 'role' in a}
+    spawned = {a['role'] for r in e['rules'] for _, a in walk(r['actions'], '') if a['kind'] == 'spawn' and 'role' in a}
     known_roles = set(roles) | spawned
 
     def need(kind, name, pool, where):
@@ -65,15 +78,25 @@ def semantic(e, catalog):
     def subject(value, where, trigger):
         if 'role' in value:
             need('role', value['role'], known_roles, where)
+        elif 'spawned' in value:
+            pass  # checked with the action list: a preceding spawn of exactly one creature
         elif trigger['kind'] not in ('creature_died', 'lethal_damage', 'damage_taken'):
             errors.append(f'{where}: the killer exists only for death, lethal damage and damage triggers')
 
-    def position(value, where):
+    def position(value, where, rule):
         if isinstance(value, dict):
             if 'anchor' in value:
                 need('anchor', value['anchor'], anchors, where)
             if 'random_in' in value:
                 need_area(value['random_in'], where)
+            if 'role_position' in value:
+                role = value['role_position']
+                need('role', role, known_roles, where)
+                if 'otherwise' not in value and not any(c['kind'] == 'creature_present' and c['role'] == role and c['present']
+                                                        for c in rule['conditions']):
+                    errors.append(f'{where}: role_position needs a creature_present condition for that role or an otherwise')
+                if 'otherwise' in value and rule['trigger']['kind'] not in ('creature_died', 'lethal_damage'):
+                    errors.append(f'{where}: otherwise death_position needs a death or lethal damage trigger')
 
     for rule in e['rules']:
         where = f'rules/{rule["key"]}'
@@ -119,8 +142,15 @@ def semantic(e, catalog):
                 errors.append(f'{at}: {ck} needs a death, lethal damage or damage trigger')
             elif ck == 'attacker_wears' and kind not in ('damage_taken', 'damage_accumulated', 'lethal_damage'):
                 errors.append(f'{at}: attacker_wears needs a damage trigger')
-        for n, action in enumerate(rule['actions']):
-            at = f'{where}/actions/{n}'
+        def spawned_speaker(actions, base):
+            for n, action in enumerate(actions):
+                if action.get('subject', {}).get('spawned') and not any(
+                        prior['kind'] == 'spawn' and prior['count'] == 1 for prior in actions[:n]):
+                    errors.append(f'{base}/{n}: a spawned subject needs an earlier spawn of one creature in the same list')
+                for b, branch in enumerate(action.get('branches', [])):
+                    spawned_speaker(branch['actions'], f'{base}/{n}/branches/{b}/actions')
+        spawned_speaker(rule['actions'], where + '/actions')
+        for at, action in walk(rule['actions'], where + '/actions'):
             ak = action['kind']
             for field in ('role',):
                 if field in action and ak != 'spawn':
@@ -128,13 +158,19 @@ def semantic(e, catalog):
             if 'subject' in action:
                 subject(action['subject'], at, trigger)
             if 'at' in action:
-                position(action['at'], at)
+                position(action['at'], at, rule)
             if action.get('owner') == 'death_master' and kind not in ('creature_died', 'lethal_damage'):
                 errors.append(f'{at}: death_master exists only for death and lethal damage triggers')
             if ak == 'prevent_death' and (kind != 'lethal_damage' or trigger['role'] != action['role']):
                 errors.append(f'{at}: prevent_death is valid only in a lethal_damage rule for the same role')
-            if ak == 'remove' and ('role' in action) == ('all_in' in action):
-                errors.append(f'{at}: remove takes exactly one of role and all_in')
+            if ak == 'remove' and sum(field in action for field in ('role', 'all_in', 'triggering')) != 1:
+                errors.append(f'{at}: remove takes exactly one of role, all_in and triggering')
+            if ak == 'remove' and 'triggering' in action and kind not in CREATURE_TRIGGERS:
+                errors.append(f'{at}: remove triggering needs a trigger fired by one creature')
+            if ak == 'remove' and 'keep_summons' in action and 'all_in' not in action:
+                errors.append(f'{at}: keep_summons applies only to remove all_in')
+            if ak == 'message':
+                need_area(action['to']['players_in'], at)
             if ak == 'remove' and 'all_in' in action:
                 need_area(action['all_in'], at)
             if ak == 'teleport':
@@ -177,6 +213,8 @@ def semantic(e, catalog):
                     need_area(action['anchor'], at)
                 if action['credited'] == 'killer' and kind not in ('creature_died', 'lethal_damage', 'damage_taken'):
                     errors.append(f'{at}: killer credit needs a death, lethal damage or damage trigger')
+                if action['credited'] == 'party' and kind not in ('creature_died', 'lethal_damage'):
+                    errors.append(f'{at}: party credit needs a death or lethal damage trigger')
     if catalog is not None:
         declared = {(r['family'], r['key'], r['revision']) for r in catalog['definitions']}
         for ref in refs(e):

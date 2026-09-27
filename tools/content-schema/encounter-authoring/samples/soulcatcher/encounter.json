@@ -1,0 +1,108 @@
+{
+  "identity": {
+    "key": "canary:encounter/soulcatcher",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: Soulcatcher",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "soulcatcher",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/soulcatcher",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "corrupted_soul_spawn",
+      "kind": "point",
+      "description": "Canary (33358, 31187, 10)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "soulcatcher_releases_a_soul_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "soulcatcher",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "health_percent",
+          "role": "soulcatcher",
+          "op": "<",
+          "value": 100
+        },
+        {
+          "kind": "chance_percent",
+          "value": 15
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/corrupted_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "corrupted_soul_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "soulcatcher_releases_a_soul_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "soulcatcher",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "health_percent",
+          "role": "soulcatcher",
+          "op": "<",
+          "value": 100
+        },
+        {
+          "kind": "chance_percent",
+          "value": 15
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/corrupted_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "corrupted_soul_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

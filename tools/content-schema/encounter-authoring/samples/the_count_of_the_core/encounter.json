@@ -15,6 +15,16 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "snail_slime",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/snail_slime",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
@@ -66,6 +76,55 @@
           "destination": "reward_destination",
           "revert_after_ms": 1200000,
           "revert_destination": "warzone_exit"
+        }
+      ]
+    },
+    {
+      "key": "snail_slime_bursts",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "snail_slime"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "snail_slime"
+          },
+          "text": "!!",
+          "mode": "yell"
+        }
+      ]
+    },
+    {
+      "key": "snail_slime_feeds_the_count",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "snail_slime"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "the_count_of_the_core",
+          "near": {
+            "role": "snail_slime",
+            "radius": 2,
+            "shape": "circle"
+          },
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "the_count_of_the_core"
+          },
+          "amount": {
+            "min": 0,
+            "max": 2000
+          }
         }
       ]
     }

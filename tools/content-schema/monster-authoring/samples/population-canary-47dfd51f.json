@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 172,
-    "fully_resolved": 1478,
+    "blocked": 164,
+    "fully_resolved": 1486,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1089
+    "wiki_adopted_monsters": 1093
   },
   "wiki_adopted_rows": {
     "Loot2": 11595,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 105,
+      "monsters": 95,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -596,6 +596,7 @@
     "deadeye_devious",
     "death_blob",
     "death_priest",
+    "death_priest_shargon",
     "deathbine",
     "deathbringer",
     "deathling_scout",
@@ -705,6 +706,7 @@
     "echo_of_vemiath",
     "eclipse_knight",
     "efreet",
+    "egg",
     "ekatrix",
     "elder_bloodjaw",
     "elder_bonelord",
@@ -1034,6 +1036,7 @@
     "lion_archer",
     "lion_knight",
     "lion_warlock",
+    "liquor_spirit",
     "little_corym_charlatan",
     "lizard_abomination",
     "lizard_chosen",
@@ -1046,6 +1049,7 @@
     "lizard_snakecharmer",
     "lizard_templar",
     "lizard_zaogun",
+    "lokathmor",
     "lokathmor_stuck",
     "lord_of_the_elements",
     "lost_basher",
@@ -1097,6 +1101,7 @@
     "massive_water_elemental",
     "mawhawk",
     "maxxenius",
+    "mazzinor",
     "meadow_strider",
     "mean_lost_soul",
     "mean_maw",
@@ -1326,6 +1331,7 @@
     "poodle",
     "pooka",
     "poor_soul",
+    "possessed_tree",
     "preceptor_lazare",
     "priestess",
     "primitive",
@@ -1457,6 +1463,7 @@
     "slug",
     "smuggler",
     "smuggler_baron_silvertoe",
+    "snail_slime",
     "snake",
     "snake_god_essence",
     "snake_thing",
@@ -1662,6 +1669,7 @@
     "twisted_pooka",
     "twisted_shaper",
     "two_headed_turtle",
+    "ugly_monster",
     "unaz_the_mean",
     "unbeatable_dragon",
     "unbound_blightwalker",

@@ -25,6 +25,16 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "lion_commander",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/lion_commander",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
@@ -37,6 +47,16 @@
       "key": "drume_spawn",
       "kind": "point",
       "description": "Canary (32444, 32516, 7)."
+    },
+    {
+      "key": "skirmish",
+      "kind": "area",
+      "description": "Canary x 32417-32461, y 32507-32539, z 7 (22 and 16 tiles around (32439, 32523, 7))."
+    },
+    {
+      "key": "skirmish_exit",
+      "kind": "point",
+      "description": "Canary (32453, 32503, 7)."
     }
   ],
   "phases": [],
@@ -44,6 +64,10 @@
     "counters": [
       {
         "name": "usurper_commanders",
+        "initial": 3
+      },
+      {
+        "name": "lion_commanders",
         "initial": 3
       }
     ],
@@ -128,6 +152,65 @@
           "multiplier_percent": 0,
           "sources": "any",
           "until": "reset"
+        }
+      ]
+    },
+    {
+      "key": "skirmish_lost",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "lion_commander"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "lion_commanders",
+          "op": "<=",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "remove",
+          "all_in": "skirmish",
+          "keep_summons": true
+        },
+        {
+          "kind": "message",
+          "to": {
+            "players_in": "skirmish"
+          },
+          "text": "You lost the skirmish."
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "players_in": "skirmish"
+          },
+          "to": "skirmish_exit"
+        }
+      ]
+    },
+    {
+      "key": "lion_commander_falls",
+      "trigger": {
+        "kind": "lethal_damage",
+        "role": "lion_commander"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "lion_commanders",
+          "op": ">",
+          "value": 1
+        }
+      ],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "lion_commanders",
+          "operation": "add",
+          "value": -1
         }
       ]
     }
