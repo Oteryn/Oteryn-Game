@@ -3148,11 +3148,13 @@
       "origins": [
         "appearance"
       ],
-      "disposition": "PROVENANCE",
-      "kind": "provenance",
-      "status": "provenance_only",
-      "allowed_destinations": [],
-      "reason": "numeric source proficiency ID requires an admitted canonical crosswalk"
+      "disposition": "ITEM_TYPED",
+      "kind": "definition",
+      "status": "mapped",
+      "allowed_destinations": [
+        "/item/proficiency/profile_binding"
+      ],
+      "reason": "numeric source identity maps only through an admitted exact proficiency crosswalk"
     },
     {
       "source_field": "range",

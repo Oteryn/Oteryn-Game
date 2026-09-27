@@ -11,6 +11,11 @@ from math import gcd
 from pathlib import Path
 
 from jsonschema import Draft202012Validator, FormatChecker
+from proficiency_profiles import (
+    MAGIC_SWORD_PROFICIENCY_PAYLOAD,
+    MAGIC_SWORD_PROFICIENCY_REF,
+    MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES,
+)
 from referencing import Registry, Resource
 
 ROOT = Path(__file__).resolve().parent
@@ -106,14 +111,28 @@ DEFINITION_SOURCE_PINS = {
     },
 }
 REAL_ITEM_SOURCE_OBSERVATION_DIGESTS = {
-    "oteryn:item.weapon.sword.magic": "cc2070a59b7054d3a6c1765ba6cf6ca045fffeb8ca9d16f4156a21504eeeefff",
+    "oteryn:item.weapon.sword.magic": "4424a710831a58d59637a76a85c2117cc0401c8b0312f4f10344eaa2da2dd5da",
     "oteryn:item.equipment.armor.demon": "6b62dc0882b526d9b53313c0c50797bf65f60907c6c3ed57ec8e38a9d788fdf2",
     "oteryn:item.container.backpack": "dc7be4977a7a67686c6ed806e2989c38b86326304232d7023e95b70703bd22a3",
     "oteryn:item.food.red-apple": "ea390265b539184ec45ad15921b0fdd9e35cfa68b9d4aca1cf377a6f294c8a08",
     "oteryn:item.rune.sudden-death": "d791f47099f8c8c585f56e2497f1816d45d4155f3c29f8f319c1df435e682aa4",
     "oteryn:item.fluid-container.vial": "aaa6065a2b35b24d2121cae84a522ff6ec245c73c78f488c41f271da7854b850",
 }
-ADMITTED_PROFICIENCY_CROSSWALKS = {}
+MAGIC_SWORD_PROFICIENCY_IDENT = (
+    MAGIC_SWORD_PROFICIENCY_REF["family"],
+    MAGIC_SWORD_PROFICIENCY_REF["key"],
+    MAGIC_SWORD_PROFICIENCY_REF["revision"],
+)
+ADMITTED_PROFICIENCY_PROFILES = {
+    MAGIC_SWORD_PROFICIENCY_IDENT: {
+        "sources": MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES,
+        "payload": MAGIC_SWORD_PROFICIENCY_PAYLOAD,
+    }
+}
+ADMITTED_PROFICIENCY_CROSSWALKS = {
+    source: MAGIC_SWORD_PROFICIENCY_IDENT
+    for source in MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES
+}
 ENGINE_ORIGIN_PATHS = {
     "xml_item_root": "data/items/items.xml",
     "xml_item_attribute": "data/items/items.xml",
@@ -333,12 +352,8 @@ def validate(item, dependencies, manifest=None):
             errors.append(
                 "dependencies/proficiency_crosswalks: duplicate source identity"
             )
-        if target_key in crosswalk_targets:
-            errors.append(
-                "dependencies/proficiency_crosswalks: duplicate target identity"
-            )
         crosswalk_sources.add(source_key)
-        crosswalk_targets[target_key] = crosswalk
+        crosswalk_targets.setdefault(target_key, set()).add(source_key)
     assets = set(dependencies["assets"])
     used_definitions = set()
     used_assets = set()
@@ -387,10 +402,32 @@ def validate(item, dependencies, manifest=None):
             "item/presentation/appearance_binding: missing presentation payload"
         )
     proficiency_ref = item.get("proficiency", {}).get("profile_binding")
-    if proficiency_ref is not None and ident(proficiency_ref) not in crosswalk_targets:
-        errors.append(
-            "item/proficiency/profile_binding: missing admitted source identity crosswalk"
-        )
+    if proficiency_ref is not None:
+        proficiency_key = ident(proficiency_ref)
+        admitted_profile = ADMITTED_PROFICIENCY_PROFILES.get(proficiency_key)
+        if proficiency_key not in crosswalk_targets:
+            errors.append(
+                "item/proficiency/profile_binding: missing admitted source identity crosswalk"
+            )
+        elif admitted_profile is None:
+            errors.append(
+                "item/proficiency/profile_binding: target has no admitted canonical profile"
+            )
+        else:
+            actual_sources = crosswalk_targets[proficiency_key]
+            if actual_sources != admitted_profile["sources"]:
+                errors.append(
+                    "item/proficiency/profile_binding: exact Canary and Crystal source corroboration is required"
+                )
+            actual_payload = {
+                key: value
+                for key, value in item["proficiency"].items()
+                if key != "profile_binding"
+            }
+            if actual_payload != admitted_profile["payload"]:
+                errors.append(
+                    "item/proficiency: inline profile differs from its admitted canonical payload"
+                )
     unused_crosswalks = set(crosswalk_targets) - used_definitions
     if unused_crosswalks:
         errors.append(
@@ -538,7 +575,28 @@ def validate(item, dependencies, manifest=None):
     )
     for level in proficiency.get("levels", []):
         unique(level["perks"], ("key",), "item/proficiency/levels/perks", errors)
+        selection_slots = [
+            augment.get("selection_slot") for augment in level["perks"]
+        ]
+        if any(slot is None for slot in selection_slots):
+            errors.append(
+                "item/proficiency/levels/perks: every selectable perk requires selection_slot"
+            )
+        elif len(selection_slots) != len(set(selection_slots)):
+            errors.append("item/proficiency/levels/perks: duplicate selection_slot")
+        elif selection_slots != list(range(1, len(selection_slots) + 1)):
+            errors.append(
+                "item/proficiency/levels/perks: selection_slot must be contiguous in source order"
+            )
+        if level["selection_count"] > len(level["perks"]):
+            errors.append(
+                "item/proficiency/levels: selection_count exceeds available perks"
+            )
         for augment in level["perks"]:
+            if "value" not in augment:
+                errors.append(
+                    "item/proficiency/levels/perks: every selectable perk requires a typed value"
+                )
             unique(
                 augment.get("rank_values", []),
                 ("rank",),
@@ -1151,6 +1209,23 @@ def validate_real_example(example):
             )
 
     observations = evidence["source_observations"]
+    if "profile_binding" in item.get("proficiency", {}):
+        crosswalks_by_profile = {
+            crosswalk["source_profile"]: crosswalk
+            for crosswalk in dependencies["proficiency_crosswalks"]
+        }
+        for source_id, source_profile in (
+            ("canary_appearance", CANARY_PROFILE),
+            ("crystal_appearance", CRYSTAL_PROFILE),
+        ):
+            observed_id = observations.get(source_id, {}).get(
+                "proficiency.proficiency_id"
+            )
+            crosswalk = crosswalks_by_profile.get(source_profile)
+            if crosswalk is None or str(observed_id) != crosswalk["external_id"]:
+                errors.append(
+                    "evidence/source_observations: proficiency ID differs from its exact source crosswalk"
+                )
     for source_id, profile in wiki_profiles.items():
         source = wiki_sources.get(source_id)
         if source is None:
@@ -1175,6 +1250,7 @@ def validate_real_example(example):
             (CANARY_PROFILE, CRYSTAL_PROFILE),
         ),
         "canary_appearance": ({"appearance"}, (CANARY_PROFILE,)),
+        "crystal_appearance": ({"appearance"}, (CRYSTAL_PROFILE,)),
     }
     for source_id, (allowed_origins, profiles) in engine_origins.items():
         for field in observations.get(source_id, {}):
@@ -1263,6 +1339,11 @@ def validate_real_example(example):
         leaf
         for key, value in item.items()
         if key not in ("identity", "presentation")
+        and not (
+            key == "proficiency"
+            and isinstance(value, dict)
+            and "profile_binding" in value
+        )
         for leaf in leaf_pointers(value, ("item", key))
     }
     actual_leaves = set(destinations) | set(default_destinations)
@@ -1275,7 +1356,13 @@ def validate_real_example(example):
         "sprite_atlas_not_admitted",
         "runtime_lowering_not_implemented",
     }
-    if "proficiency.proficiency_id" in observations.get("canary_appearance", {}):
+    has_proficiency_source_id = any(
+        "proficiency.proficiency_id" in observations.get(source_id, {})
+        for source_id in ("canary_appearance", "crystal_appearance")
+    )
+    if has_proficiency_source_id and "profile_binding" not in item.get(
+        "proficiency", {}
+    ):
         expected_blockers.add("proficiency_id_238_crosswalk_not_admitted")
     if "sounds" in observations.get("br", {}):
         expected_blockers.add("yum_sound_asset_not_admitted")

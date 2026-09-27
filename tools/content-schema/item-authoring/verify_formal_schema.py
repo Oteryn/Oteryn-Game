@@ -8,6 +8,15 @@ from pathlib import Path
 from build_formal_schema import main as build
 from jsonschema import Draft202012Validator
 from jsonschema.exceptions import SchemaError
+from proficiency_profiles import (
+    BERSERK_REF,
+    CANARY_PROFICIENCY_SOURCE,
+    CRYSTAL_PROFICIENCY_SOURCE,
+    INTENSE_WOUND_CLEANSING_REF,
+    MAGIC_SWORD_PROFICIENCY_REF,
+    magic_sword_proficiency,
+    proficiency_crosswalk,
+)
 from source_field_catalogs import (
     BR_PROFILE,
     CANARY_PROFILE,
@@ -400,12 +409,15 @@ def main():
         expected_valid=False,
         expected_warning=None,
         forbidden_warning=None,
+        expected_error=None,
     ):
         item, dependencies, manifest = fixture()
         if mutate:
             mutate(item, dependencies, manifest)
         errors, warnings = validate(item, dependencies, manifest)
         passed = (not errors) == expected_valid
+        if expected_error is not None:
+            passed = passed and any(expected_error in error for error in errors)
         if expected_warning is not None:
             passed = passed and any(expected_warning in warning for warning in warnings)
         if forbidden_warning is not None:
@@ -422,28 +434,29 @@ def main():
             }
         )
 
-    def add_proficiency_crosswalk(
+    def bind_magic_sword_proficiency(
         item,
         dependencies,
         external_id="238",
         version=3,
-        target_slug="sword-magic-sword",
+        target=None,
+        include_crystal=True,
     ):
-        target = ref("Proficiency", target_slug)
+        target = deepcopy(target or MAGIC_SWORD_PROFICIENCY_REF)
+        item["proficiency"] = magic_sword_proficiency()
         item["proficiency"]["profile_binding"] = target
-        dependencies["definitions"].append(target)
-        dependencies["proficiency_crosswalks"].append(
-            {
-                "source_profile": CANARY_PROFILE,
-                "repository": "opentibiabr/canary",
-                "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
-                "path": "data/items/proficiencies.json",
-                "digest_sha256": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22",
-                "external_id": external_id,
-                "source_version": version,
-                "target": target,
-            }
+        dependencies["definitions"].extend(
+            [target, deepcopy(INTENSE_WOUND_CLEANSING_REF), deepcopy(BERSERK_REF)]
         )
+        sources = [CANARY_PROFICIENCY_SOURCE]
+        if include_crystal:
+            sources.append(CRYSTAL_PROFICIENCY_SOURCE)
+        for source in sources:
+            crosswalk = proficiency_crosswalk(source)
+            crosswalk["external_id"] = external_id
+            crosswalk["source_version"] = version
+            crosswalk["target"] = deepcopy(target)
+            dependencies["proficiency_crosswalks"].append(crosswalk)
 
     case("complete item bundle validates", expected_valid=True)
     case(
@@ -599,34 +612,130 @@ def main():
     case(
         "reject proficiency reference without source identity crosswalk",
         lambda item, dependencies, manifest: (
-            item["proficiency"].__setitem__(
-                "profile_binding", ref("Proficiency", "sword-magic-sword")
+            item.__setitem__("proficiency", magic_sword_proficiency()),
+            dependencies["definitions"].extend(
+                [
+                    deepcopy(MAGIC_SWORD_PROFICIENCY_REF),
+                    deepcopy(INTENSE_WOUND_CLEANSING_REF),
+                    deepcopy(BERSERK_REF),
+                ]
             ),
-            dependencies["definitions"].append(ref("Proficiency", "sword-magic-sword")),
         ),
     )
     case(
-        "source proficiency 238/3 stays blocked until an exact canonical target is admitted",
-        lambda item, dependencies, manifest: add_proficiency_crosswalk(
+        "reject unused admitted proficiency crosswalks",
+        lambda item, dependencies, manifest: (
+            dependencies["definitions"].append(
+                deepcopy(MAGIC_SWORD_PROFICIENCY_REF)
+            ),
+            dependencies["proficiency_crosswalks"].extend(
+                [
+                    proficiency_crosswalk(CANARY_PROFICIENCY_SOURCE),
+                    proficiency_crosswalk(CRYSTAL_PROFICIENCY_SOURCE),
+                ]
+            ),
+        ),
+        expected_error="dependencies/proficiency_crosswalks: unused crosswalks",
+    )
+    case(
+        "admitted Canary and Crystal proficiency 238/3 validates",
+        lambda item, dependencies, manifest: bind_magic_sword_proficiency(
             item, dependencies
+        ),
+        True,
+    )
+    case(
+        "reject admitted proficiency without Crystal corroboration",
+        lambda item, dependencies, manifest: bind_magic_sword_proficiency(
+            item, dependencies, include_crystal=False
         ),
     )
     case(
         "reject invented target for otherwise pinned proficiency 238/3",
-        lambda item, dependencies, manifest: add_proficiency_crosswalk(
-            item, dependencies, target_slug="completely-invented-target"
+        lambda item, dependencies, manifest: bind_magic_sword_proficiency(
+            item,
+            dependencies,
+            target=ref("Proficiency", "completely-invented-target"),
         ),
     )
     case(
         "reject unknown proficiency source ID",
-        lambda item, dependencies, manifest: add_proficiency_crosswalk(
+        lambda item, dependencies, manifest: bind_magic_sword_proficiency(
             item, dependencies, external_id="999999"
         ),
     )
     case(
         "reject unknown proficiency source version",
-        lambda item, dependencies, manifest: add_proficiency_crosswalk(
+        lambda item, dependencies, manifest: bind_magic_sword_proficiency(
             item, dependencies, version=999
+        ),
+    )
+    case(
+        "reject duplicate proficiency source identity",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            dependencies["proficiency_crosswalks"].append(
+                deepcopy(dependencies["proficiency_crosswalks"][0])
+            ),
+        ),
+    )
+    case(
+        "reject wrong Crystal proficiency artifact path",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            dependencies["proficiency_crosswalks"][1].__setitem__(
+                "path", "data/items/proficiencies.json"
+            ),
+        ),
+    )
+    case(
+        "reject wrong Crystal proficiency artifact digest",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            dependencies["proficiency_crosswalks"][1].__setitem__(
+                "digest_sha256", "0" * 64
+            ),
+        ),
+    )
+    case(
+        "reject proficiency payload drift from admitted source profile",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"]["levels"][0]["perks"][0]["value"]["value"].__setitem__(
+                "numerator", 8
+            ),
+        ),
+    )
+    case(
+        "reject non-contiguous proficiency selection slots",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"]["levels"][1]["perks"][1].__setitem__(
+                "selection_slot", 4
+            ),
+        ),
+    )
+    case(
+        "reject more than one active proficiency perk per level",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"]["levels"][1].__setitem__("selection_count", 2),
+        ),
+    )
+    case(
+        "reject player proficiency experience in Item definition",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"].__setitem__("experience", 25000),
+        ),
+    )
+    case(
+        "reject player active proficiency selections in Item definition",
+        lambda item, dependencies, manifest: (
+            bind_magic_sword_proficiency(item, dependencies),
+            item["proficiency"].__setitem__(
+                "active_perks", [{"level": 2, "selection_slot": 1}]
+            ),
         ),
     )
     case(
@@ -2205,6 +2314,20 @@ def main():
         {
             "name": "real-source evidence rejects raw observation drift",
             "passed": any("raw value differs" in error for error in probe_errors),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    evidence_probe["evidence"]["source_observations"]["crystal_appearance"][
+        "proficiency.proficiency_id"
+    ] = 999
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects Crystal proficiency ID drift",
+            "passed": any(
+                "proficiency ID differs from its exact source crosswalk" in error
+                for error in probe_errors
+            ),
         }
     )
     evidence_probe = deepcopy(real_examples["examples"][0])

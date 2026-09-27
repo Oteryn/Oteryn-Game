@@ -2,6 +2,15 @@
 
 from copy import deepcopy
 
+from proficiency_profiles import (
+    BERSERK_REF,
+    CANARY_PROFICIENCY_SOURCE,
+    CRYSTAL_PROFICIENCY_SOURCE,
+    INTENSE_WOUND_CLEANSING_REF,
+    MAGIC_SWORD_PROFICIENCY_REF,
+    magic_sword_proficiency,
+    proficiency_crosswalk,
+)
 from source_field_catalogs import (
     CANARY_PROFILE,
     CRYSTAL_PROFILE,
@@ -368,12 +377,16 @@ def presentation_asset(appearance_id):
     }
 
 
-def dependencies(appearance_id):
+def dependencies(
+    appearance_id,
+    definitions=None,
+    proficiency_crosswalks=None,
+):
     return {
-        "definitions": [],
+        "definitions": deepcopy(definitions or []),
         "assets": [],
         "presentations": [presentation_asset(appearance_id)],
-        "proficiency_crosswalks": [],
+        "proficiency_crosswalks": deepcopy(proficiency_crosswalks or []),
     }
 
 
@@ -543,6 +556,7 @@ def build_real_item_examples():
             "stack": {"stackable": False, "max_count": 1},
             "imbuement": {"slot_count": 2},
             "forge": {"classification": 2, "max_tier": 2},
+            "proficiency": magic_sword_proficiency(),
             "trade": {"marketable": True, "market_category": "swords"},
         }
     )
@@ -550,7 +564,18 @@ def build_real_item_examples():
         {
             "slug": "magic-sword",
             "item": item,
-            "dependencies": dependencies(3288),
+            "dependencies": dependencies(
+                3288,
+                definitions=[
+                    MAGIC_SWORD_PROFICIENCY_REF,
+                    INTENSE_WOUND_CLEANSING_REF,
+                    BERSERK_REF,
+                ],
+                proficiency_crosswalks=[
+                    proficiency_crosswalk(CANARY_PROFICIENCY_SOURCE),
+                    proficiency_crosswalk(CRYSTAL_PROFICIENCY_SOURCE),
+                ],
+            ),
             "evidence": source_evidence(
                 "Magic Sword",
                 item,
@@ -605,8 +630,11 @@ def build_real_item_examples():
                     "canary_appearance": {
                         "proficiency.proficiency_id": 238,
                     },
+                    "crystal_appearance": {
+                        "proficiency.proficiency_id": 238,
+                    },
                 },
-                ["proficiency_id_238_crosswalk_not_admitted"],
+                [],
                 [
                     {
                         "destination": "/item/family_profile",

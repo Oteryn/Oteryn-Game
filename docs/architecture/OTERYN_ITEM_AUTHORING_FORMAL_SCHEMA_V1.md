@@ -146,13 +146,38 @@ Item destination; they are never silently promoted into executable truth.
 
 Canary does not expose a separate light radius at the pinned appearance revision, so
 `light.radius_cells` is optional evidence rather than a condition of `emits=true`.
-Typed proficiency authoring reuses the existing WorldProject/v2 augment shape (target,
-optional Effect and ranked typed values); free-form augment strings are not admitted.
-Canary `proficiency_id` is only a source-local numeric identity. It may bind a
-`ProficiencyRef` only through `dependencies.proficiency_crosswalks`, which pins the
-source repository, revision, `proficiencies.json` path and digest, numeric ID, source
-version and exact target. Repeating an invented ref in `dependencies.definitions` no
-longer passes validation.
+Typed proficiency authoring reuses the existing WorldProject/v2 augment shape and adds
+the missing weapon-proficiency distinctions: ordered selection slots, a typed direct
+perk value, signed millisecond modifiers, skill-scaled auto-attack/spell-healing
+targets and the weapon/shield modifier target. Free-form augment strings are not
+admitted.
+
+Canary and Crystal both carry the full Magic Sword profile at source pair `238`/`3`.
+At the pinned revisions, Canary `data/items/proficiencies.json` and Crystal
+`data/json/proficiencies.json` are byte-identical (SHA-256
+`1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22`), including the
+same profile name, three ordered levels and six perk records. The numeric ID remains a
+source-local identity. It binds `oteryn:proficiency.weapon.sword.magic-sword` only
+through two exact `dependencies.proficiency_crosswalks` entries, one for each engine.
+The validator requires both source identities, the admitted canonical target and exact
+inline payload; repeating an invented ref in `dependencies.definitions` does not pass.
+
+The Item owns only the static proficiency offer: profile binding, levels, one-per-level
+selection policy, ordered choices, typed targets and values. Character XP, unlocked
+levels and active choices are mutable player state and remain outside Item authoring.
+Global XP curves, catalyst awards, protection-zone change rules, persistence and
+runtime effect application belong to the Proficiency/player/ruleset implementation.
+This candidate does not claim that those runtime owners already consume this schema.
+
+Community documentation is corroboration, not executable authority. The pinned
+[Fandom Magic Sword revision `1147223`](https://tibia.fandom.com/index.php?title=Magic_Sword&oldid=1147223)
+renders the same six labels and values as the engine profile (rendered HTML captured
+2026-09-27, SHA-256
+`a1e3b417e08493c5e5de849046b65adcdce304c93c095efd230c03972276b28e`). The TibiaWiki
+BR [gameplay guide](https://www.tibiawiki.com.br/index.php?stableid=442799&title=Manual%3AJogabilidade)
+independently states that a level offers one to three choices and only one perk per
+proficiency level may be active. The engine JSON remains the exact
+numeric profile source; the Wiki pages supply human-readable semantic corroboration.
 
 Canary's Market appearance flag proves `marketable=true`, not general
 `tradeable=true`. Candidate v3 therefore makes these two facts independently optional;
@@ -217,10 +242,14 @@ at the pinned historical revision.
 The six generated examples use only real source identities (2854, 2874, 3155, 3288,
 3388 and 3585), exact pinned Wiki revisions and the identical ordered sprite sequences
 verified in Canary and Crystal. Source IDs stay in evidence/crosswalk data, never as
-the canonical Item identity. Unadmitted Ability, proficiency, sound, interaction and
-raster-atlas dependencies remain explicit blockers instead of guessed fields.
-Their closed evidence records partition every authored scalar leaf into either a
-source-evidenced value or an explicit non-source default. The validator cross-checks
+the canonical Item identity. Magic Sword now carries its admitted exact Proficiency
+and Ability references; other unadmitted Ability, sound, interaction and raster-atlas
+dependencies remain explicit blockers instead of guessed fields.
+Their closed evidence records partition every ordinary authored scalar leaf into
+either a source-evidenced value or an explicit non-source default. Exact
+profile-bound proficiency leaves form a separate closed partition: the validator
+matches the entire static payload and both source crosswalks against the admitted
+profile registry. The validator cross-checks
 each source proof against its effective catalog route, normalized value and exact raw
 observation, then verifies the bundle against the Item, both pinned engine artifacts,
 both pinned Wiki pages and the complete blocker set; the examples are not merely
@@ -292,7 +321,10 @@ The schema validator checks:
   preservation of ordered duplicate sprite IDs;
 - pinned proficiency source crosswalks for every `profile_binding`;
 - membership of every proficiency crosswalk and exact target in the pinned admitted
-  source-to-target index (currently empty; Canary `238`/`3` remains provenance only);
+  source-to-target index; Magic Sword `238`/`3` requires both exact Canary and Crystal
+  sources and exact equality with the admitted three-level payload;
+- unique contiguous proficiency selection slots, bounded selection counts and typed
+  values for every selectable perk;
 - canonical rational values and bounded percentages;
 - range/order and equipment-hand invariants;
 - capability uniqueness and direct self-reference rejection;

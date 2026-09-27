@@ -4,6 +4,10 @@ import copy
 import json
 from pathlib import Path
 
+from proficiency_profiles import (
+    CANARY_PROFICIENCY_SOURCE,
+    CRYSTAL_PROFICIENCY_SOURCE,
+)
 from real_item_examples import build_real_item_examples
 from source_field_catalogs import (
     BR_PROFILE,
@@ -780,6 +784,13 @@ def build_item_schema():
                 {"kind": {"const": "milliseconds"}, "value": use("ms")},
                 ("kind", "value"),
             ),
+            obj(
+                {
+                    "kind": {"const": "signed_milliseconds"},
+                    "value": {"type": "integer"},
+                },
+                ("kind", "value"),
+            ),
             obj({"kind": {"const": "cells"}, "value": integer()}, ("kind", "value")),
             obj({"kind": {"const": "count"}, "value": integer()}, ("kind", "value")),
         ]
@@ -791,6 +802,21 @@ def build_item_schema():
                 ("kind", "ability"),
             ),
             obj({"kind": {"const": "auto_attack"}}, ("kind",)),
+            obj(
+                {
+                    "kind": {"const": "skill_scaled_auto_attack"},
+                    "skill": text(pattern=r"^[a-z][a-z0-9_]*$"),
+                },
+                ("kind", "skill"),
+            ),
+            obj(
+                {
+                    "kind": {"const": "skill_scaled_spell_healing"},
+                    "skill": text(pattern=r"^[a-z][a-z0-9_]*$"),
+                },
+                ("kind", "skill"),
+            ),
+            obj({"kind": {"const": "weapon_shield_modifier"}}, ("kind",)),
             obj({"kind": {"const": "offensive_rune"}}, ("kind",)),
             obj(
                 {"kind": {"const": "creature_class"}, "class_key": text()},
@@ -807,15 +833,22 @@ def build_item_schema():
     )
     d["augment"] = obj(
         {
+            "selection_slot": integer(1),
             "key": text(pattern=r"^[a-z][a-z0-9_.-]*$"),
             "target": use("augmentTarget"),
             "effect": use("EffectRef"),
+            "value": use("augmentValue"),
             "rank_values": array(use("augmentRankValue")),
         },
         ("key", "target"),
     )
     d["proficiencyLevel"] = obj(
-        {"level": integer(), "perks": array(use("augment"))}, ("level", "perks")
+        {
+            "level": integer(1),
+            "selection_count": {"const": 1},
+            "perks": array(use("augment"), 1),
+        },
+        ("level", "selection_count", "perks"),
     )
     d["proficiencyShaping"] = obj(
         {
@@ -1128,31 +1161,42 @@ def build_dependencies_schema(item_schema):
         },
         ("identity", "source", "appearance_id", "frame_groups"),
     )
-    d["proficiencySourceCrosswalk"] = obj(
-        {
-            "source_profile": {"const": CANARY_PROFILE},
-            "repository": {"const": "opentibiabr/canary"},
-            "revision": {"const": "47dfd51f45280a59a1d3e50ba7edd573d7234446"},
-            "path": {"const": "data/items/proficiencies.json"},
-            "digest_sha256": {
-                "const": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22"
-            },
-            "external_id": text(pattern=r"^[1-9][0-9]*$"),
-            "source_version": integer(1),
-            "target": use("ProficiencyRef"),
-        },
-        (
-            "source_profile",
-            "repository",
-            "revision",
-            "path",
-            "digest_sha256",
-            "external_id",
-            "source_version",
-            "target",
-        ),
-        description="Pinned source-ID to admitted canonical Proficiency mapping; numeric IDs never become ContentKeys.",
+    proficiency_crosswalk_fields = (
+        "source_profile",
+        "repository",
+        "revision",
+        "path",
+        "digest_sha256",
+        "external_id",
+        "source_version",
+        "target",
     )
+
+    def proficiency_crosswalk_shape(source):
+        return obj(
+            {
+                "source_profile": {"const": source["source_profile"]},
+                "repository": {"const": source["repository"]},
+                "revision": {"const": source["revision"]},
+                "path": {"const": source["path"]},
+                "digest_sha256": {"const": source["digest_sha256"]},
+                "external_id": text(pattern=r"^[1-9][0-9]*$"),
+                "source_version": integer(1),
+                "target": use("ProficiencyRef"),
+            },
+            proficiency_crosswalk_fields,
+        )
+
+    d["proficiencySourceCrosswalk"] = {
+        "oneOf": [
+            proficiency_crosswalk_shape(CANARY_PROFICIENCY_SOURCE),
+            proficiency_crosswalk_shape(CRYSTAL_PROFICIENCY_SOURCE),
+        ],
+        "description": (
+            "Pinned Canary or Crystal source-ID to admitted canonical Proficiency "
+            "mapping; numeric IDs never become ContentKeys."
+        ),
+    }
     any_reference = {
         "oneOf": [
             use(family + "Ref")
@@ -1274,6 +1318,7 @@ def build_real_source_evidence_schema(item_schema):
                 "engine_items_xml",
                 "engine_appearance",
                 "canary_appearance",
+                "crystal_appearance",
             ),
             "field": text(),
             "catalog_field": text(),
@@ -1321,6 +1366,7 @@ def build_real_source_evidence_schema(item_schema):
             "engine_items_xml": observation_map,
             "engine_appearance": observation_map,
             "canary_appearance": observation_map,
+            "crystal_appearance": observation_map,
         },
         ("br", "fandom", "engine_items_xml"),
     )

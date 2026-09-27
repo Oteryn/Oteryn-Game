@@ -99,6 +99,17 @@
               "boolean"
             ]
           }
+        },
+        "crystal_appearance": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
         }
       },
       "required": [
@@ -1773,6 +1784,22 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "signed_milliseconds"
+            },
+            "value": {
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "cells"
             },
             "value": {
@@ -1828,6 +1855,54 @@
           "properties": {
             "kind": {
               "const": "auto_attack"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "skill_scaled_auto_attack"
+            },
+            "skill": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "skill"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "skill_scaled_spell_healing"
+            },
+            "skill": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "skill"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "weapon_shield_modifier"
             }
           },
           "required": [
@@ -1903,6 +1978,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
+        "selection_slot": {
+          "type": "integer",
+          "minimum": 1
+        },
         "key": {
           "type": "string",
           "minLength": 1,
@@ -1913,6 +1992,9 @@
         },
         "effect": {
           "$ref": "#/$defs/EffectRef"
+        },
+        "value": {
+          "$ref": "#/$defs/augmentValue"
         },
         "rank_values": {
           "type": "array",
@@ -1933,18 +2015,22 @@
       "properties": {
         "level": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 1
+        },
+        "selection_count": {
+          "const": 1
         },
         "perks": {
           "type": "array",
           "items": {
             "$ref": "#/$defs/augment"
           },
-          "minItems": 0
+          "minItems": 1
         }
       },
       "required": [
         "level",
+        "selection_count",
         "perks"
       ]
     },
@@ -2771,7 +2857,8 @@
             "fandom",
             "engine_items_xml",
             "engine_appearance",
-            "canary_appearance"
+            "canary_appearance",
+            "crystal_appearance"
           ]
         },
         "field": {

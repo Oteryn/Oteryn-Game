@@ -22,6 +22,7 @@ Architecture and boundaries:
 | `canary-field-dispositions.json` | Exhaustive pinned Canary ledger: 143 parser keys plus root, nested, appearance and reverse-relation inputs. |
 | `crystal-field-dispositions.json` | Exhaustive pinned Crystal ledger: 143 parser keys plus root, nested, appearance and reverse-relation inputs. |
 | `source_field_catalogs.py` | Generated-ledger source of truth, aliases, defects and owner routing. |
+| `proficiency_profiles.py` | Pinned Canary/Crystal proficiency sources and admitted canonical static profiles. |
 | `real_item_examples.py` / `real-source-examples.json` | Six generated, validated real-item examples with source evidence and explicit blockers. |
 | `templates/*.json` | Thirteen valid starting points for materially different authoring shapes. |
 | `validate_item.py` | Structural, semantic, exact-reference and import-readiness validation. |
@@ -66,9 +67,16 @@ ordered sprite sequence of all six fixtures and reject inline pixel/blob payload
 market vocation restrictions require `marketable=true`; an engine Market flag does
 not prove general player-to-player tradeability. Numeric source proficiency IDs remain
 provenance until a pinned `proficiency_crosswalks` entry binds them to an admitted
-exact `ProficiencyRef`. Candidate v3 preserves Canary source pair `238`/`3` as
-provenance but admits no source-to-target crosswalk because no canonical target has
-been accepted yet; the real Magic Sword example therefore remains explicitly blocked.
+exact `ProficiencyRef`. Candidate v3 admits Magic Sword source pair `238`/`3` only when
+both the pinned Canary `data/items/proficiencies.json` and Crystal
+`data/json/proficiencies.json` identities corroborate the same target. Those two files
+are byte-identical at the pinned revisions (SHA-256
+`1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22`).
+The real Magic Sword Item contains the complete ordered three-level perk matrix with
+explicit selection slots, one selectable perk per level, typed percentages/points and
+the signed `-30000 ms` cooldown modifier. The exact admitted profile validator rejects
+payload drift, missing corroboration, unknown IDs/versions and wrong source artifacts.
+Character-owned XP and active perk selections are deliberately not Item fields.
 
 The BR profile is pinned to stable source `424807`; the Fandom profile is pinned to
 historical revision `1035268` and its revision SHA-1. Per-capture SHA-256 remains a

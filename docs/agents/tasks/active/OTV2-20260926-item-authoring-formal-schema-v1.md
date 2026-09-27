@@ -114,8 +114,8 @@ Accepted review repairs:
 - added a closed evidence schema and semantic cross-checks that bind every authored
   field to exact raw engine/Wiki observations, page captures and blocker state;
 - restricted engine fields to their real source artifact and admitted raw-field alias,
-  kept proficiency pair `238`/`3` blocked until an exact canonical
-  target is accepted, and locked all six Presentation fixtures plus the raster
+  initially kept proficiency pair `238`/`3` blocked until an exact canonical target
+  was accepted, and locked all six Presentation fixtures plus the raster
   atlas boundary with positive and negative regression checks.
 - replaced capability-level evidence with an exact scalar-leaf evidence/default
   partition and reject fabricated, external, unresolved or omission-routed fields as
@@ -126,13 +126,23 @@ Accepted review repairs:
   boolean, integer, weight, enum or catalog normalization.
 - independently pinned the canonical SHA-256 of each complete extracted raw-value
   matrix, closing correlated edits of source observations, evidence and Item together.
+- after owner correction, returned frozen head `d77b109ebe5b7a4befa109b2a20dc5cf925d1671`
+  to AUTHORING and admitted Magic Sword proficiency pair `238`/`3` against both exact
+  Canary and Crystal profile artifacts; the pinned files are byte-identical at SHA-256
+  `1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22`.
+- added the complete static three-level/six-perk Magic Sword profile with ordered
+  selection slots, one-active-per-level policy, typed skill/ability/shield targets,
+  signed cooldown milliseconds and exact payload equality; character XP and active
+  choices remain rejected as player-owned state.
+- closed independent-review regressions for otherwise-valid but unused proficiency
+  crosswalks and for any `selection_count` other than exactly one.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python -X utf8 tools/content-schema/item-authoring/verify_formal_schema.py`
-- result: PASS, 200/200; 13 templates, 6 real-source examples, 4 Draft 2020-12 metaschemas, generator byte determinism,
+- result: PASS, 211/211; 13 templates, 6 real-source examples, 4 Draft 2020-12 metaschemas, generator byte determinism,
   positive bundles and fail-closed boundary/semantic cases
 - command/run: `python -m ruff check tools/content-schema/item-authoring`
 - result: PASS
@@ -195,10 +205,10 @@ Accepted review repairs:
 ## Context checkpoint
 
 ```yaml
-last_progress: local v3 candidate passes 200 focused checks and validates six leaf-partitioned real-item evidence bundles with exact raw-to-typed normalization; publication and frozen-head qualification pending
+last_progress: owner correction returned d77b109 to AUTHORING; local successor admits the exact dual-source Magic Sword proficiency profile and passes 211 focused checks; publication and fresh frozen-head qualification pending
 status: implementing
 branch: codex/item-authoring-schema-v1-20260926
-head_sha: null
+head_sha: d77b109ebe5b7a4befa109b2a20dc5cf925d1671
 pr: 952
 final_head_sha: null
 final_head_frozen_at: null
@@ -217,5 +227,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish through guarded high-level API writes, verify the exact remote delta and freeze the returned head
+next_action: complete whole-diff review, publish the guarded successor, verify the exact remote delta, and freeze the returned head
 ```

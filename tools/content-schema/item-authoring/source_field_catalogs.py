@@ -841,10 +841,9 @@ APPEARANCE_EXACT_RULES = {
     "changedtoexpire.former_object_typeid": _mapped(
         "/item/temporal/decay_target", "/item/lifecycle/transforms"
     ),
-    "proficiency.proficiency_id": _outside(
-        "PROVENANCE",
-        "provenance",
-        "numeric source proficiency ID requires an admitted canonical crosswalk",
+    "proficiency.proficiency_id": _mapped(
+        "/item/proficiency/profile_binding",
+        reason="numeric source identity maps only through an admitted exact proficiency crosswalk",
     ),
     "imbueable.slot_count": _mapped("/item/imbuement/slot_count"),
 }

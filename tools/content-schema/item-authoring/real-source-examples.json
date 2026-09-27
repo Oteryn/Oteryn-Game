@@ -66,13 +66,151 @@
           "classification": 2,
           "max_tier": 2
         },
+        "proficiency": {
+          "profile_binding": {
+            "family": "Proficiency",
+            "key": "oteryn:proficiency.weapon.sword.magic-sword",
+            "revision": "definition-r1"
+          },
+          "levels": [
+            {
+              "level": 1,
+              "selection_count": 1,
+              "perks": [
+                {
+                  "selection_slot": 1,
+                  "key": "sword_skill_auto_attack_extra_damage",
+                  "target": {
+                    "kind": "skill_scaled_auto_attack",
+                    "skill": "sword"
+                  },
+                  "value": {
+                    "kind": "rational_percent",
+                    "value": {
+                      "numerator": 7,
+                      "denominator": 1
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "level": 2,
+              "selection_count": 1,
+              "perks": [
+                {
+                  "selection_slot": 1,
+                  "key": "intense_wound_cleansing_cooldown",
+                  "target": {
+                    "kind": "ability",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.intense-wound-cleansing",
+                      "revision": "definition-r1"
+                    }
+                  },
+                  "value": {
+                    "kind": "signed_milliseconds",
+                    "value": -30000
+                  }
+                },
+                {
+                  "selection_slot": 2,
+                  "key": "weapon_shield_modifier",
+                  "target": {
+                    "kind": "weapon_shield_modifier"
+                  },
+                  "value": {
+                    "kind": "signed_points",
+                    "value": 1
+                  }
+                },
+                {
+                  "selection_slot": 3,
+                  "key": "sword_skill_spell_healing",
+                  "target": {
+                    "kind": "skill_scaled_spell_healing",
+                    "skill": "sword"
+                  },
+                  "value": {
+                    "kind": "rational_percent",
+                    "value": {
+                      "numerator": 10,
+                      "denominator": 1
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "level": 3,
+              "selection_count": 1,
+              "perks": [
+                {
+                  "selection_slot": 1,
+                  "key": "berserk_life_leech",
+                  "target": {
+                    "kind": "ability",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.berserk",
+                      "revision": "definition-r1"
+                    }
+                  },
+                  "value": {
+                    "kind": "rational_percent",
+                    "value": {
+                      "numerator": 10,
+                      "denominator": 1
+                    }
+                  }
+                },
+                {
+                  "selection_slot": 2,
+                  "key": "berserk_mana_leech",
+                  "target": {
+                    "kind": "ability",
+                    "ability": {
+                      "family": "Ability",
+                      "key": "oteryn:ability.spell.berserk",
+                      "revision": "definition-r1"
+                    }
+                  },
+                  "value": {
+                    "kind": "rational_percent",
+                    "value": {
+                      "numerator": 5,
+                      "denominator": 1
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
         "trade": {
           "marketable": true,
           "market_category": "swords"
         }
       },
       "dependencies": {
-        "definitions": [],
+        "definitions": [
+          {
+            "family": "Proficiency",
+            "key": "oteryn:proficiency.weapon.sword.magic-sword",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.intense-wound-cleansing",
+            "revision": "definition-r1"
+          },
+          {
+            "family": "Ability",
+            "key": "oteryn:ability.spell.berserk",
+            "revision": "definition-r1"
+          }
+        ],
         "assets": [],
         "presentations": [
           {
@@ -108,7 +246,36 @@
             ]
           }
         ],
-        "proficiency_crosswalks": []
+        "proficiency_crosswalks": [
+          {
+            "source_profile": "canary_47dfd51_item_definition_v1",
+            "repository": "opentibiabr/canary",
+            "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+            "path": "data/items/proficiencies.json",
+            "digest_sha256": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22",
+            "external_id": "238",
+            "source_version": 3,
+            "target": {
+              "family": "Proficiency",
+              "key": "oteryn:proficiency.weapon.sword.magic-sword",
+              "revision": "definition-r1"
+            }
+          },
+          {
+            "source_profile": "crystal_ff7ede5_item_definition_v1",
+            "repository": "zimbadev/crystalserver",
+            "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+            "path": "data/json/proficiencies.json",
+            "digest_sha256": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22",
+            "external_id": "238",
+            "source_version": 3,
+            "target": {
+              "family": "Proficiency",
+              "key": "oteryn:proficiency.weapon.sword.magic-sword",
+              "revision": "definition-r1"
+            }
+          }
+        ]
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
@@ -302,6 +469,9 @@
             "market.category": 20
           },
           "canary_appearance": {
+            "proficiency.proficiency_id": 238
+          },
+          "crystal_appearance": {
             "proficiency.proficiency_id": 238
           }
         },
@@ -723,8 +893,7 @@
           "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
           "blockers": [
             "sprite_atlas_not_admitted",
-            "runtime_lowering_not_implemented",
-            "proficiency_id_238_crosswalk_not_admitted"
+            "runtime_lowering_not_implemented"
           ],
           "non_claims": [
             "not_runtime_imported",

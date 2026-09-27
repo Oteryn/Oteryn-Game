@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 13,
-  "checks": 200,
-  "passed": 200,
+  "checks": 211,
+  "passed": 211,
   "failed": 0,
   "results": [
     {
@@ -133,7 +133,21 @@
       "warning_count": 1
     },
     {
-      "name": "source proficiency 238/3 stays blocked until an exact canonical target is admitted",
+      "name": "reject unused admitted proficiency crosswalks",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 1
+    },
+    {
+      "name": "admitted Canary and Crystal proficiency 238/3 validates",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "reject admitted proficiency without Crystal corroboration",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
@@ -143,22 +157,78 @@
       "name": "reject invented target for otherwise pinned proficiency 238/3",
       "passed": true,
       "expected_valid": false,
-      "error_count": 1,
+      "error_count": 3,
       "warning_count": 1
     },
     {
       "name": "reject unknown proficiency source ID",
       "passed": true,
       "expected_valid": false,
-      "error_count": 1,
+      "error_count": 3,
       "warning_count": 1
     },
     {
       "name": "reject unknown proficiency source version",
       "passed": true,
       "expected_valid": false,
+      "error_count": 3,
+      "warning_count": 1
+    },
+    {
+      "name": "reject duplicate proficiency source identity",
+      "passed": true,
+      "expected_valid": false,
       "error_count": 1,
       "warning_count": 1
+    },
+    {
+      "name": "reject wrong Crystal proficiency artifact path",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject wrong Crystal proficiency artifact digest",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject proficiency payload drift from admitted source profile",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject non-contiguous proficiency selection slots",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 1
+    },
+    {
+      "name": "reject more than one active proficiency perk per level",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject player proficiency experience in Item definition",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject player active proficiency selections in Item definition",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
     },
     {
       "name": "light radius remains optional evidence",
@@ -1117,6 +1187,10 @@
     },
     {
       "name": "real-source evidence rejects raw observation drift",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects Crystal proficiency ID drift",
       "passed": true
     },
     {
