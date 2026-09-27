@@ -1,17 +1,29 @@
-"""Build the Item authoring schema candidate v1. This is not runtime serialization."""
+"""Build the Item authoring schema candidate v2. This is not runtime serialization."""
 
 import copy
 import json
 from pathlib import Path
 
+from source_field_catalogs import (
+    BR_PROFILE,
+    CANARY_PROFILE,
+    CRYSTAL_PROFILE,
+    FANDOM_PROFILE,
+    build_engine_catalog,
+    build_fandom_catalog,
+)
+
 ROOT = Path(__file__).resolve().parent
 TEMPLATES = ROOT / "templates"
 REPOSITORY_ROOT = ROOT.parents[2]
-WIKI_CENSUS = REPOSITORY_ROOT / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
+WIKI_CENSUS = (
+    REPOSITORY_ROOT
+    / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
+)
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
-ITEM_ID = "urn:oteryn:item-authoring:candidate:1"
-DEPS_ID = "urn:oteryn:item-dependencies:candidate:1"
-MANIFEST_ID = "urn:oteryn:item-import-readiness:candidate:1"
+ITEM_ID = "urn:oteryn:item-authoring:candidate:2"
+DEPS_ID = "urn:oteryn:item-dependencies:candidate:2"
+MANIFEST_ID = "urn:oteryn:item-import-readiness:candidate:2"
 
 
 def obj(properties, required=(), **extra):
@@ -67,24 +79,91 @@ def reference(family):
 
 
 PROFILES = {
-    "equipment_armor": ["physical", "equipment", "protection", "modifiers", "imbuement", "forge", "trade"],
-    "equipment_offhand": ["physical", "equipment", "protection", "modifiers", "charges", "temporal", "imbuement", "forge", "trade"],
+    "equipment_armor": [
+        "physical",
+        "equipment",
+        "protection",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "trade",
+    ],
+    "equipment_offhand": [
+        "physical",
+        "equipment",
+        "protection",
+        "modifiers",
+        "charges",
+        "temporal",
+        "imbuement",
+        "forge",
+        "trade",
+    ],
     "container_equipment": ["physical", "equipment", "container", "trade"],
-    "weapon_melee": ["physical", "equipment", "weapon", "modifiers", "imbuement", "forge", "proficiency", "trade"],
-    "weapon_distance": ["physical", "equipment", "weapon", "stack", "modifiers", "imbuement", "forge", "trade"],
-    "weapon_magic": ["physical", "equipment", "weapon", "use", "requirements", "modifiers", "trade"],
+    "weapon_melee": [
+        "physical",
+        "equipment",
+        "weapon",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "proficiency",
+        "trade",
+    ],
+    "weapon_distance": [
+        "physical",
+        "equipment",
+        "weapon",
+        "stack",
+        "modifiers",
+        "imbuement",
+        "forge",
+        "trade",
+    ],
+    "weapon_magic": [
+        "physical",
+        "equipment",
+        "weapon",
+        "use",
+        "requirements",
+        "modifiers",
+        "trade",
+    ],
     "rune": ["physical", "stack", "charges", "use", "requirements", "trade"],
     "document": ["physical", "readable", "presentation", "trade"],
     "container": ["physical", "container", "trade"],
     "decoration": ["physical", "presentation", "use", "light", "lifecycle", "trade"],
     "event_collectible": ["physical", "presentation", "trade"],
     "progression_material": ["physical", "stack", "use", "trade"],
-    "transformation_item": ["physical", "lifecycle", "use", "temporal", "charges", "trade"],
-    "quest_item": ["physical", "use", "readable", "container", "fluid", "light", "lifecycle", "presentation"],
+    "transformation_item": [
+        "physical",
+        "lifecycle",
+        "use",
+        "temporal",
+        "charges",
+        "trade",
+    ],
+    "quest_item": [
+        "physical",
+        "use",
+        "readable",
+        "container",
+        "fluid",
+        "light",
+        "lifecycle",
+        "presentation",
+    ],
     "material_valuable": ["physical", "stack", "trade"],
     "trash": ["physical", "use"],
     "key": ["physical", "use"],
-    "light_source": ["physical", "light", "use", "temporal", "lifecycle", "presentation"],
+    "light_source": [
+        "physical",
+        "light",
+        "use",
+        "temporal",
+        "lifecycle",
+        "presentation",
+    ],
     "tool": ["physical", "use", "charges", "temporal", "lifecycle", "trade"],
     "food": ["physical", "stack", "consumable", "use", "trade"],
     "fluid": ["physical", "fluid", "use", "requirements", "trade"],
@@ -120,7 +199,13 @@ COMMON_CAPABILITIES = {
 
 FAMILY_ASSIGNMENTS = {
     "equipment_armor": ["Capacetes", "Botas", "Armaduras", "Calças"],
-    "equipment_offhand": ["Escudos", "Spellbooks", "Extra Slot", "Amuletos e Colares", "Anéis"],
+    "equipment_offhand": [
+        "Escudos",
+        "Spellbooks",
+        "Extra Slot",
+        "Amuletos e Colares",
+        "Anéis",
+    ],
     "container_equipment": ["Aljavas"],
     "weapon_melee": ["Machados", "Clavas", "Espadas", "Punhos", "Réplicas de Armas"],
     "weapon_distance": ["Distância", "Munição"],
@@ -128,9 +213,19 @@ FAMILY_ASSIGNMENTS = {
     "rune": ["Runas", "Runas de Decoração"],
     "document": ["Livros", "Documentos e Papéis"],
     "container": ["Recipientes"],
-    "decoration": ["Decorações", "Dolls e Bears", "Troféus", "Instrumentos Musicais", "Jogos e Diversão"],
+    "decoration": [
+        "Decorações",
+        "Dolls e Bears",
+        "Troféus",
+        "Instrumentos Musicais",
+        "Jogos e Diversão",
+    ],
     "event_collectible": ["Prêmios de Eventos", "Itens de Fansites", "Itens de Festa"],
-    "progression_material": ["Itens de Addons", "Itens de Imbuements", "Delivery Tasks"],
+    "progression_material": [
+        "Itens de Addons",
+        "Itens de Imbuements",
+        "Delivery Tasks",
+    ],
     "transformation_item": ["Itens Encantados"],
     "quest_item": ["Itens de Quest"],
     "material_valuable": ["Cristais (Itens)", "Valiosos", "Produtos de Criaturas"],
@@ -149,7 +244,7 @@ WIKI_FORMAL_DESTINATIONS = {
     "mana": ["/item/use/mana_cost"],
     "skillboost": ["/item/modifiers/skill_boost"],
     "resist": ["/item/protection/resistances"],
-    "modificadores": ["/item/modifiers/editor_notes"],
+    "modificadores": ["/item/modifiers"],
     "volume": ["/item/container/capacity"],
     "armor": ["/item/protection/armor"],
     "attack": ["/item/weapon/attack"],
@@ -160,12 +255,18 @@ WIKI_FORMAL_DESTINATIONS = {
     "defensemod": ["/item/weapon/extra_defense"],
     "charges": ["/item/charges/count"],
     "mantra": ["/item/modifiers/mantra"],
-    "vocrequired": ["/item/requirements/vocations", "/item/equipment/patterns/*/vocations"],
-    "levelrequired": ["/item/requirements/min_level", "/item/equipment/patterns/*/min_level"],
+    "vocrequired": [
+        "/item/requirements/vocations",
+        "/item/equipment/patterns/*/vocations",
+    ],
+    "levelrequired": [
+        "/item/requirements/min_level",
+        "/item/equipment/patterns/*/min_level",
+    ],
     "augments": ["/item/proficiency/augments"],
     "imbuement": ["/item/imbuement/slot_count"],
     "classificacao": ["/item/forge/classification"],
-    "weight": ["/item/physical/weight"],
+    "weight": ["/item/physical/weight", "/item/presentation/display_weight"],
     "elemental_bond": ["/item/modifiers/elemental_bond"],
     "flavortext": ["/item/presentation/flavor_text"],
     "attrib": ["/item/source_observations/attributes_text"],
@@ -221,11 +322,23 @@ def build_item_schema():
         description="Namespaced Oteryn authoring key; source numeric IDs are provenance only.",
     )
     d["revision"] = text(pattern=r"^[A-Za-z0-9_.:-]+$", maxLength=512)
-    d["identity"] = obj({"key": use("key"), "revision": use("revision")}, ("key", "revision"))
-    for family in ("Item", "Ability", "Effect", "Interaction", "Document", "Proficiency", "Presentation"):
+    d["identity"] = obj(
+        {"key": use("key"), "revision": use("revision")}, ("key", "revision")
+    )
+    for family in (
+        "Item",
+        "Ability",
+        "Effect",
+        "Interaction",
+        "Document",
+        "Proficiency",
+        "Presentation",
+    ):
         d[family + "Ref"] = reference(family)
     d["bool"] = {"type": "boolean"}
-    d["ms"] = integer(1, description="Positive duration in milliseconds; no implicit unit conversion.")
+    d["ms"] = integer(
+        1, description="Positive duration in milliseconds; no implicit unit conversion."
+    )
     d["ratio"] = obj(
         {"numerator": {"type": "integer"}, "denominator": integer(1)},
         ("numerator", "denominator"),
@@ -233,10 +346,26 @@ def build_item_schema():
     )
     d["nonnegativeRatio"] = copy.deepcopy(d["ratio"])
     d["nonnegativeRatio"]["properties"]["numerator"] = integer()
+    d["positiveRatio"] = copy.deepcopy(d["ratio"])
+    d["positiveRatio"]["properties"]["numerator"] = integer(1)
     d["percent"] = copy.deepcopy(d["nonnegativeRatio"])
-    d["percent"]["description"] = "Exact percentage points in [0,100], enforced semantically."
+    d["percent"]["description"] = (
+        "Exact percentage points in [0,100], enforced semantically."
+    )
     d["damageType"] = enum(
-        "physical", "energy", "earth", "fire", "life_drain", "mana_drain", "drowning", "ice", "holy", "death", "agony", "neutral", "healing"
+        "physical",
+        "energy",
+        "earth",
+        "fire",
+        "life_drain",
+        "mana_drain",
+        "drowning",
+        "ice",
+        "holy",
+        "death",
+        "agony",
+        "neutral",
+        "healing",
     )
     d["assetBinding"] = use("key")
     d["weight"] = obj(
@@ -246,6 +375,23 @@ def build_item_schema():
         },
         ("value", "unit"),
         description="Exact nonnegative decimal string plus explicit unit.",
+    )
+    d["displayWeight"] = obj(
+        {
+            "value": text(pattern=r"^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$", maxLength=64),
+            "unit": enum("oz", "g"),
+        },
+        ("value", "unit"),
+        description="Signed source display override only; never gameplay mass.",
+    )
+    d["displayFlags"] = obj(
+        {
+            "stack_count": use("bool"),
+            "duration": use("bool"),
+            "attributes": use("bool"),
+            "client_expiry_timer": use("bool"),
+            "client_wear_counter": use("bool"),
+        }
     )
     d["presentation"] = obj(
         {
@@ -258,6 +404,8 @@ def build_item_schema():
             "projectile_effect": d["assetBinding"],
             "attack_effect": d["assetBinding"],
             "variants": array(use("ItemRef"), unique=True),
+            "display_weight": use("displayWeight"),
+            "display_flags": use("displayFlags"),
         }
     )
     d["taxonomy"] = obj(
@@ -278,7 +426,10 @@ def build_item_schema():
         ("stackable", "max_count"),
         allOf=[
             {
-                "if": {"properties": {"stackable": {"const": True}}, "required": ["stackable"]},
+                "if": {
+                    "properties": {"stackable": {"const": True}},
+                    "required": ["stackable"],
+                },
                 "then": {"properties": {"max_count": {"minimum": 2}}},
                 "else": {"properties": {"max_count": {"const": 1}}},
             }
@@ -291,15 +442,53 @@ def build_item_schema():
             "vocations": array(text(pattern=r"^[a-z][a-z0-9_]*$"), unique=True),
             "context": text(),
             "enforcement_mode": enum("on_equip", "on_use", "both"),
+            "premium_only": use("bool"),
+            "level_magic_shortfall": obj(
+                {
+                    "policy": {"const": "allow_with_multiplicative_damage_penalty"},
+                    "damage_multiplier_per_failed_check": obj(
+                        {"numerator": {"const": 1}, "denominator": {"const": 2}},
+                        ("numerator", "denominator"),
+                    ),
+                },
+                ("policy", "damage_multiplier_per_failed_check"),
+            ),
         },
         ("enforcement_mode",),
     )
     d["equipmentPattern"] = obj(
         {
             "pattern_id": integer(),
-            "slot": enum("head", "neck", "back", "armor", "right_hand", "left_hand", "legs", "feet", "ring", "ammo", "extra"),
+            "slot": enum(
+                "head",
+                "neck",
+                "back",
+                "armor",
+                "right_hand",
+                "left_hand",
+                "legs",
+                "feet",
+                "ring",
+                "ammo",
+                "extra",
+            ),
             "hands": integer(0, 2),
-            "reserved_slots": array(enum("head", "neck", "back", "armor", "right_hand", "left_hand", "legs", "feet", "ring", "ammo", "extra"), unique=True),
+            "reserved_slots": array(
+                enum(
+                    "head",
+                    "neck",
+                    "back",
+                    "armor",
+                    "right_hand",
+                    "left_hand",
+                    "legs",
+                    "feet",
+                    "ring",
+                    "ammo",
+                    "extra",
+                ),
+                unique=True,
+            ),
             "groups": array(text(pattern=r"^[a-z][a-z0-9_]*$"), unique=True),
             "vocations": array(text(pattern=r"^[a-z][a-z0-9_]*$"), unique=True),
             "min_level": integer(),
@@ -310,6 +499,8 @@ def build_item_schema():
         {
             **copy.deepcopy(d["equipmentPattern"]["properties"]),
             "patterns": array(use("equipmentPattern"), 1),
+            "dual_wielding": use("bool"),
+            "activation_events": array(enum("equip", "unequip"), 1, unique=True),
         },
         oneOf=[
             {"required": ["slot", "hands"], "not": {"required": ["patterns"]}},
@@ -318,7 +509,15 @@ def build_item_schema():
                 "not": {
                     "anyOf": [
                         {"required": [name]}
-                        for name in ("pattern_id", "slot", "hands", "reserved_slots", "groups", "vocations", "min_level")
+                        for name in (
+                            "pattern_id",
+                            "slot",
+                            "hands",
+                            "reserved_slots",
+                            "groups",
+                            "vocations",
+                            "min_level",
+                        )
                     ]
                 },
             },
@@ -326,19 +525,50 @@ def build_item_schema():
         description="Use the compact slot/hands form for one pattern or patterns[] when equip rules differ by vocation/level.",
     )
     d["elementalAttack"] = obj(
-        {"damage_type": use("damageType"), "amount": integer()}, ("damage_type", "amount")
+        {"damage_type": use("damageType"), "amount": integer()},
+        ("damage_type", "amount"),
     )
     d["damageRange"] = obj(
         {"minimum": {"type": "integer"}, "maximum": {"type": "integer"}},
         ("minimum", "maximum"),
     )
-    d["chain"] = obj(
-        {"max_targets": integer(2), "range_cells": integer(1), "falloff_percent": use("percent")},
+    d["chainTargeting"] = obj(
+        {
+            "max_targets": integer(2),
+            "range_cells": integer(1),
+            "falloff_percent": use("percent"),
+        },
         ("max_targets", "range_cells"),
     )
+    d["chain"] = {
+        "oneOf": [
+            obj({"mode": {"const": "disabled"}}, ("mode",)),
+            obj(
+                {
+                    "mode": {"const": "override"},
+                    "skill_formula_coefficient": use("positiveRatio"),
+                    "targeting": use("chainTargeting"),
+                },
+                ("mode", "skill_formula_coefficient"),
+            ),
+        ],
+        "description": "Absent inherits engine defaults; disabled and explicit coefficient are distinct.",
+    }
     d["weapon"] = obj(
         {
-            "weapon_type": enum("sword", "axe", "club", "fist", "distance", "ammunition", "wand", "rod"),
+            "weapon_type": enum(
+                "sword",
+                "axe",
+                "club",
+                "fist",
+                "distance_launcher",
+                "ammunition",
+                "thrown_missile",
+                "wand",
+                "rod",
+                "shield",
+                "spellbook",
+            ),
             "ammunition_kind": text(pattern=r"^[a-z][a-z0-9_]*$"),
             "attack": {"type": "integer"},
             "attack_modifier": {"type": "integer"},
@@ -351,7 +581,13 @@ def build_item_schema():
             "damage_range": use("damageRange"),
             "damage_type": use("damageType"),
             "elemental_attack": array(use("elementalAttack")),
-            "consumption_mode": enum("none", "consume_ammunition", "consume_charge", "consume_item"),
+            "consumption_mode": enum(
+                "none",
+                "consume_ammunition",
+                "consume_charge",
+                "consume_item",
+                "move_item_to_impact_tile",
+            ),
             "break_chance_percent": use("percent"),
             "chain": use("chain"),
         },
@@ -366,7 +602,10 @@ def build_item_schema():
         ("damage_type", "reduction_percent", "scope"),
     )
     d["conditionSuppression"] = obj(
-        {"condition": text(pattern=r"^[a-z][a-z0-9_]*$"), "scope": enum("direct", "field", "all")},
+        {
+            "condition": text(pattern=r"^[a-z][a-z0-9_]*$"),
+            "scope": enum("direct", "field", "all"),
+        },
         ("condition", "scope"),
     )
     d["protection"] = obj(
@@ -381,33 +620,78 @@ def build_item_schema():
         ("skill", "amount"),
     )
     d["capacityModifier"] = obj(
-        {"resource": enum("health", "mana", "capacity", "soul"), "flat": {"type": "integer"}, "percent": use("ratio")},
+        {
+            "resource": enum("health", "mana", "capacity", "soul"),
+            "flat": {"type": "integer"},
+            "percent": use("ratio"),
+        },
         ("resource",),
         anyOf=[{"required": ["flat"]}, {"required": ["percent"]}],
     )
     d["regenerationModifier"] = obj(
-        {"resource": enum("health", "mana"), "amount": integer(1), "interval_ms": use("ms")},
+        {
+            "resource": enum("health", "mana"),
+            "amount": integer(1),
+            "interval_ms": use("ms"),
+        },
         ("resource", "amount", "interval_ms"),
     )
     d["leechModifier"] = obj(
-        {"resource": enum("health", "mana"), "chance_percent": use("percent"), "amount_percent": use("percent")},
+        {
+            "resource": enum("health", "mana"),
+            "chance_percent": use("percent"),
+            "amount_percent": use("percent"),
+        },
         ("resource", "chance_percent", "amount_percent"),
     )
     d["magicLevelModifier"] = obj(
         {
             "combat_type": {"oneOf": [use("damageType"), {"const": "all"}]},
             "amount": {"type": "integer"},
+            "percent": use("ratio"),
         },
-        ("combat_type", "amount"),
+        ("combat_type",),
+        oneOf=[
+            {"required": ["amount"], "not": {"required": ["percent"]}},
+            {"required": ["percent"], "not": {"required": ["amount"]}},
+        ],
     )
     d["reflection"] = obj(
-        {"damage_type": use("damageType"), "flat": {"type": "integer"}, "percent": use("percent")},
+        {
+            "damage_type": use("damageType"),
+            "flat": {"type": "integer"},
+            "percent": use("percent"),
+        },
         ("damage_type",),
         anyOf=[{"required": ["flat"]}, {"required": ["percent"]}],
     )
     d["magicShieldCapacity"] = obj(
         {"flat": {"type": "integer"}, "percent": use("ratio")},
         anyOf=[{"required": ["flat"]}, {"required": ["percent"]}],
+    )
+    d["movementSpeed"] = obj(
+        {
+            "flat": {
+                "type": "integer",
+                "minimum": -2147483648,
+                "maximum": 2147483647,
+            },
+            "unit": {"const": "speed_points"},
+        },
+        ("flat", "unit"),
+    )
+    d["mantra"] = obj(
+        {
+            "points": {"type": "integer", "minimum": -32768, "maximum": 32767},
+            "damage_types": array(
+                enum("energy", "fire", "earth", "ice"), 1, unique=True
+            ),
+        },
+        ("points", "damage_types"),
+    )
+    d["elementalBond"] = obj(
+        {"damage_type": enum("physical", "energy", "earth")},
+        ("damage_type",),
     )
     d["modifiers"] = obj(
         {
@@ -420,12 +704,23 @@ def build_item_schema():
             "magic_level": array(use("magicLevelModifier")),
             "mana_shield_enabled": use("bool"),
             "magic_shield_capacity": use("magicShieldCapacity"),
-            "perfect_shot_bonus": array(obj({"range_cells": integer(1), "damage": {"type": "integer"}}, ("range_cells", "damage"))),
+            "perfect_shot_bonus": array(
+                obj(
+                    {"range_cells": integer(1), "damage": {"type": "integer"}},
+                    ("range_cells", "damage"),
+                )
+            ),
             "cleave_percent": use("percent"),
             "reflection": array(use("reflection")),
-            "mantra": text(),
-            "elemental_bond": text(),
-            "editor_notes": array(text(), unique=True, description="Non-executable bounded notes; not a gameplay attribute bag."),
+            "movement_speed": use("movementSpeed"),
+            "invisibility_enabled": use("bool"),
+            "mantra": use("mantra"),
+            "elemental_bond": use("elementalBond"),
+            "editor_notes": array(
+                text(),
+                unique=True,
+                description="Non-executable bounded notes; not a gameplay attribute bag.",
+            ),
         }
     )
     d["charges"] = obj({"count": integer(1), "show_count": use("bool")}, ("count",))
@@ -459,25 +754,46 @@ def build_item_schema():
         ("slot_count",),
     )
     d["forge"] = obj(
-        {"classification": integer(), "max_tier": integer()}, ("classification", "max_tier")
+        {"classification": integer(), "max_tier": integer()},
+        ("classification", "max_tier"),
     )
     d["augmentValue"] = {
         "oneOf": [
-            obj({"kind": {"const": "boolean"}, "value": use("bool")}, ("kind", "value")),
-            obj({"kind": {"const": "signed_points"}, "value": {"type": "integer"}}, ("kind", "value")),
-            obj({"kind": {"const": "rational_percent"}, "value": use("ratio")}, ("kind", "value")),
-            obj({"kind": {"const": "milliseconds"}, "value": use("ms")}, ("kind", "value")),
+            obj(
+                {"kind": {"const": "boolean"}, "value": use("bool")}, ("kind", "value")
+            ),
+            obj(
+                {"kind": {"const": "signed_points"}, "value": {"type": "integer"}},
+                ("kind", "value"),
+            ),
+            obj(
+                {"kind": {"const": "rational_percent"}, "value": use("ratio")},
+                ("kind", "value"),
+            ),
+            obj(
+                {"kind": {"const": "milliseconds"}, "value": use("ms")},
+                ("kind", "value"),
+            ),
             obj({"kind": {"const": "cells"}, "value": integer()}, ("kind", "value")),
             obj({"kind": {"const": "count"}, "value": integer()}, ("kind", "value")),
         ]
     }
     d["augmentTarget"] = {
         "oneOf": [
-            obj({"kind": {"const": "ability"}, "ability": use("AbilityRef")}, ("kind", "ability")),
+            obj(
+                {"kind": {"const": "ability"}, "ability": use("AbilityRef")},
+                ("kind", "ability"),
+            ),
             obj({"kind": {"const": "auto_attack"}}, ("kind",)),
             obj({"kind": {"const": "offensive_rune"}}, ("kind",)),
-            obj({"kind": {"const": "creature_class"}, "class_key": text()}, ("kind", "class_key")),
-            obj({"kind": {"const": "generic"}, "target_key": text()}, ("kind", "target_key")),
+            obj(
+                {"kind": {"const": "creature_class"}, "class_key": text()},
+                ("kind", "class_key"),
+            ),
+            obj(
+                {"kind": {"const": "generic"}, "target_key": text()},
+                ("kind", "target_key"),
+            ),
         ]
     }
     d["augmentRankValue"] = obj(
@@ -505,7 +821,14 @@ def build_item_schema():
             "lunar_ascension_enabled": use("bool"),
             "cost_service": use("InteractionRef"),
         },
-        ("max_rank", "replace_slots", "refine_enabled", "reshape_enabled", "clear_enabled", "lunar_ascension_enabled"),
+        (
+            "max_rank",
+            "replace_slots",
+            "refine_enabled",
+            "reshape_enabled",
+            "clear_enabled",
+            "lunar_ascension_enabled",
+        ),
     )
     d["proficiency"] = obj(
         {
@@ -514,10 +837,18 @@ def build_item_schema():
             "shaping": use("proficiencyShaping"),
             "augments": array(use("augment")),
         },
-        anyOf=[{"required": ["profile_binding"]}, {"required": ["levels"]}, {"required": ["augments"]}],
+        anyOf=[
+            {"required": ["profile_binding"]},
+            {"required": ["levels"]},
+            {"required": ["augments"]},
+        ],
     )
     d["consumable"] = obj(
-        {"edible": use("bool"), "regeneration_seconds": integer(), "consume_count": integer(1)},
+        {
+            "edible": use("bool"),
+            "regeneration_seconds": integer(),
+            "consume_count": integer(1),
+        },
         ("edible", "consume_count"),
     )
     d["fluid"] = obj(
@@ -541,20 +872,32 @@ def build_item_schema():
         ("readable", "writable", "write_policy"),
         allOf=[
             {
-                "if": {"properties": {"writable": {"const": False}}, "required": ["writable"]},
-                "then": {"properties": {"write_policy": {"const": "none"}}, **forbid("write_once_target")},
+                "if": {
+                    "properties": {"writable": {"const": False}},
+                    "required": ["writable"],
+                },
+                "then": {
+                    "properties": {"write_policy": {"const": "none"}},
+                    **forbid("write_once_target"),
+                },
                 "else": {
                     "properties": {"write_policy": {"enum": ["write_once", "rewrite"]}},
                     "required": ["max_characters"],
                 },
             },
             {
-                "if": {"properties": {"write_policy": {"const": "write_once"}}, "required": ["write_policy"]},
+                "if": {
+                    "properties": {"write_policy": {"const": "write_once"}},
+                    "required": ["write_policy"],
+                },
                 "then": {"required": ["write_once_target"]},
                 "else": forbid("write_once_target"),
             },
             {
-                "if": {"properties": {"writable": {"const": True}}, "required": ["writable"]},
+                "if": {
+                    "properties": {"writable": {"const": True}},
+                    "required": ["writable"],
+                },
                 "then": {"properties": {"readable": {"const": True}}},
             },
         ],
@@ -573,7 +916,13 @@ def build_item_schema():
             {
                 "if": {"properties": {"emits": {"const": True}}, "required": ["emits"]},
                 "then": {"required": ["color_binding", "intensity"]},
-                "else": forbid("color_binding", "intensity", "radius_cells", "when_equipped", "toggleable"),
+                "else": forbid(
+                    "color_binding",
+                    "intensity",
+                    "radius_cells",
+                    "when_equipped",
+                    "toggleable",
+                ),
             }
         ],
     )
@@ -587,12 +936,35 @@ def build_item_schema():
             "damage": use("damageRange"),
             "damage_type": use("damageType"),
             "mana_cost": integer(),
+            "default_action": text(pattern=r"^[a-z][a-z0-9_.-]*$"),
         },
         ("usable", "use_with"),
     )
     d["transform"] = obj(
-        {"trigger": enum("use", "equip", "unequip", "decay", "wrap", "unwrap"), "target": use("ItemRef")},
+        {
+            "trigger": enum(
+                "use", "equip", "unequip", "decay", "destroy", "wrap", "unwrap"
+            ),
+            "target": use("ItemRef"),
+        },
         ("trigger", "target"),
+    )
+    d["wrapping"] = obj(
+        {
+            "wrap_target": use("ItemRef"),
+            "unwrap_target": use("ItemRef"),
+            "preserve_contents": use("bool"),
+            "is_wrap_kit": use("bool"),
+            "wrap_enabled": use("bool"),
+            "unwrap_enabled": use("bool"),
+        },
+        anyOf=[
+            {"required": ["wrap_target"]},
+            {"required": ["unwrap_target"]},
+            {"required": ["is_wrap_kit"]},
+            {"required": ["wrap_enabled"]},
+            {"required": ["unwrap_enabled"]},
+        ],
     )
     d["lifecycle"] = obj(
         {
@@ -600,8 +972,7 @@ def build_item_schema():
             "enchanted_variant": use("ItemRef"),
             "destructible": use("bool"),
             "transforms": array(use("transform")),
-            "wrap_target": use("ItemRef"),
-            "unwrap_target": use("ItemRef"),
+            "wrapping": use("wrapping"),
         }
     )
     d["trade"] = obj(
@@ -614,13 +985,23 @@ def build_item_schema():
         ("tradeable", "marketable"),
     )
     d["sourceObservations"] = obj(
-        {"attributes_text": text(), "unparsed_clauses": array(text(), unique=True)},
+        {
+            "attributes_text": text(),
+            "unparsed_clauses": array(text(), unique=True),
+            "unparsed_modifier_clauses": array(text(), unique=True),
+        },
         description="Preserved non-executable source text; never interpreted as runtime logic.",
     )
     d["editor"] = obj(
         {
             "notes": array(text(), unique=True),
-            "estimated_value": obj({"amount": text(pattern=r"^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$"), "unit": text()}, ("amount", "unit")),
+            "estimated_value": obj(
+                {
+                    "amount": text(pattern=r"^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$"),
+                    "unit": text(),
+                },
+                ("amount", "unit"),
+            ),
         },
         description="Editor metadata only; not economy or durable value truth.",
     )
@@ -657,7 +1038,7 @@ def build_item_schema():
     return {
         "$schema": DIALECT,
         "$id": ITEM_ID,
-        "title": "Oteryn Item authoring candidate v1",
+        "title": "Oteryn Item authoring candidate v2",
         "description": "Portable Item definition only. Terrain, placed WorldObject and mutable ItemInstance state are outside this schema.",
         **obj(properties, ("identity", "display_name", "family_profile", "taxonomy")),
         "$defs": d,
@@ -666,11 +1047,24 @@ def build_item_schema():
 
 def build_dependencies_schema(item_schema):
     d = copy.deepcopy(item_schema["$defs"])
-    any_reference = {"oneOf": [use(family + "Ref") for family in ("Item", "Ability", "Effect", "Interaction", "Document", "Proficiency", "Presentation")]}
+    any_reference = {
+        "oneOf": [
+            use(family + "Ref")
+            for family in (
+                "Item",
+                "Ability",
+                "Effect",
+                "Interaction",
+                "Document",
+                "Proficiency",
+                "Presentation",
+            )
+        ]
+    }
     return {
         "$schema": DIALECT,
         "$id": DEPS_ID,
-        "title": "Oteryn Item authoring exact dependency catalog candidate v1",
+        "title": "Oteryn Item authoring exact dependency catalog candidate v2",
         **obj(
             {
                 "definitions": array(any_reference, unique=True),
@@ -685,28 +1079,65 @@ def build_dependencies_schema(item_schema):
 def build_manifest_schema(item_schema):
     d = copy.deepcopy(item_schema["$defs"])
     d["sourceField"] = obj(
-        {"source_locator": text(), "source_field": text()}, ("source_locator", "source_field")
+        {"source_locator": text(), "source_field": text()},
+        ("source_locator", "source_field"),
     )
     d["source"] = obj(
         {
             "kind": enum("git", "wiki", "web", "local"),
+            "source_profile": enum(
+                BR_PROFILE, FANDOM_PROFILE, CANARY_PROFILE, CRYSTAL_PROFILE
+            ),
             "url": text(pattern=r"^https?://"),
             "repository": text(),
             "revision": text(),
+            "revision_sha1": text(pattern=r"^[0-9a-f]{40}$"),
             "path": text(),
             "captured_at": text(format="date-time"),
             "digest_sha256": text(pattern=r"^[0-9a-f]{64}$"),
             "field_inventory": array(use("sourceField"), 1, unique=True),
         },
-        ("kind", "revision", "captured_at", "digest_sha256", "field_inventory"),
+        (
+            "kind",
+            "source_profile",
+            "revision",
+            "captured_at",
+            "digest_sha256",
+            "field_inventory",
+        ),
     )
     d["entry"] = obj(
         {
             "source_index": integer(),
             "source_locator": text(),
             "source_field": text(),
-            "kind": enum("definition", "presentation", "relationship", "provenance", "editor", "raw_text", "external_domain", "template_control", "instance_state", "world_object", "terrain"),
-            "status": enum("mapped", "approved_omission", "external_domain", "reverse_relation", "provenance_only", "editor_only", "unsupported_source_field", "unresolved_semantics", "conflict"),
+            "source_value": {"type": ["string", "number", "boolean"]},
+            "kind": enum(
+                "definition",
+                "presentation",
+                "relationship",
+                "provenance",
+                "editor",
+                "raw_text",
+                "external_domain",
+                "template_control",
+                "instance_state",
+                "world_object",
+                "terrain",
+                "source_defect",
+            ),
+            "status": enum(
+                "mapped",
+                "approved_omission",
+                "external_domain",
+                "reverse_relation",
+                "provenance_only",
+                "editor_only",
+                "pinned_no_effect",
+                "unsupported_source_field",
+                "unresolved_semantics",
+                "conflict",
+            ),
             "destination": text(pattern=r"^/(?:item|dependencies)(?:/.*)?$"),
             "promotions": array(text(pattern=r"^/item(?:/.*)?$"), unique=True),
             "reason": text(),
@@ -716,7 +1147,7 @@ def build_manifest_schema(item_schema):
     return {
         "$schema": DIALECT,
         "$id": MANIFEST_ID,
-        "title": "Oteryn Item import readiness candidate v1",
+        "title": "Oteryn Item import readiness candidate v2",
         **obj(
             {"sources": array(use("source"), 1), "entries": array(use("entry"), 1)},
             ("sources", "entries"),
@@ -735,57 +1166,241 @@ def base(slug, name, profile, item_class, primary):
         "display_name": name,
         "family_profile": profile,
         "taxonomy": {"item_class": item_class, "primary": primary, "tags": []},
-        "physical": {"weight": {"value": "1.00", "unit": "oz"}, "movable": True, "pickupable": True},
+        "physical": {
+            "weight": {"value": "1.00", "unit": "oz"},
+            "movable": True,
+            "pickupable": True,
+        },
     }
 
 
 def build_templates():
     result = {}
-    item = base("generic", "Template Portable Item", "material_valuable", "material", "generic")
+    item = base(
+        "generic", "Template Portable Item", "material_valuable", "material", "generic"
+    )
     item.update({"trade": {"tradeable": True, "marketable": True}})
     result["generic-portable.json"] = item
     item = base("armor", "Template Armor", "equipment_armor", "equipment", "armor")
-    item.update({"equipment": {"slot": "armor", "hands": 0, "reserved_slots": [], "groups": []}, "protection": {"armor": 1, "resistances": [], "condition_suppressions": []}, "trade": {"tradeable": True, "marketable": True}})
+    item.update(
+        {
+            "equipment": {
+                "slot": "armor",
+                "hands": 0,
+                "reserved_slots": [],
+                "groups": [],
+            },
+            "protection": {"armor": 1, "resistances": [], "condition_suppressions": []},
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["equipment-armor.json"] = item
-    item = base("accessory", "Template Accessory", "equipment_offhand", "equipment", "accessory")
-    item.update({"equipment": {"slot": "ring", "hands": 0, "reserved_slots": [], "groups": []}, "charges": {"count": 1, "show_count": True}, "trade": {"tradeable": True, "marketable": True}})
+    item = base(
+        "accessory", "Template Accessory", "equipment_offhand", "equipment", "accessory"
+    )
+    item.update(
+        {
+            "equipment": {
+                "slot": "ring",
+                "hands": 0,
+                "reserved_slots": [],
+                "groups": [],
+            },
+            "charges": {"count": 1, "show_count": True},
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["equipment-accessory.json"] = item
     item = base("melee", "Template Melee Weapon", "weapon_melee", "weapon", "melee")
-    item.update({"equipment": {"slot": "right_hand", "hands": 1, "reserved_slots": [], "groups": []}, "weapon": {"weapon_type": "sword", "attack": 1, "defense": 1, "consumption_mode": "none"}, "trade": {"tradeable": True, "marketable": True}})
+    item.update(
+        {
+            "equipment": {
+                "slot": "right_hand",
+                "hands": 1,
+                "reserved_slots": [],
+                "groups": [],
+            },
+            "weapon": {
+                "weapon_type": "sword",
+                "attack": 1,
+                "defense": 1,
+                "consumption_mode": "none",
+            },
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["weapon-melee.json"] = item
-    item = base("distance", "Template Distance Weapon", "weapon_distance", "weapon", "distance")
-    item.update({"equipment": {"slot": "right_hand", "hands": 2, "reserved_slots": ["left_hand"], "groups": []}, "weapon": {"weapon_type": "distance", "ammunition_kind": "arrow", "attack_modifier": 1, "hit_chance_modifier_percent": {"numerator": 0, "denominator": 1}, "range_cells": 5, "consumption_mode": "consume_ammunition"}, "trade": {"tradeable": True, "marketable": True}})
+    item = base(
+        "distance", "Template Distance Weapon", "weapon_distance", "weapon", "distance"
+    )
+    item.update(
+        {
+            "equipment": {
+                "slot": "right_hand",
+                "hands": 2,
+                "reserved_slots": ["left_hand"],
+                "groups": [],
+            },
+            "weapon": {
+                "weapon_type": "distance_launcher",
+                "ammunition_kind": "arrow",
+                "attack_modifier": 1,
+                "hit_chance_modifier_percent": {"numerator": 0, "denominator": 1},
+                "range_cells": 5,
+                "consumption_mode": "consume_ammunition",
+            },
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["weapon-distance.json"] = item
-    item = base("ammunition", "Template Ammunition", "weapon_distance", "ammunition", "ammunition")
-    item.update({"stack": {"stackable": True, "max_count": 100}, "equipment": {"slot": "ammo", "hands": 0, "reserved_slots": [], "groups": []}, "weapon": {"weapon_type": "ammunition", "ammunition_kind": "arrow", "attack": 1, "consumption_mode": "consume_item"}, "trade": {"tradeable": True, "marketable": True}})
+    item = base(
+        "ammunition",
+        "Template Ammunition",
+        "weapon_distance",
+        "ammunition",
+        "ammunition",
+    )
+    item.update(
+        {
+            "stack": {"stackable": True, "max_count": 100},
+            "equipment": {
+                "slot": "ammo",
+                "hands": 0,
+                "reserved_slots": [],
+                "groups": [],
+            },
+            "weapon": {
+                "weapon_type": "ammunition",
+                "ammunition_kind": "arrow",
+                "attack": 1,
+                "consumption_mode": "consume_item",
+            },
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["ammunition.json"] = item
-    item = base("magic-weapon", "Template Magic Weapon", "weapon_magic", "weapon", "magic")
-    item.update({"requirements": {"min_level": 1, "min_magic_level": 1, "vocations": [], "enforcement_mode": "on_use"}, "equipment": {"slot": "right_hand", "hands": 1, "reserved_slots": [], "groups": []}, "weapon": {"weapon_type": "wand", "damage_range": {"minimum": 1, "maximum": 2}, "damage_type": "energy", "consumption_mode": "none"}, "use": {"usable": True, "use_with": False}, "trade": {"tradeable": True, "marketable": True}})
+    item = base(
+        "magic-weapon", "Template Magic Weapon", "weapon_magic", "weapon", "magic"
+    )
+    item.update(
+        {
+            "requirements": {
+                "min_level": 1,
+                "min_magic_level": 1,
+                "vocations": [],
+                "enforcement_mode": "on_use",
+            },
+            "equipment": {
+                "slot": "right_hand",
+                "hands": 1,
+                "reserved_slots": [],
+                "groups": [],
+            },
+            "weapon": {
+                "weapon_type": "wand",
+                "damage_range": {"minimum": 1, "maximum": 2},
+                "damage_type": "energy",
+                "consumption_mode": "none",
+            },
+            "use": {"usable": True, "use_with": False},
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["weapon-magic.json"] = item
     item = base("rune", "Template Rune", "rune", "rune", "rune")
-    item.update({"stack": {"stackable": True, "max_count": 100}, "requirements": {"min_level": 1, "min_magic_level": 1, "vocations": [], "enforcement_mode": "on_use"}, "charges": {"count": 1, "show_count": True}, "use": {"usable": True, "use_with": True}, "trade": {"tradeable": True, "marketable": True}})
+    item.update(
+        {
+            "stack": {"stackable": True, "max_count": 100},
+            "requirements": {
+                "min_level": 1,
+                "min_magic_level": 1,
+                "vocations": [],
+                "enforcement_mode": "on_use",
+            },
+            "charges": {"count": 1, "show_count": True},
+            "use": {"usable": True, "use_with": True},
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["rune.json"] = item
-    item = base("container", "Template Container", "container", "container", "container")
-    item.update({"container": {"capacity": 20, "content_kind": "items", "accepts": []}, "trade": {"tradeable": True, "marketable": True}})
+    item = base(
+        "container", "Template Container", "container", "container", "container"
+    )
+    item.update(
+        {
+            "container": {"capacity": 20, "content_kind": "items", "accepts": []},
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["container.json"] = item
     item = base("food", "Template Food", "food", "consumable", "food")
-    item.update({"stack": {"stackable": True, "max_count": 100}, "consumable": {"edible": True, "regeneration_seconds": 60, "consume_count": 1}, "use": {"usable": True, "use_with": False}, "trade": {"tradeable": True, "marketable": True}})
+    item.update(
+        {
+            "stack": {"stackable": True, "max_count": 100},
+            "consumable": {
+                "edible": True,
+                "regeneration_seconds": 60,
+                "consume_count": 1,
+            },
+            "use": {"usable": True, "use_with": False},
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["food.json"] = item
     item = base("fluid", "Template Fluid", "fluid", "fluid", "fluid")
-    item.update({"requirements": {"enforcement_mode": "on_use"}, "fluid": {"role": "content", "fluid_type": "water"}, "use": {"usable": True, "use_with": False}, "trade": {"tradeable": True, "marketable": True}})
+    item.update(
+        {
+            "requirements": {"enforcement_mode": "on_use"},
+            "fluid": {"role": "content", "fluid_type": "water"},
+            "use": {"usable": True, "use_with": False},
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["fluid.json"] = item
     item = base("document", "Template Document", "document", "document", "document")
-    item.update({"presentation": {"grammar": {"article": "a", "plural": "documents"}}, "readable": {"readable": True, "writable": False, "write_policy": "none", "distance_readable": False}, "trade": {"tradeable": True, "marketable": False}})
+    item.update(
+        {
+            "presentation": {"grammar": {"article": "a", "plural": "documents"}},
+            "readable": {
+                "readable": True,
+                "writable": False,
+                "write_policy": "none",
+                "distance_readable": False,
+            },
+            "trade": {"tradeable": True, "marketable": False},
+        }
+    )
     result["document.json"] = item
-    item = base("decoration-kit", "Template Decoration Kit", "decoration", "decoration", "decoration")
-    item.update({"presentation": {}, "use": {"usable": True, "use_with": False}, "lifecycle": {"enchantable": False, "destructible": False, "transforms": []}, "trade": {"tradeable": True, "marketable": True}})
+    item = base(
+        "decoration-kit",
+        "Template Decoration Kit",
+        "decoration",
+        "decoration",
+        "decoration",
+    )
+    item.update(
+        {
+            "presentation": {},
+            "use": {"usable": True, "use_with": False},
+            "lifecycle": {
+                "enchantable": False,
+                "destructible": False,
+                "transforms": [],
+            },
+            "trade": {"tradeable": True, "marketable": True},
+        }
+    )
     result["portable-decoration-kit.json"] = item
     return result
 
 
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+    path.write_text(
+        json.dumps(value, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
 
 def main():
@@ -798,13 +1413,17 @@ def main():
     write_json(
         ROOT / "profile-catalog.json",
         {
-            "schema": "OTERYN_ITEM_AUTHORING_PROFILE_CATALOG/candidate-1",
+            "schema": "OTERYN_ITEM_AUTHORING_PROFILE_CATALOG/candidate-2",
             "profiles": [
                 {
                     "profile_id": profile,
                     "expected_capabilities": capabilities,
                     "common_capabilities": COMMON_CAPABILITIES[profile],
-                    "optional_capabilities": [capability for capability in capabilities if capability not in COMMON_CAPABILITIES[profile]],
+                    "optional_capabilities": [
+                        capability
+                        for capability in capabilities
+                        if capability not in COMMON_CAPABILITIES[profile]
+                    ],
                     "navigation_families": FAMILY_ASSIGNMENTS[profile],
                     "additional_capabilities_allowed": True,
                 }
@@ -818,14 +1437,26 @@ def main():
     mapped_fields = {
         row["source_parameter"]
         for row in census["field_mappings"]
-        if row["disposition"] in ("ITEM_TYPED", "ITEM_AUTHORING", "PRESENTATION_EDITOR", "SOURCE_TEXT_PRESERVE_AND_PARSE")
+        if row["disposition"]
+        in (
+            "ITEM_TYPED",
+            "ITEM_AUTHORING",
+            "PRESENTATION_EDITOR",
+            "SOURCE_TEXT_PRESERVE_AND_PARSE",
+        )
     }
     if mapped_fields != set(WIKI_FORMAL_DESTINATIONS):
-        raise ValueError("Wiki formal destination registry does not exactly cover mapped census fields")
+        raise ValueError(
+            "Wiki formal destination registry does not exactly cover mapped census fields"
+        )
     write_json(
         ROOT / "wiki-field-dispositions.json",
         {
-            "schema": "OTERYN_ITEM_AUTHORING_WIKI_FIELD_DISPOSITIONS/candidate-1",
+            "schema": "OTERYN_ITEM_AUTHORING_WIKI_FIELD_DISPOSITIONS/candidate-2",
+            "source_profile": BR_PROFILE,
+            "authority": "CURRENT_FIELD_CENSUS_REFERENCE_ONLY",
+            "source_url": "https://www.tibiawiki.com.br/index.php?stableid=424807&title=Predefini%C3%A7%C3%A3o%3AInfobox_Item",
+            "revision": "stableid:424807",
             "source": WIKI_CENSUS.relative_to(REPOSITORY_ROOT).as_posix(),
             "attrib_promotion_prefixes": list(ATTRIB_PROMOTION_PREFIXES),
             "fields": [
@@ -833,12 +1464,26 @@ def main():
                     "source_field": row["source_parameter"],
                     "disposition": row["disposition"],
                     "canonical_path": row.get("canonical_path"),
-                    "allowed_destinations": WIKI_FORMAL_DESTINATIONS.get(row["source_parameter"], []),
+                    "allowed_destinations": WIKI_FORMAL_DESTINATIONS.get(
+                        row["source_parameter"], []
+                    ),
+                    **(
+                        {"source_value_router": "signed_weight"}
+                        if row["source_parameter"] == "weight"
+                        else {}
+                    ),
                 }
                 for row in census["field_mappings"]
             ],
         },
     )
+    write_json(
+        ROOT / "canary-field-dispositions.json", build_engine_catalog(CANARY_PROFILE)
+    )
+    write_json(
+        ROOT / "crystal-field-dispositions.json", build_engine_catalog(CRYSTAL_PROFILE)
+    )
+    write_json(ROOT / "fandom-field-dispositions.json", build_fandom_catalog())
     write_json(
         ROOT / "item-dependencies-template.json",
         {"definitions": [], "assets": []},
@@ -847,3 +1492,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
