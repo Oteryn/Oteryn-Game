@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:oteryn:item-authoring:candidate:2",
-  "title": "Oteryn Item authoring candidate v2",
+  "$id": "urn:oteryn:item-authoring:candidate:3",
+  "title": "Oteryn Item authoring candidate v3",
   "description": "Portable Item definition only. Terrain, placed WorldObject and mutable ItemInstance state are outside this schema.",
   "type": "object",
   "additionalProperties": false,
@@ -504,7 +504,7 @@
           "uniqueItems": true
         },
         "appearance_binding": {
-          "$ref": "#/$defs/key"
+          "$ref": "#/$defs/PresentationRef"
         },
         "effects": {
           "type": "array",
@@ -2444,9 +2444,56 @@
           "uniqueItems": true
         }
       },
-      "required": [
-        "tradeable",
-        "marketable"
+      "required": [],
+      "anyOf": [
+        {
+          "required": [
+            "tradeable"
+          ]
+        },
+        {
+          "required": [
+            "marketable"
+          ]
+        },
+        {
+          "required": [
+            "market_category"
+          ]
+        },
+        {
+          "required": [
+            "vocations"
+          ]
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "market_category"
+                ]
+              },
+              {
+                "required": [
+                  "vocations"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "marketable": {
+                "const": true
+              }
+            },
+            "required": [
+              "marketable"
+            ]
+          }
+        }
       ]
     },
     "sourceObservations": {

@@ -12,6 +12,9 @@ CANARY_PROFILE = "canary_47dfd51_item_definition_v1"
 CRYSTAL_PROFILE = "crystal_ff7ede5_item_definition_v1"
 FANDOM_PROFILE = "tibia_fandom_merge_items_objects_1035268_v1"
 BR_PROFILE = "tibiawiki_br_infobox_item_424807_v1"
+BR_REAL_ITEM_PROFILE = "tibiawiki_br_real_item_pages_20260927_v1"
+FANDOM_REAL_ITEM_PROFILE = "tibia_fandom_real_item_pages_20260927_v1"
+REAL_ITEM_PAGE_CAPTURED_AT = "2026-09-27T07:08:47.439Z"
 
 
 COMMON_PARSER_FIELDS = (
@@ -752,7 +755,10 @@ APPEARANCE_EXACT_RULES = {
     "flags.liquidcontainer": _mapped("/item/fluid/role"),
     "flags.light": _mapped("/item/light", kind="presentation"),
     "flags.default_action": _mapped("/item/use/default_action"),
-    "flags.market": _mapped("/item/trade"),
+    "flags.market": {
+        **_mapped("/item/trade/marketable"),
+        "destination_value_equals": True,
+    },
     "flags.wrap": _mapped("/item/lifecycle/wrapping/wrap_enabled"),
     "flags.unwrap": _mapped("/item/lifecycle/wrapping/unwrap_enabled"),
     "flags.changedtoexpire": _mapped(
@@ -787,7 +793,11 @@ APPEARANCE_EXACT_RULES = {
     ),
     "flags.wrapkit": _mapped("/item/lifecycle/wrapping/is_wrap_kit"),
     "flags.dual_wielding": _mapped("/item/equipment/dual_wielding"),
-    "flags.proficiency": _mapped("/item/proficiency/profile_binding"),
+    "flags.proficiency": _outside(
+        "PROVENANCE",
+        "provenance",
+        "source proficiency presence requires an admitted canonical crosswalk",
+    ),
     "flags.imbueable": _mapped("/item/imbuement/slot_count"),
     "flags.restrict_to_vocation": _mapped(
         "/item/trade/vocations", "/item/equipment/patterns/*/vocations"
@@ -831,7 +841,11 @@ APPEARANCE_EXACT_RULES = {
     "changedtoexpire.former_object_typeid": _mapped(
         "/item/temporal/decay_target", "/item/lifecycle/transforms"
     ),
-    "proficiency.proficiency_id": _mapped("/item/proficiency/profile_binding"),
+    "proficiency.proficiency_id": _outside(
+        "PROVENANCE",
+        "provenance",
+        "numeric source proficiency ID requires an admitted canonical crosswalk",
+    ),
     "imbueable.slot_count": _mapped("/item/imbuement/slot_count"),
 }
 
@@ -1311,7 +1325,583 @@ def build_fandom_catalog():
     }
 
 
+BR_REAL_ITEM_PAGE_PINS = (
+    (
+        7109,
+        "Backpack",
+        432220,
+        "2026-01-27T00:35:10Z",
+        "f74a5e4c2bea507c5c2c766f311323073324b521",
+        "75816d7708357163fc7b007641fa9e703f1a5c6d7dc3fb14df26dc9f3d12b19d",
+        (
+            "buyfrom",
+            "droppedby",
+            "imbuement",
+            "implemented",
+            "itemclass",
+            "name",
+            "notes",
+            "npcprice",
+            "npcvalue",
+            "primarytype",
+            "sellto",
+            "stackable",
+            "volume",
+            "weight",
+        ),
+    ),
+    (
+        6527,
+        "Demon Armor",
+        379817,
+        "2022-12-18T19:26:13Z",
+        "1aafcabfd8fd058c16d5f6a07250641518a021a7",
+        "c5254032ea340db36ec8564515df8f01500d1a748c7a61a8061dbd85f6dc3029",
+        (
+            "armor",
+            "buyfrom",
+            "classificacao",
+            "imbuement",
+            "itemclass",
+            "max_tier",
+            "name",
+            "notes",
+            "npcprice",
+            "npcvalue",
+            "primarytype",
+            "sellto",
+            "stackable",
+            "value",
+            "weight",
+        ),
+    ),
+    (
+        5810,
+        "Magic Sword",
+        436743,
+        "2026-06-16T15:36:49Z",
+        "fa042e6cac18e57d36b535cfd6cac46bfc644b92",
+        "31bc9a48ea263fa02e1e85a82316e9810ae0602183ef52c7da217508da3535a9",
+        (
+            "attack",
+            "buyfrom",
+            "classificacao",
+            "defense",
+            "defensemod",
+            "droppedby",
+            "enchantable",
+            "flavortext",
+            "hands",
+            "imbuement",
+            "itemclass",
+            "levelrequired",
+            "max_tier",
+            "name",
+            "notes",
+            "npcprice",
+            "npcvalue",
+            "perk1",
+            "perk2",
+            "perk3",
+            "primarytype",
+            "sellto",
+            "stackable",
+            "type",
+            "value",
+            "weight",
+        ),
+    ),
+    (
+        8230,
+        "Red Apple",
+        381934,
+        "2022-12-18T20:00:31Z",
+        "974d6697071e73c455e505edab05f8d54e30f4d7",
+        "f0f46d71956b08626126d519778ea6aa510d2f56978540758729f166c5bde656",
+        (
+            "buyfrom",
+            "droppedby",
+            "droppedEventby",
+            "edible",
+            "flavortext",
+            "itemclass",
+            "name",
+            "notes",
+            "npcprice",
+            "npcvalue",
+            "primarytype",
+            "regenseconds",
+            "secondarytype",
+            "sellto",
+            "sounds",
+            "stackable",
+            "value",
+            "weight",
+        ),
+    ),
+    (
+        10250,
+        "Sudden Death Rune",
+        435712,
+        "2026-06-03T03:41:42Z",
+        "e3dbb273bb387789a1c7b53d0a061c2c0fa8b569",
+        "7bae31e2dbd4eb80969b98e411397603faffdc06dd56647f950eff24a5ba5a25",
+        (
+            "buyfrom",
+            "cooldowngrupo",
+            "cooldownproprio",
+            "damagetype",
+            "droppedby",
+            "droppedRaidby",
+            "effect",
+            "history",
+            "levelrequired",
+            "makelvl",
+            "makemana",
+            "makeqty",
+            "makevoc",
+            "mlrequired",
+            "name",
+            "notes",
+            "npcprice",
+            "premium",
+            "soul",
+            "storevalue",
+            "Subclass",
+            "weight",
+            "words",
+        ),
+    ),
+    (
+        7288,
+        "Vial",
+        382884,
+        "2022-12-18T20:16:04Z",
+        "2caba430cecd7be590e2fd88f3adcd1e0af92229",
+        "b1390d881313a0b17b1c5ccff510fb001de926130244031f6bf9137aaeb20dbe",
+        (
+            "attrib",
+            "buyfrom",
+            "droppedby",
+            "itemclass",
+            "name",
+            "notes",
+            "npcprice",
+            "npcvalue",
+            "primarytype",
+            "sellto",
+            "stackable",
+            "value",
+            "weight",
+        ),
+    ),
+)
+
+
+FANDOM_REAL_ITEM_PAGE_PINS = (
+    (
+        1591,
+        "Backpack",
+        1147105,
+        "2025-12-08T14:20:09Z",
+        "c7057ac6b95e3b63ea1e5b832ca1836dde9ecb2c",
+        "1c564f86bf3ddfc848499bd2bab637de01708594180a3c8403911755b8c567f0",
+        (
+            "actualname",
+            "article",
+            "buyfrom",
+            "droppedby",
+            "history",
+            "imbueslots",
+            "immobile",
+            "implemented",
+            "itemid",
+            "marketable",
+            "name",
+            "notes",
+            "npcprice",
+            "npcpricerook",
+            "npcvalue",
+            "npcvaluerook",
+            "objectclass",
+            "pickupable",
+            "primarytype",
+            "secondarytype",
+            "sellto",
+            "slot",
+            "stackable",
+            "usable",
+            "value",
+            "volume",
+            "walkable",
+            "weight",
+        ),
+    ),
+    (
+        1619,
+        "Demon Armor",
+        1147324,
+        "2025-12-08T14:29:11Z",
+        "abc09722ed0519f1b9c3cf8ee3033c0b158e3cea",
+        "b8036ddc56b00e2c3986d2b85975fd705fcdc023e8c935bce2debec28b5c9f6e",
+        (
+            "actualname",
+            "armor",
+            "article",
+            "buyfrom",
+            "droppedby",
+            "imbueslots",
+            "immobile",
+            "implemented",
+            "itemid",
+            "marketable",
+            "name",
+            "notes",
+            "npcprice",
+            "npcvalue",
+            "objectclass",
+            "pickupable",
+            "plural",
+            "primarytype",
+            "sellto",
+            "slot",
+            "stackable",
+            "upgradeclass",
+            "value",
+            "walkable",
+            "weight",
+        ),
+    ),
+    (
+        1402,
+        "Magic Sword",
+        1147223,
+        "2025-12-08T14:27:08Z",
+        "518be1259d3c036b0cf40ea0074f754855fa478e",
+        "c4800c24eed0114d308946603be6c89c8f6a2c8727173e9d14cdc57e40525c5b",
+        (
+            "actualname",
+            "article",
+            "attack",
+            "buyfrom",
+            "defense",
+            "defensemod",
+            "droppedby",
+            "enchantable",
+            "flavortext",
+            "hands",
+            "history",
+            "imbueslots",
+            "immobile",
+            "implemented",
+            "itemid",
+            "levelrequired",
+            "marketable",
+            "name",
+            "notes",
+            "npcprice",
+            "npcvalue",
+            "objectclass",
+            "pickupable",
+            "plural",
+            "primarytype",
+            "sellto",
+            "slot",
+            "stackable",
+            "upgradeclass",
+            "usable",
+            "value",
+            "walkable",
+            "weapontype",
+            "weight",
+        ),
+    ),
+    (
+        1250,
+        "Red Apple",
+        1200917,
+        "2026-08-16T17:40:11Z",
+        "b1da8f370a728b95088e32900d8c9805a51c36d7",
+        "ae2cbafd3e7835d91b3c6a19e72a573b4bcd82922cd082f7e4a8d6e376aae05a",
+        (
+            "actualname",
+            "article",
+            "buyfrom",
+            "consumable",
+            "droppedby",
+            "immobile",
+            "implemented",
+            "itemid",
+            "marketable",
+            "name",
+            "notes",
+            "npcprice",
+            "npcpricerook",
+            "npcvalue",
+            "npcvaluerook",
+            "objectclass",
+            "pickupable",
+            "plural",
+            "primarytype",
+            "regenseconds",
+            "sellto",
+            "sounds",
+            "stackable",
+            "usable",
+            "value",
+            "walkable",
+            "weight",
+        ),
+    ),
+    (
+        2216,
+        "Sudden Death Rune",
+        1189790,
+        "2026-06-16T20:15:20Z",
+        "a596bff1fe50fbc5e11998029f4fe1294f61cdb4",
+        "15e969af7af151448d23c126e9c0e7a73ec2b0de4b61b4c3a3cfb547b0fe648e",
+        (
+            "actualname",
+            "article",
+            "basepower",
+            "buyfrom",
+            "damagetype",
+            "droppedby",
+            "history",
+            "immobile",
+            "implemented",
+            "itemid",
+            "levelrequired",
+            "marketable",
+            "mlrequired",
+            "name",
+            "notes",
+            "npcprice",
+            "npcvalue",
+            "objectclass",
+            "pickupable",
+            "plural",
+            "primarytype",
+            "sellto",
+            "stackable",
+            "storevalue",
+            "usable",
+            "value",
+            "vocrequired",
+            "walkable",
+            "weight",
+            "words",
+        ),
+    ),
+    (
+        2725,
+        "Vial",
+        1098584,
+        "2025-04-10T13:29:32Z",
+        "7d45c4734e713967ae7195c24dd1d6646b311db8",
+        "833c0ab7bf1c13678e90e184d8e8034b5558ff3fe01cc34a2259e62d3eafaae4",
+        (
+            "actualname",
+            "article",
+            "buyfrom",
+            "droppedby",
+            "holdsliquid",
+            "immobile",
+            "implemented",
+            "itemid",
+            "marketable",
+            "name",
+            "notes",
+            "npcprice",
+            "npcpricerook",
+            "npcvalue",
+            "npcvaluerook",
+            "objectclass",
+            "pickupable",
+            "plural",
+            "primarytype",
+            "sellto",
+            "stackable",
+            "usable",
+            "value",
+            "walkable",
+            "weight",
+        ),
+    ),
+)
+
+
+def _page_pin(base_url, values):
+    page_id, title, revision, timestamp, sha1, digest, fields = values
+    return {
+        "page_id": page_id,
+        "title": title,
+        "url": (
+            base_url
+            + "index.php?title="
+            + title.replace(" ", "_")
+            + "&oldid="
+            + str(revision)
+        ),
+        "revision": str(revision),
+        "revision_timestamp": timestamp,
+        "captured_at": REAL_ITEM_PAGE_CAPTURED_AT,
+        "revision_sha1": sha1,
+        "content_sha256": digest,
+        "raw_fields": list(fields),
+    }
+
+
+def build_br_real_item_supplement():
+    external_ability = _outside(
+        "EXTERNAL_BEHAVIOR",
+        "external_domain",
+        "Ability/Effect authoring owns executable spell and rune behavior",
+    )
+    rules = {
+        "max_tier": _mapped("/item/forge/max_tier", disposition="ITEM_AUTHORING"),
+        "Subclass": {
+            **_row("VALUE_DEPENDENT", "raw_text", "unresolved_semantics"),
+            "source_value_routes": [
+                {
+                    "source_value": "Ataque",
+                    **_mapped("/item/taxonomy/secondary"),
+                    "destination_value_equals": "attack",
+                }
+            ],
+        },
+        "mlrequired": _mapped("/item/requirements/min_magic_level"),
+        "premium": {
+            **_row("VALUE_DEPENDENT", "raw_text", "unresolved_semantics"),
+            "source_value_routes": [
+                {
+                    "source_value": "não",
+                    **_mapped("/item/requirements/premium_only"),
+                    "destination_value_equals": False,
+                }
+            ],
+        },
+        **{
+            field: external_ability
+            for field in (
+                "cooldowngrupo",
+                "cooldownproprio",
+                "effect",
+                "words",
+                "makelvl",
+                "makemana",
+                "makeqty",
+                "makevoc",
+                "soul",
+            )
+        },
+        "history": _outside(
+            "PROVENANCE", "provenance", "community history is evidence, not Item truth"
+        ),
+    }
+    return {
+        "schema": "OTERYN_ITEM_AUTHORING_REAL_ITEM_FIELD_SUPPLEMENT/candidate-3",
+        "source_profile": BR_REAL_ITEM_PROFILE,
+        "base_profile": BR_PROFILE,
+        "authority": "PINNED_REAL_ITEM_PAGE_FIXTURE_SUPPLEMENT",
+        "unknown_field_policy": "unsupported_source_field",
+        "pages": [
+            _page_pin("https://www.tibiawiki.com.br/", values)
+            for values in BR_REAL_ITEM_PAGE_PINS
+        ],
+        "fields": [{"source_field": field, **rules[field]} for field in sorted(rules)],
+    }
+
+
+def build_fandom_real_item_supplement():
+    approved_taxonomy_omission = _outside(
+        "APPROVED_OMISSION",
+        "template_control",
+        "coarse community class does not select a portable Item capability",
+    )
+    rules = {
+        "objectclass": {
+            **_row("VALUE_DEPENDENT", "raw_text", "unresolved_semantics"),
+            "source_value_routes": [
+                {
+                    "source_value": source,
+                    **_mapped("/item/taxonomy/item_class"),
+                    "destination_value_equals": target,
+                }
+                for source, target in (
+                    ("Weapons", "weapon"),
+                    ("Body Equipment", "equipment"),
+                    ("Runes", "rune"),
+                )
+            ]
+            + [
+                {"source_value": source, **approved_taxonomy_omission}
+                for source in (
+                    "Household Items",
+                    "Plants, Animal Products, Food and Drink",
+                )
+            ],
+        },
+        "slot": {
+            **_row("VALUE_DEPENDENT", "raw_text", "unresolved_semantics"),
+            "source_value_routes": [
+                {
+                    "source_value": "Body",
+                    **_mapped("/item/equipment/slot"),
+                    "destination_value_equals": "armor",
+                },
+                {
+                    "source_value": "Weapon Hand",
+                    **_outside(
+                        "UNRESOLVED",
+                        "raw_text",
+                        "source does not select left_hand or right_hand",
+                    ),
+                },
+                {
+                    "source_value": "Container",
+                    **_outside(
+                        "APPROVED_OMISSION",
+                        "template_control",
+                        "container classification is not an equipment slot",
+                    ),
+                },
+            ],
+        },
+        "upgradeclass": _mapped("/item/forge/classification"),
+        "weapontype": {
+            **_row("VALUE_DEPENDENT", "raw_text", "unresolved_semantics"),
+            "source_value_routes": [
+                {
+                    "source_value": "Sword",
+                    **_mapped("/item/weapon/weapon_type"),
+                    "destination_value_equals": "sword",
+                }
+            ],
+        },
+        "basepower": _outside(
+            "EXTERNAL_BEHAVIOR",
+            "external_domain",
+            "Ability combat formula owns rune base power",
+        ),
+    }
+    return {
+        "schema": "OTERYN_ITEM_AUTHORING_REAL_ITEM_FIELD_SUPPLEMENT/candidate-3",
+        "source_profile": FANDOM_REAL_ITEM_PROFILE,
+        "base_profile": FANDOM_PROFILE,
+        "authority": "PINNED_REAL_ITEM_PAGE_FIXTURE_SUPPLEMENT",
+        "unknown_field_policy": "unsupported_source_field",
+        "pages": [
+            _page_pin("https://tibia.fandom.com/", values)
+            for values in FANDOM_REAL_ITEM_PAGE_PINS
+        ],
+        "fields": [{"source_field": field, **rules[field]} for field in sorted(rules)],
+    }
+
+
 assert len(COMMON_PARSER_FIELDS) == 142
 assert len(set(COMMON_PARSER_FIELDS)) == 142
 assert len(FANDOM_FIELDS) == 84
 assert len(set(FANDOM_FIELDS)) == 84
+assert len(build_br_real_item_supplement()["fields"]) == 14
+assert len(build_fandom_real_item_supplement()["fields"]) == 5

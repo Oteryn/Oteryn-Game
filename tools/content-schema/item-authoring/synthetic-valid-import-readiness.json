@@ -18,6 +18,21 @@
           "source_field": "floorchange"
         }
       ]
+    },
+    {
+      "kind": "git",
+      "source_profile": "canary_47dfd51_item_definition_v1",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/appearances.dat",
+      "captured_at": "2026-09-26T20:00:00Z",
+      "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+      "field_inventory": [
+        {
+          "source_locator": "appearance[id='1']",
+          "source_field": "appearance.frame_group"
+        }
+      ]
     }
   ],
   "entries": [
@@ -38,6 +53,15 @@
       "kind": "world_object",
       "status": "external_domain",
       "reason": "Terrain/WorldObject owns placed world traversal"
+    },
+    {
+      "source_index": 1,
+      "source_locator": "appearance[id='1']",
+      "source_field": "appearance.frame_group",
+      "kind": "presentation",
+      "status": "mapped",
+      "destination": "/item/presentation/appearance_binding",
+      "reason": "exact versioned Presentation binding"
     }
   ]
 }

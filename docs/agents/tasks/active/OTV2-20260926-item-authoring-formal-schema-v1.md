@@ -63,6 +63,7 @@ session fence, authority-bearing controller or recovery evidence is touched.
 - [x] All templates structurally and semantically validate.
 - [x] Negative tests reject Terrain/WorldObject, ItemInstance and source-ID leakage.
 - [x] Canary/Crystal/Wiki review finds no material portable-field or routing omission.
+- [x] Six real Item examples validate with exact engine presentation evidence and pinned Wiki page overlays.
 - [ ] Changed-path checks and adversarial whole-diff self-review pass on the frozen head.
 
 ## Excluded scope
@@ -99,25 +100,51 @@ Accepted review repairs:
 - pinned BR/Fandom source identity, enabled timezone-qualified capture validation and
   made signed weight, boolean inversion and value-dependent parser routes verifiable;
 - added the missing appearance upgrade-classification value leaf.
+- replaced the unversioned appearance asset string with an exact `PresentationRef` and
+  a dependency payload that preserves pinned appearance ID, geometry and ordered
+  sprite IDs while leaving the unavailable raster atlas explicitly unresolved;
+- separated independently knowable `marketable` and `tradeable` facts and narrowed
+  Canary `flags.market` to `marketable=true`;
+- made Canary numeric proficiency IDs provenance-only unless a pinned admitted
+  `proficiency_crosswalks` entry closes the exact canonical `ProficiencyRef`;
+- kept the exact 71/84 BR/Fandom base catalogs intact and added bounded 14/5-field
+  overlays for twelve exact revisions of six real item pages;
+- generated and validated Magic Sword, Demon Armor, Backpack, Red Apple, Sudden Death
+  Rune and Vial examples with source IDs kept outside canonical Item identity.
+- added a closed evidence schema and semantic cross-checks that bind every authored
+  field to exact raw engine/Wiki observations, page captures and blocker state;
+- restricted engine fields to their real source artifact and admitted raw-field alias,
+  kept proficiency pair `238`/`3` blocked until an exact canonical
+  target is accepted, and locked all six Presentation fixtures plus the raster
+  atlas boundary with positive and negative regression checks.
+- replaced capability-level evidence with an exact scalar-leaf evidence/default
+  partition and reject fabricated, external, unresolved or omission-routed fields as
+  proof of an Item value; non-source defaults are also restricted to an admitted
+  destination/state/value registry.
+- bound every `route_destination` to its evidenced scalar leaf (or exact ancestor) and
+  require each raw observation to reproduce the typed leaf through a pinned exact
+  boolean, integer, weight, enum or catalog normalization.
+- independently pinned the canonical SHA-256 of each complete extracted raw-value
+  matrix, closing correlated edits of source observations, evidence and Item together.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python -X utf8 tools/content-schema/item-authoring/verify_formal_schema.py`
-- result: PASS, 143/143; 13 templates, 3 Draft 2020-12 metaschemas, generator byte determinism,
+- result: PASS, 200/200; 13 templates, 6 real-source examples, 4 Draft 2020-12 metaschemas, generator byte determinism,
   positive bundles and fail-closed boundary/semantic cases
 - command/run: `python -m ruff check tools/content-schema/item-authoring`
 - result: PASS
 - command/run: `python -X utf8 tools/content-schema/item-authoring/validate_item.py ... --manifest ...`
-- result: PASS; valid=true, warnings=[], errors=[]
+- result: PASS; valid=true, errors=[]; expected warning records that no matching raster sprite atlas is admitted
 
 ### Component/integration
 
 - command/run: `validate_item_master_schema.py` + `test_validate_item_master_schema.py`
 - result: PASS; 71 fields, 50 families, 22 profiles, zero unassigned; positive=2 negative=5
 - command/run: `tools/agents/validate_governance.py` + lifecycle unit tests
-- result: PASS; 22 policy documents, 9 lanes, 8/8 lifecycle tests
+- result: PASS; 22 policy documents, 9 lanes, 13/13 lifecycle tests
 
 ### E2E
 
@@ -147,11 +174,14 @@ Accepted review repairs:
 - exact head: pending
 - method/auditor: three read-only Canary, Crystal and Wiki subagents, followed by bounded
   repair verification
-- material findings: the initial audits found omitted parser/appearance fields, source
-  defects, Fandom coverage ambiguity and an unsafe `modificadores` mapping; all were
-  accepted into the v2 repair above
-- verdict: PASS; final stable read-only re-check ran 39 probes plus 12 critical
-  negative cases and reported no remaining actionable P0-P2 finding
+- material findings: the real-item follow-up found coupled trade booleans, an
+  unversioned appearance binding, missing per-page Wiki deltas and an unproven direct
+  `proficiency_id=238` mapping. Final review additionally found unvalidated evidence,
+  missing persisted capture time, unrestricted proficiency pairs, unenforced engine
+  source paths, incomplete Presentation/overlay regressions, unrelated route proofs
+  and missing raw-to-typed/source-extraction equality; all were repaired in the v3
+  candidate above
+- verdict: implementation repaired; fresh exact-head final review remains pending
 
 ## PR and closeout
 
@@ -165,7 +195,7 @@ Accepted review repairs:
 ## Context checkpoint
 
 ```yaml
-last_progress: local v2 candidate passes 143 focused checks; combined independent re-review found no actionable P0-P2 issue
+last_progress: local v3 candidate passes 200 focused checks and validates six leaf-partitioned real-item evidence bundles with exact raw-to-typed normalization; publication and frozen-head qualification pending
 status: implementing
 branch: codex/item-authoring-schema-v1-20260926
 head_sha: null

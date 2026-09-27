@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 13,
-  "checks": 143,
-  "passed": 143,
+  "checks": 200,
+  "passed": 200,
   "failed": 0,
   "results": [
     {
@@ -11,35 +11,182 @@
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
-      "name": "light radius remains optional evidence",
-      "passed": true,
-      "expected_valid": true,
-      "error_count": 0,
-      "warning_count": 0
-    },
-    {
-      "name": "multiple equipment patterns validate",
-      "passed": true,
-      "expected_valid": true,
-      "error_count": 0,
-      "warning_count": 0
-    },
-    {
-      "name": "profile omissions are advisory, not incompatible schemas",
+      "name": "marketable is independently knowable without tradeable",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
       "warning_count": 1
     },
     {
-      "name": "Crystal and Canary typed capability additions validate together",
+      "name": "tradeable is independently knowable without marketable",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "reject empty trade capability",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject market category without marketable=true",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject marketable=false with market category",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Canary market flag maps only to marketable=true",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "reject Canary market flag promoted to general tradeable",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject Canary appearance field attributed to items.xml",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject old unversioned string appearance binding",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject presentation sprite count inconsistent with geometry",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "ordered duplicate sprite IDs remain valid",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "reject appearance source outside the pinned artifact",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 1
+    },
+    {
+      "name": "exact raster atlas closes the presentation warning",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
       "warning_count": 0
+    },
+    {
+      "name": "reject inline raster pixels in sprite atlas binding",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject data URI in sprite atlas binding",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject sprite atlas binding without revision and digest",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 0
+    },
+    {
+      "name": "reject proficiency reference without source identity crosswalk",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "source proficiency 238/3 stays blocked until an exact canonical target is admitted",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject invented target for otherwise pinned proficiency 238/3",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject unknown proficiency source ID",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject unknown proficiency source version",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "light radius remains optional evidence",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "multiple equipment patterns validate",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "profile omissions are advisory, not incompatible schemas",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 2
+    },
+    {
+      "name": "Crystal and Canary typed capability additions validate together",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 1
     },
     {
       "name": "reject negative gameplay weight while signed display weight remains available",
@@ -226,21 +373,21 @@
       "passed": true,
       "expected_valid": false,
       "error_count": 3,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject unresolved asset",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject noncanonical ratio",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject reflection without flat or percent value",
@@ -254,7 +401,7 @@
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject free-form proficiency augment",
@@ -268,49 +415,49 @@
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject percent above 100",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject inverted weapon damage range",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject two hands without reserving other hand",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject two hands reserving the same hand",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject duplicate equipment pattern IDs",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject fluid content without fluid_type",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject placed fluid source role",
@@ -331,84 +478,84 @@
       "passed": true,
       "expected_valid": false,
       "error_count": 2,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject direct self transformation",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject unresolved manifest semantics",
       "passed": true,
       "expected_valid": false,
       "error_count": 3,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject mapped manifest destination that does not exist",
       "passed": true,
       "expected_valid": false,
       "error_count": 2,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject destination on external-domain manifest entry",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject terrain mapped into portable Item",
       "passed": true,
       "expected_valid": false,
       "error_count": 3,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject duplicate source-field disposition",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject incomplete source-field disposition",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject unused exact dependency",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject unused asset binding",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject duplicate transform trigger",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject conflicting temporal and lifecycle decay targets",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject writable but unreadable document",
@@ -429,294 +576,294 @@
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject Wiki reverse relation mislabeled as Item definition",
       "passed": true,
       "expected_valid": false,
       "error_count": 2,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Wiki reverse relation routes outside Item",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject Wiki attack mapped to the wrong Item leaf",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject approved omission of a typed TibiaWiki BR field",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Wiki attack maps to the formal attack leaf",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Canary pinned no-effect parser key is explicitly accepted without an Item destination",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject Canary pinned no-effect parser key promoted to gameplay truth",
       "passed": true,
       "expected_valid": false,
       "error_count": 4,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Crystal showcharges maps to charge display semantics",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "negative engine weight routes only to signed presentation weight",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "appearance unmove=true maps by checked inversion to movable=false",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject appearance unmove inversion when destination stays movable",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject negative engine weight routed to gameplay mass",
       "passed": true,
       "expected_valid": false,
       "error_count": 2,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "nonnegative TibiaWiki BR weight routes to gameplay mass",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "engine type value routes a portable container into Item taxonomy",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject engine type route when taxonomy value disagrees",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "engine type value routes bed outside portable Item",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject value-dependent engine type without source_value",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "nested equip eventtype routes to typed equipment",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "nested stepin eventtype remains Interaction-owned",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "nested removecharge action selects consume_charge",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "nested chain=false selects disabled mode",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject chain=false mapped to an override",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "positive chain coefficient is preserved exactly",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject nested action when consumption mode disagrees",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "engine missile weapon kind normalizes to thrown_missile",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject source field unknown to its pinned engine profile",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Fandom historical name maps with exact revision profile",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject Fandom profile with an unpinned URL",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject Fandom profile with the wrong revision SHA-1",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Fandom unresolved historical imbuements field blocks readiness",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Fandom immobile=false maps by checked inversion to movable=true",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject Fandom immobile inversion when the destination value disagrees",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Fandom immobile=true remains WorldObject-owned",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject engine profile paired with the wrong pinned revision",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject invalid provenance capture timestamp",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Wiki modificadores requires typed modifier content",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject TibiaWiki BR profile with an unpinned stable source",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Wiki modificadores maps to a typed modifier aggregate",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Wiki modificadores rejects unresolved modifier clauses",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "reject Wiki attrib mapped to the wrong Item leaf",
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "Wiki attrib retains raw text and resolves a typed promotion",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
-      "warning_count": 0
+      "warning_count": 1
     },
     {
       "name": "generator is byte deterministic",
@@ -799,6 +946,44 @@
       "passed": true
     },
     {
+      "name": "BR real-page supplement has the exact bounded delta",
+      "passed": true
+    },
+    {
+      "name": "BR exact real-page source identity validates",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "name": "BR real-page pins retain exact revision identities",
+      "passed": true
+    },
+    {
+      "name": "Fandom real-page supplement has the exact bounded delta",
+      "passed": true
+    },
+    {
+      "name": "Fandom exact real-page source identity validates",
+      "passed": true,
+      "error_count": 0
+    },
+    {
+      "name": "Fandom real-page pins retain exact revision identities",
+      "passed": true
+    },
+    {
+      "name": "BR overlay dispatches base and supplement fields to distinct rules",
+      "passed": true
+    },
+    {
+      "name": "BR and Fandom overlay routes accept every representative mapped, external, unresolved and omission contract",
+      "passed": true
+    },
+    {
+      "name": "BR and Fandom overlay routes reject destination, normalization and ownership drift",
+      "passed": true
+    },
+    {
       "name": "Canary pinned no-effect set is exact and has no Item destinations",
       "passed": true
     },
@@ -863,6 +1048,122 @@
       "passed": true
     },
     {
+      "name": "real-source example set contains exactly six real Items",
+      "passed": true
+    },
+    {
+      "name": "real-source bundle validates: magic-sword",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "real-source bundle validates: demon-armor",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "real-source bundle validates: backpack",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "real-source bundle validates: red-apple",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 1
+    },
+    {
+      "name": "real-source bundle validates: sudden-death-rune",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 2
+    },
+    {
+      "name": "real-source bundle validates: vial",
+      "passed": true,
+      "error_count": 0,
+      "warning_count": 2
+    },
+    {
+      "name": "exact pinned Crystal Presentation fixture: magic-sword",
+      "passed": true
+    },
+    {
+      "name": "exact pinned Crystal Presentation fixture: demon-armor",
+      "passed": true
+    },
+    {
+      "name": "exact pinned Crystal Presentation fixture: backpack",
+      "passed": true
+    },
+    {
+      "name": "exact pinned Crystal Presentation fixture: red-apple",
+      "passed": true
+    },
+    {
+      "name": "exact pinned Crystal Presentation fixture: sudden-death-rune",
+      "passed": true
+    },
+    {
+      "name": "exact pinned Crystal Presentation fixture: vial",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects Item value drift",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects raw observation drift",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects an unrelated route destination",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects Item and normalized-value drift from raw attack",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects fully correlated source, proof and Item drift",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects yes-to-false boolean normalization",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects Wiki page pin drift",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects engine sprite drift",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects correlated marketable-to-tradeable promotion",
+      "passed": true
+    },
+    {
+      "name": "real-source defaults reject unadmitted Item leaves",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects fabricated source fields",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects external behavior as an Item-field proof",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects approved omission as an Item-field proof",
+      "passed": true
+    },
+    {
       "name": "Draft 2020-12 metaschema accepts item.schema.json",
       "passed": true
     },
@@ -872,6 +1173,10 @@
     },
     {
       "name": "Draft 2020-12 metaschema accepts item-import-readiness.schema.json",
+      "passed": true
+    },
+    {
+      "name": "Draft 2020-12 metaschema accepts real-source-evidence.schema.json",
       "passed": true
     }
   ]

@@ -6,7 +6,7 @@
 - Task: `OTV2-20260926-item-authoring-formal-schema-v1`
 - Parent control plane: #162
 - Programme: KAN-16 / #504
-- Current authoring candidate: v2 (v1 frozen SHA superseded after exhaustive source audit)
+- Current authoring candidate: v3 (v2 frozen SHA superseded by real-item evidence closure)
 - Package: `tools/content-schema/item-authoring/`
 
 ## 1. Decision
@@ -40,6 +40,13 @@ One `item.json` contains only stable, portable definition facts:
   },
   "display_name": "Magic Sword",
   "family_profile": "weapon_melee",
+  "presentation": {
+    "appearance_binding": {
+      "family": "Presentation",
+      "key": "oteryn:presentation.crystal.item.3288",
+      "revision": "ff7ede593c69d4c658b382c97443e8155926924a.appearance-v1"
+    }
+  },
   "taxonomy": {
     "item_class": "weapon",
     "primary": "sword",
@@ -70,10 +77,18 @@ One `item.json` contains only stable, portable definition facts:
 }
 ```
 
-Every definition reference carries `{family,key,revision}`. Asset bindings use an
-Oteryn namespaced key. `item-dependencies.json` closes those exact references for local
-validation without embedding Ability, Effect, Interaction, Document or ItemInstance
-payloads in the Item.
+Every definition reference carries `{family,key,revision}`. Generic effect, sound and
+color assets continue to use Oteryn namespaced keys. Appearance uses an exact
+`PresentationRef`. `item-dependencies.json` closes those references and carries the
+pinned appearance record (source tuple, appearance ID, geometry and ordered sprite
+IDs) without embedding Ability, Effect, Interaction, Document or ItemInstance payloads
+in the Item.
+
+The presentation record may bind an exact raster `sprite_atlas` by key, revision and
+SHA-256. Canary and Crystal provide appearance metadata and sprite numbers but not the
+matching raster client atlas, so the six real-source examples deliberately omit this
+binding and remain runtime/rendering blocked. A sprite number without that versioned
+atlas is not a graphic.
 
 ## 3. Source-derived field delta
 
@@ -131,9 +146,17 @@ Item destination; they are never silently promoted into executable truth.
 
 Canary does not expose a separate light radius at the pinned appearance revision, so
 `light.radius_cells` is optional evidence rather than a condition of `emits=true`.
-Canary proficiency augments lower into the existing typed WorldProject/v2 augment
-shape (target, optional Effect and ranked typed values); free-form augment strings are
-not admitted.
+Typed proficiency authoring reuses the existing WorldProject/v2 augment shape (target,
+optional Effect and ranked typed values); free-form augment strings are not admitted.
+Canary `proficiency_id` is only a source-local numeric identity. It may bind a
+`ProficiencyRef` only through `dependencies.proficiency_crosswalks`, which pins the
+source repository, revision, `proficiencies.json` path and digest, numeric ID, source
+version and exact target. Repeating an invented ref in `dependencies.definitions` no
+longer passes validation.
+
+Canary's Market appearance flag proves `marketable=true`, not general
+`tradeable=true`. Candidate v3 therefore makes these two facts independently optional;
+market category or market vocation restrictions require explicit `marketable=true`.
 
 The protected `ReferenceItemSemantics` model is also preserved where the earlier
 human-readable master view was intentionally flatter: equipment may use multiple typed
@@ -172,6 +195,15 @@ at revision `1035268` (`2023-08-12T17:54:38Z`), not a claim of a current Fandom 
 
 - `https://tibia.fandom.com/wiki/TibiaWiki:Projects/Merge_Items_and_Objects`
 
+The base registries remain exactly 71 BR fields and 84 historical Fandom rows. They are
+not widened to pretend that one template revision describes all current item pages.
+Two bounded overlays capture only the delta observed on exact revisions of Magic
+Sword, Demon Armor, Backpack, Red Apple, Sudden Death Rune and Vial: 14 BR fields and
+5 Fandom fields. Each overlay stores page ID, revision ID/timestamp, capture timestamp,
+MediaWiki SHA-1, UTF-8 wikitext SHA-256 and the complete sorted raw-parameter inventory. Tests require
+`observed_fields - base_fields - supplement_fields == empty` and reject unobserved
+supplement fields.
+
 The comparison confirms the need for `requirements.min_magic_level`, explicit readable
 write policy and container content constraints. It also confirms that community value,
 drops, NPC offers, quest membership and source numeric IDs must not become intrinsic
@@ -181,6 +213,26 @@ The TibiaWiki BR `modificadores` parameter maps to the typed `modifiers` aggrega
 Editor notes alone cannot satisfy it, and any unparsed modifier clause blocks import
 readiness. Fandom `actualname`, `fansite` and `imbuements` remain explicitly unresolved
 at the pinned historical revision.
+
+The six generated examples use only real source identities (2854, 2874, 3155, 3288,
+3388 and 3585), exact pinned Wiki revisions and the identical ordered sprite sequences
+verified in Canary and Crystal. Source IDs stay in evidence/crosswalk data, never as
+the canonical Item identity. Unadmitted Ability, proficiency, sound, interaction and
+raster-atlas dependencies remain explicit blockers instead of guessed fields.
+Their closed evidence records partition every authored scalar leaf into either a
+source-evidenced value or an explicit non-source default. The validator cross-checks
+each source proof against its effective catalog route, normalized value and exact raw
+observation, then verifies the bundle against the Item, both pinned engine artifacts,
+both pinned Wiki pages and the complete blocker set; the examples are not merely
+standalone schema-valid Item objects. The catalog route must equal the scalar leaf or
+be its JSON-pointer ancestor, while a pinned raw-to-typed transform must reproduce the
+leaf value for every observation. This rejects both unrelated proofs and correlated
+edits that make Item/evidence copies agree while departing from the pinned raw fact.
+The complete extracted raw-value matrix for each example is additionally bound by an
+independently pinned canonical SHA-256, so changing source observations, evidence and
+Item together still fails closed.
+Non-source leaves must match an admitted
+destination/state/value normalization and cannot act as a generic escape hatch.
 
 ## 4. Boundary table
 
@@ -236,6 +288,11 @@ The schema validator checks:
 
 - closed JSON shape and explicit units;
 - exact dependency and asset closure;
+- exact Presentation dependency closure, geometry/sprite-count consistency and
+  preservation of ordered duplicate sprite IDs;
+- pinned proficiency source crosswalks for every `profile_binding`;
+- membership of every proficiency crosswalk and exact target in the pinned admitted
+  source-to-target index (currently empty; Canary `238`/`3` remains provenance only);
 - canonical rational values and bounded percentages;
 - range/order and equipment-hand invariants;
 - capability uniqueness and direct self-reference rejection;
@@ -243,12 +300,17 @@ The schema validator checks:
 - exact equality between each declared source-field inventory and its dispositions;
 - the protected 71-field Wiki disposition registry, including reverse/external owners;
 - the exact 84-row historical Fandom registry and both 143-key engine registries;
+- the exact 14-field BR and 5-field Fandom real-page supplements over twelve pinned
+  page revisions without modifying the base catalogs;
 - exact allowed formal JSON Pointer patterns for every mappable source field;
 - pinned source identity/revision and explicit registered-but-ineffective keys;
+- exact engine field origin (`items.xml`, `appearances.dat` or `bags.xml`);
 - value-dependent owner routing and normalized destination values for type, event,
   weapon action/kind, signed weight and inverse movement flags;
 - timezone-qualified capture timestamps, per-capture SHA-256 and the pinned Fandom
   revision SHA-1 as separate provenance facts;
+- exact leaf-level real-example Item/evidence/default partition, effective source-field
+  routing, engine and Wiki pins, Presentation geometry/sprites and blocker sets;
 - fail-closed `unresolved_semantics`, `unsupported_source_field` and `conflict` states.
 
 This candidate does not:

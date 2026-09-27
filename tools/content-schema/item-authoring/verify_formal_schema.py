@@ -1,6 +1,7 @@
-"""Focused positive/negative verification for the Item authoring schema candidate v2."""
+"""Focused positive/negative verification for the Item authoring schema candidate v3."""
 
 import json
+from copy import deepcopy
 from importlib.metadata import version
 from pathlib import Path
 
@@ -17,7 +18,17 @@ from source_field_catalogs import (
 ROOT = Path(__file__).resolve().parent
 build()
 
-from validate_item import read, validate
+from validate_item import (
+    SOURCE_CATALOGS,
+    catalog_rules,
+    read,
+    uses_wiki_base_rule,
+    validate,
+    validate_catalog_disposition,
+    validate_real_example,
+    validate_routed_destination_value,
+    validate_source_identity,
+)
 
 
 def ref(family, slug):
@@ -33,6 +44,7 @@ def fixture():
     effect = ref("Effect", "energy-hit")
     interaction = ref("Interaction", "target-creature")
     variant = ref("Item", "magic-wand-charged")
+    presentation = ref("Presentation", "magic-wand")
     item = {
         "identity": {
             "key": "oteryn:item.template.magic-wand",
@@ -43,7 +55,7 @@ def fixture():
         "family_profile": "weapon_magic",
         "presentation": {
             "grammar": {"article": "a", "plural": "template magic wands"},
-            "appearance_binding": "oteryn:asset.item.magic-wand",
+            "appearance_binding": presentation,
             "projectile_effect": "oteryn:asset.effect.energy-shot",
             "variants": [variant],
         },
@@ -128,7 +140,36 @@ def fixture():
     }
     dependencies = {
         "definitions": [ability, effect, interaction, variant],
-        "assets": ["oteryn:asset.item.magic-wand", "oteryn:asset.effect.energy-shot"],
+        "assets": ["oteryn:asset.effect.energy-shot"],
+        "presentations": [
+            {
+                "identity": presentation,
+                "source": {
+                    "source_profile": CANARY_PROFILE,
+                    "repository": "opentibiabr/canary",
+                    "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                    "path": "data/items/appearances.dat",
+                    "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+                },
+                "appearance_id": 1,
+                "frame_groups": [
+                    {
+                        "kind": "object_initial",
+                        "source_group_id": 2,
+                        "geometry": {
+                            "pattern_width": 1,
+                            "pattern_height": 1,
+                            "pattern_depth": 1,
+                            "layers": 1,
+                            "phase_count": 1,
+                            "is_opaque": False,
+                        },
+                        "sprite_ids": [1],
+                    }
+                ],
+            }
+        ],
+        "proficiency_crosswalks": [],
     }
     manifest = {
         "sources": [
@@ -150,7 +191,22 @@ def fixture():
                         "source_field": "floorchange",
                     },
                 ],
-            }
+            },
+            {
+                "kind": "git",
+                "source_profile": CANARY_PROFILE,
+                "repository": "opentibiabr/canary",
+                "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                "path": "data/items/appearances.dat",
+                "captured_at": "2026-09-26T20:00:00Z",
+                "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+                "field_inventory": [
+                    {
+                        "source_locator": "appearance[id='1']",
+                        "source_field": "appearance.frame_group",
+                    }
+                ],
+            },
         ],
         "entries": [
             {
@@ -170,6 +226,15 @@ def fixture():
                 "kind": "world_object",
                 "status": "external_domain",
                 "reason": "Terrain/WorldObject owns placed world traversal",
+            },
+            {
+                "source_index": 1,
+                "source_locator": "appearance[id='1']",
+                "source_field": "appearance.frame_group",
+                "kind": "presentation",
+                "status": "mapped",
+                "destination": "/item/presentation/appearance_binding",
+                "reason": "exact versioned Presentation binding",
             },
         ],
     }
@@ -210,7 +275,9 @@ def wiki_field(
         entry["promotions"] = promotions
     if source_value is not None:
         entry["source_value"] = source_value
-    manifest["entries"] = [entry]
+    manifest["entries"] = [entry] + [
+        value for value in manifest["entries"] if value["source_index"] == 1
+    ]
 
 
 def catalog_field(
@@ -242,6 +309,15 @@ def catalog_field(
                 "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
             }
         )
+    if profile in (CANARY_PROFILE, CRYSTAL_PROFILE):
+        rule = catalog_rules(SOURCE_CATALOGS[profile]).get(source_field)
+        origins = set(rule.get("origins", [])) if rule else set()
+        if origins == {"appearance"}:
+            source["path"] = "data/items/appearances.dat"
+        elif origins == {"reverse_bag_relation"}:
+            source["path"] = "data/items/bags.xml"
+        else:
+            source["path"] = "data/items/items.xml"
     source["field_inventory"] = [
         {"source_locator": "pinned-source", "source_field": source_field}
     ]
@@ -257,7 +333,9 @@ def catalog_field(
         entry["destination"] = destination
     if source_value is not None:
         entry["source_value"] = source_value
-    manifest["entries"] = [entry]
+    manifest["entries"] = [entry] + [
+        value for value in manifest["entries"] if value["source_index"] == 1
+    ]
 
 
 def schema_supports_destination(item_schema, destination):
@@ -286,10 +364,43 @@ def schema_supports_destination(item_schema, destination):
     return True
 
 
+def supplement_route_probe(
+    profile,
+    source_field,
+    kind,
+    status,
+    destination=None,
+    source_value=None,
+    resolved=None,
+):
+    entry = {
+        "source_field": source_field,
+        "kind": kind,
+        "status": status,
+    }
+    if destination is not None:
+        entry["destination"] = destination
+    if source_value is not None:
+        entry["source_value"] = source_value
+    errors = []
+    validate_catalog_disposition(entry, {"source_profile": profile}, {}, errors)
+    if status == "mapped" and destination is not None:
+        validate_routed_destination_value(
+            entry, {"source_profile": profile}, resolved, errors
+        )
+    return errors
+
+
 def main():
     results = []
 
-    def case(name, mutate=None, expected_valid=False, expected_warning=None):
+    def case(
+        name,
+        mutate=None,
+        expected_valid=False,
+        expected_warning=None,
+        forbidden_warning=None,
+    ):
         item, dependencies, manifest = fixture()
         if mutate:
             mutate(item, dependencies, manifest)
@@ -297,6 +408,10 @@ def main():
         passed = (not errors) == expected_valid
         if expected_warning is not None:
             passed = passed and any(expected_warning in warning for warning in warnings)
+        if forbidden_warning is not None:
+            passed = passed and not any(
+                forbidden_warning in warning for warning in warnings
+            )
         results.append(
             {
                 "name": name,
@@ -307,7 +422,213 @@ def main():
             }
         )
 
+    def add_proficiency_crosswalk(
+        item,
+        dependencies,
+        external_id="238",
+        version=3,
+        target_slug="sword-magic-sword",
+    ):
+        target = ref("Proficiency", target_slug)
+        item["proficiency"]["profile_binding"] = target
+        dependencies["definitions"].append(target)
+        dependencies["proficiency_crosswalks"].append(
+            {
+                "source_profile": CANARY_PROFILE,
+                "repository": "opentibiabr/canary",
+                "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+                "path": "data/items/proficiencies.json",
+                "digest_sha256": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22",
+                "external_id": external_id,
+                "source_version": version,
+                "target": target,
+            }
+        )
+
     case("complete item bundle validates", expected_valid=True)
+    case(
+        "marketable is independently knowable without tradeable",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "trade", {"marketable": True, "market_category": "weapons"}
+        ),
+        True,
+    )
+    case(
+        "tradeable is independently knowable without marketable",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "trade", {"tradeable": True}
+        ),
+        True,
+    )
+    case(
+        "reject empty trade capability",
+        lambda item, dependencies, manifest: item.__setitem__("trade", {}),
+    )
+    case(
+        "reject market category without marketable=true",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "trade", {"market_category": "weapons"}
+        ),
+    )
+    case(
+        "reject marketable=false with market category",
+        lambda item, dependencies, manifest: item.__setitem__(
+            "trade", {"marketable": False, "market_category": "weapons"}
+        ),
+    )
+    case(
+        "Canary market flag maps only to marketable=true",
+        lambda item, dependencies, manifest: (
+            item.__setitem__("trade", {"marketable": True}),
+            catalog_field(
+                manifest,
+                CANARY_PROFILE,
+                "flags.market",
+                "definition",
+                "mapped",
+                "/item/trade/marketable",
+            ),
+        ),
+        True,
+    )
+    case(
+        "reject Canary market flag promoted to general tradeable",
+        lambda item, dependencies, manifest: catalog_field(
+            manifest,
+            CANARY_PROFILE,
+            "flags.market",
+            "definition",
+            "mapped",
+            "/item/trade/tradeable",
+        ),
+    )
+    case(
+        "reject Canary appearance field attributed to items.xml",
+        lambda item, dependencies, manifest: (
+            item.__setitem__("trade", {"marketable": True}),
+            catalog_field(
+                manifest,
+                CANARY_PROFILE,
+                "flags.market",
+                "definition",
+                "mapped",
+                "/item/trade/marketable",
+            ),
+            manifest["sources"][0].__setitem__("path", "data/items/items.xml"),
+        ),
+    )
+    case(
+        "reject old unversioned string appearance binding",
+        lambda item, dependencies, manifest: item["presentation"].__setitem__(
+            "appearance_binding", "oteryn:asset.item.magic-wand"
+        ),
+    )
+    case(
+        "reject presentation sprite count inconsistent with geometry",
+        lambda item, dependencies, manifest: dependencies["presentations"][0][
+            "frame_groups"
+        ][0]["geometry"].__setitem__("pattern_width", 2),
+    )
+    case(
+        "ordered duplicate sprite IDs remain valid",
+        lambda item, dependencies, manifest: (
+            dependencies["presentations"][0]["frame_groups"][0]["geometry"].__setitem__(
+                "pattern_width", 2
+            ),
+            dependencies["presentations"][0]["frame_groups"][0].__setitem__(
+                "sprite_ids", [1, 1]
+            ),
+        ),
+        True,
+    )
+    case(
+        "reject appearance source outside the pinned artifact",
+        lambda item, dependencies, manifest: dependencies["presentations"][0][
+            "source"
+        ].__setitem__("digest_sha256", "0" * 64),
+    )
+    case(
+        "exact raster atlas closes the presentation warning",
+        lambda item, dependencies, manifest: dependencies["presentations"][
+            0
+        ].__setitem__(
+            "sprite_atlas",
+            {
+                "key": "oteryn:asset.atlas.client-items",
+                "revision": "atlas-r1",
+                "sha256": "1" * 64,
+            },
+        ),
+        True,
+        forbidden_warning="no admitted sprite_atlas",
+    )
+    case(
+        "reject inline raster pixels in sprite atlas binding",
+        lambda item, dependencies, manifest: dependencies["presentations"][
+            0
+        ].__setitem__(
+            "sprite_atlas",
+            {
+                "key": "oteryn:asset.atlas.client-items",
+                "revision": "atlas-r1",
+                "sha256": "1" * 64,
+                "pixels": [0, 1],
+            },
+        ),
+    )
+    case(
+        "reject data URI in sprite atlas binding",
+        lambda item, dependencies, manifest: dependencies["presentations"][
+            0
+        ].__setitem__(
+            "sprite_atlas",
+            {
+                "key": "oteryn:asset.atlas.client-items",
+                "revision": "atlas-r1",
+                "sha256": "1" * 64,
+                "data_uri": "data:image/png;base64,AA==",
+            },
+        ),
+    )
+    case(
+        "reject sprite atlas binding without revision and digest",
+        lambda item, dependencies, manifest: dependencies["presentations"][
+            0
+        ].__setitem__("sprite_atlas", {"key": "oteryn:asset.atlas.client-items"}),
+    )
+    case(
+        "reject proficiency reference without source identity crosswalk",
+        lambda item, dependencies, manifest: (
+            item["proficiency"].__setitem__(
+                "profile_binding", ref("Proficiency", "sword-magic-sword")
+            ),
+            dependencies["definitions"].append(ref("Proficiency", "sword-magic-sword")),
+        ),
+    )
+    case(
+        "source proficiency 238/3 stays blocked until an exact canonical target is admitted",
+        lambda item, dependencies, manifest: add_proficiency_crosswalk(
+            item, dependencies
+        ),
+    )
+    case(
+        "reject invented target for otherwise pinned proficiency 238/3",
+        lambda item, dependencies, manifest: add_proficiency_crosswalk(
+            item, dependencies, target_slug="completely-invented-target"
+        ),
+    )
+    case(
+        "reject unknown proficiency source ID",
+        lambda item, dependencies, manifest: add_proficiency_crosswalk(
+            item, dependencies, external_id="999999"
+        ),
+    )
+    case(
+        "reject unknown proficiency source version",
+        lambda item, dependencies, manifest: add_proficiency_crosswalk(
+            item, dependencies, version=999
+        ),
+    )
     case(
         "light radius remains optional evidence",
         lambda item, dependencies, manifest: (
@@ -465,7 +786,15 @@ def main():
     templates = sorted((ROOT / "templates").glob("*.json"))
     for path in templates:
         item = read(path)
-        errors, warnings = validate(item, {"definitions": [], "assets": []})
+        errors, warnings = validate(
+            item,
+            {
+                "definitions": [],
+                "assets": [],
+                "presentations": [],
+                "proficiency_crosswalks": [],
+            },
+        )
         results.append(
             {
                 "name": "template validates: " + path.name,
@@ -748,6 +1077,9 @@ def main():
                         "destination": "/item/display_name",
                         "reason": "bad intrinsic mapping",
                     }
+                ]
+                + [
+                    value for value in manifest["entries"] if value["source_index"] == 1
                 ],
             ),
         ),
@@ -777,6 +1109,9 @@ def main():
                         "status": "reverse_relation",
                         "reason": "Creature/Loot owns the relation",
                     }
+                ]
+                + [
+                    value for value in manifest["entries"] if value["source_index"] == 1
                 ],
             ),
         ),
@@ -1284,11 +1619,15 @@ def main():
             ROOT / "item.schema.json",
             ROOT / "item-dependencies.schema.json",
             ROOT / "item-import-readiness.schema.json",
+            ROOT / "real-source-evidence.schema.json",
             ROOT / "profile-catalog.json",
             ROOT / "wiki-field-dispositions.json",
             ROOT / "canary-field-dispositions.json",
             ROOT / "crystal-field-dispositions.json",
             ROOT / "fandom-field-dispositions.json",
+            ROOT / "wiki-real-item-field-supplement.json",
+            ROOT / "fandom-real-item-field-supplement.json",
+            ROOT / "real-source-examples.json",
             ROOT / "item-dependencies-template.json",
             *templates,
         ]
@@ -1323,6 +1662,10 @@ def main():
         "Canary": read(ROOT / "canary-field-dispositions.json"),
         "Crystal": read(ROOT / "crystal-field-dispositions.json"),
         "Fandom": read(ROOT / "fandom-field-dispositions.json"),
+    }
+    supplements = {
+        "BR": read(ROOT / "wiki-real-item-field-supplement.json"),
+        "Fandom": read(ROOT / "fandom-real-item-field-supplement.json"),
     }
     results.append(
         {
@@ -1458,6 +1801,239 @@ def main():
             "passed": len(source_catalogs["Fandom"]["fields"]) == 84,
         }
     )
+    base_catalogs = {"BR": wiki_catalog, "Fandom": source_catalogs["Fandom"]}
+    expected_supplement_counts = {"BR": 14, "Fandom": 5}
+    for name, supplement in supplements.items():
+        base_fields = {row["source_field"] for row in base_catalogs[name]["fields"]}
+        supplement_fields = {row["source_field"] for row in supplement["fields"]}
+        observed_fields = {
+            field for page in supplement["pages"] for field in page["raw_fields"]
+        }
+        results.append(
+            {
+                "name": name + " real-page supplement has the exact bounded delta",
+                "passed": len(supplement["pages"]) == 6
+                and len(supplement_fields) == expected_supplement_counts[name]
+                and not (observed_fields - base_fields - supplement_fields)
+                and not (supplement_fields - observed_fields),
+            }
+        )
+        page = supplement["pages"][0]
+        source = {
+            "kind": "wiki",
+            "source_profile": supplement["source_profile"],
+            "url": page["url"],
+            "page_id": page["page_id"],
+            "revision": page["revision"],
+            "revision_timestamp": page["revision_timestamp"],
+            "revision_sha1": page["revision_sha1"],
+            "captured_at": page["captured_at"],
+            "digest_sha256": page["content_sha256"],
+            "field_inventory": [
+                {"source_locator": page["title"], "source_field": field}
+                for field in page["raw_fields"]
+            ],
+        }
+        source_errors = []
+        validate_source_identity(source, source_errors)
+        results.append(
+            {
+                "name": name + " exact real-page source identity validates",
+                "passed": not source_errors,
+                "error_count": len(source_errors),
+            }
+        )
+        results.append(
+            {
+                "name": name + " real-page pins retain exact revision identities",
+                "passed": all(
+                    page["url"].endswith("&oldid=" + page["revision"])
+                    and page["captured_at"] == "2026-09-27T07:08:47.439Z"
+                    and len(page["revision_sha1"]) == 40
+                    and len(page["content_sha256"]) == 64
+                    and page["raw_fields"]
+                    == sorted(set(page["raw_fields"]), key=str.casefold)
+                    for page in supplement["pages"]
+                ),
+            }
+        )
+    results.append(
+        {
+            "name": "BR overlay dispatches base and supplement fields to distinct rules",
+            "passed": uses_wiki_base_rule(supplements["BR"]["source_profile"], "name")
+            and not uses_wiki_base_rule(
+                supplements["BR"]["source_profile"], "max_tier"
+            ),
+        }
+    )
+    br_overlay = supplements["BR"]["source_profile"]
+    fandom_overlay = supplements["Fandom"]["source_profile"]
+    positive_overlay_probes = [
+        (
+            br_overlay,
+            "Subclass",
+            "definition",
+            "mapped",
+            "/item/taxonomy/secondary",
+            "Ataque",
+            "attack",
+        ),
+        (
+            br_overlay,
+            "premium",
+            "definition",
+            "mapped",
+            "/item/requirements/premium_only",
+            "não",
+            False,
+        ),
+        (
+            br_overlay,
+            "max_tier",
+            "definition",
+            "mapped",
+            "/item/forge/max_tier",
+            None,
+            2,
+        ),
+        (br_overlay, "effect", "external_domain", "external_domain", None, None, None),
+        (br_overlay, "history", "provenance", "provenance_only", None, None, None),
+        (
+            fandom_overlay,
+            "objectclass",
+            "definition",
+            "mapped",
+            "/item/taxonomy/item_class",
+            "Weapons",
+            "weapon",
+        ),
+        (
+            fandom_overlay,
+            "objectclass",
+            "template_control",
+            "approved_omission",
+            None,
+            "Household Items",
+            None,
+        ),
+        (
+            fandom_overlay,
+            "slot",
+            "definition",
+            "mapped",
+            "/item/equipment/slot",
+            "Body",
+            "armor",
+        ),
+        (
+            fandom_overlay,
+            "slot",
+            "raw_text",
+            "unresolved_semantics",
+            None,
+            "Weapon Hand",
+            None,
+        ),
+        (
+            fandom_overlay,
+            "slot",
+            "template_control",
+            "approved_omission",
+            None,
+            "Container",
+            None,
+        ),
+        (
+            fandom_overlay,
+            "weapontype",
+            "definition",
+            "mapped",
+            "/item/weapon/weapon_type",
+            "Sword",
+            "sword",
+        ),
+        (
+            fandom_overlay,
+            "basepower",
+            "external_domain",
+            "external_domain",
+            None,
+            None,
+            None,
+        ),
+    ]
+    results.append(
+        {
+            "name": "BR and Fandom overlay routes accept every representative mapped, external, unresolved and omission contract",
+            "passed": all(
+                not supplement_route_probe(*probe) for probe in positive_overlay_probes
+            ),
+        }
+    )
+    negative_overlay_probes = [
+        (
+            br_overlay,
+            "Subclass",
+            "definition",
+            "mapped",
+            "/item/taxonomy/primary",
+            "Ataque",
+            "attack",
+        ),
+        (
+            br_overlay,
+            "premium",
+            "definition",
+            "mapped",
+            "/item/requirements/premium_only",
+            "não",
+            True,
+        ),
+        (
+            fandom_overlay,
+            "objectclass",
+            "definition",
+            "mapped",
+            "/item/taxonomy/item_class",
+            "Weapons",
+            "equipment",
+        ),
+        (
+            fandom_overlay,
+            "slot",
+            "definition",
+            "mapped",
+            "/item/equipment/slot",
+            "Weapon Hand",
+            "right_hand",
+        ),
+        (
+            fandom_overlay,
+            "weapontype",
+            "definition",
+            "mapped",
+            "/item/weapon/weapon_type",
+            "Sword",
+            "axe",
+        ),
+        (
+            fandom_overlay,
+            "basepower",
+            "definition",
+            "mapped",
+            "/item/weapon/attack",
+            None,
+            100,
+        ),
+    ]
+    results.append(
+        {
+            "name": "BR and Fandom overlay routes reject destination, normalization and ownership drift",
+            "passed": all(
+                supplement_route_probe(*probe) for probe in negative_overlay_probes
+            ),
+        }
+    )
     expected_no_effect = {
         "Canary": {
             "absorbpercentallelements",
@@ -1511,17 +2087,366 @@ def main():
         }
     )
     for path in templates:
-        errors, warnings = validate(read(path), {"definitions": [], "assets": []})
+        errors, warnings = validate(
+            read(path),
+            {
+                "definitions": [],
+                "assets": [],
+                "presentations": [],
+                "proficiency_crosswalks": [],
+            },
+        )
         results.append(
             {
                 "name": "official template is warning-free: " + path.name,
                 "passed": not errors and not warnings,
             }
         )
+    real_examples = read(ROOT / "real-source-examples.json")
+    results.append(
+        {
+            "name": "real-source example set contains exactly six real Items",
+            "passed": [example["slug"] for example in real_examples["examples"]]
+            == [
+                "magic-sword",
+                "demon-armor",
+                "backpack",
+                "red-apple",
+                "sudden-death-rune",
+                "vial",
+            ],
+        }
+    )
+    for example in real_examples["examples"]:
+        errors, warnings = validate_real_example(example)
+        results.append(
+            {
+                "name": "real-source bundle validates: " + example["slug"],
+                "passed": not errors
+                and any("no admitted sprite_atlas" in warning for warning in warnings),
+                "error_count": len(errors),
+                "warning_count": len(warnings),
+            }
+        )
+    expected_presentations = {
+        "magic-sword": (3288, 1, 1, [196366]),
+        "demon-armor": (3388, 1, 1, [196476]),
+        "backpack": (2854, 1, 1, [195739]),
+        "red-apple": (
+            3585,
+            4,
+            2,
+            [196798, 196799, 196800, 196801, 196802, 196803, 196803, 196803],
+        ),
+        "sudden-death-rune": (3155, 1, 1, [196224]),
+        "vial": (
+            2874,
+            4,
+            3,
+            [
+                192686,
+                192711,
+                195768,
+                195769,
+                192677,
+                195770,
+                195771,
+                195772,
+                195773,
+                195774,
+                195775,
+                193294,
+            ],
+        ),
+    }
+    for example in real_examples["examples"]:
+        appearance_id, width, height, sprite_ids = expected_presentations[
+            example["slug"]
+        ]
+        presentation = example["dependencies"]["presentations"][0]
+        group = presentation["frame_groups"][0]
+        geometry = group["geometry"]
+        results.append(
+            {
+                "name": "exact pinned Crystal Presentation fixture: " + example["slug"],
+                "passed": presentation["appearance_id"] == appearance_id
+                and len(presentation["frame_groups"]) == 1
+                and group["kind"] == "object_initial"
+                and group["source_group_id"] == 2
+                and geometry
+                == {
+                    "pattern_width": width,
+                    "pattern_height": height,
+                    "pattern_depth": 1,
+                    "layers": 1,
+                    "phase_count": 1,
+                    "is_opaque": False,
+                }
+                and group["sprite_ids"] == sprite_ids
+                and "sprite_atlas" not in presentation,
+            }
+        )
+
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    evidence_probe["item"]["physical"]["weight"]["value"] = "999.00"
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects Item value drift",
+            "passed": any(
+                "normalized value differs" in error for error in probe_errors
+            ),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    evidence_probe["evidence"]["source_observations"]["br"]["weight"] = "999.00"
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects raw observation drift",
+            "passed": any("raw value differs" in error for error in probe_errors),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    attack_evidence = next(
+        entry
+        for entry in evidence_probe["evidence"]["field_evidence"]
+        if entry["destination"] == "/item/weapon/attack"
+    )
+    attack_evidence["route_destination"] = "/item/display_name"
+    attack_evidence["observations"] = [
+        {
+            "source": "fandom",
+            "field": "name",
+            "catalog_field": "name",
+            "raw_value": "Magic Sword",
+        }
+    ]
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects an unrelated route destination",
+            "passed": any(
+                "route_destination is unrelated" in error for error in probe_errors
+            ),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    evidence_probe["item"]["weapon"]["attack"] = 999
+    attack_evidence = next(
+        entry
+        for entry in evidence_probe["evidence"]["field_evidence"]
+        if entry["destination"] == "/item/weapon/attack"
+    )
+    attack_evidence["normalized_value"] = 999
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects Item and normalized-value drift from raw attack",
+            "passed": any(
+                "raw value does not normalize" in error for error in probe_errors
+            ),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    for source in ("br", "fandom", "engine_items_xml"):
+        evidence_probe["evidence"]["source_observations"][source]["attack"] = "999"
+    attack_evidence = next(
+        entry
+        for entry in evidence_probe["evidence"]["field_evidence"]
+        if entry["destination"] == "/item/weapon/attack"
+    )
+    for observation in attack_evidence["observations"]:
+        observation["raw_value"] = "999"
+    attack_evidence["normalized_value"] = 999
+    evidence_probe["item"]["weapon"]["attack"] = 999
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects fully correlated source, proof and Item drift",
+            "passed": any(
+                "canonical value matrix differs" in error for error in probe_errors
+            ),
+        }
+    )
+    evidence_probe = deepcopy(
+        next(
+            example
+            for example in real_examples["examples"]
+            if example["slug"] == "demon-armor"
+        )
+    )
+    evidence_probe["item"]["trade"]["marketable"] = False
+    marketable_evidence = next(
+        entry
+        for entry in evidence_probe["evidence"]["field_evidence"]
+        if entry["destination"] == "/item/trade/marketable"
+    )
+    marketable_evidence["normalized_value"] = False
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects yes-to-false boolean normalization",
+            "passed": any(
+                "raw value does not normalize" in error for error in probe_errors
+            ),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    evidence_probe["evidence"]["wiki_sources"][0]["content_sha256"] = "0" * 64
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects Wiki page pin drift",
+            "passed": any("page identity" in error for error in probe_errors),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    evidence_probe["evidence"]["engine_sources"][0]["sprite_ids"] = [1]
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects engine sprite drift",
+            "passed": any("ordered sprite IDs" in error for error in probe_errors),
+        }
+    )
+    evidence_probe = deepcopy(
+        next(
+            example
+            for example in real_examples["examples"]
+            if example["slug"] == "demon-armor"
+        )
+    )
+    evidence_probe["item"]["trade"]["tradeable"] = True
+    evidence_probe["evidence"]["field_evidence"].append(
+        {
+            "destination": "/item/trade/tradeable",
+            "route_destination": "/item/trade/tradeable",
+            "normalized_value": True,
+            "normalization": "invalid marketable-to-tradeable promotion probe",
+            "observations": [
+                {
+                    "source": "fandom",
+                    "field": "marketable",
+                    "catalog_field": "marketable",
+                    "raw_value": "yes",
+                }
+            ],
+        }
+    )
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects correlated marketable-to-tradeable promotion",
+            "passed": any(
+                "allowed formal Item path" in error for error in probe_errors
+            ),
+        }
+    )
+    evidence_probe = deepcopy(
+        next(
+            example
+            for example in real_examples["examples"]
+            if example["slug"] == "demon-armor"
+        )
+    )
+    evidence_probe["item"]["trade"]["tradeable"] = True
+    evidence_probe["evidence"]["non_source_defaults"].append(
+        {
+            "destination": "/item/trade/tradeable",
+            "state": "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES",
+        }
+    )
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source defaults reject unadmitted Item leaves",
+            "passed": any("state is not admitted" in error for error in probe_errors),
+        }
+    )
+    evidence_probe = deepcopy(real_examples["examples"][0])
+    evidence_probe["evidence"]["source_observations"]["br"]["totally_fake"] = (
+        "fabricated"
+    )
+    evidence_probe["evidence"]["field_evidence"][0]["observations"] = [
+        {
+            "source": "br",
+            "field": "totally_fake",
+            "catalog_field": "totally_fake",
+            "raw_value": "fabricated",
+        }
+    ]
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects fabricated source fields",
+            "passed": any("pinned page inventory" in error for error in probe_errors)
+            and any("pinned catalog" in error for error in probe_errors),
+        }
+    )
+    evidence_probe = deepcopy(
+        next(
+            example
+            for example in real_examples["examples"]
+            if example["slug"] == "sudden-death-rune"
+        )
+    )
+    charge_evidence = next(
+        entry
+        for entry in evidence_probe["evidence"]["field_evidence"]
+        if entry["destination"] == "/item/charges/count"
+    )
+    charge_evidence["observations"] = [
+        {
+            "source": "br",
+            "field": "makeqty",
+            "catalog_field": "makeqty",
+            "raw_value": "3",
+        }
+    ]
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects external behavior as an Item-field proof",
+            "passed": any(
+                "cannot prove an Item destination" in error for error in probe_errors
+            ),
+        }
+    )
+    evidence_probe = deepcopy(
+        next(
+            example
+            for example in real_examples["examples"]
+            if example["slug"] == "red-apple"
+        )
+    )
+    primary_evidence = next(
+        entry
+        for entry in evidence_probe["evidence"]["field_evidence"]
+        if entry["destination"] == "/item/taxonomy/primary"
+    )
+    primary_evidence["observations"].append(
+        {
+            "source": "fandom",
+            "field": "objectclass",
+            "catalog_field": "objectclass",
+            "raw_value": "Plants, Animal Products, Food and Drink",
+        }
+    )
+    probe_errors, _ = validate_real_example(evidence_probe)
+    results.append(
+        {
+            "name": "real-source evidence rejects approved omission as an Item-field proof",
+            "passed": any(
+                "cannot prove an Item destination" in error for error in probe_errors
+            ),
+        }
+    )
     for schema_name in (
         "item.schema.json",
         "item-dependencies.schema.json",
         "item-import-readiness.schema.json",
+        "real-source-evidence.schema.json",
     ):
         try:
             Draft202012Validator.check_schema(read(ROOT / schema_name))

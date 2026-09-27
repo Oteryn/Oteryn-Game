@@ -1,6 +1,7 @@
 """Validate one Item authoring definition and its exact dependency catalog."""
 
 import argparse
+import hashlib
 import json
 import re
 from datetime import datetime
@@ -17,6 +18,7 @@ SCHEMA_NAMES = (
     "item.schema.json",
     "item-dependencies.schema.json",
     "item-import-readiness.schema.json",
+    "real-source-evidence.schema.json",
 )
 SCHEMAS = {
     name: json.loads((ROOT / name).read_text(encoding="utf-8"), parse_float=Decimal)
@@ -41,6 +43,8 @@ SOURCE_CATALOG_FILES = (
     "canary-field-dispositions.json",
     "crystal-field-dispositions.json",
     "fandom-field-dispositions.json",
+    "wiki-real-item-field-supplement.json",
+    "fandom-real-item-field-supplement.json",
 )
 SOURCE_CATALOGS = {
     catalog["source_profile"]: catalog
@@ -64,12 +68,108 @@ PERCENT_AT_MOST_100 = {
     "percent",
 }
 ASSET_FIELDS = {
-    "appearance_binding",
     "projectile_effect",
     "attack_effect",
     "color_binding",
 }
 ASSET_ARRAYS = {"sounds", "effects"}
+APPEARANCE_SOURCE_PINS = {
+    "canary_47dfd51_item_definition_v1": {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    },
+    "crystal_ff7ede5_item_definition_v1": {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/appearances.dat",
+        "digest_sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+    },
+}
+CANARY_PROFILE = "canary_47dfd51_item_definition_v1"
+CRYSTAL_PROFILE = "crystal_ff7ede5_item_definition_v1"
+BR_REAL_ITEM_PROFILE = "tibiawiki_br_real_item_pages_20260927_v1"
+FANDOM_REAL_ITEM_PROFILE = "tibia_fandom_real_item_pages_20260927_v1"
+DEFINITION_SOURCE_PINS = {
+    CANARY_PROFILE: {
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/items.xml",
+        "digest_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    },
+    CRYSTAL_PROFILE: {
+        "repository": "zimbadev/crystalserver",
+        "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+        "path": "data/items/items.xml",
+        "digest_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+    },
+}
+REAL_ITEM_SOURCE_OBSERVATION_DIGESTS = {
+    "oteryn:item.weapon.sword.magic": "cc2070a59b7054d3a6c1765ba6cf6ca045fffeb8ca9d16f4156a21504eeeefff",
+    "oteryn:item.equipment.armor.demon": "6b62dc0882b526d9b53313c0c50797bf65f60907c6c3ed57ec8e38a9d788fdf2",
+    "oteryn:item.container.backpack": "dc7be4977a7a67686c6ed806e2989c38b86326304232d7023e95b70703bd22a3",
+    "oteryn:item.food.red-apple": "ea390265b539184ec45ad15921b0fdd9e35cfa68b9d4aca1cf377a6f294c8a08",
+    "oteryn:item.rune.sudden-death": "d791f47099f8c8c585f56e2497f1816d45d4155f3c29f8f319c1df435e682aa4",
+    "oteryn:item.fluid-container.vial": "aaa6065a2b35b24d2121cae84a522ff6ec245c73c78f488c41f271da7854b850",
+}
+ADMITTED_PROFICIENCY_CROSSWALKS = {}
+ENGINE_ORIGIN_PATHS = {
+    "xml_item_root": "data/items/items.xml",
+    "xml_item_attribute": "data/items/items.xml",
+    "nested_script_attribute": "data/items/items.xml",
+    "appearance": "data/items/appearances.dat",
+    "reverse_bag_relation": "data/items/bags.xml",
+}
+EVIDENCE_SOURCE_FIELD_ALIASES = {
+    ("engine_items_xml", "weaponType"): "weapontype",
+    ("engine_items_xml", "allowpickUpAble"): "allowpickupable",
+}
+EVIDENCE_ENUM_VALUE_NORMALIZATIONS = {
+    ("/item/equipment/patterns/0/hands", "hands", "Uma"): 1,
+    ("/item/equipment/patterns/0/hands", "hands", "One"): 1,
+    ("/item/equipment/patterns/1/hands", "hands", "Uma"): 1,
+    ("/item/equipment/patterns/1/hands", "hands", "One"): 1,
+    ("/item/equipment/slot", "slot", "Body"): "armor",
+    ("/item/fluid/role", "holdsliquid", "yes"): "container",
+    ("/item/taxonomy/primary", "primarytype", "Sword Weapons"): "sword",
+    ("/item/taxonomy/primary", "primarytype", "sword weapons"): "sword",
+    ("/item/taxonomy/primary", "primarytype", "Armors"): "armor",
+    ("/item/taxonomy/primary", "primarytype", "armors"): "armor",
+    ("/item/taxonomy/primary", "primarytype", "Recipientes"): "container",
+    ("/item/taxonomy/primary", "primarytype", "Containers"): "container",
+    ("/item/taxonomy/primary", "primarytype", "containers"): "container",
+    ("/item/taxonomy/primary", "primarytype", "Food"): "food",
+    ("/item/taxonomy/primary", "primarytype", "food"): "food",
+    ("/item/taxonomy/primary", "primarytype", "Attack Runes"): "attack",
+    ("/item/taxonomy/primary", "primarytype", "attack runes"): "attack",
+    ("/item/taxonomy/secondary", "secondarytype", "Backpacks"): "backpack",
+    ("/item/trade/market_category", "market.category", 20): "swords",
+    ("/item/weapon/weapon_type", "type", "Espada"): "sword",
+}
+NON_SOURCE_DEFAULT_DESTINATIONS = {
+    "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES": ("/item/family_profile",),
+    "SOURCE_WEIGHT_UNIT_NORMALIZATION": ("/item/physical/weight/unit",),
+    "PROFILE_ENFORCEMENT_NORMALIZATION": ("/item/requirements/enforcement_mode",),
+    "AUTHORING_PATTERN_ID": ("/item/equipment/patterns/*/pattern_id",),
+    "ENGINE_NORMALIZATION_FROM_AMBIGUOUS_SLOT_HAND": (
+        "/item/equipment/patterns/*/slot",
+    ),
+    "ENGINE_NORMALIZATION_FROM_SLOT_HAND": ("/item/equipment/patterns/*/slot",),
+    "PROFILE_DEFAULT_NO_CONSUMPTION": ("/item/weapon/consumption_mode",),
+    "SCHEMA_NORMALIZATION_FROM_STACKABLE_FALSE": ("/item/stack/max_count",),
+    "SCHEMA_NORMALIZATION_FOR_NON_HAND_SLOT": ("/item/equipment/hands",),
+    "AUTHOR_SELECTED_FROM_CONTAINER_CAPABILITY": ("/item/taxonomy/item_class",),
+    "NORMALIZATION_FROM_CONTAINER_TAXONOMY": ("/item/container/content_kind",),
+    "AUTHOR_SELECTED_FROM_FOOD_CAPABILITY": ("/item/taxonomy/item_class",),
+    "PROFILE_DEFAULT_NOT_SOURCE_VERIFIED": (
+        "/item/stack/max_count",
+        "/item/consumable/consume_count",
+    ),
+    "NORMALIZATION_FROM_SINGLE_TARGET_CONSUMPTION": ("/item/use/use_with",),
+    "AUTHOR_SELECTED_FROM_FLUID_CAPABILITY": ("/item/taxonomy/item_class",),
+    "AUTHOR_SELECTED_CANONICAL_KIND": ("/item/taxonomy/primary",),
+}
 
 
 def read(path):
@@ -133,6 +233,27 @@ def unique(values, fields, label, errors):
         errors.append(label + ": duplicate " + "/".join(fields))
 
 
+def catalog_rules(catalog):
+    rules = {}
+    base_profile = catalog.get("base_profile")
+    if base_profile:
+        rules.update(catalog_rules(SOURCE_CATALOGS[base_profile]))
+    rules.update({row["source_field"]: row for row in catalog["fields"]})
+    return rules
+
+
+def uses_wiki_base_rule(source_profile, source_field):
+    catalog = SOURCE_CATALOGS.get(source_profile)
+    return (
+        catalog is not None
+        and (
+            source_profile == WIKI_CATALOG["source_profile"]
+            or catalog.get("base_profile") == WIKI_CATALOG["source_profile"]
+        )
+        and source_field in WIKI_FIELD_DISPOSITIONS
+    )
+
+
 def validate(item, dependencies, manifest=None):
     errors = structural("item.schema.json", item)
     errors += structural("item-dependencies.schema.json", dependencies)
@@ -141,6 +262,7 @@ def validate(item, dependencies, manifest=None):
     if errors:
         return errors, []
 
+    semantic_warnings = []
     local_identity = item_ident(item["identity"])
     definitions = {local_identity}
     declared_definitions = set()
@@ -152,6 +274,71 @@ def validate(item, dependencies, manifest=None):
             )
         definitions.add(key)
         declared_definitions.add(key)
+    presentations = {}
+    for presentation in dependencies["presentations"]:
+        key = ident(presentation["identity"])
+        if key in definitions:
+            errors.append(
+                "dependencies/presentations: duplicate exact definition " + repr(key)
+            )
+            continue
+        definitions.add(key)
+        declared_definitions.add(key)
+        presentations[key] = presentation
+        source = presentation["source"]
+        pin = APPEARANCE_SOURCE_PINS[source["source_profile"]]
+        if any(source[field] != pin[field] for field in pin):
+            errors.append(
+                "dependencies/presentations: appearance source differs from its pinned profile"
+            )
+        frame_group_keys = [
+            (group["kind"], group["source_group_id"])
+            for group in presentation["frame_groups"]
+        ]
+        if len(frame_group_keys) != len(set(frame_group_keys)):
+            errors.append("dependencies/presentations: duplicate kind/source_group_id")
+        for group in presentation["frame_groups"]:
+            geometry = group["geometry"]
+            expected_sprite_count = (
+                geometry["pattern_width"]
+                * geometry["pattern_height"]
+                * geometry["pattern_depth"]
+                * geometry["layers"]
+                * geometry["phase_count"]
+            )
+            if len(group["sprite_ids"]) != expected_sprite_count:
+                errors.append(
+                    "dependencies/presentations: sprite count differs from geometry/layers/phases"
+                )
+        if "sprite_atlas" not in presentation:
+            semantic_warnings.append(
+                "presentation "
+                + presentation["identity"]["key"]
+                + " has no admitted sprite_atlas; sprite IDs are evidence, not renderable pixels"
+            )
+    crosswalk_targets = {}
+    crosswalk_sources = set()
+    for crosswalk in dependencies["proficiency_crosswalks"]:
+        source_key = (
+            crosswalk["source_profile"],
+            crosswalk["external_id"],
+            crosswalk["source_version"],
+        )
+        target_key = ident(crosswalk["target"])
+        if ADMITTED_PROFICIENCY_CROSSWALKS.get(source_key) != target_key:
+            errors.append(
+                "dependencies/proficiency_crosswalks: exact source-to-target mapping is not in the pinned admitted index"
+            )
+        if source_key in crosswalk_sources:
+            errors.append(
+                "dependencies/proficiency_crosswalks: duplicate source identity"
+            )
+        if target_key in crosswalk_targets:
+            errors.append(
+                "dependencies/proficiency_crosswalks: duplicate target identity"
+            )
+        crosswalk_sources.add(source_key)
+        crosswalk_targets[target_key] = crosswalk
     assets = set(dependencies["assets"])
     used_definitions = set()
     used_assets = set()
@@ -194,6 +381,22 @@ def validate(item, dependencies, manifest=None):
             errors.append(location + ": unresolved asset " + value)
         if len(path) >= 2 and path[-2] in ASSET_ARRAYS and isinstance(value, str):
             used_assets.add(value)
+    appearance_ref = item.get("presentation", {}).get("appearance_binding")
+    if appearance_ref is not None and ident(appearance_ref) not in presentations:
+        errors.append(
+            "item/presentation/appearance_binding: missing presentation payload"
+        )
+    proficiency_ref = item.get("proficiency", {}).get("profile_binding")
+    if proficiency_ref is not None and ident(proficiency_ref) not in crosswalk_targets:
+        errors.append(
+            "item/proficiency/profile_binding: missing admitted source identity crosswalk"
+        )
+    unused_crosswalks = set(crosswalk_targets) - used_definitions
+    if unused_crosswalks:
+        errors.append(
+            "dependencies/proficiency_crosswalks: unused crosswalks "
+            + repr(sorted(unused_crosswalks))
+        )
     unused_definitions = declared_definitions - used_definitions
     if unused_definitions:
         errors.append(
@@ -355,6 +558,29 @@ def validate(item, dependencies, manifest=None):
         for source in manifest["sources"]:
             validate_source_identity(source, errors)
             validate_capture_timestamp(source, errors)
+        manifest_source_tuples = {
+            (
+                source["source_profile"],
+                source.get("repository"),
+                source["revision"],
+                source.get("path"),
+                source["digest_sha256"],
+            )
+            for source in manifest["sources"]
+        }
+        for presentation in dependencies["presentations"]:
+            source = presentation["source"]
+            source_tuple = (
+                source["source_profile"],
+                source["repository"],
+                source["revision"],
+                source["path"],
+                source["digest_sha256"],
+            )
+            if source_tuple not in manifest_source_tuples:
+                errors.append(
+                    "dependencies/presentations: source tuple is absent from the manifest"
+                )
         expected_fields = {
             (source_index, field["source_locator"], field["source_field"])
             for source_index, source in enumerate(manifest["sources"])
@@ -418,7 +644,7 @@ def validate(item, dependencies, manifest=None):
                     "manifest: pinned source defect requires pinned_no_effect disposition"
                 )
             source = manifest["sources"][entry["source_index"]]
-            if source["source_profile"] == WIKI_CATALOG["source_profile"]:
+            if uses_wiki_base_rule(source["source_profile"], entry["source_field"]):
                 validate_wiki_disposition(entry, errors)
             else:
                 validate_catalog_disposition(entry, source, document, errors)
@@ -450,7 +676,7 @@ def validate(item, dependencies, manifest=None):
                     errors.append("manifest: null destination " + entry["destination"])
                 validate_routed_destination_value(entry, source, resolved, errors)
                 if (
-                    source["source_profile"] == WIKI_CATALOG["source_profile"]
+                    uses_wiki_base_rule(source["source_profile"], entry["source_field"])
                     and entry["source_field"] == "modificadores"
                 ):
                     typed_modifiers = set(item.get("modifiers", {})) - {"editor_notes"}
@@ -487,7 +713,7 @@ def validate(item, dependencies, manifest=None):
                     )
 
     expected = EXPECTED_CAPABILITIES[item["family_profile"]]
-    warnings = [
+    warnings = semantic_warnings + [
         "profile "
         + item["family_profile"]
         + " normally expects capability "
@@ -495,6 +721,583 @@ def validate(item, dependencies, manifest=None):
         for capability in expected
         if capability not in item
     ]
+    return errors, warnings
+
+
+def leaf_pointers(value, path=()):
+    if isinstance(value, dict):
+        for key, child in value.items():
+            yield from leaf_pointers(child, path + (key,))
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from leaf_pointers(child, path + (index,))
+    else:
+        yield pointer(path)
+
+
+def evidence_route_value(rule, raw_value):
+    route_values = [
+        route["source_value"] for route in rule.get("source_value_routes", [])
+    ]
+    if any(isinstance(value, bool) for value in route_values) and isinstance(
+        raw_value, str
+    ):
+        lowered = raw_value.casefold()
+        if lowered in ("yes", "sim", "true", "1"):
+            return True
+        if lowered in ("no", "não", "false", "0"):
+            return False
+    return raw_value
+
+
+def normalize_evidence_boolean(raw_value):
+    if isinstance(raw_value, bool):
+        return raw_value
+    if isinstance(raw_value, int) and raw_value in (0, 1):
+        return bool(raw_value)
+    if isinstance(raw_value, str):
+        lowered = raw_value.casefold()
+        if lowered in ("yes", "sim", "true", "1"):
+            return True
+        if lowered in ("no", "não", "false", "0"):
+            return False
+    raise ValueError("unsupported evidence boolean")
+
+
+def normalize_evidence_integer(raw_value):
+    if isinstance(raw_value, bool):
+        raise TypeError("boolean is not an evidence integer")
+    if isinstance(raw_value, int):
+        return raw_value
+    if isinstance(raw_value, str) and re.fullmatch(r"[+-]?[0-9]+", raw_value):
+        return int(raw_value)
+    raise ValueError("unsupported evidence integer")
+
+
+def normalize_evidence_weight(observation):
+    raw_value = observation["raw_value"]
+    try:
+        value = Decimal(str(raw_value))
+    except (InvalidOperation, TypeError, ValueError) as error:
+        raise ValueError("unsupported evidence weight") from error
+    if not value.is_finite():
+        raise ValueError("non-finite evidence weight")
+    if observation["source"] == "engine_items_xml":
+        if value != value.to_integral_value():
+            raise ValueError("engine weight must use integral centi-ounces")
+        value /= 100
+    elif observation["source"] in ("br", "fandom"):
+        if value * 100 != (value * 100).to_integral_value():
+            raise ValueError("Wiki weight must be exact to centi-ounces")
+    else:
+        raise ValueError("unsupported evidence weight source")
+    return f"{value:.2f}"
+
+
+def validate_evidence_observation_value(
+    observation, destination, resolved, catalog_normalizations, errors
+):
+    if catalog_normalizations:
+        expected = catalog_normalizations[0]
+        if any(value != expected for value in catalog_normalizations[1:]):
+            errors.append(
+                "evidence/field_evidence: source profiles disagree on the pinned value normalization"
+            )
+            return
+    else:
+        key = (
+            destination,
+            observation["catalog_field"],
+            observation["raw_value"],
+        )
+        if key in EVIDENCE_ENUM_VALUE_NORMALIZATIONS:
+            expected = EVIDENCE_ENUM_VALUE_NORMALIZATIONS[key]
+        elif (
+            destination == "/item/physical/weight/value"
+            and observation["catalog_field"] == "weight"
+        ):
+            try:
+                expected = normalize_evidence_weight(observation)
+            except (TypeError, ValueError):
+                errors.append(
+                    "evidence/field_evidence: raw weight has no admitted exact normalization"
+                )
+                return
+        elif isinstance(resolved, bool):
+            try:
+                expected = normalize_evidence_boolean(observation["raw_value"])
+            except ValueError:
+                errors.append(
+                    "evidence/field_evidence: raw boolean has no admitted normalization"
+                )
+                return
+        elif isinstance(resolved, int):
+            try:
+                expected = normalize_evidence_integer(observation["raw_value"])
+            except (TypeError, ValueError):
+                errors.append(
+                    "evidence/field_evidence: raw integer has no admitted normalization"
+                )
+                return
+        elif isinstance(resolved, str) and observation["raw_value"] == resolved:
+            expected = resolved
+        else:
+            errors.append(
+                "evidence/field_evidence: observation has no admitted value normalization"
+            )
+            return
+    if expected != resolved:
+        errors.append(
+            "evidence/field_evidence: raw value does not normalize to Item destination"
+        )
+
+
+def validate_evidence_observation_route(
+    observation, route_destination, destination, resolved, document, errors
+):
+    if not (
+        route_destination == destination
+        or destination.startswith(route_destination + "/")
+    ):
+        errors.append(
+            "evidence/field_evidence: route_destination is unrelated to destination"
+        )
+        return
+    source_id = observation["source"]
+    expected_catalog_field = EVIDENCE_SOURCE_FIELD_ALIASES.get(
+        (source_id, observation["field"]), observation["field"]
+    )
+    if observation["catalog_field"] != expected_catalog_field:
+        errors.append(
+            "evidence/field_evidence: catalog_field differs from the admitted raw-field alias"
+        )
+        return
+    profiles = {
+        "br": (BR_REAL_ITEM_PROFILE,),
+        "fandom": (FANDOM_REAL_ITEM_PROFILE,),
+        "engine_items_xml": (CANARY_PROFILE, CRYSTAL_PROFILE),
+        "engine_appearance": (CANARY_PROFILE, CRYSTAL_PROFILE),
+        "canary_appearance": (CANARY_PROFILE,),
+    }[source_id]
+    catalog_normalizations = []
+    for profile in profiles:
+        catalog = SOURCE_CATALOGS[profile]
+        rule = catalog_rules(catalog).get(observation["catalog_field"])
+        if rule is None:
+            errors.append(
+                "evidence/field_evidence: observation field is absent from its pinned catalog"
+            )
+            continue
+        effective_rule = rule
+        source_value = evidence_route_value(rule, observation["raw_value"])
+        entry = {
+            "source_field": observation["catalog_field"],
+            "source_value": source_value,
+            "destination": route_destination,
+        }
+        source = {"source_profile": profile}
+        if source_id == "engine_items_xml":
+            source["path"] = "data/items/items.xml"
+        elif source_id in ("engine_appearance", "canary_appearance"):
+            source["path"] = "data/items/appearances.dat"
+        if uses_wiki_base_rule(profile, observation["catalog_field"]):
+            if rule["disposition"] not in (
+                "ITEM_TYPED",
+                "ITEM_AUTHORING",
+                "PRESENTATION_EDITOR",
+                "SOURCE_TEXT_PRESERVE_AND_PARSE",
+            ):
+                errors.append(
+                    "evidence/field_evidence: non-mappable Wiki field cannot prove an Item destination"
+                )
+                continue
+            entry.update({"kind": "definition", "status": "mapped"})
+            validate_wiki_disposition(entry, errors)
+        else:
+            if "source_value_routes" in rule:
+                effective_rule = next(
+                    (
+                        route
+                        for route in rule["source_value_routes"]
+                        if route["source_value"] == source_value
+                    ),
+                    None,
+                )
+                if effective_rule is None:
+                    errors.append(
+                        "evidence/field_evidence: raw value has no pinned source-value route"
+                    )
+                    continue
+            if effective_rule["status"] != "mapped":
+                errors.append(
+                    "evidence/field_evidence: external, unresolved or omitted field cannot prove an Item destination"
+                )
+                continue
+            entry.update(
+                {"kind": effective_rule["kind"], "status": effective_rule["status"]}
+            )
+            validate_catalog_disposition(entry, source, document, errors)
+        try:
+            routed_value = resolve_pointer(document, route_destination)
+        except (KeyError, IndexError, TypeError, ValueError):
+            errors.append(
+                "evidence/field_evidence: route_destination does not resolve in Item"
+            )
+            continue
+        validate_routed_destination_value(entry, source, routed_value, errors)
+        if "destination_value_equals" in effective_rule:
+            catalog_normalizations.append(effective_rule["destination_value_equals"])
+        elif effective_rule.get("destination_value_transform") == (
+            "boolean_not_source"
+        ) and isinstance(source_value, bool):
+            catalog_normalizations.append(not source_value)
+    validate_evidence_observation_value(
+        observation, destination, resolved, catalog_normalizations, errors
+    )
+
+
+def validate_non_source_default(entry, resolved, item, errors):
+    patterns = NON_SOURCE_DEFAULT_DESTINATIONS.get(entry["state"])
+    if patterns is None or not any(
+        pointer_matches(entry["destination"], pattern) for pattern in patterns
+    ):
+        errors.append(
+            "evidence/non_source_defaults: state is not admitted for this Item leaf"
+        )
+        return
+    expected_values = {
+        "SOURCE_WEIGHT_UNIT_NORMALIZATION": "oz",
+        "PROFILE_DEFAULT_NO_CONSUMPTION": "none",
+        "SCHEMA_NORMALIZATION_FOR_NON_HAND_SLOT": 0,
+        "AUTHOR_SELECTED_FROM_CONTAINER_CAPABILITY": "container",
+        "NORMALIZATION_FROM_CONTAINER_TAXONOMY": "items",
+        "AUTHOR_SELECTED_FROM_FOOD_CAPABILITY": "consumable",
+        "NORMALIZATION_FROM_SINGLE_TARGET_CONSUMPTION": False,
+        "AUTHOR_SELECTED_FROM_FLUID_CAPABILITY": "fluid_container",
+        "AUTHOR_SELECTED_CANONICAL_KIND": "vial",
+    }
+    if (
+        entry["state"] in expected_values
+        and resolved != expected_values[entry["state"]]
+    ):
+        errors.append(
+            "evidence/non_source_defaults: value differs from the admitted normalization"
+        )
+    if entry["state"] == "PROFILE_ENFORCEMENT_NORMALIZATION" and resolved not in (
+        "on_equip",
+        "on_use",
+    ):
+        errors.append(
+            "evidence/non_source_defaults: unsupported enforcement normalization"
+        )
+    if entry["state"] in (
+        "ENGINE_NORMALIZATION_FROM_AMBIGUOUS_SLOT_HAND",
+        "ENGINE_NORMALIZATION_FROM_SLOT_HAND",
+    ) and resolved not in ("right_hand", "left_hand"):
+        errors.append(
+            "evidence/non_source_defaults: unsupported hand-slot normalization"
+        )
+    if (
+        entry["state"]
+        in (
+            "SCHEMA_NORMALIZATION_FROM_STACKABLE_FALSE",
+            "PROFILE_DEFAULT_NOT_SOURCE_VERIFIED",
+        )
+        and entry["destination"] == "/item/stack/max_count"
+    ):
+        expected = 100 if item["stack"]["stackable"] else 1
+        if resolved != expected:
+            errors.append(
+                "evidence/non_source_defaults: max_count differs from stackability normalization"
+            )
+    if (
+        entry["state"] == "PROFILE_DEFAULT_NOT_SOURCE_VERIFIED"
+        and entry["destination"] == "/item/consumable/consume_count"
+        and resolved != 1
+    ):
+        errors.append(
+            "evidence/non_source_defaults: consume_count differs from the admitted default"
+        )
+
+
+def validate_real_example(example):
+    item = example["item"]
+    dependencies = example["dependencies"]
+    evidence = example["evidence"]
+    errors, warnings = validate(item, dependencies)
+    evidence_errors = structural("real-source-evidence.schema.json", evidence)
+    errors.extend(evidence_errors)
+    if evidence_errors:
+        return errors, warnings
+
+    document = {"item": item}
+    if evidence["item_key"] != item["identity"]["key"]:
+        errors.append("evidence/item_key: differs from Item identity")
+    expected_observation_digest = REAL_ITEM_SOURCE_OBSERVATION_DIGESTS.get(
+        item["identity"]["key"]
+    )
+    try:
+        observation_payload = json.dumps(
+            evidence["source_observations"],
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    except (TypeError, ValueError):
+        observation_digest = None
+    else:
+        observation_digest = hashlib.sha256(observation_payload).hexdigest()
+    if (
+        expected_observation_digest is None
+        or observation_digest != expected_observation_digest
+    ):
+        errors.append(
+            "evidence/source_observations: canonical value matrix differs from the pinned source extraction"
+        )
+
+    presentations = dependencies["presentations"]
+    if len(presentations) != 1:
+        errors.append(
+            "evidence: real Item example requires exactly one Presentation payload"
+        )
+        return errors, warnings
+    presentation = presentations[0]
+    appearance_ref = item["presentation"]["appearance_binding"]
+    source_identity = evidence["source_identity"]
+    if source_identity["target"] != appearance_ref:
+        errors.append(
+            "evidence/source_identity/target: differs from Item appearance binding"
+        )
+    if presentation["identity"] != appearance_ref:
+        errors.append(
+            "evidence: Presentation payload identity differs from Item binding"
+        )
+    if source_identity["external_id"] != str(presentation["appearance_id"]):
+        errors.append(
+            "evidence/source_identity/external_id: differs from appearance_id"
+        )
+
+    sprite_ids = [
+        sprite_id
+        for group in presentation["frame_groups"]
+        for sprite_id in group["sprite_ids"]
+    ]
+    engine_sources = {
+        source["source_profile"]: source for source in evidence["engine_sources"]
+    }
+    if set(engine_sources) != set(APPEARANCE_SOURCE_PINS):
+        errors.append(
+            "evidence/engine_sources: must contain exact Canary and Crystal pins"
+        )
+    for profile, pin in APPEARANCE_SOURCE_PINS.items():
+        source = engine_sources.get(profile)
+        if source is None:
+            continue
+        if any(source[field] != pin[field] for field in pin):
+            errors.append(
+                "evidence/engine_sources: source differs from pinned appearance artifact"
+            )
+        if source["item_id"] != presentation["appearance_id"]:
+            errors.append("evidence/engine_sources: item_id differs from appearance_id")
+        if source["appearance_id"] != presentation["appearance_id"]:
+            errors.append(
+                "evidence/engine_sources: source appearance_id differs from Presentation"
+            )
+        if source["sprite_ids"] != sprite_ids:
+            errors.append(
+                "evidence/engine_sources: ordered sprite IDs differ from Presentation"
+            )
+
+    definition_sources = {
+        source["source_profile"]: source for source in evidence["definition_sources"]
+    }
+    if set(definition_sources) != set(DEFINITION_SOURCE_PINS):
+        errors.append(
+            "evidence/definition_sources: must contain exact Canary and Crystal pins"
+        )
+    expected_locator = f"item[@id='{presentation['appearance_id']}']"
+    for profile, pin in DEFINITION_SOURCE_PINS.items():
+        source = definition_sources.get(profile)
+        if source is None:
+            continue
+        if any(source[field] != pin[field] for field in pin):
+            errors.append(
+                "evidence/definition_sources: source differs from pinned definition artifact"
+            )
+        if source["source_locator"] != expected_locator:
+            errors.append(
+                "evidence/definition_sources: locator differs from Presentation appearance_id"
+            )
+
+    wiki_profiles = {"br": BR_REAL_ITEM_PROFILE, "fandom": FANDOM_REAL_ITEM_PROFILE}
+    wiki_sources = {source["source_id"]: source for source in evidence["wiki_sources"]}
+    if set(wiki_sources) != set(wiki_profiles):
+        errors.append("evidence/wiki_sources: must contain exact BR and Fandom pages")
+    for source_id, profile in wiki_profiles.items():
+        source = wiki_sources.get(source_id)
+        if source is None:
+            continue
+        page = next(
+            (
+                candidate
+                for candidate in SOURCE_CATALOGS[profile]["pages"]
+                if candidate["title"] == item["display_name"]
+            ),
+            None,
+        )
+        if page is None or source != {"source_id": source_id, **page}:
+            errors.append(
+                "evidence/wiki_sources: page identity or complete raw inventory differs from its pinned supplement"
+            )
+
+    observations = evidence["source_observations"]
+    for source_id, profile in wiki_profiles.items():
+        source = wiki_sources.get(source_id)
+        if source is None:
+            continue
+        unknown_fields = set(observations[source_id]) - set(source["raw_fields"])
+        if unknown_fields:
+            errors.append(
+                "evidence/source_observations: Wiki field is absent from the pinned page inventory"
+            )
+        rules = catalog_rules(SOURCE_CATALOGS[profile])
+        if set(observations[source_id]) - set(rules):
+            errors.append(
+                "evidence/source_observations: Wiki field is absent from the pinned disposition catalog"
+            )
+    engine_origins = {
+        "engine_items_xml": (
+            {"xml_item_root", "xml_item_attribute", "nested_script_attribute"},
+            (CANARY_PROFILE, CRYSTAL_PROFILE),
+        ),
+        "engine_appearance": (
+            {"appearance"},
+            (CANARY_PROFILE, CRYSTAL_PROFILE),
+        ),
+        "canary_appearance": ({"appearance"}, (CANARY_PROFILE,)),
+    }
+    for source_id, (allowed_origins, profiles) in engine_origins.items():
+        for field in observations.get(source_id, {}):
+            catalog_field = EVIDENCE_SOURCE_FIELD_ALIASES.get((source_id, field), field)
+            for profile in profiles:
+                rule = catalog_rules(SOURCE_CATALOGS[profile]).get(catalog_field)
+                if rule is None:
+                    errors.append(
+                        "evidence/source_observations: engine field is absent from the pinned catalog"
+                    )
+                elif not (set(rule["origins"]) & allowed_origins):
+                    errors.append(
+                        "evidence/source_observations: engine field is assigned to the wrong artifact"
+                    )
+
+    destinations = [entry["destination"] for entry in evidence["field_evidence"]]
+    if len(destinations) != len(set(destinations)):
+        errors.append("evidence/field_evidence: duplicate destination")
+    for entry in evidence["field_evidence"]:
+        try:
+            resolved = resolve_pointer(document, entry["destination"])
+        except (KeyError, IndexError, TypeError, ValueError):
+            errors.append(
+                "evidence/field_evidence: missing destination " + entry["destination"]
+            )
+            continue
+        if resolved != entry["normalized_value"]:
+            errors.append(
+                "evidence/field_evidence: normalized value differs from Item destination"
+            )
+        if isinstance(resolved, (dict, list)):
+            errors.append(
+                "evidence/field_evidence: destination must identify one scalar leaf"
+            )
+        for observation in entry["observations"]:
+            source_values = observations.get(observation["source"], {})
+            if observation["field"] not in source_values:
+                errors.append(
+                    "evidence/field_evidence: observation is absent from source_observations"
+                )
+            elif source_values[observation["field"]] != observation["raw_value"]:
+                errors.append(
+                    "evidence/field_evidence: raw value differs from source_observations"
+                )
+            validate_evidence_observation_route(
+                observation,
+                entry["route_destination"],
+                entry["destination"],
+                resolved,
+                document,
+                errors,
+            )
+
+    default_destinations = [
+        entry["destination"] for entry in evidence["non_source_defaults"]
+    ]
+    if len(default_destinations) != len(set(default_destinations)):
+        errors.append("evidence/non_source_defaults: duplicate destination")
+    if set(destinations) & set(default_destinations):
+        errors.append(
+            "evidence: a leaf cannot be both source-evidenced and a non-source default"
+        )
+    for destination in default_destinations:
+        try:
+            resolved = resolve_pointer(document, destination)
+        except (KeyError, IndexError, TypeError, ValueError):
+            errors.append(
+                "evidence/non_source_defaults: missing destination " + destination
+            )
+            continue
+        if isinstance(resolved, (dict, list)):
+            errors.append(
+                "evidence/non_source_defaults: destination must identify one scalar leaf"
+            )
+        validate_non_source_default(
+            next(
+                entry
+                for entry in evidence["non_source_defaults"]
+                if entry["destination"] == destination
+            ),
+            resolved,
+            item,
+            errors,
+        )
+    expected_leaves = {
+        leaf
+        for key, value in item.items()
+        if key not in ("identity", "presentation")
+        for leaf in leaf_pointers(value, ("item", key))
+    }
+    actual_leaves = set(destinations) | set(default_destinations)
+    if actual_leaves != expected_leaves:
+        errors.append(
+            "evidence: field_evidence and non_source_defaults must exactly partition every authored Item leaf"
+        )
+
+    expected_blockers = {
+        "sprite_atlas_not_admitted",
+        "runtime_lowering_not_implemented",
+    }
+    if "proficiency.proficiency_id" in observations.get("canary_appearance", {}):
+        expected_blockers.add("proficiency_id_238_crosswalk_not_admitted")
+    if "sounds" in observations.get("br", {}):
+        expected_blockers.add("yum_sound_asset_not_admitted")
+    if item["family_profile"] == "rune":
+        expected_blockers.update(
+            {"ability_binding_not_admitted", "combat_formula_not_admitted"}
+        )
+    if item["family_profile"] == "fluid":
+        expected_blockers.add("fluid_interaction_binding_not_admitted")
+    if set(evidence["readiness"]["blockers"]) != expected_blockers:
+        errors.append(
+            "evidence/readiness/blockers: differs from unresolved source state"
+        )
+    expected_non_claims = {
+        "not_runtime_imported",
+        "not_gameplay_parity_proven",
+        "not_renderable_without_matching_sprite_atlas",
+    }
+    if set(evidence["readiness"]["non_claims"]) != expected_non_claims:
+        errors.append(
+            "evidence/readiness/non_claims: differs from the authoring boundary"
+        )
     return errors, warnings
 
 
@@ -570,7 +1373,7 @@ def validate_catalog_disposition(entry, source, document, errors):
     if catalog is None:
         errors.append("manifest: unknown source_profile " + source["source_profile"])
         return
-    rules = {row["source_field"]: row for row in catalog["fields"]}
+    rules = catalog_rules(catalog)
     rule = rules.get(entry["source_field"])
     if rule is None:
         errors.append(
@@ -580,6 +1383,16 @@ def validate_catalog_disposition(entry, source, document, errors):
             + entry["source_field"]
         )
         return
+    if "repository" in catalog:
+        allowed_paths = {
+            ENGINE_ORIGIN_PATHS[origin]
+            for origin in rule["origins"]
+            if origin in ENGINE_ORIGIN_PATHS
+        }
+        if source.get("path") not in allowed_paths:
+            errors.append(
+                "manifest: engine source path differs from the field's pinned origin"
+            )
     effective_rule = rule
     if rule.get("source_value_router") == "signed_weight":
         expected = signed_weight_destination(entry, errors)
@@ -663,14 +1476,7 @@ def validate_routed_destination_value(entry, source, resolved, errors):
     catalog = SOURCE_CATALOGS.get(source["source_profile"])
     if catalog is None:
         return
-    rule = next(
-        (
-            row
-            for row in catalog["fields"]
-            if row["source_field"] == entry["source_field"]
-        ),
-        None,
-    )
+    rule = catalog_rules(catalog).get(entry["source_field"])
     if not rule:
         return
     effective_rule = rule
@@ -765,6 +1571,10 @@ def validate_source_identity(source, errors):
             errors.append(
                 "manifest: source revision differs from pinned source_profile"
             )
+        if source.get("path") not in set(ENGINE_ORIGIN_PATHS.values()):
+            errors.append(
+                "manifest: engine source path is not an admitted Item artifact"
+            )
     if catalog.get("authority") == "HISTORICAL_CORROBORATION_ONLY":
         if source.get("kind") not in ("wiki", "web"):
             errors.append("manifest: Fandom source_profile requires kind=wiki or web")
@@ -790,6 +1600,29 @@ def validate_source_identity(source, errors):
         if source.get("revision") != catalog["revision"]:
             errors.append(
                 "manifest: TibiaWiki BR revision differs from pinned stable source"
+            )
+    if catalog.get("authority") == "PINNED_REAL_ITEM_PAGE_FIXTURE_SUPPLEMENT":
+        if source.get("kind") != "wiki":
+            errors.append("manifest: real-item page supplement requires kind=wiki")
+        matches = [
+            page
+            for page in catalog["pages"]
+            if source.get("url") == page["url"]
+            and source.get("page_id") == page["page_id"]
+            and source.get("revision") == page["revision"]
+            and source.get("revision_timestamp") == page["revision_timestamp"]
+            and source.get("revision_sha1") == page["revision_sha1"]
+            and source.get("digest_sha256") == page["content_sha256"]
+        ]
+        if len(matches) != 1:
+            errors.append(
+                "manifest: source identity differs from every pinned real-item page"
+            )
+            return
+        inventory = {field["source_field"] for field in source["field_inventory"]}
+        if inventory != set(matches[0]["raw_fields"]):
+            errors.append(
+                "manifest: real-item page field inventory differs from the pinned revision"
             )
 
 

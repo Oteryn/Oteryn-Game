@@ -1,16 +1,21 @@
-"""Build the Item authoring schema candidate v2. This is not runtime serialization."""
+"""Build the Item authoring schema candidate v3. This is not runtime serialization."""
 
 import copy
 import json
 from pathlib import Path
 
+from real_item_examples import build_real_item_examples
 from source_field_catalogs import (
     BR_PROFILE,
+    BR_REAL_ITEM_PROFILE,
     CANARY_PROFILE,
     CRYSTAL_PROFILE,
     FANDOM_PROFILE,
+    FANDOM_REAL_ITEM_PROFILE,
+    build_br_real_item_supplement,
     build_engine_catalog,
     build_fandom_catalog,
+    build_fandom_real_item_supplement,
 )
 
 ROOT = Path(__file__).resolve().parent
@@ -21,9 +26,10 @@ WIKI_CENSUS = (
     / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 )
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
-ITEM_ID = "urn:oteryn:item-authoring:candidate:2"
-DEPS_ID = "urn:oteryn:item-dependencies:candidate:2"
-MANIFEST_ID = "urn:oteryn:item-import-readiness:candidate:2"
+ITEM_ID = "urn:oteryn:item-authoring:candidate:3"
+DEPS_ID = "urn:oteryn:item-dependencies:candidate:3"
+MANIFEST_ID = "urn:oteryn:item-import-readiness:candidate:3"
+EVIDENCE_ID = "urn:oteryn:item-real-source-evidence:candidate:3"
 
 
 def obj(properties, required=(), **extra):
@@ -399,7 +405,7 @@ def build_item_schema():
             "inspection_description": text(),
             "flavor_text": text(),
             "sounds": array(d["assetBinding"], unique=True),
-            "appearance_binding": d["assetBinding"],
+            "appearance_binding": use("PresentationRef"),
             "effects": array(d["assetBinding"], unique=True),
             "projectile_effect": d["assetBinding"],
             "attack_effect": d["assetBinding"],
@@ -982,7 +988,26 @@ def build_item_schema():
             "market_category": text(pattern=r"^[a-z][a-z0-9_.-]*$"),
             "vocations": array(text(pattern=r"^[a-z][a-z0-9_]*$"), unique=True),
         },
-        ("tradeable", "marketable"),
+        anyOf=[
+            {"required": ["tradeable"]},
+            {"required": ["marketable"]},
+            {"required": ["market_category"]},
+            {"required": ["vocations"]},
+        ],
+        allOf=[
+            {
+                "if": {
+                    "anyOf": [
+                        {"required": ["market_category"]},
+                        {"required": ["vocations"]},
+                    ]
+                },
+                "then": {
+                    "properties": {"marketable": {"const": True}},
+                    "required": ["marketable"],
+                },
+            }
+        ],
     )
     d["sourceObservations"] = obj(
         {
@@ -1038,7 +1063,7 @@ def build_item_schema():
     return {
         "$schema": DIALECT,
         "$id": ITEM_ID,
-        "title": "Oteryn Item authoring candidate v2",
+        "title": "Oteryn Item authoring candidate v3",
         "description": "Portable Item definition only. Terrain, placed WorldObject and mutable ItemInstance state are outside this schema.",
         **obj(properties, ("identity", "display_name", "family_profile", "taxonomy")),
         "$defs": d,
@@ -1047,6 +1072,87 @@ def build_item_schema():
 
 def build_dependencies_schema(item_schema):
     d = copy.deepcopy(item_schema["$defs"])
+    d["appearanceSource"] = obj(
+        {
+            "source_profile": enum(CANARY_PROFILE, CRYSTAL_PROFILE),
+            "repository": text(),
+            "revision": text(),
+            "path": text(),
+            "digest_sha256": text(pattern=r"^[0-9a-f]{64}$"),
+        },
+        ("source_profile", "repository", "revision", "path", "digest_sha256"),
+    )
+    d["appearanceGeometry"] = obj(
+        {
+            "pattern_width": integer(1),
+            "pattern_height": integer(1),
+            "pattern_depth": integer(1),
+            "layers": integer(1),
+            "phase_count": integer(1),
+            "is_opaque": use("bool"),
+            "bounding_square": integer(),
+        },
+        (
+            "pattern_width",
+            "pattern_height",
+            "pattern_depth",
+            "layers",
+            "phase_count",
+            "is_opaque",
+        ),
+    )
+    d["appearanceFrameGroup"] = obj(
+        {
+            "kind": {"const": "object_initial"},
+            "source_group_id": {"const": 2},
+            "geometry": use("appearanceGeometry"),
+            "sprite_ids": array(integer(1), 1),
+        },
+        ("kind", "source_group_id", "geometry", "sprite_ids"),
+    )
+    d["presentationAsset"] = obj(
+        {
+            "identity": use("PresentationRef"),
+            "source": use("appearanceSource"),
+            "appearance_id": integer(1),
+            "frame_groups": array(use("appearanceFrameGroup"), 1),
+            "sprite_atlas": obj(
+                {
+                    "key": use("key"),
+                    "revision": use("revision"),
+                    "sha256": text(pattern=r"^[0-9a-f]{64}$"),
+                },
+                ("key", "revision", "sha256"),
+                description="Exact raster atlas artifact. Omit until the matching client asset pack is admitted.",
+            ),
+        },
+        ("identity", "source", "appearance_id", "frame_groups"),
+    )
+    d["proficiencySourceCrosswalk"] = obj(
+        {
+            "source_profile": {"const": CANARY_PROFILE},
+            "repository": {"const": "opentibiabr/canary"},
+            "revision": {"const": "47dfd51f45280a59a1d3e50ba7edd573d7234446"},
+            "path": {"const": "data/items/proficiencies.json"},
+            "digest_sha256": {
+                "const": "1a915dffd9265cd1c18d39e55da7ede691b2e58add534bc186238ae028a73f22"
+            },
+            "external_id": text(pattern=r"^[1-9][0-9]*$"),
+            "source_version": integer(1),
+            "target": use("ProficiencyRef"),
+        },
+        (
+            "source_profile",
+            "repository",
+            "revision",
+            "path",
+            "digest_sha256",
+            "external_id",
+            "source_version",
+            "target",
+        ),
+        description="Pinned source-ID to admitted canonical Proficiency mapping; numeric IDs never become ContentKeys.",
+    )
     any_reference = {
         "oneOf": [
             use(family + "Ref")
@@ -1064,13 +1170,193 @@ def build_dependencies_schema(item_schema):
     return {
         "$schema": DIALECT,
         "$id": DEPS_ID,
-        "title": "Oteryn Item authoring exact dependency catalog candidate v2",
+        "title": "Oteryn Item authoring exact dependency catalog candidate v3",
         **obj(
             {
                 "definitions": array(any_reference, unique=True),
                 "assets": array(use("assetBinding"), unique=True),
+                "presentations": array(use("presentationAsset")),
+                "proficiency_crosswalks": array(use("proficiencySourceCrosswalk")),
             },
-            ("definitions", "assets"),
+            (
+                "definitions",
+                "assets",
+                "presentations",
+                "proficiency_crosswalks",
+            ),
+        ),
+        "$defs": d,
+    }
+
+
+def build_real_source_evidence_schema(item_schema):
+    d = copy.deepcopy(item_schema["$defs"])
+    scalar = {"type": ["string", "number", "boolean"]}
+    d["sourceIdentity"] = obj(
+        {
+            "identity_namespace": {"const": "client/appearance_id"},
+            "external_id": text(pattern=r"^[1-9][0-9]*$"),
+            "target": use("PresentationRef"),
+        },
+        ("identity_namespace", "external_id", "target"),
+    )
+    d["engineSource"] = obj(
+        {
+            "source_profile": enum(CANARY_PROFILE, CRYSTAL_PROFILE),
+            "repository": text(),
+            "revision": text(),
+            "path": {"const": "data/items/appearances.dat"},
+            "digest_sha256": text(pattern=r"^[0-9a-f]{64}$"),
+            "item_id": integer(1),
+            "appearance_id": integer(1),
+            "sprite_ids": array(integer(1), 1),
+        },
+        (
+            "source_profile",
+            "repository",
+            "revision",
+            "path",
+            "digest_sha256",
+            "item_id",
+            "appearance_id",
+            "sprite_ids",
+        ),
+    )
+    d["definitionSource"] = obj(
+        {
+            "source_profile": enum(CANARY_PROFILE, CRYSTAL_PROFILE),
+            "repository": text(),
+            "revision": text(),
+            "path": {"const": "data/items/items.xml"},
+            "digest_sha256": text(pattern=r"^[0-9a-f]{64}$"),
+            "source_locator": text(pattern=r"^item\[@id='[1-9][0-9]*'\]$"),
+        },
+        (
+            "source_profile",
+            "repository",
+            "revision",
+            "path",
+            "digest_sha256",
+            "source_locator",
+        ),
+    )
+    d["wikiSource"] = obj(
+        {
+            "source_id": enum("br", "fandom"),
+            "page_id": integer(1),
+            "title": text(),
+            "url": text(pattern=r"^https?://"),
+            "revision": text(pattern=r"^[1-9][0-9]*$"),
+            "revision_timestamp": text(format="date-time"),
+            "captured_at": text(format="date-time"),
+            "revision_sha1": text(pattern=r"^[0-9a-f]{40}$"),
+            "content_sha256": text(pattern=r"^[0-9a-f]{64}$"),
+            "raw_fields": array(text(), 1, unique=True),
+        },
+        (
+            "source_id",
+            "page_id",
+            "title",
+            "url",
+            "revision",
+            "revision_timestamp",
+            "captured_at",
+            "revision_sha1",
+            "content_sha256",
+            "raw_fields",
+        ),
+    )
+    d["fieldObservation"] = obj(
+        {
+            "source": enum(
+                "br",
+                "fandom",
+                "engine_items_xml",
+                "engine_appearance",
+                "canary_appearance",
+            ),
+            "field": text(),
+            "catalog_field": text(),
+            "raw_value": scalar,
+        },
+        ("source", "field", "catalog_field", "raw_value"),
+    )
+    d["fieldEvidence"] = obj(
+        {
+            "destination": text(pattern=r"^/item(?:/.*)?$"),
+            "route_destination": text(pattern=r"^/item(?:/.*)?$"),
+            "normalized_value": {},
+            "normalization": text(),
+            "observations": array(use("fieldObservation"), 1, unique=True),
+        },
+        (
+            "destination",
+            "route_destination",
+            "normalized_value",
+            "normalization",
+            "observations",
+        ),
+    )
+    d["nonSourceDefault"] = obj(
+        {"destination": text(pattern=r"^/item(?:/.*)?$"), "state": text()},
+        ("destination", "state"),
+    )
+    d["readiness"] = obj(
+        {
+            "state": {"const": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED"},
+            "blockers": array(text(), 2, unique=True),
+            "non_claims": array(text(), 1, unique=True),
+        },
+        ("state", "blockers", "non_claims"),
+    )
+    observation_map = {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": scalar,
+    }
+    source_observations = obj(
+        {
+            "br": observation_map,
+            "fandom": observation_map,
+            "engine_items_xml": observation_map,
+            "engine_appearance": observation_map,
+            "canary_appearance": observation_map,
+        },
+        ("br", "fandom", "engine_items_xml"),
+    )
+    return {
+        "$schema": DIALECT,
+        "$id": EVIDENCE_ID,
+        "title": "Oteryn real Item source evidence candidate v3",
+        **obj(
+            {
+                "schema": {"const": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3"},
+                "item_key": use("key"),
+                "source_identity": use("sourceIdentity"),
+                "engine_sources": array(
+                    use("engineSource"), 2, unique=True, maxItems=2
+                ),
+                "definition_sources": array(
+                    use("definitionSource"), 2, unique=True, maxItems=2
+                ),
+                "wiki_sources": array(use("wikiSource"), 2, unique=True, maxItems=2),
+                "source_observations": source_observations,
+                "field_evidence": array(use("fieldEvidence"), 1),
+                "non_source_defaults": array(use("nonSourceDefault"), unique=True),
+                "readiness": use("readiness"),
+            },
+            (
+                "schema",
+                "item_key",
+                "source_identity",
+                "engine_sources",
+                "definition_sources",
+                "wiki_sources",
+                "source_observations",
+                "field_evidence",
+                "non_source_defaults",
+                "readiness",
+            ),
         ),
         "$defs": d,
     }
@@ -1086,12 +1372,19 @@ def build_manifest_schema(item_schema):
         {
             "kind": enum("git", "wiki", "web", "local"),
             "source_profile": enum(
-                BR_PROFILE, FANDOM_PROFILE, CANARY_PROFILE, CRYSTAL_PROFILE
+                BR_PROFILE,
+                FANDOM_PROFILE,
+                BR_REAL_ITEM_PROFILE,
+                FANDOM_REAL_ITEM_PROFILE,
+                CANARY_PROFILE,
+                CRYSTAL_PROFILE,
             ),
             "url": text(pattern=r"^https?://"),
             "repository": text(),
             "revision": text(),
             "revision_sha1": text(pattern=r"^[0-9a-f]{40}$"),
+            "page_id": integer(1),
+            "revision_timestamp": text(format="date-time"),
             "path": text(),
             "captured_at": text(format="date-time"),
             "digest_sha256": text(pattern=r"^[0-9a-f]{64}$"),
@@ -1147,7 +1440,7 @@ def build_manifest_schema(item_schema):
     return {
         "$schema": DIALECT,
         "$id": MANIFEST_ID,
-        "title": "Oteryn Item import readiness candidate v2",
+        "title": "Oteryn Item import readiness candidate v3",
         **obj(
             {"sources": array(use("source"), 1), "entries": array(use("entry"), 1)},
             ("sources", "entries"),
@@ -1406,14 +1699,16 @@ def write_json(path, value):
 def main():
     item = build_item_schema()
     dependencies = build_dependencies_schema(item)
+    evidence = build_real_source_evidence_schema(item)
     manifest = build_manifest_schema(item)
     write_json(ROOT / "item.schema.json", item)
     write_json(ROOT / "item-dependencies.schema.json", dependencies)
+    write_json(ROOT / "real-source-evidence.schema.json", evidence)
     write_json(ROOT / "item-import-readiness.schema.json", manifest)
     write_json(
         ROOT / "profile-catalog.json",
         {
-            "schema": "OTERYN_ITEM_AUTHORING_PROFILE_CATALOG/candidate-2",
+            "schema": "OTERYN_ITEM_AUTHORING_PROFILE_CATALOG/candidate-3",
             "profiles": [
                 {
                     "profile_id": profile,
@@ -1452,7 +1747,7 @@ def main():
     write_json(
         ROOT / "wiki-field-dispositions.json",
         {
-            "schema": "OTERYN_ITEM_AUTHORING_WIKI_FIELD_DISPOSITIONS/candidate-2",
+            "schema": "OTERYN_ITEM_AUTHORING_WIKI_FIELD_DISPOSITIONS/candidate-3",
             "source_profile": BR_PROFILE,
             "authority": "CURRENT_FIELD_CENSUS_REFERENCE_ONLY",
             "source_url": "https://www.tibiawiki.com.br/index.php?stableid=424807&title=Predefini%C3%A7%C3%A3o%3AInfobox_Item",
@@ -1485,9 +1780,23 @@ def main():
     )
     write_json(ROOT / "fandom-field-dispositions.json", build_fandom_catalog())
     write_json(
-        ROOT / "item-dependencies-template.json",
-        {"definitions": [], "assets": []},
+        ROOT / "wiki-real-item-field-supplement.json",
+        build_br_real_item_supplement(),
     )
+    write_json(
+        ROOT / "fandom-real-item-field-supplement.json",
+        build_fandom_real_item_supplement(),
+    )
+    write_json(
+        ROOT / "item-dependencies-template.json",
+        {
+            "definitions": [],
+            "assets": [],
+            "presentations": [],
+            "proficiency_crosswalks": [],
+        },
+    )
+    write_json(ROOT / "real-source-examples.json", build_real_item_examples())
 
 
 if __name__ == "__main__":

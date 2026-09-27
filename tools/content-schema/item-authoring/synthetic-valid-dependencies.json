@@ -22,7 +22,41 @@
     }
   ],
   "assets": [
-    "oteryn:asset.item.magic-wand",
     "oteryn:asset.effect.energy-shot"
-  ]
+  ],
+  "presentations": [
+    {
+      "identity": {
+        "family": "Presentation",
+        "key": "oteryn:presentation.template.magic-wand",
+        "revision": "definition-r1"
+      },
+      "source": {
+        "source_profile": "canary_47dfd51_item_definition_v1",
+        "repository": "opentibiabr/canary",
+        "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+        "path": "data/items/appearances.dat",
+        "digest_sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "appearance_id": 1,
+      "frame_groups": [
+        {
+          "kind": "object_initial",
+          "source_group_id": 2,
+          "geometry": {
+            "pattern_width": 1,
+            "pattern_height": 1,
+            "pattern_depth": 1,
+            "layers": 1,
+            "phase_count": 1,
+            "is_opaque": false
+          },
+          "sprite_ids": [
+            1
+          ]
+        }
+      ]
+    }
+  ],
+  "proficiency_crosswalks": []
 }

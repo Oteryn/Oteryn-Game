@@ -1850,9 +1850,10 @@
       "kind": "definition",
       "status": "mapped",
       "allowed_destinations": [
-        "/item/trade"
+        "/item/trade/marketable"
       ],
-      "reason": "typed portable Item definition fact"
+      "reason": "typed portable Item definition fact",
+      "destination_value_equals": true
     },
     {
       "source_field": "flags.minimum_level",
@@ -1921,13 +1922,11 @@
       "origins": [
         "appearance"
       ],
-      "disposition": "ITEM_TYPED",
-      "kind": "definition",
-      "status": "mapped",
-      "allowed_destinations": [
-        "/item/proficiency/profile_binding"
-      ],
-      "reason": "typed portable Item definition fact"
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "source proficiency presence requires an admitted canonical crosswalk"
     },
     {
       "source_field": "flags.reportable",
@@ -3149,13 +3148,11 @@
       "origins": [
         "appearance"
       ],
-      "disposition": "ITEM_TYPED",
-      "kind": "definition",
-      "status": "mapped",
-      "allowed_destinations": [
-        "/item/proficiency/profile_binding"
-      ],
-      "reason": "typed portable Item definition fact"
+      "disposition": "PROVENANCE",
+      "kind": "provenance",
+      "status": "provenance_only",
+      "allowed_destinations": [],
+      "reason": "numeric source proficiency ID requires an admitted canonical crosswalk"
     },
     {
       "source_field": "range",

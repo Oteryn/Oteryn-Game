@@ -11,7 +11,11 @@
       "article": "a",
       "plural": "template magic wands"
     },
-    "appearance_binding": "oteryn:asset.item.magic-wand",
+    "appearance_binding": {
+      "family": "Presentation",
+      "key": "oteryn:presentation.template.magic-wand",
+      "revision": "definition-r1"
+    },
     "projectile_effect": "oteryn:asset.effect.energy-shot",
     "variants": [
       {

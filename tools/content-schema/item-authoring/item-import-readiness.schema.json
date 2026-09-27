@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:oteryn:item-import-readiness:candidate:2",
-  "title": "Oteryn Item import readiness candidate v2",
+  "$id": "urn:oteryn:item-import-readiness:candidate:3",
+  "title": "Oteryn Item import readiness candidate v3",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -401,7 +401,7 @@
           "uniqueItems": true
         },
         "appearance_binding": {
-          "$ref": "#/$defs/key"
+          "$ref": "#/$defs/PresentationRef"
         },
         "effects": {
           "type": "array",
@@ -2341,9 +2341,56 @@
           "uniqueItems": true
         }
       },
-      "required": [
-        "tradeable",
-        "marketable"
+      "required": [],
+      "anyOf": [
+        {
+          "required": [
+            "tradeable"
+          ]
+        },
+        {
+          "required": [
+            "marketable"
+          ]
+        },
+        {
+          "required": [
+            "market_category"
+          ]
+        },
+        {
+          "required": [
+            "vocations"
+          ]
+        }
+      ],
+      "allOf": [
+        {
+          "if": {
+            "anyOf": [
+              {
+                "required": [
+                  "market_category"
+                ]
+              },
+              {
+                "required": [
+                  "vocations"
+                ]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "marketable": {
+                "const": true
+              }
+            },
+            "required": [
+              "marketable"
+            ]
+          }
+        }
       ]
     },
     "sourceObservations": {
@@ -2446,6 +2493,8 @@
           "enum": [
             "tibiawiki_br_infobox_item_424807_v1",
             "tibia_fandom_merge_items_objects_1035268_v1",
+            "tibiawiki_br_real_item_pages_20260927_v1",
+            "tibia_fandom_real_item_pages_20260927_v1",
             "canary_47dfd51_item_definition_v1",
             "crystal_ff7ede5_item_definition_v1"
           ]
@@ -2467,6 +2516,15 @@
           "type": "string",
           "minLength": 1,
           "pattern": "^[0-9a-f]{40}$"
+        },
+        "page_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "revision_timestamp": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
         },
         "path": {
           "type": "string",
