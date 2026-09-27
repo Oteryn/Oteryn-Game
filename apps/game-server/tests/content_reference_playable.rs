@@ -77,7 +77,7 @@ fn source() -> Result<ReferencePlayableContentSource, ContentError> {
         package_manifest,
         content_lock,
         world_id: world_id()?,
-        coordinate_frame: CoordinateFrameRef::new("global-target-2026-07-28")?,
+        coordinate_frame: CoordinateFrameRef::new("global-target-2026-09-27")?,
         definitions: vec![
             ReferenceDefinition {
                 definition: object_ref.clone(),

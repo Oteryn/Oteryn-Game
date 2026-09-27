@@ -650,8 +650,8 @@
       "source_line": 16,
       "source_field": "events=HealthForgotten",
       "kind": "script",
-      "status": "unresolved_semantics",
-      "resolution": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_healthchange_forgotten.lua doubles damage taken unless a Possessed Tree is within 7 tiles. Combat-changing encounter mechanic (D9: Encounter); blocked until the Encounter models it."
+      "status": "approved_omission",
+      "resolution": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_healthchange_forgotten.lua doubles damage taken unless a Possessed Tree is within 7 tiles. Relocated to Encounter canary:encounter/the_enraged_thorn_knight (encounter-authoring/samples/the_enraged_thorn_knight), whose manifest covers this creature for the whole event; the monster keeps no copy of the logic (D20, D28)."
     }
   ]
 }

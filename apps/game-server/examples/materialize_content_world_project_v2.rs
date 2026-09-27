@@ -63,19 +63,19 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "c78379bd89895c912494e22411b9cae6138d1f482655f7549e7c80cac320153f";
+    "ff797d863be23684e465afbe8627d908e8f12efa021b075c1289ee420863eed7";
 const CREATURE_STAGE_TOOL_SHA256: &str =
     "02ec69fb6dc42056a2049e9da9d274304fab5b5201fc0bc222fb84e6866fd714";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "b27b5dd2199859cbfc2d9cf7d4dbf3f9a0670f99b50630411c6311b552deb17e";
+    "c2724e672526b0b40a98bae45f81379f0eec173587df9670bfbf9725b31857c4";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "b158d590eddcf27864d90390791031e45c9db54c03a2a17edb11b4668b40cddd";
+const NPC_STAGED_SHA256: &str = "13e37595332b466e0b0dcda0a1648aeda010d3453b937522b70b5704da077bf4";
 const NPC_STAGE_TOOL_SHA256: &str =
-    "abb90fdddc38222e96f27b750655d7369757675ff99610668c5276ddb5ec9f3e";
+    "8c519ad2b42fb7bdcffb70f1652f30a3a14bcba89e8319e89d4aa4d9775c8d87";
 const NPC_CANDIDATES_SHA256: &str =
     "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
@@ -1275,7 +1275,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),
                 world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
-                coordinate_frame: "global-target-2026-07-28".to_owned(),
+                coordinate_frame: "global-target-2026-09-27".to_owned(),
                 records,
                 imports: vec![
                     provenance,

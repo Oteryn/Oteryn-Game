@@ -90,14 +90,14 @@ RULES = {
 }
 # Owner decisions 2026-09-26 (docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md section 3).
 WIKI_API = 'https://tibia.fandom.com/api.php'
-WIKI_REFERENCE = 'wiki-2026-07-28.json'
+WIKI_REFERENCE = 'wiki-2026-09-27.json'
 BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
 PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile')
 PATH_TRAIL = (r'local target = Creature\(var\.number\) if not target then return false end local creaturePos = creature:getPosition\(\) '
               r'local path = creaturePos:getPathTo\(target:getPosition\(\), 0, 0, true, (true|false), (\d+)\) if not path or #path == 0 '
               r'then return false end for i = 1, #path do creaturePos:getNextPosition\(path\[i\], 1\) '
               r'creaturePos:sendMagicEffect\((CONST_ME_\w+)\) end return combat:execute\(creature, var\)')
-WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces '
+WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces '
                  'it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary '
                  'difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain '
                  '(? or ~) or unparsed wiki value')

@@ -1,5 +1,7 @@
 # Content/World — Reference corridor fixture exit policy
 
+> 2026-09-27: the target date moved to 2026-09-27 (`OTERYN_TARGET_DATE_20260927_DECISION.md`); "post-target" below refers to the 2026-07-28 cut this policy was written for.
+
 ```yaml
 status: OWNER_DIRECTION / EXECUTION_POLICY_DELTA
 version: 1.0

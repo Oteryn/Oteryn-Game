@@ -20,7 +20,7 @@ import canary_batch as cb
 import validate_monster as vm
 
 ROOT = Path(__file__).resolve().parent
-WIKI = ROOT / 'samples' / 'wiki-population-2026-07-28.json'
+WIKI = ROOT / 'samples' / 'wiki-population-2026-09-27.json'
 INDEX = ROOT / 'samples' / 'population-bundles-canary-47dfd51f.json'
 BUNDLE_FILES = ('monster.json', 'dependencies.json', 'catalog.json', 'manifest.json')
 OPEN = ('unsupported_source_field', 'unresolved_semantics', 'unresolved_dependency', 'partial_text')
