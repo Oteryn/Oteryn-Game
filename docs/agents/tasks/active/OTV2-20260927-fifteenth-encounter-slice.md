@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-fifteenth-encounter-slice
 title: D34 boss attribute for Burning Hatred (fifteenth encounter slice)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1043
 jira: KAN-16
 base_sha: 961c74ab573d87807ed24cbd414a46d8072f72d3
 head_sha: null
