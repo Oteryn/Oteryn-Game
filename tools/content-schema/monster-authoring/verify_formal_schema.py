@@ -193,6 +193,13 @@ if __name__=='__main__':
         return mutate
     case('attribute modifiers accepted (D12)',attributes([{'attribute':'skill_shield','mode':'percent_of_base','value':40}]),True)
     case('attribute modifier mode is closed',attributes([{'attribute':'skill_shield','mode':'multiply','value':40}]))
+    case('damage mitigated by armor and shield accepted',set_value(('d','effects',0,'mitigated_by'),['armor','shield']),True)
+    case('mitigation defence is closed',set_value(('d','effects',0,'mitigated_by'),['armor','magic_shield']))
+    case('mitigation defences are unique',set_value(('d','effects',0,'mitigated_by'),['armor','armor']))
+    case('mitigation list is not empty',set_value(('d','effects',0,'mitigated_by'),[]))
+    def healed(m,d,c):
+        d['effects'][0].update({'operation':'heal','damage_type':'healing','mitigated_by':['armor']})
+    case('heal cannot be mitigated by armor',healed)
     def variants(nested=False,with_effects=False):
         def mutate(m,d,c):
             base=d['abilities'][0]

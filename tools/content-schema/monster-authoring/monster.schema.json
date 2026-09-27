@@ -2159,6 +2159,18 @@
         "condition": {
           "$ref": "#/$defs/condition"
         },
+        "mitigated_by": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "armor",
+              "shield"
+            ]
+          },
+          "minItems": 1,
+          "uniqueItems": true,
+          "description": "Target defences that reduce this damage (Canary/Crystal blockedByArmor/blockedByShield); absent means neither. The reduction formula itself is a world combat rule."
+        },
         "appearance_transform": {
           "type": "object",
           "additionalProperties": false,
@@ -2444,6 +2456,30 @@
                 {
                   "required": [
                     "duration_ms"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "damage"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {},
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "mitigated_by"
                   ]
                 }
               ]

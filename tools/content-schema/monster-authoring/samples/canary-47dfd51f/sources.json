@@ -2,6 +2,9 @@
   "repository": "opentibiabr/canary",
   "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
   "rules": {
+    "armor_melee": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by)",
+    "armor_physical": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR on an inline physical combat, so its damage is reduced by the target armor (mitigated_by)",
+    "armor_script": "src/creatures/combat/combat.cpp Combat::setParam maps COMBAT_PARAM_BLOCKARMOR/BLOCKSHIELD to blockedByArmor/blockedByShield, which Creature::blockHit applies (mitigated_by)",
     "loot_scale": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000",
     "loot_order": "register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration",
     "loot_defaults": "creatures_definitions.hpp LootBlock countmin=countmax=1; unique=false",

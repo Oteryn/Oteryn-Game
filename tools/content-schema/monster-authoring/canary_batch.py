@@ -41,6 +41,12 @@ BATCH_2 = ['bosses/morshabaal', 'humanoids/dworc_voodoomaster', 'fey/wisp',
            'constructs/war_golem']
 BATCHES = {REV: BATCH_1, REV + '-batch-2': BATCH_2}
 RULES = {
+    'armor_melee': 'src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD '
+                   'on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by)',
+    'armor_physical': 'src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR on an inline physical '
+                      'combat, so its damage is reduced by the target armor (mitigated_by)',
+    'armor_script': 'src/creatures/combat/combat.cpp Combat::setParam maps COMBAT_PARAM_BLOCKARMOR/BLOCKSHIELD to '
+                    'blockedByArmor/blockedByShield, which Creature::blockHit applies (mitigated_by)',
     'loot_scale': 'src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000',
     'loot_order': 'register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration',
     'loot_defaults': 'creatures_definitions.hpp LootBlock countmin=countmax=1; unique=false',
@@ -1019,7 +1025,8 @@ class Converter:
                 params.pop(name)
         unsupported = set(params) - {'COMBAT_PARAM_TYPE', 'COMBAT_PARAM_EFFECT', 'COMBAT_PARAM_DISTANCEEFFECT',
                                      'COMBAT_PARAM_CHAIN_EFFECT', 'COMBAT_PARAM_CREATEITEM', 'COMBAT_PARAM_AGGRESSIVE',
-                                     'COMBAT_PARAM_USECHARGES', 'COMBAT_PARAM_IMPACTSOUND', 'COMBAT_PARAM_CASTSOUND'}
+                                     'COMBAT_PARAM_USECHARGES', 'COMBAT_PARAM_IMPACTSOUND', 'COMBAT_PARAM_CASTSOUND',
+                                     'COMBAT_PARAM_BLOCKARMOR', 'COMBAT_PARAM_BLOCKSHIELD'}
         if unsupported:
             raise SpellUnresolved(f'combat parameter(s) {sorted(unsupported)} have no authoring field.')
         if combat.get('formula'):
@@ -1058,8 +1065,14 @@ class Converter:
             damage = DAMAGE[kind[7:]]
             if not any(f['identity']['key'] == CASTER_MAGNITUDE for f in deps['formulas']):
                 deps['formulas'].append({'identity': ident(CASTER_MAGNITUDE), 'kind': 'caster_magnitude'})
+            mitigated = [name for name, param in (('armor', 'COMBAT_PARAM_BLOCKARMOR'), ('shield', 'COMBAT_PARAM_BLOCKSHIELD'))
+                         if params.get(param) not in (None, 0, False)]
+            if mitigated and damage != 'healing':
+                notes.append(RULES['armor_script'] + '.')
             add('', {'operation': 'heal' if damage == 'healing' else 'damage', 'damage_type': damage,
-                     'formula': ref('Formula', CASTER_MAGNITUDE), **({'presentation': visual} if visual else {})})
+                     'formula': ref('Formula', CASTER_MAGNITUDE),
+                     **({'mitigated_by': mitigated} if mitigated and damage != 'healing' else {}),
+                     **({'presentation': visual} if visual else {})})
             visual, uses_magnitude = {}, True
         if 'COMBAT_PARAM_CREATEITEM' in params:
             item = ref('Item', f'canary:item/{int(params["COMBAT_PARAM_CREATEITEM"])}')
@@ -1203,7 +1216,9 @@ class Converter:
                 formula = ref('Formula', key)
             else:
                 formula = formula_range(spell.get('minDamage', 0), spell.get('maxDamage', 0))
-            add_effect('', {'operation': 'damage', 'damage_type': 'physical', 'formula': formula, **({'presentation': presentation()} if presentation() else {})})
+            add_effect('', {'operation': 'damage', 'damage_type': 'physical', 'formula': formula, 'mitigated_by': ['armor', 'shield'],
+                            **({'presentation': presentation()} if presentation() else {})})
+            note = RULES['armor_melee'] + '. '
             geometry = {'needs_target': True, 'needs_direction': False}
             kind, range_tiles = 'melee', 1
         elif name in ('combat', *FIELD_ITEMS):
@@ -1224,6 +1239,9 @@ class Converter:
             if area and spell.get('effect') is None and 'field' not in name:
                 visual['impact_asset_binding'] = asset('canary.appearance:effect/poff')
                 note = RULES['area_effect'] + '. '
+            if body.get('damage_type') == 'physical' and body['operation'] == 'damage':
+                body['mitigated_by'] = ['armor']
+                note += RULES['armor_physical'] + '. '
             if visual:
                 body['presentation'] = visual
             add_effect('', body)

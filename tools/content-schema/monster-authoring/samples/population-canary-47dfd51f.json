@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 352,
-    "fully_resolved": 1298,
+    "blocked": 346,
+    "fully_resolved": 1304,
     "not_converted": 6,
-    "wiki_adopted_monsters": 988
+    "wiki_adopted_monsters": 992
   },
   "wiki_adopted_rows": {
     "Loot2": 11547,
@@ -54,7 +54,7 @@
     },
     {
       "blocker": "unresolved_semantics attacks[]",
-      "monsters": 91,
+      "monsters": 84,
       "examples": [
         "quara_looter",
         "cerebellum",
@@ -328,6 +328,7 @@
     "animated_snowman",
     "animated_stone_golem",
     "animated_stone_rhino",
+    "animated_sword",
     "annihilon",
     "antenna",
     "apocalypse",
@@ -452,6 +453,7 @@
     "chakoya_tribewarden",
     "chakoya_windcaller",
     "charged_energy_elemental",
+    "chasm_spawn",
     "chayenne",
     "cheese_thief",
     "chicken",
@@ -1045,6 +1047,7 @@
     "monk_of_the_order",
     "monk_s_apparition",
     "monstor",
+    "mooh_tah_master",
     "mooh_tah_warrior",
     "moohtant",
     "morgaroth",
@@ -1353,6 +1356,7 @@
     "stone_golem",
     "stone_rhino",
     "stonecracker",
+    "stonerefiner",
     "strange_slime",
     "streaked_devourer",
     "sugar_cube",
@@ -1370,6 +1374,7 @@
     "swan_maiden",
     "swarmer",
     "swarmer_hatchling",
+    "sword_of_vengeance",
     "tainted_soul",
     "tainted_soul_splinter",
     "tame_terror_bird",
@@ -1385,6 +1390,7 @@
     "terrorsleep",
     "thalas",
     "thanatursus",
+    "thawing_dragon_lord",
     "the_abomination",
     "the_armored_voidborn",
     "the_axeorcist",

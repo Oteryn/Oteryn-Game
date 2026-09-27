@@ -172,6 +172,8 @@ d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration'
      'then':{'required':['damage_over_time'],**forbid('speed_formula')},'else':forbid('damage_over_time')}])
 d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only'),
     'damage_type':use('damageType'),'formula':use('FormulaRef'),'duration_ms':use('ms'),'condition':use('condition'),
+    'mitigated_by':array(enum('armor','shield'),1,True,description='Target defences that reduce this damage (Canary/Crystal '
+        'blockedByArmor/blockedByShield); absent means neither. The reduction formula itself is a world combat rule.'),
     'appearance_transform':obj({'creature':use('CreatureRef'),'item':use('ItemRef')},oneOf=[
         {'required':['creature'],**forbid('item')},{'required':['item'],**forbid('creature')}]),
     'created_item':use('ItemRef'),
@@ -189,7 +191,8 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
     {'if':{'properties':{'operation':{'const':'create_item'}},'required':['operation']},
      'then':{'required':['created_item']},'else':forbid('created_item')},
     {'if':{'properties':{'operation':{'const':'presentation_only'}},'required':['operation']},
-     'then':{'required':['presentation'],'properties':{'presentation':{'minProperties':1}},**forbid('duration_ms')}}])
+     'then':{'required':['presentation'],'properties':{'presentation':{'minProperties':1}},**forbid('duration_ms')}},
+    {'if':{'properties':{'operation':{'const':'damage'}},'required':['operation']},'then':{},'else':forbid('mitigated_by')}])
 d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_skill','speed_modifier','caster_magnitude'),
     'magnitude':obj({'minimum':integer(),'maximum':integer()},('minimum','maximum')),
     'melee':obj({'attack':integer(),'skill':integer()},('attack','skill')),

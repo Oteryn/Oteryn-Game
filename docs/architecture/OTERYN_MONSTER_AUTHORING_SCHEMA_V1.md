@@ -145,7 +145,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 197 focused positive/negative cases
+python verify_formal_schema.py     # 202 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -234,19 +234,34 @@ monster references the largest are `conditional_summon` (23 spells), `remove_mag
 20 references), `heal_allies_in_area` (14), `path_trail_missile` (3 spells, 17 references: a drawn
 effect trail plus one single-target hit, not a real chain) and `plain_combat_unsupported_schema`
 (9 spells: plain combats blocked only by `BLOCKARMOR`, `DISPEL`, `COMBAT_LIFEDRAINDAMAGE` or a
-custom area constant, which need schema fields rather than a behaviour). Boss-specific logic
+custom area constant, which need schema fields rather than a behaviour; `BLOCKARMOR` is now covered
+by `mitigated_by`, §8.5). Boss-specific logic
 (`boss_form_swap`, `boss_escape_utility`, `map_or_quest_specific`) belongs with the Encounter
 definitions of D9. Canary defects found on the way: `gorerilla small ring` uses the undefined
 `COMBAT_PHYSICALDAMAGEDAMAGE`, `metal gargoyle curse` has a one-step loop, `icicle heal` deals 100
 damage, and `gaz'haragoth summon` calls `setSummon` with an undefined value. The grouping is a
 proposal for owner review; no behaviour key is created by it.
 
+### 8.5 Armor and shield mitigation (`mitigated_by`)
+
+A damage Effect may carry `mitigated_by: ["armor"]`, `["shield"]` or both: the target defences that
+reduce it. Absent means neither, which is the engine default for spells. The field records only
+whether a defence applies; the reduction formula is a world combat rule (like D12(6)). Canary
+`47dfd51f` and Crystal Server `37d0d54` behave identically for monsters:
+`monsters.cpp deserializeSpell` sets `COMBAT_PARAM_BLOCKARMOR` and `BLOCKSHIELD` on every monster
+melee and `BLOCKARMOR` on an inline physical `combat`; a registered spell sets them itself (28
+Canary scripts, e.g. `berserk.lua`, `explosion.lua`). `Combat::setParam` maps them to
+`blockedByArmor`/`blockedByShield` and `Creature::blockHit` subtracts a random share of the target's
+defense and armor (Crystal additionally lowers the armor by a player's weapon proficiency, which
+monsters do not have). The converter now emits the field from these three rules; before it, monster
+melee and physical attacks lost the armor and shield reduction silently.
+
 ## 9. Import readiness of the Canary population
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,298 convert, validate and resolve every manifest row (1,103 before registered spells were
-converted, 1,315 before wiki adoption); 352 are blocked; 6 do not convert (five Soul War bosses
+files, 1,304 convert, validate and resolve every manifest row (1,103 before registered spells were
+converted, 1,315 before wiki adoption, 1,298 before `mitigated_by`); 346 are blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 

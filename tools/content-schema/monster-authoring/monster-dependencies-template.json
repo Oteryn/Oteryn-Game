@@ -98,6 +98,9 @@
           }
         ]
       },
+      "mitigated_by": [
+        null
+      ],
       "appearance_transform": {
         "creature": {
           "family": null,
