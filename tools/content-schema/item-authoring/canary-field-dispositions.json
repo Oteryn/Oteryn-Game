@@ -1,8 +1,12 @@
 {
-  "schema": "OTERYN_ITEM_AUTHORING_ENGINE_FIELD_DISPOSITIONS/candidate-2",
+  "schema": "OTERYN_ITEM_AUTHORING_ENGINE_FIELD_DISPOSITIONS/candidate-3",
   "source_profile": "canary_47dfd51_item_definition_v1",
   "repository": "opentibiabr/canary",
   "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+  "artifact_digests": {
+    "data/items/items.xml": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+    "data/items/appearances.dat": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+  },
   "parser_registry": {
     "entry_count": 144,
     "unique_key_count": 143,
@@ -288,19 +292,6 @@
         "upgradeclassification.upgrade_classification",
         "write.max_text_length",
         "write_once.max_text_length_once"
-      ]
-    },
-    {
-      "name": "reverse_bag_relation",
-      "fields": [
-        "bags.bossOnly",
-        "bags.chance",
-        "bags.class",
-        "bags.itemid",
-        "bags.maxAmount",
-        "bags.minAmount",
-        "bags.name",
-        "bags.raceId"
       ]
     }
   ],
@@ -736,94 +727,6 @@
       "status": "external_domain",
       "allowed_destinations": [],
       "reason": "automap presentation belongs to Terrain/world presentation"
-    },
-    {
-      "source_field": "bags.bossOnly",
-      "origins": [
-        "reverse_bag_relation"
-      ],
-      "disposition": "RELATIONSHIP",
-      "kind": "relationship",
-      "status": "reverse_relation",
-      "allowed_destinations": [],
-      "reason": "Creature/Loot owns reverse surprise-bag membership"
-    },
-    {
-      "source_field": "bags.chance",
-      "origins": [
-        "reverse_bag_relation"
-      ],
-      "disposition": "RELATIONSHIP",
-      "kind": "relationship",
-      "status": "reverse_relation",
-      "allowed_destinations": [],
-      "reason": "Creature/Loot owns reverse surprise-bag membership"
-    },
-    {
-      "source_field": "bags.class",
-      "origins": [
-        "reverse_bag_relation"
-      ],
-      "disposition": "RELATIONSHIP",
-      "kind": "relationship",
-      "status": "reverse_relation",
-      "allowed_destinations": [],
-      "reason": "Creature/Loot owns reverse surprise-bag membership"
-    },
-    {
-      "source_field": "bags.itemid",
-      "origins": [
-        "reverse_bag_relation"
-      ],
-      "disposition": "RELATIONSHIP",
-      "kind": "relationship",
-      "status": "reverse_relation",
-      "allowed_destinations": [],
-      "reason": "Creature/Loot owns reverse surprise-bag membership"
-    },
-    {
-      "source_field": "bags.maxAmount",
-      "origins": [
-        "reverse_bag_relation"
-      ],
-      "disposition": "RELATIONSHIP",
-      "kind": "relationship",
-      "status": "reverse_relation",
-      "allowed_destinations": [],
-      "reason": "Creature/Loot owns reverse surprise-bag membership"
-    },
-    {
-      "source_field": "bags.minAmount",
-      "origins": [
-        "reverse_bag_relation"
-      ],
-      "disposition": "RELATIONSHIP",
-      "kind": "relationship",
-      "status": "reverse_relation",
-      "allowed_destinations": [],
-      "reason": "Creature/Loot owns reverse surprise-bag membership"
-    },
-    {
-      "source_field": "bags.name",
-      "origins": [
-        "reverse_bag_relation"
-      ],
-      "disposition": "RELATIONSHIP",
-      "kind": "relationship",
-      "status": "reverse_relation",
-      "allowed_destinations": [],
-      "reason": "Creature/Loot owns reverse surprise-bag membership"
-    },
-    {
-      "source_field": "bags.raceId",
-      "origins": [
-        "reverse_bag_relation"
-      ],
-      "disposition": "RELATIONSHIP",
-      "kind": "relationship",
-      "status": "reverse_relation",
-      "allowed_destinations": [],
-      "reason": "Creature/Loot owns reverse surprise-bag membership"
     },
     {
       "source_field": "bank.waypoints",

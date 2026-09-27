@@ -6,7 +6,7 @@
       "slug": "magic-sword",
       "item": {
         "identity": {
-          "key": "oteryn:item.weapon.sword.magic",
+          "key": "oteryn:item.registry.i00003167",
           "revision": "real-source-example-r1"
         },
         "display_name": "Magic Sword",
@@ -280,7 +280,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.weapon.sword.magic",
+        "item_key": "oteryn:item.registry.i00003167",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "3288",
@@ -1417,7 +1417,8 @@
           "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
           "blockers": [
             "sprite_atlas_not_admitted",
-            "runtime_lowering_not_implemented"
+            "runtime_lowering_not_implemented",
+            "canonical_item_identity_not_bound"
           ],
           "non_claims": [
             "not_runtime_imported",
@@ -1885,7 +1886,8 @@
           "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
           "blockers": [
             "sprite_atlas_not_admitted",
-            "runtime_lowering_not_implemented"
+            "runtime_lowering_not_implemented",
+            "canonical_item_identity_not_bound"
           ],
           "non_claims": [
             "not_runtime_imported",
@@ -2364,7 +2366,8 @@
           "blockers": [
             "sprite_atlas_not_admitted",
             "runtime_lowering_not_implemented",
-            "yum_sound_asset_not_admitted"
+            "yum_sound_asset_not_admitted",
+            "canonical_item_identity_not_bound"
           ],
           "non_claims": [
             "not_runtime_imported",
@@ -2877,7 +2880,8 @@
             "sprite_atlas_not_admitted",
             "runtime_lowering_not_implemented",
             "ability_binding_not_admitted",
-            "combat_formula_not_admitted"
+            "combat_formula_not_admitted",
+            "canonical_item_identity_not_bound"
           ],
           "non_claims": [
             "not_runtime_imported",
@@ -3294,7 +3298,8 @@
           "blockers": [
             "sprite_atlas_not_admitted",
             "runtime_lowering_not_implemented",
-            "fluid_interaction_binding_not_admitted"
+            "fluid_interaction_binding_not_admitted",
+            "canonical_item_identity_not_bound"
           ],
           "non_claims": [
             "not_runtime_imported",

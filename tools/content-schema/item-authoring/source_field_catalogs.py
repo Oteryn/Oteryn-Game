@@ -8,6 +8,9 @@ attribute bag.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 CANARY_PROFILE = "canary_47dfd51_item_definition_v1"
 CRYSTAL_PROFILE = "crystal_ff7ede5_item_definition_v1"
 FANDOM_PROFILE = "tibia_fandom_merge_items_objects_1035268_v1"
@@ -188,6 +191,32 @@ ROOT_DEFINITION_FIELDS = (
     "toid",
     "editorsuffix",
 )
+
+# Canonical Item keys bound to TibiaWiki BR page IDs in the Game content tree.
+TIBIAWIKI_ITEM_BINDINGS = {
+    binding["external_id"]: binding["target"]["key"]
+    for binding in json.loads(
+        (
+            Path(__file__).resolve().parents[3]
+            / "imports/tibiawiki/bindings/items.json"
+        ).read_text(encoding="utf-8")
+    )["bindings"]
+    if binding["identity_namespace"] == "mediawiki/page_id"
+    and binding["disposition"] == "EXACT"
+}
+
+# SHA-256 of every engine artifact an Item manifest may cite, at the pinned revisions.
+ENGINE_ARTIFACT_DIGESTS = {
+    CANARY_PROFILE: {
+        "data/items/items.xml": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+        "data/items/appearances.dat": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
+    },
+    CRYSTAL_PROFILE: {
+        "data/items/items.xml": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+        "data/items/appearances.dat": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+        "data/items/bags.xml": "e95d650f40f8300aac912314a1dc9b7e80e4dbfae6cd57d14b4a83d5e02cbc99",
+    },
+}
 
 BAG_RELATION_FIELDS = (
     "bags.itemid",
@@ -1227,8 +1256,11 @@ def build_engine_catalog(profile):
         "xml_item_attribute": tuple(sorted(parser_fields)),
         "nested_script_attribute": tuple(sorted(NESTED_DEFINITION_FIELDS)),
         "appearance": tuple(sorted(appearance_fields)),
-        "reverse_bag_relation": tuple(sorted(BAG_RELATION_FIELDS)),
     }
+    if profile == CRYSTAL_PROFILE:
+        # Canary does not load bags.xml at the pinned revision; Crystal does
+        # (src/items/items.cpp#L324-L339).
+        origins["reverse_bag_relation"] = tuple(sorted(BAG_RELATION_FIELDS))
     fields = sorted(set().union(*map(set, origins.values())))
     rows = []
     for field in fields:
@@ -1271,10 +1303,11 @@ def build_engine_catalog(profile):
             }
         )
     return {
-        "schema": "OTERYN_ITEM_AUTHORING_ENGINE_FIELD_DISPOSITIONS/candidate-2",
+        "schema": "OTERYN_ITEM_AUTHORING_ENGINE_FIELD_DISPOSITIONS/candidate-3",
         "source_profile": profile,
         "repository": repository,
         "revision": revision,
+        "artifact_digests": ENGINE_ARTIFACT_DIGESTS[profile],
         "parser_registry": {
             "entry_count": 144,
             "unique_key_count": 143,

@@ -190,7 +190,9 @@ def fixture():
                 "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
                 "path": "data/items/items.xml",
                 "captured_at": "2026-09-26T20:00:00Z",
-                "digest_sha256": "0" * 64,
+                "digest_sha256": SOURCE_CATALOGS[CANARY_PROFILE]["artifact_digests"][
+                    "data/items/items.xml"
+                ],
                 "field_inventory": [
                     {
                         "source_locator": "item[@id='template']",
@@ -328,6 +330,9 @@ def catalog_field(
             source["path"] = "data/items/bags.xml"
         else:
             source["path"] = "data/items/items.xml"
+        source["digest_sha256"] = SOURCE_CATALOGS[profile]["artifact_digests"][
+            source["path"]
+        ]
     source["field_inventory"] = [
         {"source_locator": "pinned-source", "source_field": source_field}
     ]
@@ -2329,6 +2334,157 @@ def main():
                 and "sprite_atlas" not in presentation,
             }
         )
+
+    case(
+        "reject non-canonical weight decimal",
+        lambda item, dependencies, manifest: item["physical"]["weight"].__setitem__(
+            "value", "21.5"
+        ),
+        expected_error="physical/weight/value",
+    )
+    case(
+        "reject negative-zero display weight",
+        lambda item, dependencies, manifest: item["presentation"].__setitem__(
+            "display_weight", {"value": "-0.00", "unit": "oz"}
+        ),
+        expected_error="display_weight/value",
+    )
+    case(
+        "reject item reserving its own equipment slot",
+        lambda item, dependencies, manifest: item["equipment"].__setitem__(
+            "reserved_slots", ["right_hand"]
+        ),
+        expected_error="must not reserve its own slot",
+    )
+    case(
+        "reject one-handed item reserving the other hand",
+        lambda item, dependencies, manifest: item["equipment"].__setitem__(
+            "reserved_slots", ["left_hand"]
+        ),
+        expected_error="only a two-handed item may reserve the other hand",
+    )
+    case(
+        "reject signed percentage below -100",
+        lambda item, dependencies, manifest: item.setdefault(
+            "protection", {}
+        ).__setitem__(
+            "resistances",
+            [
+                {
+                    "damage_type": "fire",
+                    "scope": "direct",
+                    "reduction_percent": {"numerator": -1000, "denominator": 1},
+                }
+            ],
+        ),
+        expected_error="percentage must be within -100..100",
+    )
+    case(
+        "reject non-RFC3339 capture timestamp",
+        lambda item, dependencies, manifest: manifest["sources"][0].__setitem__(
+            "captured_at", "20260926T200000Z"
+        ),
+        expected_error="captured_at",
+    )
+    case(
+        "reject non-RFC3339 revision timestamp",
+        lambda item, dependencies, manifest: manifest["sources"][0].__setitem__(
+            "revision_timestamp", "not-a-date"
+        ),
+        expected_error="revision_timestamp",
+    )
+    case(
+        "reject engine source digest outside the pinned artifact",
+        lambda item, dependencies, manifest: manifest["sources"][0].__setitem__(
+            "digest_sha256", "1" * 64
+        ),
+        expected_error="engine source digest differs from the pinned artifact",
+    )
+    case(
+        "reject Canary bags.xml (not loaded at the pinned revision)",
+        lambda item, dependencies, manifest: manifest["sources"][0].__setitem__(
+            "path", "data/items/bags.xml"
+        ),
+        expected_error="engine source path is not an admitted Item artifact",
+    )
+
+    def real_probe(name, mutate, expected_error):
+        example = deepcopy(real_examples["examples"][0])
+        mutate(example)
+        try:
+            errors, _ = validate_real_example(example)
+        except Exception as error:  # noqa: BLE001 - a crash is a failed check
+            errors = ["CRASH " + type(error).__name__]
+        results.append(
+            {
+                "name": name,
+                "passed": any(expected_error in error for error in errors),
+            }
+        )
+
+    real_probe(
+        "real-source evidence covers unevidenced presentation leaves",
+        lambda example: example["item"]["presentation"].__setitem__(
+            "flavor_text", "It deals 9999 fire damage."
+        ),
+        "exactly partition every authored Item leaf",
+    )
+    real_probe(
+        "real-source evidence covers empty capability containers",
+        lambda example: example["item"].__setitem__("protection", {}),
+        "exactly partition every authored Item leaf",
+    )
+    real_probe(
+        "real-source evidence rejects boolean/number confusion",
+        lambda example: next(
+            entry
+            for entry in example["evidence"]["field_evidence"]
+            if entry["destination"] == "/item/physical/movable"
+        ).__setitem__("normalized_value", 1),
+        "normalized value differs from Item destination",
+    )
+    real_probe(
+        "real-source example without appearance binding fails without crashing",
+        lambda example: example["item"].pop("presentation"),
+        "requires an appearance binding",
+    )
+    real_probe(
+        "real-source example keeps the canonical Item key of its TibiaWiki page",
+        lambda example: (
+            example["item"]["identity"].__setitem__(
+                "key", "oteryn:item.weapon.sword.magic"
+            ),
+            example["evidence"].__setitem__(
+                "item_key", "oteryn:item.weapon.sword.magic"
+            ),
+        ),
+        "differs from the canonical Item bound to its TibiaWiki page",
+    )
+    real_probe(
+        "real-source Crystal appearance observation is routed, not a crash",
+        lambda example: example["evidence"]["field_evidence"][0]["observations"].append(
+            {
+                "source": "crystal_appearance",
+                "field": "proficiency.proficiency_id",
+                "catalog_field": "proficiency.proficiency_id",
+                "raw_value": 238,
+            }
+        ),
+        "evidence/",
+    )
+    unbound = [
+        example["item"]["display_name"]
+        for example in real_examples["examples"]
+        if "canonical_item_identity_not_bound"
+        in example["evidence"]["readiness"]["blockers"]
+    ]
+    results.append(
+        {
+            "name": "real-source examples without a canonical Item binding stay blocked",
+            "passed": unbound
+            == ["Demon Armor", "Backpack", "Red Apple", "Sudden Death Rune", "Vial"],
+        }
+    )
 
     evidence_probe = deepcopy(real_examples["examples"][0])
     evidence_probe["item"]["physical"]["weight"]["value"] = "999.00"

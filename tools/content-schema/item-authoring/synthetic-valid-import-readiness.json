@@ -7,7 +7,7 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data/items/items.xml",
       "captured_at": "2026-09-26T20:00:00Z",
-      "digest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "digest_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
       "field_inventory": [
         {
           "source_locator": "item[@id='template']",

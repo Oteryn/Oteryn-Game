@@ -1,4 +1,4 @@
-# Item authoring schema candidate v3
+# Item authoring schema candidate v4
 
 This package turns the Item Master Schema v1 census into an executable authoring
 contract. It validates one portable Item definition, not a placed map object and not a
@@ -36,7 +36,7 @@ instance state cannot silently enter an Item definition.
 
 ```text
 pip install -r requirements.txt
-python build_formal_schema.py
+python build_formal_schema.py && git diff --exit-code -- .
 python verify_formal_schema.py
 python validate_item.py synthetic-valid-item.json synthetic-valid-dependencies.json --manifest synthetic-valid-import-readiness.json
 ```
@@ -67,7 +67,7 @@ ordered sprite sequence of all six fixtures and reject inline pixel/blob payload
 market vocation restrictions require `marketable=true`; an engine Market flag does
 not prove general player-to-player tradeability. Numeric source proficiency IDs remain
 provenance until a pinned `proficiency_crosswalks` entry binds them to an admitted
-exact `ProficiencyRef`. Candidate v3 admits Magic Sword source pair `238`/`3` only when
+exact `ProficiencyRef`. The candidate admits Magic Sword source pair `238`/`3` only when
 both the pinned Canary `data/items/proficiencies.json` and Crystal
 `data/json/proficiencies.json` identities corroborate the same target. Those two files
 are byte-identical at the pinned revisions (SHA-256
@@ -116,4 +116,16 @@ The validator also proves the Item key, appearance ID, Presentation ref,
 ordered sprite IDs, engine definition pins, Wiki page pins and unresolved blocker set.
 Changing the Item value, the recorded source observation or their typed normalization
 makes the bundle invalid. Engine manifest fields are additionally restricted to their actual origin:
-`items.xml`, `appearances.dat` or `bags.xml`.
+`items.xml`, `appearances.dat` or (Crystal only) `bags.xml`, and each cited engine
+artifact must carry its pinned SHA-256.
+
+An example keeps the canonical Item key bound to its TibiaWiki BR page in
+`imports/tibiawiki/bindings/items.json` (Magic Sword: `oteryn:item.registry.i00003167`).
+Examples whose page has no binding yet keep a provisional key and the
+`canonical_item_identity_not_bound` blocker.
+
+Weights are exact decimals with two fractional digits (`42.00 oz` = engine weight
+`4200`). The auxiliary schemas reference `item.schema.json` definitions by `$id`, like
+the Monster package. The Monster package's Item projection still uses
+`weight_centioz`, `collision` and a bare `asset_binding`; see the architecture document
+for how it maps to this schema.

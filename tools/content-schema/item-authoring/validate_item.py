@@ -17,8 +17,13 @@ from proficiency_profiles import (
     MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES,
 )
 from referencing import Registry, Resource
+from source_field_catalogs import TIBIAWIKI_ITEM_BINDINGS
 
 ROOT = Path(__file__).resolve().parent
+if "date-time" not in FormatChecker().checkers:
+    raise SystemExit(
+        "date-time format checking needs rfc3339-validator; pip install -r requirements.txt"
+    )
 SCHEMA_NAMES = (
     "item.schema.json",
     "item-dependencies.schema.json",
@@ -59,7 +64,7 @@ SOURCE_CATALOGS = {
     )
 }
 SOURCE_CATALOGS[WIKI_CATALOG["source_profile"]] = WIKI_CATALOG
-PERCENT_AT_MOST_100 = {
+PERCENT_WITHIN_100 = {
     "hit_chance_percent",
     "hit_chance_modifier_percent",
     "max_hit_chance_percent",
@@ -111,7 +116,7 @@ DEFINITION_SOURCE_PINS = {
     },
 }
 REAL_ITEM_SOURCE_OBSERVATION_DIGESTS = {
-    "oteryn:item.weapon.sword.magic": "4424a710831a58d59637a76a85c2117cc0401c8b0312f4f10344eaa2da2dd5da",
+    "oteryn:item.registry.i00003167": "4424a710831a58d59637a76a85c2117cc0401c8b0312f4f10344eaa2da2dd5da",
     "oteryn:item.equipment.armor.demon": "6b62dc0882b526d9b53313c0c50797bf65f60907c6c3ed57ec8e38a9d788fdf2",
     "oteryn:item.container.backpack": "dc7be4977a7a67686c6ed806e2989c38b86326304232d7023e95b70703bd22a3",
     "oteryn:item.food.red-apple": "ea390265b539184ec45ad15921b0fdd9e35cfa68b9d4aca1cf377a6f294c8a08",
@@ -168,12 +173,8 @@ EVIDENCE_ENUM_VALUE_NORMALIZATIONS = {
 }
 NON_SOURCE_DEFAULT_DESTINATIONS = {
     "AUTHOR_SELECTED_FROM_TYPED_ITEM_CAPABILITIES": ("/item/family_profile",),
-    "AUTHOR_SELECTED_DELIVERY_TASK_ELIGIBLE": (
-        "/item/delivery_task_eligible",
-    ),
-    "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE": (
-        "/item/delivery_task_eligible",
-    ),
+    "AUTHOR_SELECTED_DELIVERY_TASK_ELIGIBLE": ("/item/delivery_task_eligible",),
+    "AUTHOR_SELECTED_DELIVERY_TASK_INELIGIBLE": ("/item/delivery_task_eligible",),
     "SOURCE_WEIGHT_UNIT_NORMALIZATION": ("/item/physical/weight/unit",),
     "PROFILE_ENFORCEMENT_NORMALIZATION": ("/item/requirements/enforcement_mode",),
     "AUTHORING_PATTERN_ID": ("/item/equipment/patterns/*/pattern_id",),
@@ -197,8 +198,21 @@ NON_SOURCE_DEFAULT_DESTINATIONS = {
 }
 
 
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON object key " + repr(key))
+        result[key] = value
+    return result
+
+
 def read(path):
-    return json.loads(Path(path).read_text(encoding="utf-8"), parse_float=Decimal)
+    return json.loads(
+        Path(path).read_text(encoding="utf-8"),
+        parse_float=Decimal,
+        object_pairs_hook=unique_object,
+    )
 
 
 def exact_numbers(value):
@@ -252,6 +266,13 @@ def fraction(value):
     return Fraction(value["numerator"], value["denominator"])
 
 
+def same_value(left, right):
+    """JSON equality: booleans never equal numbers (Python treats True == 1)."""
+    if isinstance(left, bool) or isinstance(right, bool):
+        return type(left) is type(right) and left == right
+    return left == right
+
+
 def unique(values, fields, label, errors):
     keys = [tuple(value[field] for field in fields) for value in values]
     if len(keys) != len(set(keys)):
@@ -279,9 +300,14 @@ def uses_wiki_base_rule(source_profile, source_field):
     )
 
 
+def structural_errors(item, dependencies):
+    return structural("item.schema.json", item) + structural(
+        "item-dependencies.schema.json", dependencies
+    )
+
+
 def validate(item, dependencies, manifest=None):
-    errors = structural("item.schema.json", item)
-    errors += structural("item-dependencies.schema.json", dependencies)
+    errors = structural_errors(item, dependencies)
     if manifest is not None:
         errors += structural("item-import-readiness.schema.json", manifest)
     if errors:
@@ -382,8 +408,8 @@ def validate(item, dependencies, manifest=None):
                     location + ": ratio must be in lowest terms (zero is 0/1)"
                 )
             parent = str(path[-1]) if path else ""
-            if parent in PERCENT_AT_MOST_100 and fraction(value) > 100:
-                errors.append(location + ": percentage must not exceed 100")
+            if parent in PERCENT_WITHIN_100 and abs(fraction(value)) > 100:
+                errors.append(location + ": percentage must be within -100..100")
         if (
             path
             and path[-1] in ASSET_FIELDS
@@ -478,13 +504,20 @@ def validate(item, dependencies, manifest=None):
         hand_slots = {"right_hand", "left_hand"}
         if pattern["hands"] > 0 and pattern["slot"] not in hand_slots:
             errors.append("item/equipment: hands > 0 requires a hand slot")
-        if pattern["hands"] == 2:
+        reserved = pattern.get("reserved_slots", [])
+        if pattern["slot"] in reserved:
+            errors.append("item/equipment: an item must not reserve its own slot")
+        if pattern["slot"] in hand_slots:
             other_hand = (
                 "left_hand" if pattern["slot"] == "right_hand" else "right_hand"
             )
-            if other_hand not in pattern.get("reserved_slots", []):
+            if pattern["hands"] == 2 and other_hand not in reserved:
                 errors.append(
                     "item/equipment: two-handed item must reserve the other hand"
+                )
+            if pattern["hands"] < 2 and other_hand in reserved:
+                errors.append(
+                    "item/equipment: only a two-handed item may reserve the other hand"
                 )
     pattern_ids = [
         pattern.get("pattern_id")
@@ -581,9 +614,7 @@ def validate(item, dependencies, manifest=None):
     )
     for level in proficiency.get("levels", []):
         unique(level["perks"], ("key",), "item/proficiency/levels/perks", errors)
-        selection_slots = [
-            augment.get("selection_slot") for augment in level["perks"]
-        ]
+        selection_slots = [augment.get("selection_slot") for augment in level["perks"]]
         if any(slot is None for slot in selection_slots):
             errors.append(
                 "item/proficiency/levels/perks: every selectable perk requires selection_slot"
@@ -789,7 +820,9 @@ def validate(item, dependencies, manifest=None):
 
 
 def leaf_pointers(value, path=()):
-    if isinstance(value, dict):
+    if isinstance(value, (dict, list)) and not value:
+        yield pointer(path)
+    elif isinstance(value, dict):
         for key, child in value.items():
             yield from leaf_pointers(child, path + (key,))
     elif isinstance(value, list):
@@ -942,6 +975,7 @@ def validate_evidence_observation_route(
         "engine_items_xml": (CANARY_PROFILE, CRYSTAL_PROFILE),
         "engine_appearance": (CANARY_PROFILE, CRYSTAL_PROFILE),
         "canary_appearance": (CANARY_PROFILE,),
+        "crystal_appearance": (CRYSTAL_PROFILE,),
     }[source_id]
     catalog_normalizations = []
     for profile in profiles:
@@ -1040,9 +1074,8 @@ def validate_non_source_default(entry, resolved, item, errors):
         "AUTHOR_SELECTED_FROM_FLUID_CAPABILITY": "fluid_container",
         "AUTHOR_SELECTED_CANONICAL_KIND": "vial",
     }
-    if (
-        entry["state"] in expected_values
-        and resolved != expected_values[entry["state"]]
+    if entry["state"] in expected_values and not same_value(
+        resolved, expected_values[entry["state"]]
     ):
         errors.append(
             "evidence/non_source_defaults: value differs from the admitted normalization"
@@ -1099,10 +1132,10 @@ def validate_real_example(example):
     item = example["item"]
     dependencies = example["dependencies"]
     evidence = example["evidence"]
-    errors, warnings = validate(item, dependencies)
     evidence_errors = structural("real-source-evidence.schema.json", evidence)
+    errors, warnings = validate(item, dependencies)
     errors.extend(evidence_errors)
-    if evidence_errors:
+    if evidence_errors or structural_errors(item, dependencies):
         return errors, warnings
 
     document = {"item": item}
@@ -1131,6 +1164,9 @@ def validate_real_example(example):
         )
 
     presentations = dependencies["presentations"]
+    if "appearance_binding" not in item.get("presentation", {}):
+        errors.append("evidence: real Item example requires an appearance binding")
+        return errors, warnings
     if len(presentations) != 1:
         errors.append(
             "evidence: real Item example requires exactly one Presentation payload"
@@ -1294,7 +1330,7 @@ def validate_real_example(example):
                 "evidence/field_evidence: missing destination " + entry["destination"]
             )
             continue
-        if resolved != entry["normalized_value"]:
+        if not same_value(resolved, entry["normalized_value"]):
             errors.append(
                 "evidence/field_evidence: normalized value differs from Item destination"
             )
@@ -1355,13 +1391,14 @@ def validate_real_example(example):
     expected_leaves = {
         leaf
         for key, value in item.items()
-        if key not in ("identity", "presentation")
+        if key != "identity"
         and not (
             key == "proficiency"
             and isinstance(value, dict)
             and "profile_binding" in value
         )
         for leaf in leaf_pointers(value, ("item", key))
+        if not leaf.startswith("/item/presentation/appearance_binding/")
     }
     actual_leaves = set(destinations) | set(default_destinations)
     if actual_leaves != expected_leaves:
@@ -1389,6 +1426,17 @@ def validate_real_example(example):
         )
     if item["family_profile"] == "fluid":
         expected_blockers.add("fluid_interaction_binding_not_admitted")
+    br_page = next(
+        (source for source in evidence["wiki_sources"] if source["source_id"] == "br"),
+        None,
+    )
+    canonical_key = br_page and TIBIAWIKI_ITEM_BINDINGS.get(str(br_page["page_id"]))
+    if canonical_key is None:
+        expected_blockers.add("canonical_item_identity_not_bound")
+    elif item["identity"]["key"] != canonical_key:
+        errors.append(
+            "item/identity/key: differs from the canonical Item bound to its TibiaWiki page"
+        )
     if set(evidence["readiness"]["blockers"]) != expected_blockers:
         errors.append(
             "evidence/readiness/blockers: differs from unresolved source state"
@@ -1675,9 +1723,14 @@ def validate_source_identity(source, errors):
             errors.append(
                 "manifest: source revision differs from pinned source_profile"
             )
-        if source.get("path") not in set(ENGINE_ORIGIN_PATHS.values()):
+        artifact_digest = catalog["artifact_digests"].get(source.get("path"))
+        if artifact_digest is None:
             errors.append(
                 "manifest: engine source path is not an admitted Item artifact"
+            )
+        elif source.get("digest_sha256") != artifact_digest:
+            errors.append(
+                "manifest: engine source digest differs from the pinned artifact"
             )
     if catalog.get("authority") == "HISTORICAL_CORROBORATION_ONLY":
         if source.get("kind") not in ("wiki", "web"):

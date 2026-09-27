@@ -198,7 +198,8 @@ Accepted review repairs:
   missing persisted capture time, unrestricted proficiency pairs, unenforced engine
   source paths, incomplete Presentation/overlay regressions, unrelated route proofs
   and missing raw-to-typed/source-extraction equality; all were repaired in the v3
-  candidate above
+  candidate above. Review of 517daa6b found an incomplete leaf partition, crash paths,
+  unenforced date-time/digests, Canary bags.xml and an unbound Item key; fixed in v4
 - verdict: implementation repaired; fresh exact-head final review remains pending
 
 ## PR and closeout
@@ -213,10 +214,10 @@ Accepted review repairs:
 ## Context checkpoint
 
 ```yaml
-last_progress: owner added the Delivery Task eligibility requirement and returned 7e450684 to AUTHORING; local successor requires the boolean on every Item and passes 217 focused checks; publication and fresh frozen-head qualification pending
+last_progress: v4 review repairs (identity binding, validator fail-open, $ref aux schemas) on claude/compassionate-albattani-s29syw above 517daa6b
 status: implementing
 branch: codex/item-authoring-schema-v1-20260926
-head_sha: 7e450684bfc8633ec093506c9e040f1b129ad57c
+head_sha: 517daa6b017647f52f2632c43c12461e1d0be95d
 pr: 952
 final_head_sha: null
 final_head_frozen_at: null
@@ -235,5 +236,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: complete whole-diff review, publish the guarded successor, verify the exact remote delta, and freeze the returned head
+next_action: owner selects the v4 repair branch for #952, then freeze and exact-head review
 ```

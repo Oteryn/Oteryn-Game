@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 13,
-  "checks": 217,
-  "passed": 217,
+  "checks": 233,
+  "passed": 233,
   "failed": 0,
   "results": [
     {
@@ -101,7 +101,7 @@
       "name": "reject Canary appearance field attributed to items.xml",
       "passed": true,
       "expected_valid": false,
-      "error_count": 1,
+      "error_count": 2,
       "warning_count": 1
     },
     {
@@ -547,7 +547,7 @@
       "name": "reject two hands reserving the same hand",
       "passed": true,
       "expected_valid": false,
-      "error_count": 1,
+      "error_count": 2,
       "warning_count": 1
     },
     {
@@ -926,7 +926,7 @@
       "passed": true,
       "expected_valid": false,
       "error_count": 1,
-      "warning_count": 1
+      "warning_count": 0
     },
     {
       "name": "Wiki modificadores requires typed modifier content",
@@ -1214,6 +1214,97 @@
     },
     {
       "name": "exact pinned Crystal Presentation fixture: vial",
+      "passed": true
+    },
+    {
+      "name": "reject non-canonical weight decimal",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject negative-zero display weight",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject item reserving its own equipment slot",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject one-handed item reserving the other hand",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject signed percentage below -100",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject non-RFC3339 capture timestamp",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject non-RFC3339 revision timestamp",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject engine source digest outside the pinned artifact",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 1
+    },
+    {
+      "name": "reject Canary bags.xml (not loaded at the pinned revision)",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 3,
+      "warning_count": 1
+    },
+    {
+      "name": "real-source evidence covers unevidenced presentation leaves",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence covers empty capability containers",
+      "passed": true
+    },
+    {
+      "name": "real-source evidence rejects boolean/number confusion",
+      "passed": true
+    },
+    {
+      "name": "real-source example without appearance binding fails without crashing",
+      "passed": true
+    },
+    {
+      "name": "real-source example keeps the canonical Item key of its TibiaWiki page",
+      "passed": true
+    },
+    {
+      "name": "real-source Crystal appearance observation is routed, not a crash",
+      "passed": true
+    },
+    {
+      "name": "real-source examples without a canonical Item binding stay blocked",
       "passed": true
     },
     {

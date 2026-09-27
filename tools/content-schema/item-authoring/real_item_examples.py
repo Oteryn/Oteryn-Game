@@ -14,22 +14,22 @@ from proficiency_profiles import (
 from source_field_catalogs import (
     CANARY_PROFILE,
     CRYSTAL_PROFILE,
+    ENGINE_ARTIFACT_DIGESTS,
+    TIBIAWIKI_ITEM_BINDINGS,
     build_br_real_item_supplement,
     build_fandom_real_item_supplement,
 )
 
 CANARY_REVISION = "47dfd51f45280a59a1d3e50ba7edd573d7234446"
 CRYSTAL_REVISION = "ff7ede593c69d4c658b382c97443e8155926924a"
-CANARY_APPEARANCE_DIGEST = (
-    "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
-)
-CRYSTAL_APPEARANCE_DIGEST = (
-    "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
-)
-CANARY_ITEMS_DIGEST = "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
-CRYSTAL_ITEMS_DIGEST = (
-    "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
-)
+CANARY_APPEARANCE_DIGEST = ENGINE_ARTIFACT_DIGESTS[CANARY_PROFILE][
+    "data/items/appearances.dat"
+]
+CRYSTAL_APPEARANCE_DIGEST = ENGINE_ARTIFACT_DIGESTS[CRYSTAL_PROFILE][
+    "data/items/appearances.dat"
+]
+CANARY_ITEMS_DIGEST = ENGINE_ARTIFACT_DIGESTS[CANARY_PROFILE]["data/items/items.xml"]
+CRYSTAL_ITEMS_DIGEST = ENGINE_ARTIFACT_DIGESTS[CRYSTAL_PROFILE]["data/items/items.xml"]
 
 APPEARANCES = {
     2854: (1, 1, [195739]),
@@ -452,6 +452,8 @@ def source_evidence(title, item, appearance_id, source_values, blockers, default
     br_catalog = build_br_real_item_supplement()
     fandom_catalog = build_fandom_real_item_supplement()
     sprite_ids = APPEARANCES[appearance_id][2]
+    if str(_page(br_catalog, title)["page_id"]) not in TIBIAWIKI_ITEM_BINDINGS:
+        blockers = [*blockers, "canonical_item_identity_not_bound"]
     return {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
         "item_key": item["identity"]["key"],
@@ -533,7 +535,7 @@ def build_real_item_examples():
     examples = []
 
     item = item_base(
-        "oteryn:item.weapon.sword.magic",
+        "oteryn:item.registry.i00003167",
         "Magic Sword",
         "weapon_melee",
         "weapon",

@@ -6,7 +6,8 @@
 - Task: `OTV2-20260926-item-authoring-formal-schema-v1`
 - Parent control plane: #162
 - Programme: KAN-16 / #504
-- Current authoring candidate: v3 (v2 frozen SHA superseded by real-item evidence closure)
+- Current authoring candidate: v4 (Delivery Task eligibility, canonical identity binding and
+  validator hardening; v3 frozen SHA superseded)
 - Package: `tools/content-schema/item-authoring/`
 
 ## 1. Decision
@@ -35,7 +36,7 @@ One `item.json` contains only stable, portable definition facts:
 ```json
 {
   "identity": {
-    "key": "oteryn:item.weapon.sword.magic",
+    "key": "oteryn:item.registry.i00003167",
     "revision": "definition-r1"
   },
   "display_name": "Magic Sword",
@@ -90,6 +91,15 @@ SHA-256. Canary and Crystal provide appearance metadata and sprite numbers but n
 matching raster client atlas, so the six real-source examples deliberately omit this
 binding and remain runtime/rendering blocked. A sprite number without that versioned
 atlas is not a graphic.
+
+`physical.weight.value` is an exact decimal string with exactly two fractional digits,
+so `42.00 oz` corresponds one-to-one to the engine `items.xml` weight `4200`
+(centi-ounces) and every value has a single spelling. The Item Master Schema chose this
+shape; the runtime unit remains the separate `TYPED_WEIGHT_UNIT` blocker.
+
+`item-dependencies`, `item-import-readiness` and `real-source-evidence` reference the
+shared definitions in `item.schema.json` by `$id` instead of copying them, as the
+Monster authoring package does.
 
 ## 3. Source-derived field delta
 
@@ -155,7 +165,10 @@ only sampled:
 
 The generated engine ledgers classify exactly 143 unique registered XML keys per
 engine (`movable` is duplicated in both source registries), plus item-root fields,
-14 nested definition fields, appearance-loaded inputs and reverse `bags.xml` relations.
+14 nested definition fields and appearance-loaded inputs. Only Crystal loads reverse
+`bags.xml` relations (`src/items/items.cpp#L324-L339`); Canary has no `bags.xml` at the
+pinned revision, so its ledger does not list those fields. Each ledger pins the SHA-256
+of every engine artifact a manifest may cite.
 Canary-only `proficiency` and Crystal-only `meleeattackeffect` remain explicit. Six
 Canary and four Crystal registered keys are pinned source defects and have no formal
 Item destination; they are never silently promoted into executable truth.
@@ -266,7 +279,11 @@ at the pinned historical revision.
 The six generated examples use only real source identities (2854, 2874, 3155, 3288,
 3388 and 3585), exact pinned Wiki revisions and the identical ordered sprite sequences
 verified in Canary and Crystal. Source IDs stay in evidence/crosswalk data, never as
-the canonical Item identity. Magic Sword now carries its admitted exact Proficiency
+the canonical Item identity. An example keeps the canonical Item key that
+`imports/tibiawiki/bindings/items.json` binds to its pinned TibiaWiki BR page: Magic
+Sword (page `5810`) is `oteryn:item.registry.i00003167`. The other five pages have no
+binding yet, so their example keys are provisional and they carry the
+`canonical_item_identity_not_bound` blocker until the Item identity binding covers them. Magic Sword now carries its admitted exact Proficiency
 and Ability references; other unadmitted Ability, sound, interaction and raster-atlas
 dependencies remain explicit blockers instead of guessed fields.
 All six examples set `delivery_task_eligible=false` as an explicit Oteryn authoring
@@ -315,6 +332,25 @@ This formal boundary narrows the earlier master census candidate for `bed.sleepa
 and fluid sources: those facts describe a placed bed, cask or terrain source and route
 to WorldObject/Terrain/Interaction. Portable fluid contents and containers remain Item
 capabilities.
+
+### Relation to the Monster authoring Item projection
+
+`monster-authoring` carries a verification projection of Items (`$defs/item`) for
+corpse and loot checks. `OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md` states it is "not Item
+authority" and that `ItemRef` must resolve to the canonical Item catalogue before
+admission. Where the two differ, this schema follows
+the executable Game model and the projection must follow it:
+
+| Fact | Item authoring (this schema) | Monster projection today | Game model |
+|---|---|---|---|
+| weight | `{value:"42.00",unit:"oz"}` | `weight_centioz: 4200` | unit blocked (`TYPED_WEIGHT_UNIT`) |
+| collision | not an Item fact | required `collision.*` | `CellDefinition.collision`, placement `CollisionFootprint` |
+| fluid source | Terrain/WorldObject | `fluid.fluid_source` | Terrain/WorldObject |
+| appearance | `PresentationRef {family,key,revision}` | bare `asset_binding` key | `ProjectV2DefinitionRef` to Presentation |
+| percentages | lowest-terms ratio | (loot chances stay 0..100 numbers → ppm) | `ReferenceRationalPercent`; loot `probability_ppm` |
+
+The weight values convert exactly (`weight_centioz = value × 100` for `oz`). Aligning
+the projection is a separate Monster-package change.
 
 ## 5. Profiles and templates
 
@@ -366,13 +402,21 @@ The schema validator checks:
   page revisions without modifying the base catalogs;
 - exact allowed formal JSON Pointer patterns for every mappable source field;
 - pinned source identity/revision and explicit registered-but-ineffective keys;
-- exact engine field origin (`items.xml`, `appearances.dat` or `bags.xml`);
+- exact engine field origin (`items.xml`, `appearances.dat` or Crystal `bags.xml`) and
+  the pinned SHA-256 of each cited engine artifact;
+- RFC 3339 `date-time` values (`rfc3339-validator` is a required dependency; the
+  validator refuses to run without it) and duplicate JSON object keys;
+- canonical two-decimal weights, signed percentages within -100..100 and equipment
+  slot reservations (never the own slot; the other hand only when two-handed);
 - value-dependent owner routing and normalized destination values for type, event,
   weapon action/kind, signed weight and inverse movement flags;
 - timezone-qualified capture timestamps, per-capture SHA-256 and the pinned Fandom
   revision SHA-1 as separate provenance facts;
-- exact leaf-level real-example Item/evidence/default partition, effective source-field
-  routing, engine and Wiki pins, Presentation geometry/sprites and blocker sets;
+- exact leaf-level real-example Item/evidence/default partition (every authored leaf,
+  including presentation leaves other than the appearance binding and empty
+  containers), type-exact normalized values, effective source-field routing, engine and
+  Wiki pins, canonical Item key of the bound TibiaWiki page, Presentation
+  geometry/sprites and blocker sets;
 - fail-closed `unresolved_semantics`, `unsupported_source_field` and `conflict` states.
 
 This candidate does not:

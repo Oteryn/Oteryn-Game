@@ -1,8 +1,13 @@
 {
-  "schema": "OTERYN_ITEM_AUTHORING_ENGINE_FIELD_DISPOSITIONS/candidate-2",
+  "schema": "OTERYN_ITEM_AUTHORING_ENGINE_FIELD_DISPOSITIONS/candidate-3",
   "source_profile": "crystal_ff7ede5_item_definition_v1",
   "repository": "zimbadev/crystalserver",
   "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+  "artifact_digests": {
+    "data/items/items.xml": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+    "data/items/appearances.dat": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+    "data/items/bags.xml": "e95d650f40f8300aac912314a1dc9b7e80e4dbfae6cd57d14b4a83d5e02cbc99"
+  },
   "parser_registry": {
     "entry_count": 144,
     "unique_key_count": 143,

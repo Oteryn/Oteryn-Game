@@ -1,4 +1,4 @@
-"""Build the Item authoring schema candidate v3. This is not runtime serialization."""
+"""Build the Item authoring schema candidate v4. This is not runtime serialization."""
 
 import copy
 import json
@@ -30,10 +30,10 @@ WIKI_CENSUS = (
     / "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 )
 DIALECT = "https://json-schema.org/draft/2020-12/schema"
-ITEM_ID = "urn:oteryn:item-authoring:candidate:3"
-DEPS_ID = "urn:oteryn:item-dependencies:candidate:3"
-MANIFEST_ID = "urn:oteryn:item-import-readiness:candidate:3"
-EVIDENCE_ID = "urn:oteryn:item-real-source-evidence:candidate:3"
+ITEM_ID = "urn:oteryn:item-authoring:candidate:4"
+DEPS_ID = "urn:oteryn:item-dependencies:candidate:4"
+MANIFEST_ID = "urn:oteryn:item-import-readiness:candidate:4"
+EVIDENCE_ID = "urn:oteryn:item-real-source-evidence:candidate:4"
 
 
 def obj(properties, required=(), **extra):
@@ -380,15 +380,20 @@ def build_item_schema():
     d["assetBinding"] = use("key")
     d["weight"] = obj(
         {
-            "value": text(pattern=r"^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$", maxLength=64),
+            "value": text(pattern=r"^(?:0|[1-9][0-9]*)\.[0-9]{2}$", maxLength=64),
             "unit": enum("oz", "g"),
         },
         ("value", "unit"),
-        description="Exact nonnegative decimal string plus explicit unit.",
+        description=(
+            "Exact nonnegative decimal string with exactly two fractional digits"
+            " plus explicit unit; 42.00 oz is engine weight 4200 (centi-ounces)."
+        ),
     )
     d["displayWeight"] = obj(
         {
-            "value": text(pattern=r"^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$", maxLength=64),
+            "value": text(
+                pattern=r"^(?!-0\.00$)-?(?:0|[1-9][0-9]*)\.[0-9]{2}$", maxLength=64
+            ),
             "unit": enum("oz", "g"),
         },
         ("value", "unit"),
@@ -1097,7 +1102,7 @@ def build_item_schema():
     return {
         "$schema": DIALECT,
         "$id": ITEM_ID,
-        "title": "Oteryn Item authoring candidate v3",
+        "title": "Oteryn Item authoring candidate v4",
         "description": "Portable Item definition only. Terrain, placed WorldObject and mutable ItemInstance state are outside this schema.",
         **obj(
             properties,
@@ -1224,7 +1229,7 @@ def build_dependencies_schema(item_schema):
     return {
         "$schema": DIALECT,
         "$id": DEPS_ID,
-        "title": "Oteryn Item authoring exact dependency catalog candidate v3",
+        "title": "Oteryn Item authoring exact dependency catalog candidate v4",
         **obj(
             {
                 "definitions": array(any_reference, unique=True),
@@ -1383,7 +1388,7 @@ def build_real_source_evidence_schema(item_schema):
     return {
         "$schema": DIALECT,
         "$id": EVIDENCE_ID,
-        "title": "Oteryn real Item source evidence candidate v3",
+        "title": "Oteryn real Item source evidence candidate v4",
         **obj(
             {
                 "schema": {"const": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3"},
@@ -1496,7 +1501,7 @@ def build_manifest_schema(item_schema):
     return {
         "$schema": DIALECT,
         "$id": MANIFEST_ID,
-        "title": "Oteryn Item import readiness candidate v3",
+        "title": "Oteryn Item import readiness candidate v4",
         **obj(
             {"sources": array(use("source"), 1), "entries": array(use("entry"), 1)},
             ("sources", "entries"),
@@ -1744,6 +1749,30 @@ def build_templates():
     return result
 
 
+def reference_item_defs(schema, item_schema):
+    """Drop copied Item $defs and reference them in item.schema.json instead."""
+    local = {
+        name: value
+        for name, value in schema["$defs"].items()
+        if item_schema["$defs"].get(name) != value
+    }
+    prefix = "#/$defs/"
+
+    def rewrite(node):
+        if isinstance(node, list):
+            return [rewrite(value) for value in node]
+        if not isinstance(node, dict):
+            return node
+        ref = node.get("$ref")
+        if ref and ref.startswith(prefix) and ref[len(prefix) :] not in local:
+            return {**node, "$ref": ITEM_ID + ref}
+        return {key: rewrite(value) for key, value in node.items()}
+
+    result = rewrite({key: value for key, value in schema.items() if key != "$defs"})
+    result["$defs"] = rewrite(local)
+    return result
+
+
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -1755,9 +1784,9 @@ def write_json(path, value):
 
 def main():
     item = build_item_schema()
-    dependencies = build_dependencies_schema(item)
-    evidence = build_real_source_evidence_schema(item)
-    manifest = build_manifest_schema(item)
+    dependencies = reference_item_defs(build_dependencies_schema(item), item)
+    evidence = reference_item_defs(build_real_source_evidence_schema(item), item)
+    manifest = reference_item_defs(build_manifest_schema(item), item)
     write_json(ROOT / "item.schema.json", item)
     write_json(ROOT / "item-dependencies.schema.json", dependencies)
     write_json(ROOT / "real-source-evidence.schema.json", evidence)
