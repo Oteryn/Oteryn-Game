@@ -1,5 +1,9 @@
 {
-  "schema": "OTERYN_ITEM_AUTHORING_WIKI_FIELD_DISPOSITIONS/candidate-1",
+  "schema": "OTERYN_ITEM_AUTHORING_WIKI_FIELD_DISPOSITIONS/candidate-2",
+  "source_profile": "tibiawiki_br_infobox_item_424807_v1",
+  "authority": "CURRENT_FIELD_CENSUS_REFERENCE_ONLY",
+  "source_url": "https://www.tibiawiki.com.br/index.php?stableid=424807&title=Predefini%C3%A7%C3%A3o%3AInfobox_Item",
+  "revision": "stableid:424807",
   "source": "docs/agents/evidence/OTV2-20260925-tibiawiki-item-master-field-census-v1.json",
   "attrib_promotion_prefixes": [
     "/item/light/",
@@ -73,7 +77,7 @@
       "disposition": "ITEM_TYPED",
       "canonical_path": "modifiers.misc",
       "allowed_destinations": [
-        "/item/modifiers/editor_notes"
+        "/item/modifiers"
       ]
     },
     {
@@ -203,8 +207,10 @@
       "disposition": "ITEM_TYPED",
       "canonical_path": "physical.weight",
       "allowed_destinations": [
-        "/item/physical/weight"
-      ]
+        "/item/physical/weight",
+        "/item/presentation/display_weight"
+      ],
+      "source_value_router": "signed_weight"
     },
     {
       "source_field": "elemental_bond",
@@ -550,3 +556,4 @@
     }
   ]
 }
+
