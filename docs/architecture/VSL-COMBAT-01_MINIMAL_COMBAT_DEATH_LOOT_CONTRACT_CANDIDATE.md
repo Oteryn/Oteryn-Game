@@ -454,6 +454,13 @@ semantics. Combat must not add an XP formula/engine, write XP directly, or make
 XP and loot one distributed transaction. Failure or pending state in one
 descendant does not roll back or fabricate the other.
 
+Before D/E admission and before any generic Combat XP settlement, the
+Character-owned progression initialization/readiness prerequisite must be proven
+through its authorized owning route and bound to a fresh, separately allocated
+Character owner revision/policy binding. Without that proof, generic Combat XP
+settlement remains gated. R7 P03 applies awards to initialized progression; this
+admission designs no initializer and selects no values, SQL, or runtime path.
+
 ### 24.2 Genericity, provenance and native entry scope
 
 The same generic code must pass two deterministic definition/revision fixtures.
@@ -484,31 +491,33 @@ proof.
 ### 24.3 Dependency map and whole-unit admission
 
 The following are serialized gates. Each child needs its own exact allocation,
-bounded owned paths, lease and current-head qualification. Dependency-safe PRs
-are implementation mechanics only: admission A remains open until every F
-criterion passes on protected state.
+bounded paths, lease and current-head qualification. Character-owned progression
+initialization/readiness is a separate prerequisite with a fresh owning revision/
+policy allocation; it must precede D/E admission and any Combat XP settlement.
+Dependency-safe PRs are mechanics only: A stays open until F passes on protected
+state.
 
 | Child | Owner and required allocation / serialization | Exit evidence |
 |---|---|---|
 | A — this admission | Current #162 allocation; architecture author owns only this contract and its task packet. No runtime/schema/registry edits. | Accepted chain, dependency map, exact whole-unit DoD and owner-input boundaries are recorded. |
 | B — native owning bindings | GAME-ITEM, Content, ANL/schema/profile, and resource owners each hold their required exact allocation. Serialize shared event registries, item/profile schema, `RESOURCE_LIMITS_REGISTRY.json`, migration numbering and native identity/custody decisions. Preserve item-specific P90D. | Accepted native typed binding and legal CharacterInventory placement; registered schema/profile/security purpose/resource limits with measured max/max+1/overflow and retained/encoded evidence. Unknowns remain closed. |
 | C — DUR-03 physical MINT and TRANSFER | DUR-03 owner, separately leased from B/D and any shared durability writer. Serialize `durability/mod.rs`, physical DUR registries, audit/outbox schema and migration numbers. MINT and TRANSFER remain distinct operations. | Native audit/candidate binding, PostgreSQL transaction proof, exact receipts, audit/outbox contribution, ambiguous-commit recovery and separate MINT/TRANSFER restart/retry evidence under §§39.1-39.2. |
-| D — generic death/loot/reward orchestration | Combat owner after B/C bindings, R7 P03, and resource acceptance. Exclusive lease over `foundation/mod.rs` and `runtime_actor_carrier.rs`; serialize their shared edits. Explicitly exclude PR #1004 and R7 P03 paths absent a new shared lease. | Generic definition/revision/source/occurrence/state-driven path; at least two deterministic fixtures; death/loot workflow and XP descendant through R7 P03 with no second XP engine or cross-domain transaction. |
-| E — existing-room Seam/protocol/native-client composition | Server Seam, protocol and client composition owners each receive exact leases. Serialize protocol schemas/IDs, server/client composition roots, and any room/source change with Content/Seam owner. Reuse the existing qualified room and #961 Movement integration. | Production protocol input/output and independent wire fixtures, existing start/east step-and-return retained, authoritative native client observation of combat, item and inventory state. |
-| F — terminal qualification | One exact-candidate integration/qualification owner after B-E; no concurrent writes to candidate during qualification. | Real native desktop + real Game PostgreSQL, restart/retry/anti-dup suite, exact-head independent review/CI/Merge Queue, merge-group `game-gate` and protected-main readback. Only this whole-unit result may close A or be called playable Combat. |
+| D — generic death/loot/reward orchestration | Combat owner after B/C bindings, R7 P03, resource acceptance and authorized Character progression-readiness proof under a fresh separate owner revision/policy allocation. Exclusive lease over `foundation/mod.rs` and `runtime_actor_carrier.rs`; serialize shared edits. Exclude PR #1004 and R7 P03 paths absent a new shared lease. | Generic definition/revision/source/occurrence/state-driven path; two deterministic fixtures; death/loot workflow and XP through R7 P03 with no second XP engine or cross-domain transaction. |
+| E — existing-room Seam/protocol/native-client composition | Server Seam, protocol and client composition owners each receive exact leases after the separate Character readiness gate. Serialize protocol schemas/IDs, server/client roots, and room/source changes with Content/Seam owner. Reuse existing room and #961 Movement integration. | Production protocol input/output and independent wire fixtures; retained start/east step-and-return; authoritative native-client observation of combat, item and inventory state. |
+| F — terminal qualification | One exact-candidate integration/qualification owner after B-E; no concurrent candidate writes. | Real native desktop + Game PostgreSQL; restart/retry/anti-dup; proof admitted native Character progression was initialized through its authorized Character-owned route and bound to the fresh owner revision/policy; exact-head review/CI/MQ, merge-group `game-gate` and protected-main readback. Only whole-unit success closes A or qualifies playable Combat. |
 
 ### 24.4 Whole-unit terminal acceptance matrix
 
 | Area | Required terminal evidence |
 |---|---|
-| End-to-end semantics | One native player intent commits through GAME-ABILITY legality; one creature-death generation selects deterministic legal loot; one-item MINT, pickup and separate TRANSFER reach direct-root CharacterInventory; native client observes authoritative results; XP settles once through R7 P03 independently. |
+| End-to-end semantics | One native player intent commits through GAME-ABILITY legality; one death generation selects deterministic legal loot; separate one-item MINT and TRANSFER reach direct-root CharacterInventory; native client observes authority; XP settles once through R7 P03 after Character-owned initialization/readiness is proven. |
 | Genericity and binding | Same code passes two deterministic fixtures with different definition/revision identity. Retain exact candidate bytes and semantic envelope; verify definition, content, ruleset, SIM, source occurrence and state bindings. No fixture-name branches or synthetic identity/bytes promoted as production. |
 | Concurrency and replay | Exactly one concurrent pickup wins; duplicate command/death/source replay creates no second death, mint, transfer, XP or location. Source occurrence is non-reusable. One authoritative location remains and no corpse ghost survives reconciliation. |
 | Ambiguity and recovery | Lost ACK, ambiguous commit, crash/restart before and after each MINT and TRANSFER, duplicate retry, committed-but-lost runtime completion and stale result reconcile the same operation and identity without fresh mint or partial custody. |
 | Authority fences | Reject independently stale session, Character lease, runtime/scope, actor-local generation and content/revision evidence before mutation; independently test the applicable negative cases and one-winner race. |
 | Resources and owner lane | Evidence for every accepted native resource/profile limit: max, max+1 and checked overflow before mutation/allocation; audit/outbox backpressure fails closed; bounded retry/reconciliation; no synchronous database wait in the owner lane. |
 | Protocol and client | Independent exact-byte fixtures plus malformed, gap, duplicate and resync cases; server and native client composition are exercised, not only a shared headless codec or direct mutation harness. |
-| Physical terminal proof | Real Game PostgreSQL and real native desktop through the existing room; restart and durable readback; retained proof that the existing start/east step-and-return still works. Room qualification is preproduction only. |
+| Physical terminal proof | Real Game PostgreSQL and native desktop through existing room; restart/readback; admitted Character initialization via authorized owning route; existing start/east step-and-return retained. Preproduction only. |
 | Repository terminal proof | Exact frozen candidate, complete owned-path review, required independent review, exact-head CI, native Merge Queue aggregate `game-gate`, and protected-main readback. Dependency PRs alone never close this row or A. |
 
 No partial child, offline prototype, narrow green suite, schema/profile check,
@@ -524,8 +533,10 @@ pickup planning and legality; DUR-03 owns durable item identity, custody,
 conservation, idempotency and recovery; item MINT and TRANSFER are separate
 one-item transactions under §§39.1-39.2; GAME-CHAR/DUR-02 own persistent XP and
 R7 P03 is the integrated XP commit path; ANL-01 envelope/payload semantics and
-existing item P90D remain binding. Existing room and Movement proof environment
-are reused. Canary/Crystal revisions above are pinned read-only references.
+existing item P90D remain binding. Character-owned progression initialization/
+readiness through its authorized route, with a fresh separately allocated owner
+revision/policy binding, is required before D/E and Combat XP settlement. Existing
+room and Movement proof environment are reused. Canary/Crystal remain read-only.
 
 **TECHNICAL decisions future owners may propose** — native typed bindings and
 profiles, measured hard resource limits, implementation/module/API shapes,

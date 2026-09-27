@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: /root/combat_vertical_admission_author
 created_at: 2026-09-27T17:45:00Z
-updated_at: 2026-09-27T17:45:00Z
+updated_at: 2026-09-27T18:03:39Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/VSL-COMBAT-01_MINIMAL_COMBAT_DEATH_LOOT_CONTRACT_CANDIDATE.md
@@ -63,6 +63,10 @@ playability evidence.
 - `PROVEN`: current GAME-ITEM CharacterInventory family and integrated R7 P03
   API are the item destination and separate persistent XP owner. No second XP
   engine or shared XP/loot transaction is permitted.
+- `REQUIRED GATE`: Character-owned progression initialization/readiness must be
+  proven through its authorized route and bound to a fresh, separately allocated
+  owner revision/policy before D/E admission or generic Combat XP settlement.
+  No initializer design or value is selected here.
 - `PROVEN`: existing protected native entry room, boot activation pin,
   `content_native_entry_room.rs`, native-entry qualification workflow and
   integrated PR #961 Movement step supply the current preproduction Movement /
@@ -109,7 +113,8 @@ replace fresh authority evidence.
 - [x] Existing native room, Movement proof cells, activation pin and #961
   integration are preserved; no second room/harness is admitted.
 - [x] A-F dependency owners, leases/serialization boundaries, whole-unit terminal
-  DoD, product unknowns, authority exclusions and recovery boundaries are stated.
+  DoD, Character progression-readiness prerequisite, product unknowns, authority
+  exclusions and recovery boundaries are stated.
 - [ ] Whole-unit terminal acceptance: every A-F matrix row has exact evidence,
   then exact-head review/CI/MQ and protected-main readback prove the complete
   playable native Combat path. Until then A remains open and no partial child may
@@ -129,27 +134,21 @@ Content/Seam owner.
 
 ## Implementation / findings
 
-The executable dependency sequence is A admission -> B native owner bindings,
-schema/profile and measured resources -> C separate physical DUR-03 MINT and
-TRANSFER with receipt/audit/outbox/recovery proof -> D generic death/loot plus
-separate XP orchestration through R7 P03 -> E existing-room Server Seam/protocol/
-native-client composition -> F real native desktop + real Game PostgreSQL
-restart/anti-dup terminal qualification. Registry files, `durability/mod.rs`,
-migration numbering, `foundation/mod.rs`, `runtime_actor_carrier.rs`, protocol
-and client composition require serialized exclusive leases. PR #1004 and R7 P03
-paths are excluded unless the live control plane grants a new shared lease.
+Sequence: A -> B/C -> authorized Character-owned progression initialization /
+readiness gate (fresh separate owner allocation and revision/policy) -> D and E
+-> F. The gate precedes both D/E and every generic Combat XP settlement. D reuses
+R7 P03 and one calculator; this task designs no initializer. Serialize registries,
+`durability/mod.rs`, migration numbering, `foundation/mod.rs`,
+`runtime_actor_carrier.rs`, protocol and client composition. Exclude PR #1004 and
+R7 P03 paths without a new shared lease.
 
-No evidence in a child substitutes for F: concurrent pickup must have one winner;
-duplicate command/death/source replay cannot duplicate; exact candidate bytes and
-semantic envelope must be retained; lost ACK and ambiguous commit must reconcile;
-restart before/after each transaction must retain one item; stale authority and
-revision fences must reject before mutation; one authoritative location and no
-corpse ghost must remain; the source cannot be reused; audit/outbox pressure must
-fail closed; and accepted resource maxima, max+1 and overflow must be checked
-before allocation/mutation. Owner-lane DB waits are forbidden. Protocol fixtures
-must be independent and include malformed/gap/resync cases. Exact-head required
-review, CI, Merge Queue aggregate `game-gate` and protected-main readback complete
-the repository terminal gate.
+F proves one-winner pickup; duplicate/death/source replay; exact bytes/envelope;
+lost ACK, ambiguity and restart around both transactions; stale-fence rejection;
+one location/no corpse ghost/source non-reuse; backpressure and max/max+1/overflow
+before mutation/allocation; no owner-lane DB wait; independent malformed/gap/resync
+wire fixtures; admitted Character initialized through its authorized route; real
+PostgreSQL/native desktop, Movement cells, exact-head review/CI/MQ and protected
+readback. No child substitutes for F.
 
 Product values deliberately remain `UNKNOWN`: entry-room damage/lethality and
 HP math; loot probability and quantity; XP amount/formula; client presentation
@@ -168,9 +167,9 @@ before selecting values. Pinned OTS references only allow comparison/presentatio
   diff/encoding/whitespace passed. Exact status: `M
   docs/architecture/VSL-COMBAT-01_MINIMAL_COMBAT_DEATH_LOOT_CONTRACT_CANDIDATE.md`;
   `?? docs/agents/tasks/active/OTV2-20260927-generic-combat-loot-pickup-native-vertical-admission-162.md`.
-  Architecture: 32,499 bytes; SHA-256
-  `e6076145df6f0bd694e9e44e64217589f54a164ea71ff841429ee60d110faf17`; Git
-  blob `0d4a5d4ac765c87ea6cc85453f23595286a8ad31`. Task manifest returned
+  Architecture: 33,444 bytes; SHA-256
+  `0fd827df685c29d065a803b1f3d8e6d041a38c5f95b803fe0e7b4680a281bc54`; Git
+  blob `06582ee4455ff2ba2f85dba3ba9bd3749291ab82`. Task manifest returned
   externally to avoid self-reference.
 
 ### Component/integration
@@ -199,7 +198,8 @@ before selecting values. Pinned OTS references only allow comparison/presentatio
 - exact head: pending root publication/freeze
 - method/reviewer: `/root/combat_vertical_admission_author`; complete working-tree
   two-path diff review, including authority, acceptance and exact path scope
-- material findings: no P0-P2 findings
+- material findings: PR #1005 P2 omission repaired: Character-owned initialized
+  progression/readiness gate was not explicit before D/E and XP settlement
 - verdict: PASS for authoring; exact remote head still pending root publication/freeze
 
 ## Independent review
@@ -223,7 +223,7 @@ before selecting values. Pinned OTS references only allow comparison/presentatio
 ## Context checkpoint
 
 ```yaml
-last_progress: focused author validation and complete working-tree two-path self-review passed; no P0-P2 findings
+last_progress: PR #1005 P2 repaired locally; Character readiness gate now precedes D/E and XP settlement
 status: implementing
 branch: codex/generic-combat-loot-pickup-admission-162
 head_sha: null
