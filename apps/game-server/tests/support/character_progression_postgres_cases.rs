@@ -11,7 +11,8 @@ use crate::durability::character_progression::{
     ExperienceCommitOutcome, ExperienceRewardOccurrence,
 };
 use crate::durability::runtime_scope_assignment::{
-    BootstrapSecret, LaunchBinding, NodeIncarnationProof,
+    AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
+    LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
 use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
@@ -169,7 +170,7 @@ impl Harness {
                 .map_err(|error| format!("{error:?}"))?;
         }
         let node = register(&root, 1).await?;
-        seed_character(&pool, &node, initialized).await?;
+        seed_character(&pool, &root, &node, initialized).await?;
         Ok(Self {
             database,
             root,
@@ -214,6 +215,7 @@ fn channel_scope_key() -> [u8; 33] {
 
 async fn seed_character(
     pool: &sqlx::PgPool,
+    root: &DurabilityRoot,
     node: &NodeIncarnationProof,
     initialized: bool,
 ) -> TestResult {
@@ -324,20 +326,36 @@ async fn seed_character(
 
     let fact = node.fact();
     sqlx::query(
-        "INSERT INTO game_runtime_scope_assignments(\
-           scope_key,world_id,channel_id,ownership_generation,state,holder_node_id,\
-           holder_registration_revision,source_revision,decision_identity,operation_key,decided_at) \
-         VALUES ($1,encode($2,'hex')::uuid,encode($3,'hex')::uuid,1,1,\
-           encode($4,'hex')::uuid,$5::text::numeric(20,0),1,'progression-fixture',$6,1)",
+        "INSERT INTO game_control_scope_grants \
+         (control_role, world_id, channel_id, operation) \
+         VALUES (session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, 1)",
     )
-    .bind(channel_scope_key().as_slice())
     .bind(id(42).as_slice())
     .bind(id(43).as_slice())
-    .bind(fact.node_id().as_bytes().as_slice())
-    .bind(fact.registration_revision().to_string())
-    .bind([7_u8; 32].as_slice())
     .execute(pool)
     .await?;
+    let writer = RuntimeScopeAssignmentWriter::open(root.clone(), "progression-writer")
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+    let scope = RuntimeScopeRefV1::channel(
+        crate::foundation::WorldId::decode(&id(42)).map_err(|error| format!("{error:?}"))?,
+        crate::foundation::ChannelId::decode(&id(43)).map_err(|error| format!("{error:?}"))?,
+    );
+    let assignment = writer
+        .submit(&AssignmentRequest {
+            operation_key: OperationKey::from_bytes([7_u8; 32]),
+            actor: ControlActor::new("oteryn_test_admin")
+                .map_err(|error| format!("{error:?}"))?,
+            command: AssignmentCommand::Assign {
+                scope,
+                target: fact,
+            },
+        })
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+    if !matches!(assignment, AssignmentOutcome::Committed(_)) {
+        return Err(format!("unexpected assignment outcome: {assignment:?}").into());
+    }
     Ok(())
 }
 
