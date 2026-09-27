@@ -15,6 +15,16 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "organic_matter",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/organic_matter",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
@@ -66,6 +76,28 @@
           "destination": "reward_destination",
           "revert_after_ms": 1200000,
           "revert_destination": "warzone_exit"
+        }
+      ]
+    },
+    {
+      "key": "organic_matter_bursts",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "organic_matter"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/aggressive_matter",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 4,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
         }
       ]
     }

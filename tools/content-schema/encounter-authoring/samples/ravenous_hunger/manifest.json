@@ -4,6 +4,12 @@
   "covers": {
     "CultsOfTibiaBossDeath": [
       "canary:creature/ravenous_hunger"
+    ],
+    "Splash": [
+      "canary:creature/wine_cask"
+    ],
+    "Evaporate": [
+      "canary:creature/liquor_spirit"
     ]
   },
   "sources": [
@@ -20,6 +26,48 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
       "blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/wine_cask.lua",
+      "blob_sha1": "1f8e60247928b3041a46f873e2a59d50e00c9f44"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_splash.lua",
+      "blob_sha1": "bf8b0ac2d5981b442c1ca946628e51779925e516"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/summons/liquor_spirit.lua",
+      "blob_sha1": "f3bbf3dcff8499b5ab312d3f5b97c1c2a435120d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/leiden.lua",
+      "blob_sha1": "4cd3d29533104889b6a0c0dd69d956046bfd5c08"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_evaporate.lua",
+      "blob_sha1": "95c4c2e37a6eb162561d66d9c7754d29fc497c7c"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_spawn_boss.lua",
+      "blob_sha1": "c5af3db5c9c094d95b755abf78ff0415f50e59d4"
     }
   ],
   "entries": [
@@ -73,6 +121,250 @@
       "status": "mapped",
       "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage CultsOfTibia.Barkless.Mission to 6 when it is lower.",
       "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Wine Cask is the wine_cask participant; its file registers Splash.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "status": "mapped",
+      "resolution": "onThink: below 85% health (Canary compares strictly).",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        6,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "addEvent(..., 100): the effect follows 100 ms later.",
+      "destination": "/encounter/rules/1/delay_ms"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        7,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "A liquor spirit on (33160, 31945, 15), not forced.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        12
+      ],
+      "status": "mapped",
+      "resolution": "creature:say(\"SPLASH!\", TALKTYPE_MONSTER_YELL).",
+      "destination": "/encounter/rules/1/actions/1"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        13
+      ],
+      "status": "mapped",
+      "resolution": "The cask heals to full, so it crosses 85% again only after new damage.",
+      "destination": "/encounter/rules/1/actions/2"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        8,
+        9,
+        10
+      ],
+      "status": "approved_omission",
+      "resolution": "The closure tests the captured creature object, never nil; a delayed action on a creature that no longer exists does nothing (§9.2)."
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Liquor Spirit is the liquor_spirit participant; its file registers Evaporate.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 5,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Leiden is the leiden participant.",
+      "destination": "/encounter/participants/3/creatures"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        31,
+        32,
+        33,
+        34
+      ],
+      "status": "mapped",
+      "resolution": "onThink: below 60% health (Canary compares strictly).",
+      "destination": "/encounter/rules/2/trigger"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        35,
+        36,
+        37,
+        38,
+        39,
+        45,
+        46
+      ],
+      "status": "mapped",
+      "resolution": "addEvent(..., 100) for the same creature; its first run removes the spirit, later ones find no creature.",
+      "destination": "/encounter/rules/2/delay_ms"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        40
+      ],
+      "status": "mapped",
+      "resolution": "creature:say(..., TALKTYPE_MONSTER_YELL).",
+      "destination": "/encounter/rules/2/actions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        1,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        14,
+        15,
+        16,
+        17,
+        29,
+        41,
+        42
+      ],
+      "status": "mapped",
+      "resolution": "The combat area around the spirit is Canary's radius-3 circle (every tile with dx^2 + dy^2 <= 10, the rows of lines 5-11); onTargetTile acts on the monster standing on each tile.",
+      "destination": "/encounter/rules/3/conditions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        18,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "Leiden loses 3000-6000 health through creature:addHealth: a direct change without attacker or type, so no resistance applies (damage_type none, D31).",
+      "destination": "/encounter/rules/3/actions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        19
+      ],
+      "status": "mapped",
+      "resolution": "registerEvent(\"SpawnBoss\") arms Leiden's death rule below; the flag records it.",
+      "destination": "/encounter/rules/3/actions/1"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        21,
+        22
+      ],
+      "status": "mapped",
+      "resolution": "Ravenous Hunger in the area gains 3000-6000 health.",
+      "destination": "/encounter/rules/4/actions/0"
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        23,
+        24,
+        25,
+        26,
+        27
+      ],
+      "status": "approved_omission",
+      "resolution": "Other tiles and creatures are left alone."
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        2
+      ],
+      "status": "approved_omission",
+      "resolution": "The purple smoke effect is cosmetic; the combat has no damage formula."
+    },
+    {
+      "source_index": 6,
+      "source_lines": [
+        43,
+        44
+      ],
+      "status": "mapped",
+      "resolution": "creature:remove(): only this spirit disappears (D31).",
+      "destination": "/encounter/rules/5/actions/0"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "SpawnBoss is registered on Leiden by the evaporation only (creaturescripts_evaporate.lua line 19).",
+      "destination": "/encounter/rules/6/trigger"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        8,
+        12,
+        13,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "Ravenous Hunger on Leiden's death position, not forced.",
+      "destination": "/encounter/rules/6/actions/0"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        9,
+        10,
+        11
+      ],
+      "status": "approved_omission",
+      "resolution": "The Sinister Hermit branch belongs to movements_geyser.lua, which registers SpawnBoss on the hermit."
     }
   ],
   "outcome_evidence": [

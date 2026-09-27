@@ -15,6 +15,26 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "ferumbras_soul_splinter",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ferumbras_soul_splinter",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "ferumbras_essence",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ferumbras_essence",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
@@ -72,6 +92,46 @@
           "effect": "canary.appearance:effect/thunder",
           "revert_after_ms": 60000,
           "revert_destination": "ascendant_exit"
+        }
+      ]
+    },
+    {
+      "key": "soul_splinter_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "ferumbras_soul_splinter"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ferumbras_essence",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ferumbras_essence",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "ferumbras_essence_is_immortal",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "ferumbras_essence"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "ferumbras_essence",
+          "multiplier_percent": 0,
+          "sources": "any",
+          "until": "reset"
         }
       ]
     }

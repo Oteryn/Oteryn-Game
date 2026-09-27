@@ -1,0 +1,70 @@
+{
+  "identity": {
+    "key": "canary:encounter/tirecz",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "The New Frontier: Tirecz",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "tirecz",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/tirecz",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "arena",
+      "kind": "area",
+      "description": "Every tile within 10 tiles of Canary (33063, 31034, 3) on that floor."
+    },
+    {
+      "key": "arena_exit",
+      "kind": "point",
+      "description": "Canary (33062, 31029, 7)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "tirecz_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "tirecz"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "tirecz_defeated",
+          "credited": "players_in_anchor",
+          "anchor": "arena"
+        },
+        {
+          "kind": "teleport",
+          "who": {
+            "players_in": "arena"
+          },
+          "to": "arena_exit"
+        },
+        {
+          "kind": "remove",
+          "all_in": "arena"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "tirecz_defeated"
+  ]
+}

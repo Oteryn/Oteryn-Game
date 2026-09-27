@@ -141,6 +141,36 @@ case('primary-only modifier accepted', rule([{'kind': 'damage_modifier', 'role':
                                               'until': 'this_hit', 'component': 'primary'}]), True)
 case('map item interaction accepted', rule([{'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'), 'anchor': 'exit',
                                              'interaction': 'canary:interaction/5580'}]), True)
+died = {'kind': 'creature_died', 'role': 'boss'}
+add = lambda: {'kind': 'spawn', 'creature': ref('Creature', 'add'), 'count': 1, 'at': 'death_position', 'owner': 'none', 'health': 'full'}
+case('heal trigger accepted', rule(trigger={'kind': 'heal_received', 'role': 'boss', 'source': 'any'}), True)
+case('circle presence accepted', rule(conditions=[{'kind': 'creature_present', 'role': 'boss',
+                                                   'near': {'role': 'boss', 'radius': 3, 'shape': 'circle'}, 'present': True}]), True)
+case('heal range from zero accepted', rule([{'kind': 'heal', 'subject': {'role': 'boss'}, 'amount': {'min': 0, 'max': 2000}}]), True)
+case('fixed zero heal rejected', rule([{'kind': 'heal', 'subject': {'role': 'boss'}, 'amount': 0}]))
+case('remove triggering creature accepted', rule([{'kind': 'remove', 'triggering': True}], trigger=died), True)
+case('remove triggering needs a creature trigger', rule([{'kind': 'remove', 'triggering': True}]))
+case('remove takes one target of three', rule([{'kind': 'remove', 'role': 'boss', 'triggering': True}], trigger=died))
+case('remove keeping summons accepted', rule([{'kind': 'remove', 'all_in': 'arena', 'keep_summons': True}]), True)
+case('keep_summons needs all_in', rule([{'kind': 'remove', 'role': 'boss', 'keep_summons': True}]))
+case('player message accepted', rule([{'kind': 'message', 'to': {'players_in': 'arena'}, 'text': 'You lost.'}]), True)
+case('player message needs an area', rule([{'kind': 'message', 'to': {'players_in': 'exit'}, 'text': 'You lost.'}]))
+case('weighted choice accepted', rule([{'kind': 'one_of', 'branches': [{'weight': 1, 'actions': [add()]},
+                                                                       {'weight': 3, 'actions': [{'kind': 'flag', 'flag': 'enraged', 'value': True}]}]}],
+                                      trigger=died), True)
+case('weighted choice needs two branches', rule([{'kind': 'one_of', 'branches': [{'weight': 1, 'actions': [add()]}]}], trigger=died))
+case('choice branches are validated', rule([{'kind': 'one_of', 'branches': [{'weight': 1, 'actions': [add()]},
+                                                                            {'weight': 1, 'actions': [{'kind': 'flag', 'flag': 'ghost', 'value': True}]}]}],
+                                           trigger=died))
+case('role position accepted', rule([{**add(), 'at': {'role_position': 'boss'}}],
+                                    conditions=[{'kind': 'creature_present', 'role': 'boss', 'anchor': 'arena', 'present': True}]), True)
+case('role position needs a presence condition', rule([{**add(), 'at': {'role_position': 'boss'}}]))
+case('party credit accepted', rule([{'kind': 'emit_outcome', 'outcome': 'victory', 'credited': 'party'}], trigger=died), True)
+case('party credit needs a death', rule([{'kind': 'emit_outcome', 'outcome': 'victory', 'credited': 'party'}]))
+case('spawned speaker accepted', rule([add(), {'kind': 'say', 'subject': {'spawned': True}, 'text': 'Free!', 'mode': 'say'}], trigger=died),
+     True)
+case('spawned speaker needs a spawn', rule([{'kind': 'say', 'subject': {'spawned': True}, 'text': 'Free!', 'mode': 'say'}], trigger=died))
+case('role position fallback accepted', rule([{**add(), 'at': {'role_position': 'boss', 'otherwise': 'death_position'}}], trigger=died), True)
 case('chance above 100 rejected', rule(conditions=[{'kind': 'chance_percent', 'value': 150}]))
 case('duplicate rule key', lambda e, c: e['rules'].append(copy.deepcopy(e['rules'][0])))
 

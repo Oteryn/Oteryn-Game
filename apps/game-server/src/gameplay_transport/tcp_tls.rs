@@ -47,6 +47,51 @@ pub(super) async fn read_frame<R: AsyncRead + Unpin>(reader: &mut R) -> io::Resu
     Ok(body)
 }
 
+/// Incremental frame reader whose `next` is cancel-safe: bytes read by a cancelled call stay
+/// buffered, so an admitted connection can race reads against its liveness cadence.
+#[derive(Default)]
+pub(super) struct FrameReader {
+    prefix: [u8; 4],
+    prefix_filled: usize,
+    body: Option<Vec<u8>>,
+    body_filled: usize,
+}
+
+impl FrameReader {
+    pub(super) async fn next<R: AsyncRead + Unpin>(
+        &mut self,
+        reader: &mut R,
+    ) -> io::Result<Vec<u8>> {
+        loop {
+            if let Some(body) = self.body.as_mut() {
+                if self.body_filled == body.len() {
+                    let frame = std::mem::take(body);
+                    self.body = None;
+                    self.body_filled = 0;
+                    self.prefix_filled = 0;
+                    return Ok(frame);
+                }
+                let read = reader.read(&mut body[self.body_filled..]).await?;
+                if read == 0 {
+                    return Err(io::ErrorKind::UnexpectedEof.into());
+                }
+                self.body_filled += read;
+                continue;
+            }
+            let read = reader.read(&mut self.prefix[self.prefix_filled..]).await?;
+            if read == 0 {
+                return Err(io::ErrorKind::UnexpectedEof.into());
+            }
+            self.prefix_filled += read;
+            if self.prefix_filled == self.prefix.len() {
+                let length = crate::foundation::FrameLength::from_prefix(&self.prefix)
+                    .map_err(|error| io::Error::new(io::ErrorKind::InvalidData, error))?;
+                self.body = Some(vec![0; length.get() as usize]);
+            }
+        }
+    }
+}
+
 pub(super) async fn write_frame<W: AsyncWrite + Unpin>(
     writer: &mut W,
     body: &[u8],
@@ -70,6 +115,44 @@ mod tests {
     use std::error::Error;
     use tokio::io::AsyncWriteExt;
     use tokio::net::{TcpListener, TcpStream};
+
+    #[test]
+    fn frame_reader_keeps_partial_bytes_across_cancelled_reads() -> Result<(), Box<dyn Error>> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(async {
+                let (mut server, mut client) = tokio::io::duplex(64);
+                let mut frames = FrameReader::default();
+                // Two bytes of the prefix, then the read is cancelled.
+                client.write_all(&[0, 0]).await?;
+                let pending = tokio::time::timeout(
+                    std::time::Duration::from_millis(20),
+                    frames.next(&mut server),
+                )
+                .await;
+                assert!(pending.is_err());
+                // The rest of the prefix and half the body, cancelled again.
+                client.write_all(&[0, 3, 7]).await?;
+                let pending = tokio::time::timeout(
+                    std::time::Duration::from_millis(20),
+                    frames.next(&mut server),
+                )
+                .await;
+                assert!(pending.is_err());
+                client.write_all(&[8, 9, 0, 0, 0, 1, 5]).await?;
+                assert_eq!(frames.next(&mut server).await?, vec![7, 8, 9]);
+                assert_eq!(frames.next(&mut server).await?, vec![5]);
+                client.write_all(&[0, 0, 0]).await?;
+                drop(client);
+                let end = frames.next(&mut server).await;
+                assert_eq!(
+                    end.map_err(|error| error.kind()),
+                    Err(io::ErrorKind::UnexpectedEof)
+                );
+                Ok(())
+            })
+    }
 
     #[test]
     fn transport_tls12_rejected_before_frame_handoff() -> Result<(), Box<dyn Error>> {

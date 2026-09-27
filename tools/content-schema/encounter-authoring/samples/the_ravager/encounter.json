@@ -1,0 +1,70 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_ravager",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Dark Trails: The Ravager",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_ravager",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_ravager",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Canary (33496, 32070, 8)."
+    },
+    {
+      "key": "ravager_exit",
+      "kind": "point",
+      "description": "Canary (33459, 32083, 8)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_ravager_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_ravager"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "create",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "ravager_exit",
+          "revert_after_ms": 300000
+        },
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_ravager_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_ravager_defeated"
+  ]
+}

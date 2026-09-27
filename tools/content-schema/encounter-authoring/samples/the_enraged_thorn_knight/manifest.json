@@ -4,6 +4,9 @@
   "covers": {
     "ForgottenKnowledgeBossDeath": [
       "canary:creature/the_enraged_thorn_knight"
+    ],
+    "PossessedTree": [
+      "canary:creature/possessed_tree"
     ]
   },
   "sources": [
@@ -20,6 +23,20 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua",
       "blob_sha1": "00ced55f16d363011cad6cc00bc14ea07fbdd253"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/possessed_tree.lua",
+      "blob_sha1": "c8e0fb70d21e9438c2124f3e70972720a90f4f64"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_possessed_tree.lua",
+      "blob_sha1": "708e04d878e5e9a995261a852066779f64f6adfe"
     }
   ],
   "entries": [
@@ -72,6 +89,59 @@
       ],
       "status": "approved_omission",
       "resolution": "The PlantCounter/BirdCounter reset sits in an elseif after `if bossConfig.storage`, and the thorn knight has a storage, so Canary never runs it (dead branch)."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        56
+      ],
+      "status": "mapped",
+      "resolution": "Possessed Tree is the possessed_tree participant; its file registers PossessedTree.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a possessed tree.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1,
+        9,
+        10,
+        11,
+        12
+      ],
+      "status": "mapped",
+      "resolution": "One of the four unbound creatures, picked uniformly, appears forced on the death position and names itself.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        13
+      ],
+      "status": "mapped",
+      "resolution": "addEvent: a new possessed tree, forced, on the same position after 60 s.",
+      "destination": "/encounter/rules/2"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        8
+      ],
+      "status": "approved_omission",
+      "resolution": "The plant effect is cosmetic."
     }
   ],
   "outcome_evidence": [

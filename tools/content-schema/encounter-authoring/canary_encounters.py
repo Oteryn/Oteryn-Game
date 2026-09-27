@@ -1023,13 +1023,683 @@ def megalomania_splinters(build):
                 'remove on the undefined global `creature` and fails before increaseHatredDamageMultiplier(5); the boss '
                 'strength change (its hatred multiplier) is outside the vocabulary.')
 
+def world_boss_events(build):
+    """Pythius, The First Dragon, the white deer, Dark Trails, The Shatterer, The Primal Menace, Gaz'haragoth, Tirecz and
+    the Order of the Lion skirmish."""
+    path_ = 'data-otservbr-global/scripts/quests/the_hidden_city_of_beregar/creaturescripts_pythius_the_rotten_kill.lua'
+    item = build.get('pythius_the_rotten', 'The Hidden City of Beregar: Pythius the Rotten', 'instance_per_party')
+    build.participant(item, 'pythius_the_rotten', 'Pythius the Rotten', 'PythiusTheRottenDeath')
+    item['encounter']['outcomes'].append('pythius_the_rotten_defeated')
+    text = 'NICE FIGHTING LITTLE WORM, YOUR VICTORY SHALL BE REWARDED!'
+    path = build.rule(item, {'key': 'pythius_death', 'trigger': {'kind': 'creature_died', 'role': 'pythius_the_rotten'}, 'conditions': [],
+                             'actions': [{'kind': 'say', 'subject': {'role': 'pythius_the_rotten'}, 'text': text, 'mode': 'say'},
+                                         {'kind': 'emit_outcome', 'outcome': 'pythius_the_rotten_defeated', 'credited': 'damage_contributors'}]})
+    build.entry(item, path_, [1, 2], 'mapped', path + '/trigger', 'onDeath of Pythius the Rotten.')
+    build.entry(item, path_, [3], 'mapped', path + '/actions/0',
+                'creature:say(..., TALKTYPE_MONSTER_SAY); Canary shows the text on (32572, 31405, 15), a display position only.')
+    build.entry(item, path_, [5, 6, 7], 'mapped', path + '/actions/1',
+                'The player with the most damage is teleported to the reward room (32577, 31403, 15): a reward room belongs to the '
+                'reward domain (D27), which picks the top damage contributor. The teleport effect is cosmetic.')
+    item['manifest']['outcome_evidence'].append({
+        'outcome': 'pythius_the_rotten_defeated', 'credited': 'damage_contributors',
+        'reward_domain': {'recipient': 'the top damage contributor (Canary mostDamageKiller)',
+                          'reward_room': 'Canary (32577, 31403, 15)'}})
+
+    path_ = 'data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_first_dragon.lua'
+    item = build.items['the_first_dragon']
+    build.participant(item, 'the_first_dragon', 'The First Dragon', 'FirstDragonDeath')
+    item['encounter']['anchors'] += [
+        {'key': 'lair', 'kind': 'area', 'description': 'Every tile within 14 tiles of Canary (33617, 31023, 14) on that floor.'},
+        {'key': 'lair_exit', 'kind': 'point', 'description': 'Canary (33617, 31020, 13).'}]
+    item['encounter']['outcomes'].append('the_first_dragon_defeated')
+    path = build.rule(item, {'key': 'the_first_dragon_death', 'trigger': {'kind': 'creature_died', 'role': 'the_first_dragon'},
+                             'conditions': [],
+                             'actions': [{'kind': 'emit_outcome', 'outcome': 'the_first_dragon_defeated', 'credited': 'players_in_anchor',
+                                          'anchor': 'lair'},
+                                         {'kind': 'teleport', 'who': {'players_in': 'lair'}, 'to': 'lair_exit'}]})
+    build.entry(item, path_, [1, 21], 'mapped', path + '/trigger', 'onDeath of The First Dragon.')
+    build.entry(item, path_, [22, 23, 24, 25, 28, 29, 30], 'mapped', path + '/actions/0',
+                'Every player within 14 tiles of the lair centre gets TheFirstDragon.Feathers = 1 unless already set (D27 quest '
+                'domain). The outcome is emitted before the teleport so the players are still in the lair.')
+    build.entry(item, path_, [26, 27], 'mapped', path + '/actions/1',
+                'Those players are teleported to (33617, 31020, 13); the teleport effect is cosmetic.')
+    build.entry(item, path_, list(range(3, 20)), 'approved_omission', None, 'The destinations table is never read.')
+    item['manifest']['outcome_evidence'].append({
+        'outcome': 'the_first_dragon_defeated', 'credited': 'players_in_anchor',
+        'quest_domain': {'canary_storage': 'Storage.Quest.U11_02.TheFirstDragon.Feathers', 'raise_to_at_least': 1}})
+
+    deer = 'data/scripts/creaturescripts/monster/white_deer_death.lua'
+    scouts = 'data/scripts/creaturescripts/monster/white_deer_scouts.lua'
+    item = build.get('white_deer', 'White Deer', 'channel_shared')
+    build.participant(item, 'white_deer', 'White Deer', 'WhiteDeerDeath')
+    build.participant(item, 'enraged_white_deer', 'Enraged White Deer', 'WhiteDeerScoutsDeath')
+    for name in ('Desperate White Deer', 'Elf Scout'):
+        build.define(item, creature(name))
+    item['encounter']['state']['flags'].append({'name': 'deer_variant_chosen', 'initial': False})
+    unmastered = {'kind': 'has_master', 'role': 'white_deer', 'value': False}
+    first = build.rule(item, {'key': 'white_deer_roll', 'trigger': {'kind': 'creature_died', 'role': 'white_deer'},
+                              'conditions': [unmastered], 'actions': [{'kind': 'flag', 'flag': 'deer_variant_chosen', 'value': False}]})
+    enraged = build.rule(item, {
+        'key': 'white_deer_turns_to_fight', 'trigger': {'kind': 'creature_died', 'role': 'white_deer'},
+        'conditions': [unmastered, {'kind': 'chance_percent', 'value': 30}],
+        'actions': [{'kind': 'flag', 'flag': 'deer_variant_chosen', 'value': True},
+                    {'kind': 'spawn', 'creature': creature('Enraged White Deer'), 'role': 'enraged_white_deer', 'count': 1,
+                     'at': 'death_position', 'owner': 'none', 'health': 'full'},
+                    {'kind': 'say', 'subject': {'role': 'white_deer'}, 'text': 'The white deer summons all his strength and turns to fight!',
+                     'mode': 'say'}]})
+    desperate = build.rule(item, {
+        'key': 'white_deer_escapes', 'trigger': {'kind': 'creature_died', 'role': 'white_deer'},
+        'conditions': [unmastered, {'kind': 'flag', 'flag': 'deer_variant_chosen', 'value': False}],
+        'actions': [{'kind': 'spawn', 'creature': creature('Desperate White Deer'), 'count': 1, 'at': 'death_position', 'owner': 'none',
+                     'health': 'full'},
+                    {'kind': 'say', 'subject': {'role': 'white_deer'}, 'text': 'The white deer desperately tries to escape!', 'mode': 'say'}]})
+    build.entry(item, deer, [6, 8], 'mapped', first + '/trigger', 'onDeath of a white deer.')
+    build.entry(item, deer, [9, 10, 11, 12], 'mapped', first + '/conditions/0', 'A summoned white deer has no effect.')
+    build.entry(item, deer, [14, 15, 16, 22], 'mapped', first + '/actions/0',
+                'One roll of math.random(100) walks the config in order and stops at the first match: 30% the first entry, '
+                'otherwise the second. The flag, cleared first and set by the 30% rule, makes the two rules exclusive (rules run '
+                'in listed order, §9.2).')
+    build.entry(item, deer, [1, 2, 17, 20], 'mapped', enraged,
+                'chance 30: an Enraged White Deer on the death position (extended, forced) and the message.')
+    build.entry(item, deer, [3, 17, 20], 'mapped', desperate, 'Otherwise a Desperate White Deer and its message.')
+    build.entry(item, deer, [18, 19], 'approved_omission', None,
+                'The teleport effect is cosmetic; the message only follows a successful spawn, and a forced spawn does not fail.')
+    path = build.rule(item, {
+        'key': 'elves_avenge_the_deer', 'trigger': {'kind': 'creature_died', 'role': 'enraged_white_deer'},
+        'conditions': [{'kind': 'has_master', 'role': 'enraged_white_deer', 'value': False}, {'kind': 'chance_percent', 'value': 10}],
+        'actions': [{'kind': 'spawn', 'creature': creature('Elf Scout'), 'count': 2, 'at': 'death_position', 'owner': 'none', 'health': 'full'},
+                    {'kind': 'say', 'subject': {'role': 'enraged_white_deer'},
+                     'text': 'The elves came too late to save the deer, however they might avenge it.', 'mode': 'say'}]})
+    build.entry(item, scouts, [1, 3], 'mapped', path + '/trigger', 'onDeath of an enraged white deer.')
+    build.entry(item, scouts, [4, 5, 6, 7], 'mapped', path + '/conditions/0', 'A summoned deer has no effect.')
+    build.entry(item, scouts, [9, 10], 'mapped', path + '/conditions/1', 'math.random(100) <= 10: a 10% chance.')
+    build.entry(item, scouts, [11, 12, 13, 15, 16], 'mapped', path + '/actions/0', 'Two Elf Scouts on the death position (extended, forced).')
+    build.entry(item, scouts, [14], 'approved_omission', None, 'The teleport effect is cosmetic.')
+    build.entry(item, scouts, [18], 'mapped', path + '/actions/1', 'targetMonster:say(..., TALKTYPE_MONSTER_SAY).')
+
+    path_ = 'data-otservbr-global/scripts/quests/dark_trails/creaturescripts_kill_the_ravager.lua'
+    item = build.get('the_ravager', 'Dark Trails: The Ravager', 'instance_per_party')
+    build.participant(item, 'the_ravager', 'The Ravager', 'TheRavagerDeath')
+    item['encounter']['anchors'] += [{'key': 'exit_teleporter', 'kind': 'point', 'description': 'Canary (33496, 32070, 8).'},
+                                     {'key': 'ravager_exit', 'kind': 'point', 'description': 'Canary (33459, 32083, 8).'}]
+    teleporter = ref('Item', 'canary:item/1949')
+    build.define(item, teleporter)
+    item['encounter']['outcomes'].append('the_ravager_defeated')
+    path = build.rule(item, {'key': 'the_ravager_death', 'trigger': {'kind': 'creature_died', 'role': 'the_ravager'}, 'conditions': [],
+                             'actions': [{'kind': 'map_item', 'operation': 'create', 'item': teleporter, 'anchor': 'exit_teleporter',
+                                          'destination': 'ravager_exit', 'revert_after_ms': 5 * 60 * 1000},
+                                         {'kind': 'emit_outcome', 'outcome': 'the_ravager_defeated', 'credited': 'damage_contributors'}]})
+    build.entry(item, path_, [9, 10], 'mapped', path + '/trigger', 'onDeath of The Ravager.')
+    build.entry(item, path_, [13, 14, 15, 16, 22, 1, 2, 3, 4, 6], 'mapped', path + '/actions/0',
+                'A teleporter 1949 on (33496, 32070, 8) leading to (33459, 32083, 8), removed after 5 minutes.')
+    build.entry(item, path_, [17, 18, 19, 20, 21], 'mapped', path + '/actions/1',
+                'Every damaging player gets DarkTrails.Mission11 = 1 unless already set (D27 quest domain).')
+    build.entry(item, path_, [5, 11, 12], 'approved_omission', None, 'Magic effects are cosmetic.')
+    item['manifest']['outcome_evidence'].append({
+        'outcome': 'the_ravager_defeated', 'credited': 'damage_contributors',
+        'quest_domain': {'canary_storage': 'Storage.Quest.U10_50.DarkTrails.Mission11', 'raise_to_at_least': 1}})
+
+    path_ = 'data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_the_shatterer_kill.lua'
+    item = build.get('the_shatterer', 'Ferumbras Ascension: The Shatterer', 'instance_per_party')
+    build.participant(item, 'the_shatterer', 'The Shatterer', 'TheShattererDeath')
+    item['encounter']['anchors'] += [{'key': 'exit_teleporter', 'kind': 'point', 'description': 'Canary (33393, 32438, 14).'},
+                                     {'key': 'shatterer_exit', 'kind': 'point', 'description': 'Canary (33436, 32443, 15).'}]
+    closed, opened = ref('Item', 'canary:item/1949'), ref('Item', 'canary:item/22761')
+    build.define(item, closed)
+    build.define(item, opened)
+    item['encounter']['outcomes'].append('the_shatterer_defeated')
+    path = build.rule(item, {'key': 'the_shatterer_death', 'trigger': {'kind': 'creature_died', 'role': 'the_shatterer'}, 'conditions': [],
+                             'actions': [{'kind': 'emit_outcome', 'outcome': 'the_shatterer_defeated', 'credited': 'damage_contributors'},
+                                         {'kind': 'map_item', 'operation': 'transform', 'item': closed, 'into': opened,
+                                          'anchor': 'exit_teleporter', 'destination': 'shatterer_exit', 'revert_after_ms': 2 * 60 * 1000}]})
+    build.entry(item, path_, [85, 86], 'mapped', path + '/trigger', 'onDeath of The Shatterer.')
+    build.entry(item, path_, [87, 88, 89], 'mapped', path + '/actions/0',
+                'Every damaging player gets FerumbrasAscension.TheShatterer = 1 (D27 quest domain).')
+    build.entry(item, path_, [82, 83, 91, 92, 93, 94, 95, 96, 97, 99, 100, 1, 2, 3, 4, 5, 6, 7], 'mapped', path + '/actions/1',
+                'Teleporter 1949 on (33393, 32438, 14) becomes 22761 leading to (33436, 32443, 15); after 2 minutes it turns back '
+                'into 1949 with its original destination.')
+    build.entry(item, path_, [98], 'approved_omission', None, 'The thunder effect on the boss position is cosmetic.')
+    build.entry(item, path_, [101] + list(range(9, 81)), 'approved_omission', None,
+                'revert() puts back the chains of the four corridors and resets the four levers for the next group '
+                '(actions_the_shatterer_levers.lua removes them); an instance per party starts from the map state (D26).')
+    build.entry(item, path_, [103, 104], 'approved_omission', None,
+                'Global TheShattererLever and TheShattererTimer reset the shared room; an instance per party replaces them (D26).')
+    item['manifest']['outcome_evidence'].append({
+        'outcome': 'the_shatterer_defeated', 'credited': 'damage_contributors',
+        'quest_domain': {'canary_storage': 'Storage.Quest.U10_90.FerumbrasAscension.TheShatterer', 'set': 1}})
+
+    path_ = 'data-otservbr-global/scripts/quests/the_primal_ordeal/creaturescripts_the_primal_menace_killed.lua'
+    item = build.get('the_primal_menace', 'The Primal Ordeal: The Primal Menace', 'instance_per_party')
+    build.participant(item, 'the_primal_menace', 'The Primal Menace', 'ThePrimalMenaceDeath')
+    item['encounter']['outcomes'].append('the_primal_menace_defeated')
+    path = build.rule(item, {'key': 'the_primal_menace_death', 'trigger': {'kind': 'creature_died', 'role': 'the_primal_menace'},
+                             'conditions': [], 'actions': [{'kind': 'emit_outcome', 'outcome': 'the_primal_menace_defeated',
+                                                            'credited': 'damage_contributors'}]})
+    build.entry(item, path_, [1, 3], 'mapped', path + '/trigger', 'onDeath of The Primal Menace.')
+    build.entry(item, path_, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16], 'mapped', path + '/actions/0',
+                'Every damaging player gets PrimalOrdeal.Bosses.ThePrimalMenaceKilled = 1 (quest domain) and, when the hazard '
+                'points of the fight equal the player\'s highest Gnomprona Gardens hazard level, that level rises by one '
+                '(hazard progression domain, D27).')
+    item['manifest']['outcome_evidence'].append({
+        'outcome': 'the_primal_menace_defeated', 'credited': 'damage_contributors',
+        'quest_domain': {'canary_storage': 'Storage.Quest.U12_90.PrimalOrdeal.Bosses.ThePrimalMenaceKilled', 'raise_to_at_least': 1},
+        'hazard_domain': {'hazard': 'hazard.gnomprona-gardens',
+                          'level_up_when': 'the fight hazard points (Hazard:getHazardPlayerAndPoints of the damage map) equal the '
+                                           'player maximum hazard level'}})
+
+    heal = 'data-otservbr-global/scripts/creaturescripts/monster/gaz_haragoth_heal.lua'
+    vortex_path = 'data-otservbr-global/scripts/creaturescripts/monster/minion_gaz_haragoth_vortex.lua'
+    item = build.get('gaz_haragoth', "Roshamuul: Gaz'haragoth", 'channel_shared')
+    build.participant(item, 'gaz_haragoth', "Gaz'haragoth", 'GazHaragothHeal')
+    build.participant(item, 'minion_of_gaz_haragoth', "Minion of Gaz'haragoth", 'MinionGazDeath')
+    item['encounter']['state']['flags'].append({'name': 'heal_pending', 'initial': False})
+    item['encounter']['state']['timers'].append({'name': 'nightmare_heal', 'duration_ms': 7000, 'repeat': False})
+    path = build.rule(item, {
+        'key': 'gaz_haragoth_draws_on_nightmares', 'trigger': {'kind': 'health_crossed', 'role': 'gaz_haragoth', 'percent': 12.5},
+        'conditions': [{'kind': 'flag', 'flag': 'heal_pending', 'value': False}],
+        'actions': [{'kind': 'flag', 'flag': 'heal_pending', 'value': True},
+                    {'kind': 'say', 'subject': {'role': 'gaz_haragoth'}, 'text': "Gaz'haragoth begins to draw on the nightmares to HEAL himself!",
+                     'mode': 'yell'},
+                    {'kind': 'timer', 'timer': 'nightmare_heal', 'operation': 'start'}]})
+    healed = build.rule(item, {
+        'key': 'gaz_haragoth_heals', 'trigger': {'kind': 'timer_elapsed', 'timer': 'nightmare_heal'}, 'conditions': [],
+        'actions': [{'kind': 'heal', 'subject': {'role': 'gaz_haragoth'}, 'amount': 300000},
+                    {'kind': 'say', 'subject': {'role': 'gaz_haragoth'}, 'text': "Gaz'haragoth HEALS himself!", 'mode': 'yell'},
+                    {'kind': 'flag', 'flag': 'heal_pending', 'value': False}]})
+    build.entry(item, heal, [7, 8, 9, 10], 'mapped', path + '/trigger',
+                'onThink: below 12.5% health (Canary compares strictly) while the marker condition is absent.')
+    build.entry(item, heal, [1, 2, 3, 4, 5, 10, 11], 'mapped', path + '/conditions/0',
+                'The regeneration condition (subid 88888, 7 s) is only a marker: CONDITION_PARAM_HEALTHGAIN 0.01 is read as the '
+                'integer 0 (ConditionRegeneration::setParam takes int32_t), so it heals nothing. The flag, cleared when the heal '
+                'lands 7 s later, plays that marker.')
+    build.entry(item, heal, [12], 'mapped', path + '/actions/1', 'creature:say(..., TALKTYPE_MONSTER_YELL).')
+    build.entry(item, heal, [13, 14, 15, 16, 17, 21, 22], 'mapped', path + '/actions/2', 'addEvent(..., 7000): the heal follows 7 s later.')
+    build.entry(item, heal, [18], 'mapped', healed + '/actions/0', 'creature:addHealth(300000).')
+    build.entry(item, heal, [19], 'approved_omission', None, 'The magic effect is cosmetic.')
+    build.entry(item, heal, [20], 'mapped', healed + '/actions/1', 'creature:say(..., TALKTYPE_MONSTER_YELL).')
+    vortex = ref('Item', 'canary:item/20121')
+    build.define(item, vortex)
+    path = build.rule(item, {'key': 'minion_leaves_a_vortex', 'trigger': {'kind': 'creature_died', 'role': 'minion_of_gaz_haragoth'},
+                             'conditions': [], 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': vortex, 'at': 'death_position',
+                                                            'revert_after_ms': 60000, 'interaction': 'canary:interaction/33542'}]})
+    build.entry(item, vortex_path, [8, 10, 11, 12, 13, 14], 'mapped', path + '/trigger', "onDeath of a minion of Gaz'haragoth.")
+    build.entry(item, vortex_path, [16, 17, 18, 19, 20, 22, 1, 2, 3, 4, 5, 6], 'mapped', path + '/actions/0',
+                'Vortex 20121 with action id 33542 on the death position, removed after one minute. Action id 33542 is '
+                'movements/roshamuul/strange_vortex_tp.lua: a player stepping in is teleported into the nightmare '
+                '(33542, 32421, 15) (interaction domain).')
+
+    path_ = 'data-otservbr-global/scripts/quests/the_new_frontier/creaturescripts_tirecz_kill.lua'
+    item = build.get('tirecz', 'The New Frontier: Tirecz', 'instance_per_party')
+    build.participant(item, 'tirecz', 'Tirecz', 'TireczDeath')
+    item['encounter']['anchors'] += [
+        {'key': 'arena', 'kind': 'area', 'description': 'Every tile within 10 tiles of Canary (33063, 31034, 3) on that floor.'},
+        {'key': 'arena_exit', 'kind': 'point', 'description': 'Canary (33062, 31029, 7).'}]
+    item['encounter']['outcomes'].append('tirecz_defeated')
+    path = build.rule(item, {'key': 'tirecz_death', 'trigger': {'kind': 'creature_died', 'role': 'tirecz'}, 'conditions': [],
+                             'actions': [{'kind': 'emit_outcome', 'outcome': 'tirecz_defeated', 'credited': 'players_in_anchor', 'anchor': 'arena'},
+                                         {'kind': 'teleport', 'who': {'players_in': 'arena'}, 'to': 'arena_exit'},
+                                         {'kind': 'remove', 'all_in': 'arena'}]})
+    build.entry(item, path_, [17, 19], 'mapped', path + '/trigger', 'onDeath of Tirecz.')
+    build.entry(item, path_, [2, 20, 21, 22, 25, 26, 27, 28, 29, 30], 'mapped', path + '/actions/0',
+                'Every player in the arena gets the achievement "Champion of Chazorai" and, at TheNewFrontier.Questline 25, '
+                'Mission09 = 2 and Questline = 26; each player shows the reward text. Achievement, quest and reward text belong '
+                'to their domains (D27).')
+    build.entry(item, path_, [1, 23], 'mapped', path + '/actions/1', 'Those players are teleported to (33062, 31029, 7).')
+    build.entry(item, path_, [24], 'approved_omission', None, 'The teleport effect is cosmetic.')
+    build.entry(item, path_, [34, 4, 5, 6, 7, 11, 12, 13, 14, 15], 'mapped', path + '/actions/2',
+                'clearArena removes every creature left in the arena.')
+    build.entry(item, path_, [8, 9, 10], 'approved_omission', None,
+                'The player branch of clearArena never runs: the players were already teleported to floor 7 (its effect constant '
+                'COsNST_ME_TELEPORT is also misspelt).')
+    build.entry(item, path_, [33], 'approved_omission', None,
+                'The global Mission09 storage frees the shared arena; an instance per party replaces it (D26).')
+    item['manifest']['outcome_evidence'].append({
+        'outcome': 'tirecz_defeated', 'credited': 'players_in_anchor',
+        'achievement_domain': {'achievement': 'Champion of Chazorai'},
+        'quest_domain': {'canary_storage': 'Storage.Quest.U8_54.TheNewFrontier.Questline', 'when': 25, 'set': 26,
+                         'also': {'Storage.Quest.U8_54.TheNewFrontier.Mission09[1]': 2}},
+        'message': 'You have won! As new champion take the ancient armor as reward before you leave.'})
+
+    lion = 'data-otservbr-global/scripts/quests/the_order_of_lion/creatureevent-commander_kills.lua'
+    lever = 'data-otservbr-global/scripts/quests/the_order_of_lion/action-drume.lua'
+    item = build.get('drume', 'The Order of the Lion: Drume', 'instance_per_party')
+    build.participant(item, 'usurper_commander', 'Usurper Commander', 'UsurperCommanderDeath')
+    build.participant(item, 'kesar', 'Kesar', 'KesarImmortal')
+    build.define(item, creature('Drume'))
+    item['encounter']['anchors'] += [{'key': 'kesar_spawn', 'kind': 'point', 'description': 'Canary (32444, 32515, 7).'},
+                                     {'key': 'drume_spawn', 'kind': 'point', 'description': 'Canary (32444, 32516, 7).'}]
+    item['encounter']['state']['counters'].append({'name': 'usurper_commanders', 'initial': 3})
+    build.entry(item, lever, [7, 8, 9, 10, 11, 83, 94, 95, 96, 97, 98, 99, 100, 101, 102, 115], 'mapped', '/encounter/state/counters',
+                'The lever spawns three usurper commanders and stores their number in a global storage; the counter of the '
+                'party instance starts at three (D26).')
+    path = build.rule(item, {'key': 'usurper_commander_falls', 'trigger': {'kind': 'lethal_damage', 'role': 'usurper_commander'},
+                             'conditions': [{'kind': 'counter_compare', 'counter': 'usurper_commanders', 'op': '>', 'value': 0}],
+                             'actions': [{'kind': 'counter', 'counter': 'usurper_commanders', 'operation': 'add', 'value': -1}]})
+    build.entry(item, lion, [30, 31, 40], 'mapped', path + '/trigger', 'onPrepareDeath of a usurper commander; the death is not prevented.')
+    build.entry(item, lion, [32, 33, 34], 'mapped', path + '/actions/0', 'The count drops by one while above zero.')
+    path = build.rule(item, {'key': 'kesar_and_drume_appear', 'trigger': {'kind': 'counter_reached', 'counter': 'usurper_commanders', 'value': 0},
+                             'conditions': [],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Kesar'), 'role': 'kesar', 'count': 1, 'at': {'anchor': 'kesar_spawn'},
+                                          'owner': 'none', 'health': 'full'},
+                                         {'kind': 'spawn', 'creature': creature('Drume'), 'count': 1, 'at': {'anchor': 'drume_spawn'},
+                                          'owner': 'none', 'health': 'full'}]})
+    build.entry(item, lion, [35, 36, 37, 38], 'mapped', path,
+                'When the last one falls (the count was 1), Kesar and Drume are created (forced) on their tiles.')
+    path = build.rule(item, {'key': 'kesar_is_immortal', 'trigger': {'kind': 'creature_spawned', 'role': 'kesar'}, 'conditions': [],
+                             'actions': [{'kind': 'damage_modifier', 'role': 'kesar', 'multiplier_percent': 0, 'sources': 'any', 'until': 'reset'}]})
+    build.entry(item, lion, [45, 46, 47, 48], 'mapped', path,
+                'onHealthChange returns zero for every hit: Kesar takes no damage. Kesar has no healing spell.')
+
+def quest_room_events(build):
+    """Splash (Wine Cask), MakeshiftHomeDeath, OrganicMatterDeath, the Ferumbras soul splinter and essence, TentacleDeep."""
+    path_ = 'data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_splash.lua'
+    item = build.items['ravenous_hunger']
+    build.participant(item, 'wine_cask', 'Wine Cask', 'Splash')
+    build.define(item, creature('Liquor Spirit'))
+    item['encounter']['anchors'].append({'key': 'liquor_spirit_spawn', 'kind': 'point', 'description': 'Canary (33160, 31945, 15).'})
+    path = build.rule(item, {'key': 'wine_cask_splashes', 'trigger': {'kind': 'health_crossed', 'role': 'wine_cask', 'percent': 85},
+                             'delay_ms': 100, 'conditions': [],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Liquor Spirit'), 'count': 1,
+                                          'at': {'anchor': 'liquor_spirit_spawn'}, 'owner': 'none', 'health': 'full'},
+                                         {'kind': 'say', 'subject': {'role': 'wine_cask'}, 'text': 'SPLASH!', 'mode': 'yell'},
+                                         {'kind': 'heal', 'subject': {'role': 'wine_cask'}, 'amount': 'full'}]})
+    build.entry(item, path_, [1, 3, 4, 5], 'mapped', path + '/trigger', 'onThink: below 85% health (Canary compares strictly).')
+    build.entry(item, path_, [6, 14, 15], 'mapped', path + '/delay_ms', 'addEvent(..., 100): the effect follows 100 ms later.')
+    build.entry(item, path_, [7, 11], 'mapped', path + '/actions/0', 'A liquor spirit on (33160, 31945, 15), not forced.')
+    build.entry(item, path_, [12], 'mapped', path + '/actions/1', 'creature:say("SPLASH!", TALKTYPE_MONSTER_YELL).')
+    build.entry(item, path_, [13], 'mapped', path + '/actions/2', 'The cask heals to full, so it crosses 85% again only after new damage.')
+    build.entry(item, path_, [8, 9, 10], 'approved_omission', None,
+                'The closure tests the captured creature object, never nil; a delayed action on a creature that no longer exists '
+                'does nothing (§9.2).')
+
+    path_ = 'data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua'
+    item = build.get('dangerous_depth_makeshift_homes', 'Dangerous Depth: makeshift homes', 'channel_shared')
+    build.participant(item, 'makeshift_home', 'Makeshift Home', 'MakeshiftHomeDeath')
+    trash = ref('Item', 'canary:item/398')
+    build.define(item, trash)
+    path = build.rule(item, {'key': 'makeshift_home_leaves_rubble', 'trigger': {'kind': 'creature_died', 'role': 'makeshift_home'},
+                             'conditions': [], 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': trash, 'at': 'death_position',
+                                                            'interaction': 'canary:interaction/57233'}]})
+    build.entry(item, path_, [68, 70], 'mapped', path + '/trigger', 'onDeath of a makeshift home.')
+    build.entry(item, path_, [71, 72], 'mapped', path + '/actions/0',
+                'Wooden trash 398 with action id 57233 on the death position. Action id 57233 is dangerous_depth/'
+                'actions_wooden_trash.lua: searching it may start a prisoner escort (quest interaction).')
+
+    path_ = 'data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_the_baron_from_below.lua'
+    item = build.items['the_baron_from_below']
+    build.participant(item, 'organic_matter', 'Organic Matter', 'OrganicMatterDeath')
+    build.define(item, creature('Aggressive Matter'))
+    path = build.rule(item, {'key': 'organic_matter_bursts', 'trigger': {'kind': 'creature_died', 'role': 'organic_matter'},
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('Aggressive Matter'), 'count': 4,
+                                                            'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+    build.entry(item, path_, [63, 64], 'mapped', path + '/trigger', 'onDeath of organic matter.')
+    build.entry(item, path_, [65, 66, 67], 'mapped', path + '/actions/0', 'Four aggressive matters on the death position (extended).')
+
+    path_ = 'data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_ferumbras_soul_splinter.lua'
+    item = build.items['ferumbras_mortal_shell']
+    build.participant(item, 'ferumbras_soul_splinter', 'Ferumbras Soul Splinter', 'FerumbrasSoulSplinterDeath')
+    build.participant(item, 'ferumbras_essence', 'Ferumbras Essence', 'FerumbrasEssenceImmortal')
+    path = build.rule(item, {'key': 'soul_splinter_death', 'trigger': {'kind': 'creature_died', 'role': 'ferumbras_soul_splinter'},
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('Ferumbras Essence'),
+                                                            'role': 'ferumbras_essence', 'count': 1, 'at': 'death_position',
+                                                            'owner': 'none', 'health': 'full'}]})
+    build.entry(item, path_, [1, 3], 'mapped', path + '/trigger', 'onDeath of a Ferumbras soul splinter.')
+    build.entry(item, path_, [4, 5, 6, 7, 8, 9], 'mapped', path + '/actions/0',
+                'A Ferumbras essence on the death position (extended, forced); the failure log has no game effect.')
+    path = build.rule(item, {'key': 'ferumbras_essence_is_immortal', 'trigger': {'kind': 'creature_spawned', 'role': 'ferumbras_essence'},
+                             'conditions': [], 'actions': [{'kind': 'damage_modifier', 'role': 'ferumbras_essence', 'multiplier_percent': 0,
+                                                            'sources': 'any', 'until': 'reset'}]})
+    build.entry(item, path_, [14, 15, 16, 17], 'mapped', path,
+                'onHealthChange returns zero for every hit: the essence takes no damage. It also zeroes the essence\'s own heal '
+                '(15-25), which changes nothing on a creature that never loses health.')
+
+    path_ = 'data-otservbr-global/scripts/quests/hero_of_rathleton/creaturescripts_tentacle.lua'
+    item = build.items['deep_terror']
+    build.participant(item, 'tentacle', 'Tentacle of the Deep Terror', 'TentacleDeep')
+    item['encounter']['anchors'] += [
+        {'key': 'tentacle_room', 'kind': 'area', 'description': 'Every tile within 13 tiles of Canary (33740, 31953, 14) on that floor.'},
+        {'key': 'tentacle_spawns', 'kind': 'area', 'description': 'Canary x 33736-33746, y 31948-31957, z 14.'},
+        {'key': 'deep_terror_spawn', 'kind': 'point', 'description': 'Canary (33741, 31953, 14).'}]
+    item['encounter']['state']['flags'].append({'name': 'deep_terror_risen', 'initial': False})
+    respawn = build.rule(item, {
+        'key': 'tentacle_regrows', 'trigger': {'kind': 'creature_died', 'role': 'tentacle'}, 'delay_ms': 10000,
+        'conditions': [{'kind': 'creature_present', 'role': 'tentacle', 'anchor': 'tentacle_room', 'present': True}],
+        'actions': [{'kind': 'spawn', 'creature': creature('Tentacle of the Deep Terror'), 'role': 'tentacle', 'count': 1,
+                     'at': {'random_in': 'tentacle_spawns'}, 'owner': 'none', 'health': 'full'}]})
+    rise = build.rule(item, {
+        'key': 'deep_terror_rises', 'trigger': {'kind': 'creature_died', 'role': 'tentacle'}, 'delay_ms': 5000,
+        'conditions': [{'kind': 'creature_present', 'role': 'tentacle', 'anchor': 'tentacle_room', 'present': False},
+                       {'kind': 'flag', 'flag': 'deep_terror_risen', 'value': False}],
+        'actions': [{'kind': 'spawn', 'creature': creature('Deep Terror'), 'role': 'deep_terror', 'count': 1,
+                     'at': {'anchor': 'deep_terror_spawn'}, 'owner': 'none', 'health': 'full'},
+                    {'kind': 'flag', 'flag': 'deep_terror_risen', 'value': True}]})
+    build.entry(item, path_, [20, 21, 22, 23, 24, 25], 'mapped', respawn + '/trigger', 'onDeath of a tentacle.')
+    build.entry(item, path_, [26], 'mapped', respawn + '/delay_ms',
+                'Canary checks 5 s after each death. The reference-date wiki (Hero of Rathleton Quest/Spoiler) gives a dead '
+                'tentacle "a 10-second window before it spawns again with full health" unless all four die in it (D15, D25).')
+    build.entry(item, path_, [1, 2, 4, 5, 6], 'mapped', respawn + '/conditions/0',
+                'A living tentacle within 13 tiles of (33740, 31953, 14). Canary returns after the first spectator of the list, '
+                'so the outcome depends on spectator order (a player listed first spawns the Deep Terror while tentacles live); '
+                'the wiki decides: tentacles regrow while any live, the Deep Terror comes when all are dead (D25).')
+    build.entry(item, path_, [3, 7, 8], 'mapped', respawn + '/actions/0',
+                'A new tentacle, forced, on a random tile of x 33736-33746, y 31948-31957.')
+    build.entry(item, path_, [9, 26], 'mapped', rise + '/delay_ms', 'The Deep Terror check runs 5 s after a death (the wiki gives no delay).')
+    build.entry(item, path_, [10, 11, 12], 'mapped', rise + '/conditions/1',
+                'GlobalStorage HeroRathleton.DeepRunning == 2 makes the Deep Terror appear once; an instance flag replaces the '
+                'global (D26).')
+    build.entry(item, path_, [13, 15], 'mapped', rise + '/actions/0', 'The Deep Terror, forced, on (33741, 31953, 14).')
+    build.entry(item, path_, [14], 'mapped', rise + '/actions/1', 'DeepRunning = 2.')
+
+def secret_library_knowledges(build):
+    """lokathmorDeath, mazzinorDeath, mazzinorHealth: the knowledge drops check a name their registrant never has; the wiki
+    decides (D25)."""
+    path_ = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_lokathmor.lua'
+    item = build.get('lokathmor', 'The Secret Library: Lokathmor', 'instance_per_party')
+    build.participant(item, 'lokathmor', 'Lokathmor', 'lokathmorDeath')
+    build.participant(item, 'dark_knowledge', 'Dark Knowledge')
+    parchment = ref('Item', 'canary:item/28488')
+    build.define(item, parchment)
+    path = build.rule(item, {'key': 'dark_knowledge_leaves_parchment', 'trigger': {'kind': 'creature_died', 'role': 'dark_knowledge'},
+                             'conditions': [], 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': parchment,
+                                                            'at': 'death_position'}]})
+    build.entry(item, path_, [3, 5, 6, 7, 10], 'approved_omission', None,
+                'The event is registered only by Lokathmor, but its body acts only on a creature named "dark knowledge", so '
+                'Lokathmor\'s death has no effect; Dark Knowledge (corpse 0) registers no event, so in Canary no parchment ever '
+                'appears.')
+    build.entry(item, path_, [1, 8, 9], 'mapped', path,
+                'The reference-date wiki (Dark Knowledge: "When it dies, it becomes a Parchment of Dark Knowledge"; The Secret '
+                'Library Quest/Spoiler: its parchment is used on the writing desk to free Lokathmor) decides (D25): parchment '
+                '28488 (actions_parchment.lua) on the death position of a dark knowledge.')
+
+    path_ = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_mazzinor.lua'
+    item = build.get('mazzinor', 'The Secret Library: Mazzinor', 'instance_per_party')
+    build.participant(item, 'mazzinor', 'Mazzinor', 'mazzinorDeath')
+    build.participant(item, 'mazzinor', 'Mazzinor', 'mazzinorHealth')
+    build.participant(item, 'wild_knowledge', 'Wild Knowledge')
+    vortex = ref('Item', 'canary:item/28673')
+    build.define(item, vortex)
+    path = build.rule(item, {'key': 'wild_knowledge_leaves_vortex', 'trigger': {'kind': 'creature_died', 'role': 'wild_knowledge'},
+                             'conditions': [], 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': vortex,
+                                                            'at': 'death_position', 'revert_after_ms': 60000,
+                                                            'interaction': 'canary:interaction/4951'}]})
+    build.entry(item, path_, [4, 6, 7, 8, 19, 20, 22], 'approved_omission', None,
+                'mazzinorDeath is registered only by Mazzinor, but its body acts only on a creature named "wild knowledge", so '
+                'Mazzinor\'s death has no effect; Wild Knowledge (corpse 0) registers no event, so in Canary no vortex appears.')
+    build.entry(item, path_, [1, 2, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], 'mapped', path,
+                'The reference-date wiki (The Secret Library Quest/Spoiler: "Once you kill them, they will become a blue vortex") '
+                'decides (D25): vortex 28673 with action id 4951 on the death position of a wild knowledge, removed after one '
+                'minute. Action id 4951 (movements_mazzinor.lua) gives the player stepping in a 30 s outfit condition and '
+                'removes the vortex (interaction domain).')
+    build.entry(item, path_, [24, 26, 27, 28, 29, 30, 31, 33], 'approved_omission', None,
+                'mazzinorHealth re-applies the primary part of every change to Mazzinor through creature:addHealth without an '
+                'attacker and zeroes the original (damage arrives negative, game.cpp combatChangeHealth): the secondary part of '
+                'each hit is lost and no player is credited with any damage, so the reward boss would leave no rewards. The '
+                'reference-date wiki describes an ordinary fight in which players attack Mazzinor directly and lists its loot, '
+                'so the change is not reproduced (D25); Crystal (D30) has the same script.')
+
+def d31_events(build):
+    """Events that need the D31 vocabulary: player messages, removing only the triggering creature, weighted choices, heal
+    triggers, party credit and circular areas."""
+    lion = 'data-otservbr-global/scripts/quests/the_order_of_lion/creatureevent-commander_kills.lua'
+    lever = 'data-otservbr-global/scripts/quests/the_order_of_lion/action-drume.lua'
+    item = build.items['drume']
+    build.participant(item, 'lion_commander', 'Lion Commander', 'LionCommanderDeath')
+    item['encounter']['anchors'] += [
+        {'key': 'skirmish', 'kind': 'area', 'description': 'Canary x 32417-32461, y 32507-32539, z 7 (22 and 16 tiles around (32439, 32523, 7)).'},
+        {'key': 'skirmish_exit', 'kind': 'point', 'description': 'Canary (32453, 32503, 7).'}]
+    item['encounter']['state']['counters'].append({'name': 'lion_commanders', 'initial': 3})
+    build.entry(item, lever, [2, 3, 4, 5, 6, 82, 85, 86, 87, 88, 89, 90, 91, 92, 93, 114], 'mapped', '/encounter/state/counters',
+                'The lever spawns three lion commanders and stores their number; the party instance counter starts at three (D26).')
+    lost = build.rule(item, {
+        'key': 'skirmish_lost', 'trigger': {'kind': 'lethal_damage', 'role': 'lion_commander'},
+        'conditions': [{'kind': 'counter_compare', 'counter': 'lion_commanders', 'op': '<=', 'value': 1}],
+        'actions': [{'kind': 'remove', 'all_in': 'skirmish', 'keep_summons': True},
+                    {'kind': 'message', 'to': {'players_in': 'skirmish'}, 'text': 'You lost the skirmish.'},
+                    {'kind': 'teleport', 'who': {'players_in': 'skirmish'}, 'to': 'skirmish_exit'}]})
+    falls = build.rule(item, {
+        'key': 'lion_commander_falls', 'trigger': {'kind': 'lethal_damage', 'role': 'lion_commander'},
+        'conditions': [{'kind': 'counter_compare', 'counter': 'lion_commanders', 'op': '>', 'value': 1}],
+        'actions': [{'kind': 'counter', 'counter': 'lion_commanders', 'operation': 'add', 'value': -1}]})
+    build.entry(item, lion, [8, 9, 25, 26], 'mapped', falls + '/trigger', 'onPrepareDeath of a lion commander; the death is not prevented.')
+    build.entry(item, lion, [10, 11, 12], 'mapped', falls, 'While more than one is left, the count drops by one.')
+    build.entry(item, lion, [1, 2, 3, 4, 5, 6, 13, 14], 'mapped', lost + '/conditions/0',
+                'The last one (count 1 or less) loses the skirmish. The rule stands before the count rule so both read the count '
+                'before this death.')
+    build.entry(item, lion, [15, 16, 17], 'mapped', lost + '/actions/0',
+                'Every monster without a master in the room is removed; players\' summons stay.')
+    build.entry(item, lion, [18, 19], 'mapped', lost + '/actions/1', 'MESSAGE_EVENT_ADVANCE to every player in the room.')
+    build.entry(item, lion, [20, 21, 22], 'mapped', lost + '/actions/2', 'Those players are teleported to (32453, 32503, 7).')
+    build.entry(item, lion, [23], 'approved_omission', None, 'The teleport effect is cosmetic.')
+
+    evaporate = 'data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_evaporate.lua'
+    spawn_boss = 'data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_spawn_boss.lua'
+    item = build.items['ravenous_hunger']
+    build.participant(item, 'liquor_spirit', 'Liquor Spirit', 'Evaporate')
+    build.participant(item, 'leiden', 'Leiden')
+    item['encounter']['state']['flags'].append({'name': 'leiden_evaporated', 'initial': False})
+    near = lambda role: {'kind': 'creature_present', 'role': role, 'near': {'role': 'liquor_spirit', 'radius': 3, 'shape': 'circle'},
+                         'present': True}
+    trigger = {'kind': 'health_crossed', 'role': 'liquor_spirit', 'percent': 60}
+    say = build.rule(item, {'key': 'liquor_spirit_evaporates', 'trigger': trigger, 'delay_ms': 100, 'conditions': [],
+                            'actions': [{'kind': 'say', 'subject': {'role': 'liquor_spirit'}, 'text': 'The liquor spirit evaporates!',
+                                         'mode': 'yell'}]})
+    hurt = build.rule(item, {'key': 'evaporation_hurts_leiden', 'trigger': trigger, 'delay_ms': 100, 'conditions': [near('leiden')],
+                             'actions': [{'kind': 'damage', 'subject': {'role': 'leiden'}, 'amount': {'min': 3000, 'max': 6000},
+                                          'damage_type': 'none'},
+                                         {'kind': 'flag', 'flag': 'leiden_evaporated', 'value': True}]})
+    feed = build.rule(item, {'key': 'evaporation_feeds_ravenous_hunger', 'trigger': trigger, 'delay_ms': 100,
+                             'conditions': [near('ravenous_hunger')],
+                             'actions': [{'kind': 'heal', 'subject': {'role': 'ravenous_hunger'}, 'amount': {'min': 3000, 'max': 6000}}]})
+    gone = build.rule(item, {'key': 'liquor_spirit_gone', 'trigger': trigger, 'delay_ms': 100, 'conditions': [],
+                             'actions': [{'kind': 'remove', 'triggering': True}]})
+    build.entry(item, evaporate, [31, 32, 33, 34], 'mapped', say + '/trigger', 'onThink: below 60% health (Canary compares strictly).')
+    build.entry(item, evaporate, [35, 36, 37, 38, 39, 45, 46], 'mapped', say + '/delay_ms',
+                'addEvent(..., 100) for the same creature; its first run removes the spirit, later ones find no creature.')
+    build.entry(item, evaporate, [40], 'mapped', say + '/actions/0', 'creature:say(..., TALKTYPE_MONSTER_YELL).')
+    build.entry(item, evaporate, [1, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 29, 41, 42], 'mapped', hurt + '/conditions/0',
+                'The combat area around the spirit is Canary\'s radius-3 circle (every tile with dx^2 + dy^2 <= 10, the rows of '
+                'lines 5-11); onTargetTile acts on the monster standing on each tile.')
+    build.entry(item, evaporate, [18, 20], 'mapped', hurt + '/actions/0',
+                'Leiden loses 3000-6000 health through creature:addHealth: a direct change without attacker or type, so no '
+                'resistance applies (damage_type none, D31).')
+    build.entry(item, evaporate, [19], 'mapped', hurt + '/actions/1',
+                'registerEvent("SpawnBoss") arms Leiden\'s death rule below; the flag records it.')
+    build.entry(item, evaporate, [21, 22], 'mapped', feed + '/actions/0', 'Ravenous Hunger in the area gains 3000-6000 health.')
+    build.entry(item, evaporate, [23, 24, 25, 26, 27], 'approved_omission', None, 'Other tiles and creatures are left alone.')
+    build.entry(item, evaporate, [2], 'approved_omission', None, 'The purple smoke effect is cosmetic; the combat has no damage formula.')
+    build.entry(item, evaporate, [43, 44], 'mapped', gone + '/actions/0', 'creature:remove(): only this spirit disappears (D31).')
+    path = build.rule(item, {'key': 'leiden_turns_into_ravenous_hunger', 'trigger': {'kind': 'creature_died', 'role': 'leiden'},
+                             'conditions': [{'kind': 'flag', 'flag': 'leiden_evaporated', 'value': True}],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Ravenous Hunger'), 'role': 'ravenous_hunger', 'count': 1,
+                                          'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+    build.entry(item, spawn_boss, [1, 2, 3, 4, 5, 7], 'mapped', path + '/trigger',
+                'SpawnBoss is registered on Leiden by the evaporation only (creaturescripts_evaporate.lua line 19).')
+    build.entry(item, spawn_boss, [8, 12, 13, 15], 'mapped', path + '/actions/0', 'Ravenous Hunger on Leiden\'s death position, not forced.')
+    build.entry(item, spawn_boss, [9, 10, 11], 'approved_omission', None,
+                'The Sinister Hermit branch belongs to movements_geyser.lua, which registers SpawnBoss on the hermit.')
+
+    path_ = 'data-otservbr-global/scripts/creaturescripts/monster/the_welter_egg.lua'
+    item = build.get('the_welter', 'Raid: The Welter', 'channel_shared')
+    build.participant(item, 'egg', 'Egg', 'TheWelterEgg')
+    build.define(item, creature('Spawn of the Welter'))
+    path = build.rule(item, {'key': 'egg_hatches', 'trigger': {'kind': 'creature_spawned', 'role': 'egg'}, 'delay_ms': 10000, 'conditions': [],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Spawn of the Welter'), 'count': 1, 'at': 'subject_position',
+                                          'owner': 'none', 'health': 'full'},
+                                         {'kind': 'remove', 'triggering': True}]})
+    build.entry(item, path_, [1, 2, 3, 16, 17], 'mapped', path + '/trigger',
+                'onThink schedules the hatching 10 s after the egg\'s first think (monsters think every second, so within a second '
+                'of appearing); later thinks schedule more, which find the egg gone.')
+    build.entry(item, path_, [4, 5, 6, 7, 8, 11, 12, 13, 14, 15], 'mapped', path + '/actions/0',
+                'A Spawn of the Welter on the egg\'s tile (forced, no master).')
+    build.entry(item, path_, [10], 'mapped', path + '/actions/1', 'Only this egg is removed (D31).')
+    build.entry(item, path_, [9], 'approved_omission', None, 'The poison effect is cosmetic.')
+
+    path_ = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_possessed_tree.lua'
+    item = build.items['the_enraged_thorn_knight']
+    build.participant(item, 'possessed_tree', 'Possessed Tree', 'PossessedTree')
+    unbound = ['Unbound Blightwalker', 'Unbound Demon', 'Unbound Demon Outcast', 'Unbound Defiler']
+    branches = []
+    for name in unbound:
+        build.define(item, creature(name))
+        branches.append({'weight': 1, 'actions': [
+            {'kind': 'spawn', 'creature': creature(name), 'count': 1, 'at': 'death_position', 'owner': 'none', 'health': 'full'},
+            {'kind': 'say', 'subject': {'spawned': True}, 'text': f'The destruction of the tree unleashes the {name.lower()}!',
+             'mode': 'say'}]})
+    unleash = build.rule(item, {'key': 'possessed_tree_unleashes', 'trigger': {'kind': 'creature_died', 'role': 'possessed_tree'},
+                                'conditions': [], 'actions': [{'kind': 'one_of', 'branches': branches}]})
+    regrow = build.rule(item, {'key': 'possessed_tree_regrows', 'trigger': {'kind': 'creature_died', 'role': 'possessed_tree'},
+                               'delay_ms': 60000, 'conditions': [],
+                               'actions': [{'kind': 'spawn', 'creature': creature('Possessed Tree'), 'role': 'possessed_tree', 'count': 1,
+                                            'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+    build.entry(item, path_, [2, 3, 4, 5, 6, 7], 'mapped', unleash + '/trigger', 'onDeath of a possessed tree.')
+    build.entry(item, path_, [1, 9, 10, 11, 12], 'mapped', unleash + '/actions/0',
+                'One of the four unbound creatures, picked uniformly, appears forced on the death position and names itself.')
+    build.entry(item, path_, [13], 'mapped', regrow, 'addEvent: a new possessed tree, forced, on the same position after 60 s.')
+    build.entry(item, path_, [8], 'approved_omission', None, 'The plant effect is cosmetic.')
+
+    path_ = 'data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster.lua'
+    item = build.get('ugly_monster', 'Cobra Bastion: Ugly Monster', 'channel_shared')
+    build.participant(item, 'ugly_monster', 'Ugly Monster', 'UglyMonsterDrop')
+    loot = [3577, 3582, 836, 3587, 3591, 3593, 3586, 3601, 30059, 30060, 30061]
+    for item_id in loot:
+        build.define(item, ref('Item', f'canary:item/{item_id}'))
+    drops = [{'weight': 97 if index < 8 else 8, 'actions': [{'kind': 'drop_item', 'item': ref('Item', f'canary:item/{item_id}'),
+                                                             'at': 'subject_position'}]} for index, item_id in enumerate(loot)]
+    rules = []
+    for source_kind in ('damage_taken', 'heal_received'):
+        rules.append(build.rule(item, {'key': f'ugly_monster_drops_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': 'ugly_monster',
+                                                                                                  'source': 'any'},
+                                       'conditions': [{'kind': 'chance_percent', 'value': 1}],
+                                       'actions': [{'kind': 'one_of', 'branches': drops}]}))
+    build.entry(item, path_, [68, 69, 81, 82, 84], 'mapped', rules[0] + '/trigger',
+                'onHealthChange runs for every change with an origin, damage and heals alike (game.cpp combatChangeHealth); '
+                'one rule per trigger kind.')
+    build.entry(item, path_, [68, 69], 'mapped', rules[1] + '/trigger', 'The same handler for heals.')
+    build.entry(item, path_, [70, 71], 'mapped', rules[0] + '/conditions/0', 'math.random(100) == 100: a 1% chance.')
+    build.entry(item, path_, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 72, 73, 74, 75, 76, 77, 78, 79, 80], 'mapped',
+                rules[0] + '/actions/0',
+                'Then 3% (math.random(100) >= 98) one of the last three items, uniformly, else one of the first eight: weights '
+                '8 each for 30059-30061 and 97 each for the others (0.03/3 = 8/800, 0.97/8 = 97/800), dropped on the monster\'s tile.')
+
+    path_ = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_soulcatcher_summon.lua'
+    item = build.get('soulcatcher', 'Forgotten Knowledge: Soulcatcher', 'instance_per_party')
+    build.participant(item, 'soulcatcher', 'Soulcatcher', 'SoulcatcherSummon')
+    build.define(item, creature('Corrupted Soul'))
+    item['encounter']['anchors'].append({'key': 'corrupted_soul_spawn', 'kind': 'point', 'description': 'Canary (33358, 31187, 10).'})
+    rules = []
+    for source_kind in ('damage_taken', 'heal_received'):
+        rules.append(build.rule(item, {
+            'key': f'soulcatcher_releases_a_soul_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': 'soulcatcher', 'source': 'any'},
+            'conditions': [{'kind': 'health_percent', 'role': 'soulcatcher', 'op': '<', 'value': 100},
+                           {'kind': 'chance_percent', 'value': 15}],
+            'actions': [{'kind': 'spawn', 'creature': creature('Corrupted Soul'), 'count': 1, 'at': {'anchor': 'corrupted_soul_spawn'},
+                         'owner': 'none', 'health': 'full'}]}))
+    build.entry(item, path_, [1, 2, 3, 11, 12, 14], 'mapped', rules[0] + '/trigger',
+                'onHealthChange of the Soulcatcher: every change with an origin, including its own heals (healing spell '
+                '100-145 and life drain); one rule per trigger kind.')
+    build.entry(item, path_, [1, 2, 3], 'mapped', rules[1] + '/trigger', 'The same handler for heals.')
+    build.entry(item, path_, [4, 9], 'mapped', rules[0] + '/conditions/0',
+                'getHealth() <= 49999 of 50000: not at full health, read before the change (§9.2).')
+    build.entry(item, path_, [5, 6, 8], 'mapped', rules[0] + '/conditions/1', 'math.random(1, 100) <= 15.')
+    build.entry(item, path_, [7], 'mapped', rules[0] + '/actions/0', 'A corrupted soul, forced, on (33358, 31187, 10).')
+
+    path_ = 'data-otservbr-global/scripts/quests/dark_trails/creaturescripts_kill_death_priest_shargon.lua'
+    item = build.get('death_priest_shargon', 'Dark Trails: Death Priest Shargon', 'instance_per_party')
+    build.participant(item, 'death_priest_shargon', 'Death Priest Shargon', 'DeathPriestShargonDeath')
+    item['encounter']['anchors'] += [{'key': 'exit_teleporter', 'kind': 'point', 'description': 'Canary (33487, 32101, 9).'},
+                                     {'key': 'shargon_exit', 'kind': 'point', 'description': 'Canary (33489, 32088, 9).'}]
+    teleporter = ref('Item', 'canary:item/1949')
+    build.define(item, teleporter)
+    item['encounter']['outcomes'].append('death_priest_shargon_defeated')
+    path = build.rule(item, {'key': 'death_priest_shargon_death', 'trigger': {'kind': 'creature_died', 'role': 'death_priest_shargon'},
+                             'conditions': [],
+                             'actions': [{'kind': 'map_item', 'operation': 'create', 'item': teleporter, 'anchor': 'exit_teleporter',
+                                          'destination': 'shargon_exit', 'revert_after_ms': 5 * 60 * 1000},
+                                         {'kind': 'emit_outcome', 'outcome': 'death_priest_shargon_defeated', 'credited': 'party'}]})
+    build.entry(item, path_, [18, 20], 'mapped', path + '/trigger', 'onDeath of Death Priest Shargon.')
+    build.entry(item, path_, [1, 2, 3, 4, 23, 24, 25, 26, 36, 10, 11, 12, 13, 15, 16], 'mapped', path + '/actions/0',
+                'A teleporter 1949 on (33487, 32101, 9) leading to (33489, 32088, 9), removed after 5 minutes.')
+    build.entry(item, path_, [5, 6, 7, 28, 29, 30, 31, 32, 33, 34], 'mapped', path + '/actions/1',
+                'onDeathForParty credits the party of the top damage dealer (functions.lua lines 1087-1096; party.lua Participants '
+                'tests a misspelt requiredSharedExperience, so shared experience is never required): DarkTrails.Mission18 = 1 unless '
+                'already set (D27 quest domain).')
+    build.entry(item, path_, [14, 21, 22], 'approved_omission', None, 'Magic effects are cosmetic.')
+    item['manifest']['outcome_evidence'].append({
+        'outcome': 'death_priest_shargon_defeated', 'credited': 'party',
+        'quest_domain': {'canary_storage': 'Storage.Quest.U10_50.DarkTrails.Mission18', 'raise_to_at_least': 1}})
+
+    path_ = 'data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_snail_slime_kill.lua'
+    item = build.items['the_count_of_the_core']
+    build.participant(item, 'snail_slime', 'Snail Slime', 'SnailSlimeDeath')
+    build.participant(item, 'snail_slime', 'Snail Slime', 'SnailSlimeThink')
+    cry = build.rule(item, {'key': 'snail_slime_bursts', 'trigger': {'kind': 'creature_died', 'role': 'snail_slime'}, 'conditions': [],
+                            'actions': [{'kind': 'say', 'subject': {'role': 'snail_slime'}, 'text': '!!', 'mode': 'yell'}]})
+    feed = build.rule(item, {'key': 'snail_slime_feeds_the_count', 'trigger': {'kind': 'creature_died', 'role': 'snail_slime'},
+                             'conditions': [{'kind': 'creature_present', 'role': 'the_count_of_the_core',
+                                             'near': {'role': 'snail_slime', 'radius': 2, 'shape': 'circle'}, 'present': True}],
+                             'actions': [{'kind': 'heal', 'subject': {'role': 'the_count_of_the_core'}, 'amount': {'min': 0, 'max': 2000}}]})
+    build.entry(item, path_, [60, 61, 65, 66, 68], 'mapped', cry + '/trigger', 'onDeath of a snail slime.')
+    build.entry(item, path_, [62], 'mapped', cry + '/actions/0', 'creature:say("!!", TALKTYPE_MONSTER_YELL).')
+    build.entry(item, path_, [5, 6, 12, 13, 14, 15, 16, 17, 18, 19, 22, 23, 24, 25, 27, 63, 64], 'mapped', feed + '/conditions/0',
+                'AREA_CIRCLE2X2 around the slime (every tile with dx^2 + dy^2 <= 5); onTargetTile acts on The Count of the Core '
+                'standing there.')
+    build.entry(item, path_, [8, 9, 10, 20, 21], 'mapped', feed + '/actions/0', 'The Count gains math.random(0, 2000) health.')
+    build.entry(item, path_, [1, 2, 3], 'approved_omission', None,
+                'The fire combat has no damage formula, so it deals nothing; its effect is cosmetic.')
+    build.entry(item, path_, [29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55,
+                              56, 58], 'approved_omission', None,
+                'SnailSlimeThink is registered only by the snail slime, but acts only on a creature named "the count of the core", '
+                'so it never does anything.')
+
+def respawn_and_remains(build):
+    """CarlinVortexDeath (the cult soul remains) and DeathDragon (Ragiaz's dragons revive; the wiki decides, D25)."""
+    path_ = 'data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua'
+    item = build.get('cult_soul_remains', 'Cults of Tibia: soul remains of the cultists', 'channel_shared')
+    for name in ('Cult Believer', 'Cult Enforcer', 'Cult Scholar'):
+        build.participant(item, 'cultist', name, 'CarlinVortexDeath')
+    branches = []
+    for item_id in (32414, 32415):
+        remains = ref('Item', f'canary:item/{item_id}')
+        build.define(item, remains)
+        branches.append({'weight': 1, 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': remains, 'at': 'death_position',
+                                                   'revert_after_ms': 60000, 'interaction': 'canary:interaction/5580'}]})
+    path = build.rule(item, {'key': 'cultist_leaves_soul_remains', 'trigger': {'kind': 'creature_died', 'role': 'cultist'}, 'conditions': [],
+                             'actions': [{'kind': 'one_of', 'branches': branches}]})
+    build.entry(item, path_, [1, 2, 15], 'mapped', path + '/trigger', 'onDeath of a cult believer, enforcer or scholar.')
+    build.entry(item, path_, [3, 4, 5, 6, 7, 8, 9, 10, 11, 12], 'mapped', path + '/actions/0',
+                'Remains 32414 or 32415, picked uniformly, with action id 5580 on the death position, removed after one minute. '
+                'Action id 5580 (movements_task_teleport.lua) lets a player absorb the remains for a Cults of Tibia mission '
+                'counter (interaction and quest domains).')
+
+    path_ = 'data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_death_dragon.lua'
+    item = build.items['ragiaz']
+    build.participant(item, 'death_dragon', 'Death Dragon', 'DeathDragon')
+    revive = build.rule(item, {'key': 'death_dragon_revives', 'trigger': {'kind': 'creature_died', 'role': 'death_dragon'}, 'delay_ms': 1000,
+                               'conditions': [],
+                               'actions': [{'kind': 'spawn', 'creature': creature('Death Dragon'), 'role': 'death_dragon', 'count': 1,
+                                            'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+    speak = build.rule(item, {'key': 'ragiaz_revives_his_minion', 'trigger': {'kind': 'creature_died', 'role': 'death_dragon'},
+                              'conditions': [{'kind': 'creature_present', 'role': 'ragiaz', 'near': {'role': 'death_dragon', 'radius': 10},
+                                              'present': True}],
+                              'actions': [{'kind': 'say', 'subject': {'role': 'ragiaz'}, 'text': 'Ragiaz power revives his minion!',
+                                           'mode': 'say'}]})
+    build.entry(item, path_, [1, 2, 3, 4, 5, 21, 23], 'mapped', revive + '/trigger',
+                'onDeath of a death dragon. The guard reads the undefined global targetMonster, so Canary always returns here and '
+                'the rest never runs. The reference-date wiki (Ferumbras\' Ascension Quest/Spoiler: "The Death Dragons respawn '
+                'immediately after being killed") decides (D25): the body below is transcribed.')
+    build.entry(item, path_, [7, 8, 9, 10], 'mapped', revive + '/actions/0',
+                'A new death dragon, forced, on the death position one second later (addEvent returns an event id, so the nil check '
+                'never stops it).')
+    build.entry(item, path_, [12, 13, 14, 15, 16, 17, 18, 19, 20], 'mapped', speak,
+                'Ragiaz within 10 tiles of the dead dragon says the line.')
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu, megalomania_splinters):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains):
         transcribe(build)
     print(json.dumps(build.write()))
 
