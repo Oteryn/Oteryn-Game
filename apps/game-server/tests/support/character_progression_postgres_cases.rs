@@ -117,13 +117,16 @@ impl Database {
 fn fence_parent(tag: &str) -> TestResult<std::path::PathBuf> {
     use std::os::unix::fs::PermissionsExt;
     let parent = std::env::temp_dir().join(format!(
-        "oteryn-character-progression-{tag}-{}",
+        "oteryn-character-progression-parent-{}",
         std::process::id()
     ));
-    let _ = std::fs::remove_dir_all(&parent);
     std::fs::create_dir_all(&parent)?;
     std::fs::set_permissions(&parent, std::fs::Permissions::from_mode(0o700))?;
-    Ok(parent)
+    let retained = parent.join(tag);
+    let _ = std::fs::remove_dir_all(&retained);
+    std::fs::create_dir(&retained)?;
+    std::fs::set_permissions(&retained, std::fs::Permissions::from_mode(0o700))?;
+    Ok(retained)
 }
 
 async fn register(root: &DurabilityRoot, tag: u8) -> TestResult<NodeIncarnationProof> {

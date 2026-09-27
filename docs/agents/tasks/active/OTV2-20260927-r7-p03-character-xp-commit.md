@@ -193,7 +193,12 @@ previously unseen occurrence.
 - Protected PostgreSQL 17.6 routing: shared cases are included by registered `character_authority_postgres`.
 - Local configured PostgreSQL: pending; no `OTERYN_TEST_POSTGRES_ADMIN_URL` and
   the installed Docker Desktop engine failed to initialize.
-- Hosted PostgreSQL 17.6 lane: container/classification reached on superseded SHA; execution pending final repaired exact head.
+- Hosted PostgreSQL 17.6 lane: exact-head run `36329970211` reached the registered
+  target after build, strict Clippy and workspace tests passed. Its four P03 cases
+  failed during fixture setup, before exercising progression, because the fixture
+  placed the retained recovery directory directly below world-writable `/tmp`.
+  The successor fixture creates a private process-owned `0700` parent first;
+  configured execution is pending the repaired exact head.
 
 ### E2E
 
@@ -235,7 +240,7 @@ previously unseen occurrence.
 ## Context checkpoint
 
 ```yaml
-last_progress: full-workspace Clippy and terminal-session negative coverage repaired
+last_progress: hosted PostgreSQL fixture parent contract repaired after exact-head failure
 status: implementing
 branch: codex/r7-p03-character-xp-commit
 head_sha: null
@@ -252,10 +257,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
-ci_recovery_actions_for_current_head: 1
+repair_cycles_for_current_gate: 4
+ci_recovery_actions_for_current_head: 2
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: refresh main, freeze repaired SHA, rerun exact-head review and PostgreSQL 17.6 CI
+next_action: freeze repaired SHA, rerun exact-head review and PostgreSQL 17.6 CI
 ```
