@@ -856,6 +856,19 @@ impl ChannelRuntimeV1 {
             .record_player_control_loss(&self.continuity, actor.0, game_session_id, mark)
     }
 
+    /// Clear the exact recorded loss once the durable same-session recovery committed:
+    /// the still-present actor is controlled again. Idempotent when already restored; a
+    /// different recorded epoch is a conflict.
+    pub(crate) fn restore_control(
+        &mut self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        epoch: u64,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .restore_player_control(&self.continuity, actor.0, game_session_id, epoch)
+    }
+
     /// Synthetic context is confined to tests. A committed session still goes through
     /// the actual runtime reservation and carrier position initialization checks.
     #[cfg(test)]
@@ -1912,6 +1925,29 @@ impl ChannelActorCarrier {
         }
     }
 
+    fn restore_player_control(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+        epoch: u64,
+    ) -> Result<(), CarrierError> {
+        let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+        match &mut self.slots[index] {
+            Slot::Occupied {
+                control_loss: stored @ Some(_),
+                ..
+            } if stored.is_some_and(|mark| mark.epoch == epoch) => {
+                *stored = None;
+                Ok(())
+            }
+            Slot::Occupied {
+                control_loss: None, ..
+            } => Ok(()),
+            _ => Err(CarrierError::ControlLossConflict),
+        }
+    }
+
     fn validate_ref(
         &self,
         continuity: &NamespaceContinuityGuard,
@@ -2379,6 +2415,20 @@ mod tests {
         assert_eq!(after.placement_identity, facts.placement_identity);
         assert_eq!(runtime.player_control_loss_epochs(), vec![1]);
         // The actor stays present: the committed player count is unchanged.
+        assert_eq!(runtime.player_slot_counts(), (1, 1));
+        // A committed same-session recovery restores control of the same actor; only
+        // the exact recorded epoch clears it, and restoring again is idempotent.
+        assert_eq!(
+            runtime.restore_control(actor, session(64), 2),
+            Err(CarrierError::ControlLossConflict)
+        );
+        assert_eq!(
+            runtime.restore_control(actor, session(65), 1),
+            Err(CarrierError::PlayerReservationMismatch)
+        );
+        assert_eq!(runtime.restore_control(actor, session(64), 1), Ok(()));
+        assert_eq!(runtime.player_control_loss_epochs(), Vec::<u64>::new());
+        assert_eq!(runtime.restore_control(actor, session(64), 1), Ok(()));
         assert_eq!(runtime.player_slot_counts(), (1, 1));
     }
 

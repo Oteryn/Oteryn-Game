@@ -746,6 +746,101 @@ replay mutation, production or Reference-parity authority. Any successor require
 fresh exact allocation and applicable DUR/ANL/data-integrity/privacy review;
 registry paths remain serialized under the live control plane.
 
+### 39.2 Native MINT audit binding and staged admission
+
+This bounded technical decision follows [the native-admission escalation
+5857709826](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5857709826)
+and [documentation allocation
+5857774964](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5857774964).
+It specializes the next native audit-binding gate under §39.1, GAME-ITEM-01 and
+ANL-01; it neither supersedes their invariants nor admits a production event.
+
+**Selected staging:** bind the native MINT snapshot/audit first, without requiring
+an invented Inventory-root representation to start that work. The subsequent
+TRANSFER remains a separate transaction under §39.1; this staging does not
+combine commits, change materialization timing owned by combat/loot/content, or
+accept pickup before its native destination and authority prerequisites exist.
+
+The native MINT aggregate binds complete applicable evidence, not fixture aliases:
+
+- Explicit semantic absence before and one fresh transaction-scoped live
+  ItemInstance after, with ItemInstanceId and WorldId. Absence is not a nil
+  identity or zero-quantity live state.
+- The native stable namespaced ItemTypeKey and explicit compatible definition/
+  ruleset/content revision context under GAME-ITEM-01 and DUR-04. Private numeric
+  mappings and revision-scoped compiled handles cannot replace canonical type
+  identity; this decision selects no key grammar, encoding or gameplay quantity.
+- The complete definition-legal typed after-state and actual typed Ground,
+  including its concrete World/runtime scope and world-position interpretation.
+  Corpse association/provenance is not another immediate location authority.
+- The owning materialization/loot domain's eligible stable occurrence/output-cause
+  and compatible rule/revision binding, sufficient to deduplicate the same output
+  across crash/retry. This records independently authorized source facts; an audit
+  record, arbitrary UUID or synthetic source-kind value cannot create eligibility.
+- Actual applicable ANL common context, complete TransactionEventRef membership
+  under §39.1, safe expected fence references without secrets, and conservation
+  evidence. Server-originated MINT invents no player command; OperationId exists
+  only when the owning durable workflow requires it.
+
+The owning source contract must supply the actual typed occurrence/output-cause
+reference and eligibility meaning. The exact source reference/domain is not
+defined here. Likewise, native Content identity alone does not accept its typed
+state, stack semantics or placement legality. Unknown source or item legality
+keeps admission closed; a synthetic fixture or caller assertion is not a substitute
+for independent current owning facts. Immutable expected bindings cannot grant
+current Character/session/lease/runtime authority.
+
+TRANSFER additionally requires the legal native direct-root CharacterInventory
+reference/position and applicable capacity/placement rules from GAME-ITEM-01 and
+the owning pickup/current-authority contract. No new root identifier domain,
+slot family or numerical ceiling is selected. Its before-state/source must bind
+the actual existing item and Ground, not a freshly substituted internally
+consistent snapshot; identity, type, quantity and one immediate location are
+preserved. These destination prerequisites do not retroactively gate preceding
+MINT schema/codec/profile design, but remain mandatory before TRANSFER admission.
+
+Historical `oteryn.events.candidate.v1/v2`, their private numeric keys, synthetic
+World/root/source facts and literal byte evidence remain unregistered evidence,
+not compatible canonical production revisions. A separately accepted native
+schema/registry binding must not reinterpret those bytes or reuse their fixture
+identities as production authority. ANL-01 remains normative: same EventId fixes
+exact payload bytes/hash and all immutable semantic envelope values. Equivalent
+outer-envelope serialization ordering alone is not a content conflict; the v2
+fixture's strict whole-envelope ordering is not a general ANL admission rule.
+
+The accepted [item-specific P90D logical
+profile](reviews/OTERYN_DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_DECISION_2026-09-27.md)
+supplies purpose, privacy floor, authorized audited readers/export, immutable
+timestamp/expiry, bounded deletion and explicit hold/evolution constraints.
+Character retention is not substituted. The actual native event family must
+bind that accepted item policy through reviewed registry admission; this paragraph
+does not create a serialized profile entry or prove runtime retention enforcement.
+Audit expiry stays independent of receipt/source-cause protection and non-reuse.
+
+This decision concretely supplies native identity/snapshot and compatibility
+inputs for separately allocated schema/codec and item-profile authoring. Resource
+qualification must use the resulting actual native grammar and all applicable
+copies/work; neither candidate widths nor wire integer widths become production
+maxima. Production admission remains conjunctively gated on accepted actual
+schema/event/profile bindings, complete mandatory evidence, registered applicable
+hard resource bounds checked before allocation, legal current source/item/scope/
+destination facts and applicable live fences, and proven owning atomic mutation/
+audit/receipt/publication and recovery mechanisms. No SQL/runtime path, registry
+mutation, PREPARE/COMMIT, collection or gameplay authority follows from this text.
+
+Decision test: **must decide now YES**, to avoid freezing synthetic identity into
+native encoding and unnecessarily coupling MINT to an unresolved root domain.
+Promoting v2 is rejected because its source/type/root semantics are synthetic;
+waiting for all TRANSFER representation choices is rejected as unnecessary for
+preceding native MINT binding. Native MINT-first has the smaller implementation
+surface but leaves TRANSFER admission and playability incomplete. Late identity/
+source reinterpretation would require schema and historical-evidence migration;
+explicit accepted domain changes, compatibility/security/privacy findings or
+measured native encoding/resource evidence can justify reviewed supersession.
+Field/event IDs, source/root domains, gameplay limits and physical mechanisms
+remain deliberately undecided. Fresh exact allocations and independent
+DUR/ANL/data-integrity/privacy review remain required for all successors.
+
 ## 40. Durable acknowledgement
 
 For a durable DUR-03 mutation:

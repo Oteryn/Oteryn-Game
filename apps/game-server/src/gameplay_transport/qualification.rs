@@ -658,11 +658,15 @@ fn frames(output: &[u8]) -> Reply {
 }
 
 fn client_command(id: u64, command_type: u64, payload: &[u8]) -> Vec<u8> {
+    client_command_at(1, id, command_type, payload)
+}
+
+fn client_command_at(generation: u64, id: u64, command_type: u64, payload: &[u8]) -> Vec<u8> {
     let mut body = Vec::new();
     scalar(&mut body, 1, id);
     scalar(&mut body, 2, command_type);
     bytes_field(&mut body, 4, payload);
-    envelope(7, 1, &body)
+    envelope(7, generation, &body)
 }
 
 /// The exact frames after `ServerAccepted` for the first-control scenario, from the committed
@@ -821,6 +825,7 @@ fn node_boot_seam_against_running_node() -> TestResult {
                 )?,
                 url: &url,
                 runtime: None,
+                recovery: &recovery_key()?,
             })
             .await
         })
@@ -1049,6 +1054,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         &shutdown,
     );
 
+    let recovery_signing = recovery_key()?;
     let clients = seam_clients(SeamClients {
         address,
         certificate: &certificate,
@@ -1062,6 +1068,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         descriptor: &descriptor,
         url: &url,
         runtime: Some(&runtime),
+        recovery: &recovery_signing,
     });
     // The listener must outlive every client case: an early listener exit is a
     // failure, never a hang on an unaccepted connection.
@@ -1091,9 +1098,10 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     // KAN-26: every committed fresh admission holds exactly one player actor;
     // refused, replayed and losing attempts leave no reservation behind; and
     // ordinary disconnect (every client has closed by now) removes nothing.
-    // #822: the two lost actors were removed only by their durable grace-expiry
-    // release; the re-admitted character holds the one remaining actor, and a
-    // plain disconnect removed nothing (its loss window was cut by shutdown).
+    // #822: the two lost actors were removed only by a durable terminal release: the
+    // silent one after grace, the resumed one when its recovered connection ended again.
+    // The re-admitted character holds the one remaining actor, and a plain disconnect
+    // removed nothing (its loss window was cut by shutdown).
     let (committed_players, pending) = runtime.lock().await.player_slot_counts();
     if committed_players != 1 || pending != 0 || committed_admissions(&url).await? != 3 {
         return Err(
@@ -1137,6 +1145,112 @@ struct SeamClients<'a> {
     descriptor: &'a ProducerDescriptor,
     url: &'a str,
     runtime: Option<&'a tokio::sync::Mutex<crate::foundation::ChannelRuntimeV1>>,
+    /// The published Platform recovery key (`oteryn-reauth-recovery-v1`) and its id.
+    recovery: &'a (String, SigningKey),
+}
+
+/// The Platform recovery signing key published in the topology (#822 resume).
+fn recovery_key() -> TestResult<(String, SigningKey)> {
+    Ok((
+        required("WP5_S3B_RECOVERY_KEY_ID")?,
+        SigningKey::from_bytes(&hex32(&required("WP5_S3B_RECOVERY_KEY_SEED")?)?),
+    ))
+}
+
+/// A Platform `oteryn-reauth-recovery-v1` credential for `character` of `account` in `world`.
+fn sign_recovery(
+    (key_id, signing): &(String, SigningKey),
+    account: &str,
+    character: &[u8; 16],
+    world: &[u8; 16],
+    security_generation: u64,
+    issued_at: i64,
+    nonce: [u8; 32],
+) -> String {
+    let header = format!(r#"{{"alg":"Ed25519","kid":"{key_id}","typ":"oteryn-recovery+jwt"}}"#);
+    let payload = serde_json::json!({
+        "iss": "urn:oteryn:platform:game-recovery",
+        "aud": "urn:oteryn:game:recovery",
+        "iat": issued_at,
+        "nbf": issued_at,
+        "exp": issued_at + 30,
+        "jti": URL_SAFE_NO_PAD.encode(nonce),
+        "profile": "oteryn-reauth-recovery-v1",
+        "purpose": "existing_actor_recovery",
+        "attempt_ref": uuid_text(&v7(nonce[0], 0x0e)),
+        "account_id": account,
+        "character_id": uuid_text(character),
+        "world_id": uuid_text(world),
+        "account_security_generation": security_generation.to_string(),
+        "protocol_major": 1,
+        "transport_profile": 1,
+        "ruleset_revision": "rules-s3b-1",
+        "content_revision": "content-s3b-1",
+        "map_revision": "map-s3b-1",
+        "world_policy_revision": "policy-s3b-1",
+    });
+    let signing_input = format!(
+        "{}.{}",
+        URL_SAFE_NO_PAD.encode(header),
+        URL_SAFE_NO_PAD.encode(payload.to_string())
+    );
+    let signature = URL_SAFE_NO_PAD.encode(signing.sign(signing_input.as_bytes()).to_bytes());
+    format!("{signing_input}.{signature}")
+}
+
+/// The exact frames after a same-session recovery of the admission-stage session: resumed
+/// generation 2 continues CommandId 6 and server_sequence 7 with a baseline snapshot at the
+/// committed position (0,0,0) revision 3; command 6 steps east (revision 4); command 8 is a gap.
+fn resume_frames(world: WorldId, session: &[u8; 16]) -> TestResult<Vec<Vec<u8>>> {
+    let room = crate::content::qualify_native_entry_room(world)
+        .map_err(|e| format!("native entry room: {e}"))?;
+    let at = |x| {
+        encode_world_spatial(&WorldSpatialObservation {
+            content_generation: room.compiled().client_digest(),
+            actor_position: ActorPosition { x, y: 0, floor: 0 },
+        })
+    };
+    let mut frames = vec![crate::foundation::encode_server_resume_accepted(
+        &crate::foundation::ServerResumeAcceptedValue {
+            game_session_id: crate::foundation::GameSessionId::decode(session)?,
+            connection_generation: 2,
+            current_server_sequence: 7,
+            next_command_id: 6,
+            schema_revision: super::connection::SERVER_SCHEMA_REVISION,
+            selected_capabilities: &[],
+        },
+    )?];
+    frames.extend(encode_single_chunk_snapshot(
+        2,
+        1,
+        7,
+        &[DomainSnapshot {
+            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            revision: 3,
+            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            payload: &at(0),
+        }],
+    )?);
+    frames.extend([
+        encode_command_result(
+            2,
+            8,
+            6,
+            CommandStatus::Accepted,
+            &encode_step_result(StepDisposition::Moved),
+        )?,
+        encode_state_delta(
+            2,
+            9,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            3,
+            4,
+            DELTA_TYPE_WORLD_SPATIAL_V1,
+            &at(1),
+        )?,
+        encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 2, 8, 7)?,
+    ]);
+    Ok(frames)
 }
 
 /// The #823 `SEAM_PASS` client stages against one serving node.
@@ -1154,6 +1268,7 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         descriptor,
         url,
         runtime,
+        recovery,
     } = clients;
     let exact = connector(certificate, &EXACT)?;
     let mut nonce_tag = 0x40u8;
@@ -1486,6 +1601,58 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     evidence(
         "control_loss closed_transport=reconnectable silent_transport=reconnectable epoch=1 grace_s=60 admissions=2",
     );
+
+    evidence("stage=resume");
+    // FND-04B §20: within grace the admission-stage player resumes the SAME GameSession with a
+    // Platform recovery credential on a new TLS connection: generation 2 continues CommandId
+    // and server_sequence, the actor is the same one at its committed position, and no
+    // admission is created. That connection then ends on a gap again.
+    let generation = platform_generation(descriptor, &accounts[0]).await?;
+    let token = sign_recovery(
+        recovery,
+        &accounts[0],
+        &characters[0],
+        &world,
+        generation,
+        now_seconds()?,
+        [0x5e; 32],
+    );
+    let step = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+    let mut raw = framed(&resume(&session, token.as_bytes()));
+    raw.extend_from_slice(&framed(&client_command_at(
+        2,
+        6,
+        step,
+        &encode_step_intent(StepDirection::East),
+    )));
+    raw.extend_from_slice(&framed(&client_command_at(
+        2,
+        8,
+        step,
+        &encode_step_intent(StepDirection::East),
+    )));
+    let reply = exchange_must_close(address, &exact, &raw).await?;
+    let expected = resume_frames(WorldId::decode(&world)?, &session)?;
+    if reply != Reply::Frames(expected) {
+        return Err(format!("same-session resume diverged: {reply:?}").into());
+    }
+    if committed_admissions(url).await? != 2 {
+        return Err("resume created an admission".into());
+    }
+    evidence(
+        "resume same_session=resumed generation=2 next_command_id=6 server_sequence=7 position=0_0_0_rev3 step_east=moved_1_0_0_rev4 admissions=2",
+    );
+    // The consumed recovery credential cannot resume again.
+    let replay = exchange(
+        address,
+        &exact,
+        &framed(&resume(&session, token.as_bytes())),
+    )
+    .await?;
+    if replay != Reply::Closed || committed_admissions(url).await? != 2 {
+        return Err(format!("replayed recovery credential resumed: {replay:?}").into());
+    }
+    evidence("resume replayed_credential=refused");
 
     evidence("stage=grace_expiry");
     // FND-04B §6: with no resumed control, each lost session is terminally released once its

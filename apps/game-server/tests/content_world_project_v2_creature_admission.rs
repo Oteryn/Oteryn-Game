@@ -486,6 +486,16 @@ fn authored_sequences_keep_their_order_and_sets_are_canonicalized() {
     if let ProjectV2AuthoringProfileData::Behavior(behavior) = profile_mut(&mut changed, BEHAVIOR) {
         behavior.attacks.reverse();
     }
+    if let ProjectV2AuthoringProfileData::Presentation(presentation) =
+        profile_mut(&mut changed, PRESENTATION)
+    {
+        presentation.attachment_bindings = ["addon-2", "addon-1"]
+            .map(|addon| ProjectV2SlotBinding {
+                slot: ProjectV2AttachmentSlot::Addon,
+                asset_binding: format!("canary.appearance:outfit/34/{addon}"),
+            })
+            .to_vec();
+    }
     let parsed = admit(changed).expect("admit reordered monster");
     let state = parsed.v2().expect("v2 state");
     let find = |key: &str| {
@@ -520,12 +530,44 @@ fn authored_sequences_keep_their_order_and_sets_are_canonicalized() {
         Some(WAVE),
         "schedule order is authored order"
     );
+    let addons = match find(PRESENTATION) {
+        ProjectV2AuthoringProfileData::Presentation(presentation) => presentation
+            .attachment_bindings
+            .into_iter()
+            .map(|binding| binding.asset_binding)
+            .collect(),
+        _ => Vec::new(),
+    };
+    assert_eq!(
+        addons,
+        vec![
+            "canary.appearance:outfit/34/addon-1".to_owned(),
+            "canary.appearance:outfit/34/addon-2".to_owned()
+        ],
+        "both addons share the addon slot and sort by binding"
+    );
 }
 
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 12] = [
+    let cases: [(&str, &str, Mutation); 13] = [
+        (
+            "two palette bindings for one slot",
+            "v2 presentation slots are not sorted and unique",
+            |draft| {
+                if let ProjectV2AuthoringProfileData::Presentation(presentation) =
+                    profile_mut(draft, PRESENTATION)
+                {
+                    presentation.palette_bindings = ["canary.palette:1", "canary.palette:2"]
+                        .map(|binding| ProjectV2SlotBinding {
+                            slot: ProjectV2PaletteSlot::Head,
+                            asset_binding: binding.to_owned(),
+                        })
+                        .to_vec();
+                }
+            },
+        ),
         (
             "chance above one million ppm",
             "v2 schedule chance exceeds 100%",

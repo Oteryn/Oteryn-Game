@@ -5884,6 +5884,44 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
                 source.current.lock().map_err(|_| "owner lock")?.snapshot.claims =
                     guards.load(&keys).await?.into_iter().collect::<Option<Vec<_>>>().ok_or("missing claim rows")?;
             }
+            // The durable original loss is read back exactly.
+            assert_eq!(
+                store.owning_loss(lost.commit().game_session_id(), authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?,
+                Some((loss.operation().clone(), loss_decided_at))
+            );
+            {
+                // A PREPARE whose COMMIT is abandoned is withdrawn: the session accepts a
+                // later attempt and the budget keeps the withdrawn one as Terminal.
+                let abandoned = source.current.lock().map_err(|_| "owner lock")?.clone();
+                let abandoned = std::sync::Arc::new(Owner { current: std::sync::Mutex::new(abandoned), security: security.clone() });
+                let identity19 = authority_matrix::checked(ReconnectIdentityV1::new(
+                    lost.commit().game_session_id(), authority_matrix::checked(ReconnectAttemptRef::new(19))?, account,
+                    lost.commit().character_id(), lost.commit().world_id(), lost.current_runtime_scope(),
+                ))?;
+                let candidate19 = authority_matrix::checked(ReconnectCandidateBindingV1::new(
+                    lost.commit().game_session_id(), identity19.reconnect_attempt_ref(),
+                    authority_matrix::checked(ConnectionGeneration::new(2))?,
+                    authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x64; 16]))?, now + 5,
+                ))?;
+                {
+                    let mut current = abandoned.current.lock().map_err(|_| "owner lock")?;
+                    current.snapshot.candidate = candidate19;
+                    current.snapshot.proof_transition.candidate = candidate19;
+                }
+                let verified = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
+                    .map_err(|error| format!("verify: {error:?}"))?;
+                let authorization = CompleteReconnectAuthorizationV1::authorize(abandoned.as_ref(), identity19.clone(), CompleteReconnectProofV1::V2(Box::new(verified)), now)
+                    .map_err(|e| format!("abandoned authorize: {e:?}"))?;
+                let mut abandoned_flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|e| format!("abandoned begin: {e:?}"))?;
+                let request = std::sync::Arc::new(abandoned_flow.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("abandoned take: {e:?}"))?);
+                assert!(matches!(store.apply_complete_reconnect(request, abandoned).await?, CompleteReconnectOutcomeV1::Prepared { .. }));
+                assert!(store.abort_complete_reconnect(&identity19).await?);
+                assert!(!store.abort_complete_reconnect(&identity19).await?);
+                let budget = store.recovery_budget(lost.commit().game_session_id(), authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?;
+                assert_eq!(budget.entries().len(), 1);
+                assert_eq!(budget.entries()[0].disposition, RetainedRecoveryAttemptDispositionV1::Terminal);
+                source.current.lock().map_err(|_| "owner lock")?.snapshot.budget = budget;
+            }
             let verified = verify_recovery_grant_durability_v2(&token, now, &RecoveryDurabilityTrustContextV2::from_owning_source(&security), &recovery)
                 .map_err(|error| format!("verify: {error:?}"))?;
             let authorization = CompleteReconnectAuthorizationV1::authorize(source.as_ref(), identity.clone(), CompleteReconnectProofV1::V2(Box::new(verified)), now).map_err(|e| format!("authorize: {e:?}"))?;
@@ -5903,7 +5941,7 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
                 let mut forged_flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|e| format!("forged begin: {e:?}"))?;
                 let request = std::sync::Arc::new(forged_flow.take_request(CompleteReconnectRequestKindV1::Prepare).map_err(|e| format!("forged take: {e:?}"))?);
                 assert_eq!(store.apply_complete_reconnect(request, forged).await?, CompleteReconnectOutcomeV1::Rejected);
-                let reservations: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_transport_ref_reservations WHERE reservation_owner = 1").fetch_one(&pool).await?;
+                let reservations: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_transport_ref_reservations WHERE transport_ref = $1").bind([0x61u8; 16].as_slice()).fetch_one(&pool).await?;
                 assert_eq!(reservations, 0);
             }
             let mut flow = CompleteReconnectFlowV1::begin(authorization, None).map_err(|e| format!("begin: {e:?}"))?;
@@ -5939,8 +5977,8 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
             // Exact replay of the same PREPARE returns the original decision.
             assert_eq!(store.apply_complete_reconnect(prepare.clone(), source.clone()).await?, prepared);
             let budget = store.recovery_budget(lost.commit().game_session_id(), authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?;
-            assert_eq!(budget.entries().len(), 1);
-            assert_eq!(budget.entries()[0].disposition, RetainedRecoveryAttemptDispositionV1::Prepared);
+            assert_eq!(budget.entries().len(), 2);
+            assert_eq!(budget.entries()[1].disposition, RetainedRecoveryAttemptDispositionV1::Prepared);
             {
                 let mut current = source.current.lock().map_err(|_| "owner lock")?;
                 current.snapshot.budget = budget;
@@ -5979,12 +6017,28 @@ fn complete_reconnect_resumes_an_owning_loss_session_exactly_once()
             assert_eq!(reconciled.outcome, committed);
             let restored = store.recovery_budget(lost.commit().game_session_id(), authority_matrix::checked(ControlLossEpochRefV1::new(1))?).await?;
             assert_eq!(restored.state(), RecoveryEpochStateV1::Restored);
-            assert_eq!(restored.entries()[0].disposition, RetainedRecoveryAttemptDispositionV1::Committed);
+            assert_eq!(restored.entries()[0].disposition, RetainedRecoveryAttemptDispositionV1::Terminal);
+            assert_eq!(restored.entries()[1].disposition, RetainedRecoveryAttemptDispositionV1::Committed);
             // A fresh PREPARE against the resumed (ACTIVE) session is refused.
             let active = source.current.lock().map_err(|_| "owner lock")?.snapshot.clone();
             assert!(CompleteReconnectAuthorizationV1::authorize(
                 &Owner { current: std::sync::Mutex::new(CompleteReconnectCurrentV1 { snapshot: CompleteReconnectSnapshotV1 { session: resumed, ..active }, prepared: None }), security },
                 identity, CompleteReconnectProofV1::V1Token(token), now).is_err());
+            // The resumed connection ends again: only its exact transport releases the
+            // session (never stranded ACTIVE), and a foreign transport changes nothing.
+            let resumed_id = lost.commit().game_session_id();
+            assert_eq!(
+                store.release_abandoned_session(resumed_id, account, authority_matrix::checked(AuthenticatedTransportRefV1::decode(&[0x63; 16]))?).await?,
+                durability::fresh_admission::ExpiredLossReleaseV1::NotApplicable
+            );
+            assert!(matches!(
+                store.release_abandoned_session(resumed_id, account, candidate.transport_ref()).await?,
+                durability::fresh_admission::ExpiredLossReleaseV1::Released { .. }
+            ));
+            assert_eq!(store.current_session_at(resumed_id).await?.0.session_state(), GameSessionState::Terminal);
+            let rows = guards.load(&keys).await?;
+            assert!(matches!(rows[0].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Account { presence: None, .. })));
+            assert!(matches!(rows[1].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Character { holder: None, .. })));
             pool.close().await;
             Ok::<(), Box<dyn std::error::Error>>(())
         }.await;

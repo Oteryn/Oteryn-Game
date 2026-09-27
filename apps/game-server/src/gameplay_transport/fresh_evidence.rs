@@ -27,6 +27,9 @@ const FRESH_PROFILE: &str = "oteryn-pre-admission-v1";
 const FRESH_KEY_PURPOSE: &str = "fresh_admission";
 const ACCOUNT_PURPOSE: &str = "platform_security";
 const ACCOUNT_SCOPE: &str = "fresh_admission";
+const RECOVERY_ISSUER: &str = "urn:oteryn:platform:game-recovery";
+const RECOVERY_PROFILE: &str = "oteryn-reauth-recovery-v1";
+const RECOVERY_PURPOSE: &str = "existing_actor_recovery";
 
 /// Bounded wait for one of the registered active exchange slots.
 const ACTIVATION_ATTEMPTS: u32 = 100;
@@ -113,6 +116,37 @@ impl FreshEvidenceSource {
             .await
     }
 
+    /// Fetches the Recovery V2 account security and the recovery signing trust of
+    /// `key_id` into S2 custody, for a same-session recovery decision (FND-04B §20).
+    pub(crate) async fn refresh_recovery(
+        &self,
+        root: &DurabilityRoot,
+        custody: &NodeIncarnationProof,
+        account_id: &str,
+        key_id: &str,
+    ) -> Result<(), EvidenceUnavailable> {
+        let account = Request::Account {
+            recovery: true,
+            account_id,
+            purpose: ACCOUNT_PURPOSE,
+            scope: RECOVERY_PURPOSE,
+        };
+        self.fetch_and_accept(
+            root,
+            custody,
+            &account,
+            Operation::ReadRecoveryAccountSecurityV2,
+        )
+        .await?;
+        let trust = Request::Trust {
+            recovery: true,
+            key_id,
+            key_purpose: RECOVERY_PURPOSE,
+        };
+        self.fetch_and_accept(root, custody, &trust, Operation::ReadRecoverySigningTrustV2)
+            .await
+    }
+
     async fn fetch_and_accept(
         &self,
         root: &DurabilityRoot,
@@ -136,10 +170,26 @@ impl FreshEvidenceSource {
         let binding = PublicationBinding {
             source_authority: self.descriptor.source_authority().into(),
             subject: match request {
-                Request::Account { account_id, .. } => {
-                    BindingSubject::Account((*account_id).into())
-                }
-                Request::Trust { key_id, .. } => BindingSubject::FreshTrust((*key_id).into()),
+                Request::Account {
+                    recovery: false,
+                    account_id,
+                    ..
+                } => BindingSubject::Account((*account_id).into()),
+                Request::Account {
+                    recovery: true,
+                    account_id,
+                    ..
+                } => BindingSubject::RecoveryAccount((*account_id).into()),
+                Request::Trust {
+                    recovery: false,
+                    key_id,
+                    ..
+                } => BindingSubject::FreshTrust((*key_id).into()),
+                Request::Trust {
+                    recovery: true,
+                    key_id,
+                    ..
+                } => BindingSubject::RecoveryTrust((*key_id).into()),
             },
             source_revision: observation.source_revision,
             decision_identity: observation.decision_identity.as_str().into(),
@@ -338,6 +388,8 @@ fn outcome_is_ambiguous(outcome: &Result<(), DurabilityError>) -> bool {
 enum BindingSubject {
     Account(String),
     FreshTrust(String),
+    RecoveryAccount(String),
+    RecoveryTrust(String),
 }
 
 /// The exact immutable observation a slot owns, enough to replay the
@@ -357,6 +409,8 @@ impl PublicationBinding {
         let (kind, id) = match &self.subject {
             BindingSubject::Account(id) => ("account", id),
             BindingSubject::FreshTrust(id) => ("fresh_trust", id),
+            BindingSubject::RecoveryAccount(id) => ("recovery_account", id),
+            BindingSubject::RecoveryTrust(id) => ("recovery_trust", id),
         };
         serde_json::to_vec(&serde_json::json!({
             "v": 1,
@@ -383,6 +437,8 @@ impl PublicationBinding {
         let subject = match object.get("kind")?.as_str()? {
             "account" => BindingSubject::Account(id),
             "fresh_trust" => BindingSubject::FreshTrust(id),
+            "recovery_account" => BindingSubject::RecoveryAccount(id),
+            "recovery_trust" => BindingSubject::RecoveryTrust(id),
             _ => return None,
         };
         Some(Self {
@@ -408,6 +464,20 @@ impl PublicationBinding {
                     FRESH_ISSUER,
                     FRESH_PROFILE,
                     FRESH_KEY_PURPOSE,
+                    id.clone(),
+                )
+                .ok()?,
+            ),
+            BindingSubject::RecoveryAccount(id) => (
+                NativeSourceOperation::ReadRecoveryAccountSecurityV2,
+                NativeSourceSubject::account_security(id.clone()).ok()?,
+            ),
+            BindingSubject::RecoveryTrust(id) => (
+                NativeSourceOperation::ReadRecoverySigningTrustV2,
+                NativeSourceSubject::signing_trust(
+                    RECOVERY_ISSUER,
+                    RECOVERY_PROFILE,
+                    RECOVERY_PURPOSE,
                     id.clone(),
                 )
                 .ok()?,
@@ -442,7 +512,7 @@ mod tests {
         let encoded = binding.encode();
         assert!(encoded.is_some());
         let encoded = encoded.unwrap_or_default();
-        assert_eq!(PublicationBinding::decode(&encoded), Some(binding));
+        assert_eq!(PublicationBinding::decode(&encoded), Some(binding.clone()));
         let mut extra: serde_json::Value = serde_json::from_slice(&encoded).unwrap_or_default();
         if let Some(object) = extra.as_object_mut() {
             object.insert("x".into(), serde_json::Value::Null);
@@ -450,6 +520,30 @@ mod tests {
         let extra = serde_json::to_vec(&extra).unwrap_or_default();
         assert_eq!(PublicationBinding::decode(&extra), None);
         assert_eq!(PublicationBinding::decode(b"not json"), None);
+        // Recovery bindings replay as their own Recovery V2 operations and subjects.
+        for (subject, operation) in [
+            (
+                BindingSubject::RecoveryAccount("01934f10-7c00-7000-8000-000000000001".into()),
+                NativeSourceOperation::ReadRecoveryAccountSecurityV2,
+            ),
+            (
+                BindingSubject::RecoveryTrust("recovery-1".into()),
+                NativeSourceOperation::ReadRecoverySigningTrustV2,
+            ),
+        ] {
+            let binding = PublicationBinding {
+                subject,
+                ..binding.clone()
+            };
+            let encoded = binding.encode().unwrap_or_default();
+            assert_eq!(PublicationBinding::decode(&encoded), Some(binding.clone()));
+            assert_eq!(
+                binding
+                    .observation()
+                    .map(|observation| observation.operation),
+                Some(operation)
+            );
+        }
     }
 
     #[test]
