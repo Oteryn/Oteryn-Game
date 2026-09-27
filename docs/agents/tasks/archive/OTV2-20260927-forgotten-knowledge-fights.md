@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-forgotten-knowledge-fights
 title: Forgotten Knowledge fight encounters (tenth encounter slice)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1012
 jira: KAN-16
 base_sha: 420bdf0d4a0940e1417eab8b352ed65b62420c28
-head_sha: null
-final_head_sha: null
+head_sha: bd74f550bfec8859fae4feee1d8459639c1372ae
+final_head_sha: bd74f550bfec8859fae4feee1d8459639c1372ae
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -62,3 +62,8 @@ Authority: owner direction in this session (D31 consent for vocabulary additions
 - `population_census.py` reports 1,505 resolved, 145 blocked and 6 not converted.
 - Crystal (D30) matches, except for nil guards in the Lloyd script.
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1012 (`2bbeaaeb9857f22199dc585387339f4f658400bc`) from final head `bd74f55`; required checks passed on that head.
+Owner released.

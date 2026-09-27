@@ -1,0 +1,117 @@
+{
+  "identity": {
+    "key": "canary:encounter/heart_cracklers",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Heart of Destruction: crackler room",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "crackler",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/crackler",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "depolarized_crackler",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/depolarized_crackler",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [
+      {
+        "name": "room_polarized",
+        "initial": false
+      }
+    ],
+    "timers": [
+      {
+        "name": "crackler_think",
+        "duration_ms": 1000,
+        "repeat": true
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "crackler_think_starts",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "crackler_think",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "crackler_turns",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "crackler_think"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "room_polarized",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "crackler",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/depolarized_crackler",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "keep_absolute"
+        }
+      ]
+    },
+    {
+      "key": "depolarized_crackler_turns",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "crackler_think"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "room_polarized",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "depolarized_crackler",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/crackler",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "keep_absolute"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

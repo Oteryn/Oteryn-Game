@@ -429,7 +429,8 @@ separate observation and never decides. The list has 436 unique ids; at Crystal 
 converted and eligible, 51 are in `items.xml` but not converted, and 43848 is absent from
 `items.xml`. Text artifacts are digested as Git blob bytes (CRLF normalized to LF);
 `appearances.dat` is digested raw, so LF and CRLF checkouts give identical censuses.
-`--check` fails on any drift from the committed census.
+`--check` fails on any drift from the committed census. `population_census.py --check`
+needs the pinned Crystal/Canary checkouts, so it is run locally, not by repository CI.
 
 ## 6. Validation and non-claims
 
