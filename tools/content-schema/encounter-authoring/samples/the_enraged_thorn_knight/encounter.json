@@ -25,6 +25,26 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "mounted_thorn_knight",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/mounted_thorn_knight",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_shielded_thorn_knight",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_shielded_thorn_knight",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [],
@@ -182,6 +202,246 @@
             "revision": "canary-47dfd51f"
           },
           "role": "possessed_tree",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "mounted_thorn_knight_unguarded_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "mounted_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "mounted_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "mounted_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "mounted_thorn_knight_unguarded_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "mounted_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "mounted_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "mounted_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_shielded_thorn_knight_unguarded_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_shielded_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "the_shielded_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_shielded_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_shielded_thorn_knight_unguarded_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_shielded_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "the_shielded_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_shielded_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_enraged_thorn_knight_unguarded_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "the_enraged_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "the_enraged_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_enraged_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "the_enraged_thorn_knight_unguarded_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "the_enraged_thorn_knight",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "possessed_tree",
+          "near": {
+            "role": "the_enraged_thorn_knight",
+            "radius": 7
+          },
+          "present": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage_modifier",
+          "role": "the_enraged_thorn_knight",
+          "multiplier_percent": 200,
+          "component": "primary",
+          "sources": "any",
+          "until": "this_hit"
+        }
+      ]
+    },
+    {
+      "key": "mounted_thorn_knight_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "mounted_thorn_knight"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "mounted_thorn_knight"
+          },
+          "text": "The thorn knight unmounts!",
+          "mode": "say"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_shielded_thorn_knight",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_shielded_thorn_knight",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/thorn_steed",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "the_shielded_thorn_knight_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_shielded_thorn_knight"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_enraged_thorn_knight",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_enraged_thorn_knight",
           "count": 1,
           "at": "death_position",
           "owner": "none",

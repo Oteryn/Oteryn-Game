@@ -1155,6 +1155,137 @@ def heart_bosses(build):
 
 
 
+FORGOTTEN = 'data-otservbr-global/scripts/quests/forgotten_knowledge/'
+
+
+def forgotten_knowledge_fights(build):
+    """HealthForgotten, ThornKnightDeath, LloydPrepareDeath and the energy prism events: the fight mechanics of Lady Tenebris,
+    the Thorn Knight and Lloyd."""
+    health = FORGOTTEN + 'creaturescripts_healthchange_forgotten.lua'
+    for encounter, bosses, guard, guard_lines in (
+            ('lady_tenebris', ['Lady Tenebris'], 'Shadow Tentacle', [4, 5, 6, 7, 8, 9, 10, 11]),
+            ('the_enraged_thorn_knight', ['Mounted Thorn Knight', 'The Shielded Thorn Knight', 'The Enraged Thorn Knight'],
+             'Possessed Tree', [12, 13, 14, 15, 16, 17, 18, 19, 20])):
+        item = build.items[encounter]
+        build.participant(item, slug(guard), guard)
+        for boss in bosses:
+            role = slug(boss)
+            build.participant(item, role, boss, 'HealthForgotten')
+            rules = []
+            for source_kind in ('damage_taken', 'heal_received'):
+                rules.append(build.rule(item, {
+                    'key': f'{role}_unguarded_{source_kind}', 'trigger': {'kind': source_kind, 'role': role, 'source': 'any'},
+                    'conditions': [{'kind': 'creature_present', 'role': slug(guard), 'near': {'role': role, 'radius': 7}, 'present': False}],
+                    'actions': [{'kind': 'damage_modifier', 'role': role, 'multiplier_percent': 200, 'component': 'primary', 'sources': 'any',
+                                 'until': 'this_hit'}]}))
+            build.entry(item, health, [1, 2, 3, 21, 22, 23, 25], 'mapped', rules[0],
+                        f'onHealthChange of {boss}: the primary part of every change is doubled (primary + 100/100 * primary).')
+            build.entry(item, health, [1, 2], 'mapped', rules[1],
+                        'The same handler runs for heals (game.cpp combatChangeHealth), so a heal of the boss is doubled too; in a '
+                        'heal_received rule the this_hit modifier scales that heal (D31).')
+            build.entry(item, health, guard_lines, 'mapped', rules[0] + '/conditions/0',
+                        f'Unless a {guard.lower()} stands within 7 tiles on the same floor (getSpectators 7/7/7/7, not multi-floor); '
+                        'the spectator is found by name, which only that creature carries.')
+            build.entry(item, health, guard_lines, 'mapped', rules[1] + '/conditions/0', 'The same guard for heals.')
+
+    # The Thorn Knight dismounts, then loses its shield.
+    item = build.items['the_enraged_thorn_knight']
+    death = FORGOTTEN + 'creaturescripts_thorn_knight_death.lua'
+    build.define(item, creature('Thorn Steed'))
+    for boss, following, extra, lines in (
+            ('Mounted Thorn Knight', 'The Shielded Thorn Knight', True, [13, 14, 15, 16, 18]),
+            ('The Shielded Thorn Knight', 'The Enraged Thorn Knight', False, [19, 20, 22])):
+        role = slug(boss)
+        build.participant(item, role, boss, 'ThornKnightDeath')
+        actions = [{'kind': 'spawn', 'creature': creature(following), 'role': slug(following), 'count': 1, 'at': 'death_position',
+                    'owner': 'none', 'health': 'full'}]
+        if extra:
+            actions = [{'kind': 'say', 'subject': {'role': role}, 'text': 'The thorn knight unmounts!', 'mode': 'say'}, *actions,
+                       {'kind': 'spawn', 'creature': creature('Thorn Steed'), 'count': 1, 'at': 'death_position', 'owner': 'none',
+                        'health': 'full'}]
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': actions})
+        build.entry(item, death, [11, 12, 23, 24, 25, 27] + lines, 'mapped', path,
+                    f'onDeath of {boss.lower()}: {following} appears (forced) where it died'
+                    + (', after its line, with a thorn steed.' if extra else '.'))
+    build.entry(item, death, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 17, 21], 'approved_omission', None,
+                'checkBlood removes the unmovable items (the blood splash) from the death tile 1 ms later; cosmetic.')
+
+    # Lloyd: four times he refocuses on a prism instead of dying; the prism can be killed for 10 s.
+    item = build.items['lloyd']
+    prepare, prism_health, prism_death = (FORGOTTEN + name for name in ('creaturescripts_lloyd_preparedeath.lua',
+                                                                        'creaturescripts_energy_prism.lua',
+                                                                        'creaturescripts_energy_prism_death.lua'))
+    spots = [('a', 32801, 32827, 2), ('b', 32798, 32827, 3), ('c', 32803, 32826, 4), ('d', 32796, 32826, 5)]
+    item['encounter']['anchors'] += [
+        {'key': 'lloyd_center', 'kind': 'point', 'description': 'Canary (32799, 32826, 14), between the four prisms.'},
+        {'key': 'lloyd_center_tile', 'kind': 'area', 'description': 'Exactly the one tile Canary (32799, 32826, 14).'},
+        {'key': 'lloyd_return', 'kind': 'point', 'description': 'Canary (32799, 32829, 14).'}]
+    item['encounter']['anchors'] += [{'key': f'prism_spot_{letter}', 'kind': 'point', 'description': f'Canary ({x}, {y}, 14).'}
+                                     for letter, x, y, _ in spots]
+    item['encounter']['state']['counters'].append({'name': 'prisms_destroyed', 'initial': 0})
+    item['encounter']['state']['timers'].append({'name': 'lloyd_refocus', 'duration_ms': 10000, 'repeat': False})
+    build.entry(item, prepare, [32, 33, 34, 35, 36, 37, 38], 'mapped', '/encounter/state/counters/0',
+                'prismCount is 1 plus the prism tiles left empty: the prisms killed so far. The lever places the four invulnerable '
+                'prisms.')
+    build.participant(item, 'lloyd', 'Lloyd', 'LloydPrepareDeath')
+    for index, (letter, x, y, line) in enumerate(spots):
+        prism, invulnerable = f'cosmic_energy_prism_{letter}', f'cosmic_energy_prism_{letter}_invu'
+        build.participant(item, invulnerable, f'Cosmic Energy Prism {letter.upper()} Invu')
+        path = build.rule(item, {
+            'key': f'lloyd_refocuses_on_prism_{letter}', 'trigger': {'kind': 'lethal_damage', 'role': 'lloyd'},
+            'conditions': [{'kind': 'counter_compare', 'counter': 'prisms_destroyed', 'op': '==', 'value': index}],
+            'actions': [{'kind': 'prevent_death', 'role': 'lloyd'}, {'kind': 'remove', 'role': invulnerable},
+                        {'kind': 'spawn', 'creature': creature(f'Cosmic Energy Prism {letter.upper()}'), 'role': prism, 'count': 1,
+                         'at': {'anchor': f'prism_spot_{letter}'}, 'owner': 'none', 'health': 'full'},
+                        {'kind': 'teleport', 'who': {'role': 'lloyd'}, 'to': 'lloyd_center'},
+                        {'kind': 'heal', 'subject': {'role': 'lloyd'}, 'amount': 'full'},
+                        {'kind': 'say', 'subject': {'role': 'lloyd'}, 'text': 'The cosmic energies in the chamber refocus on Lloyd.',
+                         'mode': 'say'},
+                        {'kind': 'timer', 'timer': 'lloyd_refocus', 'operation': 'start'}]})
+        build.entry(item, prepare, [1, line, 6, 30, 31, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 57], 'mapped', path,
+                    f'onPrepareDeath with {index} prisms killed: the invulnerable prism {letter.upper()} becomes the normal one, '
+                    'Lloyd is teleported between the prisms and healed by 300000 (more than his 64000 health) and says his line; '
+                    'the revert follows 10 s later.')
+        path = build.rule(item, {
+            'key': f'lloyd_returns_from_prism_{letter}', 'trigger': {'kind': 'timer_elapsed', 'timer': 'lloyd_refocus'},
+            'conditions': [{'kind': 'counter_compare', 'counter': 'prisms_destroyed', 'op': '==', 'value': index}],
+            'actions': [{'kind': 'teleport', 'who': {'role': 'lloyd'}, 'to': 'lloyd_return'}, {'kind': 'remove', 'role': prism},
+                        {'kind': 'spawn', 'creature': creature(f'Cosmic Energy Prism {letter.upper()} Invu'), 'role': invulnerable,
+                         'count': 1, 'at': {'anchor': f'prism_spot_{letter}'}, 'owner': 'none', 'health': 'full'}]})
+        build.entry(item, prepare, [8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28], 'mapped', path,
+                    f'revertLloyd: Lloyd (the creature on the centre tile) goes back to (32799, 32829, 14) and prism {letter.upper()} '
+                    'becomes invulnerable again.')
+        build.participant(item, prism, f'Cosmic Energy Prism {letter.upper()}', 'EnergyPrismDeath')
+        path = build.rule(item, {'key': f'prism_{letter}_death', 'trigger': {'kind': 'creature_died', 'role': prism}, 'conditions': [],
+                                 'actions': [{'kind': 'timer', 'timer': 'lloyd_refocus', 'operation': 'stop'},
+                                             {'kind': 'counter', 'counter': 'prisms_destroyed', 'operation': 'add', 'value': 1},
+                                             {'kind': 'teleport', 'who': {'role': 'lloyd'}, 'to': 'lloyd_return'}]})
+        build.entry(item, prism_death, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 16], 'mapped', path,
+                    'onDeath of the prism: the revert is cancelled and Lloyd goes back to (32799, 32829, 14); the empty tile counts '
+                    'as a killed prism.')
+        build.participant(item, prism, f'Cosmic Energy Prism {letter.upper()}', 'EnergyPrismHealthChange')
+        rules = []
+        for source_kind in ('damage_taken', 'heal_received'):
+            rules.append(build.rule(item, {
+                'key': f'prism_{letter}_recharges_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': prism, 'source': 'any'},
+                'conditions': [{'kind': 'creature_present', 'role': 'lloyd', 'anchor': 'lloyd_center_tile', 'present': False},
+                               {'kind': 'health_percent', 'role': prism, 'op': '<', 'value': 100}],
+                'actions': [{'kind': 'say', 'subject': {'role': prism}, 'text': '*zap!*', 'mode': 'say'},
+                            {'kind': 'heal', 'subject': {'role': prism}, 'amount': 10000}]}))
+        build.entry(item, prism_health, [1, 2, 4, 5, 7, 8, 9, 10, 11, 13], 'mapped', rules[0],
+                    'onHealthChange of the prism, read before the change: when not at full health it says "*zap!*" and heals 10000 '
+                    '(ten times its 1000 health).')
+        build.entry(item, prism_health, [1, 2], 'mapped', rules[1], 'The same handler for heals.')
+        build.entry(item, prism_health, [3], 'mapped', rules[0] + '/conditions/0',
+                    'Only while the centre tile is empty. The creature there is Lloyd: his wiki page (2026-07-28) says a prism can only '
+                    'be killed after he teleports between them (D29, D25).')
+        build.entry(item, prism_health, [6], 'approved_omission', None, 'The energy hit effect is cosmetic.')
+    build.entry(item, prepare, [14, 49], 'approved_omission', None, 'The teleport effects are cosmetic.')
+    build.entry(item, prism_death, [11], 'approved_omission', None, 'The teleport effect is cosmetic.')
+
+
+
 def small_boss_events(build):
     """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
     glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
@@ -1970,7 +2101,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights):
         transcribe(build)
     print(json.dumps(build.write()))
 
