@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package oteryn.events.candidate.v2;
+
+// UNREGISTERED OFFLINE CANDIDATE, not an accepted production contract.
+// Revision 1 remains historical and byte-for-byte unchanged; no implicit adapter.
+// Foundation EventEnvelope revision=1, schema_revision=2, event_type_id=0.
+// Membership is exactly one event (ordinal=count=1) per distinct transaction.
+// The executable candidate accepts only its closed, canonical wire grammar;
+// unknown/duplicate fields, nonminimal varints and unsupported revisions reject.
+message OneItemTransactionCandidate {
+  uint32 interpretation_revision = 1; // exactly 2
+  oneof operation {
+    OneItemMint mint = 2;
+    OneItemTransfer transfer = 3;
+  }
+}
+
+message CandidateItemState {
+  bytes item_instance_id = 1; // exact 16-byte non-nil UUIDv7
+  bytes world_id = 2;
+  uint32 definition_key = 3; // private synthetic mapping, not Content authority
+  uint32 definition_revision = 4;
+  uint32 quantity = 5; // synthetic fixture=1; u32 is representation, not gameplay cap
+  uint32 lifecycle = 6; // exactly 1 (LIVE)
+}
+
+message CandidateGround {
+  bytes world_id = 1;
+  bytes channel_id = 2;
+  bytes corpse_occurrence_id = 3; // provenance association, not location authority
+  uint64 corpse_revision = 4;
+  sint32 x = 5;
+  sint32 y = 6;
+  sint32 floor = 7; // checked i16; independently supplied finite World floor set
+}
+
+enum FixtureRootPosition {
+  FIXTURE_ROOT_POSITION_UNSPECIFIED = 0;
+  FIXTURE_ROOT_POSITION_SYNTHETIC_DIRECT_ROOT = 1;
+}
+
+message CandidateInventory {
+  bytes character_id = 1;
+  uint64 session_generation = 2; // expected fixture binding, never live authority
+  FixtureRootPosition fixture_root_position = 3; // closed exactly 1, NOT v1 slot 0
+}
+
+message CandidateProvenance {
+  uint32 source_kind = 1; // exactly 1 (corpse loot)
+  bytes occurrence_id = 2;
+  bytes cause_id = 3;
+}
+
+message OneItemMint {
+  CandidateItemState after = 1;
+  CandidateGround destination = 2;
+  CandidateProvenance source = 3;
+}
+
+message OneItemTransfer {
+  CandidateItemState before = 1;
+  CandidateItemState after = 2;
+  CandidateGround source = 3;
+  CandidateInventory destination = 4;
+  CandidateProvenance cause = 5;
+}

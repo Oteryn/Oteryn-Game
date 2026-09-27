@@ -13,6 +13,8 @@ Game truth and nothing writes `content/`.
 | `source_diff.py` | Canary vs Crystal fact-level diff (owner decision D2: equal sources, no automatic winner). |
 | `wiki_fandom.py` | TibiaWiki (Fandom) snapshot fetch and position/travel/trade comparison (stdlib only, ≤2 requests/s, neutral User-Agent). |
 | `population_census.py` | Readiness census over converted bundles. |
+| `promotion_candidates.py` | Merges Canary+Crystal with the wiki as tie-breaker into native-keyed promotion candidates (D4–D6). |
+| `validate_promotion.py` | Checks a promotion-candidate report (keys, slugs, routes, placements, provenance, no text). |
 | `samples/` | Committed census, diff and wiki-compare evidence and a few text-free sample bundles. |
 
 ## Reproduce
@@ -32,6 +34,9 @@ python wiki_fandom.py self-test
 python wiki_fandom.py fetch --cache out/fandom
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/canary/bundles --out samples/fandom-compare-canary-47dfd51f.json
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/crystal/bundles --out samples/fandom-compare-crystal-ff7ede59.json
+(cd ../../.. && cargo +1.94.0 run --locked -p oteryn-game-server --example export_reference_item_identity_map -- "$OLDPWD/out/native-map.json")
+python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json --out samples/promotion-candidates-v1.json
+python validate_promotion.py samples/promotion-candidates-v1.json
 ```
 
 The Fandom snapshot (article fields only, not committed) takes about four minutes to fetch; the compare

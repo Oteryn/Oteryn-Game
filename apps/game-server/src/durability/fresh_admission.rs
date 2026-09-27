@@ -1860,6 +1860,41 @@ impl FreshAdmissionStore {
         if now < deadline {
             return Ok(ExpiredLossReleaseV1::NotExpired { deadline, now });
         }
+        self.release_current_claims(current, now, account_id).await
+    }
+
+    /// Terminal release of a resumed session whose recovered connection ended again. A loss
+    /// after a resume (resumed history) is not recorded yet, so the session is released
+    /// instead of being stranded ACTIVE on a dead transport: the player loses grace, never
+    /// the ability to enter again. Only the exact ended controller transport of a session
+    /// that was already lost once is released; a newer controller keeps its session.
+    pub async fn release_abandoned_session(
+        &self,
+        session: GameSessionId,
+        account_id: &str,
+        transport: AuthenticatedTransportRefV1,
+    ) -> Result<ExpiredLossReleaseV1> {
+        let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
+        if current.session_state() != GameSessionState::Active
+            || current.current_transport() != Some(transport)
+            || current.current_control_loss_epoch().is_none()
+        {
+            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        }
+        self.release_current_claims(current, now, account_id).await
+    }
+
+    /// Prepare the FND-04B terminal release of `current` from the current claim rows at the
+    /// durable time `now` and commit it through the exact fenced [`Self::release`].
+    async fn release_current_claims(
+        &self,
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        now: i64,
+        account_id: &str,
+    ) -> Result<ExpiredLossReleaseV1> {
         let keys = [
             AdmissionAuthorityGuardKeyV1::Account {
                 account_id: account_id.into(),
@@ -2051,6 +2086,812 @@ impl FreshAdmissionStore {
             .bind(lifecycle_key(evidence)).bind(&prepared.encoded).bind(prepared.decided_at).execute(&mut **tx).await?;
         Ok(())
     }
+}
+
+// ---------------------------------------------------------------------------
+// Complete reconnect (FND-04B §§11–13, §20): canonical same-session receipts.
+// ---------------------------------------------------------------------------
+
+fn write_session_snapshot(
+    w: &mut Writer,
+    s: &GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+) -> Result<()> {
+    let c = s.commit();
+    w.bytes(c.game_session_id().as_bytes())?;
+    w.bytes(c.character_id().as_bytes())?;
+    w.bytes(c.world_id().as_bytes())?;
+    w.bytes(c.channel_id().as_bytes())?;
+    w.u64(c.character_lease_generation())?;
+    w.u64(c.scope_ownership_generation())?;
+    w.u64(c.connection_generation().get())?;
+    w.bytes(&c.initial_transport().to_bytes())?;
+    w.bytes(s.current_game_session_id().as_bytes())?;
+    w.tag(match s.session_state() {
+        GameSessionState::Active => 1,
+        GameSessionState::Reconnectable => 2,
+        GameSessionState::Terminal => 3,
+    })?;
+    w.u64(s.current_connection_generation().get())?;
+    w.boolean(s.current_transport().is_some())?;
+    if let Some(t) = s.current_transport() {
+        w.bytes(&t.to_bytes())?;
+    }
+    w.bytes(s.current_character_lease().character_id().as_bytes())?;
+    w.u64(s.current_character_lease().generation())?;
+    w.boolean(s.current_character_world_eligibility().is_some())?;
+    if let Some(e) = s.current_character_world_eligibility() {
+        w.bytes(e.character_id().as_bytes())?;
+        w.bytes(e.world_id().as_bytes())?;
+    }
+    write_scope(w, s.current_runtime_scope())?;
+    w.u64(s.current_scope_generation().get())?;
+    w.boolean(s.current_control_loss_epoch().is_some())?;
+    if let Some(e) = s.current_control_loss_epoch() {
+        w.u64(e.get())?;
+    }
+    w.boolean(s.current_original_grace_deadline().is_some())?;
+    if let Some(t) = s.current_original_grace_deadline() {
+        w.i64(t)?;
+    }
+    Ok(())
+}
+
+fn write_protection(w: &mut Writer, p: RecoveryProtectionContinuityV1) -> Result<()> {
+    match p.usage {
+        RecoveryProtectionUseV1::NotEntitled => w.tag(0)?,
+        RecoveryProtectionUseV1::Unused {
+            entitlement_generation,
+        } => {
+            w.tag(1)?;
+            w.u64(entitlement_generation)?;
+        }
+        RecoveryProtectionUseV1::Activated {
+            entitlement_generation,
+            activated_at,
+            deadline,
+        } => {
+            w.tag(2)?;
+            w.u64(entitlement_generation)?;
+            w.i64(activated_at)?;
+            w.i64(deadline)?;
+        }
+    }
+    match p.rearm {
+        RecoveryProtectionRearmV1::Satisfied {
+            generation,
+            established_at,
+        } => {
+            w.tag(1)?;
+            w.u64(generation)?;
+            w.i64(established_at)?;
+        }
+        RecoveryProtectionRearmV1::NotRearmed {
+            generation,
+            stable_control_started_at,
+            accepted_deadline,
+        } => {
+            w.tag(0)?;
+            w.u64(generation)?;
+            for time in [stable_control_started_at, accepted_deadline] {
+                w.boolean(time.is_some())?;
+                if let Some(time) = time {
+                    w.i64(time)?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+fn write_candidate(w: &mut Writer, c: ReconnectCandidateBindingV1) -> Result<()> {
+    w.bytes(c.game_session_id().as_bytes())?;
+    w.bytes(&c.reconnect_attempt_ref().to_be_bytes())?;
+    w.u64(c.connection_generation().get())?;
+    w.bytes(&c.transport_ref().to_bytes())?;
+    w.i64(c.prepared_deadline())
+}
+
+fn write_budget(w: &mut Writer, b: &RetainedRecoveryBudgetV1) -> Result<()> {
+    w.u64(b.epoch().get())?;
+    w.tag(match b.state() {
+        RecoveryEpochStateV1::Open => 1,
+        RecoveryEpochStateV1::Restored => 2,
+        RecoveryEpochStateV1::Retired => 3,
+    })?;
+    w.tag(checked(u8::try_from(b.entries().len()))?)?;
+    for e in b.entries() {
+        w.bytes(&e.attempt.to_be_bytes())?;
+        w.bytes(&e.transport.to_bytes())?;
+        w.tag(match e.disposition {
+            RetainedRecoveryAttemptDispositionV1::Committed => 1,
+            RetainedRecoveryAttemptDispositionV1::Prepared => 2,
+            RetainedRecoveryAttemptDispositionV1::TransportCollision => 3,
+            RetainedRecoveryAttemptDispositionV1::Terminal => 4,
+        })?;
+    }
+    Ok(())
+}
+
+fn write_recovery_revisions(w: &mut Writer, revisions: [&str; 4]) -> Result<()> {
+    for revision in revisions {
+        w.text(revision)?;
+    }
+    Ok(())
+}
+
+fn write_complete_reconnect(
+    w: &mut Writer,
+    operation: &CompleteReconnectDurabilityOperationV1,
+) -> Result<()> {
+    let recovery = &operation.recovery;
+    let original = &recovery.original;
+    // Only same-session reauthenticated recovery is durable here; a replacement onto a
+    // new session and fast-reconnect proof delivery have no owner yet.
+    let CompleteReconnectCredentialV1::Recovery(credential) = &recovery.credential else {
+        return Err(DurabilityError::Unavailable);
+    };
+    if recovery.version != 1
+        || recovery.mode != CompleteReconnectModeV1::SameSession
+        || operation.replacement.is_some()
+        || original.replacement_anchor.is_some()
+    {
+        return Err(DurabilityError::Unavailable);
+    }
+    w.tag(1)?;
+    let identity = &recovery.identity;
+    w.bytes(identity.game_session_id().as_bytes())?;
+    w.bytes(&identity.reconnect_attempt_ref().to_be_bytes())?;
+    w.text(identity.account_id())?;
+    w.bytes(identity.character_id().as_bytes())?;
+    w.bytes(identity.world_id().as_bytes())?;
+    write_scope(w, identity.runtime_scope())?;
+    w.i64(recovery.prepared_at)?;
+    w.tag(checked(u8::try_from(original.predecessor_attempts.len()))?)?;
+    for attempt in &original.predecessor_attempts {
+        w.bytes(attempt.session.as_bytes())?;
+        w.bytes(&attempt.attempt.to_be_bytes())?;
+        w.bytes(&attempt.transport.to_bytes())?;
+    }
+    write_fresh_loss(w, &original.loss)?;
+    w.i64(original.loss_decided_at)?;
+    write_scope(w, original.source_authority)?;
+    w.u64(original.source_revision)?;
+    w.u64(original.accepted_source_revision)?;
+    w.i64(original.observed_at)?;
+    write_session_snapshot(w, &original.session)?;
+    w.text(original.account_presence.account_id())?;
+    w.bytes(original.account_presence.character_id().as_bytes())?;
+    w.boolean(original.actor_present)?;
+    w.boolean(original.runtime_ready)?;
+    w.bytes(&original.placement_identity)?;
+    w.u64(original.placement_revision)?;
+    write_protection(w, original.protection)?;
+    write_budget(w, &original.budget)?;
+    write_candidate(w, original.candidate)?;
+    let proof = &original.proof_transition;
+    write_scope(w, proof.owner)?;
+    w.u64(proof.revision)?;
+    w.u64(proof.accepted_revision)?;
+    w.i64(proof.observed_at)?;
+    w.bytes(proof.predecessor_session.as_bytes())?;
+    w.u64(proof.predecessor_generation)?;
+    w.bytes(proof.successor_session.as_bytes())?;
+    w.u64(proof.successor_generation)?;
+    write_candidate(w, proof.candidate)?;
+    let fnd02 = &original.fnd02;
+    w.u64(fnd02.next_command_id().get())?;
+    w.tag(checked(u8::try_from(fnd02.pending().len()))?)?;
+    for pending in fnd02.pending() {
+        w.u64(pending.command_id().get())?;
+        w.tag(match pending.disposition() {
+            PendingCommandDispositionV1::PendingOriginal => 1,
+            PendingCommandDispositionV1::TerminalOutcomeRetained => 2,
+        })?;
+    }
+    w.u64(fnd02.server_sequence())?;
+    w.tag(checked(u8::try_from(fnd02.domain_revisions().len()))?)?;
+    for revision in fnd02.domain_revisions() {
+        w.u64(u64::from(revision.domain_id()))?;
+        w.u64(revision.revision())?;
+    }
+    let current = &original.recovery;
+    w.text(&current.account_id)?;
+    w.bytes(current.character_id.as_bytes())?;
+    w.bytes(current.world_id.as_bytes())?;
+    write_recovery_revisions(
+        w,
+        [
+            &current.ruleset_revision,
+            &current.content_revision,
+            &current.map_revision,
+            &current.world_policy_revision,
+        ],
+    )?;
+    write_changes(w, &original.claims)?;
+    w.tag(1)?;
+    w.bytes(&credential.grant_nonce)?;
+    w.u64(credential.account_security_generation)?;
+    w.u64(credential.protocol_major)?;
+    w.u64(credential.transport_profile)?;
+    write_recovery_revisions(w, credential.revisions.each_ref().map(String::as_str))?;
+    w.i64(credential.expires_at)?;
+    w.boolean(credential.v1_trust.is_some())?;
+    if let Some(trust) = &credential.v1_trust {
+        w.text(&trust.signing_key_id)?;
+        w.bytes(&trust.signing_public_key)?;
+        w.u64(trust.minimum_generation)?;
+    }
+    w.boolean(credential.v2.is_some())?;
+    if let Some(audit) = &credential.v2 {
+        w.bytes(&audit.credential_attempt_ref)?;
+        w.bytes(&audit.grant_nonce)?;
+        w.text(&audit.account_id)?;
+        w.bytes(audit.character_id.as_bytes())?;
+        w.bytes(audit.world_id.as_bytes())?;
+        w.u64(audit.account_security_generation)?;
+        w.u64(audit.protocol_major)?;
+        w.u64(audit.transport_profile)?;
+        write_recovery_revisions(
+            w,
+            [
+                &audit.ruleset_revision,
+                &audit.content_revision,
+                &audit.map_revision,
+                &audit.world_policy_revision,
+            ],
+        )?;
+        w.i64(audit.issued_at)?;
+        w.i64(audit.not_before)?;
+        w.i64(audit.expires_at)?;
+        w.text(&audit.signing.key_id)?;
+        w.bytes(&audit.signing.public_key)?;
+        w.boolean(audit.signing.trusted)?;
+        write_provenance(w, &audit.signing.provenance)?;
+        w.text(&audit.security.account_id)?;
+        w.u64(audit.security.minimum_generation)?;
+        w.boolean(audit.security.allowed)?;
+        write_provenance(w, &audit.security.provenance)?;
+        w.i64(audit.verified_at)?;
+        w.i64(audit.accepted_deadline)?;
+    }
+    Ok(())
+}
+
+/// Canonical bounded bytes of one same-session complete-reconnect operation.
+/// Receipts compare these in full; no digest grants identity.
+pub fn encode_complete_reconnect(
+    operation: &CompleteReconnectDurabilityOperationV1,
+) -> Result<String> {
+    checked(operation.validate_historical())?;
+    let maximum = super::MAX_FRESH_OPERATION_BYTES;
+    let mut counter = Writer::counter(maximum);
+    write_complete_reconnect(&mut counter, operation)?;
+    envelope_size(counter.measured(), maximum)?;
+    let mut writer = Writer::new(maximum);
+    write_complete_reconnect(&mut writer, operation)?;
+    encode_envelope(&writer.bytes, maximum)
+}
+
+const COMPLETE_PREPARE_KEY: &[u8] = b"complete-reconnect-prepare-v1";
+const COMPLETE_COMMIT_KEY: &[u8] = b"complete-reconnect-commit-v1";
+
+fn complete_reconnect_prefix(phase: &[u8], session: GameSessionId, epoch: u64) -> Vec<u8> {
+    let mut key = phase.to_vec();
+    key.extend_from_slice(session.as_bytes());
+    key.extend_from_slice(&epoch.to_be_bytes());
+    key
+}
+
+fn complete_reconnect_key(phase: &[u8], identity: &ReconnectIdentityV1, epoch: u64) -> Vec<u8> {
+    let mut key = complete_reconnect_prefix(phase, identity.game_session_id(), epoch);
+    key.extend_from_slice(&identity.reconnect_attempt_ref().to_be_bytes());
+    key
+}
+
+impl FreshAdmissionStore {
+    /// The complete retained recovery budget of one loss epoch, reconstructed from the
+    /// immutable prepare/commit receipts and candidate transport reservations under the
+    /// caller's relation locks. A prepared attempt no longer named by the session was
+    /// aborted or superseded (`Terminal`).
+    async fn recovery_budget_locked(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        session: GameSessionId,
+        epoch: ControlLossEpochRefV1,
+    ) -> Result<RetainedRecoveryBudgetV1> {
+        use sqlx::Row;
+        let prefix = complete_reconnect_prefix(COMPLETE_PREPARE_KEY, session, epoch.get());
+        let prepared: Option<Vec<u8>> = sqlx::query_scalar("SELECT prepared_attempt_ref FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid")
+            .bind(session.as_bytes().as_slice()).fetch_optional(&mut **tx).await?
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let rows = sqlx::query("SELECT substring(r.operation_key from $2) AS attempt, t.transport_ref, EXISTS (SELECT 1 FROM game_durability_admission_lifecycle_receipts c WHERE c.operation_key = $3 || substring(r.operation_key from $2)) AS committed FROM game_durability_admission_lifecycle_receipts r JOIN game_durability_transport_ref_reservations t ON t.game_session_id = encode($4,'hex')::uuid AND t.reservation_owner = 1 AND t.reconnect_attempt_ref = substring(r.operation_key from $2) WHERE r.operation_key > $1 AND r.operation_key < $1 || '\\xffffffffffffffffff'::bytea AND octet_length(r.operation_key) = $5 + 8 ORDER BY r.decided_at, r.operation_key")
+            .bind(&prefix)
+            .bind(i32::try_from(prefix.len() + 1).map_err(|_| DurabilityError::InvalidStoredState)?)
+            .bind(complete_reconnect_prefix(COMPLETE_COMMIT_KEY, session, epoch.get()))
+            .bind(session.as_bytes().as_slice())
+            .bind(i32::try_from(prefix.len()).map_err(|_| DurabilityError::InvalidStoredState)?)
+            .fetch_all(&mut **tx).await?;
+        let mut entries = Vec::with_capacity(rows.len());
+        let mut restored = false;
+        for row in rows {
+            let attempt: Vec<u8> = row.try_get("attempt")?;
+            let transport: Vec<u8> = row.try_get("transport_ref")?;
+            let committed: bool = row.try_get("committed")?;
+            let attempt_bytes: [u8; 8] = attempt
+                .as_slice()
+                .try_into()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            restored |= committed;
+            entries.push(RetainedRecoveryAttemptV1 {
+                attempt: checked(ReconnectAttemptRef::new(u64::from_be_bytes(attempt_bytes)))?,
+                transport: checked(AuthenticatedTransportRefV1::decode(&transport))?,
+                disposition: if committed {
+                    RetainedRecoveryAttemptDispositionV1::Committed
+                } else if prepared.as_deref() == Some(attempt.as_slice()) {
+                    RetainedRecoveryAttemptDispositionV1::Prepared
+                } else {
+                    RetainedRecoveryAttemptDispositionV1::Terminal
+                },
+            });
+        }
+        let state = if restored {
+            RecoveryEpochStateV1::Restored
+        } else {
+            RecoveryEpochStateV1::Open
+        };
+        checked(RetainedRecoveryBudgetV1::restore(
+            epoch, state, true, entries,
+        ))
+    }
+
+    /// The current retained recovery budget of one loss epoch, for the owning source.
+    pub async fn recovery_budget(
+        &self,
+        session: GameSessionId,
+        epoch: ControlLossEpochRefV1,
+    ) -> Result<RetainedRecoveryBudgetV1> {
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let budget = store
+                        .recovery_budget_locked(&mut tx, session, epoch)
+                        .await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(budget)
+                })
+            })
+            .await
+    }
+
+    /// FND-04B same-session reauthenticated recovery PREPARE or COMMIT of one owning-loss
+    /// session (§§11–13, §20). Under the admission relation locks the adapter binds the
+    /// operation to the exact durable original loss, the exact current session, current
+    /// claim ownership, the ready runtime guard and the reconstructed retained budget, then
+    /// samples the single decision time and lets the sealed request validate its source.
+    /// PREPARE reserves the candidate transport and names the attempt on the session;
+    /// COMMIT consumes the RecoveryGrantNonce and switches the session to the candidate
+    /// connection atomically. Receipts are immutable and replay exactly; a lost
+    /// acknowledgement is reconciled, never decided twice.
+    ///
+    /// The recovery credential is revalidated against the registered Recovery V2 floors
+    /// fenced in the same transaction (custody, registration, account and trust floors
+    /// after the admission relation locks), never against a caller-held observation.
+    pub async fn apply_registered_complete_reconnect(
+        &self,
+        custody: &super::runtime_scope_assignment::NodeIncarnationProof,
+        request: std::sync::Arc<CompleteReconnectRequestV1>,
+        source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+    ) -> Result<CompleteReconnectOutcomeV1> {
+        self.apply_complete_reconnect_with(Some(custody.clone()), request, source)
+            .await
+    }
+
+    /// Test seam: the same decision against the source's own recovery evidence.
+    #[cfg(test)]
+    pub async fn apply_complete_reconnect(
+        &self,
+        request: std::sync::Arc<CompleteReconnectRequestV1>,
+        source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+    ) -> Result<CompleteReconnectOutcomeV1> {
+        self.apply_complete_reconnect_with(None, request, source)
+            .await
+    }
+
+    async fn apply_complete_reconnect_with(
+        &self,
+        custody: Option<super::runtime_scope_assignment::NodeIncarnationProof>,
+        request: std::sync::Arc<CompleteReconnectRequestV1>,
+        source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+    ) -> Result<CompleteReconnectOutcomeV1> {
+        let store = (*self).clone();
+        let issued = store.guards.backend.try_issue_root()?;
+        let backend = store.guards.backend.clone();
+        backend
+            .run_pass(issued, |holder, deadline| Box::pin(async move {
+        use sqlx::Row;
+        let commit = match request.kind() {
+            CompleteReconnectRequestKindV1::Prepare => false,
+            CompleteReconnectRequestKindV1::Commit => true,
+            CompleteReconnectRequestKindV1::Reconcile => return Err(DurabilityError::Unavailable),
+        };
+        let operation = request.operation();
+        let encoded = encode_complete_reconnect(operation)?;
+        let recovery = &operation.recovery;
+        let original = &recovery.original;
+        let identity = &recovery.identity;
+        let session_id = identity.game_session_id();
+        let epoch = original.loss.observation.loss_epoch;
+        let key = complete_reconnect_key(
+            if commit { COMPLETE_COMMIT_KEY } else { COMPLETE_PREPARE_KEY },
+            identity,
+            epoch.get(),
+        );
+        let mut tx = super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+        super::db::lock_admission_relations(&mut tx).await?;
+        if let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+            .bind(&key).fetch_optional(&mut *tx).await? {
+            let stored: Option<String> = row.try_get("operation_json")?;
+            if stored.as_deref() != Some(encoded.as_str()) { return Err(DurabilityError::InvalidStoredState); }
+            let decided_at: i64 = row.try_get("decided_at")?;
+            if decided_at < recovery.prepared_at { return Err(DurabilityError::InvalidStoredState); }
+            super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+            return Ok(if commit {
+                CompleteReconnectOutcomeV1::Committed { decided_at }
+            } else {
+                CompleteReconnectOutcomeV1::Prepared { decided_at }
+            });
+        }
+        // The exact durable original loss this recovery resumes.
+        let mut loss_key = b"owning-loss-v1".to_vec();
+        loss_key.extend_from_slice(session_id.as_bytes());
+        loss_key.extend_from_slice(&epoch.get().to_be_bytes());
+        let loss_row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+            .bind(&loss_key).fetch_optional(&mut *tx).await?;
+        let Some(loss_row) = loss_row else { return Ok(CompleteReconnectOutcomeV1::Rejected) };
+        let stored_loss: Option<String> = loss_row.try_get("operation_json")?;
+        let loss_decided_at: i64 = loss_row.try_get("decided_at")?;
+        if stored_loss.as_deref() != Some(encode_fresh_loss(&original.loss)?.as_str())
+            || loss_decided_at != original.loss_decided_at
+        {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
+        }
+        let fresh_row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
+            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let fresh_json: Option<String> = fresh_row.try_get("operation_json")?;
+        let fresh = decode_operation(&fresh_json.ok_or(DurabilityError::InvalidStoredState)?, store.maximum_operation_bytes)?;
+        if fresh.authorization.account_id != identity.account_id() {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
+        }
+        // Current session, claim ownership, runtime owner and retained budget.
+        let current = store.current_session_locked(&mut tx, session_id).await?;
+        // PREPARE leaves the snapshot unchanged, so both phases bind the original.
+        if current != original.session {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
+        }
+        let mut claims = Vec::with_capacity(2);
+        for expected in &original.claims {
+            claims.push(store.guards.load_locked(&mut tx, &expected.key).await?);
+        }
+        // Recovery grants control: the locked rows must be exactly the claims the sealed
+        // request validated (security allowed and generation floor, eligibility,
+        // presence and holder), not merely still owned by this session.
+        if claims.len() != original.claims.len()
+            || claims.iter().zip(&original.claims).any(|(row, expected)| row.as_ref() != Some(expected))
+            || validate_claim_ownership_v1(identity.account_id(), original.session, current, &original.claims, &claims).is_err()
+        {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
+        }
+        let runtime = store.guards.load_locked(&mut tx, &AdmissionAuthorityGuardKeyV1::Runtime(current.current_runtime_scope())).await?;
+        // The runtime owner is ready at the session's scope generation and still serves exactly
+        // the ruleset/content/map/world-policy revisions the credential was verified against.
+        let revisions = &original.recovery;
+        if !matches!(runtime.as_ref().map(|row| &row.state),
+            Some(AdmissionAuthorityGuardStateV1::Runtime {
+                ownership_generation, ready: true, ruleset_revision, content_revision, map_revision, world_policy_revision, ..
+            })
+            if *ownership_generation == current.current_scope_generation().get()
+                && *ruleset_revision == revisions.ruleset_revision
+                && *content_revision == revisions.content_revision
+                && *map_revision == revisions.map_revision
+                && *world_policy_revision == revisions.world_policy_revision)
+        {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
+        }
+        let budget = store.recovery_budget_locked(&mut tx, session_id, epoch).await?;
+        let expected_budget = if commit {
+            // The prepared attempt is part of the durable budget by now.
+            recovery_budget_after_prepare(recovery)?
+        } else {
+            original.budget.clone()
+        };
+        if budget != expected_budget {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
+        }
+        let candidate = original.candidate;
+        let attempt = identity.reconnect_attempt_ref().to_be_bytes();
+        let transport = candidate.transport_ref().to_bytes();
+        let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
+            .fetch_one(&mut *tx).await?;
+        let decision = match &custody {
+            Some(custody) => {
+                let CompleteReconnectCredentialV1::Recovery(credential) = &recovery.credential else {
+                    return Ok(CompleteReconnectOutcomeV1::Rejected);
+                };
+                let Some(audit) = &credential.v2 else {
+                    return Ok(CompleteReconnectOutcomeV1::Rejected);
+                };
+                let subject = super::recovery_evidence_composition::RecoveryEvidenceSubject::new(
+                    identity.account_id(),
+                    audit.signing.key_id.clone(),
+                )?;
+                super::recovery_evidence_composition::decide_with_registered_recovery(
+                    &mut tx,
+                    custody,
+                    &subject,
+                    |registered| {
+                        request.validate_locked(
+                            &RegisteredRecoverySource { inner: source.as_ref(), registered },
+                            decided_at,
+                        )
+                    },
+                )
+                .await?
+            }
+            None => request.validate_locked(source.as_ref(), decided_at),
+        };
+        let Ok(effect) = decision else {
+            return Ok(CompleteReconnectOutcomeV1::Rejected);
+        };
+        if commit {
+            if !store.complete_prepare_exists(&mut tx, identity, epoch, &encoded).await? {
+                return Ok(CompleteReconnectOutcomeV1::Rejected);
+            }
+            let CompleteReconnectCredentialV1::Recovery(credential) = &recovery.credential else {
+                return Ok(CompleteReconnectOutcomeV1::Rejected);
+            };
+            let consumed = sqlx::query("INSERT INTO game_durability_recovery_grant_consumptions (recovery_grant_nonce, game_session_id, reconnect_attempt_ref) VALUES ($1, encode($2,'hex')::uuid, $3) ON CONFLICT (recovery_grant_nonce) DO NOTHING")
+                .bind(credential.grant_nonce.as_slice()).bind(session_id.as_bytes().as_slice()).bind(attempt.as_slice())
+                .execute(&mut *tx).await?;
+            if consumed.rows_affected() != 1 {
+                return Ok(CompleteReconnectOutcomeV1::Rejected);
+            }
+            let next = effect.session();
+            let switched = sqlx::query("UPDATE game_durability_reconnect_sessions SET session_state = 2, current_generation = $2::text::numeric(20,0), current_transport_ref = $3, prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND session_state = 1 AND current_transport_ref IS NULL AND prepared_attempt_ref = $4 AND current_generation = $5::text::numeric(20,0)")
+                .bind(session_id.as_bytes().as_slice())
+                .bind(next.current_connection_generation().get().to_string())
+                .bind(transport.as_slice())
+                .bind(attempt.as_slice())
+                .bind(original.session.current_connection_generation().get().to_string())
+                .execute(&mut *tx).await?;
+            if switched.rows_affected() != 1 {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            if store.current_session_locked(&mut tx, session_id).await? != next {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        } else {
+            // A grant nonce that was already consumed can never commit; do not let it
+            // strand the session with a prepared attempt.
+            let CompleteReconnectCredentialV1::Recovery(credential) = &recovery.credential else {
+                return Ok(CompleteReconnectOutcomeV1::Rejected);
+            };
+            let spent: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_recovery_grant_consumptions WHERE recovery_grant_nonce = $1)")
+                .bind(credential.grant_nonce.as_slice()).fetch_one(&mut *tx).await?;
+            if spent {
+                return Ok(CompleteReconnectOutcomeV1::Rejected);
+            }
+            let reserved = sqlx::query("INSERT INTO game_durability_transport_ref_reservations (transport_ref, game_session_id, reconnect_attempt_ref, reservation_owner) VALUES ($1, encode($2,'hex')::uuid, $3, 1) ON CONFLICT (transport_ref) DO NOTHING")
+                .bind(transport.as_slice()).bind(session_id.as_bytes().as_slice()).bind(attempt.as_slice())
+                .execute(&mut *tx).await?;
+            if reserved.rows_affected() != 1 {
+                return Ok(CompleteReconnectOutcomeV1::Rejected);
+            }
+            let named = sqlx::query("UPDATE game_durability_reconnect_sessions SET prepared_attempt_ref = $2, attempt_count = attempt_count + 1 WHERE game_session_id = encode($1,'hex')::uuid AND session_state = 1 AND current_transport_ref IS NULL AND prepared_attempt_ref IS NULL AND attempt_count < 8")
+                .bind(session_id.as_bytes().as_slice()).bind(attempt.as_slice())
+                .execute(&mut *tx).await?;
+            if named.rows_affected() != 1 {
+                return Ok(CompleteReconnectOutcomeV1::Rejected);
+            }
+        }
+        sqlx::query("INSERT INTO game_durability_admission_lifecycle_receipts (operation_key, operation_json, decided_at) VALUES ($1,$2,$3)")
+            .bind(&key).bind(&encoded).bind(decided_at).execute(&mut *tx).await?;
+        if commit && store.recovery_budget_locked(&mut tx, session_id, epoch).await? != *effect.budget() {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        if super::admission_journal::commit_pass_transaction(tx, deadline).await.is_err() {
+            return Ok(CompleteReconnectOutcomeV1::Ambiguous);
+        }
+        Ok(if commit {
+            CompleteReconnectOutcomeV1::Committed { decided_at }
+        } else {
+            CompleteReconnectOutcomeV1::Prepared { decided_at }
+        })
+            }))
+            .await
+    }
+
+    async fn complete_prepare_exists(
+        &self,
+        tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        identity: &ReconnectIdentityV1,
+        epoch: ControlLossEpochRefV1,
+        encoded: &str,
+    ) -> Result<bool> {
+        let key = complete_reconnect_key(COMPLETE_PREPARE_KEY, identity, epoch.get());
+        let stored: Option<Option<String>> = sqlx::query_scalar("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+            .bind(&key).fetch_optional(&mut **tx).await?;
+        Ok(stored.flatten().as_deref() == Some(encoded))
+    }
+
+    /// The durable original loss of `session` at `epoch` and its decision time, decoded
+    /// against the session's canonical fresh receipt. `None` when no owning loss exists.
+    pub async fn owning_loss(
+        &self,
+        session: GameSessionId,
+        epoch: ControlLossEpochRefV1,
+    ) -> Result<Option<(ControlLossOperationV1, i64)>> {
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    use sqlx::Row;
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let mut key = b"owning-loss-v1".to_vec();
+                    key.extend_from_slice(session.as_bytes());
+                    key.extend_from_slice(&epoch.get().to_be_bytes());
+                    let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+                        .bind(&key).fetch_optional(&mut *tx).await? else {
+                        super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                        return Ok(None);
+                    };
+                    let stored: Option<String> = row.try_get("operation_json")?;
+                    let decided_at: i64 = row.try_get("decided_at")?;
+                    let fresh_row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
+                        .bind(session.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let fresh_json: Option<String> = fresh_row.try_get("operation_json")?;
+                    let fresh = decode_operation(
+                        &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
+                        store.maximum_operation_bytes,
+                    )?;
+                    let loss = decode_fresh_loss(
+                        &stored.ok_or(DurabilityError::InvalidStoredState)?,
+                        checked(fresh.authorization.initial_commit())?,
+                    )?;
+                    if loss.observation.loss_epoch != epoch || decided_at < loss.authorized_at {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(Some((loss, decided_at)))
+                })
+            })
+            .await
+    }
+
+    /// Withdraw a PREPARED same-session attempt whose COMMIT was refused or could not be
+    /// proven, so a later attempt may prepare. The attempt stays in the retained budget as
+    /// `Terminal`; its immutable PREPARE receipt and transport reservation remain. A
+    /// committed attempt is never withdrawn (the session is no longer RECONNECTABLE).
+    pub async fn abort_complete_reconnect(&self, identity: &ReconnectIdentityV1) -> Result<bool> {
+        let session = identity.game_session_id();
+        let attempt = identity.reconnect_attempt_ref().to_be_bytes();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let cleared = sqlx::query("UPDATE game_durability_reconnect_sessions SET prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND session_state = 1 AND prepared_attempt_ref = $2")
+                        .bind(session.as_bytes().as_slice()).bind(attempt.as_slice())
+                        .execute(&mut *tx).await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(cleared.rows_affected() == 1)
+                })
+            })
+            .await
+    }
+
+    /// Recover the outcome of one complete-reconnect operation from its immutable
+    /// receipts: `Committed`, else `Prepared`, else absent. Receipts naming a different
+    /// operation for the same attempt are a stored-state conflict.
+    pub async fn reconcile_complete_reconnect(
+        &self,
+        operation: &CompleteReconnectDurabilityOperationV1,
+    ) -> Result<Option<CompleteReconnectCompletionV1>> {
+        let encoded = encode_complete_reconnect(operation)?;
+        let operation = operation.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    use sqlx::Row;
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let epoch = operation.recovery.original.loss.observation.loss_epoch.get();
+                    let mut outcome = None;
+                    for (phase, commit) in [(COMPLETE_COMMIT_KEY, true), (COMPLETE_PREPARE_KEY, false)] {
+                        let key = complete_reconnect_key(phase, &operation.recovery.identity, epoch);
+                        let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+                            .bind(&key).fetch_optional(&mut *tx).await? else { continue };
+                        let stored: Option<String> = row.try_get("operation_json")?;
+                        if stored.as_deref() != Some(encoded.as_str()) {
+                            return Err(DurabilityError::InvalidStoredState);
+                        }
+                        let decided_at: i64 = row.try_get("decided_at")?;
+                        if outcome.is_none() {
+                            outcome = Some(if commit {
+                                CompleteReconnectOutcomeV1::Committed { decided_at }
+                            } else {
+                                CompleteReconnectOutcomeV1::Prepared { decided_at }
+                            });
+                        }
+                    }
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(outcome.map(|outcome| CompleteReconnectCompletionV1 { operation, outcome }))
+                })
+            })
+            .await
+    }
+}
+
+/// The owning reconnect source with its Recovery V2 evidence replaced by the registered
+/// floors locked in the deciding transaction.
+struct RegisteredRecoverySource<'a> {
+    inner: &'a dyn CompleteReconnectSourceV1,
+    registered: &'a dyn RecoveryDurabilityEvidenceSourceV2,
+}
+impl recovery_source_sealed::Sealed for RegisteredRecoverySource<'_> {}
+impl CompleteReconnectSourceV1 for RegisteredRecoverySource<'_> {
+    fn resolve_reconnect(
+        &self,
+        identity: &ReconnectIdentityV1,
+        now: i64,
+    ) -> std::result::Result<CompleteReconnectCurrentV1, ReconnectDurabilityErrorV1> {
+        self.inner.resolve_reconnect(identity, now)
+    }
+    fn recovery_v2_source(&self) -> Option<&dyn RecoveryDurabilityEvidenceSourceV2> {
+        Some(self.registered)
+    }
+}
+
+/// The retained budget as PREPARE leaves it: the historical budget with this attempt
+/// added as `Prepared` (the durable reconstruction names no predecessor attempts here).
+fn recovery_budget_after_prepare(
+    recovery: &CompleteReconnectOperationV1,
+) -> Result<RetainedRecoveryBudgetV1> {
+    let original = &recovery.original.budget;
+    let mut entries = original.entries().to_vec();
+    if !entries
+        .iter()
+        .any(|entry| entry.attempt == recovery.identity.reconnect_attempt_ref())
+    {
+        entries.push(RetainedRecoveryAttemptV1 {
+            attempt: recovery.identity.reconnect_attempt_ref(),
+            transport: recovery.original.candidate.transport_ref(),
+            disposition: RetainedRecoveryAttemptDispositionV1::Prepared,
+        });
+    }
+    checked(RetainedRecoveryBudgetV1::restore(
+        original.epoch(),
+        original.state(),
+        true,
+        entries,
+    ))
 }
 
 #[cfg(test)]
