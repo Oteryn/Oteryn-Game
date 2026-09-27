@@ -25,7 +25,7 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "83c0af24697c49c43a083e8430df23cc4886ebec"
       EXPECTED_AGENT_GOVERNANCE_BLOB: "a1a597016af6d17315b46d5720396182a6cf8bae"
       EXPECTED_MERGE_GATE_BLOB: "c10a449bbb09c75fda898da096b6a2eae1f45480"
     steps:
@@ -199,7 +199,7 @@ jobs:
               '  merge_group:\n    types: [checks_requested]\n',
               '    name: game-gate\n',
               '    if: always()\n',
-              '    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain]\n',
+              '    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain, node_boot, server_seam]\n',
               '    name: Merge Queue / candidate and governance\n',
               '          python tools/agents/tests/test_governance_lifecycle_discovery.py\n',
               '          python tools/repository/test_validate_merge_group_pg_sim.py\n',
