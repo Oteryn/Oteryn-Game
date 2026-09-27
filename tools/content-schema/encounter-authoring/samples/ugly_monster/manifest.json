@@ -1,0 +1,100 @@
+{
+  "encounter": "canary:encounter/ugly_monster",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "UglyMonsterDrop": [
+      "canary:creature/ugly_monster"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/mysterious_ornate_chest/ugly_monster.lua",
+      "blob_sha1": "b4ee8a482033124cd3a25cf74ef5bbec6ebed459"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster.lua",
+      "blob_sha1": "799081897e68e9befe14782a6262d522aad32a01"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        25
+      ],
+      "status": "mapped",
+      "resolution": "Ugly Monster is the ugly_monster participant; its file registers UglyMonsterDrop.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        68,
+        69,
+        81,
+        82,
+        84
+      ],
+      "status": "mapped",
+      "resolution": "onHealthChange runs for every change with an origin, damage and heals alike (game.cpp combatChangeHealth); one rule per trigger kind.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        68,
+        69
+      ],
+      "status": "mapped",
+      "resolution": "The same handler for heals.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        70,
+        71
+      ],
+      "status": "mapped",
+      "resolution": "math.random(100) == 100: a 1% chance.",
+      "destination": "/encounter/rules/0/conditions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80
+      ],
+      "status": "mapped",
+      "resolution": "Then 3% (math.random(100) >= 98) one of the last three items, uniformly, else one of the first eight: weights 8 each for 30059-30061 and 97 each for the others (0.03/3 = 8/800, 0.97/8 = 97/800), dropped on the monster's tile.",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": []
+}

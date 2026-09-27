@@ -25,6 +25,26 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "liquor_spirit",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/liquor_spirit",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "leiden",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/leiden",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
@@ -37,7 +57,12 @@
   "phases": [],
   "state": {
     "counters": [],
-    "flags": [],
+    "flags": [
+      {
+        "name": "leiden_evaporated",
+        "initial": false
+      }
+    ],
     "timers": []
   },
   "rules": [
@@ -100,6 +125,143 @@
             "role": "wine_cask"
           },
           "amount": "full"
+        }
+      ]
+    },
+    {
+      "key": "liquor_spirit_evaporates",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "liquor_spirit",
+        "percent": 60
+      },
+      "delay_ms": 100,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "liquor_spirit"
+          },
+          "text": "The liquor spirit evaporates!",
+          "mode": "yell"
+        }
+      ]
+    },
+    {
+      "key": "evaporation_hurts_leiden",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "liquor_spirit",
+        "percent": 60
+      },
+      "delay_ms": 100,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "leiden",
+          "near": {
+            "role": "liquor_spirit",
+            "radius": 3,
+            "shape": "circle"
+          },
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage",
+          "subject": {
+            "role": "leiden"
+          },
+          "amount": {
+            "min": 3000,
+            "max": 6000
+          },
+          "damage_type": "none"
+        },
+        {
+          "kind": "flag",
+          "flag": "leiden_evaporated",
+          "value": true
+        }
+      ]
+    },
+    {
+      "key": "evaporation_feeds_ravenous_hunger",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "liquor_spirit",
+        "percent": 60
+      },
+      "delay_ms": 100,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "ravenous_hunger",
+          "near": {
+            "role": "liquor_spirit",
+            "radius": 3,
+            "shape": "circle"
+          },
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "ravenous_hunger"
+          },
+          "amount": {
+            "min": 3000,
+            "max": 6000
+          }
+        }
+      ]
+    },
+    {
+      "key": "liquor_spirit_gone",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "liquor_spirit",
+        "percent": 60
+      },
+      "delay_ms": 100,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "triggering": true
+        }
+      ]
+    },
+    {
+      "key": "leiden_turns_into_ravenous_hunger",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "leiden"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "leiden_evaporated",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ravenous_hunger",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ravenous_hunger",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
         }
       ]
     }

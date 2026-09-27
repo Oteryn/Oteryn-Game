@@ -1,0 +1,14 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/soulcatcher",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/corrupted_soul",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

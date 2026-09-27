@@ -100,6 +100,7 @@ Encounter
 | `creature_spawned(role)` | `mType.onSpawn` (D29) |
 | `ability_cast(role, AbilityRef)` | a monster spell script with fight effects (D29) |
 | `damage_taken(role, source: player/any)` | `onHealthChange` per hit |
+| `heal_received(role, source: player/any)` | `onHealthChange` per heal (Canary runs the handler for heals too) (D31) |
 | `damage_accumulated(role, amount)` | `onHealthChange` damage counters |
 | `timer_elapsed(timer)` | `addEvent` delays, `onThink` countdowns |
 | `counter_reached(counter, value)` | global kill/stage counters |
@@ -110,7 +111,7 @@ Encounter
 ## 5. Conditions
 
 `chance_percent`, `counter_compare(counter, op, value)`, `flag(name, value)`,
-`creature_present(role, anchor or near(role, radius), present/absent)`, `in_anchor(role or killer, anchor)`,
+`creature_present(role, anchor or near(role, radius, square or circle), present/absent)`, `in_anchor(role or killer, anchor)`,
 `killer_is_player`, `has_master(role, value)` (Canary skips summoned copies of a boss),
 `health_percent(role, op, value)` (fractional allowed),
 `attacker_wears(ItemRef)` (the Asura counter items), `killer_progress(quest key, op, value)` - a
@@ -123,11 +124,11 @@ buff such as the cobra flask).
 
 | Action | Parameters |
 |---|---|
-| `spawn` | role or CreatureRef, count, at (`death_position`, anchor, `random_in(anchor)`, offset), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent) |
-| `remove` | role, or `all_in(anchor)` (monsters only; players are never removed) |
+| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, offset, or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent) |
+| `remove` | role, `all_in(anchor)` (monsters only; players are never removed; `keep_summons` spares monsters with a master), or `triggering`: only the creature that fired the rule (D31) |
 | `transform` | role -> next stage, CreatureRef or `random_of` several CreatureRefs (uniform); health `keep_percent`/`keep_absolute`/`full` |
-| `heal` | role, amount, range or `full` |
-| `damage` | subject, amount or range, damage type (D29) |
+| `heal` | role, amount, range (may start at 0, D31) or `full` |
+| `damage` | subject, amount or range, damage type (D29); type `none` is a direct health change that no resistance, buff or immunity changes and that credits no one (D31) |
 | `prevent_death` | only after `lethal_damage` |
 | `damage_modifier` | role, multiplier (0 = immune), damage types, sources, duration or until reset; `component: primary` limits it to the primary part of a hit (D29) |
 | `reflect_damage` | role, percent, damage types |
@@ -137,9 +138,11 @@ buff such as the cobra flask).
 | `counter` / `flag` / `timer` | set, add, start, stop |
 | `set_phase` | next or named phase (phase changes are triggers too: `phase_entered(name)`) |
 | `cast` | AbilityRef at a role or anchor (death explosions) |
-| `say` | role, text, mode |
+| `say` | role, killer or `spawned` (the creature of the preceding one-creature `spawn` in the same action list, D31), text, mode |
+| `message` | text to every player in an anchor area (D31) |
+| `one_of` | two or more weighted branches, each a list of actions; the encounter instance draws one (D31) |
 | `drop_item` | ItemRef, chance, at role position |
-| `emit_outcome` | named outcome for quests, cooldowns and rewards (§2.5), `credited`: `damage_contributors`, `killer` or `players_in_anchor(anchor)` |
+| `emit_outcome` | named outcome for quests, cooldowns and rewards (§2.5), `credited`: `damage_contributors`, `killer`, `players_in_anchor(anchor)` or `party`: the party of the top damage contributor, wherever its members are (D31) |
 
 ## 7. Worked examples
 
@@ -180,7 +183,10 @@ buff such as the cobra flask).
    evaluated and its actions run `delay_ms` later, and `death_position` is the position of that death.
    `health_crossed` fires when a creature's health falls from above the threshold to at or below it;
    a Canary check with a strict `<` differs only at the single health value on the threshold and is
-   noted in the manifest.
+   noted in the manifest. The conditions of a `damage_taken` or `heal_received` rule read the health
+   before that change, as Canary's `onHealthChange` does. `role_position` is taken when the trigger
+   fires, like `death_position`. A `near` area is a square (Canary spectator ranges) unless
+   `shape: circle`, which is Canary's circle area of that radius (every tile with dx² + dy² ≤ r² + 1).
    In a rule triggered by one creature (a death, lethal damage, damage, health, spawn or cast
    trigger), `transform`, `prevent_death`, `heal`, `damage`, `damage_modifier` and `say` naming the
    trigger's role act on that creature; `remove` of a role removes every creature of the role. A
@@ -205,6 +211,7 @@ buff such as the cobra flask).
 | D28 | §4-6 plus phases is the v1 vocabulary under the rules of §9. Work starts with `FourthTaintBossesPrepareDeath` (15 Soul War hunting monsters, a `channel_shared` zone rule with a read-only quest-progress condition), then the largest death events. | Owner delegated the choice; the source shows the event is a zone rule, not a boss fight. |
 | D29 | Vocabulary extensions: `creature_spawned` and `ability_cast` triggers; the `world_state` read-only condition; fractional or absolute health thresholds; `creature_present` near a role; `{min, max}` ranges; a `damage` action; `component: primary`; `map_item.interaction`. Acting on whatever stands on a fixed tile is not added: each case names its role from wiki or map evidence. Scripted movement is deferred. State shared by all parties belongs to the quest domain, which the encounter reads through `world_state`. | Owner accepted the proposal ("kontynuuj tak jak uważasz za optymalne", 2026-09-27). |
 | D30 | Crystal Server (`zimbadev/crystalserver`, a Canary fork) is consulted as a second donor wherever a Canary script is broken, ambiguous or unresolved. It is evidence only: Canary stays the transcription source and the reference-date wiki still decides (D25). | Owner request 2026-09-27 ("sprawdzać też crystal jako donor"). |
+| D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage. Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
@@ -305,3 +312,21 @@ These events stay unresolved; each needs one of these additions, which go to the
 
 `SoulCageHealthChange` reflects only heals by players; its manifest waits for the cage's death rule.
 61 encounters validate, 55 manifests resolve fully; the census rises from 1,463 to 1,478.
+
+A seventh slice uses D31 and D30:
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `lokathmorDeath`, `mazzinorDeath`, `mazzinorHealth` | 2 | 2 | Both death events check the name of a knowledge the boss never has, so no parchment or vortex ever appears. The wiki decides (D25): Dark Knowledge leaves the parchment, Wild Knowledge a one-minute vortex. `mazzinorHealth` re-applies each hit without an attacker, which would leave the reward boss without rewards; the wiki describes an ordinary fight, so it is not reproduced. |
+| `LionCommanderDeath` | 1 | 1 | The last lion commander loses the skirmish: the room is emptied (summons stay), and the players get a message and leave. |
+| `Evaporate` | 1 | 1 | Leiden in the spirit's radius-3 circle loses 3,000-6,000 untyped health; that arms Leiden's death to bring Ravenous Hunger (`SpawnBoss`); only this spirit disappears. |
+| `TheWelterEgg`, `PossessedTree`, `UglyMonsterDrop` | 3 | 3 | An egg hatches after 10 s; a tree unleashes one of four unbound creatures and regrows after 60 s; the Ugly Monster drops one of eleven items, weighted, on 1% of its health changes. |
+| `SoulcatcherSummon`, `DeathPriestShargonDeath`, `SnailSlimeDeath`, `SnailSlimeThink` | 3 | 3 | Heals count as health changes; Shargon credits the top damage dealer's party; `SnailSlimeThink` checks a name its slime never has. |
+
+Ghulosh stays unresolved: Crystal's lever starts the stage counter that Canary never starts. Neither
+server brings the Deathgaze back to Ghulosh, and the wiki describes that without numbers.
+`SoulWarAspectOfPowerDeath` stays unresolved too. Canary starts the blue Annihilation form after
+every vulnerable phase, while the wiki says it happens once per fight and does not say what starts
+it.
+67 encounters validate, 61 manifests resolve fully, `verify_encounter_schema.py` 84/84; the census
+rises from 1,478 to 1,486.
