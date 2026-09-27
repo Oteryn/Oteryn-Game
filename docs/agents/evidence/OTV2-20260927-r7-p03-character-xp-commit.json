@@ -1,0 +1,99 @@
+{
+  "schema": "OTERYN_R7_P03_CHARACTER_XP_COMMIT/v1",
+  "status": "PRODUCTION_COMPONENT_CANDIDATE",
+  "captured_at_utc": "2026-09-27T15:07:58Z",
+  "repository": "Oteryn/Oteryn-Game",
+  "base_sha": "0c7098eb5086fb8274527ec3a419fd4a2f862f38",
+  "task_id": "OTV2-20260927-r7-p03-character-xp-commit",
+  "allocation": {
+    "issue": 162,
+    "comment_id": 5856703694,
+    "base_refresh_comment_id": 5857041066,
+    "branch": "codex/r7-p03-character-xp-commit",
+    "jira_story": "KAN-12"
+  },
+  "component_boundary": {
+    "owns": [
+      "typed Character progression state",
+      "one global CharacterRevision successor per committed XP award",
+      "stable reward-occurrence replay and conflict receipts",
+      "same-transaction recovery, session, lease, scope and node fencing",
+      "lost-success reconciliation and restart readback"
+    ],
+    "does_not_own": [
+      "Combat reward eligibility or occurrence production",
+      "initial progression-state population",
+      "Reference or Global XP formula selection",
+      "party or shared experience",
+      "low-level bonus and modifier ordering",
+      "death experience loss commit",
+      "runtime composition or playable client flow",
+      "loot or cross-domain atomicity"
+    ],
+    "runtime_qualified": false,
+    "playable_qualified": false,
+    "global_parity": "UNKNOWN"
+  },
+  "durability_invariants": {
+    "semantic_identity": "UUIDv7 reward occurrence",
+    "exact_retry": "returns immutable committed receipt without session reauthorization",
+    "changed_reuse": "CONFLICTING_OCCURRENCE",
+    "global_revision": "strict predecessor plus one",
+    "typed_state": true,
+    "json_state_bag": false,
+    "migration_backfill": false,
+    "audit_or_outbox_inferred": false,
+    "database_commit_constraint": true,
+    "commit_success_after_database_commit": true,
+    "ambiguous_result_reconciliation": "read by reward occurrence under sealed Character recovery authority"
+  },
+  "authority_invariants": [
+    "sealed Character recovery admission matches",
+    "current nonterminal GameSession is state 1 or 2",
+    "exact CharacterId, WorldId and ChannelId match",
+    "connection generation matches",
+    "Character lease generation and holder session match",
+    "runtime scope ownership generation matches",
+    "assigned scope holder matches current NodeId and registration revision",
+    "node incarnation secret proves current registration",
+    "active Character root and expected CharacterRevision match",
+    "root interpretation matches current Game-owned interpretation",
+    "stored typed progression context and policy identities match"
+  ],
+  "transaction_order": [
+    "assert recovery fence",
+    "lock admission relations",
+    "serialize reward occurrence and check receipt",
+    "validate current session and guards on receipt miss",
+    "lock assigned Channel scope",
+    "prove current node incarnation",
+    "lock Character root and progression state",
+    "recompute with domain::progression::calculate_progression",
+    "advance root and typed state by one revision",
+    "insert immutable receipt",
+    "commit before reporting success"
+  ],
+  "reference_evidence_disposition": {
+    "canary": "NOT_APPLICABLE_TO_DURABLE_COMMIT_CORRECTNESS",
+    "crystalserver": "NOT_APPLICABLE_TO_DURABLE_COMMIT_CORRECTNESS",
+    "tibiawiki_br": "NOT_APPLICABLE_TO_DURABLE_COMMIT_CORRECTNESS",
+    "tibia_fandom": "NOT_APPLICABLE_TO_DURABLE_COMMIT_CORRECTNESS",
+    "bounded_fixture": "R7 checkpoint level 50, sole contributor, modifiers inactive, AwardExperience=5",
+    "fixture_authority": "TEST_VECTOR_ONLY_NOT_REFERENCE_FORMULA"
+  },
+  "validation": {
+    "wsl_cargo_check": "PASS",
+    "focused_test_compile": "PASS",
+    "strict_clippy_no_deps": "PASS",
+    "prefreeze_gpt6_luna_sql_review": "PASS_NO_MATERIAL_FINDINGS",
+    "postgresql_17_6": "PENDING_CONFIGURED_HOSTED_LANE",
+    "local_postgresql_reason": "Docker Desktop engine failed to initialize and no OTERYN_TEST_POSTGRES_ADMIN_URL was configured",
+    "exact_head_ci": "PENDING_REMOTE_FREEZE",
+    "independent_review": "PENDING_EXACT_HEAD_GPT6_LUNA"
+  },
+  "known_limits": [
+    "Existing and newly bootstrapped Characters have no progression row until the separately owned initializer runs",
+    "A caller supplies a revision-bound finite policy; this component binds and executes it but does not establish policy authority",
+    "No death-to-XP runtime consumer is wired in P03"
+  ]
+}
