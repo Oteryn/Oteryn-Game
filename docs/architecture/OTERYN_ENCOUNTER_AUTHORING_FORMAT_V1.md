@@ -109,7 +109,8 @@ Encounter
 
 `chance_percent`, `counter_compare(counter, op, value)`, `flag(name, value)`,
 `creature_present(role, anchor or radius, present/absent)`, `in_anchor(role or killer, anchor)`,
-`killer_is_player`, `health_percent(role, op, value)`,
+`killer_is_player`, `has_master(role, value)` (Canary skips summoned copies of a boss),
+`health_percent(role, op, value)`,
 `attacker_wears(ItemRef)` (the Asura counter items), `killer_progress(quest key, op, value)` - a
 read-only view of the killer's quest progress published by the quest domain (the Soul War taints);
 the encounter never writes it.
@@ -127,13 +128,13 @@ the encounter never writes it.
 | `reflect_damage` | role, percent, damage types |
 | `convert_damage_to_heal` | role, damage types |
 | `teleport` | role or `players_in(anchor)`, to anchor |
-| `map_item` | create/transform/remove ItemRef at anchor, `revert_after_ms` |
+| `map_item` | create/transform/remove ItemRef at anchor, `revert_after_ms`; a teleporter carries `destination` and `revert_destination` anchors; optional `effect` |
 | `counter` / `flag` / `timer` | set, add, start, stop |
 | `set_phase` | next or named phase (phase changes are triggers too: `phase_entered(name)`) |
 | `cast` | AbilityRef at a role or anchor (death explosions) |
 | `say` | role, text, mode |
 | `drop_item` | ItemRef, chance, at role position |
-| `emit_outcome` | named outcome for quests, cooldowns and rewards (§2.5) |
+| `emit_outcome` | named outcome for quests, cooldowns and rewards (§2.5), `credited`: `damage_contributors`, `killer` or `players_in_anchor(anchor)` |
 
 ## 7. Worked examples
 
@@ -194,6 +195,20 @@ admission contract (FND-ID-01 Party Finder consequences); this format does not d
 
 `samples/soul_war_taint_zones/` transcribes `FourthTaintBossesPrepareDeath`: 15 participants read
 from the monster files that register it, one `channel_shared` rule, every source line mapped in the
-manifest, schema and semantic validation clean (`verify_encounter_schema.py` 29/29). The monster
+manifest, schema and semantic validation clean. The monster
 converter now records that event as relocated for those 15 monsters; 6 of them had no other
 blocker, so the population census rises from 1,377 to 1,383 fully resolved monsters.
+
+Boss death events followed, one encounter per boss with a `damage_contributors` outcome whose
+Canary storages are listed in the manifest `outcome_evidence` for the quest and reward domains:
+
+| Event | Encounters | Covered monsters | Unresolved |
+|---|---:|---:|---|
+| `dreamCourtsDeath` | 7 | 9 | Alptramun's dream escalation: Canary never counts the dreams (the summons have a master and the script skips them) while the wiki lists all four; modelling it needs an ability-cast trigger (owner decision) |
+| `ForgottenKnowledgeBossDeath` | 7 | 9 | Melting Frozen Horror acts on whatever creatures stand on two fixed tiles |
+| `AscendantBossesDeath` | 9 | 8 | Ferumbras Mortal Shell resets quest-wide crystal storages and fixed crystal items (needs a quest-domain contract) |
+
+The Ascension bosses open their room teleporter to the Godbreaker for 60 s (`map_item` with
+destinations). A dead `elseif` branch of the thorn knight is recorded as an approved omission.
+24 encounters validate, 21 manifests resolve fully, `verify_encounter_schema.py` 35/35; the census
+rises from 1,383 to 1,389.
