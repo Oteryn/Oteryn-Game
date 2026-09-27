@@ -862,12 +862,85 @@ def heart_chargers(build):
                 'locked; an instance per party (D26) replaces the lock.')
 
 
+
+def small_boss_events(build):
+    """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
+    glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
+    keeper = build.items['the_last_lore_keeper']
+    build.participant(keeper, 'astral_glyph', 'An Astral Glyph', 'AstralGlyphDeath')
+    path = build.rule(keeper, {'key': 'astral_glyph_death', 'trigger': {'kind': 'creature_died', 'role': 'astral_glyph'}, 'conditions': [],
+                               'actions': [{'kind': 'spawn', 'creature': creature('The Last Lore Keeper'), 'role': 'the_last_lore_keeper',
+                                            'count': 1, 'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+    build.entry(keeper, glyph_death, [1, 2], 'mapped', path + '/trigger', 'onDeath of an astral glyph.')
+    build.entry(keeper, glyph_death, [3], 'mapped', path + '/actions/0',
+                'Game.createMonster("the last lore keeper", death position, true, true): full health, no owner.')
+
+    essence_death = 'data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_dragon_essence.lua'
+    item = build.get('the_first_dragon', 'The First Dragon', 'instance_per_party')
+    build.participant(item, 'dragon_essence', 'Dragon Essence', 'DragonEssenceDeath')
+    item['encounter']['anchors'].append({'key': 'lair_centre', 'kind': 'point', 'description': 'Canary (33617, 31023, 14).'})
+    build.define(item, creature('The First Dragon'))
+    text = 'BEWARE! THE FIRST DRAGON APROACHES!'
+    path = build.rule(item, {'key': 'dragon_essence_death', 'trigger': {'kind': 'creature_died', 'role': 'dragon_essence'}, 'conditions': [],
+                             'actions': [{'kind': 'remove', 'role': 'dragon_essence'},
+                                         {'kind': 'spawn', 'creature': creature('The First Dragon'), 'role': 'the_first_dragon',
+                                          'count': 1, 'at': {'anchor': 'lair_centre'}, 'owner': 'none', 'health': 'full'},
+                                         {'kind': 'say', 'subject': {'role': 'dragon_essence'}, 'text': text, 'mode': 'say'}]})
+    build.entry(item, essence_death, [1, 3], 'mapped', path + '/trigger', 'onDeath of a dragon essence.')
+    build.entry(item, essence_death, [4, 5, 6, 7, 8, 9, 10], 'mapped', path + '/actions/0',
+                'Every other dragon essence within 14 tiles of (33617, 31023, 14), the whole lair, is removed.')
+    build.entry(item, essence_death, [11], 'mapped', path + '/actions/1',
+                'Game.createMonster("The First Dragon", (33617, 31023, 14), true, true): full health, no owner.')
+    build.entry(item, essence_death, [12], 'mapped', path + '/actions/2',
+                'The dying essence says the warning (Canary places the text on the lair centre).')
+
+    ooze_death = 'data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_disgusting_ooze_death.lua'
+    item = build.items['plagirath']
+    build.participant(item, 'disgusting_ooze', 'Disgusting Ooze', 'DisgustingOozeDeath')
+    ooze = creature('Disgusting Ooze')
+    path = build.rule(item, {'key': 'disgusting_ooze_splits', 'trigger': {'kind': 'creature_died', 'role': 'disgusting_ooze'},
+                             'conditions': [{'kind': 'chance_percent', 'value': 10}],
+                             'actions': [{'kind': 'spawn', 'creature': ooze, 'role': 'disgusting_ooze', 'count': 2, 'at': 'death_position',
+                                          'owner': 'death_master', 'health': 'full'},
+                                         {'kind': 'say', 'subject': {'role': 'disgusting_ooze'}, 'text': 'The ooze splits and regenerates.',
+                                          'mode': 'say'}]})
+    build.entry(item, ooze_death, [1, 2, 3, 4, 5], 'mapped', path + '/trigger',
+                'onDeath of a disgusting ooze (Plagirath summons them, plagirath_summon.lua); summons run death events too.')
+    build.entry(item, ooze_death, [7], 'mapped', path + '/conditions/0', 'math.random(20) < 3: 2 of 20 values, a 10% chance.')
+    build.entry(item, ooze_death, [8, 9, 10, 11, 12, 13, 14], 'mapped', path + '/actions/0',
+                'Two new oozes on the death position with the master of the dying ooze (setMaster(creature:getMaster())).')
+    build.entry(item, ooze_death, [15], 'mapped', path + '/actions/1', 'creature:say(..., TALKTYPE_MONSTER_SAY).')
+
+    feroxa_path = 'data-otservbr-global/scripts/quests/grimvale/creaturescripts_feroxa_transform.lua'
+    item = build.get('feroxa', 'Grimvale: Feroxa', 'channel_shared')
+    build.participant(item, 'feroxa', 'Feroxa', 'FeroxaTransform')
+    build.participant(item, 'feroxa2', 'Feroxa2', 'FeroxaTransform')
+    build.define(item, creature('Feroxa3'))
+    build.define(item, creature('Feroxa4'))
+    path = build.rule(item, {'key': 'feroxa_second_form', 'trigger': {'kind': 'health_crossed', 'role': 'feroxa', 'percent': 50},
+                             'conditions': [], 'actions': [{'kind': 'transform', 'role': 'feroxa', 'into': creature('Feroxa2'),
+                                                            'health': 'full'}]})
+    build.entry(item, feroxa_path, [1, 2, 3, 4, 5, 6, 7, 12], 'mapped', path + '/trigger',
+                'onThink of a creature named "Feroxa" with 100000 maximum health: at 50000 health or less, 50%.')
+    build.entry(item, feroxa_path, [9, 10, 11], 'mapped', path + '/actions/0',
+                'Feroxa is removed and Feroxa2 (displayed as "Feroxa", 50000 health) is created in its place with full health.')
+    path = build.rule(item, {'key': 'feroxa_third_form', 'trigger': {'kind': 'health_crossed', 'role': 'feroxa2', 'percent': 50},
+                             'conditions': [], 'actions': [{'kind': 'transform', 'role': 'feroxa2',
+                                                            'into': {'random_of': [creature('Feroxa3'), creature('Feroxa4')]},
+                                                            'health': 'full'}]})
+    build.entry(item, feroxa_path, [13, 14, 23, 24], 'mapped', path + '/trigger',
+                'Feroxa2 carries the display name "Feroxa" and 50000 maximum health, so this branch runs: at 25000 or less, 50%.')
+    build.entry(item, feroxa_path, [16, 17, 18, 19, 20, 21, 22], 'mapped', path + '/actions/0',
+                'Feroxa3 or Feroxa4, picked uniformly, replaces it with full health.')
+    build.entry(item, feroxa_path, [8, 15], 'approved_omission', None, 'The poff effect is cosmetic.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events):
         transcribe(build)
     print(json.dumps(build.write()))
 

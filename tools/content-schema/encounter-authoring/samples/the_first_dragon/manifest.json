@@ -1,0 +1,80 @@
+{
+  "encounter": "canary:encounter/the_first_dragon",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "DragonEssenceDeath": [
+      "canary:creature/dragon_essence"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/the_first_dragon/dragon_essence.lua",
+      "blob_sha1": "a91ecae04c52599a47059c7f80ab30300a360364"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/the_first_dragon/creaturescripts_death_dragon_essence.lua",
+      "blob_sha1": "eb20aa066453647a172b738f4f30edd06782f4f5"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        24
+      ],
+      "status": "mapped",
+      "resolution": "Dragon Essence is the dragon_essence participant; its file registers DragonEssenceDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a dragon essence.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10
+      ],
+      "status": "mapped",
+      "resolution": "Every other dragon essence within 14 tiles of (33617, 31023, 14), the whole lair, is removed.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        11
+      ],
+      "status": "mapped",
+      "resolution": "Game.createMonster(\"The First Dragon\", (33617, 31023, 14), true, true): full health, no owner.",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        12
+      ],
+      "status": "mapped",
+      "resolution": "The dying essence says the warning (Canary places the text on the lair centre).",
+      "destination": "/encounter/rules/0/actions/2"
+    }
+  ],
+  "outcome_evidence": []
+}

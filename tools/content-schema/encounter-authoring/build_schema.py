@@ -84,9 +84,11 @@ d['condition'] = {'oneOf': [
 
 d['action'] = {'oneOf': [
     kinded('spawn', {'creature': use('CreatureRef'), 'role': NAME, 'count': integer(1), 'at': use('position'),
-                     'owner': enum('none', 'subject'), 'health': use('health')}, ('creature', 'count', 'at', 'owner', 'health')),
+                     'owner': enum('none', 'subject', 'death_master'), 'health': use('health')},
+           ('creature', 'count', 'at', 'owner', 'health')),
     kinded('remove', {'role': NAME, 'all_in': NAME}, ()),
-    kinded('transform', {'role': NAME, 'into': {'oneOf': [use('CreatureRef'), obj({'next_stage': const(True)}, ('next_stage',))]},
+    kinded('transform', {'role': NAME, 'into': {'oneOf': [use('CreatureRef'), obj({'next_stage': const(True)}, ('next_stage',)),
+                                                           obj({'random_of': array(use('CreatureRef'), 2, True)}, ('random_of',))]},
                          'health': use('health')}, ('role', 'into', 'health')),
     kinded('heal', {'subject': use('subject'), 'amount': {'oneOf': [const('full'), integer(1)]}}, ('subject', 'amount')),
     kinded('prevent_death', {'role': NAME}, ('role',)),

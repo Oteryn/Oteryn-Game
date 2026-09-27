@@ -49,6 +49,29 @@
           "credited": "damage_contributors"
         }
       ]
+    },
+    {
+      "key": "astral_glyph_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "astral_glyph"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_last_lore_keeper",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_last_lore_keeper",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
     }
   ],
   "outcomes": [
