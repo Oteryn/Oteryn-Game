@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-world-object-revert-progression
-pr: null
+pr: 1045
 base_sha: ac8395b885e82d564d70968d6cae066fbc276e13
 head_sha: null
 final_head_sha: null
@@ -35,18 +35,21 @@ external_repositories: []
 One decision delta recorded in `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md`,
 still `DecisionStatus: CANDIDATE` for the new part:
 
-1. A new §8 answers, for `revert_after` only, which existing owner supplies a scope-owned logical
+1. A new §7 answers, for `revert_after` only, which existing owner supplies a scope-owned logical
    progression input: the minimum real options grounded in code facts (no existing Foundation/global
-   tick; the scope runtime's own new monotonic step; a purely reactive re-evaluation), the
+   tick; a new scope-owned monotonic step introduced by the scope runtime owner, honestly stated as
+   a new mechanism since no existing scope cadence is proven; a purely reactive re-evaluation), the
    must-decide-now test, a recommended option, the exact delta the owning lane (the scope-runtime/
    Foundation carrier lane behind `ChannelRuntimeV1`/`InstanceRuntime`, not this documentation task)
    must supply, and exact test obligations. The owner question itself (who accepts this decision) is
    left explicit and unresolved by this task.
-2. §4/§5/§7 record, without designing them, the separate CW3/CW4 worker's Content model delta
-   (1a per-state collision presence, 1b authored initial state validated fail-closed, 1c RETAG
-   decision) and the C3 hardening clarification separating the supported fixed, bind-time-reserved
-   collision footprint from out-of-scope dynamically materialized geometry. The Follow-up list gets
-   the new CW3/CW4 children.
+2. §4/§5 record, without designing it, the CW3 Content-model worker's delta (allocation
+   `OTV2-20260928-cw3-local-object-state-model`: 1a per-state collision presence, 1b authored
+   initial state validated fail-closed, 1c RETAG decision) and the C3 hardening clarification
+   separating the supported fixed, bind-time-reserved collision footprint from out-of-scope
+   dynamically materialized geometry. §8 Follow-up gets the new children, correctly split between
+   CW3 (Content model), CW4 (runtime, ships without `revert_after` for now) and the scope-runtime/
+   Foundation carrier lane (owns §7's progression-input decision).
 
 No code, Foundation/runtime/protocol/registry, `content/**` or `tools/**` change. No claim that any
 of this is `ACCEPTED`. D37 relocation and `SCOPE_HANDOFF` are untouched.
@@ -75,6 +78,18 @@ of this is `ACCEPTED`. D37 relocation and `SCOPE_HANDOFF` are untouched.
 - Grep of `apps/game-server/src` and `crates/` for `tick|Tick|logical_time|logical_step|Instant|
   Clock|SimulationStep` found no scope-owned simulation-step concept beyond the two above —
   DERIVED (absence evidence, bounded to the read tree).
+- Bounded grep for the scope-runtime driver/cadence (`tokio::time::interval|tokio::time::sleep|
+  select!\{|loop \{` cross-checked against every `ChannelRuntimeV1` use site:
+  `gameplay_transport/{qualification,mod}.rs`, `movement.rs`, `node/serve.rs`,
+  `foundation/{runtime_actor_carrier,mod}.rs`) — PROVEN: every located call into `ChannelRuntimeV1`
+  is reactive (`gameplay_transport/mod.rs` `ComposedFreshAdmission::release_after_grace` ~473-514: a
+  per-connection grace-expiry retry loop with its own backoff `sleep`; `movement.rs`
+  `MovementOwnerTurn::begin`/`try_step` ~213-249: a bounded batch of movement inputs processed per
+  invocation). `movement.rs` ~197-200 states explicitly in its own doc comment: "No production
+  maximum, queue, command outcome, or scheduling authority is implied. Fairness remains an
+  obligation of the future owner scheduler." No independent scope-wide cadence that advances
+  regardless of command activity was found. UNKNOWN whether one exists outside this bounded read
+  tree; §7 states this honestly rather than assuming a cadence to piggyback on.
 
 ## High-risk authority/recovery qualification
 
@@ -87,41 +102,56 @@ reason: >
 
 ## Acceptance criteria
 
-- [ ] §8 states the revert_after progression options, must-decide-now test, recommendation, owning
+- [x] §7 states the revert_after progression options, must-decide-now test, recommendation, owning
       lane's exact delta and test obligations, with `DecisionStatus` for the new part left CANDIDATE
       and the owner-acceptance question explicit.
-- [ ] §4/§5/§7 record the 1a/1b/1c model delta and the C3 fixed-footprint-vs-dynamic-geometry
-      clarification, and §7 lists the new CW3/CW4 follow-up children.
-- [ ] `python3 tools/agents/validate_governance.py` passes.
-- [ ] `python3 tools/repository/validate_repository_policy.py` passes.
+- [x] §4/§5 record the 1a/1b/1c model delta (correctly attributed to CW3) and the C3
+      fixed-footprint-vs-dynamic-geometry clarification, and §8 lists the new follow-up children
+      (CW3 Content model, CW4 runtime, scope-runtime/Foundation carrier lane for §7's decision).
+- [x] `python3 tools/agents/validate_governance.py` passes.
+- [x] `python3 tools/repository/validate_repository_policy.py` passes.
 
 ## Excluded scope
 
 - Any code change (`apps/game-server`, `crates/`, `content/**`, `tools/**`).
 - Foundation/runtime/protocol/registry design or acceptance.
-- Declaring the new §8 decision, or the 1a/1b/1c model delta, `ACCEPTED`.
+- Declaring the new §7 decision, or the 1a/1b/1c model delta, `ACCEPTED`.
 - D37 relocation and `SCOPE_HANDOFF`.
 - Jira; bulk Issue #162 history.
 
 ## Implementation / findings
 
 The owned architecture doc already records D37/D38 as owner-accepted-pending-review. This task adds
-one new decision delta (§8, revert_after progression owner/options) and records, without designing,
-a separate worker's Content model delta (1a/1b/1c) plus a hardening clarification (C3) that the
+one new decision delta (§7, revert_after progression owner/options) and records, without designing,
+the CW3 Content-model worker's delta (1a/1b/1c) plus a hardening clarification (C3) that the
 independent review asked for. See the diff for exact wording; see "Architecture and source of truth"
 above for the file:line evidence behind every option and rejection.
+
+Pre-freeze fix (coordinator, PR #1045 returned to AUTHORING): corrected §-numbering throughout this
+task record (the decision is §7, Follow-up is §8, not the reverse); relabelled the Content-model
+worker CW3 (not CW4) in §4/§8 of the owned doc and here; renamed §8 Follow-up item 7 from
+"CW3/CW4 (scope-runtime lane)" to the actual owner, the scope-runtime/Foundation carrier lane
+(`ChannelRuntimeV1`/`InstanceRuntime`), with CW4 adding `revert_after` on top once that lane
+decides; and made §7's option 2 honest by adding the bounded scope-runtime-driver grep evidence
+above (PROVEN: every located call is reactive; no proven scope-owned cadence) and rewriting option 2
+so it states plainly that, absent a proven cadence, the owning lane's exact delta is introducing the
+scope's own step driver (one per scope owner, not per object) as the one real new mechanism, still
+CANDIDATE and not accepted here.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python3 tools/agents/validate_governance.py`
-- result: pending
+- result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
+  documents and 9 project lanes." (re-run after the pre-freeze fix commit; unchanged pass)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
-- result: pending
+- result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
+  validation passed (23 files, 45 workflows)." (re-run after the pre-freeze fix commit; unchanged
+  pass)
 
 ### E2E
 
@@ -165,11 +195,14 @@ above for the file:line evidence behind every option and rejection.
 ## Context checkpoint
 
 ```yaml
-last_progress: task record created; owned architecture doc not yet edited
+last_progress: >
+  PR #1045 returned to AUTHORING by the coordinator for pre-freeze fixes: task-record pr/§-numbering
+  corrected, CW3/CW4 attribution fixed in the owned doc and this record, §7 option 2 made honest
+  with new bounded scope-runtime-driver grep evidence; both validators re-run and still pass.
 status: implementing
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
-pr: null
+pr: 1045
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -187,5 +220,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Edit the owned architecture doc (§4/§5/§7/§8), then run both validators.
+next_action: coordinator freeze + independent review
 ```

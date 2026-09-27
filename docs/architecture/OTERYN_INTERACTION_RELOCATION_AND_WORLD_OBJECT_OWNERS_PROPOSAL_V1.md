@@ -104,8 +104,9 @@ keeps its lifetime and exclusions.
   | `REMOVE(def)` | walls, stones, barriers |
   | `RETAG` | the action-id change that re-arms a trigger |
 
-  A separate CW4 Content-model worker is implementing a `SHARED_LEASE_REQUIRED` delta this
-  operation table depends on, recorded here without being designed by this task:
+  The CW3 Content-model worker (allocation `OTV2-20260928-cw3-local-object-state-model`) is
+  implementing a `SHARED_LEASE_REQUIRED` delta this operation table depends on, recorded here
+  without being designed by this task:
   - **1a.** Per-state collision presence on a `LocalObject` definition: each declared state is
     `{key, collision: Present | Absent}`, replacing the current runtime's hard-wiring of collision
     to only the Open/Close two-state pair (`apps/game-server/src/world_runtime.rs` `prepare`'s
@@ -164,8 +165,9 @@ keeps its lifetime and exclusions.
   (collision presence) and an existing hard-wired binding default (initial state); it adds no new
   owner, persistence or domain. C3 does not add multi-scope or dynamic geometry; it only names the
   footprint boundary the runtime already enforces by computing collision cells once at bind time.
-- §7's recommended `revert_after` option adds exactly one new scope-owned counter to the existing
-  scope-runtime owner named in D38; it adds no timer service, queue, receipt store or persistence.
+- §7's recommended `revert_after` option adds exactly one new scope-owned step driver and counter,
+  owned by the same scope-runtime owner named in D38 — one mechanism per scope, never per object;
+  it adds no per-object timer service, queue, receipt store or persistence.
 
 ## 6. Owner decisions
 
@@ -217,9 +219,20 @@ nobody touches it again. No such input exists in the read code today.
 - PROVEN (`docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md` line 224:
   "No universal fixed global tick is required."; line 419: "global tick rate ... deliberately
   deferred."): there is no committed Foundation/global simulation tick to reuse.
-- DERIVED: because the scope runtime must already process incoming commands somehow, it has *some*
-  internal progression loop, but its exact call site is out of this task's read set and is not
-  claimed here.
+- PROVEN (bounded grep for `tokio::time::interval|tokio::time::sleep|select!\{|loop \{` in
+  `apps/game-server/src` and `crates/`, cross-checked against every `ChannelRuntimeV1` use site —
+  `gameplay_transport/{qualification,mod}.rs`, `movement.rs`, `node/serve.rs`,
+  `foundation/{runtime_actor_carrier,mod}.rs`): every located call into `ChannelRuntimeV1` is
+  reactive. `apps/game-server/src/gameplay_transport/mod.rs`
+  `ComposedFreshAdmission::release_after_grace` (~473-514) is a per-connection grace-expiry retry
+  loop with its own backoff `sleep`, scoped to one admitted session, not the scope. `apps/game-
+  server/src/movement.rs` `MovementOwnerTurn::begin`/`try_step` (~213-249) processes a bounded batch
+  of movement inputs (`max_inputs`) per invocation, and its own doc comment (~197-200) says so
+  explicitly: "No production maximum, queue, command outcome, or scheduling authority is implied.
+  Fairness remains an obligation of the future owner scheduler." No independent scope-wide cadence
+  that advances regardless of command activity was found anywhere driving `ChannelRuntimeV1`.
+- UNKNOWN whether a scope-owned periodic driver exists outside this bounded read tree. This section
+  does not assume one; option 2 below is written to hold either way.
 
 ### Options (minimum real set)
 
@@ -228,13 +241,18 @@ nobody touches it again. No such input exists in the read code today.
    one. Adopting or creating one now would be a new Foundation-owned decision, out of this task's
    `excluded_scope` (Foundation/runtime/protocol/registry) and disproportionate to one `revert_after`
    field.
-2. **A new scope-owned monotonic logical step, supplied by the scope runtime owner (RECOMMENDED).**
-   The same owner D38 already names (`ChannelRuntimeV1`/`InstanceRuntime`) adds one monotonic
-   counter, scoped to its own `scope_generation`, incremented by whatever unit of forward progress
-   the scope runtime already performs on its own cadence (not gated on any specific object
-   receiving a command). `revert_after` stores an absolute target step derived at commit time from
-   that counter; the revert fires as the scope runtime's own next relevant step reaches or passes
-   that target.
+2. **A new scope-owned monotonic logical step, supplied by the scope runtime owner (RECOMMENDED,
+   stated honestly).** The evidence above shows no proven scope-owned cadence exists today: every
+   located `ChannelRuntimeV1` call is reactive, and `movement.rs` names the missing "future owner
+   scheduler" in its own doc comment. This option is therefore not "reuse an existing increment
+   point" — it is introducing the one real new mechanism: the same owner D38 already names
+   (`ChannelRuntimeV1`/`InstanceRuntime`) adds its own step driver, one per scope owner (not per
+   object, not per pending revert), that drives all of that scope's own due work forward on
+   whatever cadence the owning lane picks — piggy-backing on a cadence it can later prove already
+   exists, or a minimal interval added for exactly this purpose. `revert_after` stores an absolute
+   target step derived at commit time from that counter; the revert fires as the scope's own next
+   step reaches or passes that target. Without deciding to introduce this driver, option 2 collapses
+   into option 3.
 3. **Purely reactive re-evaluation against an already-existing counter** (`LocalObjectRuntime`'s
    own `revision`, or `ScopeOwnershipGeneration`). Rejected: both only advance when something else
    already happens to that same object or scope, so an untouched decaying wall or timed door would
@@ -258,8 +276,9 @@ nobody touches it again. No such input exists in the read code today.
    DETERMINISM-01 would have to be amended first); or measured evidence that a per-scope counter
    cannot meet a specific product timing requirement (for example cross-scope revert ordering,
    which §4 already excludes).
-5. **What is deliberately not decided?** The exact field name, integer width, increment call site
-   inside the scope runtime, and whether `revert_after`'s unit is "N scope steps" or another
+5. **What is deliberately not decided?** The exact field name, integer width, whether the owning
+   lane's step driver piggybacks on a cadence it later proves already exists or adds a new minimal
+   interval for exactly this purpose, and whether `revert_after`'s unit is "N scope steps" or another
    monotonic unit the owning lane picks. Those belong to the owning lane's implementation, not this
    architecture delta.
 
@@ -270,11 +289,14 @@ Owner: the scope-runtime/Foundation carrier lane behind `ChannelRuntimeV1`/`Inst
 lane (`apps/game-server/src/world_runtime.rs`) that owns `LocalObjectRuntime`. This document does
 not implement it; it is CANDIDATE and not owner-accepted.
 
+- Introduce the scope owner's own step driver: one per scope owner (`ChannelRuntimeV1`/
+  `InstanceRuntime`), never a per-object or per-revert timer, driving all of that scope's own due
+  work forward. Whether it piggybacks on a cadence the scope runtime is later shown to already have,
+  or adds one new minimal interval for exactly this purpose, is the owning lane's implementation
+  choice — either way it is one mechanism per scope, not new infrastructure per object.
 - Add one monotonic step counter scoped to `scope_generation`, reset to its initial value whenever
   `scope_generation` changes (the same reset `advance_owner` already causes for the rest of the
-  overlay).
-- Increment it only from the scope runtime's own existing forward-progress unit; no new thread,
-  timer or external scheduler.
+  overlay), incremented only by that one scope-owned driver.
 - On any `revert_after`-carrying overlay operation, store the derived revert's target step alongside
   the same fences §4 already requires (World/Channel/InstanceId, `scope_generation`,
   `content_generation`, the overlay revision of the anchor) and a child identity derived from the
@@ -318,10 +340,11 @@ not implement it; it is CANDIDATE and not owner-accepted.
 2. Anchors bind to world placements.
 3. The GAME-INTERACTION-01 successor names these owners in §19.3.
 4. Independent review of the accepted text, then implementation in the scope runtime.
-5. **CW4 (Content model).** Implement the 1a/1b/1c delta in §4: per-state collision presence,
+5. **CW3 (Content model).** Implement the 1a/1b/1c delta in §4: per-state collision presence,
    authored initial state validated fail-closed, and the `RETAG`/`…local-object-retag` decision.
 6. **CW4 (runtime).** Ship `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` without `revert_after`, per the
    coordinator direction recorded in §4, until §7 is owner-accepted.
-7. **CW3/CW4 (scope-runtime lane).** Own §7's decision: accept or supersede the recommended
-   `revert_after` progression option and supply the exact delta §7 names, then let CW4 add
-   `revert_after` on top of the already-shipped operations.
+7. **Scope-runtime / Foundation carrier lane (`ChannelRuntimeV1`/`InstanceRuntime`).** Own §7's
+   decision: accept or supersede the recommended `revert_after` progression option and supply the
+   exact delta §7 names — including, if no existing scope cadence is proven, the scope's own step
+   driver itself. CW4 then adds `revert_after` on top of the already-shipped operations.
