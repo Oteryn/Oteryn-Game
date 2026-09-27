@@ -1325,6 +1325,10 @@ def synthetic_wiki_fallback_entry(
 
 
 def convert_with_fallback(item_records, wiki_fallback, item_id=200, engine="crystal"):
+    # The wiki fallback only applies to entries with an appearances.dat object.
+    item_records = {
+        record_id: {"flags": {}, **record} for record_id, record in item_records.items()
+    }
     sources = synthetic_sources(engine, item_records)
     sources["wiki_family_fallback"] = wiki_fallback
     return engine_items.convert_item(sources, item_id)
@@ -1383,6 +1387,30 @@ def test_wiki_fallback_name_mismatch_is_ignored():
     check(item is None, report)
     check(report["converted"] is False, report)
     check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_wiki_fallback_needs_an_appearance_object():
+    # Rows such as the fluid-kind names 1-20 have no appearances.dat object; wiki
+    # evidence for a same-named object must not turn them into Items.
+    key = engine_items.build_identity_index()[409][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "fluid", ["wine"], field="primarytype", value="Liquids"
+        )
+    }
+    sources = synthetic_sources("crystal", {409: {"name": "wine", "attrs": {}}})
+    sources["wiki_family_fallback"] = fallback
+    check(409 not in sources["appearances"], "fixture must lack an appearance")
+    item, _deps, report = engine_items.convert_item(sources, 409)
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+    sources = synthetic_sources(
+        "crystal", {409: {"name": "wine", "attrs": {}, "flags": {}}}
+    )
+    sources["wiki_family_fallback"] = fallback
+    check(409 in sources["appearances"], "fixture must carry an appearance")
+    item, _deps, report = engine_items.convert_item(sources, 409)
+    check(item["family_profile_basis"] == "wiki_evidence_fallback", report)
 
 
 def test_engine_attribute_always_wins_over_wiki_fallback():
@@ -2228,6 +2256,7 @@ def main():
         test_family_profile_fallbacks,
         test_wiki_fallback_direct_hit,
         test_wiki_fallback_name_mismatch_is_ignored,
+        test_wiki_fallback_needs_an_appearance_object,
         test_engine_attribute_always_wins_over_wiki_fallback,
         test_wiki_fallback_disambiguation_accepted_when_candidates_agree,
         test_wiki_fallback_loader_missing_file_is_empty,

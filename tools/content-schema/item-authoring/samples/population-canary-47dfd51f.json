@@ -15,12 +15,12 @@
       "blocker": "family_profile_unresolved",
       "examples": [
         "oteryn:item.registry.i00000001",
-        "oteryn:item.registry.i00000019",
-        "oteryn:item.registry.i00000028",
-        "oteryn:item.registry.i00000031",
-        "oteryn:item.registry.i00000034"
+        "oteryn:item.registry.i00000002",
+        "oteryn:item.registry.i00000003",
+        "oteryn:item.registry.i00000004",
+        "oteryn:item.registry.i00000005"
       ],
-      "items": 893
+      "items": 912
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -3069,27 +3069,27 @@
       "items": 1
     }
   ],
-  "bundle_digest": "9edd7f5ef7ffa4ee1140dc164a401c184d3462721abf79915d63d1f16405535c",
+  "bundle_digest": "fc091da3fbf7ca321183def3ea60d3544ec9c6ad5d7f7ed33c48f88af9460243",
   "by_profile": {
     "container": 276,
     "container_equipment": 8,
-    "decoration": 2826,
+    "decoration": 2825,
     "document": 417,
     "equipment_armor": 459,
     "equipment_offhand": 439,
     "event_collectible": 179,
-    "fluid": 104,
-    "food": 189,
+    "fluid": 88,
+    "food": 188,
     "key": 12,
     "light_source": 168,
-    "material_valuable": 2863,
+    "material_valuable": 2862,
     "plant": 859,
     "quest_item": 1032,
     "rune": 41,
     "tool": 325,
     "transformation_item": 23,
     "trash": 196,
-    "unresolved": 26322,
+    "unresolved": 26341,
     "weapon_distance": 141,
     "weapon_magic": 86,
     "weapon_melee": 562
@@ -3135,20 +3135,20 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 10804,
+      "eligible_false": 10785,
       "eligible_true": 401,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 9,
-      "not_member": 11196,
+      "not_member": 11177,
       "source": "canary_task_board_weekly_items"
     }
   },
   "family_profile_basis": {
     "engine_attribute": 10352,
-    "wiki_evidence_fallback": 853
+    "wiki_evidence_fallback": 834
   },
   "field_coverage": {
     "absorbpercentall": {
@@ -4443,9 +4443,9 @@
   },
   "outcome": {
     "blocked": 877,
-    "fully_resolved": 10328,
+    "fully_resolved": 10309,
     "items": 37527,
-    "not_converted": 1129,
+    "not_converted": 1148,
     "routed_non_item": 25193
   },
   "routed_non_item": [

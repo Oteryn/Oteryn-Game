@@ -392,10 +392,10 @@ TibiaWiki BR binding also exists it must agree.
 |---|---|---|
 | entries | 38,157 | 37,527 |
 | validator errors | 0 | 0 |
-| valid, only the sprite atlas pending | 10,665 | 10,328 |
+| valid, only the sprite atlas pending | 10,646 | 10,309 |
 | valid, other blockers | 902 | 877 |
 | routed to a non-Item owner | 25,656 | 25,193 |
-| not converted (no family, or no identity binding) | 934 | 1,129 |
+| not converted (no family, or no identity binding) | 953 | 1,148 |
 | Delivery Task eligible | 433 | 401 |
 
 Entries that are not portable Items are counted as `routed_non_item` with an owner and
@@ -419,19 +419,19 @@ identical in both engines) and mantra damage types (energy, fire, earth, ice). A
 with proficiency `238` cites both engines' admitted crosswalks.
 
 Remaining blockers (Crystal): `sprite_atlas_not_admitted` on every converted Item (no
-admitted sprite atlas yet); `family_profile_unresolved` 934 (no structural signal and no
+admitted sprite atlas yet); `family_profile_unresolved` 953 (no structural signal and no
 admitted wiki evidence either; editorial backlog); other proficiency ids 642, `augments`
 83 and `runespellname` 36 (need an Ability identity crosswalk); `flags.forceuse` 34
 (loaded but unused by both engines); and small data-quality residuals such as
 `stopduration` without decay or a container without `containersize`. Canary's own
-`family_profile_unresolved` is 893, plus 236 `identity_not_in_b1_catalog` (no Crystal
+`family_profile_unresolved` is 912, plus 236 `identity_not_in_b1_catalog` (no Crystal
 allocator key at all, so the wiki fallback below is never consulted for those).
 
 `family_profile_basis` distinguishes how each converted Item's `family_profile` was
 decided: `engine_attribute` (the engine's own `primarytype`/`weapontype`/slot/etc., as
 `classify_family_profile` always decides first) or `wiki_evidence_fallback` (§5b below,
 applied only when the engine carried no such signal at all). Crystal: 10,674
-`engine_attribute`, 893 `wiki_evidence_fallback`. Canary: 10,352 `engine_attribute`, 853
+`engine_attribute`, 874 `wiki_evidence_fallback`. Canary: 10,352 `engine_attribute`, 834
 `wiki_evidence_fallback`.
 
 `delivery_task_eligible` follows the owner-approved authoring rule
@@ -483,14 +483,16 @@ rejection, a recomputed-and-compared `snapshot_sha256`, every `registry_key` req
 the identity index, every mapped value required to resolve through the admitted mapping)
 before `convert_item` ever applies it. It is applied only after `classify_family_profile`
 and the non-item/immovable routing have already found no family, and only when the
-unresolved item's own lower-cased engine name is one the snapshot actually matched;
+unresolved item's own lower-cased engine name is one the snapshot actually matched, and
+only to an entry that has an `appearances.dat` object (the fluid-kind name rows 1-20 and
+other appearance-less rows are not physical Items and stay unresolved);
 engine-attribute classification always wins. A hit sets `family_profile_basis:
 "wiki_evidence_fallback"` and a `family_profile_evidence` citation (matched field/value,
 wiki title/page id/revision id/content digest, or the full candidate list for a
 disambiguation) on the converted Item. Of 3,573 previously-unresolved (engine, id) pairs
-(1,827 Crystal + 1,746 Canary) across 1,065 unique engine names, 946 names resolved to one
-admitted profile (885 direct, 61 disambiguation), recovering 893 Crystal and 853 Canary
-Items (1,746 total); the remainder stays `family_profile_unresolved`, still fail-closed.
+(1,827 Crystal + 1,746 Canary) across 1,065 unique engine names, the snapshot holds 946
+registry-key records resolved to one admitted profile (885 direct, 61 disambiguation),
+recovering 874 Crystal and 834 Canary Items (1,708 total); the remainder stays `family_profile_unresolved`, still fail-closed.
 The title index itself is not pinned in the schema (it is provenance, not correctness --
 every record's own wiki page/revision identity is what the loader verifies); its count and
 digest are recorded in the capture tool's uncommitted report only.

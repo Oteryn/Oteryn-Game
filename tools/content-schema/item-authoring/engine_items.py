@@ -2034,10 +2034,13 @@ def convert_item(sources, item_id):
         # ever applies once every engine signal above has already failed to resolve a
         # family, and only when this exact item's own lower-cased engine name is one the
         # reviewed snapshot actually resolved (else it is ignored and stays unresolved,
-        # never guessed from a same-named-but-different item's evidence).
+        # never guessed from a same-named-but-different item's evidence). An entry with
+        # no `appearances.dat` object (e.g. the fluid-kind name rows 1-20) is not a
+        # physical Item, so wiki evidence about a same-named object never applies to it.
         fallback_entry = sources.get("wiki_family_fallback", {}).get(key)
         if (
             fallback_entry is not None
+            and appearance is not None
             and name.strip().lower() in fallback_entry["matched_names"]
         ):
             family_profile = fallback_entry["profile"]

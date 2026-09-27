@@ -107,9 +107,9 @@ Results:
 
 | | Crystal | Canary |
 |---|---|---|
-| `family_profile_unresolved` | 1,827 → 934 | 1,746 → 893 |
-| fully resolved | 9,773 → 10,665 | 9,476 → 10,328 |
-| resolved by wiki fallback | 893 | 853 |
+| `family_profile_unresolved` | 1,827 → 953 | 1,746 → 912 |
+| fully resolved | 9,773 → 10,646 | 9,476 → 10,309 |
+| resolved by wiki fallback | 874 | 834 |
 | Delivery Task eligible | 384 → 433 | 364 → 401 |
 
 The snapshot has 946 registry-key records: 885 direct and 61 disambiguation-with-agreement.
@@ -148,12 +148,18 @@ the exact page title the old title-case guess missed), "slime" (resolves via its
 "tortoise egg from nargor" whose `primarytype` was empty but whose `objectclass` is now
 tried and resolves (Food).
 
+The owner's session review then found 19 appearance-less rows among the wiki hits: the
+fluid-kind names at ids 2-18 and 20 (wine, beer, mud, slime, ...) and 6938 "ice". These are
+not physical Items. Before the fix they converted with no blocker. The fallback now applies
+only to entries that have an `appearances.dat` object, and
+`test_wiki_fallback_needs_an_appearance_object` covers that rule.
+
 ## Validation
 
 All of the following PASS:
 
 - `verify_formal_schema.py`: 242 checks.
-- `test_engine_items.py`: 344 checks.
+- `test_engine_items.py`: 349 checks.
 - `test_lower_promotion_packet.py`: 55 checks.
 - `build_formal_schema.py`: byte-identical output.
 - `population_census.py --check --self-check` for Crystal and Canary.
