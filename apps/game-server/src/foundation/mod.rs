@@ -14,9 +14,10 @@ mod runtime_actor_carrier;
 pub(crate) use runtime_actor_carrier::MovementActorFixture;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    CarrierError, ChannelRuntimeV1, CurrentOwnerExactActorCommit, CurrentOwnerExactActorLookup,
-    CurrentOwnerMovementPosition, ExactActorRef, MovementLocalPosition, MovementPositionContext,
-    MovementPositionSnapshot, OwnerDamageCommand, OwnerDamageResult, PlayerActorReservation,
+    CarrierError, ChannelContentPin, ChannelRuntimeV1, CurrentOwnerExactActorCommit,
+    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef,
+    MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
+    OwnerDamageResult, PlayerActorReservation,
 };
 #[cfg(test)]
 #[allow(dead_code)]

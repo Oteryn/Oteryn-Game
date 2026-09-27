@@ -343,14 +343,26 @@ node_assigned_ready() { # §4.2–§4.4
   if ops assignment assign --request assign-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"; then
     fail "assignment without an exact-scope grant"
   fi
+  # #935: the node activates the scope's current native entry Content issuance before its
+  # Channel runtime exists. Issuance requires an exact-scope operation-4 grant.
+  local code=0
+  ops content activate --request content-ungranted.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty || code=$?
+  [[ $code == 6 ]] || fail "content activation without an exact-scope grant exit=$code"
   psql_admin oteryn_node_boot <<SQL
-INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM generate_series(1, 3) op;
+INSERT INTO game_control_scope_grants SELECT 'nb_control', '$WORLD_ID', '$CHANNEL_ID', op FROM generate_series(1, 4) op;
 SQL
+  ops content activate --request content-1.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 1 --previous empty
+  ops content activate --request content-1.json
+  code=0
+  ops content activate --request content-stale.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --sequence 2 --previous empty || code=$?
+  [[ $code == 6 ]] || fail "stale content activation predecessor exit=$code"
+  [[ "$(echo 'SELECT count(*) FROM game_content_activations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "content activation rows"
   ops assignment assign --request assign-a.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
+  await_log "event=content_activated activation_sequence=1 " 60
   await_log "readiness ready=true" 60
   [[ "$(sudo stat -c '%u %a' "$BASE/run/control.sock")" == "$SERVICE_UID 600" ]] || fail "control socket mode"
   [[ "$(echo 'SELECT count(*) FROM game_node_registrations' | psql_admin oteryn_node_boot)" == 1 ]] || fail "operator registered an incarnation"
-  evidence "node registered=1 assignment=operator ungranted=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
+  evidence "node registered=1 assignment=operator ungranted=refused content_activation=sequence_1 content_ungranted=refused content_replay=exact content_stale=refused readiness=true control_socket=uid${SERVICE_UID}_0600"
 }
 
 control_socket_peer() { # a non-root peer is closed without an answer
@@ -440,11 +452,13 @@ superseding_replacement() { # claims custody, ready by CAS after replace
   node="$(node_field "$node_log" node_id)"; revision="$(node_field "$node_log" registration_revision)"
   remember node_c "$node"
   ops assignment replace --request replace-c.json --world "$WORLD_ID" --channel "$CHANNEL_ID" --node-id "$node" --revision "$revision"
+  # A new incarnation starts with no active Content and reactivates only the current issuance.
+  await_log "event=content_activated activation_sequence=1 " 60
   await_log "readiness ready=true" 60
   sudo kill -TERM "$NODE_PID"
   for _ in $(seq 1 30); do sudo kill -0 "$NODE_PID" 2>/dev/null || break; sleep 1; done
   grep -q "shutdown state=complete" "$node_log" || fail "replacement did not shut down cleanly"
-  evidence "replacement=superseding custody=claimed readiness=cas"
+  evidence "replacement=superseding custody=claimed content=reactivated_current_issuance readiness=cas"
 }
 
 signal_before_ready() { # SIGTERM in the assignment wait: clean exit, never ready

@@ -128,6 +128,25 @@ pub struct CharacterRecoveryRequestFile {
 }
 operator_file!(CharacterRecoveryRequestFile);
 
+/// One native entry Content activation issuance for a Channel scope (#935). The digests are
+/// computed by the issuer from the committed room qualified for `world_id`; a re-run replays
+/// exactly this file.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ContentActivationRequestFile {
+    pub version: u8,
+    pub world_id: String,
+    pub channel_id: String,
+    pub activation_sequence: u64,
+    /// The scope's current sequence this issuance replaces, or `None` for its first activation.
+    pub previous_sequence: Option<u64>,
+    /// 32-byte digests, hexadecimal.
+    pub server_artifact_digest: String,
+    pub client_artifact_digest: String,
+    pub frame_binding_digest: String,
+}
+operator_file!(ContentActivationRequestFile);
+
 /// Fresh random bytes from the operating system.
 pub fn random_bytes<const N: usize>() -> std::io::Result<[u8; N]> {
     use std::io::Read;
