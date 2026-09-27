@@ -34,6 +34,27 @@ pub(crate) struct AdmittedSession {
     /// Present for the composed production fresh-admission path. Transport-only
     /// fixtures may omit it; the transport never invents or mutates actor authority.
     pub(crate) runtime_actor: Option<ExactActorRef>,
+    /// #935 first-entry positioning of `runtime_actor`. Only a positioned actor
+    /// may later become input-eligible.
+    pub(crate) first_entry: FirstEntryOutcome,
+}
+
+/// Outcome of #935 first-entry positioning for one admitted session.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FirstEntryOutcome {
+    /// Transport-only fixture: there is no Channel runtime actor.
+    #[cfg_attr(not(test), allow(dead_code))]
+    NotApplicable,
+    /// The Channel owner wrote the start position.
+    Positioned,
+    /// The same initialization had already completed; nothing was written.
+    Reconciled,
+    /// Current authority no longer matches the admission; nothing was written.
+    RefusedStaleAuthority,
+    /// Current authority could not be read; nothing was written.
+    RefusedUnavailable,
+    /// The Channel owner refused the write; nothing was written.
+    RefusedByChannel,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -255,6 +276,7 @@ mod tests {
                 world_id: WorldId::decode(&WORLD).expect("world"),
                 channel_id: ChannelId::decode(&CHANNEL).expect("channel"),
                 runtime_actor: None,
+                first_entry: FirstEntryOutcome::NotApplicable,
             })
         }
     }
@@ -372,6 +394,7 @@ mod tests {
                 world_id: WorldId::decode(&WORLD)?,
                 channel_id: ChannelId::decode(&CHANNEL)?,
                 runtime_actor: None,
+                first_entry: FirstEntryOutcome::NotApplicable,
             };
             assert_eq!(end, ConnectionEnd::AdmittedThenDisconnected(admitted));
             assert_eq!(authority.calls.get(), 1);

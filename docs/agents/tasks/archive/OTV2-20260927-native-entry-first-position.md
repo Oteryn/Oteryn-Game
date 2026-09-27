@@ -16,6 +16,7 @@ owned_paths:
   - apps/game-server/src/content/activation.rs
   - apps/game-server/src/content/project/native_entry.rs
   - apps/game-server/src/gameplay_transport/mod.rs
+  - apps/game-server/src/gameplay_transport/connection.rs
   - apps/game-server/src/gameplay_transport/qualification.rs
   - docs/agents/tasks/archive/OTV2-20260927-native-entry-first-position.md
 ---
@@ -40,21 +41,29 @@ Authority: the first-entry decision #935, §"Position write and retry". Allocati
   - An exact retry reconciles the completed initialization without a write.
   - An actor positioned under another context gets no replacement.
   - A stale or removed actor gets no write.
-- **Server Seam.** After the durable COMMIT and the runtime actor-slot COMMIT, the seam
-  revalidates the current state:
+- **Server Seam.** After the durable COMMIT and the runtime actor-slot COMMIT, the seam reads the
+  current state independently and checks it with `first_entry_authority_is_current`:
   - the current GameSession is owned by this socket: active, at the same connection generation
     and transport, with no control loss;
-  - the current Character lease matches the committed character and lease generation;
-  - the World eligibility matches;
-  - the current runtime scope and ownership generation equal the runtime binding;
+  - World eligibility is present and matches (absent means the Character is no longer eligible);
+  - the session's Character lease matches;
+  - the current runtime scope and ownership generation match;
+  - the **current Character guard** matches: owner account, World, eligibility, lease
+    generation, and a holder that is exactly this GameSession;
   - the current assignment still matches.
 
-  Only then does the seam initialize. Any failure writes nothing and fabricates no rollback. The
-  actor stays unpositioned, so it is not input-eligible.
+  The binding comparison and the write happen under one Channel-owner lock. Any failure writes
+  nothing and fabricates no rollback. The typed outcome (`AdmittedSession.first_entry`: Positioned,
+  Reconciled, or Refused with a reason) makes a refusal observable, and the actor stays
+  unpositioned, so it is not input-eligible.
 
 ## Validation
 
 - Lib unit tests:
+  - a single-invariant no-write matrix over every current binding: the session state, eligibility,
+    lease, scope generation, the guard's owner, World, eligibility, lease and holder, a missing
+    guard, and the expected session, transport, World, Channel and runtime generation;
+  - a wrong-scope actor reference and a recycled slot;
   - the write lands once at the start (0,0,0) at revision 1, and an exact retry is `Reconciled`;
   - an actor positioned under another context and a stale actor are refused without a write;
   - the activation pin carries the start.

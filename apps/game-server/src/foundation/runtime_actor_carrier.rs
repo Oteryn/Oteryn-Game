@@ -1875,6 +1875,44 @@ mod tests {
     }
 
     #[test]
+    fn first_entry_position_refuses_wrong_scope_and_recycled_reference() {
+        // A reference from another Channel runtime is refused without a write.
+        let mut runtime = runtime(1);
+        let mut other = ChannelRuntimeV1::from_committed_assignment(
+            WorldId::decode(&uuid_v7(70)).expect("world"),
+            ChannelId::decode(&uuid_v7(71)).expect("channel"),
+            node(72),
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            1,
+            ChannelContentPin::test(WorldId::decode(&uuid_v7(70)).expect("world")),
+        )
+        .expect("other runtime");
+        let reservation = other.reserve_fresh_session(session(73)).expect("reserve");
+        let foreign = other.commit_fresh_session(reservation).expect("commit");
+        assert!(runtime.initialize_first_entry_position(foreign).is_err());
+        assert_eq!(runtime.players_positioned_at_entry_start(), 0);
+
+        // A recycled slot: the old reference is refused; the new actor starts
+        // unpositioned and gets its own first write.
+        let reservation = runtime.reserve_fresh_session(session(74)).expect("reserve");
+        let old = runtime.commit_fresh_session(reservation).expect("commit");
+        runtime
+            .remove_terminal_session(session(74), old)
+            .expect("terminal cleanup");
+        let reservation = runtime.reserve_fresh_session(session(75)).expect("reserve");
+        let recycled = runtime.commit_fresh_session(reservation).expect("commit");
+        assert!(runtime.initialize_first_entry_position(old).is_err());
+        assert!(matches!(
+            runtime.initialize_first_entry_position(recycled),
+            Ok(FirstEntryPosition::Initialized(_))
+        ));
+        assert_eq!(runtime.players_positioned_at_entry_start(), 1);
+    }
+
+    #[test]
     fn runtime_rejects_invalid_assignment_identity_and_zero_provenance() {
         let world = WorldId::decode(&uuid_v7(50)).expect("world");
         let channel = ChannelId::decode(&uuid_v7(51)).expect("channel");
