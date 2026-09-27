@@ -2443,8 +2443,34 @@ impl FreshAdmissionStore {
     /// COMMIT consumes the RecoveryGrantNonce and switches the session to the candidate
     /// connection atomically. Receipts are immutable and replay exactly; a lost
     /// acknowledgement is reconciled, never decided twice.
+    ///
+    /// The recovery credential is revalidated against the registered Recovery V2 floors
+    /// fenced in the same transaction (custody, registration, account and trust floors
+    /// after the admission relation locks), never against a caller-held observation.
+    pub async fn apply_registered_complete_reconnect(
+        &self,
+        custody: &super::runtime_scope_assignment::NodeIncarnationProof,
+        request: std::sync::Arc<CompleteReconnectRequestV1>,
+        source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+    ) -> Result<CompleteReconnectOutcomeV1> {
+        self.apply_complete_reconnect_with(Some(custody.clone()), request, source)
+            .await
+    }
+
+    /// Test seam: the same decision against the source's own recovery evidence.
+    #[cfg(test)]
     pub async fn apply_complete_reconnect(
         &self,
+        request: std::sync::Arc<CompleteReconnectRequestV1>,
+        source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
+    ) -> Result<CompleteReconnectOutcomeV1> {
+        self.apply_complete_reconnect_with(None, request, source)
+            .await
+    }
+
+    async fn apply_complete_reconnect_with(
+        &self,
+        custody: Option<super::runtime_scope_assignment::NodeIncarnationProof>,
         request: std::sync::Arc<CompleteReconnectRequestV1>,
         source: std::sync::Arc<dyn CompleteReconnectSourceV1 + Send + Sync>,
     ) -> Result<CompleteReconnectOutcomeV1> {
@@ -2549,7 +2575,34 @@ impl FreshAdmissionStore {
         let transport = candidate.transport_ref().to_bytes();
         let decided_at: i64 = sqlx::query_scalar("SELECT floor(extract(epoch FROM clock_timestamp()))::bigint")
             .fetch_one(&mut *tx).await?;
-        let Ok(effect) = request.validate_locked(source.as_ref(), decided_at) else {
+        let decision = match &custody {
+            Some(custody) => {
+                let CompleteReconnectCredentialV1::Recovery(credential) = &recovery.credential else {
+                    return Ok(CompleteReconnectOutcomeV1::Rejected);
+                };
+                let Some(audit) = &credential.v2 else {
+                    return Ok(CompleteReconnectOutcomeV1::Rejected);
+                };
+                let subject = super::recovery_evidence_composition::RecoveryEvidenceSubject::new(
+                    identity.account_id(),
+                    audit.signing.key_id.clone(),
+                )?;
+                super::recovery_evidence_composition::decide_with_registered_recovery(
+                    &mut tx,
+                    custody,
+                    &subject,
+                    |registered| {
+                        request.validate_locked(
+                            &RegisteredRecoverySource { inner: source.as_ref(), registered },
+                            decided_at,
+                        )
+                    },
+                )
+                .await?
+            }
+            None => request.validate_locked(source.as_ref(), decided_at),
+        };
+        let Ok(effect) = decision else {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         };
         if commit {
@@ -2633,6 +2686,80 @@ impl FreshAdmissionStore {
         Ok(stored.flatten().as_deref() == Some(encoded))
     }
 
+    /// The durable original loss of `session` at `epoch` and its decision time, decoded
+    /// against the session's canonical fresh receipt. `None` when no owning loss exists.
+    pub async fn owning_loss(
+        &self,
+        session: GameSessionId,
+        epoch: ControlLossEpochRefV1,
+    ) -> Result<Option<(ControlLossOperationV1, i64)>> {
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    use sqlx::Row;
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let mut key = b"owning-loss-v1".to_vec();
+                    key.extend_from_slice(session.as_bytes());
+                    key.extend_from_slice(&epoch.get().to_be_bytes());
+                    let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+                        .bind(&key).fetch_optional(&mut *tx).await? else {
+                        super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                        return Ok(None);
+                    };
+                    let stored: Option<String> = row.try_get("operation_json")?;
+                    let decided_at: i64 = row.try_get("decided_at")?;
+                    let fresh_row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
+                        .bind(session.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
+                        .ok_or(DurabilityError::InvalidStoredState)?;
+                    let fresh_json: Option<String> = fresh_row.try_get("operation_json")?;
+                    let fresh = decode_operation(
+                        &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
+                        store.maximum_operation_bytes,
+                    )?;
+                    let loss = decode_fresh_loss(
+                        &stored.ok_or(DurabilityError::InvalidStoredState)?,
+                        checked(fresh.authorization.initial_commit())?,
+                    )?;
+                    if loss.observation.loss_epoch != epoch || decided_at < loss.authorized_at {
+                        return Err(DurabilityError::InvalidStoredState);
+                    }
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(Some((loss, decided_at)))
+                })
+            })
+            .await
+    }
+
+    /// Withdraw a PREPARED same-session attempt whose COMMIT was refused or could not be
+    /// proven, so a later attempt may prepare. The attempt stays in the retained budget as
+    /// `Terminal`; its immutable PREPARE receipt and transport reservation remain. A
+    /// committed attempt is never withdrawn (the session is no longer RECONNECTABLE).
+    pub async fn abort_complete_reconnect(&self, identity: &ReconnectIdentityV1) -> Result<bool> {
+        let session = identity.game_session_id();
+        let attempt = identity.reconnect_attempt_ref().to_be_bytes();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let cleared = sqlx::query("UPDATE game_durability_reconnect_sessions SET prepared_attempt_ref = NULL WHERE game_session_id = encode($1,'hex')::uuid AND session_state = 1 AND prepared_attempt_ref = $2")
+                        .bind(session.as_bytes().as_slice()).bind(attempt.as_slice())
+                        .execute(&mut *tx).await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok(cleared.rows_affected() == 1)
+                })
+            })
+            .await
+    }
+
     /// Recover the outcome of one complete-reconnect operation from its immutable
     /// receipts: `Committed`, else `Prepared`, else absent. Receipts naming a different
     /// operation for the same attempt are a stored-state conflict.
@@ -2675,6 +2802,26 @@ impl FreshAdmissionStore {
                 })
             })
             .await
+    }
+}
+
+/// The owning reconnect source with its Recovery V2 evidence replaced by the registered
+/// floors locked in the deciding transaction.
+struct RegisteredRecoverySource<'a> {
+    inner: &'a dyn CompleteReconnectSourceV1,
+    registered: &'a dyn RecoveryDurabilityEvidenceSourceV2,
+}
+impl recovery_source_sealed::Sealed for RegisteredRecoverySource<'_> {}
+impl CompleteReconnectSourceV1 for RegisteredRecoverySource<'_> {
+    fn resolve_reconnect(
+        &self,
+        identity: &ReconnectIdentityV1,
+        now: i64,
+    ) -> std::result::Result<CompleteReconnectCurrentV1, ReconnectDurabilityErrorV1> {
+        self.inner.resolve_reconnect(identity, now)
+    }
+    fn recovery_v2_source(&self) -> Option<&dyn RecoveryDurabilityEvidenceSourceV2> {
+        Some(self.registered)
     }
 }
 

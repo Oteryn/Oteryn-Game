@@ -162,6 +162,24 @@ impl DurabilityRoot {
     }
 }
 
+/// Within the caller's semantic transaction (which already holds the admission relation
+/// locks, the one order every S2 writer shares after them), fence custody, resolve the
+/// current acknowledged Recovery V2 floors for `subject` and run the synchronous `decide`
+/// against them. The sealed source never outlives this call: a complete-reconnect
+/// decision revalidates the recovery credential against the same locked floors it
+/// commits under.
+pub(super) async fn decide_with_registered_recovery<T>(
+    tx: &mut Transaction<'_, Postgres>,
+    custody: &NodeIncarnationProof,
+    subject: &RecoveryEvidenceSubject,
+    decide: impl FnOnce(&dyn RecoveryDurabilityEvidenceSourceV2) -> T,
+) -> Result<T> {
+    fence_custody(tx, custody).await?;
+    let authority = registered_authority(tx).await?;
+    let source = resolve_current(tx, &authority, subject).await?;
+    Ok(decide(&source))
+}
+
 fn bounded_bindings(current: &RecoveryCurrentEvidence) -> bool {
     // Necessary wire bounds already enforced by Foundation's canonical UUID
     // and valid_revision codecs; this does not grant authority to these DTOs.
