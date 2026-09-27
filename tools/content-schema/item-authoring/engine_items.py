@@ -2,8 +2,12 @@
 
 Reads `items.xml` (expanding `fromid`/`toid` ranges the way the engine does) and decodes
 the `appearances.dat` protobuf (`src/protobuf/appearances.proto` at the pinned Canary
-revision; Crystal shares the same wire format). Every input file's SHA-256 is checked
-against `ENGINE_ARTIFACT_DIGESTS` (`source_field_catalogs.py`) before it is read.
+revision; Crystal shares the same wire format). Every input artifact is digest-verified
+before it is read (`read_verified_artifact`): text artifacts (`items.xml`, the two
+Delivery Task pool files) are verified and parsed after CRLF->LF normalization, matching
+Git's canonical text-blob bytes, so an autocrlf=true checkout digests identically to an
+LF one; `appearances.dat` is always verified and read as exact raw bytes and is never
+normalized. A missing pinned artifact is a hard error, never an empty result.
 
 Identity reproduces the committed Content World B1 allocator: ascending `source_item_id`
 from `docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json`,
@@ -13,6 +17,14 @@ a semantic id takes its native key from `NATIVE_ITEM_BATCH` in
 `crystal-field-dispositions.json` / `canary-field-dispositions.json` ledgers: a field whose
 disposition is not `ITEM_TYPED`/mapped is counted as routed to its owner, never a blocker;
 an `ITEM_TYPED` field this converter does not implement is `converter_missing:<field>`.
+
+Each engine reads only its own pinned Delivery Task pool (Canary: the `weeklyItems`
+table in `data/modules/scripts/taskboard/settings.lua`; Crystal: its existing delivery
+list). Pool membership is upstream evidence, not an Oteryn authoring decision: no
+admitted adoption rule exists yet, so a candidate bundle never carries
+`delivery_task_eligible`. The per-item report instead records a `delivery_task` block
+(`source`, `member`, `proposal`, `decision: "unresolved"`) and the caller is responsible
+for keeping that separate from the emitted Item.
 
 This is evidence tooling: it proves what the pinned engine sources say, not Game truth.
 """
@@ -61,34 +73,52 @@ DELIVERY_LIST_PATH = "data/scripts/lib/task_board_delivery_items.lua"
 DELIVERY_LIST_SHA256 = (
     "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d"
 )
+CANARY_WEEKLY_ITEMS_PATH = "data/modules/scripts/taskboard/settings.lua"
+CANARY_WEEKLY_ITEMS_SHA256 = (
+    "9ae88e3a3ee6d0baecfc26adc806f5b59d54bf1491348f67e6f00e32894fe504"
+)
+DELIVERY_POOL_PATH = {"crystal": DELIVERY_LIST_PATH, "canary": CANARY_WEEKLY_ITEMS_PATH}
+DELIVERY_SOURCE_NAME = {
+    "crystal": "crystal_delivery_list",
+    "canary": "canary_task_board_weekly_items",
+}
+
+# Text artifacts are digested/parsed after CRLF->LF normalization (Git's canonical text
+# blob bytes), so an autocrlf=true checkout digests identically to an LF one. Every other
+# pinned artifact (appearances.dat) is digested/parsed as exact raw bytes and must never
+# be normalized: a binary artifact may legitimately contain the byte sequence 0d 0a.
+TEXT_ARTIFACTS = {"data/items/items.xml", DELIVERY_LIST_PATH, CANARY_WEEKLY_ITEMS_PATH}
 
 
-def sha256_file(path):
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
+def normalize_text_bytes(data):
+    return data.replace(b"\r\n", b"\n")
 
 
-def verify_digest(profile, source_root, relative_path):
+def read_verified_artifact(source_root, relative_path, expected_digest):
+    """Digest-verify one pinned source artifact; return (payload_bytes, digest_mode)."""
     path = source_root / relative_path
-    expected = ENGINE_ARTIFACT_DIGESTS[profile][relative_path]
-    actual = sha256_file(path)
-    if actual != expected:
+    if not path.is_file():
+        raise SystemExit(f"missing required source artifact: {relative_path}")
+    raw = path.read_bytes()
+    if relative_path in TEXT_ARTIFACTS:
+        payload, digest_mode = normalize_text_bytes(raw), "text_lf_normalized"
+    else:
+        payload, digest_mode = raw, "raw_bytes"
+    actual = hashlib.sha256(payload).hexdigest()
+    if actual != expected_digest:
         raise SystemExit(
-            f"digest mismatch for {relative_path}: expected {expected}, got {actual}"
+            f"digest mismatch for {relative_path}: expected {expected_digest}, got {actual}"
         )
-    return path
+    return payload, digest_mode
 
 
 # --- items.xml -----------------------------------------------------------------
 
 
-def load_items_xml(path):
+def load_items_xml(text):
     """Expand fromid/toid ranges; split root vs. nested `script` sub-attributes."""
     items = {}
-    root = ET.parse(path).getroot()
+    root = ET.fromstring(text)
     for node in root.iter("item"):
         root_attrs = {}
         script_attrs = {}
@@ -420,10 +450,9 @@ def decode_appearance_object(value):
     return record
 
 
-def load_appearance_objects(path):
+def load_appearance_objects(data):
     """Decode the `object` (family 1) appearances into {id: decoded record}."""
     objects = {}
-    data = path.read_bytes()
     for number, value in protobuf_fields(data):
         if number != 1:
             continue
@@ -502,19 +531,41 @@ def item_ref(identity_index, item_id):
     return {"family": "Item", "key": entry[0], "revision": DEFINITION_REVISION}
 
 
-# --- delivery task eligibility -----------------------------------------------------
+# --- delivery task evidence (Canary Task Board / Crystal delivery list) ------------
 
 
-def load_delivery_item_ids(source_root):
-    path = source_root / DELIVERY_LIST_PATH
-    actual = sha256_file(path)
-    if actual != DELIVERY_LIST_SHA256:
-        raise SystemExit(
-            f"digest mismatch for {DELIVERY_LIST_PATH}: "
-            f"expected {DELIVERY_LIST_SHA256}, got {actual}"
-        )
-    text = path.read_text(encoding="utf-8")
+def parse_crystal_delivery_ids(text):
     return {int(match) for match in re.findall(r"itemId\s*=\s*(\d+)", text)}
+
+
+def parse_canary_weekly_item_ids(text):
+    """Parse only the `weeklyItems = { ... }` table; ignore every other `id =` in the
+    file (e.g. `shopOffers`), which is not the Delivery Task pool."""
+    opening = re.search(r"weeklyItems\s*=\s*\{", text)
+    if opening is None:
+        raise SystemExit(f"weeklyItems table not found in {CANARY_WEEKLY_ITEMS_PATH}")
+    depth = 0
+    end = None
+    for pos in range(opening.end() - 1, len(text)):
+        if text[pos] == "{":
+            depth += 1
+        elif text[pos] == "}":
+            depth -= 1
+            if depth == 0:
+                end = pos
+                break
+    if end is None:
+        raise SystemExit(
+            f"unterminated weeklyItems table in {CANARY_WEEKLY_ITEMS_PATH}"
+        )
+    block = text[opening.end() - 1 : end + 1]
+    return {int(value) for value in re.findall(r"\bid\s*=\s*(\d+)", block)}
+
+
+DELIVERY_POOL_PARSER = {
+    "crystal": parse_crystal_delivery_ids,
+    "canary": parse_canary_weekly_item_ids,
+}
 
 
 # --- field dispositions (crystal-field-dispositions.json / canary-...) -------------
@@ -1186,34 +1237,61 @@ def build_presentation_dependency(profile, appearance_id, appearance_obj):
 # --- assembling one Item -----------------------------------------------------------
 
 
-def load_engine_sources(engine, source_root):
+def default_artifact_digests(profile, engine):
+    digests = dict(ENGINE_ARTIFACT_DIGESTS[profile])
+    pool_path = DELIVERY_POOL_PATH[engine]
+    digests[pool_path] = (
+        DELIVERY_LIST_SHA256 if engine == "crystal" else CANARY_WEEKLY_ITEMS_SHA256
+    )
+    return digests
+
+
+def load_engine_sources(engine, source_root, digests=None):
+    """digests overrides the pinned production SHA-256 map; used only by fixture tests."""
     config = ENGINES[engine]
     profile = config["profile"]
-    items_path = verify_digest(profile, source_root, "data/items/items.xml")
-    appearances_path = verify_digest(profile, source_root, "data/items/appearances.dat")
-    delivery_ids = load_delivery_item_ids(source_root) if engine == "crystal" else set()
+    artifact_digests = (
+        digests if digests is not None else default_artifact_digests(profile, engine)
+    )
+    pool_path = DELIVERY_POOL_PATH[engine]
+
+    items_bytes, items_mode = read_verified_artifact(
+        source_root, "data/items/items.xml", artifact_digests["data/items/items.xml"]
+    )
+    appearances_bytes, appearances_mode = read_verified_artifact(
+        source_root,
+        "data/items/appearances.dat",
+        artifact_digests["data/items/appearances.dat"],
+    )
+    pool_bytes, pool_mode = read_verified_artifact(
+        source_root, pool_path, artifact_digests[pool_path]
+    )
+    delivery_member_ids = DELIVERY_POOL_PARSER[engine](pool_bytes.decode("utf-8"))
+
     return {
         "engine": engine,
         "profile": profile,
         "repository": config["repository"],
         "revision": config["revision"],
-        "items": load_items_xml(items_path),
-        "appearances": load_appearance_objects(appearances_path),
+        "items": load_items_xml(items_bytes.decode("utf-8")),
+        "appearances": load_appearance_objects(appearances_bytes),
         "identity_index": build_identity_index(),
-        "delivery_item_ids": delivery_ids,
+        "delivery_member_ids": delivery_member_ids,
+        "delivery_source": DELIVERY_SOURCE_NAME[engine],
         "disposition": load_disposition_catalog(profile),
         "artifact_digests": {
-            "data/items/items.xml": ENGINE_ARTIFACT_DIGESTS[profile][
-                "data/items/items.xml"
-            ],
-            "data/items/appearances.dat": ENGINE_ARTIFACT_DIGESTS[profile][
-                "data/items/appearances.dat"
-            ],
-            **(
-                {DELIVERY_LIST_PATH: DELIVERY_LIST_SHA256}
-                if engine == "crystal"
-                else {}
-            ),
+            "data/items/items.xml": {
+                "sha256": artifact_digests["data/items/items.xml"],
+                "digest_mode": items_mode,
+            },
+            "data/items/appearances.dat": {
+                "sha256": artifact_digests["data/items/appearances.dat"],
+                "digest_mode": appearances_mode,
+            },
+            pool_path: {
+                "sha256": artifact_digests[pool_path],
+                "digest_mode": pool_mode,
+            },
         },
     }
 
@@ -1317,17 +1395,22 @@ def convert_item(sources, item_id):
         "identity": {"key": key, "revision": DEFINITION_REVISION},
         "display_name": name,
         "family_profile": family_profile,
-        "delivery_task_eligible": item_id in sources["delivery_item_ids"],
         "taxonomy": {
             "item_class": PROFILE_ITEM_CLASS[family_profile],
             "primary": primarytype or attrs.get("weapontype") or family_profile,
         },
     }
-    delivery_basis = (
-        "crystal_delivery_list"
-        if item_id in sources["delivery_item_ids"]
-        else "not_in_crystal_delivery_list"
-    )
+    # No admitted Oteryn Delivery Task adoption rule exists yet: pool membership is
+    # upstream evidence, not an authoring decision, so the emitted Item never carries
+    # `delivery_task_eligible`. The report keeps that evidence separate and unresolved.
+    is_pool_member = item_id in sources["delivery_member_ids"]
+    delivery_task_report = {
+        "source": sources["delivery_source"],
+        "member": is_pool_member,
+        "proposal": is_pool_member,
+        "decision": "unresolved",
+    }
+    blockers.append("delivery_task_decision_not_admitted")
 
     dependencies = {
         "definitions": [],
@@ -1648,8 +1731,7 @@ def convert_item(sources, item_id):
             "key": key,
             "identity_basis": identity_basis,
             "family_profile": family_profile,
-            "delivery_task_eligible": item["delivery_task_eligible"],
-            "delivery_task_basis": delivery_basis,
+            "delivery_task": delivery_task_report,
             "converted": True,
             "blockers": blockers,
             "field_status": field_status,

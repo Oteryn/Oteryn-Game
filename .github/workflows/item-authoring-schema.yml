@@ -1,0 +1,77 @@
+name: Item Authoring Schema
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/item-authoring/**
+      - tools/content-schema/validate_item_master_schema.py
+      - tools/content-schema/test_validate_item_master_schema.py
+      - imports/tibiawiki/bindings/items.json
+      - .github/workflows/item-authoring-schema.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  item-authoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/item-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Regenerate schemas, catalogs and templates byte-identically
+        run: |
+          set -euo pipefail
+          python build_formal_schema.py
+          git diff --exit-code -- .
+
+      - name: Focused schema and validator checks
+        run: |
+          set -euo pipefail
+          python verify_formal_schema.py
+          git diff --exit-code -- .
+          python validate_item.py synthetic-valid-item.json synthetic-valid-dependencies.json \
+            --manifest synthetic-valid-import-readiness.json
+
+      - name: Converter fixture tests
+        run: python test_engine_items.py
+
+      - name: Item Master census
+        working-directory: .
+        run: |
+          set -euo pipefail
+          python tools/content-schema/validate_item_master_schema.py
+          python tools/content-schema/test_validate_item_master_schema.py
+
+      - name: Ruff check and format
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ruff check tools/content-schema/item-authoring
+          ruff format --check tools/content-schema/item-authoring
+
+      - name: Verify the checkout stayed clean
+        if: ${{ always() }}
+        working-directory: .
+        run: test -z "$(git status --short --untracked-files=all)"

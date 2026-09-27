@@ -23,6 +23,17 @@
       "items": 22531
     },
     {
+      "blocker": "delivery_task_decision_not_admitted",
+      "examples": [
+        "oteryn:item.registry.i00000023",
+        "oteryn:item.registry.i00000032",
+        "oteryn:item.registry.i00000033",
+        "oteryn:item.registry.i00000037",
+        "oteryn:item.registry.i00000038"
+      ],
+      "items": 11606
+    },
+    {
       "blocker": "sprite_atlas_not_admitted",
       "examples": [
         "oteryn:item.registry.i00000023",
@@ -431,7 +442,7 @@
       "items": 1
     }
   ],
-  "bundle_digest": "03e30e3d082b6ac6342e91b37d42b07c084b5bbeaf35133c8ebffa18b2277709",
+  "bundle_digest": "1a268533ae0f0936148cac4c465830faafa944c2afaee95b6a4aade2bac12c48",
   "by_profile": {
     "container": 2513,
     "container_equipment": 8,
@@ -456,8 +467,10 @@
     "weapon_magic": 86,
     "weapon_melee": 562
   },
-  "delivery_task_eligible": {
-    "not_in_crystal_delivery_list": 11606
+  "delivery_task": {
+    "member": 9,
+    "not_member": 11597,
+    "source": "canary_task_board_weekly_items"
   },
   "field_coverage": {
     "absorbpercentall": {
@@ -1752,15 +1765,25 @@
   },
   "outcome": {
     "blocked": 9125,
-    "fully_resolved": 2481,
     "items": 37527,
-    "not_converted": 25921
+    "not_converted": 25921,
+    "pending_author_decision": 2481
   },
   "scope": "Every item id in this engine's pinned data/items/items.xml (fromid/toid ranges expanded); not a placed map object or instance.",
   "source": {
     "artifact_digests": {
-      "data/items/appearances.dat": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50",
-      "data/items/items.xml": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+      "data/items/appearances.dat": {
+        "digest_mode": "raw_bytes",
+        "sha256": "aa44a154f30c7ed59acc25f246286396e4043851ef0b54ef3cf3951e46d1ce50"
+      },
+      "data/items/items.xml": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2"
+      },
+      "data/modules/scripts/taskboard/settings.lua": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "9ae88e3a3ee6d0baecfc26adc806f5b59d54bf1491348f67e6f00e32894fe504"
+      }
     },
     "engine": "canary",
     "profile": "canary_47dfd51_item_definition_v1",

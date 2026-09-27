@@ -27,8 +27,9 @@ Architecture and boundaries:
 | `templates/*.json` | Thirteen valid starting points for materially different authoring shapes. |
 | `validate_item.py` | Structural, semantic, exact-reference and import-readiness validation. |
 | `verify_formal_schema.py` | Focused positive/negative contract checks and deterministic fixtures. |
-| `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding. Digest-verifies every input file first. |
-| `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every bundle, and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage). |
+| `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding, each engine's own Delivery Task pool evidence. Digest-verifies every input artifact first (text artifacts after CRLF->LF normalization, `appearances.dat` as exact raw bytes); a missing pinned artifact is a hard error. |
+| `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every bundle (including the Delivery Task field as a throwaway proposal, never emitted), and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage, Delivery Task counts). `--self-check` runs required engine-specific assertions for both engines; `--check` diffs an in-memory regeneration against the committed file instead of writing. |
+| `test_engine_items.py` | Fixture-checkout tests for `engine_items`/`population_census`: LF/CRLF digest portability, per-engine Delivery Task pool parsing and evidence/decision separation. Run with `python test_engine_items.py`. |
 | `samples/population-crystal-ff7ede5.json`, `samples/population-canary-47dfd51f.json` | Committed census outputs for the two pinned engine revisions. |
 
 The profiles are guidance inside one schema. Missing a common capability produces a
@@ -38,20 +39,30 @@ fields fail closed, so map placement, collision, pathing, source numeric IDs and
 instance state cannot silently enter an Item definition.
 
 ```text
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt  # dev: ruff==0.16.1
 python build_formal_schema.py && git diff --exit-code -- .
 python verify_formal_schema.py
 python validate_item.py synthetic-valid-item.json synthetic-valid-dependencies.json --manifest synthetic-valid-import-readiness.json
 ```
 
-Engine population census (pinned Crystal/Canary checkouts, digests verified before read;
-Crystal also needs `data/scripts/lib/task_board_delivery_items.lua` for
-`delivery_task_eligible`):
+CI: `.github/workflows/item-authoring-schema.yml` runs these steps plus
+`test_engine_items.py`, the Item Master census and Ruff on every PR touching the package.
+The whole-population census needs the pinned upstream checkouts and stays a local
+`population_census.py --check` step.
+
+Engine population census (pinned Crystal/Canary checkouts, digests verified before read
+on both LF and CRLF checkouts; Crystal also needs its existing delivery list, Canary
+needs the `weeklyItems` table in `data/modules/scripts/taskboard/settings.lua`; neither
+engine's Delivery Task pool evidence makes it into the emitted `delivery_task_eligible`
+field, which no candidate bundle carries):
 
 ```text
 python population_census.py --engine crystal --source /path/to/crystalserver --self-check
 python population_census.py --engine canary --source /path/to/canary --self-check
+python population_census.py --engine crystal --source /path/to/crystalserver --check
+python population_census.py --engine canary --source /path/to/canary --check
 python engine_items.py --engine crystal --source /path/to/crystalserver --id 3288
+python test_engine_items.py
 ```
 
 `population_census.py` is evidence tooling: it proves what the pinned engine sources

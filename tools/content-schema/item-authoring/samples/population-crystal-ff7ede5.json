@@ -23,6 +23,17 @@
       "items": 22928
     },
     {
+      "blocker": "delivery_task_decision_not_admitted",
+      "examples": [
+        "oteryn:item.registry.i00000023",
+        "oteryn:item.registry.i00000032",
+        "oteryn:item.registry.i00000033",
+        "oteryn:item.registry.i00000037",
+        "oteryn:item.registry.i00000038"
+      ],
+      "items": 11986
+    },
+    {
       "blocker": "sprite_atlas_not_admitted",
       "examples": [
         "oteryn:item.registry.i00000023",
@@ -437,7 +448,7 @@
       "items": 1
     }
   ],
-  "bundle_digest": "7b2d43f86df04aea1150c71068a8ecf3eead9c57ed7bee387d9807ab126b19c6",
+  "bundle_digest": "38cfc919c491eb59ee0a195c5801a3e5b48bf49e62fb7b66223ff610e7afdb35",
   "by_profile": {
     "container": 2678,
     "container_equipment": 8,
@@ -462,9 +473,10 @@
     "weapon_magic": 88,
     "weapon_melee": 568
   },
-  "delivery_task_eligible": {
-    "crystal_delivery_list": 382,
-    "not_in_crystal_delivery_list": 11604
+  "delivery_task": {
+    "member": 382,
+    "not_member": 11604,
+    "source": "crystal_delivery_list"
   },
   "field_coverage": {
     "absorbpercentall": {
@@ -1824,16 +1836,25 @@
   },
   "outcome": {
     "blocked": 9465,
-    "fully_resolved": 2521,
     "items": 38157,
-    "not_converted": 26171
+    "not_converted": 26171,
+    "pending_author_decision": 2521
   },
   "scope": "Every item id in this engine's pinned data/items/items.xml (fromid/toid ranges expanded); not a placed map object or instance.",
   "source": {
     "artifact_digests": {
-      "data/items/appearances.dat": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
-      "data/items/items.xml": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
-      "data/scripts/lib/task_board_delivery_items.lua": "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d"
+      "data/items/appearances.dat": {
+        "digest_mode": "raw_bytes",
+        "sha256": "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1"
+      },
+      "data/items/items.xml": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb"
+      },
+      "data/scripts/lib/task_board_delivery_items.lua": {
+        "digest_mode": "text_lf_normalized",
+        "sha256": "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d"
+      }
     },
     "engine": "crystal",
     "profile": "crystal_ff7ede5_item_definition_v1",
