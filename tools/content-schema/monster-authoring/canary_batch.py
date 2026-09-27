@@ -778,7 +778,12 @@ class Converter:
                     resolution='Registered creature event whose script has not been verified.')
         for callback in sorted(callbacks):
             line = line_of(r'mType\.' + callback)
-            if re.search(r'^mType\.' + callback + r'\s*=\s*function\s*\([^)]*\)\s*end\s*$', text, re.M):
+            encounters = ENCOUNTERS.get((f'mType.{callback}', creature['identity']['key']))
+            if encounters:
+                row(f'mType.{callback}', 'approved_omission', 'script', line=line,
+                    resolution=f'Inline Lua callback relocated to Encounter {", ".join(encounters)}, whose manifest covers this '
+                               'creature for the whole callback; the monster keeps no copy of the logic (D20, D28).')
+            elif re.search(r'^mType\.' + callback + r'\s*=\s*function\s*\([^)]*\)\s*end\s*$', text, re.M):
                 row(f'mType.{callback}', 'approved_omission', 'script', line=line,
                     resolution='Inline Lua callback with an empty body (`function(...) end`): no effect.')
             elif callback == 'onAppear' and REWARD_ON_APPEAR.search(text):

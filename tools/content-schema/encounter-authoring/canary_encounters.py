@@ -991,12 +991,45 @@ def urmahlullu(build):
                 'server rate.')
 
 
+
+SPLINTERS = 'data-otservbr-global/monster/quests/soul_war/normal_monsters/megalomania_room/'
+
+
+def megalomania_splinters(build):
+    """mType.onSpawn of the Splinters of Madness: each stage grows into the next after 120 s (the wiki decides, D25)."""
+    item = build.get('goshnars_megalomania', "Soul War: Goshnar's Megalomania", 'instance_per_party')
+    stages = [('Lesser Splinter of Madness', 'Greater Splinter of Madness', 'lesser_splinter_of_madness.lua'),
+              ('Greater Splinter of Madness', 'Mighty Splinter of Madness', 'greater_splinter_of_madness.lua')]
+    for stage, following, filename in stages:
+        role = slug(stage)
+        build.participant(item, role, stage, 'mType.onSpawn')
+        build.define(item, creature(following))
+        path = build.rule(item, {'key': f'{role}_grows', 'trigger': {'kind': 'creature_spawned', 'role': role}, 'delay_ms': 120000,
+                                 'conditions': [], 'actions': [{'kind': 'transform', 'role': role, 'into': creature(following),
+                                                                'health': 'full'}]})
+        build.entry(item, SPLINTERS + filename, [97, 98, 99, 100, 101, 102, 103, 104], 'mapped', path,
+                    f'onSpawn schedules, 120 s later, setType("{following}", true) on the same creature if it still exists: '
+                    'the next stage with its full health.')
+    build.entry(item, SPLINTERS + 'greater_splinter_of_madness.lua', [97], 'mapped', '/encounter/rules/1/trigger',
+                'Canary runs onSpawn only for a creature that is spawned, and setType does not run it again '
+                '(monster_functions.cpp luaMonsterSetType), so a splinter that grew from a lesser one never becomes mighty. '
+                'The reference-date wiki (Soul War Quest/Spoiler: lesser splinters "will become Greater Splinters of Madness '
+                'and then Mighty Splinters of Madness") decides (D25): creature_spawned also fires for a creature transformed '
+                'into the role.')
+    build.participant(item, 'mighty_splinter_of_madness', 'Mighty Splinter of Madness')
+    build.entry(item, SPLINTERS + 'mighty_splinter_of_madness.lua', list(range(97, 111)), 'unresolved_semantics', None,
+                'After 120 s a mighty splinter is absorbed and Goshnar\'s Megalomania grows stronger (the wiki: "If a Mighty '
+                'Splinter of Madness is not removed in due time, it will be absorbed"). Canary\'s callback calls say and '
+                'remove on the undefined global `creature` and fails before increaseHatredDamageMultiplier(5); the boss '
+                'strength change (its hatred multiplier) is outside the vocabulary.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu, megalomania_splinters):
         transcribe(build)
     print(json.dumps(build.write()))
 

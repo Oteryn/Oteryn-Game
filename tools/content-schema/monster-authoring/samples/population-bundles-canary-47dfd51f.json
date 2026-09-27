@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1461,
+  "bundles": 1463,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -581,6 +581,7 @@
     {"monster":"gravelord_oshuran","file":"bosses/gravelord_oshuran","sha256":"84f82c75c045e70b8300bcd4b262f297b93046b40be1431c2e2eead7303e2a8c"},
     {"monster":"greater_canopic_jar","file":"quests/dark_trails/greater_canopic_jar","sha256":"3ed102957d3a44343a3b8c52e6fc86905ec6fcae70e40db28e1a96b8ecd18f2a"},
     {"monster":"greater_death_minion","file":"quests/dark_trails/greater_death_minion","sha256":"f45eb522ef86ae50cc344b633858fd7d31167cbb94f184e91bf6b072151775c8"},
+    {"monster":"greater_splinter_of_madness","file":"quests/soul_war/normal_monsters/megalomania_room/greater_splinter_of_madness","sha256":"10a3da77c0707ba22956277b85fa40083eceaff3a24fdf6dcd49b03cc042c34f"},
     {"monster":"greed","file":"quests/heart_of_destruction/greed","sha256":"1567df5ee8fa01f526d66871ef44ed98e2fe0b7ee5a8d1f315051983c5e1d481"},
     {"monster":"green_djinn","file":"magicals/green_djinn","sha256":"db0857bbefa9565d20526a570c0baf1f0f3d3010386b59c2be7cfe9c8df84a50"},
     {"monster":"green_frog","file":"amphibics/green_frog","sha256":"79aadf0ae10c9bc238a89dcc9af16b1db10f16ab8f7907b99dcce239fb0b0fc7"},
@@ -715,6 +716,7 @@
     {"monster":"leaf_golem","file":"plants/leaf_golem","sha256":"5d111d111bcb41a81c5f7ee79602c3d5a871be0df4cc54e090492c57b55a1ae6"},
     {"monster":"lesser_death_minion","file":"quests/dark_trails/lesser_death_minion","sha256":"b062febcdf5abaa5f781910aa7afaa50e040e82cd8f8851badc3cacc544b32c3"},
     {"monster":"lesser_fire_devil","file":"dawnport/lesser_fire_devil","sha256":"c137458edf1ed9da3fe57e12907b54a89b657ffea329e892b849fe2def3fe047"},
+    {"monster":"lesser_splinter_of_madness","file":"quests/soul_war/normal_monsters/megalomania_room/lesser_splinter_of_madness","sha256":"d262a33379ac46e90a2c84b111b21e3b74dd138c5c1d97614fd55ce269418a56"},
     {"monster":"lesser_swarmer","file":"vermins/lesser_swarmer","sha256":"4fdf409a80597f7090019668cb7471e2ceb62784b046bda0b79706748b1002cf"},
     {"monster":"lethal_lissy","file":"raids/lethal_lissy","sha256":"97caf028ac7cbbaf28a06aa205c7b5bfbcf0e8adba6dbf17d55bf57910ec3fcb"},
     {"monster":"leviathan","file":"quests/killing_in_the_name_of/leviathan","sha256":"3f120db1f6baa2d51f494a344e8b7063deef639b11a8e4b519f97f0175b4086d"},

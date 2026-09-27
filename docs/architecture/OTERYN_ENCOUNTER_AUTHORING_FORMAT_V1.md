@@ -178,6 +178,11 @@ buff such as the cobra flask).
    rule run in order. `prevent_death` is valid only in a `lethal_damage` rule. A rule with
    `delay_ms` is scheduled once per trigger occurrence (like Canary `addEvent`): its conditions are
    evaluated and its actions run `delay_ms` later, and `death_position` is the position of that death.
+   In a rule triggered by one creature (a death, lethal damage, damage, health, spawn or cast
+   trigger), `transform`, `prevent_death`, `heal`, `damage`, `damage_modifier` and `say` naming the
+   trigger's role act on that creature; `remove` of a role removes every creature of the role. A
+   delayed action on a creature that no longer exists does nothing. `creature_spawned` fires when a
+   creature of the role appears: placed by the map or a lever, spawned, or transformed into the role.
 3. Randomness (`chance_percent`, random positions, `random_of`, `{min, max}` ranges for spawn
    counts, heal and damage amounts, rule delays and timer durations) is drawn uniformly by the
    encounter instance, so a fight can be audited and replayed from its seed.
