@@ -6,6 +6,7 @@ before the target cut and keeps the revision id, its timestamp and the top-level
 cut to 300 characters. Raw page text never leaves the runner.
 
     python wiki_br_capture.py --out capture.json "Dark Merudri" "Count Vlarkorth"
+    python wiki_br_capture.py --out population.json --titles-from samples/wiki-population-2026-09-27.json
     python wiki_br_capture.py self-test
 """
 import argparse
@@ -61,7 +62,7 @@ def infobox(text):
         i += 1
     if current is not None:
         fields[current] = ''.join(buffer).strip()
-    return name, {key: value[:FIELD_LIMIT] for key, value in fields.items() if key}
+    return name, {key: value[:FIELD_LIMIT] for key, value in fields.items() if key and value}
 
 
 def revision_at_cut(title):
@@ -84,6 +85,7 @@ def self_test():
     name, fields = infobox('x {{Infobox Criatura|nome = Dark Merudri\n| hp = 6500\n| notas = [[A|b]] {{c|d}}\n}} y')
     assert name == 'Infobox Criatura', name
     assert fields == {'nome': 'Dark Merudri', 'hp': '6500', 'notas': '[[A|b]] {{c|d}}'}, fields
+    assert infobox('{{Infobox X|a=|b=1}}')[1] == {'b': '1'}
     assert infobox('no box') == (None, {})
     assert len(infobox('{{Infobox X|a=' + 'z' * 400 + '}}')[1]['a']) == FIELD_LIMIT
     print('wiki_br_capture self-test: PASS')
@@ -96,16 +98,32 @@ def main(argv=None):
         return 0
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--out', type=Path, required=True)
-    parser.add_argument('titles', nargs='+')
+    parser.add_argument('--titles-from', type=Path, help='a wiki population sample: every distinct wiki_title in it')
+    parser.add_argument('titles', nargs='*')
     args = parser.parse_args(argv)
+    titles = list(args.titles)
+    if args.titles_from:
+        sample = json.loads(args.titles_from.read_text(encoding='utf-8'))
+        titles += sorted({m['wiki_title'] for m in sample['monsters']} - set(titles))
+    if not titles:
+        parser.error('no titles')
     pages = []
-    for title in args.titles:
-        pages.append(revision_at_cut(title))
+    for title in titles:
+        for attempt in range(3):
+            try:
+                pages.append(revision_at_cut(title))
+                break
+            except (OSError, ValueError, KeyError) as error:
+                if attempt == 2:
+                    pages.append({'title': title, 'error': type(error).__name__})
+                time.sleep(2 ** (attempt + 1))
         time.sleep(0.5)
     document = {'wiki': 'tibiawiki.com.br', 'api': API, 'target_cut': TARGET_CUT, 'cut_timestamp': CUT_TIMESTAMP,
                 'field_limit': FIELD_LIMIT, 'pages': pages}
     args.out.write_text(json.dumps(document, ensure_ascii=False, indent=1) + '\n', encoding='utf-8', newline='\n')
-    print(json.dumps({p['title']: p.get('revision_id', 'missing') for p in pages}, ensure_ascii=False))
+    found = sum(1 for p in pages if 'revision_id' in p)
+    errors = sum(1 for p in pages if 'error' in p)
+    print(f'pages: {len(pages)}, found: {found}, missing: {len(pages) - found - errors}, errors: {errors}')
     return 0
 
 
