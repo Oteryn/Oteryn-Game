@@ -441,6 +441,27 @@ transitions to slice 3. A file that shadows `Storage` itself keeps its full path
    review and the scope-runtime implementation, the blocked children become executable. The first
    target is The Queen of the Banshees, played from start to end.
 4. The dedicated-script doors (vocation doors, Katana, Secret Service).
+
+**Runtime readiness for a playable quest (audit 2026-09-27).** The server does not execute any quest
+content yet. WorldProject/v2 admits Quest, Interaction, WorldObject, Npc and Dialogue records as
+declarations only (`content/project/v2.rs`); only the Reference linker's definition families lower
+to runtime, and none of them is a quest family.
+
+A player completing The Queen of the Banshees needs:
+
+| Need | Today | Blocked on |
+|---|---|---|
+| Step-on and use triggers | generic proposal dispatcher only (`interaction/`) | GAME-INTERACTION-01 successor (PROPOSED) |
+| Quest progress store, fenced per character | only character XP persists | a quest-state store; D35 gives the rules, no contract yet |
+| Teleport, walls and levers | one local step (`movement.rs`); no map-object state | VSL-MOVE-01 implementation; D37/D38 review |
+| Summons | spawn rejected (`ai/mod.rs`) | GAME-AI-01 (PROPOSED) |
+| Reward items | fixture-only | DUR-03 (CANDIDATE, no runtime authority) |
+| NPC dialogue with quest hooks | none | an NPC dialogue runtime contract (none yet) |
+| Quest lowering from content | none | a Quest/Interaction definition family in the Reference linker |
+
+The smallest playable slice is a reward chest: a `USE` trigger, one DUR-03 hand-out and a per-character
+claim. It needs only GAME-INTERACTION-01 and DUR-03 accepted and a claim store. A full storyline quest
+needs every row above.
 5. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
    Cloudflare challenge.
 
