@@ -1,6 +1,7 @@
-"""Validate reward claims and reward-only quests: JSON Schema plus the semantic rules of the format.
+"""Validate reward claims, reward-only quests and door gates: JSON Schema plus the semantic rules of the format.
 
 Usage: python validate_quest_content.py CLAIMS.json QUESTS.json [--catalog CATALOG.json] [--manifest MANIFEST.json]
+                                        [--gates GATES.json [--gates-manifest MANIFEST.json]]
 Prints one JSON report; the exit code is 1 when the documents are invalid.
 """
 import argparse
@@ -87,15 +88,68 @@ def validate(claims_doc, quests_doc, catalog=None, manifest=None):
     return sorted(set(errors))
 
 
+def validate_gates(gates_doc, claims_doc, manifest=None):
+    schema = json.loads((ROOT / 'quest_content.schema.json').read_text())
+    errors = [f'{"/".join(map(str, e.absolute_path))}: {e.message}'
+              for e in jsonschema.Draft202012Validator(schema).iter_errors(gates_doc)]
+    if errors:
+        return errors
+    claims = {c['identity']['key']: c for c in claims_doc['claims']}
+    keys, positions = set(), {}
+    for gate in gates_doc['gates']:
+        key, condition = gate['identity']['key'], gate['condition']
+        if key in keys:
+            errors.append(f'{key}: duplicate gate key')
+        keys.add(key)
+        if (gate['quest'] is None) != (gate['quest_link_basis'] is None):
+            errors.append(f'{key}: quest and quest_link_basis must be set together')
+        if (gate['state'] == 'shared_lock') != (condition['kind'] == 'door_key'):
+            errors.append(f'{key}: only a key door has a shared lock')
+        for placement in gate['placements']:
+            position = tuple(placement['position'].values())
+            if position in positions:
+                errors.append(f'{key}: position {position} already belongs to {positions[position]}')
+            positions[position] = key
+        if condition['kind'] == 'quest_progress' and condition['claim']:
+            claim = claims.get(condition['claim']['key'])
+            if claim is None:
+                errors.append(f'{key}: unknown claim {condition["claim"]["key"]}')
+            elif claim['identity']['key'].split('/', 1)[1] != condition['progress'].split('/', 1)[1]:
+                errors.append(f'{key}: the claim does not record the progress the door reads')
+        if condition['kind'] == 'door_key':
+            number = condition['key_binding'].rsplit('/', 1)[1]
+            for claim_ref in condition['key_from_claims']:
+                claim = claims.get(claim_ref['key'])
+                bindings = {p['reward'].get('key_binding', '').rsplit('/', 1)[-1] for p in claim['placements']} if claim else set()
+                if number not in bindings:
+                    errors.append(f'{key}: {claim_ref["key"]} hands out no key for this door')
+    if manifest is not None:
+        for entry in manifest['entries']:
+            if entry['status'] not in MANIFEST_STATUS:
+                errors.append(f'manifest: unknown status {entry["status"]}')
+            if entry.get('destination') and entry['destination'] not in keys:
+                errors.append(f'manifest: destination {entry["destination"]} is not a gate')
+            if entry['status'] in ('mapped', 'conflict') and not entry.get('destination'):
+                errors.append(f'manifest: {entry["status"]} entry at {entry.get("position")} has no destination')
+        mapped = {e['destination'] for e in manifest['entries'] if e.get('destination')}
+        for key in sorted(keys - mapped):
+            errors.append(f'{key}: no manifest entry maps a source door to this gate')
+    return sorted(set(errors))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('claims', type=Path)
     parser.add_argument('quests', type=Path)
     parser.add_argument('--catalog', type=Path)
     parser.add_argument('--manifest', type=Path)
+    parser.add_argument('--gates', type=Path)
+    parser.add_argument('--gates-manifest', type=Path)
     args = parser.parse_args()
     load = lambda p: json.loads(p.read_text()) if p else None
     errors = validate(load(args.claims), load(args.quests), load(args.catalog), load(args.manifest))
+    if args.gates:
+        errors += validate_gates(load(args.gates), load(args.claims), load(args.gates_manifest))
     print(json.dumps({'valid': not errors, 'errors': errors[:50], 'error_count': len(errors)}, indent=2))
     sys.exit(1 if errors else 0)
 

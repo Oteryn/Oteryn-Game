@@ -2,7 +2,7 @@
 import json
 import sys
 
-from validate_quest_content import validate
+from validate_quest_content import validate, validate_gates
 
 
 def ref(family, name):
@@ -93,6 +93,48 @@ quests['quests'].clear()
 errors = validate(claims, quests, catalog, manifest)
 results.insert(2, {'name': 'unlinked claim with section candidate accepted', 'expected_valid': True, 'passed': not errors,
                    'first_error': errors[0] if errors else None})
+
+
+
+def gate_fixture():
+    claims, _, _, _ = fixture()
+    claims['claims'][0]['placements'][1]['reward']['key_binding'] = 'oteryn:door-key/3800'
+    gates = {'gates': [
+        {'identity': {'key': 'oteryn:door-gate/progress/reward-claim', 'revision': 'r1'}, 'label': 'The annihilator door',
+         'quest': ref('Quest', 'quest/annihilator'), 'quest_link_basis': 'storage_key',
+         'condition': {'kind': 'quest_progress', 'progress': 'oteryn:quest-progress/annihilator', 'claim': ref('RewardClaim', 'reward-claim/annihilator')},
+         'state': 'per_character_pass', 'placements': [{'position': {'x': 90, 'y': 200, 'z': 7}, 'appearance': None}]},
+        {'identity': {'key': 'oteryn:door-gate/level/100', 'revision': 'r1'}, 'label': None, 'quest': None, 'quest_link_basis': None,
+         'condition': {'kind': 'min_level', 'level': 100}, 'state': 'per_character_pass',
+         'placements': [{'position': {'x': 91, 'y': 200, 'z': 7}, 'appearance': ref('Item', 'item/door')}]},
+        {'identity': {'key': 'oteryn:door-gate/key/3800', 'revision': 'r1'}, 'label': None, 'quest': None, 'quest_link_basis': None,
+         'condition': {'kind': 'door_key', 'key_binding': 'oteryn:door-key/3800', 'key_from_claims': [ref('RewardClaim', 'reward-claim/annihilator')]},
+         'state': 'shared_lock', 'placements': [{'position': {'x': 92, 'y': 200, 'z': 7}, 'appearance': None}]}]}
+    manifest = {'entries': [{'position': [90 + i, 200, 7], 'status': 'mapped', 'destination': g['identity']['key']}
+                            for i, g in enumerate(gates['gates'])]}
+    return gates, claims, manifest
+
+
+def gate_case(name, mutate=None, expected=False):
+    gates, claims, manifest = gate_fixture()
+    if mutate:
+        mutate(gates['gates'], claims, manifest)
+    errors = validate_gates(gates, claims, manifest)
+    results.append({'name': name, 'expected_valid': expected, 'passed': (not errors) == expected,
+                    'first_error': errors[0] if errors else None})
+
+
+gate_case('gate fixture accepted', expected=True)
+gate_case('condition kind is closed', lambda g, c, m: g[1]['condition'].update(kind='vocation'))
+gate_case('level is positive', lambda g, c, m: g[1]['condition'].update(level=0))
+gate_case('only key doors share a lock', lambda g, c, m: g[1].update(state='shared_lock'))
+gate_case('key doors share a lock', lambda g, c, m: g[2].update(state='per_character_pass'))
+gate_case('two gates cannot share a position', lambda g, c, m: g[1]['placements'][0]['position'].update(x=90))
+gate_case('progress door reads the claim it names', lambda g, c, m: g[0]['condition'].update(progress='oteryn:quest-progress/other'))
+gate_case('progress door names a known claim', lambda g, c, m: g[0]['condition'].update(claim=ref('RewardClaim', 'reward-claim/ghost')))
+gate_case('key comes from a chest that hands it out', lambda g, c, m: g[2]['condition'].update(key_binding='oteryn:door-key/1'))
+gate_case('gate link basis without a quest', lambda g, c, m: g[0].update(quest=None))
+gate_case('every gate is mapped from a source', lambda g, c, m: m['entries'].pop())
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:

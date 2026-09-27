@@ -52,8 +52,8 @@
     "quests": 121,
     "by_status": {
       "approved_omission": 134,
-      "conflict": 2,
-      "mapped": 357
+      "conflict": 1,
+      "mapped": 358
     }
   },
   "entries": [
@@ -8139,8 +8139,8 @@
           ]
         }
       ],
-      "status": "conflict",
-      "resolution": "servers disagree on reward; canary: {\"reward\": [[7369, 1]]}; crystalserver: {\"reward\": [[7870, 1]]}",
+      "status": "mapped",
+      "resolution": "servers disagree on reward; canary: {\"reward\": [[7369, 1]]}; crystalserver: {\"reward\": [[7870, 1]]}; the wiki decides for crystalserver (D25): The Thieves Guild Quest spoiler: the chest behind the quest door holds the Stolen Golden Goblet (https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler?oldid=1086330, https://tibia.fandom.com/wiki/Stolen_Golden_Goblet?oldid=1115203)",
       "destination": "canary:reward-claim/quest/u8_2/the_thieves_guild_quest/golden_goblet"
     },
     {

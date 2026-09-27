@@ -32,6 +32,14 @@ REVISION = 'canary-47dfd51f+crystalserver-ff7ede59'
 # A storage expression that is not a storage key: Canary uid 6093 stores `keyAction` (an undefined global).
 INVALID_MARKERS = {'keyAction'}
 STOP = {'the', 'a', 'an', 'of', 'quest', 'quests', 's', 'and', 'in', 'to'}
+FANDOM = 'https://tibia.fandom.com/wiki/'
+# Conflicts decided by the reference-date wiki (D25): position -> server whose value stands, with the evidence.
+WIKI_DECISIONS = {
+    (32551, 32652, 10): ('crystalserver', 'The Thieves Guild Quest spoiler: the chest behind the quest door holds the '
+                         'Stolen Golden Goblet', [('The_Thieves_Guild_Quest/Spoiler', 1086330), ('Stolen_Golden_Goblet', 1115203)]),
+}
+# The wiki confirms a cooldown that the servers' data sets but their script ignores.
+COOLDOWN_EVIDENCE = [('Brass-Shod_Chest', 1200697, 'Falcon Bastion chests can be opened once every 24h')]
 
 
 def ref(family, key):
@@ -209,6 +217,11 @@ def build(repos, coverage):
                 status = 'conflict'
                 resolution = 'servers disagree on ' + ', '.join(fields) + '; ' + '; '.join(
                     f'{n}: ' + json.dumps({f: comparable(pair[n]).get(f) for f in fields}) for n in pair)
+                if position in WIKI_DECISIONS:
+                    winner, reason, pages = WIKI_DECISIONS[position]
+                    primary, status = pair[winner], 'mapped'
+                    resolution += f'; the wiki decides for {winner} (D25): {reason} (' + ', '.join(
+                        f'{FANDOM}{title}?oldid={revid}' for title, revid in pages) + ')'
         if len(pair) == 2 and primary is pair['canary'] and (pair['crystalserver']['text'] or {}).get('itemId'):
             # CrystalServer names the reward item that carries a written text; Canary stamps every item
             primary = dict(primary, text=pair['crystalserver']['text'])
@@ -262,7 +275,9 @@ def build(repos, coverage):
                  'placements': [placement(m[1]) for m in members]}
         if timed:
             claim['source_divergence'] = ('The source data sets `time` in hours but the shared script only honours '
-                                          '`timerStorage`, so both servers hand this reward out once. The intent is kept.')
+                                          '`timerStorage`, so both servers hand this reward out once. The wiki confirms '
+                                          'the cooldown: ' + '; '.join(f'{text} ({FANDOM}{title}?oldid={revid})'
+                                                                       for title, revid, text in COOLDOWN_EVIDENCE) + '.')
         claims.append(claim)
         for position, primary, pair, sources, status, resolution in members:
             manifest_entries.append({'position': list(position), 'sources': sources, 'status': status,

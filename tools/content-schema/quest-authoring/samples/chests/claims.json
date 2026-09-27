@@ -9970,7 +9970,7 @@
           }
         }
       ],
-      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The intent is kept."
+      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
       "identity": {
@@ -10068,7 +10068,7 @@
           }
         }
       ],
-      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The intent is kept."
+      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
       "identity": {
@@ -10166,7 +10166,7 @@
           }
         }
       ],
-      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The intent is kept."
+      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
       "identity": {
@@ -10264,7 +10264,7 @@
           }
         }
       ],
-      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The intent is kept."
+      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
       "identity": {
@@ -10362,7 +10362,7 @@
           }
         }
       ],
-      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The intent is kept."
+      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
       "identity": {
@@ -10460,7 +10460,7 @@
           }
         }
       ],
-      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The intent is kept."
+      "source_divergence": "The source data sets `time` in hours but the shared script only honours `timerStorage`, so both servers hand this reward out once. The wiki confirms the cooldown: Falcon Bastion chests can be opened once every 24h (https://tibia.fandom.com/wiki/Brass-Shod_Chest?oldid=1200697)."
     },
     {
       "identity": {
@@ -16673,7 +16673,7 @@
           },
           "appearance": {
             "family": "Item",
-            "key": "canary:item/2469",
+            "key": "crystalserver:item/2469",
             "revision": "canary-47dfd51f+crystalserver-ff7ede59"
           },
           "reward": {
@@ -16681,7 +16681,7 @@
               {
                 "item": {
                   "family": "Item",
-                  "key": "canary:item/7369",
+                  "key": "crystalserver:item/7870",
                   "revision": "canary-47dfd51f+crystalserver-ff7ede59"
                 },
                 "count": 1

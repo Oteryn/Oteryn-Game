@@ -1712,11 +1712,6 @@
     },
     {
       "family": "Item",
-      "key": "canary:item/7369",
-      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-    },
-    {
-      "family": "Item",
       "key": "canary:item/7372",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
@@ -1968,6 +1963,11 @@
     {
       "family": "Item",
       "key": "crystalserver:item/50263",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Item",
+      "key": "crystalserver:item/7870",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
     {
