@@ -154,7 +154,7 @@ monster of each profile shape.
 1. This decision.
 2. Rust: the §5 profiles, `canonicalize`, `validate_v2_authoring_profile` and focused positive
    and negative tests. No content change.
-3. Writer and pilot: 24 monsters through admission and linking. They include a shared spell,
+3. Writer and pilot: 25 monsters through admission and linking. They include a shared spell,
    inline condition effects, a skipped loot entry, and the four creatures the pilot monsters
    summon.
 4. Wave A in bulk (1,315) and regeneration of the content tree.

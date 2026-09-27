@@ -34,6 +34,7 @@ ITEM_ALLOCATION_SHA256 = 'ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91
 PILOT = ('rat', 'dragon', 'dragon_lord', 'demon', 'warlock', 'orc_shaman', 'bonebeast', 'hydra',
          'nightmare', 'ghoul', 'undead_dragon', 'frost_dragon', 'water_elemental', 'hellhound',
          'plaguesmith', 'massive_fire_elemental', 'serpent_spawn', 'wyrm', 'juggernaut', 'grim_reaper',
+         'mawhawk',  # a loot entry that skips later drops of the same item
          # summoned by the pilot monsters above, so that the pilot closes over its references
          'fire_elemental', 'snake', 'stone_golem', 'clay_guardian')
 NONPRODUCTION = ('fixture', 'synthetic', 'evidence', 'test-only')
