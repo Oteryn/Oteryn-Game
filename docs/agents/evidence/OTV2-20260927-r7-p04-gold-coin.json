@@ -1,0 +1,119 @@
+{
+  "schema": "OTERYN_R7_P04_GOLD_COIN_PROMOTION/v1",
+  "status": "REFERENCE_CONTENT_ONLY",
+  "captured_at_utc": "2026-09-27T13:04:26.991792Z",
+  "authority": {
+    "native_identity": "OTERYN_EDITORIAL_SELECTION",
+    "external_sources": "REFERENCE_EVIDENCE_ONLY",
+    "runtime_qualified": false,
+    "global_parity": "UNKNOWN"
+  },
+  "source_identity": {
+    "source_item_id": 3031,
+    "protected_catalog_index": 2948,
+    "opaque_sequence": 2921,
+    "current_native_key": "oteryn:item.registry.i00002921",
+    "target_native_key": "oteryn:item.currency.gold_coin",
+    "target_revision": "definition-r1",
+    "source_node_sha256": "9528fadc4f8fdf66e7937d15e3843b3f39b35ae47ae8a737d93ca76efe652124",
+    "field_profile_sha256": "74d31a24125469ba363fdb5833bf1097bf5280900531d7657549ddc5c281b2e0",
+    "numeric_coordinate_is_native_identity": false
+  },
+  "source_evidence": {
+    "canary": {
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data/items/items.xml",
+      "url": "https://raw.githubusercontent.com/opentibiabr/canary/47dfd51f45280a59a1d3e50ba7edd573d7234446/data/items/items.xml",
+      "response_bytes": 3637462,
+      "response_sha256": "1cf2992cdd7cc5b97bcf930b8c89676ec1627170008e995fd2576110e26022f2",
+      "line_start": 6796,
+      "line_end": 6799,
+      "item_node_sha256": "a13fff4efd0edccee26f5b37c8f7b131aa85acbe5ac34779f0e475c5cc16ac9e",
+      "observations": {
+        "source_item_id": 3031,
+        "name": "gold coin",
+        "primary_type": "valuables",
+        "weight_source_units": 10
+      }
+    },
+    "crystalserver": {
+      "repository": "zimbadev/crystalserver",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
+      "path": "data/items/items.xml",
+      "url": "https://raw.githubusercontent.com/zimbadev/crystalserver/9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d/data/items/items.xml",
+      "response_bytes": 3819874,
+      "response_sha256": "c847293e980b40ec146e2b7f68a62366513a1c0566d16b7c3a011136087021eb",
+      "line_start": 6818,
+      "line_end": 6821,
+      "item_node_sha256": "5684fce5eea620260f5d0dbc2ed9645fc61bd164d88e3ab2fea7425bda4c3ed0",
+      "observations": {
+        "source_item_id": 3031,
+        "name": "gold coin",
+        "primary_type": "valuables",
+        "weight_source_units": 1
+      }
+    },
+    "tibiawiki_br": {
+      "site": "tibiawiki.com.br",
+      "page_id": 8631,
+      "title": "Gold Coin",
+      "revision_id": 429156,
+      "parent_revision_id": 388370,
+      "revision_timestamp": "2025-10-22T07:02:39Z",
+      "mediawiki_sha1": "4b78cfa31b2a9ba730093f5d13f50c83f154208f",
+      "api_url": "https://www.tibiawiki.com.br/api.php?action=query&prop=revisions&revids=429156&rvprop=ids%7Ctimestamp%7Csha1%7Ccontent&rvslots=main&format=json&formatversion=2",
+      "api_response_bytes": 1355,
+      "api_response_sha256": "934f6c68f550f5fc496ca451f99b56ee0a12e614b065ca0d2ecfdb5ef3fa985a",
+      "observations": {
+        "weight_oz": "0.01",
+        "stackable": true,
+        "npc_value": 1,
+        "exchange_note": "100 Gold Coin to 1 Platinum Coin"
+      }
+    },
+    "tibia_fandom": {
+      "site": "tibia.fandom.com",
+      "page_id": 2119,
+      "title": "Gold Coin",
+      "revision_id": 1175624,
+      "parent_revision_id": 1136304,
+      "revision_timestamp": "2026-04-19T11:33:46Z",
+      "mediawiki_sha1": "f61186a63f9bb517bb9d7977d16a34107d988a46",
+      "api_url": "https://tibia.fandom.com/api.php?action=query&prop=revisions&titles=Gold%20Coin&rvprop=ids%7Ctimestamp%7Csha1%7Ccontent&rvslots=main&format=json&formatversion=2",
+      "api_response_bytes": 3113,
+      "api_response_sha256": "759c58f4c3979e70da84d9eadbb5c807029c35e92ba610e120dd052a7ce11be4",
+      "observations": {
+        "source_item_id": 3031,
+        "weight_oz": "0.01",
+        "stackable": true,
+        "value": 1,
+        "historical_piles_over_100": true,
+        "weight_change_2025_10_21": "0.10 oz to 0.01 oz"
+      }
+    }
+  },
+  "field_dispositions": {
+    "stable_identity": "ADMITTED_OTERYN_EDITORIAL_SELECTION",
+    "materializable": "ADMITTED_TRUE_REFERENCE_CARRIER_ONLY",
+    "stack_class": "ADMITTED_STACK_CAPABLE",
+    "typed_stackable": "UNKNOWN_NOT_EMITTED",
+    "max_stack": "UNKNOWN_NOT_EMITTED",
+    "weight": "CONFLICT_RETAINED_NOT_EMITTED",
+    "value": "SOURCE_SUPPORTED_NOT_ECONOMY_AUTHORITY_NOT_EMITTED",
+    "exchange_rate": "SOURCE_SUPPORTED_NOT_ECONOMY_AUTHORITY_NOT_EMITTED",
+    "presentation": "UNKNOWN_NOT_EMITTED",
+    "runtime_activation": "NOT_AUTHORIZED",
+    "mint_transfer": "NOT_IMPLEMENTED",
+    "global_parity": "UNKNOWN"
+  },
+  "invariants": {
+    "full_item_family_count": 38157,
+    "replace_exactly_one_opaque_identity": true,
+    "preserve_unrelated_registry_key_i00003031": true,
+    "all_typed_semantics_remain_unknown": true,
+    "source_id_never_used_as_native_key": true,
+    "no_tibiawiki_binding_from_server_item_id": true,
+    "no_runtime_or_durability_claim": true
+  }
+}

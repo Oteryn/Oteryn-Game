@@ -748,6 +748,11 @@ fn promoted_family_import() -> ProtectedCw2B1PromotedItemFamilyImport {
         .expect("protected B1 promoted Item family")
 }
 
+fn gold_coin_family_import() -> ProtectedCw2B1PromotedItemFamilyImport {
+    protected_r7_p04_gold_coin_item_family_import(B1_EVIDENCE, R7_P04_GOLD_COIN_EVIDENCE_PACKET)
+        .expect("protected R7 P04 Gold Coin Item family")
+}
+
 fn count_promoted_atoms(semantics: &ReferenceItemSemantics) -> usize {
     use ReferenceItemField::{Known, Unknown};
 
@@ -858,6 +863,134 @@ fn protected_semantic_promotion_changes_exactly_69_atoms_without_identity_or_mat
 
     assert_eq!(atom_count, ITEM_SEMANTIC_PROMOTION_FIELD_COUNT);
     assert_eq!(promoted_items, ITEM_SEMANTIC_PROMOTION_ITEM_COUNT);
+}
+
+#[test]
+fn r7_p04_promotes_exactly_source_3031_without_admitting_typed_coin_semantics() {
+    let before = promoted_family_import();
+    let after = gold_coin_family_import();
+
+    assert_eq!(after.family.records.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    assert_eq!(
+        after.family.batch.candidates.len(),
+        CW2_B1_FULL_ITEM_FAMILY_COUNT
+    );
+    assert_eq!(
+        after.family.batch.reimport_states.len(),
+        CW2_B1_FULL_ITEM_FAMILY_COUNT
+    );
+    assert_eq!(after.promoted_fields, before.promoted_fields);
+    assert_eq!(after.promoted_items, before.promoted_items);
+    assert_ne!(
+        after.family.allocation_digest_sha256,
+        before.family.allocation_digest_sha256
+    );
+    assert_eq!(
+        after.family.allocation_digest_sha256,
+        "c666b4411f358e45b5e0e7be09a088f85916112d032dfd3558f70bed4d8ede45"
+    );
+
+    let before_records = before
+        .family
+        .records
+        .iter()
+        .map(|record| {
+            let ProjectReferenceRecord::Item { identity, .. } = record else {
+                panic!("protected full family contains only Items");
+            };
+            (identity.key.as_str(), record)
+        })
+        .collect::<BTreeMap<_, _>>();
+    assert!(before_records.contains_key(R7_P04_GOLD_COIN_OLD_KEY));
+    assert!(!before_records.contains_key(R7_P04_GOLD_COIN_KEY));
+
+    let mut gold_records = 0_usize;
+    for record in &after.family.records {
+        let ProjectReferenceRecord::Item {
+            identity,
+            client_projection,
+            materializable,
+            stack_class,
+            semantics,
+        } = record
+        else {
+            panic!("protected full family contains only Items");
+        };
+        if identity.key == R7_P04_GOLD_COIN_KEY {
+            gold_records += 1;
+            assert_eq!(identity.family, "Item");
+            assert_eq!(identity.revision, CW2_B1_FULL_ITEM_REVISION);
+            assert_eq!(*client_projection, ProjectionDocument::ClientSafe);
+            assert!(*materializable);
+            assert_eq!(*stack_class, ItemStackDocument::StackCapable);
+            assert!(semantics.is_all_unknown());
+            assert!(matches!(semantics.stack, ReferenceItemField::Unknown));
+        } else {
+            assert_eq!(
+                Some(record),
+                before_records.get(identity.key.as_str()).copied(),
+                "unrelated record changed: {}",
+                identity.key
+            );
+        }
+    }
+    assert_eq!(gold_records, 1);
+    assert!(!after.family.records.iter().any(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_OLD_KEY)
+    }));
+    assert!(after.family.records.iter().any(|record| {
+        matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_UNRELATED_REGISTRY_KEY)
+    }));
+
+    let gold_candidate = after
+        .family
+        .batch
+        .candidates
+        .iter()
+        .find(|candidate| candidate.source_numeric_id == Some(R7_P04_GOLD_COIN_SOURCE_ITEM_ID))
+        .expect("source 3031 candidate");
+    assert_eq!(
+        candidate_binding(gold_candidate).identity.key,
+        R7_P04_GOLD_COIN_KEY
+    );
+    assert_eq!(
+        gold_candidate.disposition_reason,
+        "R7_P04_REFERENCE_CONTENT_PROMOTION_RUNTIME_UNQUALIFIED"
+    );
+
+    let unrelated = after
+        .family
+        .batch
+        .candidates
+        .iter()
+        .find(|candidate| candidate.source_numeric_id == Some(R7_P04_UNRELATED_SOURCE_ITEM_ID))
+        .expect("unrelated source 3147 candidate");
+    assert_eq!(
+        candidate_binding(unrelated).identity.key,
+        R7_P04_UNRELATED_REGISTRY_KEY
+    );
+}
+
+#[test]
+fn r7_p04_rejects_any_gold_coin_evidence_byte_drift_or_oversize() {
+    let mut drifted = R7_P04_GOLD_COIN_EVIDENCE_PACKET.to_vec();
+    let last = drifted.last_mut().expect("Gold Coin evidence bytes");
+    *last ^= 1;
+    assert!(matches!(
+        protected_r7_p04_gold_coin_item_family_import(B1_EVIDENCE, &drifted),
+        Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "R7 P04 Gold Coin evidence bytes"
+        ))
+    ));
+
+    let mut above = R7_P04_GOLD_COIN_EVIDENCE_PACKET.to_vec();
+    above.push(b'\n');
+    assert!(matches!(
+        protected_r7_p04_gold_coin_item_family_import(B1_EVIDENCE, &above),
+        Err(ProtectedCw2B1ImportError::InputLimitExceeded { actual, limit })
+            if actual == R7_P04_GOLD_COIN_EVIDENCE_BYTES + 1
+                && limit == R7_P04_GOLD_COIN_EVIDENCE_BYTES
+    ));
 }
 
 fn decoded_json_fields(bytes: &[u8]) -> usize {

@@ -16,8 +16,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "content.lock.json",
-        364,
-        "a89ba184397ee9d8eb48848d948dcf72b8a2110ab40d6a6e0b38a04dcc7b8001",
+        415,
+        "87427afc65c26e7fa90f20b8cc465b128f8ea240f76909eb959522bf4110b82b",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        7_475_358,
-        "240a5467d795d911669edc3724601fa469961963eea257cc83fbdcc0ec1a4555",
+        7_475_362,
+        "267171f50a44a89b332b1c1974a14a4f5c2212276712f7c204bf397edc9c2c49",
     ),
     (
         "editor/author.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1931,
-        "a72ef2c1c99d8dbb7bf6b0c7ef7884e11b0087a370640a847216e345184401b0",
+        1948,
+        "996cb4731d885cade8e20e9f0f0ac4d6c87e9a1aade1792646f631ffc1c522da",
     ),
     (
         "presentations/bindings.json",
@@ -46,8 +46,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "project.json",
-        390,
-        "f9442137d0e73611b1fc4b5d859c70a8e3d5f0d3d6dad40438169dbc04e5dd3e",
+        407,
+        "acd7e78a197642567425546b1df722e5a4292ec528242358c3126797a04e2654",
     ),
     (
         "provenance/imports.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "e3ef5bdd37d92eb5b8c117beb375d16ca10b8114cdc5f55dcefc139030557186";
+const TREE_SHA256: &str = "b50e5980a9c5b4e08b45f7275880c7c3441172f6c0ea45faba214b831c4e1a4a";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 
@@ -264,7 +264,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-item-wave1-r1");
+    assert_eq!(
+        project.project_revision(),
+        "g4-item-wave1-r7-p04-gold-coin-r1"
+    );
     assert_eq!(project.imports().len(), 4);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -514,6 +517,20 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .map(|definition| definition.definition.key().as_str())
         .collect::<BTreeSet<_>>();
     assert_eq!(keys.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
+    assert!(keys.contains(R7_P04_GOLD_COIN_KEY));
+    assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
+    assert!(keys.contains(R7_P04_UNRELATED_REGISTRY_KEY));
+    let gold_coin = linked
+        .definitions
+        .iter()
+        .find(|definition| definition.definition.key().as_str() == R7_P04_GOLD_COIN_KEY)
+        .expect("repository Gold Coin definition");
+    let ReferenceDefinitionKind::Item(gold_coin) = &gold_coin.kind else {
+        panic!("Gold Coin is an Item");
+    };
+    assert!(gold_coin.materializable);
+    assert_eq!(gold_coin.stack_class, ReferenceItemStackClass::StackCapable);
+    assert!(gold_coin.semantics.is_all_unknown());
     let (promoted_items, promoted_fields) =
         linked
             .definitions
