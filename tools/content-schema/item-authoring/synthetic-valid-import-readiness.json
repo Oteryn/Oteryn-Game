@@ -2,6 +2,7 @@
   "sources": [
     {
       "kind": "git",
+      "source_profile": "canary_47dfd51_item_definition_v1",
       "repository": "opentibiabr/canary",
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data/items/items.xml",
@@ -10,11 +11,11 @@
       "field_inventory": [
         {
           "source_locator": "item[@id='template']",
-          "source_field": "weaponType"
+          "source_field": "weapontype"
         },
         {
           "source_locator": "item[@id='template']",
-          "source_field": "floorChange"
+          "source_field": "floorchange"
         }
       ]
     }
@@ -23,7 +24,8 @@
     {
       "source_index": 0,
       "source_locator": "item[@id='template']",
-      "source_field": "weaponType",
+      "source_field": "weapontype",
+      "source_value": "wand",
       "kind": "definition",
       "status": "mapped",
       "destination": "/item/weapon/weapon_type",
@@ -32,10 +34,11 @@
     {
       "source_index": 0,
       "source_locator": "item[@id='template']",
-      "source_field": "floorChange",
-      "kind": "terrain",
+      "source_field": "floorchange",
+      "kind": "world_object",
       "status": "external_domain",
       "reason": "Terrain/WorldObject owns placed world traversal"
     }
   ]
 }
+
