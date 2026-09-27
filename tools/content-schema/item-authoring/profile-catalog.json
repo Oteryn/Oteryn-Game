@@ -1,5 +1,5 @@
 {
-  "schema": "OTERYN_ITEM_AUTHORING_PROFILE_CATALOG/candidate-1",
+  "schema": "OTERYN_ITEM_AUTHORING_PROFILE_CATALOG/candidate-2",
   "profiles": [
     {
       "profile_id": "equipment_armor",
@@ -545,3 +545,4 @@
     }
   ]
 }
+
