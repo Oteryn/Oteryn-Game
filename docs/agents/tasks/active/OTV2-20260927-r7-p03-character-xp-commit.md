@@ -10,13 +10,13 @@ base_branch: main
 branch: codex/r7-p03-character-xp-commit
 issue: 162
 pr: null
-base_sha: 0c7098eb5086fb8274527ec3a419fd4a2f862f38
+base_sha: 5ecf841c7b849a252ec239226361e6e76ac05239
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: /root
 created_at: 2026-09-27T14:25:00Z
-updated_at: 2026-09-27T15:07:58Z
+updated_at: 2026-09-27T15:19:56Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_progression.rs
@@ -24,6 +24,8 @@ owned_paths:
   - apps/game-server/src/durability/mod.rs
   - apps/game-server/migrations/0009_character_progression.sql
   - apps/game-server/tests/character_progression_postgres.rs
+  - apps/game-server/tests/character_authority_postgres.rs
+  - apps/game-server/tests/support/character_progression_postgres_cases.rs
   - docs/agents/tasks/active/OTV2-20260927-r7-p03-character-xp-commit.md
   - docs/agents/evidence/OTV2-20260927-r7-p03-character-xp-commit.json
 public_contracts: []
@@ -32,7 +34,8 @@ blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 allocation_comment: 5856703694
-base_refresh_comment: 5857041066
+base_refresh_comment: 5857130016
+routing_allocation_comments: [5857090934, 5857102866]
 jira_story: KAN-12
 ```
 
@@ -56,8 +59,9 @@ same state. P03 does not wire Combat to XP and is not a playable milestone.
   persistence-neutral calculator and is reused without a second formula.
 - `PROVEN`: before freeze, AUTHORING fast-forwarded from allocated base
   `56e5c8a39bf2d899cbbc24735d2d7440d4ecaec1` through `0d01e9841f9c7bbc6895d6bd928f8521e6f205f3`
-  to protected `main@0c7098eb5086fb8274527ec3a419fd4a2f862f38`; every integrated path is
-  disjoint from all seven P03 paths and migration `0009` remained free.
+  and `0c7098eb5086fb8274527ec3a419fd4a2f862f38` to protected
+  `main@5ecf841c7b849a252ec239226361e6e76ac05239`; every integrated path is
+  disjoint from all nine P03 paths and migration `0009` remained free.
 - `UNKNOWN`: Reference/Global formula parity, low-level bonuses, modifiers,
   party/shared XP, death loss commit and the runtime death-to-XP producer.
 - `NOT_APPLICABLE`: Canary, CrystalServer, TibiaWiki BR and Fandom do not establish
@@ -118,6 +122,8 @@ finding_family_sweep:
   restart_retry_replay_concurrency_pg_reload: focused target present; configured PostgreSQL run pending
   evidence:
     - apps/game-server/tests/character_progression_postgres.rs
+    - apps/game-server/tests/support/character_progression_postgres_cases.rs
+    - apps/game-server/tests/character_authority_postgres.rs
 finding_dispositions:
   p0_p1_accepted_and_repaired:
     - replaced immutable-root trigger with identity-preserving exact revision successor guard
@@ -172,14 +178,16 @@ previously unseen occurrence.
 ### Focused
 
 - WSL `cargo check -p oteryn-game-server --locked`: PASS.
-- WSL focused target compile: PASS.
+- WSL focused and registered PostgreSQL target compile: PASS.
+- Protected `character_authority_postgres` target discovers the shared P03 cases: PASS.
 - WSL strict Clippy for `character_progression_postgres` with `--no-deps -D warnings`: PASS.
 - GPT-6 Luna pre-freeze SQL/trigger/concurrency static audit: PASS, no material findings.
 - Pure binding regressions: present in `character_progression.rs`.
 
 ### Component/integration
 
-- PostgreSQL target: `apps/game-server/tests/character_progression_postgres.rs`.
+- Focused PostgreSQL wrapper: `apps/game-server/tests/character_progression_postgres.rs`.
+- Protected PostgreSQL 17.6 routing: shared cases are included by registered `character_authority_postgres`.
 - Local configured PostgreSQL: pending; no `OTERYN_TEST_POSTGRES_ADMIN_URL` and
   the installed Docker Desktop engine failed to initialize.
 - Hosted PostgreSQL 17.6 lane: required after exact remote freeze.
@@ -224,7 +232,7 @@ previously unseen occurrence.
 ## Context checkpoint
 
 ```yaml
-last_progress: typed XP state, fenced commit API, migration guards and focused target implemented
+last_progress: protected PostgreSQL target now compiles with the shared P03 cases
 status: implementing
 branch: codex/r7-p03-character-xp-commit
 head_sha: null
@@ -246,5 +254,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: finish LF validation, freeze one remote candidate and dispatch exact-head review
+next_action: validate routing successor, refresh main, freeze new SHA and rerun exact-head review
 ```

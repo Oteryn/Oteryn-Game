@@ -1,14 +1,15 @@
 {
   "schema": "OTERYN_R7_P03_CHARACTER_XP_COMMIT/v1",
   "status": "PRODUCTION_COMPONENT_CANDIDATE",
-  "captured_at_utc": "2026-09-27T15:07:58Z",
+  "captured_at_utc": "2026-09-27T15:19:56Z",
   "repository": "Oteryn/Oteryn-Game",
-  "base_sha": "0c7098eb5086fb8274527ec3a419fd4a2f862f38",
+  "base_sha": "5ecf841c7b849a252ec239226361e6e76ac05239",
   "task_id": "OTV2-20260927-r7-p03-character-xp-commit",
   "allocation": {
     "issue": 162,
     "comment_id": 5856703694,
-    "base_refresh_comment_id": 5857041066,
+    "base_refresh_comment_id": 5857130016,
+    "routing_allocation_comment_ids": [5857090934, 5857102866],
     "branch": "codex/r7-p03-character-xp-commit",
     "jira_story": "KAN-12"
   },
@@ -84,12 +85,15 @@
   "validation": {
     "wsl_cargo_check": "PASS",
     "focused_test_compile": "PASS",
+    "registered_postgresql_target_compile": "PASS",
+    "registered_postgresql_target": "character_authority_postgres includes shared P03 cases",
     "strict_clippy_no_deps": "PASS",
     "prefreeze_gpt6_luna_sql_review": "PASS_NO_MATERIAL_FINDINGS",
     "postgresql_17_6": "PENDING_CONFIGURED_HOSTED_LANE",
     "local_postgresql_reason": "Docker Desktop engine failed to initialize and no OTERYN_TEST_POSTGRES_ADMIN_URL was configured",
     "exact_head_ci": "PENDING_REMOTE_FREEZE",
-    "independent_review": "PENDING_EXACT_HEAD_GPT6_LUNA"
+    "independent_review": "PENDING_SUCCESSOR_EXACT_HEAD_GPT6_LUNA",
+    "superseded_candidate_review": "7dabb3d9a7dd3a1346aef6ec59a2397187b47588 PASS_NO_MATERIAL_FINDINGS"
   },
   "known_limits": [
     "Existing and newly bootstrapped Characters have no progression row until the separately owned initializer runs",
