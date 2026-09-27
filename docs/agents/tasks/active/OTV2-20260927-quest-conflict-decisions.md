@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-quest-conflict-decisions
 title: Quest format - D25 decisions for every Canary/CrystalServer conflict of the quest transcriptions
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 1015
 base_sha: 514d6de1aa2b560c50a4d2003f33744a9f02a066
 head_sha: null
 final_head_sha: null
