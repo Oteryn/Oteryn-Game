@@ -192,3 +192,49 @@ owner_action_required: null
 blocker: null
 next_action: Freeze final remote head and return exact two-file validation packet to the active control plane
 ```
+
+## Terminal lifecycle closeout — 2026-09-27
+
+This section supersedes the historical pre-commit/open-draft status, pending
+qualification statements and checkpoint above. The complete delivery record is
+retained verbatim as history; this archive is not an active dispatch surface.
+
+`PROVEN`: [PR #982](https://github.com/Oteryn/Oteryn-Game/pull/982) is closed and
+merged through native Merge Queue. Its exact frozen delivery head is
+`d058766bf0279fc40dd8e46ce1c8aca45ffb05ab`; the valid queue receipt is
+`53132faf-0957-44d3-bcd8-b50e483f2013`.
+The real [merge_group run 36322567925](https://github.com/Oteryn/Oteryn-Game/actions/runs/36322567925)
+completed successfully, including aggregate
+[game-gate job 108630564626](https://github.com/Oteryn/Oteryn-Game/actions/runs/36322567925/job/108630564626).
+The merge timestamp is `2026-09-27T13:38:50Z`; protected-main readback and the
+merge commit both bind `ccef9bbe8ecf75c4b1b99b07237c78ebf4642dce`.
+Terminal decision evidence is [#513 comment 5856355629](https://github.com/Oteryn/Oteryn-Game/issues/513#issuecomment-5856355629).
+Queue acceptance alone is not used as integration proof.
+
+The delivery task status is `completed` for the separate owner-selected P90D
+retention decision. This does not complete aggregate #513 or KAN-12, implement
+retention or cleanup, or close any remaining DUR-03 resource, schema, SQL/restart
+or playable gates identified in the preserved record.
+
+[#162 closeout allocation 5856356713](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856356713)
+allocates branch `codex/dur03-p90d-retention-closeout-513` from protected
+`main@ccef9bbe8ecf75c4b1b99b07237c78ebf4642dce` to exactly the same-name
+active-to-archive movement. The closeout uses one high-level atomic GitHub
+`createCommitOnBranch(expectedHeadOid=...)` mutation containing the complete
+bounded two-path delta. Fresh live predecessor and returned-head readback are
+required before exact candidate freeze; candidate-specific validation belongs in
+the resulting draft PR and writer packet after freeze.
+
+This archive movement remains a proposed closeout until its own protected
+integration. Delivery ownership and the closeout path lease are released only
+after that closeout integrates and the active control plane confirms terminal
+protected-main readback. Draft creation, queue receipt or these archive bytes do
+not assert that the closeout itself has integrated or that ownership is already
+released. The writer returns the frozen candidate; review dispatch, ready
+transition, queue and integration remain with the active control plane.
+
+`NOT_APPLICABLE`: this lifecycle-only closeout changes no executable component
+or runtime behavior and supplies no runtime E2E proof. Hosted candidate gates
+remain required on its own exact frozen head. Independent #981/#986 task paths
+and Jira synchronization remain outside this closeout allocation.
+
