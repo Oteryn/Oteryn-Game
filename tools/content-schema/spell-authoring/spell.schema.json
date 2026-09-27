@@ -1,0 +1,661 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:oteryn:spell-authoring:candidate:1",
+  "title": "Player Spell authoring schema candidate v1 - structural validation",
+  "description": "CANDIDATE authoring schema (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md). Not a WorldProject/v2 contract or runtime activation; semantic rules live in validate_spell.py.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "spell": {
+      "$ref": "#/$defs/spell"
+    }
+  },
+  "required": [
+    "spell"
+  ],
+  "$defs": {
+    "key": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/key"
+    },
+    "revision": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/revision"
+    },
+    "identity": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/identity"
+    },
+    "bool": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/bool"
+    },
+    "ms": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/ms"
+    },
+    "AbilityRef": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/AbilityRef"
+    },
+    "EffectRef": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/EffectRef"
+    },
+    "FormulaRef": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/FormulaRef"
+    },
+    "ItemRef": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/ItemRef"
+    },
+    "InteractionRef": {
+      "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/InteractionRef"
+    },
+    "SpellRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "family": {
+          "const": "Spell"
+        },
+        "key": {
+          "$ref": "#/$defs/key"
+        },
+        "revision": {
+          "$ref": "#/$defs/revision"
+        }
+      },
+      "required": [
+        "family",
+        "key",
+        "revision"
+      ]
+    },
+    "vocation": {
+      "enum": [
+        "druid",
+        "elder_druid",
+        "sorcerer",
+        "master_sorcerer",
+        "knight",
+        "elite_knight",
+        "paladin",
+        "royal_paladin",
+        "monk",
+        "exalted_monk"
+      ],
+      "description": "S8: explicit base or promoted vocation key; a promoted vocation is never implied by its base vocation."
+    },
+    "groupKey": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "Cooldown group key, lowercase without spaces (attack, healing, support, focus, greatbeams, ...)."
+    },
+    "cooldownGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "group": {
+          "$ref": "#/$defs/groupKey"
+        },
+        "cooldown_ms": {
+          "$ref": "#/$defs/ms"
+        }
+      },
+      "required": [
+        "group",
+        "cooldown_ms"
+      ]
+    },
+    "decimal": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE]-?[0-9]+)?$",
+      "maxLength": 64,
+      "description": "S5: decimal literal, read as the nearest IEEE-754 double (the source literal)."
+    },
+    "expression": {
+      "description": "S5: formula expression over declared inputs, evaluated in IEEE-754 double in authored operation order.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "const": {
+              "$ref": "#/$defs/decimal"
+            }
+          },
+          "required": [
+            "const"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "var": {
+              "enum": [
+                "level",
+                "magic_level",
+                "base_power",
+                "attack_skill",
+                "attack_value",
+                "attack_factor",
+                "shielding_skill"
+              ]
+            }
+          },
+          "required": [
+            "var"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "enum": [
+                "add",
+                "sub",
+                "mul",
+                "div"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "enum": [
+                "neg",
+                "floor",
+                "ceil",
+                "sqrt",
+                "abs"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              },
+              "minItems": 1,
+              "maxItems": 1
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "op": {
+              "enum": [
+                "min",
+                "max"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              },
+              "minItems": 2
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fn": {
+              "enum": [
+                "level_base_damage_healing"
+              ]
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/expression"
+              },
+              "minItems": 1,
+              "maxItems": 1
+            }
+          },
+          "required": [
+            "fn",
+            "args"
+          ],
+          "description": "S5: the one world level curve (Canary Player::calculateFlatDamageHealing, Crystal calculateBaseDamageHealing); its exact rounding is an owner decision (S5)."
+        }
+      ]
+    },
+    "formula": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "kind": {
+          "const": "player_expression"
+        },
+        "inputs": {
+          "enum": [
+            "level_magic",
+            "skill"
+          ],
+          "description": "level_magic: level, magic_level, base_power; skill: level, attack_skill, attack_value, attack_factor, base_power, shielding_skill. The engine fills attack_* from the wielded weapon (a world combat rule)."
+        },
+        "minimum": {
+          "$ref": "#/$defs/expression"
+        },
+        "maximum": {
+          "$ref": "#/$defs/expression"
+        }
+      },
+      "required": [
+        "identity",
+        "kind",
+        "inputs",
+        "minimum",
+        "maximum"
+      ],
+      "description": "S5: magnitude range of a damage or heal Effect cast by a player. Each bound is evaluated, truncated toward zero and then drawn by the world damage distribution."
+    },
+    "rune": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/ItemRef",
+          "description": "S2: the rune Item (Item authority stays with the Item catalogue)."
+        },
+        "charges": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "magic_level": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "allow_far_use": {
+          "$ref": "#/$defs/bool"
+        },
+        "blocking": {
+          "enum": [
+            "solid",
+            "creature",
+            "none"
+          ],
+          "description": "Canary/Crystal isBlocking(true, false) as solid/creature; absent call = none."
+        }
+      },
+      "required": [
+        "item",
+        "charges",
+        "magic_level",
+        "allow_far_use",
+        "blocking"
+      ]
+    },
+    "conjure": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reagent": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "result": {
+          "$ref": "#/$defs/ItemRef"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "result",
+        "count"
+      ],
+      "description": "S2: removes one reagent (when present) and creates count result items."
+    },
+    "nativeBehavior": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_]*$"
+        },
+        "parameters": {
+          "type": "object",
+          "description": "Data parameters of the shared behaviour (S7)."
+        }
+      },
+      "required": [
+        "key",
+        "parameters"
+      ]
+    },
+    "execution": {
+      "description": "Exactly one execution: an Ability (plain or random combat), a conjure, or a native behaviour.",
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ability": {
+              "$ref": "#/$defs/AbilityRef"
+            }
+          },
+          "required": [
+            "ability"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "conjure": {
+              "$ref": "#/$defs/conjure"
+            }
+          },
+          "required": [
+            "conjure"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "native_behavior": {
+              "$ref": "#/$defs/nativeBehavior"
+            }
+          },
+          "required": [
+            "native_behavior"
+          ]
+        }
+      ]
+    },
+    "spell": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "carrier": {
+          "enum": [
+            "instant",
+            "rune"
+          ]
+        },
+        "words": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Spoken words, lowercase; required for instant spells."
+        },
+        "reference_spell_id": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Client spell id (Canary/Crystal spell:id, wiki spellid)."
+        },
+        "requirements": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "vocations": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/vocation"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "level": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "premium": {
+              "$ref": "#/$defs/bool"
+            },
+            "learning_required": {
+              "$ref": "#/$defs/bool"
+            },
+            "acquisition_interactions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/InteractionRef"
+              },
+              "minItems": 1,
+              "uniqueItems": true,
+              "description": "S10: trainer NPC services."
+            }
+          },
+          "required": [
+            "vocations",
+            "level",
+            "premium",
+            "learning_required"
+          ]
+        },
+        "costs": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "mana": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "mana_percent": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "soul": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "soul"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "mana"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "mana_percent"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "required": [
+                "mana_percent"
+              ],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": [
+                      "mana"
+                    ]
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "cooldown_ms": {
+          "$ref": "#/$defs/ms"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/cooldownGroup"
+          },
+          "minItems": 1,
+          "maxItems": 2,
+          "description": "S9: primary group first, then an optional secondary group; group keys differ."
+        },
+        "targeting": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "aggressive": {
+              "$ref": "#/$defs/bool"
+            },
+            "self_target": {
+              "$ref": "#/$defs/bool"
+            },
+            "needs_target": {
+              "$ref": "#/$defs/bool"
+            },
+            "needs_direction": {
+              "$ref": "#/$defs/bool"
+            },
+            "target_or_direction": {
+              "$ref": "#/$defs/bool"
+            },
+            "range_tiles": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "block_walls": {
+              "$ref": "#/$defs/bool"
+            },
+            "allow_on_self": {
+              "$ref": "#/$defs/bool"
+            },
+            "check_floor": {
+              "$ref": "#/$defs/bool"
+            },
+            "parameter": {
+              "enum": [
+                "none",
+                "player_name",
+                "text"
+              ]
+            }
+          },
+          "required": [
+            "aggressive",
+            "self_target",
+            "needs_target",
+            "needs_direction",
+            "target_or_direction",
+            "block_walls",
+            "parameter"
+          ]
+        },
+        "pz_locks_caster": {
+          "$ref": "#/$defs/bool"
+        },
+        "needs_weapon": {
+          "$ref": "#/$defs/bool"
+        },
+        "base_power": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Reference base power (wiki basepower, Crystal basePower); a formula input, not a damage value."
+        },
+        "rune": {
+          "$ref": "#/$defs/rune"
+        },
+        "execution": {
+          "$ref": "#/$defs/execution"
+        },
+        "presentation": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cast_cue": {
+              "type": "string",
+              "minLength": 1
+            },
+            "impact_cue": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": []
+        }
+      },
+      "required": [
+        "identity",
+        "name",
+        "carrier",
+        "requirements",
+        "costs",
+        "cooldown_ms",
+        "groups",
+        "targeting",
+        "pz_locks_caster",
+        "needs_weapon",
+        "execution"
+      ],
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "carrier": {
+                "const": "instant"
+              }
+            },
+            "required": [
+              "carrier"
+            ]
+          },
+          "then": {
+            "required": [
+              "words"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "rune"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "required": [
+              "rune"
+            ]
+          }
+        }
+      ],
+      "description": "CANDIDATE player Spell (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md)."
+    }
+  }
+}

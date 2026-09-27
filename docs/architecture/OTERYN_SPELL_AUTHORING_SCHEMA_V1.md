@@ -1,0 +1,204 @@
+# Oteryn Spell Authoring Schema v1 and implementation plan
+
+- Date: 2026-09-27
+- Status: CANDIDATE / authoring schema with executable validation and source evidence; decisions S1–S10
+  are PROPOSED for owner acceptance; no runtime, WorldProject storage or `content/` change
+- Request: owner request of 2026-09-27 (schema and implementation plan for player spells, as for monsters);
+  programme story KAN-16; no GitHub task allocation yet
+- Machine artifacts: `tools/content-schema/spell-authoring/`
+- Companion of: `OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md` (Ability/Effect/Formula, D10–D13, D15, D25),
+  `OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md` (rune items), `OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md`
+  (`content/abilities/**`)
+- Sources: `opentibiabr/canary@47dfd51f45280a59a1d3e50ba7edd573d7234446`,
+  `zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a` (both `OtsHypothesisOnly`),
+  TibiaWiki (Fandom) at the 2026-07-28 reference cut. TibiaWiki BR is the registered primary structured
+  source (`OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md`) and is captured in phase P1.
+
+## 1. Outcome
+
+Before this document Oteryn had a complete legacy inventory of player spells (199 spells + 36 runes,
+`OTV2-20260921-content-world-cw2-ability-family-source-catalogue.json`, all `UNRESOLVED`), the
+fixture-only ability engine and the monster schema, which admits a player spell only when a monster
+casts it (D11). There was no format for the player side of a spell and no plan to reach castable spells.
+
+This candidate adds:
+
+1. the player Spell authoring format (`spell.schema.json`), reusing the monster Ability, Effect and
+   import-ledger definitions instead of a second combat model;
+2. the `player_expression` Formula: the exact source damage/heal formula as an expression tree;
+3. a census of every player spell and rune script in Canary and Crystal Server, with the formulas
+   extracted by symbolic execution, and a field comparison with TibiaWiki (Fandom) at the cut;
+4. the implementation plan (§9) from this schema to castable spells in the real game server.
+
+The server does not read this format. Executable adoption extends WorldProject/v2 as §6 describes.
+
+## 2. Shape
+
+```text
+spell bundle (spell.schema.json)
+└── spell   identity, name, carrier (instant | rune), words, reference_spell_id,
+            requirements (vocations, level, premium, learning_required, acquisition_interactions),
+            costs (mana | mana_percent, soul), cooldown_ms, groups[1..2] (group, cooldown_ms),
+            targeting (aggressive, self_target, needs_target, needs_direction, target_or_direction,
+                       range_tiles, block_walls, allow_on_self, check_floor, parameter),
+            pz_locks_caster, needs_weapon, base_power,
+            rune (item, charges, magic_level, allow_far_use, blocking)      -- carrier = rune
+            execution: ability | conjure (reagent, result, count) | native_behavior (key, parameters)
+            presentation (cast_cue, impact_cue)
+
+direct dependencies (spell-dependencies.schema.json)
+└── abilities[] + effects[]   monster-authoring definitions, unchanged
+    formulas[]                monster kinds, or player_expression (inputs, minimum, maximum)
+
+import disposition ledger     monster-import-readiness.schema.json, unchanged
+```
+
+Every cross-definition link is an exact `{family, key, revision}` reference. `Spell` is the new family;
+Item, Interaction and Creature references resolve against the catalogue as in the monster schema.
+
+## 3. Source census
+
+`samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json` (`spell_census.py`). Each script is loaded
+in a stubbed LuaJIT sandbox; `Spell`, `Combat`, `Condition` and `createCombatArea` record their calls.
+Damage/heal callbacks are called with symbolic arguments, so arithmetic builds an expression tree in
+source operation order.
+
+| | Canary 47dfd51f | Crystal ff7ede5 |
+|---|---:|---:|
+| registered spells (instant + rune) | 235 (199 + 36) | 252 (216 + 36) |
+| monster-only registrations (words `#…`) | 3 | 5 |
+| `plain_combat`, declarative (one Combat, no Lua callback, formula resolved) | 106 | 83 |
+| `plain_combat` with a per-target Lua callback / unresolved formula / `setFormula` | 6 / 3 / 1 | 7 / 0 / 1 |
+| `conjure` (runes, arrows, food items) | 49 | 49 |
+| `custom` (native behaviour candidates) | 67 | 107 |
+| damage/heal formulas resolved / unresolved | 95 / 6 | 168 / 5 |
+
+Canary and Crystal share 233 spells; 2 are Canary-only (`lightest magic missile`, `mentor other`, which
+Crystal removed) and 19 Crystal-only (for example `master of flames`, `shield bash`, `death echo`,
+`divine barrage`). 128 shared spells differ: `basePower` (100, absent in Canary), `needLearn` (30),
+`cooldown` (11), `range` (11), `groupCooldown` (10), the formula (93) and a few requirements.
+
+`custom` bodies carry pattern tags (a spell may carry several), Canary / Crystal: Wheel of Destiny
+gating 21 / 22, elemental or aura stance – / 27, equipment-dependent (shield, weapon bond) 1 / 16,
+monk harmony/virtue 6 / 14, world query (spectators, tiles, corpses) 13 / 13, delayed or repeated
+strikes 7 / 10, conditional self state 6 / 10, familiar 9 / 9, summons share the condition 7 / 7,
+party 5 / 6, player parameter (`exiva name`, levitate, illusion) 5 / 5, house 4 / 4, other 1 / 1.
+
+Formula findings:
+
+- Crystal uses the current Reference form: `basePower` per spell (108 spells) and the level curve
+  `calculateBaseDamageHealing(level)` (160 formulas); Canary mostly keeps `level / 5` (78 of its 91
+  level formulas; 7 monk formulas use `calculateFlatDamageHealing`).
+- The two level curves differ. Crystal (`register_spells.lua`) is an integer closed form. Canary
+  `Player::calculateFlatDamageHealing` (7 monk formulas) adds the whole previous threshold instead of
+  its span: level 1100 gives 284 instead of 200, level 2000 gives 566 instead of 325. This is a Canary
+  defect in the same sense as the monster §8 findings.
+- Both engines draw the final value with `normal_random(min, max)` after truncating each bound to an
+  integer (`LuaScriptInterface::getNumber<int32_t>`, `ValueCallback::getMinMaxValues`).
+
+## 4. TibiaWiki (Fandom) comparison at the cut
+
+`samples/wiki-spell-compare-fandom-2026-07-28.json` (`wiki_spells.py`): 218 `Infobox Spell` pages and
+62 `Category:Runes` pages at the last revision before 2026-07-29. Instant and conjuring spells are
+joined by words (the wiki may append the parameter, `exura sio "name`), runes by item id.
+
+| field (match / diff) | Canary | Crystal |
+|---|---:|---:|
+| words | 187 / 1 | 203 / 0 |
+| vocations (base vocations) | 185 / 0 | 197 / 3 |
+| level | 214 / 10 | 226 / 13 |
+| mana | 171 / 11 | 185 / 12 |
+| soul | 187 / 1 | 202 / 1 |
+| premium | 156 / 32 | 162 / 41 |
+| cooldown | 176 / 12 | 183 / 20 |
+| primary group cooldown | 183 / 5 | 202 / 1 |
+| base power | – (absent) | 85 / 6 |
+| rune magic level | 36 / 0 | 36 / 0 |
+| conjure amount | 34 / 0 | 34 / 0 |
+
+Compared: Canary 224 spells, Crystal 239; unmatched source spells are monster-only registrations and a
+few conjuring spells whose wiki page name differs. 14 wiki spell pages have no Crystal spell: 11 are
+`deprecated` or `ts-only`, the others are `Gift of Life` (Wheel), `Lesser Mystic Repulse` (15.12) and
+`Mentor Other` (removed by Crystal). Several Crystal values that differ from the cut (base power 170 vs 155 for the great beams,
+new Crystal-only spells) look like changes after the reference date.
+
+## 5. Decisions (PROPOSED — owner acceptance required)
+
+| # | Proposal | Basis |
+|---|---|---|
+| S1 | A player spell is a `Spell` definition (casting layer) whose execution is an `Ability`. A spell a monster also casts keeps the one shared Ability (`oteryn:ability.spell.<name>`, D11); only the monster schedule overrides its magnitude. | D11; 7 player spells/runes already exist as shared Abilities in `content/abilities/`. |
+| S2 | Two carriers: `instant` (spoken words) and `rune` (an Item with charges). A conjuring spell is an instant spell whose execution is `conjure` (reagent → result × count). The rune Item stays Item authority (item schema kind 8, rune); the Spell references it. | Canary/Crystal `Spell("instant")` / `Spell("rune")`, `Player:conjureItem`; 49 conjure bodies. |
+| S3 | Observable requirement fields follow the reference-date wiki: words, vocations, level, magic level, mana, soul, premium, cooldowns and groups, base power, conjure amount, rune item. TibiaWiki BR is primary and Fandom the second structured source (source registry G4 order); a BR/Fandom conflict stays `CONFLICT` for the owner. Canary/Crystal donate what the wikis do not state (area, effects, conditions, formula shape, targeting flags). | D15/D25 precedent; §4 differences (premium, cooldown, level). |
+| S4 | Crystal ff7ede5 is the primary execution donor for player spells and Canary 47dfd51f the cross-check; a donor value that the wiki contradicts is replaced under S3 and kept as `approved_omission` in the manifest. | §3: Crystal has base power and the current level curve and matches the wiki better on words, vocations and group cooldowns. Monsters keep Canary (D10). |
+| S5 | Damage/heal formulas are `player_expression` trees over declared inputs, evaluated in IEEE-754 double in authored order; each bound is truncated toward zero; the draw between bounds is the world damage distribution (a world rule, like D12). The level curve is one world function `level_base_damage_healing`; its exact values (Crystal floor form; Canary's form is defective) are fixed by owner decision against the wiki formulae page before the first damage spell is qualified. | §3 formula findings. |
+| S6 | Wheel of Destiny, gem, weapon-proficiency and imbuement augments are not part of a Spell. A Wheel-gated spell is authored with its base behaviour and a `wheel_unlock` native gate; augments use the existing `ProjectV2AugmentBinding`. | 21–22 Wheel-gated bodies; v2 already has augment bindings. |
+| S7 | `custom` spells become `native_behavior` keys with data parameters, shared by pattern (party buff, house list, summon familiar, find person, levitate, stance switch, delayed strike, ...), not one per script; no Lua is admitted and a key without an implementation is rejected by the content compiler (D13 rule). | §3 pattern tags. |
+| S8 | Vocations are an explicit sorted list of base and promoted vocation keys, as the sources register them; a promoted vocation is never implied. | Canary/Crystal list both (`"druid;true", "elder druid;true"`); the wiki lists base vocations only and is compared on base vocations. |
+| S9 | Cooldowns: one own cooldown plus one or two groups, primary first, each with its group cooldown; group keys are lowercase without spaces (`greatbeams`, `burstsofnature`, `ultimatestrikes`, `stance`, ...). | Crystal/Canary `spell:group(a, b)` and `groupCooldown(a, b)`; wiki `subclass`/`secondarygroup` and `cooldowngroup`/`cooldowngroup2`. |
+| S10 | Learning: the Spell holds `learning_required`; trainer NPCs and prices belong to NPC services (`acquisition_interactions`), not to the Spell. | v2 `ProjectV2AbilityAuthoring.acquisition_interactions`; NPC schema owns trade/teach services. |
+
+## 6. Mapping to WorldProject/v2
+
+`ProjectV2AbilityAuthoring` (`apps/game-server/src/content/project/v2.rs`) already carries part of the
+player layer; `ProjectV2AbilityDetails` (`v2/creature.rs`) carries the monster execution part.
+
+| Authoring field | WorldProject/v2 | Status |
+|---|---|---|
+| `words` | `incantation` | MATCH |
+| `requirements.vocations` | `vocations` (sorted, unique) | MATCH after key mapping (S8) |
+| `requirements.level`, `premium` | `required_level`, `premium` | MATCH |
+| `costs.mana` | `mana_cost` | MATCH |
+| `cooldown_ms`, `groups[0]` | `cooldown_ms`, `group`, `group_cooldown_ms` | MATCH for the primary group |
+| `groups[1]` | — | GAP: second group and its cooldown |
+| `base_power`, `targeting.range_tiles` | `base_power`, `range` | MATCH |
+| `requirements.acquisition_interactions` | `acquisition_interactions` | MATCH |
+| `costs.soul`, `costs.mana_percent`, `requirements.learning_required` | — | GAP |
+| `carrier`, `rune.*`, `execution.conjure` | — | GAP |
+| `targeting.*` flags, `pz_locks_caster`, `needs_weapon`, `parameter` | `details.needs_target/needs_direction` only | PARTIAL |
+| `player_expression` Formula | — (Formula family has no expression) | GAP |
+| `execution.ability` | `details` (kind, range, area, effects, variants, chain) | MATCH through the shared Ability |
+
+GAP rows are added to v2 only when a spell in the current playable slice needs them (P3).
+
+## 7. Boundaries
+
+This candidate does not change WorldProject/v2, the compiler, the runtime ability engine, protocol or
+persistence; does not populate `content/abilities/**` or mint native Spell keys; does not admit Lua;
+does not decide S1–S10; does not establish Tibia Global parity or asset/licensing rights. The wiki files
+keep only allowlisted short infobox values with page and revision ids, never article prose.
+
+## 8. Validation
+
+From `tools/content-schema/spell-authoring/` with `requirements.txt` installed:
+
+```text
+python build_formal_schema.py && git diff --exit-code -- .   # schemas and template regenerate byte-identically
+python verify_formal_schema.py                               # 3 valid fixtures + 34 focused negative cases
+python spell_census.py self-test && python wiki_spells.py self-test
+```
+
+`validate_spell.py` checks structure, exact reference closure, lowercase words, sorted vocations,
+distinct groups, carrier/execution consistency, and every reached `player_expression` formula over a
+grid of levels 1–2500, magic levels 0–130 and skills 10–130: the formula may use only the inputs its
+kind provides, `base_power` needs the Spell's base power, and each bound must be finite, non-negative
+and `minimum <= maximum` after truncation. Success means authoring structure only
+(`runtime_qualified=false`, `source_coverage_proven=false`).
+
+## 9. Implementation plan
+
+Playable-first: every phase ends in something checkable, and runtime work starts with the smallest set
+of spells a new character actually uses.
+
+| Phase | Result | Scope | Exit evidence |
+|---|---|---|---|
+| **P0** (this change) | Schema candidate, census, Fandom comparison, plan | `tools/content-schema/spell-authoring/`, this document | validator + 37 cases green; census and compare regenerate |
+| **P1** Reference data | TibiaWiki BR capture of the spell and rune pages at the cut, BR ↔ Fandom ↔ source crosswalk; owner decisions S1–S10 (at least S3, S4, S5) | hosted-runner workflow in the G4 capture pattern (BR answers 403 here), `wiki_spells.py --source br` | every player spell has a per-field disposition: MATCH, adopted wiki value, CONFLICT or UNKNOWN |
+| **P2** Converter and readiness | `crystal_spells.py`: census → Spell bundles + dependencies + manifests for `plain_combat` (declarative), `conjure` and runes, with S3 wiki adoption; `population_census.py` for spells | `tools/content-schema/spell-authoring/` | all declarative spells validate and resolve; blockers grouped by pattern (§3), like monster §9 |
+| **P3** First castable slice (runtime) | A character casts the starter set: Light Healing (`exura`), Intense Healing (`exura gran`), Ice Strike and Energy Strike (shared with monsters), Haste (`utani hur`), Sudden Death rune + its conjuring spell, Great Fireball rune (area) | v2 GAP fields for this set; content compiler; server: words → cast intent, requirement checks (vocation, level, mana, soul, premium), cooldown and group cooldown state, `player_expression` evaluator and `level_base_damage_healing`, rune use-with and charges, conjure; reuse the ability engine (`apps/game-server/src/ability/`) for effects and commit | Rust unit + integration tests per rule; reference evidence per spell (`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json`); `game-gate` green |
+| **P4** Bulk declarative spells | All remaining `plain_combat` spells and runes by vocation, conditions (haste, paralyse, magic shield, utito) and areas | content population through the P2 converter; runtime only for missing Effect operations | readiness census: declarative spells admitted |
+| **P5** Native behaviours | Shared behaviours by pattern in order of player need: party buffs, find person / levitate / magic rope, familiars, summons, house lists, stances, equipment-dependent spells, delayed strikes; Wheel gating and augments with the Wheel system | one behaviour per pattern with parameter contract (S7) | each pattern: contract + tests; manifest rows move from `unresolved_semantics` to `resolved_native_behavior` |
+
+Dependencies: P3 needs S1–S5 accepted, the rune Items in the Item catalogue, the Formula family
+extended in v2 and the character state (mana, soul, cooldowns) under the existing session-generation
+fenced character writes. Protocol changes for spell cast/cooldown messages go through the
+`protocol-oteryn` owning contract, not this document.

@@ -1,0 +1,61 @@
+{
+  "spell": {
+    "identity": "<identity>",
+    "name": "<string>",
+    "carrier": "<instant|rune>",
+    "words": "<string>",
+    "reference_spell_id": "<integer>",
+    "requirements": {
+      "vocations": [
+        "<druid|elder_druid|sorcerer|master_sorcerer|knight|elite_knight|paladin|royal_paladin|monk|exalted_monk>"
+      ],
+      "level": "<integer>",
+      "premium": "<bool>",
+      "learning_required": "<bool>",
+      "acquisition_interactions": [
+        "<InteractionRef>"
+      ]
+    },
+    "costs": {
+      "mana": "<integer>",
+      "mana_percent": "<integer>",
+      "soul": "<integer>"
+    },
+    "cooldown_ms": "<ms>",
+    "groups": [
+      {
+        "group": "<string>",
+        "cooldown_ms": "<ms>"
+      }
+    ],
+    "targeting": {
+      "aggressive": "<bool>",
+      "self_target": "<bool>",
+      "needs_target": "<bool>",
+      "needs_direction": "<bool>",
+      "target_or_direction": "<bool>",
+      "range_tiles": "<integer>",
+      "block_walls": "<bool>",
+      "allow_on_self": "<bool>",
+      "check_floor": "<bool>",
+      "parameter": "<none|player_name|text>"
+    },
+    "pz_locks_caster": "<bool>",
+    "needs_weapon": "<bool>",
+    "base_power": "<integer>",
+    "rune": {
+      "item": "<ItemRef>",
+      "charges": "<integer>",
+      "magic_level": "<integer>",
+      "allow_far_use": "<bool>",
+      "blocking": "<solid|creature|none>"
+    },
+    "execution": {
+      "ability": "<AbilityRef>"
+    },
+    "presentation": {
+      "cast_cue": "<string>",
+      "impact_cue": "<string>"
+    }
+  }
+}
