@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-quest-readiness-and-gaps
 title: Quest format - readiness map, map check, dedicated doors, fewer unresolved interaction parts
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 1041
 base_sha: e68893a8352cc242c1b41ad2b33087c911ce63cb
 head_sha: null
 final_head_sha: null
