@@ -1,0 +1,938 @@
+{
+  "format": "oteryn-ots-map-check-v1",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "map_sources": {
+    "canary": {
+      "url": "https://github.com/opentibiabr/canary/releases/download/v3.6.1/otservbr.otbm",
+      "sha256": "a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2",
+      "path_basename": "otservbr.otbm"
+    },
+    "crystalserver": {
+      "source": "zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a :: data-global/world/world.otbm (gzip-compressed in the repository; decompressed before use)",
+      "sha256": "f1080fbefdea904f1b7465b7479beb98080e74f5d27dfdfd8e38e69be2399726",
+      "path_basename": "crystalserver_world.otbm"
+    }
+  },
+  "extra_maps_canary_config_references": [
+    {
+      "path": "data-otservbr-global/world/custom/otservbr-custom.otbm",
+      "loaded_at_startup": true,
+      "reason": "toggleMapCustom=true (config.lua.dist default): CanaryServer::loadMaps loads every *.otbm under world/custom/ right after the main map."
+    },
+    {
+      "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/*.otbm",
+      "loaded_at_startup": false,
+      "reason": "Loaded later, at runtime, by Game.loadMap(...) in lib/quests/soul_war.lua cycling the Ebb and Flow water-level overlay; not part of CanaryServer::loadMaps."
+    },
+    {
+      "path": "data-otservbr-global/world/quest/ferumbras_ascendant/habitats.otbm",
+      "loaded_at_startup": false,
+      "reason": "Loaded on demand by Game.loadMap(...) in data/libs/functions/functions.lua when the Ferumbras habitats are reset; not part of CanaryServer::loadMaps."
+    },
+    {
+      "path": "data-otservbr-global/world/world_changes/**/*.otbm (fury_gates, nightmare_isle, oriental_trader, full_moon)",
+      "loaded_at_startup": false,
+      "reason": "Loaded on demand by Game.loadMap(...) from world_changes/*.lua globalevents (gate rotation, full-moon werewolf event, etc.); not part of CanaryServer::loadMaps."
+    },
+    {
+      "path": "data-otservbr-global/world/quest/the_dream_courts/*.otbm, data-otservbr-global/world/quest/cults_of_tibia/misguided/*.otbm",
+      "loaded_at_startup": false,
+      "reason": "Same pattern: quest-triggered Game.loadMap(...) overlays, not startup-loaded."
+    }
+  ],
+  "chests": {
+    "note": "Matched/mismatched compare the chest's expected ITEM ID (appearance) against the raw map, mirroring loadLuaMapUnique's own precondition check; the runtime unique id itself is assigned by Canary's Map Attributes Loader startup event, not baked into the distributed map, so its absence here is expected and not a mismatch.",
+    "total_checked": 343,
+    "matched": 343,
+    "mismatched_count": 0,
+    "tile_missing_count": 0,
+    "crystalserver_only_placements_not_checked": 16,
+    "already_embedded_unique_id_in_raw_map": 0,
+    "mismatches": []
+  },
+  "doors": {
+    "note": "Matched/mismatched compare the door's expected ITEM ID (appearance) against the raw map; the door's runtime action id itself is assigned by Canary's Map Attributes Loader startup event (loadLuaMapAction), not baked into the distributed map.",
+    "total_checked": 369,
+    "matched": 32,
+    "mismatched_count": 0,
+    "tile_missing_count": 0,
+    "crystalserver_only_placements_not_checked": 67,
+    "no_expected_item_id_tile_has_content": 337,
+    "no_expected_item_id_tile_empty_count": 0,
+    "no_expected_item_id_tile_empty": [],
+    "mismatches": []
+  },
+  "interactions": {
+    "note": "aid()/uid() matched here against a literal number in the source registration. Some of these belong to the same generic Chest/Door/Item/Lever/Teleport/Tile tables check_chests/check_doors document as runtime-assigned by Canary's Map Attributes Loader (not baked into the raw map, so an expected mismatch); others are one-off map-editor unique/action ids the checked-out Lua does not route through that loader (a real, meaningful mismatch). This report does not attempt to separate the two classes.",
+    "anchors_with_tile_present": 313,
+    "anchors_with_tile_missing": 0,
+    "missing_tiles": [],
+    "use_edges_with_literal_aid_or_uid_matched": 0,
+    "use_edges_with_literal_aid_or_uid_mismatched_count": 61,
+    "use_edges_with_literal_aid_or_uid_mismatches": [
+      {
+        "key": "canary:interaction/dark_trails/actions_lever_death_priest_shargon",
+        "anchor": "p1",
+        "position": [
+          33487,
+          32108,
+          9
+        ],
+        "expected_uid": 30002,
+        "found_item_ids": [
+          11421
+        ]
+      },
+      {
+        "key": "canary:interaction/dark_trails/actions_lever_the_ravager",
+        "anchor": "p1",
+        "position": [
+          33487,
+          32079,
+          8
+        ],
+        "expected_uid": 30001,
+        "found_item_ids": [
+          11425
+        ]
+      },
+      {
+        "key": "canary:interaction/deeper_fibula/action_draw_well",
+        "anchor": "p1",
+        "position": [
+          32172,
+          32439,
+          8
+        ],
+        "expected_aid": 15005,
+        "found_item_ids": [
+          5769,
+          1948
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_habitat_corrupted",
+        "anchor": "p1",
+        "position": [
+          33619,
+          32722,
+          12
+        ],
+        "expected_aid": 34311,
+        "found_item_ids": [
+          12381
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_habitat_desert",
+        "anchor": "p1",
+        "position": [
+          33641,
+          32684,
+          12
+        ],
+        "expected_aid": 34308,
+        "found_item_ids": [
+          10605,
+          3919
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_habitat_dimension",
+        "anchor": "p1",
+        "position": [
+          33642,
+          32722,
+          12
+        ],
+        "expected_aid": 34312,
+        "found_item_ids": [
+          10548
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_habitat_grass",
+        "anchor": "p1",
+        "position": [
+          33642,
+          32666,
+          12
+        ],
+        "expected_aid": 34306,
+        "found_item_ids": [
+          15044
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_habitat_ice",
+        "anchor": "p1",
+        "position": [
+          33642,
+          32702,
+          12
+        ],
+        "expected_aid": 34310,
+        "found_item_ids": [
+          1019
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_habitat_mushroom",
+        "anchor": "p1",
+        "position": [
+          33617,
+          32684,
+          12
+        ],
+        "expected_aid": 34307,
+        "found_item_ids": [
+          231
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_habitat_roshamuul",
+        "anchor": "p1",
+        "position": [
+          33619,
+          32666,
+          12
+        ],
+        "expected_aid": 34305,
+        "found_item_ids": [
+          4515,
+          1857
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_habitat_venom",
+        "anchor": "p1",
+        "position": [
+          33617,
+          32702,
+          12
+        ],
+        "expected_aid": 34309,
+        "found_item_ids": [
+          799,
+          7153
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_lever_first",
+        "anchor": "p1",
+        "position": [
+          33646,
+          32654,
+          14
+        ],
+        "expected_aid": 53821,
+        "found_item_ids": [
+          7062
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_lever_four",
+        "anchor": "p1",
+        "position": [
+          33646,
+          32654,
+          14
+        ],
+        "expected_aid": 53824,
+        "found_item_ids": [
+          7062
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_lever_second",
+        "anchor": "p1",
+        "position": [
+          33646,
+          32654,
+          14
+        ],
+        "expected_aid": 53822,
+        "found_item_ids": [
+          7062
+        ]
+      },
+      {
+        "key": "canary:interaction/ferumbras_ascension/actions_lever_third",
+        "anchor": "p1",
+        "position": [
+          33646,
+          32654,
+          14
+        ],
+        "expected_aid": 53823,
+        "found_item_ids": [
+          7062
+        ]
+      },
+      {
+        "key": "crystalserver:interaction/grave_danger/cobra_bastion/actions_scarlett",
+        "anchor": "p1",
+        "position": [
+          33395,
+          32668,
+          6
+        ],
+        "expected_aid": 40003,
+        "found_item_ids": [
+          416
+        ]
+      },
+      {
+        "key": "crystalserver:interaction/grave_danger/cobra_bastion/actions_scarlett",
+        "anchor": "p2",
+        "position": [
+          33395,
+          32666,
+          6
+        ],
+        "expected_aid": 40003,
+        "found_item_ids": [
+          27866,
+          23928
+        ]
+      },
+      {
+        "key": "canary:interaction/grave_danger_quest/cobra_bastion/actions_scarlett",
+        "anchor": "p1",
+        "position": [
+          33395,
+          32668,
+          6
+        ],
+        "expected_aid": 40003,
+        "found_item_ids": [
+          416
+        ]
+      },
+      {
+        "key": "canary:interaction/grave_danger_quest/cobra_bastion/actions_scarlett",
+        "anchor": "p2",
+        "position": [
+          33395,
+          32666,
+          6
+        ],
+        "expected_aid": 40003,
+        "found_item_ids": [
+          27866,
+          23928
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p1",
+        "position": [
+          32151,
+          31356,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893,
+          23379
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p2",
+        "position": [
+          32154,
+          31353,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p3",
+        "position": [
+          32153,
+          31361,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p4",
+        "position": [
+          32158,
+          31362,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p5",
+        "position": [
+          32161,
+          31360,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p6",
+        "position": [
+          32156,
+          31357,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p7",
+        "position": [
+          32159,
+          31354,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p8",
+        "position": [
+          32163,
+          31356,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p9",
+        "position": [
+          32162,
+          31352,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p10",
+        "position": [
+          32158,
+          31350,
+          14
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p11",
+        "position": [
+          32152,
+          31355,
+          15
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p12",
+        "position": [
+          32154,
+          31360,
+          15
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p13",
+        "position": [
+          32160,
+          31360,
+          15
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p14",
+        "position": [
+          32162,
+          31356,
+          15
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_charges_lever",
+        "anchor": "p15",
+        "position": [
+          32158,
+          31352,
+          15
+        ],
+        "expected_aid": 14320,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p1",
+        "position": [
+          32200,
+          31322,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p2",
+        "position": [
+          32202,
+          31327,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p3",
+        "position": [
+          32199,
+          31330,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p4",
+        "position": [
+          32201,
+          31334,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p5",
+        "position": [
+          32207,
+          31335,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p6",
+        "position": [
+          32211,
+          31334,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p7",
+        "position": [
+          32215,
+          31332,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p8",
+        "position": [
+          32208,
+          31327,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p9",
+        "position": [
+          32207,
+          31323,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893,
+          23119
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_cracklers_lever",
+        "anchor": "p10",
+        "position": [
+          32213,
+          31323,
+          14
+        ],
+        "expected_aid": 14326,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_final_lever",
+        "anchor": "p1",
+        "position": [
+          32244,
+          31372,
+          14
+        ],
+        "expected_aid": 14332,
+        "found_item_ids": [
+          22893,
+          23124
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_final_lever",
+        "anchor": "p2",
+        "position": [
+          32271,
+          31316,
+          14
+        ],
+        "expected_aid": 14332,
+        "found_item_ids": [
+          22893,
+          23114
+        ]
+      },
+      {
+        "key": "canary:interaction/heart_of_destruction/actions_final_lever",
+        "anchor": "p3",
+        "position": [
+          32299,
+          31372,
+          14
+        ],
+        "expected_aid": 14332,
+        "found_item_ids": [
+          22893
+        ]
+      },
+      {
+        "key": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_yalahari_folio",
+        "anchor": "p1",
+        "position": [
+          33324,
+          32173,
+          6
+        ],
+        "expected_aid": 4953,
+        "found_item_ids": [
+          408
+        ]
+      },
+      {
+        "key": "crystalserver:interaction/the_dream_courts/actions_key_check",
+        "anchor": "p1",
+        "position": [
+          33069,
+          32310,
+          8
+        ],
+        "expected_aid": 23105,
+        "found_item_ids": [
+          1019
+        ]
+      },
+      {
+        "key": "crystalserver:interaction/the_dream_courts/actions_key_check",
+        "anchor": "p2",
+        "position": [
+          33068,
+          32320,
+          8
+        ],
+        "expected_aid": 23105,
+        "found_item_ids": [
+          927
+        ]
+      },
+      {
+        "key": "canary:interaction/the_dream_courts_quest/actions_key_check",
+        "anchor": "p1",
+        "position": [
+          33069,
+          32310,
+          8
+        ],
+        "expected_aid": 23105,
+        "found_item_ids": [
+          1019
+        ]
+      },
+      {
+        "key": "canary:interaction/the_dream_courts_quest/actions_key_check",
+        "anchor": "p2",
+        "position": [
+          33068,
+          32320,
+          8
+        ],
+        "expected_aid": 23105,
+        "found_item_ids": [
+          927
+        ]
+      },
+      {
+        "key": "canary:interaction/the_hidden_city_of_beregar/actions_ladder",
+        "anchor": "p1",
+        "position": [
+          32681,
+          31507,
+          10
+        ],
+        "expected_aid": 40022,
+        "found_item_ids": [
+          4409,
+          6381
+        ]
+      },
+      {
+        "key": "crystalserver:interaction/the_isle_of_evil_quest/actions_lever_teleport",
+        "anchor": "p1",
+        "position": [
+          32755,
+          31469,
+          7
+        ],
+        "expected_aid": 57237,
+        "found_item_ids": [
+          4515,
+          4656
+        ]
+      },
+      {
+        "key": "canary:interaction/the_lost_brother/actions_asura_mirror",
+        "anchor": "p1",
+        "position": [
+          32966,
+          31460,
+          1
+        ],
+        "expected_aid": 12441,
+        "found_item_ids": [
+          8309,
+          8710
+        ]
+      },
+      {
+        "key": "canary:interaction/the_order_of_lion/action_bounac_entrance",
+        "anchor": "p1",
+        "position": [
+          32423,
+          32448,
+          7
+        ],
+        "expected_aid": 59603,
+        "found_item_ids": [
+          32351,
+          309
+        ]
+      },
+      {
+        "key": "canary:interaction/the_order_of_lion/action_bounac_entrance",
+        "anchor": "p2",
+        "position": [
+          33183,
+          31756,
+          7
+        ],
+        "expected_aid": 59603,
+        "found_item_ids": [
+          4529
+        ]
+      },
+      {
+        "key": "canary:interaction/the_order_of_lion/action_elevator_elevator_bounac_action",
+        "anchor": "p1",
+        "position": [
+          32374,
+          32497,
+          3
+        ],
+        "expected_aid": 59604,
+        "found_item_ids": [
+          4402,
+          1106,
+          1103
+        ]
+      },
+      {
+        "key": "crystalserver:interaction/the_order_of_lion_quest/action_bounac_entrance",
+        "anchor": "p1",
+        "position": [
+          32423,
+          32448,
+          7
+        ],
+        "expected_aid": 59603,
+        "found_item_ids": [
+          32351,
+          309
+        ]
+      },
+      {
+        "key": "crystalserver:interaction/the_order_of_lion_quest/action_bounac_entrance",
+        "anchor": "p2",
+        "position": [
+          33183,
+          31756,
+          7
+        ],
+        "expected_aid": 59603,
+        "found_item_ids": [
+          4529
+        ]
+      },
+      {
+        "key": "canary:interaction/the_thieves_guild_quest/actions_fish_napping_door",
+        "anchor": "p1",
+        "position": [
+          32359,
+          32786,
+          6
+        ],
+        "expected_aid": 51394,
+        "found_item_ids": [
+          409
+        ]
+      }
+    ],
+    "use_edges_without_a_literal_aid_or_uid_registration": 80
+  },
+  "map_decisions": {
+    "corpse_chest": {
+      "note": "Both servers claim uid 5016 at this position (D25: 'equivalent', canary kept); the raw map's own item id at that position (not the runtime-assigned uid, which is not baked into the file; see check_chests) is what actually decides which appearance is real.",
+      "position": [
+        32576,
+        32216,
+        15
+      ],
+      "uid": 5016,
+      "canary_claimed_item_id": 3204,
+      "crystalserver_claimed_item_id": 4240,
+      "canary_map_item_ids_at_position": [
+        354,
+        3204
+      ],
+      "crystalserver_map_item_ids_at_position": [
+        354,
+        4240
+      ],
+      "crystalserver_map_checked": true
+    },
+    "wrath_of_the_emperor_chest": {
+      "note": "Canary-only chest_items claim (uid 14092, present_only_in_canary) vs a CrystalServer-only chest_items claim (uid 7825) a few tiles away, same reward. Each server's own map is also checked at the OTHER server's position, to tell 'one chest moved' apart from 'both servers place a chest at both spots but only one is wired up'.",
+      "canary_only_position": [
+        33074,
+        31170,
+        8
+      ],
+      "canary_only_uid": 14092,
+      "canary_map_item_ids_at_canary_only_position": [
+        11001,
+        2473
+      ],
+      "canary_map_item_ids_at_crystalserver_position": [
+        11001
+      ],
+      "crystalserver_position": [
+        33079,
+        31173,
+        8
+      ],
+      "crystalserver_only_uid": 7825,
+      "crystalserver_map_item_ids_at_crystalserver_position": [
+        11001,
+        2473
+      ],
+      "crystalserver_map_item_ids_at_canary_only_position": [
+        11001
+      ],
+      "crystalserver_map_checked": true
+    }
+  }
+}
