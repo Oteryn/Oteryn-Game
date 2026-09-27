@@ -176,6 +176,11 @@ case('duplicate rule key', lambda e, c: e['rules'].append(copy.deepcopy(e['rules
 case('heal scaling accepted', rule([{'kind': 'damage_modifier', 'role': 'boss', 'multiplier_percent': 200, 'component': 'primary',
                                      'sources': 'any', 'until': 'this_hit'}],
                                    trigger={'kind': 'heal_received', 'role': 'boss', 'source': 'any'}), True)
+case('non-player source accepted', rule(trigger={'kind': 'damage_taken', 'role': 'boss', 'source': 'non_player'}), True)
+case('worn slot accepted', rule(conditions=[{'kind': 'attacker_wears', 'item': ref('Item', 'vortex'), 'wears': False, 'slot': 'armor'}],
+                                trigger={'kind': 'heal_received', 'role': 'boss', 'source': 'player'}), True)
+case('unknown worn slot', rule(conditions=[{'kind': 'attacker_wears', 'item': ref('Item', 'vortex'), 'wears': False, 'slot': 'backpack'}],
+                               trigger={'kind': 'damage_taken', 'role': 'boss', 'source': 'player'}))
 case('remembered health accepted', rule([{**add(), 'role': 'boss', 'health': 'remembered'}], trigger=died), True)
 case('remembered health needs a role', rule([{**add(), 'health': 'remembered'}], trigger=died))
 case('transform cannot remember health', rule([{'kind': 'transform', 'role': 'boss', 'into': ref('Creature', 'add'), 'health': 'remembered'}], trigger=died))

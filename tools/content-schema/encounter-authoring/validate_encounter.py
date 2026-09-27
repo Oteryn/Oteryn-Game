@@ -138,10 +138,10 @@ def semantic(e, catalog):
                 need('role', condition['role'], known_roles, at)
             elif ck == 'health_percent':
                 need('role', condition['role'], known_roles, at)
-            elif ck in ('killer_is_player', 'killer_progress') and kind not in ('creature_died', 'lethal_damage', 'damage_taken'):
-                errors.append(f'{at}: {ck} needs a death, lethal damage or damage trigger')
-            elif ck == 'attacker_wears' and kind not in ('damage_taken', 'damage_accumulated', 'lethal_damage'):
-                errors.append(f'{at}: attacker_wears needs a damage trigger')
+            elif ck in ('killer_is_player', 'killer_progress') and kind not in ('creature_died', 'lethal_damage', 'damage_taken', 'heal_received'):
+                errors.append(f'{at}: {ck} needs a death, lethal damage, damage or heal trigger')
+            elif ck == 'attacker_wears' and kind not in ('damage_taken', 'damage_accumulated', 'lethal_damage', 'heal_received'):
+                errors.append(f'{at}: attacker_wears needs a damage or heal trigger')
         def spawned_speaker(actions, base):
             for n, action in enumerate(actions):
                 if action.get('subject', {}).get('spawned') and not any(

@@ -547,6 +547,7 @@
             "source": {
               "enum": [
                 "player",
+                "non_player",
                 "any"
               ]
             }
@@ -571,6 +572,7 @@
             "source": {
               "enum": [
                 "player",
+                "non_player",
                 "any"
               ]
             }
@@ -997,6 +999,19 @@
             },
             "wears": {
               "type": "boolean"
+            },
+            "slot": {
+              "enum": [
+                "head",
+                "necklace",
+                "armor",
+                "right_hand",
+                "left_hand",
+                "legs",
+                "feet",
+                "ring",
+                "ammo"
+              ]
             }
           },
           "required": [
