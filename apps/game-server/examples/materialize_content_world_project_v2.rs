@@ -63,17 +63,17 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "2f9a984dcb08d96f8e0ce8f978734574a9edb51489409925f67702cbf4868d72";
+    "c78379bd89895c912494e22411b9cae6138d1f482655f7549e7c80cac320153f";
 const CREATURE_STAGE_TOOL_SHA256: &str =
     "02ec69fb6dc42056a2049e9da9d274304fab5b5201fc0bc222fb84e6866fd714";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "73495f76e0ab4f731e7605f31b9a7816e9fdce0b55410b3e583059d216a9501d";
+    "b27b5dd2199859cbfc2d9cf7d4dbf3f9a0670f99b50630411c6311b552deb17e";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
-const CREATURE_COUNT: usize = 1315;
-const CREATURE_RECORDS: usize = 18280;
-const CREATURE_PROFILES: usize = 17315;
+const CREATURE_COUNT: usize = 1316;
+const CREATURE_RECORDS: usize = 18299;
+const CREATURE_PROFILES: usize = 17333;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {

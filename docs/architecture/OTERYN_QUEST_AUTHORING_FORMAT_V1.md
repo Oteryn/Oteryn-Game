@@ -1,9 +1,9 @@
 # Oteryn Quest Authoring Format v1
 
 - Date: 2026-09-27
-- DecisionStatus: CANDIDATE (owner decisions D32-D35 recorded in §9; slice 1 covers reward chests,
+- DecisionStatus: CANDIDATE (owner decisions D32-D36 recorded in §9; slice 1 covers reward chests,
   slice 2 quest, key and level doors, slice 3 the quest-log quests as staged missions with their
-  transitions)
+  transitions, slice 4 the quest scripts as interaction definitions)
 - DeliveryStatus: OPEN (design draft and offline transcription only)
 - ImplementationStatus: NOT_STARTED
 - Programme: CW2 B6 quests/interactions (`docs/agents/programs/OTV2_CONTENT_WORLD_BULK_CATALOG_IMPORT_PLAN.md`)
@@ -11,8 +11,9 @@
   graph and state representation (staged missions); party/guild/world scope, schedules and resets,
   migration of active quests and authoring tooling stay open
 - Companion: `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` (encounters emit outcomes the quest domain consumes)
-- Machine artifacts: `tools/content-schema/quest-authoring/` (schema, semantic validator, focused
-  checks, Canary + CrystalServer chest, door and quest-log transcriptions, wiki coverage evidence)
+- Machine artifacts: `tools/content-schema/quest-authoring/` (schemas, semantic validator, focused
+  checks, Canary + CrystalServer chest, door, quest-log and interaction transcriptions, wiki coverage
+  evidence)
 
 ## 1. Problem
 
@@ -122,6 +123,34 @@ owner confirms it.
 Missions whose storage is a bare number (the 70 Killing in the Name of tasks) keep it as the track
 `storage/<n>`. A mission graph with typed, branching objectives (option B) is added only for a quest
 that staged missions cannot express (D34).
+
+### 3.3 Interactions
+
+The movement, action and creature-event scripts are what GAME-INTERACTION-01 plans: an edge on a
+target, read-only conditions and children. D36 keeps them in that shape, in `content/interactions/`,
+and hands every child to the domain that already owns the effect. No second effect engine is added
+(ADR-0019), and the item schema's `use.interactions[]` and the monster schema's event bindings (D6)
+point at these definitions.
+
+| Source behaviour | Oteryn rule (D36) |
+|---|---|
+| `onStepIn`, `onStepOut`, `onAddItem`, `onUse`, `onDeath`/`onKill` on a registered action id, unique id, item or position | `source.edge`: `ON_ENTER`, `ON_LEAVE`, `ON_CONTACT`, `USE`, `ON_DEATH`, `ON_KILL`; the registrations stay as evidence. |
+| `if` on a player storage, a global storage, whether the actor is a player, its level, or the item type, unique id, action id or subtype of the edge source, the object in contact or the use target | Read-only conditions: `quest_stage`, `world_state` (D29), `actor_is_player`, `actor_level`, `object`. `branch`/`otherwise` keep the if/elseif/else structure. |
+| `player:setStorageValue` | Quest child: a request of the named mission transition (D35), or of a progress track the quest domain still has to declare. |
+| `Game.setStorageValue` | Quest child: world state shared by all players (D29). |
+| `Game.createMonster` | Ability child: a summon effect (GAME-ABILITY-01) at a named anchor. |
+| `player:addItem` | Item child: a hand-out through the DUR-03 item transaction. |
+| `addAchievement` | Achievement child: a grant by the Achievement domain. |
+| `sendMagicEffect`, `sendTextMessage`, `say`, `sendCancelMessage` | Presentation child, never authoritative; a message keeps its source line, never its text (LICENSE-ASSETS.md). |
+| `teleportTo` | Movement child, blocked: no movement owner contract yet (GAME-INTERACTION-01 §19.3). |
+| `transform`, `createItem`, `removeItem`, `revertItem`, `decay`, `setActionId` on map items (walls, levers, flames) | WorldObject child, blocked: no world-object state owner contract yet. |
+| Encounter scripts | Stay encounters; they emit outcomes only (D27). |
+
+Source positions become anchors (`p1`, `p2`, …) with the coordinates kept as evidence until world
+placements bind them. Anything the data cannot express (loops with their own control flow, local
+lookups, computed values, callbacks deferred with `addEvent`) stays `unresolved` with its source line
+and reason; when an interaction needs it, it
+becomes a DUR-04 component that proposes a plan, not a script with direct writes.
 
 ## 4. Shape
 
@@ -290,6 +319,37 @@ last. Eight quest gates
 (the seal doors and the banshee door, each on its own door storage) belong to the quest, and six
 reward claims hand out the final chests.
 
+### 6.3 Interactions
+
+`samples/interactions/` (`ots_interactions.py`, deterministic, reads the quest-log sample)
+transcribes every script under `scripts/quests/` of both servers (130 quest directories), keyed
+`interaction/<quest>/<script>` and joined by that path; `interaction.schema.json` and
+`validate_quest_content.py --interactions` validate it with the quest catalogue.
+
+| | Count |
+|---|---:|
+| Interactions / in both servers | 1,219 / 864 |
+| Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 399 / 201 / 14 / 6 |
+| Children: Quest / Ability / Item / Achievement / Presentation | 939 / 198 / 160 / 30 / 2,659 |
+| Children blocked: Movement / WorldObject | 798 / 1,112 |
+| Quest children naming a mission transition | 194 |
+| Unresolved statements: vocabulary / loops / deferred `addEvent` / other function literals | 1,264 / 376 / 300 / 78 |
+| Unresolved conditions | 1,957 |
+| Interactions mapped / unresolved / in conflict | 225 / 934 / 60 |
+| Progress tracks written but not declared by the catalogue | 373 |
+
+An independent spot check of 56 randomly sampled classified lines against their source found no
+misclassification. Most interactions keep some unresolved part: local tables and lookups,
+boss-room loops and delayed callbacks are the common ones. They stay with their source line
+rather than being guessed. The 373 undeclared tracks are the quest domain's to declare before the
+requests can run (D35).
+
+The Queen of the Banshees shows the result for one quest: 18 interactions; its seven seal flames
+request the seven movement transitions of slice 3 (one per mission, the last one opening the final
+battle); 9 tracks (the seal doors and two helper counters) are undeclared. Its four conflicts are
+real: the first seal lever uses other item ids in CrystalServer, and the first seal's magic walls
+sit on another trigger position there and come back after two minutes. The wiki decides them (D25).
+
 ## 7. Ownership
 
 - Static claim and placement: Content (`content/interactions/`, `content/world/placements/`),
@@ -297,6 +357,8 @@ reward claims hand out the final chests.
 - Claim state (taken, cooldown until): Character persistence, per character, shared across channels.
 - Item handout: DUR-03 item transaction, all or nothing, idempotent by claim.
 - Achievement grant: Achievement domain on the claim outcome.
+- Interactions: Content (`content/interactions/`), compiled to GAME-INTERACTION-01 plans; each
+  child is executed by its owner (quest, ability, item transaction), never by the interaction.
 - Gates: Content (definition and placements). Quest and level checks read character state; a key
   door's lock is channel or instance world-object state.
 - Quest records: `content/quests/definitions/` (`reward_only`, `storyline`) and
@@ -308,9 +370,9 @@ reward claims hand out the final chests.
 
 ## 8. Next slices
 
-1. Owner transcription: bind each transition to its owner's content, first the movement and action
-   scripts (tile and item interactions, e.g. the Queen of the Banshees seal flames), then NPC dialogue
-   nodes (the NPC schema's open decision O4 is settled by D35: dialogue requests transitions and reads
+1. Owner transcription: bind each transition to its owner's content. The movement and action
+   scripts are transcribed (§6.3); next the undeclared progress tracks join their missions and the
+   interaction conflicts go to the wiki. Then NPC dialogue nodes (the NPC schema's open decision O4 is settled by D35: dialogue requests transitions and reads
    stages, the quest domain owns the state); then settle the ten door conflicts and the 35 mission
    conflicts.
 2. NPC-driven outfit and addon quests (under the NPC service boundary).
@@ -326,3 +388,4 @@ reward claims hand out the final chests.
 | D33 | Canary and CrystalServer are both reference sources for quests, extending D30 (Crystal as a second donor for encounters): for quests CrystalServer is a full source, not only a donor. Their mechanics are used as implemented; where they differ, the union is taken, joined by map position, and conflicts go to the reference-date wiki (D25). | Owner request ("pamiętaj żeby używać i crystal i canary jako reference", "canary i crystal mają pewnie mechaniki wdrożone więc możemy się nimi posiłkować", 2026-09-27). |
 | D34 | Storyline quests use staged missions (option A of `CONTENT-QUEST-01`): a quest has missions, each mission one integer progress track with a start and an end value and a journal text per stage; transitions are named events of their owners (NPC, interaction, gate, claim, encounter). A graph of typed, branching objectives (option B) is added only for a quest that staged missions cannot express. | Owner decision 2026-09-27 ("zróbmy A a potem jeśli będzie potrzeba to B"). Both servers already describe all 529 missions this way. |
 | D35 | Only the quest domain writes quest progress. Each mission declares named transitions (from a stage to a new value, a step or a computed value); NPC dialogue, movements, actions, creature events, encounters and claims request a transition, conditions read stages, and the quest domain validates the request against the current stage, applies it idempotently and session-generation fenced, and hands rewards to the reward and item owners. This settles the quest-state part of the NPC schema's open decision O4. | Owner accepted the proposal ("zgadzam się", 2026-09-27). Quest progress is character state shared across channels while NPC runtime is channel-local; both servers let any script write progress (1,616 transitions over 355 missions). |
+| D36 | Movement, action and creature-event scripts become interaction definitions in `content/interactions/`, compiled to GAME-INTERACTION-01 plans: an edge (`ON_ENTER`, `ON_LEAVE`, `ON_CONTACT`, `USE`, `ON_DEATH`, `ON_KILL`), read-only conditions and children executed by their existing owners: quest transitions and world state (D35, D29), ability effects such as summons (GAME-ABILITY-01), item handouts (DUR-03), achievement grants. Teleports and map-object changes stay in the definition as blocked children until a movement and a world-object owner contract exist; encounters keep emitting outcomes only (D27); what data cannot express becomes a DUR-04 component. Items (`use.interactions[]`) and monsters (event bindings, D6) reference these definitions. | Owner continued after the consistency check against GAME-INTERACTION-01, GAME-ABILITY-01, DUR-04, ADR-0019 and the item and monster schemas ("kontynuuj", 2026-09-27), replacing the earlier proposal of a shared rule core. |

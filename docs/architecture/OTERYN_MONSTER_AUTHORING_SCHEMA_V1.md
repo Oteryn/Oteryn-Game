@@ -90,6 +90,7 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D23 | Wiki loot without a Loot Statistics page keeps the Canary loot list: the item is not added, because no probability is known. | Extends the D15 loot rate rule (fewer than 10 drops keeps Canary). |
 | D24 | A creature without a visible appearance (Canary `lookType` 0, no `lookTypeEx`, not a familiar) is authored with `appearance.selection: invisible`. | Wild magic traps; the wiki lists them as Traps. |
 | D25 | A combat whose damage type is undefined in the source (`COMBAT_UNDEFINEDDAMAGE` from a missing or wrong constant) is a source data error; the reference-date wiki ability decides the element. More generally, wherever the source is uncertain, the reference-date wiki decides (extends D15). | Owner rule in this session. |
+| D32 | Loot counts follow the reference-date wiki too. When a Canary entry adopts the wiki probability (at least 10 drops), the count observed in Loot Statistics replaces the Canary min-max if it falls outside it; an observed range inside the Canary range is kept, since it is a sample. A Canary `minCount` of 0 (Canary draws the count from 0..max and drops nothing on 0) becomes count 1..max: the wiki estimate already counts only kills with a drop, and without wiki statistics the probability is scaled by max/(max+1), which is exactly what the engine does. Low-confidence entries and items split over several Canary entries keep the Canary counts. | Owner, 2026-09-27 ("używaj wiki do potwierdzania loota dla potworów i bossów"); extends D15. |
 
 ## 4. Carried semantics
 
@@ -404,6 +405,8 @@ is added only when its name resolves to one item: by name, by the item page `ite
 dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
 monsters 739 mitigations and 11,547 loot rows (probabilities and added items) are adopted; 988 of
 the fully resolved monsters carry at least one adopted value.
+Under D32, 740 loot counts of 325 fully resolved monsters take the observed wiki range, and
+Duke Krule's twelve `minCount` 0 entries become count 1..max.
 
 ### 9.2 Wiki ability scenes
 

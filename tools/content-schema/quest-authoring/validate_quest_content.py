@@ -3,6 +3,8 @@
 Usage: python validate_quest_content.py CLAIMS.json QUESTS.json [--catalog CATALOG.json] [--manifest MANIFEST.json]
                                         [--gates GATES.json [--gates-manifest MANIFEST.json]]
                                         [--progress PROGRESS.json]   (QUESTS.json is then the whole catalogue, gates required)
+                                        [--interactions INTERACTIONS.json --interactions-manifest MANIFEST.json]
+                                                                     (progress required)
 Prints one JSON report; the exit code is 1 when the documents are invalid.
 """
 import argparse
@@ -14,6 +16,9 @@ import jsonschema
 
 ROOT = Path(__file__).resolve().parent
 MANIFEST_STATUS = ('mapped', 'conflict', 'approved_omission', 'unresolved_semantics')
+# D36: children whose owner has no accepted contract stay in the definition, blocked with this reason
+BLOCKED = {'Movement': 'no accepted movement owner contract (GAME-INTERACTION-01 §19.3)',
+           'WorldObject': 'no accepted world-object state owner contract'}
 
 
 def refs(value):
@@ -202,6 +207,94 @@ def validate_storylines(quests_doc, gates_doc, progress_doc):
     return sorted(set(errors))
 
 
+def rule_leaves(rules):
+    """(children, leaf conditions) of a rule tree."""
+    children, conditions = [], []
+
+    def leaves(condition):
+        if 'all' in condition or 'any' in condition:
+            for term in condition.get('all', condition.get('any')):
+                leaves(term)
+        else:
+            conditions.append(condition)
+
+    def walk(items):
+        for rule in items:
+            if 'branch' in rule:
+                for branch in rule['branch']:
+                    leaves(branch['when'])
+                    walk(branch['then'])
+                walk(rule.get('otherwise', []))
+            else:
+                children.append(rule)
+    walk(rules)
+    return children, conditions
+
+
+def validate_interactions(interactions_doc, manifest, quests_doc, progress_doc):
+    """Interaction definitions (D36): anchors, blocked owners, named quest transitions and manifest coverage."""
+    schema = json.loads((ROOT / 'interaction.schema.json').read_text())
+    errors = [f'{"/".join(map(str, e.absolute_path))}: {e.message}'
+              for e in jsonschema.Draft202012Validator(schema).iter_errors(interactions_doc)]
+    if errors:
+        return errors
+    tracks = {t['key'] for t in progress_doc['progress']}
+    missions = {f'{q["identity"]["key"]}#{m["key"]}': m for q in quests_doc['quests'] for m in q.get('missions', [])}
+    unresolved, seen, undeclared = {}, set(), set()
+    for interaction in interactions_doc['interactions']:
+        key = interaction['identity']['key']
+        if key in seen:
+            errors.append(f'{key}: duplicate interaction key')
+        seen.add(key)
+        anchors = [a['key'] for a in interaction['anchors']]
+        positions = [tuple(a['source_position'].values()) for a in interaction['anchors']]
+        if len(anchors) != len(set(anchors)) or len(positions) != len(set(positions)):
+            errors.append(f'{key}: anchor keys and positions must be unique')
+        children, conditions = rule_leaves(interaction['rules'])
+        used = {c.get('anchor') or c.get('to_anchor') for c in children} - {None}
+        for anchor in sorted(used - set(anchors)):
+            errors.append(f'{key}: unknown anchor {anchor}')
+        for anchor in sorted(set(anchors) - used):
+            errors.append(f'{key}: anchor {anchor} is not used')
+        for child in children:
+            if child['owner'] in BLOCKED and child['reason'] != BLOCKED[child['owner']]:
+                errors.append(f'{key}: {child["owner"]} child is blocked for an unknown reason')
+            if child['owner'] == 'Quest' and child['request'] == 'set_progress':
+                if child['progress'] not in tracks:
+                    undeclared.add(child['progress'])
+                if 'transition' in child:
+                    mission_key, transition = child['transition'].rsplit(':', 1)
+                    mission = missions.get(mission_key)
+                    if not mission or transition not in {t['key'] for t in mission['transitions']}:
+                        errors.append(f'{key}: unknown transition {child["transition"]}')
+                    elif mission['progress'] != child['progress']:
+                        errors.append(f'{key}: transition {child["transition"]} moves another progress track')
+        lines = [u['line'] for u in interaction['unresolved']]
+        if len(lines) != len(set(lines)):
+            errors.append(f'{key}: an unresolved line is listed twice')
+        unresolved[key] = bool(lines) or any('unresolved' in c for c in conditions)
+    if undeclared != set(manifest.get('undeclared_progress_tracks', [])):
+        errors.append('manifest: undeclared_progress_tracks does not list exactly the tracks outside the catalogue')
+    covered = set()
+    for entry in manifest['entries']:
+        destination, status = entry['destination'], entry['status']
+        if status not in MANIFEST_STATUS:
+            errors.append(f'manifest: unknown status {status}')
+        if destination not in unresolved:
+            errors.append(f'manifest: destination {destination} is not an interaction')
+            continue
+        if destination in covered:
+            errors.append(f'manifest: {destination} is listed twice')
+        covered.add(destination)
+        if status == 'mapped' and unresolved[destination]:
+            errors.append(f'manifest: {destination} is mapped but keeps unresolved lines or conditions')
+        if status == 'conflict' and len({s['source'] for s in entry['sources']}) < 2:
+            errors.append(f'manifest: {destination} is a conflict with one source')
+    for key in sorted(set(unresolved) - covered):
+        errors.append(f'{key}: no manifest entry maps a source script to this interaction')
+    return sorted(set(errors))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('claims', type=Path)
@@ -211,15 +304,22 @@ def main():
     parser.add_argument('--gates', type=Path)
     parser.add_argument('--gates-manifest', type=Path)
     parser.add_argument('--progress', type=Path)
+    parser.add_argument('--interactions', type=Path)
+    parser.add_argument('--interactions-manifest', type=Path)
     args = parser.parse_args()
     if args.progress and not args.gates:
         parser.error('--progress needs --gates')
+    if args.interactions and not (args.progress and args.interactions_manifest):
+        parser.error('--interactions needs --progress and --interactions-manifest')
     load = lambda p: json.loads(p.read_text()) if p else None
     errors = validate(load(args.claims), load(args.quests), load(args.catalog), load(args.manifest))
     if args.gates:
         errors += validate_gates(load(args.gates), load(args.claims), load(args.gates_manifest))
     if args.progress:
         errors += validate_storylines(load(args.quests), load(args.gates), load(args.progress))
+    if args.interactions:
+        errors += validate_interactions(load(args.interactions), load(args.interactions_manifest), load(args.quests),
+                                        load(args.progress))
     print(json.dumps({'valid': not errors, 'errors': errors[:50], 'error_count': len(errors)}, indent=2))
     sys.exit(1 if errors else 0)
 
