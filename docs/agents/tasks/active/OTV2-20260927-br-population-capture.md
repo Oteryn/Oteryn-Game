@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-br-population-capture
 title: Capture every population creature page from TibiaWiki BR at the target date
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1049
 jira: KAN-16
 base_sha: 716e23ba0c3585dcb0d52a5aa5300d124eaac94b
 head_sha: null
