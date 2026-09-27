@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-thirteenth-encounter-slice
 title: Monster spawn callbacks (thirteenth encounter slice)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1023
 jira: KAN-16
 base_sha: 52b983faad527247dfcd7cdc7a3dc41b834df9b1
 head_sha: null
