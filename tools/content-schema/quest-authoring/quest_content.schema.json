@@ -182,7 +182,7 @@
       "properties": {
         "identity": {"$ref": "#/$defs/identity"},
         "display_name": {"type": "string", "minLength": 1},
-        "kind": {"enum": ["reward_only", "storyline"]},
+        "kind": {"enum": ["reward_only", "storyline", "script_only"]},
         "shown_in_quest_log": {"type": "boolean"},
         "wiki": {
           "type": "object", "additionalProperties": false, "required": ["title", "pageid", "revid"],
@@ -204,8 +204,15 @@
       },
       "if": {"properties": {"kind": {"const": "storyline"}}},
       "then": {"required": ["source_name", "start", "missions", "gates"]},
-      "else": {"properties": {"claims": {"minItems": 1}},
-               "not": {"anyOf": [{"required": ["missions"]}, {"required": ["start"]}, {"required": ["gates"]}]}}
+      "else": {
+        "not": {"anyOf": [{"required": ["missions"]}, {"required": ["start"]}, {"required": ["gates"]}]},
+        "if": {"properties": {"kind": {"const": "reward_only"}}},
+        "then": {"properties": {"claims": {"minItems": 1}}},
+        "else": {
+          "description": "script_only: a quest the servers implement in scripts (chests, bosses, world state) with no quest-log entry; the wiki decides it exists (D25), so it is required here.",
+          "required": ["wiki"]
+        }
+      }
     }
   }
 }

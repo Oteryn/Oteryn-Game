@@ -210,6 +210,13 @@ storyline_case('storyline fixture accepted', expected=True)
 storyline_case('storyline without a start accepted', lambda q, t: (q.update(start=None), t[0].update(start_of=[])) and None, expected=True)
 storyline_case('storyline needs missions', lambda q, t: q.pop('missions'))
 storyline_case('reward-only quest has no missions', lambda q, t: q.update(kind='reward_only', claims=[ref('RewardClaim', 'x')]))
+storyline_case('script-only quest accepted',
+               lambda q, t: (q.update(kind='script_only', wiki={'title': 'X', 'pageid': 1, 'revid': 1}),
+                             q.pop('missions'), q.pop('start'), q.pop('gates')) and None, expected=True)
+storyline_case('script-only quest needs wiki',
+               lambda q, t: (q.update(kind='script_only'), q.pop('missions'), q.pop('start'), q.pop('gates')) and None)
+storyline_case('script-only quest has no missions',
+               lambda q, t: q.update(kind='script_only', wiki={'title': 'X', 'pageid': 1, 'revid': 1}))
 storyline_case('journal kind is closed', lambda q, t: q['missions'][0].update(journal={'kind': 'video'}))
 storyline_case('a stage has text or a template', lambda q, t: q['missions'][1]['journal']['stages'][0].pop('text_ref'))
 storyline_case('a stage has not both', lambda q, t: q['missions'][1]['journal']['stages'][0].update(template={'parts': [], 'reads': []}))

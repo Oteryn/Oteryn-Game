@@ -26,164 +26,165 @@
   "scheduler": "owner for delayed callbacks (none yet)"
  },
  "counts": {
-  "quests": 157,
+  "quests": 192,
   "by_kind": {
    "reward_only": 99,
+   "script_only": 35,
    "storyline": 58
   },
   "quests_needing_feature": {
-   "achievement": 18,
-   "boss_cooldown": 7,
-   "condition": 16,
-   "creature_removal": 14,
-   "door_progress": 46,
+   "achievement": 23,
+   "boss_cooldown": 11,
+   "condition": 18,
+   "creature_removal": 17,
+   "door_progress": 51,
    "experience": 2,
-   "item_consume": 40,
-   "item_hand_out": 32,
-   "kv_state": 5,
-   "mount": 1,
-   "npc_dialogue": 60,
-   "outfit": 4,
-   "quest_state": 75,
+   "item_consume": 56,
+   "item_hand_out": 44,
+   "kv_state": 8,
+   "mount": 4,
+   "npc_dialogue": 67,
+   "outfit": 6,
+   "quest_state": 96,
    "reward_claim": 120,
-   "scheduler": 37,
-   "summon": 27,
-   "teleport": 52,
-   "trigger_kill": 29,
-   "trigger_step": 48,
-   "trigger_use": 147,
-   "world_object": 56
+   "scheduler": 48,
+   "summon": 35,
+   "teleport": 76,
+   "trigger_kill": 48,
+   "trigger_step": 74,
+   "trigger_use": 174,
+   "world_object": 74
   },
-  "quests_without_data_gaps": 98,
-  "interactions_joined": 875,
-  "interactions_unlinked": 346
+  "quests_without_data_gaps": 101,
+  "interactions_joined": 1181,
+  "interactions_unlinked": 40
  },
  "unlock_order": [
   {
    "feature": "trigger_use",
    "owner": "GAME-INTERACTION-01 USE edge",
-   "quests_complete_on_engine_side": 0,
-   "of_which_without_data_gaps": 0
+   "quests_complete_on_engine_side": 1,
+   "of_which_without_data_gaps": 1
   },
   {
    "feature": "reward_claim",
    "owner": "DUR-03 inventory mint and RewardClaim (D39-D42)",
-   "quests_complete_on_engine_side": 76,
-   "of_which_without_data_gaps": 76
+   "quests_complete_on_engine_side": 77,
+   "of_which_without_data_gaps": 77
   },
   {
    "feature": "world_object",
    "owner": "world-object overlay (D38)",
-   "quests_complete_on_engine_side": 78,
-   "of_which_without_data_gaps": 76
-  },
-  {
-   "feature": "trigger_step",
-   "owner": "GAME-INTERACTION-01 step edges",
    "quests_complete_on_engine_side": 80,
-   "of_which_without_data_gaps": 76
+   "of_which_without_data_gaps": 77
   },
   {
    "feature": "teleport",
    "owner": "relocation owner (D37)",
-   "quests_complete_on_engine_side": 82,
-   "of_which_without_data_gaps": 77
+   "quests_complete_on_engine_side": 83,
+   "of_which_without_data_gaps": 78
   },
   {
-   "feature": "quest_state",
-   "owner": "quest-state store (D35)",
-   "quests_complete_on_engine_side": 82,
-   "of_which_without_data_gaps": 77
-  },
-  {
-   "feature": "npc_dialogue",
-   "owner": "NPC dialogue runtime",
-   "quests_complete_on_engine_side": 91,
-   "of_which_without_data_gaps": 85
-  },
-  {
-   "feature": "door_progress",
-   "owner": "door gate: quest progress",
-   "quests_complete_on_engine_side": 104,
-   "of_which_without_data_gaps": 97
-  },
-  {
-   "feature": "item_consume",
-   "owner": "DUR-03 consumption",
-   "quests_complete_on_engine_side": 106,
-   "of_which_without_data_gaps": 97
-  },
-  {
-   "feature": "scheduler",
-   "owner": "owner for delayed callbacks (none yet)",
-   "quests_complete_on_engine_side": 110,
-   "of_which_without_data_gaps": 97
-  },
-  {
-   "feature": "item_hand_out",
-   "owner": "DUR-03 inventory mint",
-   "quests_complete_on_engine_side": 115,
-   "of_which_without_data_gaps": 98
-  },
-  {
-   "feature": "summon",
-   "owner": "GAME-AI-01 spawn",
-   "quests_complete_on_engine_side": 119,
-   "of_which_without_data_gaps": 98
+   "feature": "trigger_step",
+   "owner": "GAME-INTERACTION-01 step edges",
+   "quests_complete_on_engine_side": 90,
+   "of_which_without_data_gaps": 78
   },
   {
    "feature": "trigger_kill",
    "owner": "GAME-INTERACTION-01 death/kill edges",
-   "quests_complete_on_engine_side": 121,
-   "of_which_without_data_gaps": 98
+   "quests_complete_on_engine_side": 93,
+   "of_which_without_data_gaps": 79
   },
   {
-   "feature": "condition",
-   "owner": "owner for player conditions (none yet)",
-   "quests_complete_on_engine_side": 126,
-   "of_which_without_data_gaps": 98
+   "feature": "quest_state",
+   "owner": "quest-state store (D35)",
+   "quests_complete_on_engine_side": 94,
+   "of_which_without_data_gaps": 79
+  },
+  {
+   "feature": "npc_dialogue",
+   "owner": "NPC dialogue runtime",
+   "quests_complete_on_engine_side": 104,
+   "of_which_without_data_gaps": 87
+  },
+  {
+   "feature": "door_progress",
+   "owner": "door gate: quest progress",
+   "quests_complete_on_engine_side": 119,
+   "of_which_without_data_gaps": 100
+  },
+  {
+   "feature": "item_consume",
+   "owner": "DUR-03 consumption",
+   "quests_complete_on_engine_side": 122,
+   "of_which_without_data_gaps": 100
+  },
+  {
+   "feature": "scheduler",
+   "owner": "owner for delayed callbacks (none yet)",
+   "quests_complete_on_engine_side": 128,
+   "of_which_without_data_gaps": 100
+  },
+  {
+   "feature": "item_hand_out",
+   "owner": "DUR-03 inventory mint",
+   "quests_complete_on_engine_side": 135,
+   "of_which_without_data_gaps": 101
+  },
+  {
+   "feature": "summon",
+   "owner": "GAME-AI-01 spawn",
+   "quests_complete_on_engine_side": 144,
+   "of_which_without_data_gaps": 101
   },
   {
    "feature": "achievement",
    "owner": "Achievement owner",
-   "quests_complete_on_engine_side": 134,
-   "of_which_without_data_gaps": 98
+   "quests_complete_on_engine_side": 149,
+   "of_which_without_data_gaps": 101
+  },
+  {
+   "feature": "condition",
+   "owner": "owner for player conditions (none yet)",
+   "quests_complete_on_engine_side": 158,
+   "of_which_without_data_gaps": 101
   },
   {
    "feature": "creature_removal",
    "owner": "owner for creature removal (none yet)",
-   "quests_complete_on_engine_side": 140,
-   "of_which_without_data_gaps": 98
+   "quests_complete_on_engine_side": 164,
+   "of_which_without_data_gaps": 101
   },
   {
    "feature": "boss_cooldown",
    "owner": "boss cooldown owner (none yet)",
-   "quests_complete_on_engine_side": 147,
-   "of_which_without_data_gaps": 98
+   "quests_complete_on_engine_side": 175,
+   "of_which_without_data_gaps": 101
   },
   {
    "feature": "kv_state",
    "owner": "owner for key-value writes (none yet)",
-   "quests_complete_on_engine_side": 151,
-   "of_which_without_data_gaps": 98
+   "quests_complete_on_engine_side": 182,
+   "of_which_without_data_gaps": 101
   },
   {
    "feature": "outfit",
    "owner": "Outfit grant owner",
-   "quests_complete_on_engine_side": 154,
-   "of_which_without_data_gaps": 98
-  },
-  {
-   "feature": "experience",
-   "owner": "Character XP award from an interaction",
-   "quests_complete_on_engine_side": 156,
-   "of_which_without_data_gaps": 98
+   "quests_complete_on_engine_side": 186,
+   "of_which_without_data_gaps": 101
   },
   {
    "feature": "mount",
    "owner": "Mount grant owner",
-   "quests_complete_on_engine_side": 157,
-   "of_which_without_data_gaps": 98
+   "quests_complete_on_engine_side": 190,
+   "of_which_without_data_gaps": 101
+  },
+  {
+   "feature": "experience",
+   "owner": "Character XP award from an interaction",
+   "quests_complete_on_engine_side": 192,
+   "of_which_without_data_gaps": 101
   }
  ],
  "quests": [
@@ -199,6 +200,27 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/a_pirates_tail",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "item_consume",
+    "mount",
+    "outfit",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 27,
+   "data_gaps": {
+    "interactions_with_gaps": 26,
+    "unresolved_items": 128
    }
   },
   {
@@ -234,6 +256,25 @@
    }
   },
   {
+   "quest": "canary:quest/adventures_of_galthen_quest",
+   "kind": "script_only",
+   "features": [
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "kv_state",
+    "quest_state",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 8,
+   "data_gaps": {
+    "interactions_with_gaps": 7,
+    "unresolved_items": 11
+   }
+  },
+  {
    "quest": "canary:quest/alawar_s_vault_quest",
    "kind": "reward_only",
    "features": [
@@ -259,6 +300,37 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/an_uneasy_alliance_quest",
+   "kind": "script_only",
+   "features": [
+    "door_progress",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "trigger_kill",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 2,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 2
+   }
+  },
+  {
+   "quest": "canary:quest/assassin_outfit",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_step"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
    }
   },
   {
@@ -479,6 +551,20 @@
    }
   },
   {
+   "quest": "canary:quest/cradle_of_monsters",
+   "kind": "script_only",
+   "features": [
+    "trigger_kill",
+    "trigger_step",
+    "world_object"
+   ],
+   "interactions": 4,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 9
+   }
+  },
+  {
    "quest": "canary:quest/crusader_helmet_quest",
    "kind": "reward_only",
    "features": [
@@ -646,6 +732,24 @@
    }
   },
   {
+   "quest": "canary:quest/deeplings_worldchange",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 8,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 4
+   }
+  },
+  {
    "quest": "canary:quest/demon_helmet_quest",
    "kind": "reward_only",
    "features": [
@@ -661,6 +765,25 @@
    }
   },
   {
+   "quest": "canary:quest/demon_oak",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "summon",
+    "teleport",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 6,
+   "data_gaps": {
+    "interactions_with_gaps": 5,
+    "unresolved_items": 18
+   }
+  },
+  {
    "quest": "canary:quest/demona_ring_quest",
    "kind": "reward_only",
    "features": [
@@ -671,6 +794,20 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/desert_dungeon_quest",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 3
    }
   },
   {
@@ -806,6 +943,26 @@
    }
   },
   {
+   "quest": "canary:quest/elemental_spheres_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 11,
+   "data_gaps": {
+    "interactions_with_gaps": 11,
+    "unresolved_items": 50
+   }
+  },
+  {
    "quest": "canary:quest/elephant_tusk_quest",
    "kind": "reward_only",
    "features": [
@@ -864,6 +1021,16 @@
     "reward_claim",
     "trigger_use"
    ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/feaster_of_souls_quest",
+   "kind": "script_only",
+   "features": [],
    "interactions": 0,
    "data_gaps": {
     "interactions_with_gaps": 0,
@@ -950,6 +1117,19 @@
    }
   },
   {
+   "quest": "canary:quest/formogar_mine_hoist",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_step"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 2
+   }
+  },
+  {
    "quest": "canary:quest/friends_and_traders",
    "kind": "storyline",
    "features": [
@@ -986,6 +1166,19 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/giant_smithhammer_quest",
+   "kind": "script_only",
+   "features": [
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 2
    }
   },
   {
@@ -1041,6 +1234,65 @@
    }
   },
   {
+   "quest": "canary:quest/grimvale_mini_world_change",
+   "kind": "script_only",
+   "features": [
+    "boss_cooldown",
+    "condition",
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 11,
+   "data_gaps": {
+    "interactions_with_gaps": 7,
+    "unresolved_items": 35
+   }
+  },
+  {
+   "quest": "canary:quest/grimvale_quest",
+   "kind": "script_only",
+   "features": [
+    "door_progress",
+    "quest_state"
+   ],
+   "interactions": 0,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/heart_of_destruction_quest",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "boss_cooldown",
+    "creature_removal",
+    "item_hand_out",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 24,
+   "data_gaps": {
+    "interactions_with_gaps": 19,
+    "unresolved_items": 161
+   }
+  },
+  {
    "quest": "canary:quest/heaven_blossom_quest",
    "kind": "reward_only",
    "features": [
@@ -1051,6 +1303,28 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/hero_of_rathleton_quest",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "item_consume",
+    "item_hand_out",
+    "mount",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 16,
+   "data_gaps": {
+    "interactions_with_gaps": 7,
+    "unresolved_items": 14
    }
   },
   {
@@ -1207,6 +1481,29 @@
    }
   },
   {
+   "quest": "canary:quest/kilmaresh_quest",
+   "kind": "script_only",
+   "features": [
+    "boss_cooldown",
+    "door_progress",
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 35,
+   "data_gaps": {
+    "interactions_with_gaps": 18,
+    "unresolved_items": 49
+   }
+  },
+  {
    "quest": "canary:quest/knight_outfits_quest",
    "kind": "reward_only",
    "features": [
@@ -1241,6 +1538,19 @@
    }
   },
   {
+   "quest": "canary:quest/krailos_quest",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_step"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/life_ring_quest",
    "kind": "reward_only",
    "features": [
@@ -1251,6 +1561,25 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/liquid_black_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 7,
+   "data_gaps": {
+    "interactions_with_gaps": 2,
+    "unresolved_items": 6
    }
   },
   {
@@ -1537,6 +1866,25 @@
    }
   },
   {
+   "quest": "canary:quest/poltergeist_outfits_quest",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "boss_cooldown",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 10,
+   "data_gaps": {
+    "interactions_with_gaps": 10,
+    "unresolved_items": 33
+   }
+  },
+  {
    "quest": "canary:quest/power_bolts_quest",
    "kind": "reward_only",
    "features": [
@@ -1576,6 +1924,25 @@
    }
   },
   {
+   "quest": "canary:quest/primal_ordeal_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "outfit",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 9,
+   "data_gaps": {
+    "interactions_with_gaps": 9,
+    "unresolved_items": 25
+   }
+  },
+  {
    "quest": "canary:quest/purple_tome_quest",
    "kind": "reward_only",
    "features": [
@@ -1599,6 +1966,48 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/roshamuul_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "npc_dialogue",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 10,
+   "data_gaps": {
+    "interactions_with_gaps": 9,
+    "unresolved_items": 30
+   }
+  },
+  {
+   "quest": "canary:quest/rotten_blood_quest",
+   "kind": "script_only",
+   "features": [
+    "creature_removal",
+    "kv_state",
+    "quest_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 23,
+   "data_gaps": {
+    "interactions_with_gaps": 19,
+    "unresolved_items": 67
    }
   },
   {
@@ -1782,6 +2191,29 @@
    }
   },
   {
+   "quest": "canary:quest/soul_war_quest",
+   "kind": "script_only",
+   "features": [
+    "condition",
+    "creature_removal",
+    "item_consume",
+    "item_hand_out",
+    "kv_state",
+    "scheduler",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 36,
+   "data_gaps": {
+    "interactions_with_gaps": 36,
+    "unresolved_items": 106
+   }
+  },
+  {
    "quest": "canary:quest/spike_sword_quest",
    "kind": "reward_only",
    "features": [
@@ -1867,6 +2299,20 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/thais_lighthouse_quest",
+   "kind": "script_only",
+   "features": [
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 7
    }
   },
   {
@@ -2040,6 +2486,26 @@
    "data_gaps": {
     "interactions_with_gaps": 16,
     "unresolved_items": 44
+   }
+  },
+  {
+   "quest": "canary:quest/the_gravedigger_of_drefia_quest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "quest_state",
+    "summon",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 29,
+   "data_gaps": {
+    "interactions_with_gaps": 12,
+    "unresolved_items": 20
    }
   },
   {
@@ -2355,6 +2821,20 @@
    }
   },
   {
+   "quest": "canary:quest/the_tainted_soul",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/the_thieves_guild_quest",
    "kind": "storyline",
    "features": [
@@ -2447,6 +2927,20 @@
    }
   },
   {
+   "quest": "canary:quest/their_masters_voice",
+   "kind": "script_only",
+   "features": [
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 4,
+   "data_gaps": {
+    "interactions_with_gaps": 0,
+    "unresolved_items": 0
+   }
+  },
+  {
    "quest": "canary:quest/threatened_dreams_quest",
    "kind": "storyline",
    "features": [
@@ -2520,6 +3014,26 @@
    }
   },
   {
+   "quest": "canary:quest/tinder_box_quest_chyllfroest",
+   "kind": "script_only",
+   "features": [
+    "item_consume",
+    "item_hand_out",
+    "mount",
+    "quest_state",
+    "scheduler",
+    "teleport",
+    "trigger_step",
+    "trigger_use",
+    "world_object"
+   ],
+   "interactions": 4,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 10
+   }
+  },
+  {
    "quest": "canary:quest/to_blind_the_enemy_quest",
    "kind": "reward_only",
    "features": [
@@ -2566,6 +3080,21 @@
    }
   },
   {
+   "quest": "canary:quest/tower_defence_quest",
+   "kind": "script_only",
+   "features": [
+    "door_progress",
+    "npc_dialogue",
+    "quest_state",
+    "trigger_kill"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 1
+   }
+  },
+  {
    "quest": "canary:quest/triangle_tower_quest",
    "kind": "reward_only",
    "features": [
@@ -2590,6 +3119,19 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "canary:quest/troll_sabotage_quest",
+   "kind": "script_only",
+   "features": [
+    "quest_state",
+    "trigger_step"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 5
    }
   },
   {
@@ -2716,6 +3258,48 @@
    }
   },
   {
+   "quest": "crystalserver:quest/25_years_of_tibia_quest",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_kill",
+    "trigger_use"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 8
+   }
+  },
+  {
+   "quest": "crystalserver:quest/a_piece_of_cake",
+   "kind": "script_only",
+   "features": [
+    "achievement",
+    "item_consume",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 3,
+   "data_gaps": {
+    "interactions_with_gaps": 3,
+    "unresolved_items": 25
+   }
+  },
+  {
+   "quest": "crystalserver:quest/between_the_lines_quest",
+   "kind": "script_only",
+   "features": [
+    "teleport",
+    "trigger_use"
+   ],
+   "interactions": 1,
+   "data_gaps": {
+    "interactions_with_gaps": 1,
+    "unresolved_items": 7
+   }
+  },
+  {
    "quest": "crystalserver:quest/bloody_tusks_quest",
    "kind": "storyline",
    "features": [
@@ -2726,6 +3310,23 @@
    "data_gaps": {
     "interactions_with_gaps": 0,
     "unresolved_items": 0
+   }
+  },
+  {
+   "quest": "crystalserver:quest/newhaven_quest",
+   "kind": "script_only",
+   "features": [
+    "npc_dialogue",
+    "quest_state",
+    "teleport",
+    "trigger_kill",
+    "trigger_step",
+    "trigger_use"
+   ],
+   "interactions": 5,
+   "data_gaps": {
+    "interactions_with_gaps": 4,
+    "unresolved_items": 9
    }
   },
   {
@@ -2752,125 +3353,13 @@
   }
  ],
  "interactions_unlinked": [
-  "canary:interaction/a_pirates_tail/actions_cheesy_key",
-  "canary:interaction/a_pirates_tail/actions_rascacoon_shortcut",
-  "canary:interaction/a_pirates_tail/creaturescripts_a_pirates_tail_bosses",
-  "canary:interaction/a_pirates_tail/creaturescripts_ratmiral_death",
-  "canary:interaction/a_pirates_tail/creaturescripts_tentugly_death",
-  "canary:interaction/adventures_of_galthen/actions_galthens_tree",
-  "canary:interaction/adventures_of_galthen/actions_idol_of_tukh",
-  "canary:interaction/adventures_of_galthen/actions_iksupan_entrance",
-  "canary:interaction/adventures_of_galthen/actions_iksupan_exit",
-  "canary:interaction/adventures_of_galthen/actions_mitmah_vanguard_exit",
-  "canary:interaction/adventures_of_galthen/actions_yselda_entrances",
-  "canary:interaction/adventures_of_galthen/actions_yselda_shortcut",
   "canary:interaction/alawars_vault/action_lever",
-  "canary:interaction/an_uneasy_alliance/actions_crystal_ball",
-  "canary:interaction/an_uneasy_alliance/creaturescripts_renegade_orc_kill",
-  "canary:interaction/assassin_outfit/movements_erayo_house",
   "canary:interaction/chayenne_realm/actions_lever",
   "canary:interaction/chayenne_realm/actions_reward",
   "canary:interaction/chayenne_realm/movements_enter_realm",
-  "canary:interaction/cradle_of_monsters/the_monster_fight_alchemist_container_death",
-  "canary:interaction/cradle_of_monsters/the_monster_fight_antenna_death",
-  "canary:interaction/cradle_of_monsters/the_monster_fight_monster_death",
-  "canary:interaction/cradle_of_monsters/the_monster_fight_puddle_step_in",
-  "canary:interaction/deeplings_worldchange/actions_boxramp",
-  "canary:interaction/deeplings_worldchange/actions_coral",
-  "canary:interaction/deeplings_worldchange/actions_crystal",
-  "canary:interaction/deeplings_worldchange/actions_crystalvortex",
-  "canary:interaction/deeplings_worldchange/actions_golden_anchor",
-  "canary:interaction/deeplings_worldchange/actions_questfirst",
-  "canary:interaction/deeplings_worldchange/actions_statue",
-  "canary:interaction/deeplings_worldchange/movements_deepling_bosses",
-  "canary:interaction/demon_oak/actions_demon_oak",
-  "canary:interaction/demon_oak/actions_demon_oak_chest",
-  "canary:interaction/demon_oak/actions_demon_oak_gravestone",
-  "canary:interaction/demon_oak/movements_area_damage",
-  "canary:interaction/demon_oak/movements_entrance",
-  "canary:interaction/demon_oak/movements_squares",
-  "canary:interaction/desert_dungeon_quest/actions_desert_dungeon_lever",
   "canary:interaction/edron_rope/movements_rope",
-  "canary:interaction/elemental_spheres/actions_lever",
-  "canary:interaction/elemental_spheres/actions_lord_of_elements_lever",
-  "canary:interaction/elemental_spheres/actions_machine1",
-  "canary:interaction/elemental_spheres/actions_machine2",
-  "canary:interaction/elemental_spheres/actions_soils1",
-  "canary:interaction/elemental_spheres/actions_soils2",
-  "canary:interaction/elemental_spheres/creaturescripts_overlord_kill",
-  "canary:interaction/elemental_spheres/movements_aoe_teleport_out",
-  "canary:interaction/elemental_spheres/movements_soil_entrance",
-  "canary:interaction/elemental_spheres/movements_soil_exit",
-  "canary:interaction/elemental_spheres/movements_summon_overlord",
   "canary:interaction/extension_mota/movements_extension_mota",
   "canary:interaction/fathers_burden/actions_corpse",
-  "canary:interaction/feaster_of_souls/actions_bosses_killed",
-  "canary:interaction/feaster_of_souls/actions_entrances",
-  "canary:interaction/feaster_of_souls/actions_portal_brain_head",
-  "canary:interaction/feaster_of_souls/actions_portal_minis_feaster",
-  "canary:interaction/feaster_of_souls/actions_portal_pale_worm",
-  "canary:interaction/feaster_of_souls/actions_rock_entrance",
-  "canary:interaction/feaster_of_souls/actions_slab",
-  "canary:interaction/feaster_of_souls/creaturescripts_brother_worm_death",
-  "canary:interaction/feaster_of_souls/creaturescripts_pale_worm_death",
-  "canary:interaction/feaster_of_souls/creaturescripts_wormling_death",
-  "canary:interaction/formogar_mine_hoist/movements_hoist",
-  "canary:interaction/giant_smithhammer/lever",
-  "canary:interaction/grimvale/actions_ancient_feud_entrances",
-  "canary:interaction/grimvale/actions_closed_silvered_trap",
-  "canary:interaction/grimvale/actions_portal_minis_ancient_feud",
-  "canary:interaction/grimvale/actions_portal_minis_grimvale",
-  "canary:interaction/grimvale/actions_silver_liquid",
-  "canary:interaction/grimvale/creaturescripts_feroxa_transform",
-  "canary:interaction/grimvale/movements_silvered_trap",
-  "canary:interaction/grimvale/movements_strangely_glowing_mark",
-  "canary:interaction/heart_of_destruction/actions_charges_lever",
-  "canary:interaction/heart_of_destruction/actions_cracklers_lever",
-  "canary:interaction/heart_of_destruction/actions_devourer_access",
-  "canary:interaction/heart_of_destruction/actions_final_lever",
-  "canary:interaction/heart_of_destruction/actions_reward",
-  "canary:interaction/heart_of_destruction/actions_sparks_lever",
-  "canary:interaction/heart_of_destruction/creaturescripts_charged_anomaly_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_charger_spawn",
-  "canary:interaction/heart_of_destruction/creaturescripts_charging_out_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_depolarized_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_devourer_player_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_heart_boss_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_heart_minion_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_overcharge_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_shocks_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_spark_death",
-  "canary:interaction/heart_of_destruction/creaturescripts_spark_devourer_death",
-  "canary:interaction/heart_of_destruction/movements_ice_crack",
-  "canary:interaction/heart_of_destruction/movements_teleport",
-  "canary:interaction/heart_of_destruction/movements_teleport_heart",
-  "canary:interaction/heart_of_destruction/movements_vortex_anomaly",
-  "canary:interaction/heart_of_destruction/movements_vortex_crackler_vortex_crackler",
-  "canary:interaction/heart_of_destruction/movements_vortex_crackler_vortex_crackler_2",
-  "canary:interaction/heart_of_destruction/movements_vortex_hunger",
-  "canary:interaction/hero_of_rathleton/actions_machines_deep_terror",
-  "canary:interaction/hero_of_rathleton/actions_machines_glooth_horror",
-  "canary:interaction/hero_of_rathleton/actions_machines_lava",
-  "canary:interaction/hero_of_rathleton/actions_machines_professor_maxxen",
-  "canary:interaction/hero_of_rathleton/actions_raging_corpse",
-  "canary:interaction/hero_of_rathleton/actions_reward",
-  "canary:interaction/hero_of_rathleton/creaturescripts_bosses_kill",
-  "canary:interaction/hero_of_rathleton/creaturescripts_glooth_horror",
-  "canary:interaction/hero_of_rathleton/creaturescripts_tentacle",
-  "canary:interaction/hero_of_rathleton/movements_deep_terror",
-  "canary:interaction/hero_of_rathleton/movements_exit",
-  "canary:interaction/hero_of_rathleton/movements_fast_way",
-  "canary:interaction/hero_of_rathleton/movements_glooth_horror",
-  "canary:interaction/hero_of_rathleton/movements_lava",
-  "canary:interaction/hero_of_rathleton/movements_professor_maxxen",
-  "canary:interaction/krailos/movements_access_depot",
-  "canary:interaction/liquid_black/actions_chairteleport",
-  "canary:interaction/liquid_black/actions_notescoordinates",
-  "canary:interaction/liquid_black/actions_seashell_key",
-  "canary:interaction/liquid_black/creaturescripts_deepling_boss_kill",
-  "canary:interaction/liquid_black/movements_ladder",
-  "canary:interaction/liquid_black/movements_quick_access",
-  "canary:interaction/liquid_black/movements_shortcut",
   "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
   "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
   "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
@@ -2884,106 +3373,15 @@
   "canary:interaction/others/actions_orc_edron_lever",
   "canary:interaction/others/actions_serpentine_tower_lever",
   "canary:interaction/others/actions_serpentine_tower_torch",
-  "canary:interaction/primal_ordeal_quest/bosses_killed",
-  "canary:interaction/primal_ordeal_quest/magma_bubble_fight_charged_flame_action",
-  "canary:interaction/primal_ordeal_quest/magma_bubble_fight_end_of_days_death",
-  "canary:interaction/primal_ordeal_quest/magma_bubble_fight_magma_bubble_death",
-  "canary:interaction/primal_ordeal_quest/magma_bubble_fight_magma_crystal_death",
-  "canary:interaction/primal_ordeal_quest/magma_bubble_fight_shield_field",
-  "canary:interaction/primal_ordeal_quest/ore_wagons_gnoproma",
   "canary:interaction/raging_mage_tower/creaturescripts_energized_raging_mage_kill",
   "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_1",
   "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_2",
   "canary:interaction/raging_mage_tower/creaturescripts_raging_mage_kill",
   "canary:interaction/raging_mage_tower/creaturescripts_yielothax_kill",
-  "canary:interaction/roshamuul_quest/actions_bone",
-  "canary:interaction/roshamuul_quest/actions_chalk",
-  "canary:interaction/roshamuul_quest/actions_gravel",
-  "canary:interaction/roshamuul_quest/actions_mixture",
-  "canary:interaction/roshamuul_quest/actions_mortar",
-  "canary:interaction/roshamuul_quest/actions_resonance_chamber",
-  "canary:interaction/roshamuul_quest/actions_trough",
-  "canary:interaction/roshamuul_quest/creaturescripts_lower_roshamuul",
-  "canary:interaction/roshamuul_quest/movements_lower_roshamuul_lower_roshamuul1500",
-  "canary:interaction/roshamuul_quest/movements_lower_roshamuul_lower_roshamuul20122",
-  "canary:interaction/rotten_blood_quest/actions_entrances_bakragore_entrance",
-  "canary:interaction/rotten_blood_quest/actions_entrances_teleport_event",
-  "canary:interaction/rotten_blood_quest/actions_sacrifice",
-  "canary:interaction/rotten_blood_quest/creaturescripts_bosses_killed_bakragore_on_death",
-  "canary:interaction/rotten_blood_quest/creaturescripts_bosses_killed_bosses_rotten_blood",
-  "canary:interaction/rotten_blood_quest/movements_blood_entrance_access_blood",
-  "canary:interaction/rotten_blood_quest/movements_blood_entrance_leave_blood",
-  "canary:interaction/soul_war/action_reward_soul_war",
-  "canary:interaction/soul_war/moveevent_claustrophobic_inferno_raid",
-  "canary:interaction/soul_war/moveevent_soul_war_entrances_claustrophobic_inferno_teleports",
-  "canary:interaction/soul_war/moveevent_soul_war_entrances_goshnar_spite_entrance",
-  "canary:interaction/soul_war/moveevent_soul_war_entrances_soul_war_entrances",
-  "canary:interaction/soul_war/moveevent_soul_war_entrances_soul_war_megalomania_entrance",
-  "canary:interaction/soul_war/moveevent_teleport_entrance_reward",
-  "canary:interaction/soul_war/soul_war_mechanics_bosses_death",
-  "canary:interaction/soul_war/soul_war_mechanics_cleansed_sanity",
-  "canary:interaction/soul_war/soul_war_mechanics_condensed_remorse",
-  "canary:interaction/soul_war/soul_war_mechanics_ebb_and_flow_boat_teleports",
-  "canary:interaction/soul_war/soul_war_mechanics_ebb_and_flow_door",
-  "canary:interaction/soul_war/soul_war_mechanics_fourth_taint_bosses_death",
-  "canary:interaction/soul_war/soul_war_mechanics_goshnar_greed_entrance",
-  "canary:interaction/soul_war/soul_war_mechanics_goshnar_greed_teleport",
-  "canary:interaction/soul_war/soul_war_mechanics_goshnar_spite_soul_fire",
-  "canary:interaction/soul_war/soul_war_mechanics_goshnars_hatred_access",
-  "canary:interaction/soul_war/soul_war_mechanics_goshnars_hatred_sorrow",
-  "canary:interaction/soul_war/soul_war_mechanics_greed_monster_death",
-  "canary:interaction/soul_war/soul_war_mechanics_greedy_maw",
-  "canary:interaction/soul_war/soul_war_mechanics_hazardous_phantom_death",
-  "canary:interaction/soul_war/soul_war_mechanics_madness_reduce",
-  "canary:interaction/soul_war/soul_war_mechanics_megalomania_death",
-  "canary:interaction/soul_war/soul_war_mechanics_mirror_image_creation",
-  "canary:interaction/soul_war/soul_war_mechanics_mirrored_nightmare_apparition_death",
-  "canary:interaction/soul_war/soul_war_mechanics_necromantic_focus_death",
-  "canary:interaction/soul_war/soul_war_mechanics_necromantic_remains_reduce",
-  "canary:interaction/soul_war/soul_war_mechanics_pulsating_energy",
-  "canary:interaction/soul_war/soul_war_mechanics_pulsating_energy_teleport_access",
-  "canary:interaction/soul_war/soul_war_mechanics_rotten_wasteland_shrines",
-  "canary:interaction/soul_war/soul_war_mechanics_soul_cage_death",
-  "canary:interaction/soul_war/soul_war_mechanics_soul_war_aspect_of_power_death",
-  "canary:interaction/soul_war/soul_war_mechanics_teleport_step_remove_icon",
-  "canary:interaction/soul_war/soul_war_mechanics_the_blood_of_cloak_step",
-  "canary:interaction/soul_war/soul_war_mechanics_weeping_soul_corpse",
   "canary:interaction/soulpit/exalted_core",
   "canary:interaction/soulpit/soul_prism",
   "canary:interaction/soulpit/soulpit_fight",
-  "canary:interaction/thais_lighthouse/action_lever",
-  "canary:interaction/thais_lighthouse/movement_stair_stair",
-  "canary:interaction/thais_lighthouse/movement_stair_stair_2",
   "canary:interaction/thais_quest/actions_life_ring_lever",
-  "canary:interaction/the_gravedigger_of_drefia/actions_amforas",
-  "canary:interaction/the_gravedigger_of_drefia/actions_ashes",
-  "canary:interaction/the_gravedigger_of_drefia/actions_blood",
-  "canary:interaction/the_gravedigger_of_drefia/actions_bones",
-  "canary:interaction/the_gravedigger_of_drefia/actions_bookcase",
-  "canary:interaction/the_gravedigger_of_drefia/actions_brain",
-  "canary:interaction/the_gravedigger_of_drefia/actions_caixa",
-  "canary:interaction/the_gravedigger_of_drefia/actions_candles",
-  "canary:interaction/the_gravedigger_of_drefia/actions_cape",
-  "canary:interaction/the_gravedigger_of_drefia/actions_chalk",
-  "canary:interaction/the_gravedigger_of_drefia/actions_flask",
-  "canary:interaction/the_gravedigger_of_drefia/actions_hallowed",
-  "canary:interaction/the_gravedigger_of_drefia/actions_inscriptions",
-  "canary:interaction/the_gravedigger_of_drefia/actions_key1",
-  "canary:interaction/the_gravedigger_of_drefia/actions_key2",
-  "canary:interaction/the_gravedigger_of_drefia/actions_monks",
-  "canary:interaction/the_gravedigger_of_drefia/actions_palanca",
-  "canary:interaction/the_gravedigger_of_drefia/actions_pyramids1",
-  "canary:interaction/the_gravedigger_of_drefia/actions_pyramids2",
-  "canary:interaction/the_gravedigger_of_drefia/actions_sacrifice",
-  "canary:interaction/the_gravedigger_of_drefia/actions_scroll",
-  "canary:interaction/the_gravedigger_of_drefia/actions_statue",
-  "canary:interaction/the_gravedigger_of_drefia/actions_tears",
-  "canary:interaction/the_gravedigger_of_drefia/actions_tincture",
-  "canary:interaction/the_gravedigger_of_drefia/creaturescripts_necromancer_servant",
-  "canary:interaction/the_gravedigger_of_drefia/movements_dormitory_teleport",
-  "canary:interaction/the_gravedigger_of_drefia/movements_necromancer_servant",
-  "canary:interaction/the_gravedigger_of_drefia/movements_sacrifice_teleport",
-  "canary:interaction/the_gravedigger_of_drefia/movements_teleport",
   "canary:interaction/the_order_of_lion/action_bounac_entrance",
   "canary:interaction/the_order_of_lion/action_drume",
   "canary:interaction/the_order_of_lion/action_elevator_elevator_bounac_action",
@@ -2991,112 +3389,9 @@
   "canary:interaction/the_order_of_lion/creatureevent_commander_kills_lion_commander_death",
   "canary:interaction/the_order_of_lion/creatureevent_commander_kills_usurper_commander_death",
   "canary:interaction/the_order_of_lion/moveevent_drume_entrance",
-  "canary:interaction/the_primal_ordeal/creaturescripts_magma_bubble_death",
-  "canary:interaction/the_primal_ordeal/creaturescripts_the_primal_menace_killed",
-  "canary:interaction/the_tainted_soul/actions_star_herb",
-  "canary:interaction/their_masters_voice/actions_slime_gobbler",
-  "canary:interaction/their_masters_voice/creaturescripts_mage_death",
-  "canary:interaction/their_masters_voice/creaturescripts_servant_death",
-  "canary:interaction/their_masters_voice/movements_entrance",
   "canary:interaction/thieves_guild/creaturescripts_nomad_kill",
-  "canary:interaction/tinder_box_quest_chyllfroest/actions_reward",
-  "canary:interaction/tinder_box_quest_chyllfroest/actions_tinder_box",
-  "canary:interaction/tinder_box_quest_chyllfroest/actions_ursagrodon",
-  "canary:interaction/tinder_box_quest_chyllfroest/movements_prohibit_entry",
-  "canary:interaction/tower_defence_quest/creaturescripts_goblin_leader_kill",
-  "canary:interaction/troll_sabotage/movements_teleport",
   "canary:interaction/white_pearl/movements_white_pearl",
-  "crystalserver:interaction/25_years_of_tibia_quest/actions_lion_statue",
-  "crystalserver:interaction/25_years_of_tibia_quest/actions_time_machine",
-  "crystalserver:interaction/25_years_of_tibia_quest/lord_retro_death",
-  "crystalserver:interaction/a_piece_of_cake/actions_cake_bite",
-  "crystalserver:interaction/a_piece_of_cake/movements_cake_base_isle",
-  "crystalserver:interaction/a_piece_of_cake/movements_extraction_spot",
-  "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_action",
-  "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_exit_cheesy",
-  "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_familiar_chess",
-  "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_portal_cheesy",
-  "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_portal_cheesy_chess",
-  "crystalserver:interaction/a_pirates_tail_quest/actions_rascacoon_shortcut",
-  "crystalserver:interaction/a_pirates_tail_quest/actions_tentugly_s_head",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_blue_shield",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_ratmiral_death",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_rum_barrel",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle1",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle10",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle2",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle3",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle4",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle5",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle6",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle7",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle8",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentacle9",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_tentugly_death",
-  "crystalserver:interaction/a_pirates_tail_quest/creaturescripts_weak_spot_crashes",
-  "crystalserver:interaction/adventures_of_galthen/actions_iksupan_teleports",
-  "crystalserver:interaction/between_the_lines/actions_teleport_book_world",
   "crystalserver:interaction/candia_bosses/sugar_daddy_teleports",
-  "crystalserver:interaction/grimvale/conch_shell_horn_quest_conch_shell",
-  "crystalserver:interaction/grimvale/conch_shell_horn_quest_merge_conch_horn",
-  "crystalserver:interaction/grimvale/conch_shell_horn_quest_woodenmouthpiece",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_paper",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_paper_scraps",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_roof_top",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_scrolls",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_energy_field",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_left_mirror",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_memory_shards",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_potion",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_right_mirror",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/7_four_masks",
-  "crystalserver:interaction/kilmaresh/1_fafnars_wrath/8_blessing_the_statues",
-  "crystalserver:interaction/kilmaresh/actions_augerfun",
-  "crystalserver:interaction/kilmaresh/actions_basin",
-  "crystalserver:interaction/kilmaresh/actions_books",
-  "crystalserver:interaction/kilmaresh/actions_cagekey",
-  "crystalserver:interaction/kilmaresh/actions_coruja",
-  "crystalserver:interaction/kilmaresh/actions_glasshoneyfun",
-  "crystalserver:interaction/kilmaresh/actions_lyre",
-  "crystalserver:interaction/kilmaresh/actions_peeler",
-  "crystalserver:interaction/kilmaresh/actions_peelerfun",
-  "crystalserver:interaction/kilmaresh/actions_pickenchanted",
-  "crystalserver:interaction/kilmaresh/actions_portal_minis_kilmaresh",
-  "crystalserver:interaction/kilmaresh/actions_sangra",
-  "crystalserver:interaction/kilmaresh/actions_scissors",
-  "crystalserver:interaction/kilmaresh/actions_scissorsfun",
-  "crystalserver:interaction/kilmaresh/actions_tortoise",
-  "crystalserver:interaction/kilmaresh/actions_tumulo",
-  "crystalserver:interaction/kilmaresh/actions_tumuloerro",
-  "crystalserver:interaction/kilmaresh/creaturescripts_bragrumol",
-  "crystalserver:interaction/kilmaresh/creaturescripts_fafnar",
-  "crystalserver:interaction/kilmaresh/creaturescripts_mozradek",
-  "crystalserver:interaction/kilmaresh/creaturescripts_xogixath",
-  "crystalserver:interaction/kilmaresh/movements_firetp",
-  "crystalserver:interaction/kilmaresh/movements_steptile",
-  "crystalserver:interaction/kilmaresh/movements_tpvoc",
-  "crystalserver:interaction/newhaven/movement_init_newhaven",
-  "crystalserver:interaction/newhaven/movement_select_vocation",
-  "crystalserver:interaction/newhaven/movement_update_tutorial_hunting",
-  "crystalserver:interaction/newhaven/on_death_newhaven",
-  "crystalserver:interaction/newhaven/on_use_newhaven",
-  "crystalserver:interaction/rookgaard_quests/quiver",
-  "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_enter_lever_ichgahal",
-  "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_enter_putrefactory",
-  "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_exit_putrefactory",
-  "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_exit_putrefactory_lever",
-  "crystalserver:interaction/rotten_blood_quest/bakragore_mechanics_death",
-  "crystalserver:interaction/rotten_blood_quest/chagorz_mechanics_death",
-  "crystalserver:interaction/rotten_blood_quest/creaturescripts_bakragore_player_death",
-  "crystalserver:interaction/rotten_blood_quest/creaturescripts_monster_ai_death",
-  "crystalserver:interaction/rotten_blood_quest/creaturescripts_putrefactory_x",
-  "crystalserver:interaction/rotten_blood_quest/eventcallback_on_combat_rottenblood",
-  "crystalserver:interaction/rotten_blood_quest/movements_fields_create_spore",
-  "crystalserver:interaction/rotten_blood_quest/movements_fields_funghi_field",
-  "crystalserver:interaction/rotten_blood_quest/movements_fields_spore_field",
-  "crystalserver:interaction/rotten_blood_quest/teleport_rotten_blood",
-  "crystalserver:interaction/rotten_blood_quest/teleport_step_event",
-  "crystalserver:interaction/rotten_blood_quest/vemiath_mechanics_death",
-  "crystalserver:interaction/soul_war/soul_war_mechanics_soul_sphere_death"
+  "crystalserver:interaction/rookgaard_quests/quiver"
  ]
 }

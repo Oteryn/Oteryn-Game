@@ -16,6 +16,7 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | `quest_content.schema.json` | JSON Schema of reward claims, door gates, reward-only and storyline quests. |
 | `conflict_decisions.json` | D25 decisions for every Canary/CrystalServer conflict of the chest, door, quest-log and interaction transcriptions: chosen server, basis, the difference in our own words and the wiki revision when it decides; the converters apply it and fail on a stale decision. |
 | `track_owners.json` | Owning quest of the progress tracks quest scripts write outside missions, where no mission-track prefix or script directory names it; the quest-log converter fails on a missing or stale record. |
+| `script_quests.json` | Wiki quests confidently matched to a script directory and/or the `wiki_quest` of an auxiliary progress track, added to the catalogue as `kind: script_only` (a quest the servers implement in scripts with no quest-log entry); each entry gives its basis. |
 | `interaction.schema.json` | JSON Schema of interaction definitions (D36). |
 | `ots_map_check.py` | Checks chest, door and interaction positions against Canary's `otservbr.otbm` and CrystalServer's `world.otbm` (not committed; sha256 pinned), reading Canary's startup id tables; writes `samples/map-check/report.json`. |
 | `ots_readiness.py` | Per quest, the engine features it needs and its data gaps, and the unlock order; reads only the committed samples. |
