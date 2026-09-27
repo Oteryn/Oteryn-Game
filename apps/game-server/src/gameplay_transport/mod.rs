@@ -40,7 +40,8 @@ use crate::foundation::{
 };
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FirstEntryOutcome,
-    FreshAdmissionAttempt, FreshAdmissionAuthority, StepOutcome, admit_frame, serve_admitted,
+    FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, StepOutcome, admit_frame,
+    serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -200,7 +201,7 @@ async fn serve_accepted<A, I, O>(
     let end = match admitted {
         Err(end) => end,
         Ok(admitted) => first(
-            serve_admitted(&mut stream, admitted, authority),
+            serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
             shutdown.cancelled(),
         )
         .await
