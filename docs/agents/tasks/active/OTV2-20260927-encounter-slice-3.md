@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-encounter-slice-3
 title: Transcribe Cults of Tibia, Wrath of the Emperor, Rathleton and other Canary boss events into encounters
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 964
 jira: KAN-16
 base_sha: b5f4c9641d4fb1db08be36415cbfe4b0f31278dd
 head_sha: null
