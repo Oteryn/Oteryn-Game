@@ -5,7 +5,7 @@
 - Date: 2026-09-10
 - Purpose: shared evidence/source discipline for Reference investigation agents
 - Runtime/write authority granted: **NONE**
-- External target: Global Tibia behavior/data at the accepted post-2026-07-28 cut
+- External target: Global Tibia behavior/data at the accepted post-2026-07-28 cut Superseded 2026-09-27: the target is now 2026-09-27, see `OTERYN_TARGET_DATE_20260927_DECISION.md`.
 
 ## 1. Why this registry exists
 

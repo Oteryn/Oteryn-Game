@@ -17,8 +17,8 @@
       "api": "https://tibia.fandom.com/api.php",
       "title": "Loot Statistics:Cyclops",
       "page_id": 32767,
-      "revision_id": 1195914,
-      "content_sha256": "50974c37e4c9b944482915d52132d93ac2f6e7dc0b1bb77edcf71812d7ee45af"
+      "revision_id": 1204709,
+      "content_sha256": "78ef99fe73c3ba425c584e00672bb897b7c2d710876f5e68a44504b2bc09000a"
     }
   ],
   "entries": [
@@ -50,7 +50,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7398 \"cyclops trophy\" is a declared source-scoped reference, not an admitted canonical Item. Wiki the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 9 drops, estimate 0.072% (95% interval 0.0379-0.1368%), low confidence; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7398 \"cyclops trophy\" is a declared source-scoped reference, not an admitted canonical Item. Wiki the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 9 drops, estimate 0.070203% (95% interval 0.0369-0.1334%), low confidence; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
     },
     {
       "source_index": 0,
@@ -60,7 +60,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/1",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3093 \"club ring\" is a declared source-scoped reference, not an admitted canonical Item. Wiki the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 5 drops, estimate 0.04% (95% interval 0.0171-0.0936%), low confidence; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3093 \"club ring\" is a declared source-scoped reference, not an admitted canonical Item. Wiki the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 5 drops, estimate 0.039002% (95% interval 0.0167-0.0913%), low confidence; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
     },
     {
       "source_index": 0,
@@ -70,7 +70,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/3",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3012 \"wolf tooth chain\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.19% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3012 \"wolf tooth chain\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.19% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -80,7 +80,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/2",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 266 \"health potion\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.21% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 266 \"health potion\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.21% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -90,7 +90,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/4",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3384 \"dark helmet\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.22% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3384 \"dark helmet\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.22% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -100,7 +100,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/7",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.0% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -110,7 +110,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/5",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3269 \"halberd\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.003% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3269 \"halberd\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.003% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -120,7 +120,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/6",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3413 \"battle shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.4% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3413 \"battle shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.4% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -130,7 +130,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/8",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3410 \"plate shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 2.5% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3410 \"plate shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 2.5% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -140,7 +140,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/9",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9657 \"cyclops toe\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 4.93% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 9657 \"cyclops toe\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 4.93% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -150,7 +150,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/10",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3294 \"short sword\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 8.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3294 \"short sword\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 8.0% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -160,7 +160,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/11",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3577 \"meat\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 30.07% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3577 \"meat\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 30.07% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -170,7 +170,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/12",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 82.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 82.0% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -359,7 +359,7 @@
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "approved_omission",
-      "resolution": "Canary value 0.62 superseded by the reference-date wiki value 0.97 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "Canary value 0.62 superseded by the reference-date wiki value 0.97 (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -397,7 +397,7 @@
       "source_field": "Infobox Creature.mitigation",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Wiki mitigation \"0.97\" (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+      "resolution": "Wiki mitigation \"0.97\" (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
       "destination": "/monster/creature/stats/mitigation_percent"
     },
     {
@@ -407,7 +407,7 @@
       "source_field": "Loot2.wolf tooth chain",
       "kind": "field",
       "status": "mapped",
-      "resolution": "28 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 0.224000%, 95% Wilson interval 0.155-0.3236%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "28 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 0.218409%, 95% Wilson interval 0.1512-0.3155%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/3/probability_percent"
     },
     {
@@ -417,7 +417,7 @@
       "source_field": "Loot2.gold coin",
       "kind": "field",
       "status": "mapped",
-      "resolution": "10311 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 82.488000%, 95% Wilson interval 81.8118-83.1443%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "10580 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 82.527301%, 95% Wilson interval 81.8603-83.1749%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/12/probability_percent"
     },
     {
@@ -427,7 +427,7 @@
       "source_field": "Loot2.halberd",
       "kind": "field",
       "status": "mapped",
-      "resolution": "123 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 0.984000%, 95% Wilson interval 0.8254-1.1727%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "123 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 0.959438%, 95% Wilson interval 0.8048-1.1435%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/5/probability_percent"
     },
     {
@@ -437,7 +437,7 @@
       "source_field": "Loot2.short sword",
       "kind": "field",
       "status": "mapped",
-      "resolution": "998 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 7.984000%, 95% Wilson interval 7.5217-8.4722%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "1024 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 7.987520%, 95% Wilson interval 7.5307-8.4695%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/10/probability_percent"
     },
     {
@@ -447,7 +447,7 @@
       "source_field": "Loot2.dark helmet",
       "kind": "field",
       "status": "mapped",
-      "resolution": "29 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 0.232000%, 95% Wilson interval 0.1616-0.333%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "30 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 0.234009%, 95% Wilson interval 0.164-0.3339%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/4/probability_percent"
     },
     {
@@ -457,7 +457,7 @@
       "source_field": "Loot2.plate shield",
       "kind": "field",
       "status": "mapped",
-      "resolution": "330 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 2.640000%, 95% Wilson interval 2.3732-2.9359%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "333 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 2.597504%, 95% Wilson interval 2.336-2.8874%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/8/probability_percent"
     },
     {
@@ -467,7 +467,7 @@
       "source_field": "Loot2.battle shield",
       "kind": "field",
       "status": "mapped",
-      "resolution": "194 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 1.552000%, 95% Wilson interval 1.3497-1.7841%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "201 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 1.567863%, 95% Wilson interval 1.3669-1.7979%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/6/probability_percent"
     },
     {
@@ -477,7 +477,7 @@
       "source_field": "Loot2.meat",
       "kind": "field",
       "status": "mapped",
-      "resolution": "3710 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 29.680000%, 95% Wilson interval 28.8855-30.487%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "3805 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 29.680187%, 95% Wilson interval 28.8956-30.477%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/11/probability_percent"
     },
     {
@@ -487,7 +487,7 @@
       "source_field": "Loot2.health potion",
       "kind": "field",
       "status": "mapped",
-      "resolution": "19 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 0.152000%, 95% Wilson interval 0.0973-0.2373%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "20 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 0.156006%, 95% Wilson interval 0.101-0.2409%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/2/probability_percent"
     },
     {
@@ -497,7 +497,7 @@
       "source_field": "Loot2.cyclops toe",
       "kind": "field",
       "status": "mapped",
-      "resolution": "617 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 4.936000%, 95% Wilson interval 4.5699-5.3298%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "632 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 4.929797%, 95% Wilson interval 4.5684-5.3182%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/9/probability_percent"
     },
     {
@@ -507,7 +507,7 @@
       "source_field": "Loot2.heavy old tome",
       "kind": "field",
       "status": "mapped",
-      "resolution": "265 drops / 12500 kills in the version 11.02 block of Loot Statistics:Cyclops (12500 kills): 2.120000%, 95% Wilson interval 1.8818-2.3876%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "269 drops / 12820 kills in the version 11.02 block of Loot Statistics:Cyclops (12820 kills): 2.098284%, 95% Wilson interval 1.8642-2.3611%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/7/probability_percent"
     }
   ]

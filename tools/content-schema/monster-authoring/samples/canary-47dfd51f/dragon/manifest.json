@@ -17,8 +17,8 @@
       "api": "https://tibia.fandom.com/api.php",
       "title": "Loot Statistics:Dragon",
       "page_id": 29034,
-      "revision_id": 1197999,
-      "content_sha256": "a906095d92e1fe20c28a8b217edfd9a541e5e18d43862c6d13bc7246e71716da"
+      "revision_id": 1206028,
+      "content_sha256": "319e70920e4459828731b8fd6d590c98ba3ed71f913bcdc928db1141117d71ba"
     },
     {
       "kind": "mediawiki",
@@ -88,7 +88,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/3",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3416 \"dragon shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.11% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3416 \"dragon shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.11% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -98,7 +98,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/2",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7430 \"dragonbone staff\" is a declared source-scoped reference, not an admitted canonical Item. Wiki the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 9 drops, estimate 0.059402% (95% interval 0.0313-0.1129%), low confidence; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 7430 \"dragonbone staff\" is a declared source-scoped reference, not an admitted canonical Item. Wiki the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 9 drops, estimate 0.055707% (95% interval 0.0293-0.1058%), low confidence; Canary probability kept (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence)."
     },
     {
       "source_index": 0,
@@ -108,7 +108,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3061 \"life crystal\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.17% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3061 \"life crystal\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.17% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -117,8 +117,8 @@
       "source_field": "loot[17]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/6",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3297 \"serpent sword\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.23% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "destination": "/monster/loot/entries/5",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3297 \"serpent sword\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.23% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -128,7 +128,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/4",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3322 \"dragon hammer\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.23% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3322 \"dragon hammer\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.23% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -137,8 +137,8 @@
       "source_field": "loot[16]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/5",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3028 \"small diamond\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.45% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "destination": "/monster/loot/entries/6",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3028 \"small diamond\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.45% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -148,7 +148,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/10",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3071 \"wand of inferno\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.56% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3071 \"wand of inferno\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.56% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -157,8 +157,8 @@
       "source_field": "loot[14]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/7",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5920 \"green dragon scale\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.01% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "destination": "/monster/loot/entries/8",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5920 \"green dragon scale\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.01% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -168,7 +168,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/9",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5877 \"green dragon leather\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.07% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 5877 \"green dragon leather\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.07% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -177,8 +177,8 @@
       "source_field": "loot[12]",
       "kind": "dependency",
       "status": "mapped",
-      "destination": "/monster/loot/entries/8",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 236 \"strong health potion\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.13% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "destination": "/monster/loot/entries/7",
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 236 \"strong health potion\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.13% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -188,7 +188,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/11",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3275 \"double axe\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.58% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3275 \"double axe\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.58% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -198,7 +198,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/13",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3557 \"plate legs\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 2.029% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3557 \"plate legs\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 2.029% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -208,7 +208,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/12",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3301 \"broadsword\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 2.7% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3301 \"broadsword\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 2.7% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -218,7 +218,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/14",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3351 \"steel helmet\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 3.49% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3351 \"steel helmet\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 3.49% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -228,7 +228,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/15",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3285 \"longsword\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 3.83% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3285 \"longsword\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 3.83% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -238,7 +238,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/16",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3449 \"burst arrow\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 8.06% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3449 \"burst arrow\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 8.06% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -248,7 +248,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/17",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3349 \"crossbow\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 9.12% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3349 \"crossbow\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 9.12% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -258,7 +258,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/18",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11457 \"dragon's tail\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 9.68% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 11457 \"dragon's tail\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 9.68% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -268,7 +268,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/19",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3409 \"steel shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 15.65% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3409 \"steel shield\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 15.65% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -278,7 +278,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/20",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3583 \"dragon ham\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 66.27% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3583 \"dragon ham\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 66.27% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -288,7 +288,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/21",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 89.92% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 89.92% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value). Count 1-102 replaced by 1-104 (D32 loot amount: with an adopted wiki estimate (>= 10 drops) the Loot Statistics amount is the per-kill count observed when the item drops; a count outside the Canary range replaces the Canary min-max, and a Canary minimum of 0 becomes 1 because the estimate already counts kills without it)."
     },
     {
       "source_index": 0,
@@ -477,7 +477,7 @@
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "approved_omission",
-      "resolution": "Canary value 0.99 superseded by the reference-date wiki value 1.56 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "Canary value 0.99 superseded by the reference-date wiki value 1.56 (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -523,7 +523,7 @@
       "source_field": "Infobox Creature.mitigation",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Wiki mitigation \"1.56\" (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+      "resolution": "Wiki mitigation \"1.56\" (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
       "destination": "/monster/creature/stats/mitigation_percent"
     },
     {
@@ -533,8 +533,18 @@
       "source_field": "Loot2.gold coin",
       "kind": "field",
       "status": "mapped",
-      "resolution": "13671 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 90.231668%, 95% Wilson interval 89.7487-90.6943%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "14549 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 90.053231%, 95% Wilson interval 89.5822-90.5053%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/21/probability_percent"
+    },
+    {
+      "source_index": 2,
+      "source_file": "Loot Statistics:Dragon",
+      "source_line": 8,
+      "source_field": "Loot2.gold coin.amount",
+      "kind": "field",
+      "status": "mapped",
+      "resolution": "Observed amount 1-104 over 14549 drops in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills); Canary 1-102 (D32 loot amount: with an adopted wiki estimate (>= 10 drops) the Loot Statistics amount is the per-kill count observed when the item drops; a count outside the Canary range replaces the Canary min-max, and a Canary minimum of 0 becomes 1 because the estimate already counts kills without it).",
+      "destination": "/monster/loot/entries/21/max_count"
     },
     {
       "source_index": 2,
@@ -543,7 +553,7 @@
       "source_field": "Loot2.dragon ham",
       "kind": "field",
       "status": "mapped",
-      "resolution": "9860 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 65.078213%, 95% Wilson interval 64.3154-65.8334%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "10509 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 65.047041%, 95% Wilson interval 64.3083-65.7786%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/20/probability_percent"
     },
     {
@@ -553,7 +563,7 @@
       "source_field": "Loot2.steel shield",
       "kind": "field",
       "status": "mapped",
-      "resolution": "2286 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 15.088113%, 95% Wilson interval 14.527-15.6669%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "2426 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 15.016093%, 95% Wilson interval 14.4736-15.5752%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/19/probability_percent"
     },
     {
@@ -563,7 +573,7 @@
       "source_field": "Loot2.dragon's tail",
       "kind": "field",
       "status": "mapped",
-      "resolution": "1529 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 10.091743%, 95% Wilson interval 9.6222-10.5815%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "1629 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 10.082941%, 95% Wilson interval 9.6281-10.5568%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/18/probability_percent"
     },
     {
@@ -573,7 +583,7 @@
       "source_field": "Loot2.crossbow",
       "kind": "field",
       "status": "mapped",
-      "resolution": "1525 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 10.065342%, 95% Wilson interval 9.5963-10.5546%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "1598 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 9.891062%, 95% Wilson interval 9.4402-10.361%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/17/probability_percent"
     },
     {
@@ -583,7 +593,7 @@
       "source_field": "Loot2.burst arrow",
       "kind": "field",
       "status": "mapped",
-      "resolution": "1203 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 7.940070%, 95% Wilson interval 7.5202-8.3813%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "1279 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 7.916564%, 95% Wilson interval 7.5102-8.343%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/16/probability_percent"
     },
     {
@@ -593,7 +603,7 @@
       "source_field": "Loot2.longsword",
       "kind": "field",
       "status": "mapped",
-      "resolution": "607 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 4.006336%, 95% Wilson interval 3.7056-4.3304%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "647 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 4.004704%, 95% Wilson interval 3.7131-4.3181%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/15/probability_percent"
     },
     {
@@ -603,7 +613,7 @@
       "source_field": "Loot2.steel helmet",
       "kind": "field",
       "status": "mapped",
-      "resolution": "461 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 3.042703%, 95% Wilson interval 2.7809-3.3283%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "492 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 3.045308%, 95% Wilson interval 2.7913-3.3216%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/14/probability_percent"
     },
     {
@@ -613,7 +623,7 @@
       "source_field": "Loot2.broadsword",
       "kind": "field",
       "status": "mapped",
-      "resolution": "262 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 1.729259%, 95% Wilson interval 1.5336-1.9494%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "276 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 1.708344%, 95% Wilson interval 1.5197-1.9199%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/12/probability_percent"
     },
     {
@@ -623,7 +633,7 @@
       "source_field": "Loot2.plate legs",
       "kind": "field",
       "status": "mapped",
-      "resolution": "306 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 2.019669%, 95% Wilson interval 1.8075-2.2561%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "322 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 1.993068%, 95% Wilson interval 1.7887-2.2203%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/13/probability_percent"
     },
     {
@@ -633,18 +643,18 @@
       "source_field": "Loot2.double axe",
       "kind": "field",
       "status": "mapped",
-      "resolution": "159 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 1.049436%, 95% Wilson interval 0.8991-1.2246%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "170 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 1.052241%, 95% Wilson interval 0.9061-1.2216%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/11/probability_percent"
     },
     {
       "source_index": 2,
       "source_file": "Loot Statistics:Dragon",
-      "source_line": 21,
+      "source_line": 22,
       "source_field": "Loot2.strong health potion",
       "kind": "field",
       "status": "mapped",
-      "resolution": "142 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 0.937232%, 95% Wilson interval 0.7958-1.1036%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
-      "destination": "/monster/loot/entries/8/probability_percent"
+      "resolution": "148 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 0.916068%, 95% Wilson interval 0.7804-1.0751%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/7/probability_percent"
     },
     {
       "source_index": 2,
@@ -653,18 +663,18 @@
       "source_field": "Loot2.green dragon leather",
       "kind": "field",
       "status": "mapped",
-      "resolution": "148 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 0.976833%, 95% Wilson interval 0.8322-1.1463%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "160 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 0.990344%, 95% Wilson interval 0.8489-1.1551%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/9/probability_percent"
     },
     {
       "source_index": 2,
       "source_file": "Loot Statistics:Dragon",
-      "source_line": 22,
+      "source_line": 21,
       "source_field": "Loot2.green dragon scale",
       "kind": "field",
       "status": "mapped",
-      "resolution": "136 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 0.897631%, 95% Wilson interval 0.7594-1.0608%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
-      "destination": "/monster/loot/entries/7/probability_percent"
+      "resolution": "153 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 0.947017%, 95% Wilson interval 0.8089-1.1085%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/8/probability_percent"
     },
     {
       "source_index": 2,
@@ -673,28 +683,28 @@
       "source_field": "Loot2.wand of inferno",
       "kind": "field",
       "status": "mapped",
-      "resolution": "158 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 1.042835%, 95% Wilson interval 0.893-1.2175%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "169 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 1.046051%, 95% Wilson interval 0.9004-1.215%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/10/probability_percent"
     },
     {
       "source_index": 2,
       "source_file": "Loot Statistics:Dragon",
-      "source_line": 24,
+      "source_line": 23,
       "source_field": "Loot2.small diamond",
       "kind": "field",
       "status": "mapped",
-      "resolution": "71 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 0.468616%, 95% Wilson interval 0.3717-0.5906%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
-      "destination": "/monster/loot/entries/5/probability_percent"
+      "resolution": "79 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 0.488982%, 95% Wilson interval 0.3926-0.6089%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/6/probability_percent"
     },
     {
       "source_index": 2,
       "source_file": "Loot Statistics:Dragon",
-      "source_line": 23,
+      "source_line": 24,
       "source_field": "Loot2.serpent sword",
       "kind": "field",
       "status": "mapped",
-      "resolution": "74 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 0.488417%, 95% Wilson interval 0.3893-0.6127%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
-      "destination": "/monster/loot/entries/6/probability_percent"
+      "resolution": "78 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 0.482793%, 95% Wilson interval 0.387-0.6021%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "destination": "/monster/loot/entries/5/probability_percent"
     },
     {
       "source_index": 2,
@@ -703,7 +713,7 @@
       "source_field": "Loot2.dragon hammer",
       "kind": "field",
       "status": "mapped",
-      "resolution": "65 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 0.429015%, 95% Wilson interval 0.3368-0.5464%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "69 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 0.427086%, 95% Wilson interval 0.3376-0.5401%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/4/probability_percent"
     },
     {
@@ -713,7 +723,7 @@
       "source_field": "Loot2.life crystal",
       "kind": "field",
       "status": "mapped",
-      "resolution": "11 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 0.072602%, 95% Wilson interval 0.0405-0.13%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "11 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 0.068086%, 95% Wilson interval 0.038-0.1219%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/0/probability_percent"
     },
     {
@@ -723,7 +733,7 @@
       "source_field": "Loot2.dragon shield",
       "kind": "field",
       "status": "mapped",
-      "resolution": "45 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills): 0.297010%, 95% Wilson interval 0.2221-0.3972%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "49 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills): 0.303293%, 95% Wilson interval 0.2295-0.4007%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/3/probability_percent"
     },
     {
@@ -733,7 +743,7 @@
       "source_field": "Loot2.dragon trophy",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Listed in the Dragon infobox loot (source 1, line 57), absent in Canary. Probability = 11 drops / 15151 kills in the version 13.21.14040 block of Loot Statistics:Dragon (15151 kills), 0.072602% rounded half-even to 1 ppm (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value). The name matches ids [2681, 2682, 44158]; the item page (source 3, line 5) declares itemid 44158. Item 44158 \"dragon trophy\" is a declared source-scoped reference, not an admitted canonical Item.",
+      "resolution": "Listed in the Dragon infobox loot (source 1, line 57), absent in Canary. Probability = 13 drops / 16156 kills in the version 13.21.14040 block of Loot Statistics:Dragon (16156 kills), 0.080465% rounded half-even to 1 ppm (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value). The name matches ids [2681, 2682, 44158]; the item page (source 3, line 5) declares itemid 44158. Item 44158 \"dragon trophy\" is a declared source-scoped reference, not an admitted canonical Item.",
       "destination": "/monster/loot/entries/1"
     }
   ]

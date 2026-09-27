@@ -17,8 +17,8 @@
       "api": "https://tibia.fandom.com/api.php",
       "title": "Loot Statistics:Rat",
       "page_id": 40711,
-      "revision_id": 1198087,
-      "content_sha256": "81f22c44b0ce75c116f2707b907339a63dfa4b65ec7f6c29c62a25c2f70aa5e8"
+      "revision_id": 1206491,
+      "content_sha256": "9c2675b2e684233b404b29d305bd6ab42a2b76b44381bd794cd284fdc05665de"
     }
   ],
   "entries": [
@@ -50,7 +50,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3607 \"cheese\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 39.41% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3607 \"cheese\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 39.41% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -60,7 +60,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/1",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 100.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 100.0% (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -249,7 +249,7 @@
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "approved_omission",
-      "resolution": "Canary value 0.07 superseded by the reference-date wiki value 0.12 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "Canary value 0.07 superseded by the reference-date wiki value 0.12 (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -296,7 +296,7 @@
       "source_field": "Infobox Creature.mitigation",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Wiki mitigation \"0.12\" (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+      "resolution": "Wiki mitigation \"0.12\" (Owner decision D15: where the reference-date (2026-09-27) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
       "destination": "/monster/creature/stats/mitigation_percent"
     },
     {
@@ -306,7 +306,7 @@
       "source_field": "Loot2.gold coin",
       "kind": "field",
       "status": "mapped",
-      "resolution": "25770 drops / 28581 kills in the version 9.63 block of Loot Statistics:Rat (28581 kills): 90.164795%, 95% Wilson interval 89.8141-90.5047%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "26179 drops / 28990 kills in the version 9.63 block of Loot Statistics:Rat (28990 kills): 90.303553%, 95% Wilson interval 89.9576-90.6389%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/1/probability_percent"
     },
     {
@@ -316,7 +316,7 @@
       "source_field": "Loot2.cheese",
       "kind": "field",
       "status": "mapped",
-      "resolution": "10162 drops / 28581 kills in the version 9.63 block of Loot Statistics:Rat (28581 kills): 35.555089%, 95% Wilson interval 35.0021-36.1119%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
+      "resolution": "10333 drops / 28990 kills in the version 9.63 block of Loot Statistics:Rat (28990 kills): 35.643325%, 95% Wilson interval 35.0939-36.1965%, rounded half-even to 1 ppm (D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence).",
       "destination": "/monster/loot/entries/0/probability_percent"
     }
   ]

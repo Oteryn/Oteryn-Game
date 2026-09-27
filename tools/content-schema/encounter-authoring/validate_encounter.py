@@ -48,7 +48,7 @@ def walk(actions, where):
 
 
 CREATURE_TRIGGERS = ('creature_died', 'lethal_damage', 'health_crossed', 'creature_spawned', 'ability_cast', 'damage_taken',
-                     'heal_received', 'damage_accumulated')
+                     'heal_received', 'damage_accumulated', 'item_used')
 
 
 def semantic(e, catalog):
@@ -58,7 +58,9 @@ def semantic(e, catalog):
     counters = [c['name'] for c in e['state']['counters']]
     flags = [f['name'] for f in e['state']['flags']]
     timers = [t['name'] for t in e['state']['timers']]
-    for label, names in (('participant role', roles), ('anchor', [a['key'] for a in e['anchors']]), ('counter', counters),
+    repeating = {t['name'] for t in e['state']['timers'] if t['repeat']}
+    abilities = [a['key'] for a in e.get('abilities', [])]
+    for label, names in (('encounter ability', abilities), ('participant role', roles), ('anchor', [a['key'] for a in e['anchors']]), ('counter', counters),
                          ('flag', flags), ('timer', timers), ('rule', [r['key'] for r in e['rules']])):
         duplicates = sorted({n for n in names if names.count(n) > 1})
         if duplicates:
@@ -140,6 +142,8 @@ def semantic(e, catalog):
                 need('role', condition['role'], known_roles, at)
             elif ck in ('killer_is_player', 'killer_progress') and kind not in ('creature_died', 'lethal_damage', 'damage_taken', 'heal_received'):
                 errors.append(f'{at}: {ck} needs a death, lethal damage, damage or heal trigger')
+            elif ck == 'chance_from_amount' and kind not in ('damage_taken', 'heal_received'):
+                errors.append(f'{at}: chance_from_amount needs a damage or heal trigger')
             elif ck == 'attacker_wears' and kind not in ('damage_taken', 'damage_accumulated', 'lethal_damage', 'heal_received'):
                 errors.append(f'{at}: attacker_wears needs a damage or heal trigger')
         def spawned_speaker(actions, base):
@@ -201,12 +205,31 @@ def semantic(e, catalog):
                 need('flag', action['flag'], flags, at)
             if ak == 'timer':
                 need('timer', action['timer'], timers, at)
+                if (action['operation'] == 'add') != ('ms' in action):
+                    errors.append(f'{at}: a timer add needs exactly its ms')
+            if ak == 'attribute':
+                if (action['operation'] == 'add') != ('value' in action):
+                    errors.append(f'{at}: an attribute add needs a value, a reset takes none')
+                if isinstance(action.get('value'), dict):
+                    need('counter', action['value']['counter'], counters, at)
             if ak == 'set_phase':
                 need('phase', action['phase'], e['phases'], at)
             if ak == 'damage_modifier' and (action['until'] == 'timer') != ('timer' in action):
                 errors.append(f'{at}: damage_modifier until timer needs exactly its timer')
             if ak == 'damage_modifier' and 'timer' in action:
                 need('timer', action['timer'], timers, at)
+            if ak == 'damage_modifier' and isinstance(action['multiplier_percent'], dict):
+                name = action['multiplier_percent']['timer_remaining']
+                need('timer', name, timers, at)
+                if name in repeating:
+                    errors.append(f'{at}: timer_remaining needs a timer that does not repeat')
+            if ak == 'cast':
+                if ('ability' in action) == ('encounter_ability' in action):
+                    errors.append(f'{at}: cast takes exactly one of ability and encounter_ability')
+                if 'encounter_ability' in action:
+                    need('encounter ability', action['encounter_ability'], abilities, at)
+                if action['at'] == 'death_position' and kind not in ('creature_died', 'lethal_damage'):
+                    errors.append(f'{at}: a death position exists only for death and lethal damage triggers')
             if ak == 'emit_outcome':
                 need('outcome', action['outcome'], e['outcomes'], at)
                 if (action['credited'] == 'players_in_anchor') != ('anchor' in action):

@@ -216,7 +216,7 @@ fn draft() -> ProjectDraft {
         semantic_schema_version: "reference-schema-v1".to_owned(),
         licensing_metadata: "license:project-owned-v1".to_owned(),
         world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
-        coordinate_frame: "global-target-2026-07-28".to_owned(),
+        coordinate_frame: "global-target-2026-09-27".to_owned(),
         records: project_records(),
         imports: vec![b4_batch()],
         metadata: vec![AuthorMetadataEntry {

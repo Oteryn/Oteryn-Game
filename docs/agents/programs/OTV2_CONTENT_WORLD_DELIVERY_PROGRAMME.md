@@ -151,7 +151,7 @@ Pierwsza preferowana fala katalogowa to item identity/catalog -> creature/spawn 
 
 Korzystać z istniejącego [source registry #486](OTERYN_REFERENCE_INVESTIGATION_SOURCE_REGISTRY_20260910.md), nie nowej hierarchii wymyślonej na potrzeby tego planu. `tibiawiki.com.br` jest first-class structured bulk source; Tibiopedia/inne rzeczywiście niezależne źródło służy kontroli. CipSoft/oficjalne dane i kontrolowane obserwacje rozstrzygają odpowiednie target-sensitive zachowania. Crystal/Canary/legacy dostarczają aktywnie danych kandydackich, coverage i testów; wspólne pochodzenie nie jest niezależnym potwierdzeniem.
 
-Target pozostaje `global-tibia-observable-2026-07-28-post-server-save`. Wiki-only nie oznacza automatycznie PROVEN, ale nie jest też automatycznie bezużyteczne: używać dopuszczonego DERIVED/continuity procesu. Nie wymagać osobnego black-box eksperymentu dla każdego zwykłego pola statycznego. Konflikt jednej cechy nie unieważnia innych dobrze popartych cech. Brak dostępu do źródła nie pozwala zgadywać wartości.
+Decyzja właściciela z 2026-09-27: target to stan Global Tibii na 2026-09-27 (`OTERYN_TARGET_DATE_20260927_DECISION.md`); poniższe zdanie opisuje stan sprzed tej decyzji. Target pozostaje `global-tibia-observable-2026-07-28-post-server-save`. Wiki-only nie oznacza automatycznie PROVEN, ale nie jest też automatycznie bezużyteczne: używać dopuszczonego DERIVED/continuity procesu. Nie wymagać osobnego black-box eksperymentu dla każdego zwykłego pola statycznego. Konflikt jednej cechy nie unieważnia innych dobrze popartych cech. Brak dostępu do źródła nie pozwala zgadywać wartości.
 
 | Partia | Zawartość | Wymagane rozliczenie |
 |---|---|---|
