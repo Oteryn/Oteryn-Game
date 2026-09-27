@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-encounter-boss-deaths
 title: Transcribe Canary boss death events into encounters (Dream Courts, Forgotten Knowledge, Ferumbras Ascension)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 962
 jira: KAN-16
 base_sha: fcd965b30f96a98de3384ff845d7919dbb6f7a86
 head_sha: null
