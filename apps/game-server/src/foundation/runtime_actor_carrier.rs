@@ -27,6 +27,7 @@ pub(crate) enum CarrierError {
     ContinuityGenerationNotNewer,
     PositionUnavailable,
     PositionAlreadyInitialized,
+    ControlLossConflict,
     InvalidPreProductionPositionContext,
     PositionContextMismatch,
     PositionSnapshotMismatch,
@@ -143,6 +144,32 @@ struct ActorRef {
 pub(crate) struct ExactActorRef(ActorRef);
 
 impl ExactActorRef {
+    /// Stable opaque placement identity: a domain-separated digest of the exact actor
+    /// reference in its runtime scope. It carries no position and reveals no slot layout.
+    pub(crate) fn placement_identity(self) -> [u8; 16] {
+        use sha2::{Digest, Sha256};
+        let ActorRef {
+            world_id,
+            channel_id,
+            scope_generation,
+            actor_local_id,
+            actor_local_generation,
+        } = self.0;
+        let digest = Sha256::new()
+            .chain_update(b"oteryn:runtime-player-placement:v1")
+            .chain_update(world_id.as_bytes())
+            .chain_update(channel_id.as_bytes())
+            .chain_update(scope_generation.get().to_be_bytes())
+            .chain_update(actor_local_id.0.to_be_bytes())
+            .chain_update(actor_local_generation.0.to_be_bytes())
+            .finalize();
+        let mut identity = [0_u8; 16];
+        identity.copy_from_slice(&digest[..16]);
+        identity
+    }
+}
+
+impl ExactActorRef {
     /// Transport test fixture: an actor reference that names no runtime slot.
     #[cfg(test)]
     #[allow(clippy::expect_used, dead_code)]
@@ -189,6 +216,11 @@ impl ChannelRuntimeAssignmentBinding {
 
     pub(crate) const fn scope_generation(self) -> ScopeOwnershipGeneration {
         self.scope_generation
+    }
+
+    /// The committed assignment decision revision this runtime was composed from.
+    pub(crate) const fn source_revision(self) -> u64 {
+        self.source_revision
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -534,6 +566,9 @@ enum Slot {
         /// False while capacity is reserved but durable fresh admission is unresolved.
         committed: bool,
         position: Option<VersionedPosition>,
+        /// Present while the committed player's durable GameSession is RECONNECTABLE
+        /// after an authoritative control loss (`DISCONNECT-PROTECTION-V1`).
+        control_loss: Option<ControlLossMark>,
     },
     CreatureOccupied {
         generation: u64,
@@ -546,6 +581,24 @@ enum Slot {
     Exhausted {
         generation: u64,
     },
+}
+
+/// The durable loss decision mirrored by the Channel owner for its present, uncontrolled
+/// player actor. Epoch and grace deadline are the committed `ControlLossEpoch` values.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ControlLossMark {
+    pub(crate) epoch: u64,
+    pub(crate) grace_deadline: i64,
+}
+
+/// Channel-owner facts about one committed, present player actor of an exact GameSession.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct PlayerControlFacts {
+    /// Stable opaque identity of this actor's placement in this runtime scope.
+    pub(crate) placement_identity: [u8; 16],
+    /// The actor's local generation: non-zero and unchanged while it stays placed.
+    pub(crate) placement_revision: u64,
+    pub(crate) control_loss: Option<ControlLossMark>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -775,6 +828,34 @@ impl ChannelRuntimeV1 {
         }
     }
 
+    /// Facts of the committed player actor bound to exactly this GameSession.
+    pub(crate) fn player_control_facts(
+        &self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+    ) -> Result<PlayerControlFacts, CarrierError> {
+        let control_loss =
+            self.carrier
+                .player_control_loss(&self.continuity, actor.0, game_session_id)?;
+        Ok(PlayerControlFacts {
+            placement_identity: actor.placement_identity(),
+            placement_revision: actor.0.actor_local_generation.0,
+            control_loss,
+        })
+    }
+
+    /// Mirror one committed durable control loss onto the still-present player actor.
+    /// Recording the identical decision again is a no-op; a different one conflicts.
+    pub(crate) fn record_control_loss(
+        &mut self,
+        actor: ExactActorRef,
+        game_session_id: GameSessionId,
+        mark: ControlLossMark,
+    ) -> Result<(), CarrierError> {
+        self.carrier
+            .record_player_control_loss(&self.continuity, actor.0, game_session_id, mark)
+    }
+
     /// Synthetic context is confined to tests. A committed session still goes through
     /// the actual runtime reservation and carrier position initialization checks.
     #[cfg(test)]
@@ -885,6 +966,27 @@ impl ChannelRuntimeV1 {
             .collect();
         revisions.sort_unstable();
         revisions
+    }
+
+    /// Test-only census: the recorded control-loss epochs of committed players, ascending.
+    #[cfg(test)]
+    pub(crate) fn player_control_loss_epochs(&self) -> Vec<u64> {
+        let mut epochs: Vec<u64> = self
+            .carrier
+            .slots
+            .iter()
+            .filter_map(|slot| match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    control_loss: Some(mark),
+                    ..
+                } => Some(mark.epoch),
+                _ => None,
+            })
+            .collect();
+        epochs.sort_unstable();
+        epochs
     }
 
     /// Test-only census: committed player actors positioned at the pinned
@@ -1233,6 +1335,7 @@ impl ChannelActorCarrier {
                 game_session_id,
                 committed,
                 position: None,
+                control_loss: None,
             }
         };
         self.free_head = next_free;
@@ -1744,6 +1847,71 @@ impl ChannelActorCarrier {
         })
     }
 
+    fn player_slot_index(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+    ) -> Result<usize, CarrierError> {
+        let index = self.validate_ref(continuity, actor_ref)?;
+        match &self.slots[index] {
+            Slot::Occupied {
+                generation,
+                game_session_id: Some(bound),
+                committed: true,
+                ..
+            } if *generation == actor_ref.actor_local_generation.0 && *bound == game_session_id => {
+                Ok(index)
+            }
+            Slot::Occupied { generation, .. } | Slot::CreatureOccupied { generation, .. }
+                if *generation == actor_ref.actor_local_generation.0 =>
+            {
+                Err(CarrierError::PlayerReservationMismatch)
+            }
+            _ => Err(CarrierError::StaleActorGeneration),
+        }
+    }
+
+    fn player_control_loss(
+        &self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+    ) -> Result<Option<ControlLossMark>, CarrierError> {
+        let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+        match &self.slots[index] {
+            Slot::Occupied { control_loss, .. } => Ok(*control_loss),
+            _ => Err(CarrierError::PlayerReservationMismatch),
+        }
+    }
+
+    fn record_player_control_loss(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        game_session_id: GameSessionId,
+        mark: ControlLossMark,
+    ) -> Result<(), CarrierError> {
+        if mark.epoch == 0 {
+            return Err(CarrierError::ControlLossConflict);
+        }
+        let index = self.player_slot_index(continuity, actor_ref, game_session_id)?;
+        match &mut self.slots[index] {
+            Slot::Occupied {
+                control_loss: stored @ None,
+                ..
+            } => {
+                *stored = Some(mark);
+                Ok(())
+            }
+            Slot::Occupied {
+                control_loss: Some(existing),
+                ..
+            } if *existing == mark => Ok(()),
+            _ => Err(CarrierError::ControlLossConflict),
+        }
+    }
+
     fn validate_ref(
         &self,
         continuity: &NamespaceContinuityGuard,
@@ -2152,6 +2320,66 @@ mod tests {
             Err(CarrierError::PlayerReservationMismatch)
         );
         assert!(runtime.contains_committed_session(session(41), actor));
+    }
+
+    #[test]
+    fn control_loss_is_recorded_once_for_the_exact_committed_player() {
+        let mut runtime = runtime(2);
+        let reservation = runtime.reserve_fresh_session(session(64)).expect("reserve");
+        // An uncommitted reservation has no player facts and cannot lose control.
+        let _pending = runtime.reserve_fresh_session(session(65)).expect("reserve");
+        let actor = runtime.commit_fresh_session(reservation).expect("commit");
+        let mark = ControlLossMark {
+            epoch: 1,
+            grace_deadline: 160,
+        };
+        let facts = runtime
+            .player_control_facts(actor, session(64))
+            .expect("facts");
+        assert_eq!(facts.control_loss, None);
+        assert_ne!(facts.placement_identity, [0; 16]);
+        assert_eq!(facts.placement_revision, actor.0.actor_local_generation.0);
+        // Another session never reads or marks this actor.
+        assert_eq!(
+            runtime.player_control_facts(actor, session(66)),
+            Err(CarrierError::PlayerReservationMismatch)
+        );
+        assert_eq!(
+            runtime.record_control_loss(actor, session(66), mark),
+            Err(CarrierError::PlayerReservationMismatch)
+        );
+        assert_eq!(
+            runtime.record_control_loss(actor, session(64), ControlLossMark { epoch: 0, ..mark }),
+            Err(CarrierError::ControlLossConflict)
+        );
+        assert_eq!(
+            runtime.record_control_loss(actor, session(64), mark),
+            Ok(())
+        );
+        // The identical decision replays; a different one conflicts and changes nothing.
+        assert_eq!(
+            runtime.record_control_loss(actor, session(64), mark),
+            Ok(())
+        );
+        assert_eq!(
+            runtime.record_control_loss(
+                actor,
+                session(64),
+                ControlLossMark {
+                    grace_deadline: 161,
+                    ..mark
+                }
+            ),
+            Err(CarrierError::ControlLossConflict)
+        );
+        let after = runtime
+            .player_control_facts(actor, session(64))
+            .expect("facts");
+        assert_eq!(after.control_loss, Some(mark));
+        assert_eq!(after.placement_identity, facts.placement_identity);
+        assert_eq!(runtime.player_control_loss_epochs(), vec![1]);
+        // The actor stays present: the committed player count is unchanged.
+        assert_eq!(runtime.player_slot_counts(), (1, 1));
     }
 
     #[test]

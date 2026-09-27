@@ -558,7 +558,7 @@ impl FreshAdmissionStore {
             claims.push(store.guards.load_locked(&mut tx, &expected.key).await?);
         }
         if original.authorization.account_id != observation.account_presence.account_id()
-            || validate_claim_preserving_session_v1(
+            || validate_claim_ownership_v1(
                 &original.authorization.account_id,
                 observation.session,
                 current.current_session,

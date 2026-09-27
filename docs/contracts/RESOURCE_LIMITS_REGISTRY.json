@@ -4960,6 +4960,28 @@
         "combat state (not composed yet)"
       ],
       "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 (#822 comments 5854525644 and 5854565314); to be measured and tuned (latency/jitter false-positive rate, combat tick) before release. FND-02 authenticated probe/ack only; socket close, gameplay silence or client report never prove loss. Registered ahead of the combat state; not consumed until it exists."
+    },
+    {
+      "id": "FND04B-SAME-SESSION-GRACE-S",
+      "owner_contract": "../architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md",
+      "resource": "Same-session grace from the authoritative ControlLossEpoch boundary to the original grace deadline",
+      "unit": "seconds",
+      "hard_maximum": 60,
+      "configurable_range": {
+        "minimum": 60,
+        "maximum": 60
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "One original grace deadline per loss epoch, fixed at the loss decision and never restarted or extended; a RECONNECTABLE session keeps its present, uncontrolled actor and its claims until the deadline.",
+      "client_visible": false,
+      "boundary_tests": [
+        "The committed loss records original_grace_deadline = decision time + 60 s",
+        "A replayed identical loss decision keeps the original deadline"
+      ],
+      "consumers": [
+        "gameplay_transport control-loss commit (OTV2-20260927-control-loss-lifecycle)"
+      ],
+      "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 \u00a74 (#822 comments 5854525644 and 5854565314); matches the Tibia 60 s logout block; to be measured and tuned before release. Expiry release and positive resume are later children."
     }
   ]
 }

@@ -289,7 +289,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
         return Ok(());
     }
     tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
-        for scenario in 0..4 {
+        for scenario in 0..5 {
         let not_entitled = scenario == 1;
         let database = postgres::IsolatedPostgres::create("owning_fresh_loss").await?;
         let result = async {
@@ -341,7 +341,25 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             let mut flow = ControlLossFlowV1::begin(authorization);
             let loss = std::sync::Arc::new(authority_matrix::checked(flow.take_request())?);
             assert_eq!(store.reconcile_fresh_loss(loss.operation()).await?, FreshLossReconciliation::Absent);
-            if scenario >= 2 {
+            if scenario == 4 {
+                // A later, refused admission attempt for the same account
+                // re-observes Platform security and republishes the Account
+                // row. Presence still names this session, so loss commits.
+                let key = owner.rows[0].key.clone();
+                let mut row = guards.load(&[key]).await?.pop().flatten().ok_or("missing account row")?;
+                row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet { expected_publication_revision: row.publication_revision };
+                row.publication_revision += 1;
+                row.source.source_revision += 1;
+                row.source.decision_identity = "platform-refresh".into();
+                if let AdmissionAuthorityGuardStateV1::Account { security, presence } = &mut row.state {
+                    security.provenance.publication_revision = row.publication_revision;
+                    assert_eq!(*presence, Some((session.commit().character_id(), session.commit().game_session_id())));
+                } else { return Err("missing account fixture".into()); }
+                owner.rows = vec![row];
+                let publication = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner, now))?;
+                assert_eq!(guards.publish(&publication).await?, durability::admission_authority_guards::GuardPublicationDisposition::Applied);
+            }
+            if (2..4).contains(&scenario) {
                 // Publish one independently valid current runtime change while
                 // leaving the session, claims, and loss source exactly unchanged.
                 owner.rows.retain(|row| matches!(row.key, AdmissionAuthorityGuardKeyV1::Runtime(_)));
