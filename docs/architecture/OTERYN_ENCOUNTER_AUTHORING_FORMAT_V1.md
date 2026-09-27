@@ -106,7 +106,8 @@ Encounter
 ## 5. Conditions
 
 `chance_percent`, `counter_compare(counter, op, value)`, `flag(name, value)`,
-`creature_present(role, anchor or radius, present/absent)`, `health_percent(role, op, value)`,
+`creature_present(role, anchor or radius, present/absent)`, `in_anchor(role or killer, anchor)`,
+`killer_is_player`, `health_percent(role, op, value)`,
 `attacker_wears(ItemRef)` (the Asura counter items), `killer_progress(quest key, op, value)` - a
 read-only view of the killer's quest progress published by the quest domain (the Soul War taints);
 the encounter never writes it.
@@ -136,8 +137,10 @@ the encounter never writes it.
 
 - `FourthTaintBossesPrepareDeath` (15 monsters): despite its name these are the ordinary Soul War
   hunting monsters, not bosses (`soul_war_mechanics.lua` lines 66-84). It is a zone rule:
-  `lethal_damage(any participant)` + `killer_progress(soul war taint >= 4)` + in the Soul War zone
-  anchor + `chance_percent 10` -> `say`, `heal(full)`. `Game::combatChangeHealth` then still drains
+  `lethal_damage(any participant)` by a player + `killer_progress(fourth Soul War taint held)`
+  (`Player:getTaintNameByNumber(4)`, a quest flag Canary resets at login) + the killing player
+  stands in a Soul War hunting zone (`Player:getSoulWarZoneMonster`) + `chance_percent 10`
+  (`math.random(1, 10) == 1`) -> `say`, `heal(full)`. `Game::combatChangeHealth` then still drains
   the lethal hit, capped at the health the creature had before the heal (`realDamage` is taken
   before `onPrepareDeath`), so it survives with maximum health minus that amount.
 - `UrmahlulluChanges`: `health_crossed(boss, N)` -> `transform(boss -> next stage, keep_absolute)`.
