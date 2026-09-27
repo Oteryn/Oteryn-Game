@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 ITEM_SHARD_SIZE = 500
 ADMISSION_MAIN = "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c"
-REVISION = "tree-creature-wave-a-r1"
+REVISION = "tree-npc-wave-a-r1"
 FIELD_CENSUS = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enrichment-wave1-staged.json"
 # Creature admission families (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1): family -> (tree node, shard stem).
@@ -310,7 +310,7 @@ def main() -> int:
             "git_blob_sha": declarations_blob_sha,
             "schema": declarations["schema"],
         },
-        "attached_source_bindings": sum(row.get("source_bindings") is not None for row in npc_rows),
+        "attached_source_bindings": sum(len(row.get("source_bindings", [])) for row in npc_rows),
     })
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]

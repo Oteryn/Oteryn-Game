@@ -197,6 +197,7 @@ def validate_npc_services(declarations: Any, sources: Any) -> tuple[int, int, in
     require(expected_start == NPC_COUNT, "NPC_SHARD_COVERAGE")
     require(migrated_npcs == legacy_npcs, "NPC_DECLARATION_ROUNDTRIP")
     require(canonical_sorted(migrated_npc_bindings) == canonical_sorted(legacy_npc_bindings), "NPC_BINDING_ROUNDTRIP")
+    require(npc_index["attached_source_bindings"] == len(migrated_npc_bindings), "NPC_INDEX_BINDING_COUNT")
     require(len({(row["identity"]["key"], row["identity"]["revision"]) for row in migrated_npcs}) == NPC_COUNT, "NPC_IDENTITY_UNIQUENESS")
 
     legacy_services = [row for row in declarations["records"] if row.get("kind") == "Service"]
