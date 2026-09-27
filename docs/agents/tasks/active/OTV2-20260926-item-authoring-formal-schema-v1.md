@@ -17,7 +17,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: /root
 created_at: 2026-09-26
-updated_at: 2026-09-26
+updated_at: 2026-09-27
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260926-item-authoring-formal-schema-v1.md
@@ -59,10 +59,10 @@ session fence, authority-bearing controller or recovery evidence is touched.
 
 ## Acceptance criteria
 
-- [ ] Generator reproduces every schema, catalog and template byte-identically.
-- [ ] All templates structurally and semantically validate.
-- [ ] Negative tests reject Terrain/WorldObject, ItemInstance and source-ID leakage.
-- [ ] Canary/Crystal/Wiki review finds no material portable-field or routing omission.
+- [x] Generator reproduces every schema, catalog and template byte-identically.
+- [x] All templates structurally and semantically validate.
+- [x] Negative tests reject Terrain/WorldObject, ItemInstance and source-ID leakage.
+- [x] Canary/Crystal/Wiki review finds no material portable-field or routing omission.
 - [ ] Changed-path checks and adversarial whole-diff self-review pass on the frozen head.
 
 ## Excluded scope
@@ -87,14 +87,25 @@ Accepted review repairs:
   through explicit owner and formal JSON Pointer rules;
 - fixed opposite-hand, transform/decay, readable/write-once, imbuement and uniqueness
   invariants;
-- corrected the distance-launcher template and split common vs optional profile signals.
+- corrected the distance-launcher template and split common vs optional profile signals;
+- added exact pinned Canary, Crystal and historical Fandom source-profile registries;
+- classified all 143 unique parser keys in each engine, including explicit no-effect
+  defects, root/nested/appearance inputs and reverse bag relations;
+- added signed presentation weight/display flags, movement speed, invisibility, typed
+  mantra/elemental bond, weapon-kind distinctions, chain semantics, dual wielding,
+  shortfall policy, wrapping and destroy transforms;
+- repaired TibiaWiki BR `modificadores` so editor notes alone cannot satisfy a typed
+  mapping and unresolved clauses block readiness;
+- pinned BR/Fandom source identity, enabled timezone-qualified capture validation and
+  made signed weight, boolean inversion and value-dependent parser routes verifiable;
+- added the missing appearance upgrade-classification value leaf.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python -X utf8 tools/content-schema/item-authoring/verify_formal_schema.py`
-- result: PASS, 82/82; 13 templates, 3 Draft 2020-12 metaschemas, generator byte determinism,
+- result: PASS, 143/143; 13 templates, 3 Draft 2020-12 metaschemas, generator byte determinism,
   positive bundles and fail-closed boundary/semantic cases
 - command/run: `python -m ruff check tools/content-schema/item-authoring`
 - result: PASS
@@ -136,8 +147,11 @@ Accepted review repairs:
 - exact head: pending
 - method/auditor: three read-only Canary, Crystal and Wiki subagents, followed by bounded
   repair verification
-- material findings: no P0; accepted P1/P2 findings listed above repaired by the sole writer
-- verdict: PASS; all three bounded re-checks report no residual material finding
+- material findings: the initial audits found omitted parser/appearance fields, source
+  defects, Fandom coverage ambiguity and an unsafe `modificadores` mapping; all were
+  accepted into the v2 repair above
+- verdict: PASS; final stable read-only re-check ran 39 probes plus 12 critical
+  negative cases and reported no remaining actionable P0-P2 finding
 
 ## PR and closeout
 
@@ -151,11 +165,11 @@ Accepted review repairs:
 ## Context checkpoint
 
 ```yaml
-last_progress: local candidate passes 82 focused checks and all three bounded independent re-reviews
+last_progress: local v2 candidate passes 143 focused checks; combined independent re-review found no actionable P0-P2 issue
 status: implementing
 branch: codex/item-authoring-schema-v1-20260926
 head_sha: null
-pr: null
+pr: 952
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -173,5 +187,6 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish through guarded high-level API writes, verify exact remote delta and freeze the returned head
+next_action: publish through guarded high-level API writes, verify the exact remote delta and freeze the returned head
 ```
+
