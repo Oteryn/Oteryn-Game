@@ -856,16 +856,6 @@
         "evidence_class": "DERIVED",
         "sources": [
           {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?subtopic=experiencetable",
-            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s1-current-official-experience-table",
-            "effective_date": null,
-            "observed_at": null,
-            "retrieved_at": "2026-09-27T19:05:37Z",
-            "provenance_state": "CLEARED",
-            "uncertainty_notes": "Direct post-target official retrieval listed level 7 at 2,600 and level 8 at 4,200. The response had no ETag or Last-Modified header and does not by itself prove the immutable target-cut state."
-          },
-          {
             "source_type": "COMMUNITY_CORROBORATION",
             "locator": "https://www.tibiawiki.com.br/index.php?oldid=440226&title=Tabela_de_Experi%C3%AAncia",
             "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s3-tibiawiki-br-target-near-revision",
@@ -883,11 +873,11 @@
             "observed_at": null,
             "retrieved_at": null,
             "provenance_state": "CLEARED",
-            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, lists the same values. This is historical community corroboration, not primary target evidence."
+            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, contains the cumulative-XP formula. Direct substitution of x=7 and x=8 yields 2,600 and 4,200. Its dynamic ExpTable module invocation was not separately pinned. This is historical community corroboration, not primary target evidence."
           }
         ],
-        "confidence_notes": "MEDIUM_HIGH. A pinned community revision sixteen days before the target, an older pinned community revision and a directly retrieved current official table agree on 2,600.",
-        "uncertainty_notes": "No exact primary observation at the 2026-07-28 boundary was captured. The evidence supports a bounded candidate but not PROVEN continuity, a runtime policy, or any modifier and rounding semantics.",
+        "confidence_notes": "MEDIUM_HIGH. A pinned community revision sixteen days before the target records 2,600, and an older pinned community revision contains a cumulative-XP formula that yields 2,600 for x=7.",
+        "uncertainty_notes": "No exact primary observation at the 2026-07-28 boundary was captured. The post-target official table is retained only as a current-state observation and is excluded from target support because continuity is unproven. The evidence supports a bounded candidate but not PROVEN continuity, a runtime policy, or modifier and rounding semantics.",
         "conflicts": []
       },
       "oteryn": {
@@ -937,16 +927,6 @@
         "sources": [
           {
             "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?subtopic=experiencetable",
-            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s1-current-official-experience-table",
-            "effective_date": null,
-            "observed_at": null,
-            "retrieved_at": "2026-09-27T19:05:37Z",
-            "provenance_state": "CLEARED",
-            "uncertainty_notes": "Direct post-target official retrieval listed level 7 at 2,600 and level 8 at 4,200. The response had no ETag or Last-Modified header and does not by itself prove the immutable target-cut state."
-          },
-          {
-            "source_type": "OFFICIAL_PUBLIC",
             "locator": "https://www.tibia.com/charactertrade/?auctionid=2158982&page=details&subtopic=pastcharactertrades",
             "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s2-official-level-8-auction",
             "effective_date": "2026-05-21",
@@ -973,11 +953,11 @@
             "observed_at": null,
             "retrieved_at": null,
             "provenance_state": "CLEARED",
-            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, lists the same values. This is historical community corroboration, not primary target evidence."
+            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, contains the cumulative-XP formula. Direct substitution of x=7 and x=8 yields 2,600 and 4,200. Its dynamic ExpTable module invocation was not separately pinned. This is historical community corroboration, not primary target evidence."
           }
         ],
-        "confidence_notes": "HIGH. An official pre-target auction shows a level-8 character at 4,200, a pinned community revision sixteen days before the target lists 4,200, and the directly retrieved current official table agrees.",
-        "uncertainty_notes": "The sources bracket the target but do not capture the exact server-save boundary or prove uninterrupted policy continuity. This remains DERIVED and does not establish bonus, death-loss or rounding semantics.",
+        "confidence_notes": "HIGH. An official pre-target auction shows a level-8 character at 4,200, a pinned community revision sixteen days before the target records 4,200, and an older pinned community formula yields the same value for x=8.",
+        "uncertainty_notes": "The admitted target sources predate the target but do not capture the exact server-save boundary or prove uninterrupted policy continuity. The post-target official table is retained only as a current-state observation and is excluded from target support. This remains DERIVED and does not establish bonus, death-loss or rounding semantics.",
         "conflicts": []
       },
       "oteryn": {
@@ -1026,16 +1006,6 @@
         "evidence_class": "DERIVED",
         "sources": [
           {
-            "source_type": "OFFICIAL_PUBLIC",
-            "locator": "https://www.tibia.com/library/?subtopic=experiencetable",
-            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s1-current-official-experience-table",
-            "effective_date": null,
-            "observed_at": null,
-            "retrieved_at": "2026-09-27T19:05:37Z",
-            "provenance_state": "CLEARED",
-            "uncertainty_notes": "Direct post-target official retrieval listed level 7 at 2,600 and level 8 at 4,200. The response had no ETag or Last-Modified header and does not by itself prove the immutable target-cut state."
-          },
-          {
             "source_type": "COMMUNITY_CORROBORATION",
             "locator": "https://www.tibiawiki.com.br/index.php?oldid=440226&title=Tabela_de_Experi%C3%AAncia",
             "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s3-tibiawiki-br-target-near-revision",
@@ -1053,7 +1023,7 @@
             "observed_at": null,
             "retrieved_at": null,
             "provenance_state": "CLEARED",
-            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, lists the same values. This is historical community corroboration, not primary target evidence."
+            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, contains the cumulative-XP formula. Direct substitution of x=7 and x=8 yields 2,600 and 4,200. Its dynamic ExpTable module invocation was not separately pinned. This is historical community corroboration, not primary target evidence."
           }
         ],
         "confidence_notes": "MEDIUM_HIGH. The subtraction is exact once the two bounded threshold candidates are accepted; confidence is limited by their target-continuity ceiling.",
@@ -1139,7 +1109,7 @@
     {
       "manifest_revision": 5,
       "date": "2026-09-27",
-      "summary": "Register bounded DERIVED cumulative experience thresholds for levels 7 and 8 plus their level-7 span from official pre/post-target observations and pinned TibiaWiki BR/Fandom corroboration; keep exact target-boundary continuity, modifiers, death arithmetic, runtime implementation and parity confirmation unresolved.",
+      "summary": "Register bounded DERIVED cumulative experience thresholds for levels 7 and 8 plus their level-7 span from one pre-target official observation and pinned pre-target TibiaWiki BR/Fandom corroboration; retain the post-target official table only as a separate current-state observation and keep exact target-boundary continuity, modifiers, death arithmetic, runtime implementation and parity confirmation unresolved.",
       "issue": "#483"
     }
   ]
