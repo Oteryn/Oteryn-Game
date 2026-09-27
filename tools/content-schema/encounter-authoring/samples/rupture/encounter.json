@@ -1,0 +1,51 @@
+{
+  "identity": {
+    "key": "canary:encounter/rupture",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Heart of Destruction: Rupture",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "damage_resonance",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/damage_resonance",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "resonance_active",
+        "initial": -1
+      }
+    ],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "damage_resonance_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "damage_resonance"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "resonance_active",
+          "operation": "set",
+          "value": 0
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

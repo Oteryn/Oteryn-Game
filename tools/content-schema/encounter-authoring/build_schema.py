@@ -110,7 +110,7 @@ d['action'] = {'oneOf': [
     kinded('emit_outcome', {'outcome': NAME, 'credited': enum('damage_contributors', 'killer', 'players_in_anchor'),
                             'anchor': NAME}, ('outcome', 'credited'))]}
 
-d['rule'] = obj({'key': NAME, 'trigger': use('trigger'), 'conditions': array(use('condition')),
+d['rule'] = obj({'key': NAME, 'trigger': use('trigger'), 'delay_ms': integer(1), 'conditions': array(use('condition')),
                  'actions': array(use('action'), 1)}, ('key', 'trigger', 'conditions', 'actions'))
 
 schema = obj({

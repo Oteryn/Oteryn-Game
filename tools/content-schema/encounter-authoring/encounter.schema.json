@@ -1420,6 +1420,10 @@
         "trigger": {
           "$ref": "#/$defs/trigger"
         },
+        "delay_ms": {
+          "type": "integer",
+          "minimum": 1
+        },
         "conditions": {
           "type": "array",
           "items": {

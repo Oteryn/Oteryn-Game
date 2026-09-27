@@ -106,6 +106,8 @@ case('undeclared creature', rule([{'kind': 'spawn', 'creature': ref('Creature', 
                                    'owner': 'none', 'health': 'full'}]))
 case('damage modifier until timer needs its timer', rule([{'kind': 'damage_modifier', 'role': 'boss', 'multiplier_percent': 0,
                                                            'sources': 'any', 'until': 'timer'}]))
+case('delayed rule accepted', lambda e, c: e['rules'][1].update(delay_ms=6000), True)
+case('zero delay rejected', lambda e, c: e['rules'][1].update(delay_ms=0))
 case('chance above 100 rejected', rule(conditions=[{'kind': 'chance_percent', 'value': 150}]))
 case('duplicate rule key', lambda e, c: e['rules'].append(copy.deepcopy(e['rules'][0])))
 

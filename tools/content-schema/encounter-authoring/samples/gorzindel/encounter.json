@@ -87,28 +87,23 @@
       ]
     }
   ],
-  "anchors": [],
+  "anchors": [
+    {
+      "key": "knowledge_range",
+      "kind": "area",
+      "description": "Tiles within 12 of Canary (32687, 32719, 10) on that floor: the main room and the five knowledge rooms."
+    }
+  ],
   "phases": [],
   "state": {
-    "counters": [
-      {
-        "name": "knowledges_killed",
-        "initial": 0
-      }
-    ],
+    "counters": [],
     "flags": [
       {
         "name": "gorzindel_immune",
         "initial": true
       }
     ],
-    "timers": [
-      {
-        "name": "knowledge_check",
-        "duration_ms": 1000,
-        "repeat": false
-      }
-    ]
+    "timers": []
   },
   "rules": [
     {
@@ -117,13 +112,48 @@
         "kind": "creature_died",
         "role": "stolen_knowledge_of_armor"
       },
-      "conditions": [],
+      "delay_ms": 1000,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_armor",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_summoning",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_lifesteal",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_spells",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_healing",
+          "anchor": "knowledge_range",
+          "present": false
+        }
+      ],
       "actions": [
         {
-          "kind": "counter",
-          "counter": "knowledges_killed",
-          "operation": "add",
-          "value": 1
+          "kind": "remove",
+          "role": "mean_minion"
+        },
+        {
+          "kind": "flag",
+          "flag": "gorzindel_immune",
+          "value": false
         }
       ]
     },
@@ -133,13 +163,48 @@
         "kind": "creature_died",
         "role": "stolen_knowledge_of_summoning"
       },
-      "conditions": [],
+      "delay_ms": 1000,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_armor",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_summoning",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_lifesteal",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_spells",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_healing",
+          "anchor": "knowledge_range",
+          "present": false
+        }
+      ],
       "actions": [
         {
-          "kind": "counter",
-          "counter": "knowledges_killed",
-          "operation": "add",
-          "value": 1
+          "kind": "remove",
+          "role": "mean_minion"
+        },
+        {
+          "kind": "flag",
+          "flag": "gorzindel_immune",
+          "value": false
         }
       ]
     },
@@ -149,13 +214,48 @@
         "kind": "creature_died",
         "role": "stolen_knowledge_of_lifesteal"
       },
-      "conditions": [],
+      "delay_ms": 1000,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_armor",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_summoning",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_lifesteal",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_spells",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_healing",
+          "anchor": "knowledge_range",
+          "present": false
+        }
+      ],
       "actions": [
         {
-          "kind": "counter",
-          "counter": "knowledges_killed",
-          "operation": "add",
-          "value": 1
+          "kind": "remove",
+          "role": "mean_minion"
+        },
+        {
+          "kind": "flag",
+          "flag": "gorzindel_immune",
+          "value": false
         }
       ]
     },
@@ -165,13 +265,48 @@
         "kind": "creature_died",
         "role": "stolen_knowledge_of_spells"
       },
-      "conditions": [],
+      "delay_ms": 1000,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_armor",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_summoning",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_lifesteal",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_spells",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_healing",
+          "anchor": "knowledge_range",
+          "present": false
+        }
+      ],
       "actions": [
         {
-          "kind": "counter",
-          "counter": "knowledges_killed",
-          "operation": "add",
-          "value": 1
+          "kind": "remove",
+          "role": "mean_minion"
+        },
+        {
+          "kind": "flag",
+          "flag": "gorzindel_immune",
+          "value": false
         }
       ]
     },
@@ -181,39 +316,39 @@
         "kind": "creature_died",
         "role": "stolen_knowledge_of_healing"
       },
-      "conditions": [],
-      "actions": [
+      "delay_ms": 1000,
+      "conditions": [
         {
-          "kind": "counter",
-          "counter": "knowledges_killed",
-          "operation": "add",
-          "value": 1
-        }
-      ]
-    },
-    {
-      "key": "all_knowledges_killed",
-      "trigger": {
-        "kind": "counter_reached",
-        "counter": "knowledges_killed",
-        "value": 5
-      },
-      "conditions": [],
-      "actions": [
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_armor",
+          "anchor": "knowledge_range",
+          "present": false
+        },
         {
-          "kind": "timer",
-          "timer": "knowledge_check",
-          "operation": "start"
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_summoning",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_lifesteal",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_spells",
+          "anchor": "knowledge_range",
+          "present": false
+        },
+        {
+          "kind": "creature_present",
+          "role": "stolen_knowledge_of_healing",
+          "anchor": "knowledge_range",
+          "present": false
         }
-      ]
-    },
-    {
-      "key": "gorzindel_weakened",
-      "trigger": {
-        "kind": "timer_elapsed",
-        "timer": "knowledge_check"
-      },
-      "conditions": [],
+      ],
       "actions": [
         {
           "kind": "remove",

@@ -752,31 +752,29 @@ def gorzindel(build):
     encounter = item['encounter']
     build.participant(item, 'gorzindel', 'Gorzindel', 'gorzindelHealth')
     build.participant(item, 'mean_minion', 'Mean Minion')
-    encounter['state']['counters'].append({'name': 'knowledges_killed', 'initial': 0})
     encounter['state']['flags'].append({'name': 'gorzindel_immune', 'initial': True})
-    encounter['state']['timers'].append({'name': 'knowledge_check', 'duration_ms': 1000, 'repeat': False})
+    encounter['anchors'].append({'key': 'knowledge_range', 'kind': 'area',
+                                 'description': 'Tiles within 12 of Canary (32687, 32719, 10) on that floor: the main room and the '
+                                                'five knowledge rooms.'})
+    roles = [slug(k) for k, _, _ in KNOWLEDGES]
+    for knowledge, _, _ in KNOWLEDGES:
+        build.participant(item, slug(knowledge), knowledge, 'gorzindelDeath')
     for knowledge, line, lever_line in KNOWLEDGES:
         role = slug(knowledge)
-        build.participant(item, role, knowledge, 'gorzindelDeath')
-        path = build.rule(item, {'key': f'{role}_killed', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
-                                 'actions': [{'kind': 'counter', 'counter': 'knowledges_killed', 'operation': 'add', 'value': 1}]})
-        build.entry(item, GORZINDEL, [11, 13, 16, line], 'mapped', path + '/actions/0',
-                    f'onDeath of "{knowledge.lower()}", placed once by the boss lever ({GORZINDEL_LEVER} line {lever_line}).')
-    path = build.rule(item, {'key': 'all_knowledges_killed', 'trigger': {'kind': 'counter_reached', 'counter': 'knowledges_killed', 'value': 5},
-                             'conditions': [], 'actions': [{'kind': 'timer', 'timer': 'knowledge_check', 'operation': 'start'}]})
-    build.entry(item, GORZINDEL, [9, 17, 18, 19, 20, 21, 22, 23, 24, 25, 37], 'mapped', path,
-                'One second after each knowledge death Canary looks for a living knowledge within 12 tiles of (32687, 32719, 10); '
-                'the five are placed once, in rooms inside that range, so the check first finds none one second after the fifth '
-                'death. The reference-date wiki (The Secret Library Quest/Spoiler: "When the 5 books are dead, all that is left is '
-                'for players to attack Gorzindel") confirms the intent (D25). Only when the last two die within one second does '
-                'Canary act up to a second earlier.')
-    path = build.rule(item, {'key': 'gorzindel_weakened', 'trigger': {'kind': 'timer_elapsed', 'timer': 'knowledge_check'}, 'conditions': [],
-                             'actions': [{'kind': 'remove', 'role': 'mean_minion'},
-                                         {'kind': 'flag', 'flag': 'gorzindel_immune', 'value': False}]})
-    build.entry(item, GORZINDEL, [26, 27, 28, 30], 'mapped', path + '/actions/0', 'Every mean minion in range is removed.')
+        path = build.rule(item, {
+            'key': f'{role}_killed', 'trigger': {'kind': 'creature_died', 'role': role}, 'delay_ms': 1000,
+            'conditions': [{'kind': 'creature_present', 'role': r, 'anchor': 'knowledge_range', 'present': False} for r in roles],
+            'actions': [{'kind': 'remove', 'role': 'mean_minion'}, {'kind': 'flag', 'flag': 'gorzindel_immune', 'value': False}]})
+        build.entry(item, GORZINDEL, [11, 13, 16, 17, 37, line], 'mapped', path + '/trigger',
+                    f'onDeath of "{knowledge.lower()}" (placed once by {GORZINDEL_LEVER} line {lever_line}) runs a check one '
+                    'second later (delay_ms).')
+        build.entry(item, GORZINDEL, [9, 18, 19, 20, 21, 22, 23, 24, 25], 'mapped', path + '/conditions',
+                    'The check acts only when no stolen knowledge is within 12 tiles of (32687, 32719, 10).')
+        build.entry(item, GORZINDEL, [26, 27, 28, 30], 'mapped', path + '/actions/0',
+                    'Every mean minion in range is removed; mean minions exist only in the main room.')
+        build.entry(item, GORZINDEL, [31, 32], 'mapped', path + '/actions/1',
+                    'c:unregisterEvent("gorzindelHealth") ends Gorzindel\'s immunity (the gorzindel_immune flag).')
     build.entry(item, GORZINDEL, [29], 'approved_omission', None, 'The poff effect on each removed minion is cosmetic.')
-    build.entry(item, GORZINDEL, [31, 32], 'mapped', path + '/actions/1',
-                'c:unregisterEvent("gorzindelHealth") ends Gorzindel\'s immunity (the gorzindel_immune flag).')
     path = build.rule(item, {'key': 'gorzindel_immunity', 'trigger': {'kind': 'damage_taken', 'role': 'gorzindel', 'source': 'any'},
                              'conditions': [{'kind': 'flag', 'flag': 'gorzindel_immune', 'value': True}],
                              'actions': [{'kind': 'damage_modifier', 'role': 'gorzindel', 'multiplier_percent': 0, 'sources': 'any',
@@ -790,13 +788,86 @@ def gorzindel(build):
                 'The portal sends each player who steps in to the next free knowledge room for 10 s '
                 '(movements_gorzindel.lua lines 1-38): a per-player room assignment outside the v1 vocabulary.')
 
+HEART = 'data-otservbr-global/scripts/quests/heart_of_destruction/'
+HEART_MINION = HEART + 'creaturescripts_heart_minion_death.lua'
+HEART_FINAL_LEVER = HEART + 'actions_final_lever.lua'
+
+
+def heart_minions(build):
+    """HeartMinionDeath: minion and boss deaths update the counters of the World Devourer fight and the resonance state of
+    the Rupture fight. The summon spells that read the counters are transcribed with those monsters."""
+    event = 'HeartMinionDeath'
+    item = build.get('world_devourer', 'Heart of Destruction: World Devourer', 'instance_per_party')
+    encounter = item['encounter']
+    for name in ('rage_summons', 'destruction_summons', 'devourer_summons', 'bosses_killed'):
+        encounter['state']['counters'].append({'name': name, 'initial': 0})
+    for name in ('the_hunger_killed', 'the_destruction_killed', 'the_rage_killed'):
+        encounter['state']['flags'].append({'name': name, 'initial': False})
+    build.entry(item, HEART_FINAL_LEVER, [457, 458, 459, 460, 462, 463, 464, 465], 'mapped', '/encounter/state',
+                'The final lever starts the fight with every counter at 0 and every boss flag false.')
+    minions = [('Frenzy', [7, 8, 9], ['rage_summons', 'devourer_summons']),
+               ('Disruption', [12, 13, 14], ['destruction_summons', 'devourer_summons']),
+               ('Charged Disruption', [12, 13, 14], ['destruction_summons', 'devourer_summons']),
+               ('Overcharged Disruption', [12, 13, 14], ['destruction_summons', 'devourer_summons'])]
+    for minion, lines, counters in minions:
+        role = slug(minion)
+        build.participant(item, role, minion, event)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'counter', 'counter': c, 'operation': 'add', 'value': -1} for c in counters]})
+        build.entry(item, HEART_MINION, [1, 2, 3, 4, 5, 6] + lines, 'mapped', path + '/actions',
+                    f'The death of a {minion.lower()} lowers the {" and ".join(counters)} counters by one.')
+    for boss, lines in (('The Hunger', [15, 16, 17]), ('The Destruction', [18, 19, 20]), ('The Rage', [21, 22, 23])):
+        role = slug(boss)
+        build.participant(item, role, boss, event)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'counter', 'counter': 'bosses_killed', 'operation': 'add', 'value': 1},
+                                             {'kind': 'flag', 'flag': f'{role}_killed', 'value': True}]})
+        build.entry(item, HEART_MINION, [1, 2, 3, 4, 5, 6] + lines, 'mapped', path + '/actions',
+                    f'The death of {boss.lower()} raises bosses_killed and sets its killed flag.')
+
+    rupture = build.get('rupture', 'Heart of Destruction: Rupture', 'instance_per_party')
+    rupture['encounter']['state']['counters'].append({'name': 'resonance_active', 'initial': -1})
+    build.entry(rupture, HEART + 'actions_rupture.lua', [25], 'mapped', '/encounter/state/counters/0',
+                'The Rupture lever starts the fight with RuptureResonanceActive at -1.')
+    build.participant(rupture, 'damage_resonance', 'Damage Resonance', event)
+    path = build.rule(rupture, {'key': 'damage_resonance_death', 'trigger': {'kind': 'creature_died', 'role': 'damage_resonance'},
+                                'conditions': [], 'actions': [{'kind': 'counter', 'counter': 'resonance_active', 'operation': 'set',
+                                                               'value': 0}]})
+    build.entry(rupture, HEART_MINION, [1, 2, 3, 4, 5, 6, 10, 11], 'mapped', path + '/actions/0',
+                'The death of the damage resonance sets RuptureResonanceActive to 0.')
+
+
+
+def heart_chargers(build):
+    """ChargerSpawn: a dead charger is replaced after 6 s on one of ten fixed spots."""
+    path_ = HEART + 'creaturescripts_charger_spawn.lua'
+    item = build.get('heart_chargers', 'Heart of Destruction: charger room', 'instance_per_party')
+    build.participant(item, 'charger', 'Charger', 'ChargerSpawn')
+    item['encounter']['anchors'].append({
+        'key': 'charger_spots', 'kind': 'area',
+        'description': 'Exactly ten tiles, Canary (32151, 31356, 14), (32154, 31353, 14), (32153, 31361, 14), (32158, 31362, 14), '
+                       '(32161, 31360, 14), (32156, 31357, 14), (32159, 31354, 14), (32163, 31356, 14), (32162, 31352, 14), '
+                       '(32158, 31350, 14).'})
+    path = build.rule(item, {'key': 'charger_respawn', 'trigger': {'kind': 'creature_died', 'role': 'charger'}, 'delay_ms': 6000,
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('Charger'), 'role': 'charger',
+                                                            'count': 1, 'at': {'random_in': 'charger_spots'}, 'owner': 'none',
+                                                            'health': 'full'}]})
+    build.entry(item, path_, [7, 8, 23, 25, 26], 'mapped', path + '/trigger',
+                'onDeath of a charger schedules chargerSpawn 6000 ms later, once per death (delay_ms).')
+    build.entry(item, path_, [1, 2, 4, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22], 'mapped', path + '/actions/0',
+                'Game.createMonster("charger", one of the ten positions picked uniformly, false, true): a full-health charger '
+                'on a uniformly random tile of the charger_spots anchor.')
+    build.entry(item, path_, [3, 24], 'approved_omission', None,
+                'spawningCharge marks a pending respawn for actions_charges_lever.lua line 65, which keeps the shared room '
+                'locked; an instance per party (D26) replaces the lock.')
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers):
         transcribe(build)
     print(json.dumps(build.write()))
 
