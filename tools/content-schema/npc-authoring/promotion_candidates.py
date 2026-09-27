@@ -1,4 +1,4 @@
-"""Build NPC promotion candidates: merged Canary+Crystal facts with native keys (owner decisions D4-D6).
+"""Build NPC promotion candidates: merged Canary+Crystal facts with native keys (owner decisions D4-D8).
 
 Evidence tooling only; nothing is written to content/. A candidate is what a later, reviewed
 promotion would write to content/npcs/definitions/ and content/services/travel/.
@@ -15,6 +15,16 @@ Merge rules:
   the fact open and it is left out of the candidate;
 - a definition conflict holds the whole NPC (the wiki has no outfit/movement facts);
 - a gated route (LUA_PREDICATE) is left out and reported;
+- D8 (owner request 2026-09-27, completing held NPCs from the wiki):
+  - an NPC neither source places, whose wiki page has a position, is promoted with that one
+    wiki-origin placement (direction/spawn_interval_s/spawn_radius unknown, so null; marked
+    `"origin": "wiki"`); arbitration records `{"fact": "placements", "rule": "WIKI_POSITION",
+    "chosen": "wiki"}`. Still no wiki position (or no wiki page) stays held UNPLACED;
+  - a single-source NPC absent from the wiki under its own name is tried again under a base name
+    (stripping a trailing ` (Day)`/` (Night)`, or ` Init`/` Vampires Lair`/` Back`); a wiki match
+    on the base name confirms the NPC (records `{"fact": "identity", "rule": "WIKI_BASE_NAME",
+    "chosen": "wiki"}`); several name variants may then share one wiki page. No base-name match
+    stays held SINGLE_SOURCE_NOT_ON_WIKI;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -37,11 +47,36 @@ SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 POSITION_RANK = {'MATCH': 0, 'NEAR': 1, 'MISMATCH': 2}
 LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
+WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME')  # kept in a candidate's arbitration list
+DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
+VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 
 
 def slug(name):
     folded = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode()
     return re.sub(r'[^a-z0-9]+', '_', folded.lower()).strip('_')
+
+
+def base_name(name):
+    """D8: strip a known name-variant suffix so a Day/Night (or Init/Vampires Lair/Back) variant can be
+    matched to its base wiki page. Returns None when `name` carries none of these suffixes."""
+    match = DAY_NIGHT_RE.match(name)
+    if match:
+        return match.group(1)
+    for suffix in VARIANT_NAME_SUFFIXES:
+        if name.endswith(suffix) and len(name) > len(suffix):
+            return name[:-len(suffix)]
+    return None
+
+
+def wiki_position_placement(wiki):
+    """D8: a synthetic placement for an UNPLACED NPC whose wiki page has a position. direction,
+    spawn_interval_s and spawn_radius are unknown from the wiki, so they are left null; `origin`
+    marks the row as wiki-derived rather than sourced from Canary/Crystal."""
+    if not wiki or not wiki.get('position'):
+        return None
+    return {'position': wiki['position'], 'direction': None, 'spawn_interval_s': None,
+            'spawn_radius': None, 'origin': 'wiki'}
 
 
 def definition_facts(bundle):
@@ -214,9 +249,13 @@ class Builder:
         name = next(b['definition']['name'] for b in bundles.values())
         sources = {s: b['key'] for s, b in bundles.items()}
         wiki = self.wiki.get(normalize_name(name))
-        if len(bundles) == 1 and wiki is None:
-            return self.hold(name, sources, 'SINGLE_SOURCE_NOT_ON_WIKI')
         arbitration, left_out = [], []
+        if len(bundles) == 1 and wiki is None:
+            variant = base_name(name)
+            wiki = self.wiki.get(normalize_name(variant)) if variant else None
+            if wiki is None:
+                return self.hold(name, sources, 'SINGLE_SOURCE_NOT_ON_WIKI')
+            arbitration.append({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'})
         definition, conflicts = self.merge_definition(bundles, arbitration)
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))
@@ -224,7 +263,11 @@ class Builder:
         if problem:
             return self.hold(name, sources, problem)
         if not placements:
-            return self.hold(name, sources, 'UNPLACED')
+            fallback = wiki_position_placement(wiki)
+            if fallback is None:
+                return self.hold(name, sources, 'UNPLACED')
+            placements = [fallback]
+            arbitration.append({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'})
         key_slug = slug(name)
         if not key_slug:  # a punctuation-only name has no slug; it needs a hand-chosen key
             return self.hold(name, sources, 'EMPTY_SLUG')
@@ -247,7 +290,7 @@ class Builder:
             'trade_service': trade,
             'provenance': {s: {'key': b['key'], 'sha256': b['source']['sha256']} for s, b in sorted(bundles.items())},
             'wiki': {'pageid': wiki['pageid'], 'revid': wiki['revid']} if wiki else None,
-            'arbitration': [a for a in arbitration if a['rule'] == 'WIKI_ARBITER'],
+            'arbitration': [a for a in arbitration if a['rule'] in WIKI_ARBITRATION_RULES],
             'left_out': left_out,
         }
         return record
@@ -296,7 +339,7 @@ def main():
         for row in record['left_out']:
             builder.stats['left_out_offers' if row['fact'].startswith('trade.') else 'left_out_routes'] += 1
     report = {
-        'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY', 'decisions': ['D4', 'D5', 'D6', 'D7'],
+        'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY', 'decisions': ['D4', 'D5', 'D6', 'D7', 'D8'],
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         'totals': {'candidates': len(promoted), 'with_travel': sum(1 for r in promoted if r['travel_service']),

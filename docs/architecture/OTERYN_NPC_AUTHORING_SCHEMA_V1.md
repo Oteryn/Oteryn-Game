@@ -60,6 +60,7 @@ a text reference `{sha256, length, placeholders, links}` (§6).
 | D5 | NPC text is authored by Oteryn (resolves O2). Canary/Crystal supply structure only (keywords, services, placeholders, links); no Tibia text is promoted. Description, voices and dialogue stay out of promotion until authored. |
 | D6 | TibiaWiki (Fandom) is the tie-breaker between Canary and Crystal (resolves O3 and O7): the source the wiki agrees with wins; without wiki agreement the fact stays open. The wiki never supplies a value itself. |
 | D7 | WorldProject/v2 is extended with typed travel routes and offer quantities before NPCs are admitted, as for monsters ("druga droga"); see `OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md`. |
+| D8 | The wiki completes held NPCs (owner request 2026-09-27). An NPC that neither source places is promoted when its TibiaWiki page has a position; that position becomes its candidate placement (`origin: wiki`, direction and spawn interval unknown). A single-source NPC whose name is a Day/Night or stage variant (` (Day)`, ` (Night)`, ` Init`, ` Vampires Lair`, ` Back`) is confirmed by its base name's page. Corrected spellings and names absent from the snapshot are not guessed. |
 
 Decisions were taken in the owning session on 2026-09-27.
 

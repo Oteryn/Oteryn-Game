@@ -136,6 +136,13 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    Done in `OTV2-20260927-npc-admission-wave-a`: 983 NPCs, 289 trade and 53 travel Services, 2,035 source
    bindings; the successor tree gains `content/npcs/definitions` and `content/services/{trade,travel}`.
    Dragon Ancestor Spirit is deferred (`MOVEMENT_UNDECLARED`): neither source declares its walk configuration.
+   D8 (`OTV2-20260927-npc-admission-wiki-completion`) then admits 98 more NPCs the wiki confirms: 81 that
+   neither source places but whose wiki page has a position, and 17 Day/Night or stage variants confirmed by
+   their base name's page. Wave A is then 1,081 NPCs, with 307 trade and 54 travel Services and 2,253
+   bindings. A page shared by variants binds none of them; they keep their Canary or Crystal binding. Still
+   held: 47 NPCs, i.e. 10 unplaced without a wiki position, 15 unknown to the wiki (custom server NPCs,
+   quest characters, corrected spellings), 7 definition conflicts, 6 placement conflicts, 3 naming issues,
+   6 not loadable.
 5. Later: placements after World admission; dialogue after Oteryn-authored text; held NPCs, offers and
    routes as their blockers close.
 

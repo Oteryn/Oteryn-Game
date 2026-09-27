@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 # Canary creature admission wave A (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7).
 CREATURE_FAMILY_COUNTS = {
-    "Creature": 1316, "Presentation": 2299, "Behavior": 2299, "Loot": 977, "Ability": 5245, "Effect": 3913, "Formula": 4216,
+    "Creature": 1316, "Presentation": 2397, "Behavior": 2397, "Loot": 977, "Ability": 5245, "Effect": 3913, "Formula": 4216,
 }
 CREATURE_FAMILY_NODES = {
     "Creature": "content/creatures/definitions/",
@@ -23,9 +23,9 @@ CREATURE_FAMILY_NODES = {
     "Formula": "content/abilities/formulas/",
 }
 # NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1).
-NPC_COUNT = 983
-NPC_BINDING_COUNT = 2035
-SERVICE_FAMILY_COUNTS = {"Service.Trade": 289, "Service.Travel": 53}
+NPC_COUNT = 1081
+NPC_BINDING_COUNT = 2253
+SERVICE_FAMILY_COUNTS = {"Service.Trade": 307, "Service.Travel": 54}
 SERVICE_FAMILY_NODES = {"Service.Trade": ("content/services/trade/", "offers"), "Service.Travel": ("content/services/travel/", "routes")}
 
 class ValidationError(RuntimeError):

@@ -134,6 +134,50 @@ class PromotionValidatorTests(unittest.TestCase):
         errs = validate_promotion.errors(report)
         self.assertTrue(any('totals.with_trade' in e for e in errs))
 
+    # -- D8: complete held NPCs from the wiki --------------------------------------------------
+
+    def test_base_name_variant_promoted_via_wiki(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Uzon Back')
+        self.assertEqual(len(candidate['provenance']), 1)
+        self.assertIsNotNone(candidate['wiki'])
+        self.assertIn({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'}, candidate['arbitration'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_unplaced_with_wiki_position_promoted(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        self.assertEqual(len(candidate['placements']), 1)
+        placement = candidate['placements'][0]
+        self.assertEqual(placement['origin'], 'wiki')
+        self.assertIsNone(placement['direction'])
+        self.assertIsNone(placement['spawn_interval_s'])
+        self.assertIn({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'}, candidate['arbitration'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_wiki_origin_placement_with_direction_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        candidate['placements'][0]['direction'] = 'NORTH'
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('wiki-origin placement direction must be null' in e for e in errs))
+
+    def test_bad_arbitration_rule_fails(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Uzon Back')
+        candidate['arbitration'][0]['rule'] = 'WIKI_GUESS'
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any("rule 'WIKI_GUESS' not in" in e for e in errs))
+
+    def test_unplaced_npc_without_wiki_position_stays_held(self):
+        report = load_sample()
+        held_unplaced = {h['name'] for h in report['held'] if h['reason'] == 'UNPLACED'}
+        self.assertTrue(held_unplaced)  # NPCs that are neither placed nor on the wiki with a position remain held
+        self.assertNotIn('Uzon Back', held_unplaced)
+        self.assertFalse(held_unplaced & {c['name'] for c in report['candidates']})
+
 
 if __name__ == '__main__':
     unittest.main()

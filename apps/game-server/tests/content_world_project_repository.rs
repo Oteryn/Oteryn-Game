@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "1f43d0c26a74f56e8b52e6039864d2fd8d2de1bcd33ecb95b79908829dac170e",
+        "0b749f069360f94dbbe46a0b5aacd4586f39d008bba9e3e6e6542cf7c1c2b0b7",
     ),
     (
         "definitions/declarations.json",
-        11_979_084,
-        "91db0875c0a0c0c1321267c58bcceefd7f3cc2aa60e067ca924c9d7430cee188",
+        12_258_594,
+        "da568c59700841813e66ab4b4e17a95afe1f0e808d0a79718910d618daa7e614",
     ),
     (
         "definitions/reference.json",
-        13_814_218,
-        "9d36eb6ca8efddba0bdca93dd49ee42a13147b3e13ef79487b166657d5520859",
+        13_845_268,
+        "c51ecdd428884c5c53e0bb030192420339d5159c7b3f5e76888d97d6d1d10785",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "79fe31c21ee5e8b4eafdda4447c1601337136626242d03e516b0ab929960e044",
+        "fdd722717dcd1e5d12d6cdf4c8b5b40ae26d9f5ec10efc9f41fab272604b3e32",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "308454bfbbb87d4f351b96514d6633cf1a37f99c053e670a78b0188329845a3c",
+        "6d5c594d59ce3bd577d3ed4c786b2e9f506dafee1f6f96cf9d0fc730957b12d7",
     ),
     (
         "provenance/imports.json",
         3836,
-        "d3228707b332dc8ded1f768ff0d774ad86e9fe86234dd96ab7f7598be19a8d00",
+        "c492b54c3bbf8c9224c6b45904e753490e5b012a97d271c83154857450bf4548",
     ),
     (
         "provenance/sources.json",
-        1_144_933,
-        "bc134c471ca2dcdb0be9799e46f1797fed3062bdd0651a48d73fc1d0c3b9747a",
+        1_205_052,
+        "05966d8f3150fa46f79aa584faff6686e78103c6d0b434e187328f89cf97aa6a",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "3ee13eab6ef9794c95cb8a22bcab1517f5e916dd572430b5a5226b240e5b6735";
+const TREE_SHA256: &str = "e34ad9d9b891d0d08f9adfebc23674de7af17972ab6fa543f6f5b021de808c55";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -92,10 +92,10 @@ const CREATURES: usize = 1316;
 const CREATURE_RECORDS: usize = 18299;
 const CREATURE_PROFILES: usize = 17333;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
-const NPCS: usize = 983;
-const NPC_RECORDS: usize = 1966;
-const NPC_DECLARATIONS: usize = 1325;
-const NPC_BINDINGS: usize = 2035;
+const NPCS: usize = 1081;
+const NPC_RECORDS: usize = 2162;
+const NPC_DECLARATIONS: usize = 1442;
+const NPC_BINDINGS: usize = 2253;
 
 fn repository_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -273,7 +273,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         filesystem_limits(),
     )
     .expect("capture tracked canonical package");
-    assert_eq!(project.project_revision(), "g4-npc-wave-a-r1");
+    assert_eq!(project.project_revision(), "g4-npc-wave-a-r2");
     assert_eq!(project.imports().len(), 6);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
@@ -448,7 +448,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[4].sha256, mount_import.source_artifact_sha256);
     assert_eq!(v2.sources[4].evidence, ProjectV2EvidenceClass::Derived);
     let npc_import = &project.imports()[5];
-    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r1");
+    assert_eq!(npc_import.batch_id, "g4-npc-wave-a-tibiawiki-r2");
     assert!(npc_import.candidates.is_empty());
     assert_eq!(v2.sources[5].key, v2.sources[2].key);
     assert_eq!(v2.sources[5].import_batch_id, npc_import.batch_id);
