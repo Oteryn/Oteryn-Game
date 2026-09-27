@@ -76,6 +76,7 @@ d['condition'] = {'oneOf': [
     kinded('creature_present', {'role': NAME, 'anchor': NAME, 'present': BOOL}, ('role', 'anchor', 'present')),
     kinded('in_anchor', {'subject': use('subject'), 'anchor': NAME}, ('subject', 'anchor')),
     kinded('killer_is_player'),
+    kinded('has_master', {'role': NAME, 'value': BOOL}, ('role', 'value')),
     kinded('health_percent', {'role': NAME, 'op': OP, 'value': integer(0, 100)}, ('role', 'op', 'value')),
     kinded('attacker_wears', {'item': use('ItemRef'), 'wears': BOOL}, ('item', 'wears')),
     kinded('killer_progress', {'progress': KEY, 'op': OP, 'value': {'type': ['integer', 'boolean']}},
@@ -105,7 +106,8 @@ d['action'] = {'oneOf': [
     kinded('cast', {'ability': use('AbilityRef'), 'at': use('position')}, ('ability', 'at')),
     kinded('say', {'subject': use('subject'), 'text': TEXT, 'mode': enum('say', 'yell')}, ('subject', 'text', 'mode')),
     kinded('drop_item', {'item': use('ItemRef'), 'at': use('position')}, ('item', 'at')),
-    kinded('emit_outcome', {'outcome': NAME}, ('outcome',))]}
+    kinded('emit_outcome', {'outcome': NAME, 'credited': enum('damage_contributors', 'killer', 'players_in_anchor'),
+                            'anchor': NAME}, ('outcome', 'credited'))]}
 
 d['rule'] = obj({'key': NAME, 'trigger': use('trigger'), 'conditions': array(use('condition')),
                  'actions': array(use('action'), 1)}, ('key', 'trigger', 'conditions', 'actions'))

@@ -117,13 +117,13 @@ EVENTS = {
 }
 EVENT_CENSUS = ROOT / 'samples' / 'events-canary-47dfd51f.json'
 ENCOUNTER_SAMPLES = ROOT.parent / 'encounter-authoring' / 'samples'
-ENCOUNTERS = {}
+ENCOUNTERS = {}  # (event, creature key) -> encounters whose manifests cover that pair
 for _manifest in sorted(ENCOUNTER_SAMPLES.glob('*/manifest.json')):
     _data = json.loads(_manifest.read_text(encoding='utf-8'))
-    _encounter = json.loads((_manifest.parent / 'encounter.json').read_text(encoding='utf-8'))
-    for _event in _data['canary_events']:
-        ENCOUNTERS[_event] = {'key': _data['encounter'], 'path': str(_manifest.parent.relative_to(ROOT.parent)),
-                              'participants': {c['key'] for p in _encounter['participants'] for c in p['creatures']}}
+    for _event, _creatures in _data['covers'].items():
+        for _creature in _creatures:
+            ENCOUNTERS.setdefault((_event, _creature), []).append(
+                f'{_data["encounter"]} ({_manifest.parent.relative_to(ROOT.parent)})')
 if EVENT_CENSUS.exists():
     for _event in json.loads(EVENT_CENSUS.read_text(encoding='utf-8'))['events']:
         if _event['event'] not in EVENTS:
@@ -738,11 +738,11 @@ class Converter:
                 resolution=f'Race "{m["race"]}" leaves no death residue: ' + RULES['race_residue'] + '.')
         for event in m.get('events', []):
             kind, script, effect = EVENTS.get(event, (None, None, None))
-            encounter = ENCOUNTERS.get(event)
-            if encounter and creature['identity']['key'] in encounter['participants']:
+            encounters = ENCOUNTERS.get((event, creature['identity']['key']))
+            if encounters:
                 row(f'events={event}', 'approved_omission', 'script', line=line_of(r'^monster\.events'),
-                    resolution=f'{script} {effect}. Relocated to Encounter {encounter["key"]} ({encounter["path"]}), which '
-                               'lists this creature as a participant; the monster keeps no copy of the logic (D20, D28).')
+                    resolution=f'{script} {effect}. Relocated to Encounter {", ".join(encounters)}, whose manifest covers this '
+                               'creature for the whole event; the monster keeps no copy of the logic (D20, D28).')
             elif kind == 'quest':
                 row(f'events={event}', 'approved_omission', 'script', line=line_of(r'^monster\.events'),
                     resolution=f'{script} {effect}. ' + QUEST_EVENT_OMISSION)
