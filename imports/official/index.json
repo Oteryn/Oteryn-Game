@@ -4,7 +4,7 @@
   "kind": "import_provenance",
   "owner": "Import tooling",
   "repository": "Oteryn/Oteryn-Game",
-  "population_state": "READY_UNPOPULATED",
+  "population_state": "POPULATED",
   "contract": "docs/architecture/OTERYN_FULL_GAME_CONTENT_AND_RULESET_TREE_V1.md",
-  "notes": "Official/public source evidence snapshots/manifests as legally permitted."
+  "notes": "Official/public source evidence snapshots/manifests as legally permitted. client-assets/15.30/manifest.json is a checksum-only client 15.30 asset manifest; no proprietary asset files are committed."
 }

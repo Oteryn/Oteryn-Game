@@ -240,3 +240,47 @@ owner_action_required: null
 blocker: null
 next_action: stage the exact allocated delta, publish, freeze one remote candidate and request independent review
 ```
+
+## Terminal lifecycle closeout — 2026-09-27
+
+This section supersedes the historical implementing/pending metadata and checkpoint
+above. The complete delivery record remains verbatim as historical evidence; this
+archive is not an active dispatch surface.
+
+`PROVEN` (from `git log origin/main`, no GitHub API call): PR #1018
+("feat(content): Item authoring follow-ups and semantic promotion lowering v1")
+merged into protected `main` as commit `d8285019` (author `blakinio`, committer
+`GitHub`, commit date `2026-09-27T20:17:36+00:00`), sole parent
+`e422fc9d2962f63ccb6f0af9ee80ec5f449c2a31`, tree
+`fc6e281127042126a2768432d503fcf8ee4d3f3f`; 12 files changed, 134,599 insertions,
+10 deletions, including
+`tools/content-schema/item-authoring/verify_formal_schema.py`,
+`tools/content-schema/item-authoring/source_field_catalogs.py`,
+`tools/content-schema/item-authoring/lower_promotion_packet.py`,
+`tools/content-schema/item-authoring/test_lower_promotion_packet.py`,
+`tools/content-schema/item-authoring/samples/promotion-crystal-ff7ede5.json`,
+`tools/content-schema/item-authoring/README.md`,
+`.github/workflows/item-authoring-schema.yml`,
+`docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md`, this task record,
+and the predecessor archive record
+`docs/agents/tasks/archive/OTV2-20260926-item-authoring-formal-schema-v1.md`.
+`git log origin/main` places `d8285019` at the current tip of protected `main`, so
+protected `main` is at this exact merge commit as of this closeout.
+
+This closeout performs no fresh exact-head independent review of its own; the
+"Independent review" section above records that it was pending at the last update
+of this file, and no later update captured its outcome before merge. This closeout
+does not retroactively invent that evidence; it records only what `git log` proves
+about the merge itself. This closeout performs no code, schema or content mutation
+of its own; it only moves this record from `docs/agents/tasks/active/` to
+`docs/agents/tasks/archive/`.
+
+The delivery task status is `completed`: PR #1018 closed the accepted PR #952
+review follow-ups (formal-schema negative probes, the Crystal-binding
+duplicate-target-key guard, the `population_census.py --check` doc note) and added
+the unwired v1 Crystal Item semantic-promotion lowering candidate
+(`lower_promotion_packet.py`, `samples/promotion-crystal-ff7ede5.json`), and merged
+clean into protected `main`. Aggregate issue #162 and Jira `KAN-16` remain open for
+later Item authoring work, including wiring this lowering candidate into
+`apps/game-server/src/content/cw2_b1_import.rs` under the Content/World import
+role's own review.
