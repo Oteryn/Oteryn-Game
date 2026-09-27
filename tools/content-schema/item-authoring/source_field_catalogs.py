@@ -1315,4 +1315,3 @@ assert len(COMMON_PARSER_FIELDS) == 142
 assert len(set(COMMON_PARSER_FIELDS)) == 142
 assert len(FANDOM_FIELDS) == 84
 assert len(set(FANDOM_FIELDS)) == 84
-
