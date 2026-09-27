@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-npc-promotion-candidates
 title: NPC promotion candidates with native keys (owner decisions D4-D6)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 983
 jira: KAN-16
 base_sha: ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c
 head_sha: null
