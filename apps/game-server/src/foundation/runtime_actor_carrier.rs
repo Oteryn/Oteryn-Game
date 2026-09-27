@@ -1382,6 +1382,23 @@ impl ChannelActorCarrier {
         actor_ref: ActorRef,
     ) -> Result<CommittedLethalReceipt, CarrierError> {
         let index = self.validate_ref(continuity, actor_ref)?;
+        if let Some(existing) = self
+            .corpse_projection
+            .as_ref()
+            .filter(|projection| projection.occurrence.actor == ExactActorRef(actor_ref))
+        {
+            return Ok(CommittedLethalReceipt {
+                projection: RuntimeCorpseProjection {
+                    occurrence: CreatureDeathOccurrenceRef {
+                        actor: existing.occurrence.actor,
+                        commit_binding: copy_bounded_binding(&existing.occurrence.commit_binding)?,
+                        damage: existing.occurrence.damage,
+                        health_before: existing.occurrence.health_before,
+                    },
+                    position: existing.position,
+                },
+            });
+        }
         let Slot::CreatureOccupied {
             generation,
             position,
@@ -1458,10 +1475,11 @@ impl ChannelActorCarrier {
         fail_before_write: bool,
         fail_after_write: bool,
     ) -> Result<&RuntimeCorpseProjection, CarrierError> {
-        self.validate_lethal_receipt(continuity, &receipt)?;
+        self.validate_ref(continuity, receipt.projection.occurrence.actor.0)?;
         if self.corpse_projection.is_some() {
             return self.existing_corpse_projection(&receipt);
         }
+        self.validate_lethal_receipt(continuity, &receipt)?;
         if fail_before_write {
             return Err(CarrierError::InjectedCorpseProjectionFailure);
         }

@@ -353,6 +353,16 @@ fn projection_failures_preserve_retry_and_lost_response_idempotency() {
         .current_owner_combat_death(&owner)
         .committed_lethal_receipt(actor)
         .expect("retry receipt");
+    let direct_retry = carrier
+        .current_owner_combat_death(&owner)
+        .committed_lethal_receipt(actor)
+        .expect("direct retry receipt");
+    let mut conflicting_retry = carrier
+        .current_owner_combat_death(&owner)
+        .committed_lethal_receipt(actor)
+        .expect("conflicting retry receipt");
+    conflicting_retry.projection.occurrence.commit_binding =
+        b"cast:conflicting\0binding".to_vec().into_boxed_slice();
     assert_eq!(
         carrier
             .current_owner_combat_death(&owner)
@@ -365,13 +375,45 @@ fn projection_failures_preserve_retry_and_lost_response_idempotency() {
             .as_ref()
             .expect("write survived lost response"),
     );
+    assert_eq!(carrier.remove(&owner, actor.0), Ok(ActorState(1)));
+    let direct_replay = {
+        let mut combat = carrier.current_owner_combat_death(&owner);
+        projection_signature(
+            combat
+                .project_committed_lethal(direct_retry)
+                .expect("issued receipt reconciles after source removal"),
+        )
+    };
+    assert_eq!(direct_replay, retained);
+    assert_eq!(
+        carrier
+            .current_owner_combat_death(&owner)
+            .project_committed_lethal(conflicting_retry),
+        Err(CarrierError::CorpseProjectionConflict)
+    );
     let replay = {
         let mut combat = carrier.current_owner_combat_death(&owner);
         projection_signature(
-            project_fixed_one_creature_death(&mut combat, actor).expect("lost response retry"),
+            project_fixed_one_creature_death(&mut combat, actor)
+                .expect("lost response retry reconciles after source removal"),
         )
     };
     assert_eq!(replay, retained);
+    let wrong_generation = ExactActorRef(ActorRef {
+        actor_local_generation: ActorLocalGeneration(actor.0.actor_local_generation.0 + 1),
+        ..actor.0
+    });
+    assert!(
+        project_fixed_one_creature_death(
+            &mut carrier.current_owner_combat_death(&owner),
+            wrong_generation,
+        )
+        .is_err()
+    );
+    assert_eq!(
+        projection_signature(carrier.corpse_projection.as_ref().expect("retained corpse")),
+        retained
+    );
 }
 
 #[test]
