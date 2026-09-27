@@ -8,6 +8,7 @@ mod qualification;
 mod tcp_tls;
 pub(crate) mod world_spatial;
 
+use crate::content::NativeEntryMovementCells;
 use crate::domain;
 use crate::durability::DurabilityRoot;
 use crate::durability::admission_authority_guards::{
@@ -39,7 +40,7 @@ use crate::foundation::{
 };
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FirstEntryOutcome,
-    FreshAdmissionAttempt, FreshAdmissionAuthority, admit_frame, hold_admitted,
+    FreshAdmissionAttempt, FreshAdmissionAuthority, StepOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -51,6 +52,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{Mutex, Semaphore};
 use tokio_rustls::rustls;
+use world_spatial::{ActorPosition, StepDirection, StepDisposition, WorldSpatialObservation};
 
 /// Registered Server Seam hard maximum of pre-admission connections. Admitted
 /// connections stay inside the same budget: no separate maximum is registered.
@@ -197,9 +199,12 @@ async fn serve_accepted<A, I, O>(
     drop(unit);
     let end = match admitted {
         Err(end) => end,
-        Ok(admitted) => first(hold_admitted(&mut stream, admitted), shutdown.cancelled())
-            .await
-            .unwrap_or(ConnectionEnd::AdmittedThenDisconnected(admitted)),
+        Ok(admitted) => first(
+            serve_admitted(&mut stream, admitted, authority),
+            shutdown.cancelled(),
+        )
+        .await
+        .unwrap_or(ConnectionEnd::AdmittedThenDisconnected(admitted)),
     };
     observer.ended(end);
 }
@@ -231,6 +236,8 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     /// First-slice runtime authority remains crate-owned and cannot be supplied
     /// by a transport or client caller.
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
+    /// The active generation's qualified cells the Channel's Movement reads (#935).
+    pub(crate) movement_cells: &'a NativeEntryMovementCells,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -298,6 +305,7 @@ pub async fn serve_gameplay(
         world_id: owners.world_id,
         channel_id: owners.channel_id,
         runtime: owners.runtime,
+        movement_cells: owners.movement_cells,
     };
     serve_listener(
         listener,
@@ -360,9 +368,95 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) world_id: WorldId,
     pub(crate) channel_id: ChannelId,
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
+    pub(crate) movement_cells: &'a NativeEntryMovementCells,
+}
+
+impl ComposedFreshAdmission<'_, '_, '_> {
+    fn observation(
+        runtime: &ChannelRuntimeV1,
+        position: crate::foundation::MovementLocalPosition,
+    ) -> WorldSpatialObservation {
+        WorldSpatialObservation {
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            actor_position: ActorPosition {
+                x: position.x,
+                y: position.y,
+                floor: position.floor,
+            },
+        }
+    }
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
+    async fn observe(&self, actor: ExactActorRef) -> Option<WorldSpatialObservation> {
+        let mut runtime = self.runtime.lock().await;
+        let snapshot = runtime.borrow_movement_position().read(actor).ok()?;
+        if snapshot.context() != runtime.pinned_movement_context() {
+            return None;
+        }
+        Some(Self::observation(&runtime, snapshot.position()))
+    }
+
+    /// One Channel-owner work item for one actor (`MOVE-RL-02` = 1): the pinned context, one
+    /// direct lookup in the active generation's qualified cells (`MOVE-RL-03` = 1) and the
+    /// owner's compare-commit. A blocked or out-of-room destination is `Blocked`; any stale,
+    /// unpositioned or mismatched binding is `Rejected`. Nothing moves unless the step commits.
+    async fn step(&self, actor: ExactActorRef, direction: StepDirection) -> StepOutcome {
+        use crate::movement::{
+            CardinalStep, MovementEngineeringSelection, MovementError, MovementOwnerTurn,
+            MovementTurnOutcome,
+        };
+        use std::num::NonZeroUsize;
+        let mut runtime = self.runtime.lock().await;
+        // The cells must be the pinned generation's own: same World and server artifact.
+        let scope = self.movement_cells.scope();
+        if scope.world_id != self.world_id
+            || scope.generation_digest != runtime.content_pin().server_artifact_digest()
+        {
+            return StepOutcome::rejected();
+        }
+        let owner_context = runtime.pinned_movement_context();
+        let cardinal = match direction {
+            StepDirection::North => CardinalStep::North,
+            StepDirection::East => CardinalStep::East,
+            StepDirection::South => CardinalStep::South,
+            StepDirection::West => CardinalStep::West,
+        };
+        let outcome = {
+            let mut turn = MovementOwnerTurn::begin(&mut runtime, NonZeroUsize::MIN);
+            let Ok(expected) = turn.read(actor) else {
+                return StepOutcome::rejected();
+            };
+            let selection = MovementEngineeringSelection {
+                owner_context,
+                content_scope: scope,
+            };
+            turn.try_step(
+                actor,
+                expected,
+                &selection,
+                self.movement_cells.index(),
+                cardinal,
+            )
+        };
+        match outcome {
+            Ok(MovementTurnOutcome::Applied(snapshot)) => StepOutcome {
+                disposition: StepDisposition::Moved,
+                moved_to: Some(Self::observation(&runtime, snapshot.position())),
+            },
+            Err(
+                MovementError::Blocked
+                | MovementError::Cell(
+                    crate::content::static_cell_engine::StaticCellEngineError::Absent,
+                ),
+            ) => StepOutcome {
+                disposition: StepDisposition::Blocked,
+                moved_to: None,
+            },
+            Ok(MovementTurnOutcome::Deferred) | Err(_) => StepOutcome::rejected(),
+        }
+    }
+
     async fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,

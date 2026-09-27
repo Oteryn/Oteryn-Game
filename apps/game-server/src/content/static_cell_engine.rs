@@ -1,8 +1,10 @@
 //! Versioned, server-only static-cell carrier for engineering qualification.
 //!
-//! Its input is explicitly synthetic engineering provenance. The carrier has no Reference
-//! evidence admission or activation conversion; a later Reference claim requires a separate
-//! exact-field admission path. Only a direct addressed cell is read by `lookup`.
+//! Its input is either explicitly synthetic engineering provenance or the cells of the natively
+//! qualified entry room (`NativeEntryMovementCells`, #935), built only by that room's
+//! qualification. The carrier itself grants no active status and has no Reference evidence
+//! admission or activation conversion; a later Reference claim requires a separate exact-field
+//! admission path. Only a direct addressed cell is read by `lookup`.
 
 use super::{
     CollisionClass, ContentLockBinding, ContentLockEntry, CoordinateFrameRef, LogicalCell,

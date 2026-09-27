@@ -142,6 +142,21 @@ struct ActorRef {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct ExactActorRef(ActorRef);
 
+impl ExactActorRef {
+    /// Transport test fixture: an actor reference that names no runtime slot.
+    #[cfg(test)]
+    #[allow(clippy::expect_used, dead_code)]
+    pub(crate) fn transport_fixture(world_id: WorldId, channel_id: ChannelId) -> Self {
+        Self(ActorRef {
+            world_id,
+            channel_id,
+            scope_generation: ScopeOwnershipGeneration::new(1).expect("generation"),
+            actor_local_id: ActorLocalId(1),
+            actor_local_generation: ActorLocalGeneration(1),
+        })
+    }
+}
+
 /// One fixed-slot reservation for a fresh GameSession. It is not a playable
 /// actor until the owning durable admission is proven committed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -696,6 +711,12 @@ impl ChannelRuntimeV1 {
             .current_owner_movement_position(&self.continuity)
     }
 
+    /// The Movement owner context of this runtime's fixed Content pin; a step is eligible only
+    /// for a position initialized under exactly this context.
+    pub(crate) fn pinned_movement_context(&self) -> MovementPositionContext {
+        MovementPositionContext(self.pinned_position_context())
+    }
+
     /// Unactivated Combat proof: one exclusive borrow of the physical Channel
     /// owner. It grants no scheduler, production activation or corpse lifetime.
     pub(crate) fn borrow_combat_death(&mut self) -> CurrentOwnerCombatDeath<'_> {
@@ -838,6 +859,32 @@ impl ChannelRuntimeV1 {
                 } => (committed, pending + 1),
                 _ => (committed, pending),
             })
+    }
+
+    /// Test-only census: the position revisions of committed player actors that
+    /// stand at the pinned start cell under the pinned context, ascending.
+    #[cfg(test)]
+    pub(crate) fn entry_start_player_revisions(&self) -> Vec<u64> {
+        let mut revisions: Vec<u64> = self
+            .carrier
+            .slots
+            .iter()
+            .filter_map(|slot| match slot {
+                Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    position: Some(version),
+                    ..
+                } if version.position == self.content.entry_start
+                    && version.context == self.pinned_position_context() =>
+                {
+                    Some(version.revision)
+                }
+                _ => None,
+            })
+            .collect();
+        revisions.sort_unstable();
+        revisions
     }
 
     /// Test-only census: committed player actors positioned at the pinned

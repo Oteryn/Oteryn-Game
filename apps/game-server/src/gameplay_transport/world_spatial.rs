@@ -4,8 +4,9 @@
 //! snapshot type 1. Decoding is strict: zero or unknown enum values, unknown or repeated fields and
 //! over-bound payloads fail closed.
 
-// Composed by the first-control Server Seam child (M2, #822).
-#![allow(dead_code)]
+// The client-side codecs (intent encode, result and world-spatial decode) are exercised by the
+// round-trip tests and the qualification client; the server composes only its own direction.
+#![cfg_attr(not(test), allow(dead_code))]
 
 pub(crate) const COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT: u32 = 1;
 pub(crate) const STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY: u32 = 1;
