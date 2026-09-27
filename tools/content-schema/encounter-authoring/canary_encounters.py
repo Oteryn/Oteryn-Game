@@ -237,12 +237,63 @@ def dream_courts(build):
                 None, 'The dream type chosen from the escalation counter; see the entry above.')
 
 
+FORGOTTEN_KNOWLEDGE_KILL = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua'
+# boss, encounter, display, config line, storage, cooldown seconds
+FORGOTTEN_KNOWLEDGE_BOSSES = [
+    ('Lady Tenebris', 'lady_tenebris', 'Lady Tenebris', 3, 'LadyTenebrisKilled', 20 * 3600),
+    ('The Enraged Thorn Knight', 'the_enraged_thorn_knight', 'The Enraged Thorn Knight', 4, 'ThornKnightKilled', 20 * 3600),
+    ('Lloyd', 'lloyd', 'Lloyd', 5, 'LloydKilled', 20 * 3600),
+    ('Soul of Dragonking Zyrtarch', 'soul_of_dragonking_zyrtarch', 'Soul of Dragonking Zyrtarch', 6, 'DragonkingKilled', 20 * 3600),
+    ('Melting Frozen Horror', 'melting_frozen_horror', 'Melting Frozen Horror', 7, 'HorrorKilled', 20 * 3600),
+    ('The Time Guardian', 'the_time_guardian', 'The Time Guardian', 8, 'TimeGuardianKilled', 20 * 3600),
+    ('The Blazing Time Guardian', 'the_time_guardian', 'The Time Guardian', 9, 'TimeGuardianKilled', 20 * 3600),
+    ('The Freezing Time Guardian', 'the_time_guardian', 'The Time Guardian', 10, 'TimeGuardianKilled', 20 * 3600),
+    ('The Last Lore Keeper', 'the_last_lore_keeper', 'The Last Lore Keeper', 11, 'LastLoreKilled', 13 * 24 * 3600 + 20 * 3600)]
+
+
+def forgotten_knowledge(build):
+    """ForgottenKnowledgeBossDeath: boss kill outcomes (a cooldown for the reward domain); the Melting Frozen Horror egg
+    swap on fixed tiles stays unresolved; an astral glyph death has no effect."""
+    event = 'ForgottenKnowledgeBossDeath'
+    for boss, name, display, line, storage, cooldown in FORGOTTEN_KNOWLEDGE_BOSSES:
+        item = build.get(name, f'Forgotten Knowledge: {display}', 'instance_per_party')
+        role = slug(boss)
+        build.participant(item, role, boss, event if boss != 'Melting Frozen Horror' else None)
+        outcome = f'{role}_defeated'
+        item['encounter']['outcomes'].append(outcome)
+        path = build.rule(item, {'key': f'{role}_death_outcome', 'trigger': {'kind': 'creature_died', 'role': role},
+                                 'conditions': [], 'actions': [{'kind': 'emit_outcome', 'outcome': outcome,
+                                                                'credited': 'damage_contributors'}]})
+        build.entry(item, FORGOTTEN_KNOWLEDGE_KILL, [16, 18, 19, 20, 21, 22, line], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss}".')
+        build.entry(item, FORGOTTEN_KNOWLEDGE_KILL, [24, 25, 26, 27, 28, 29, 30, 35], 'mapped', path + '/actions/0',
+                    f'onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets Storage '
+                    f'ForgottenKnowledge.{storage} to now + {cooldown} seconds.')
+        if boss == 'The Enraged Thorn Knight':
+            build.entry(item, FORGOTTEN_KNOWLEDGE_KILL, [31, 32, 33], 'approved_omission', None,
+                        'The PlantCounter/BirdCounter reset sits in an elseif after `if bossConfig.storage`, and the thorn knight '
+                        'has a storage, so Canary never runs it (dead branch).')
+        item['manifest']['outcome_evidence'].append({
+            'outcome': outcome, 'credited': 'damage_contributors',
+            'reward_domain': {'canary_storage': f'Storage.Quest.U11_02.ForgottenKnowledge.{storage}', 'cooldown_seconds': cooldown}})
+    horror = build.items['melting_frozen_horror']
+    build.entry(horror, FORGOTTEN_KNOWLEDGE_KILL, [37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48], 'unresolved_semantics', None,
+                'On its death the top creature on tile (32269, 31084, 14) is removed and a baby dragon is created in its place, '
+                'and the top creature on (32267, 31071, 14) is removed. Which creatures stand on those tiles is map state, '
+                'not visible in the script; modelling it needs those roles confirmed (D25: wiki or map evidence).')
+    keeper = build.items['the_last_lore_keeper']
+    build.participant(keeper, 'astral_glyph', 'An Astral Glyph', event)
+    build.entry(keeper, FORGOTTEN_KNOWLEDGE_KILL, [12, 13], 'approved_omission', None,
+                'An astral glyph has an empty config: no storage, not the thorn knight, not the horror, so its death has no '
+                'effect in this event.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge):
         transcribe(build)
     print(json.dumps(build.write()))
 

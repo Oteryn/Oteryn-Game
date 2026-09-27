@@ -1,0 +1,103 @@
+{
+  "encounter": "canary:encounter/the_last_lore_keeper",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ForgottenKnowledgeBossDeath": [
+      "canary:creature/the_last_lore_keeper",
+      "canary:creature/an_astral_glyph"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/the_last_lore_keeper.lua",
+      "blob_sha1": "30dd34b9766897ede59c75964fba1332ba887860"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "00ced55f16d363011cad6cc00bc14ea07fbdd253"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/kilmaresh/an_astral_glyph.lua",
+      "blob_sha1": "a9c8792332ac999ba51c0dd398d8741e5df514dd"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The Last Lore Keeper is the the_last_lore_keeper participant; its file registers ForgottenKnowledgeBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        16,
+        18,
+        19,
+        20,
+        21,
+        22,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"The Last Lore Keeper\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets Storage ForgottenKnowledge.LastLoreKilled to now + 1195200 seconds.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "An Astral Glyph is the astral_glyph participant; its file registers ForgottenKnowledgeBossDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        12,
+        13
+      ],
+      "status": "approved_omission",
+      "resolution": "An astral glyph has an empty config: no storage, not the thorn knight, not the horror, so its death has no effect in this event."
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "the_last_lore_keeper_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U11_02.ForgottenKnowledge.LastLoreKilled",
+        "cooldown_seconds": 1195200
+      }
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "definitions": [
+    {
+      "family": "Creature",
+      "key": "canary:creature/lady_tenebris",
+      "revision": "canary-47dfd51f"
+    }
+  ]
+}

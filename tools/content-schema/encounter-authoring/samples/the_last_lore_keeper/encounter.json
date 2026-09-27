@@ -1,0 +1,57 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_last_lore_keeper",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: The Last Lore Keeper",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_last_lore_keeper",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_last_lore_keeper",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "astral_glyph",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/an_astral_glyph",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_last_lore_keeper_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_last_lore_keeper"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_last_lore_keeper_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_last_lore_keeper_defeated"
+  ]
+}

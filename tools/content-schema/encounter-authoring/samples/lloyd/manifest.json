@@ -1,0 +1,77 @@
+{
+  "encounter": "canary:encounter/lloyd",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ForgottenKnowledgeBossDeath": [
+      "canary:creature/lloyd"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/forgotten_knowledge/bosses/lloyd.lua",
+      "blob_sha1": "1f73944519a5dd15ec40ebbdabb00b63398d00ee"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "00ced55f16d363011cad6cc00bc14ea07fbdd253"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Lloyd is the lloyd participant; its file registers ForgottenKnowledgeBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        16,
+        18,
+        19,
+        20,
+        21,
+        22,
+        5
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"Lloyd\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        35
+      ],
+      "status": "mapped",
+      "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the reward domain sets Storage ForgottenKnowledge.LloydKilled to now + 72000 seconds.",
+      "destination": "/encounter/rules/0/actions/0"
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "lloyd_defeated",
+      "credited": "damage_contributors",
+      "reward_domain": {
+        "canary_storage": "Storage.Quest.U11_02.ForgottenKnowledge.LloydKilled",
+        "cooldown_seconds": 72000
+      }
+    }
+  ]
+}
