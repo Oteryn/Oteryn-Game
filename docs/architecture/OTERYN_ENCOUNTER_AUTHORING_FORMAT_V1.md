@@ -178,6 +178,9 @@ buff such as the cobra flask).
    rule run in order. `prevent_death` is valid only in a `lethal_damage` rule. A rule with
    `delay_ms` is scheduled once per trigger occurrence (like Canary `addEvent`): its conditions are
    evaluated and its actions run `delay_ms` later, and `death_position` is the position of that death.
+   `health_crossed` fires when a creature's health falls from above the threshold to at or below it;
+   a Canary check with a strict `<` differs only at the single health value on the threshold and is
+   noted in the manifest.
    In a rule triggered by one creature (a death, lethal damage, damage, health, spawn or cast
    trigger), `transform`, `prevent_death`, `heal`, `damage`, `damage_modifier` and `say` naming the
    trigger's role act on that creature; `remove` of a role removes every creature of the role. A
@@ -201,6 +204,7 @@ buff such as the cobra flask).
 | D27 | Encounters only emit named outcomes. Boss cooldowns, reward eligibility and reward rooms are consumed by the reward domain; quest steps by the quest domain. | Owner delegated the choice; the scope matrix already assigns boss reward eligibility to the reward domain. |
 | D28 | §4-6 plus phases is the v1 vocabulary under the rules of §9. Work starts with `FourthTaintBossesPrepareDeath` (15 Soul War hunting monsters, a `channel_shared` zone rule with a read-only quest-progress condition), then the largest death events. | Owner delegated the choice; the source shows the event is a zone rule, not a boss fight. |
 | D29 | Vocabulary extensions: `creature_spawned` and `ability_cast` triggers; the `world_state` read-only condition; fractional or absolute health thresholds; `creature_present` near a role; `{min, max}` ranges; a `damage` action; `component: primary`; `map_item.interaction`. Acting on whatever stands on a fixed tile is not added: each case names its role from wiki or map evidence. Scripted movement is deferred. State shared by all parties belongs to the quest domain, which the encounter reads through `world_state`. | Owner accepted the proposal ("kontynuuj tak jak uważasz za optymalne", 2026-09-27). |
+| D30 | Crystal Server (`zimbadev/crystalserver`, a Canary fork) is consulted as a second donor wherever a Canary script is broken, ambiguous or unresolved. It is evidence only: Canary stays the transcription source and the reference-date wiki still decides (D25). | Owner request 2026-09-27 ("sprawdzać też crystal jako donor"). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
@@ -270,3 +274,34 @@ A fifth slice uses the D29 vocabulary:
 Inline callbacks covered by an encounter manifest are relocated by the monster converter like events.
 52 encounters validate, 46 manifests resolve fully, `verify_encounter_schema.py` 63/63; the census rises
 from 1,453 to 1,463.
+
+A sixth slice rechecked a research brief against the source. The brief was often wrong and was
+corrected before transcription. Canary passes damage to `onHealthChange` as a negative value, so
+handlers that test `primaryDamage > 0` only react to heals.
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `PythiusTheRottenDeath`, `TheRavagerDeath`, `TheShattererDeath`, `ThePrimalMenaceDeath`, `TireczDeath` | 5 | 5 | Kill outcomes (quest, reward room, achievement and hazard level for their domains); exit teleporters; Tirecz's arena is emptied. The Shatterer's chain and lever reset only prepares the shared room for the next group (D26). |
+| `FirstDragonDeath` | 1 | 1 | The lair's players are credited, then teleported out. |
+| `WhiteDeerDeath`, `WhiteDeerScoutsDeath` | 1 | 2 | A `channel_shared` hunting rule; one roll picks the enraged or the desperate deer, which a flag reproduces exactly. |
+| `Splash`, `MakeshiftHomeDeath`, `OrganicMatterDeath`, `FerumbrasSoulSplinterDeath`, `FerumbrasEssenceImmortal` | 4 | 5 | The Wine Cask summons a liquor spirit and heals; the rubble with its escort interaction; the immortal essence. |
+| `TentacleDeep` | 1 | 1 | Canary decides by the first spectator in its list. The wiki decides (D25): a dead tentacle regrows after 10 s while another lives, and the Deep Terror rises once all are dead. |
+| `GazHaragothHeal`, `MinionGazDeath` | 1 | 2 | Below 12.5% Gaz'haragoth heals 300,000 seven seconds later; its regeneration condition heals 0 and only marks the wait. Minions leave a one-minute nightmare vortex. |
+| `UsurperCommanderDeath`, `KesarImmortal` | 1 | 2 | The last of three usurper commanders brings Kesar, who is immortal, and Drume. |
+
+These events stay unresolved; each needs one of these additions, which go to the owner under D28:
+
+| Needed | Events |
+|---|---|
+| a message to the players in an anchor | `VersperothDeath`, `LionCommanderDeath`, `ParasiteDeath` |
+| remove only the triggering creature (a role `remove` takes all of them) | `Evaporate`, `TheWelterEgg` |
+| a uniform or weighted choice for `spawn` and `drop_item` | `PossessedTree`, `UglyMonsterDrop` |
+| spawn at another role's position | `SoulWarAspectOfPowerDeath` (a new aspect appears at the boss) |
+| rules on heals (Canary runs health-change handlers for heals too) | `SoulcatcherSummon`, `LeidenHeal` (the wiki: healing damages Leiden), `soul_heal` |
+| a creature stepping on an item | `AngryPlantDeath`: its corpse turns the Unbeatable Dragon that steps on it into Somewhat Beatable |
+| boss attribute changes (defence, element reflection, outgoing damage) | `SoulCageDeath` (Goshnar's Malice absorbs the cage), `NecromanticFocusDeath` |
+| an authored Ability for a death explosion (spell work, P4) | `WormlingDeath` |
+| per-player counters, a count of nearby creatures | `SomewhatBeatableDeath`, `SnailSlimeThink` |
+
+`SoulCageHealthChange` reflects only heals by players; its manifest waits for the cage's death rule.
+61 encounters validate, 55 manifests resolve fully; the census rises from 1,463 to 1,478.
