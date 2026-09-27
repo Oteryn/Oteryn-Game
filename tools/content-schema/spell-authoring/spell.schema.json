@@ -241,7 +241,7 @@
             "fn",
             "args"
           ],
-          "description": "S5: the one world level curve (Canary Player::calculateFlatDamageHealing, Crystal calculateBaseDamageHealing); its exact rounding is an owner decision (S5)."
+          "description": "S5: the world level curve of TibiaWiki Formulae: S = floor((sqrt(2L + 2025) + 5) / 10), B = floor((L + 1000) / S) + 50S - 450 (Crystal calculateBaseDamageHealing)."
         }
       ]
     },

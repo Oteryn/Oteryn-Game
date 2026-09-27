@@ -66,7 +66,7 @@ def ident(family, value):
 
 
 def level_base_damage_healing(level):
-    """S5 candidate world curve (Crystal calculateBaseDamageHealing); the exact rounding is an owner decision."""
+    """S5: TibiaWiki `Formulae` damage/healing level curve (identical to Crystal calculateBaseDamageHealing)."""
     step = math.floor((math.sqrt(2 * level + 2025) + 5) / 10)
     return math.floor((level + 1000) / step) + 50 * step - 450
 

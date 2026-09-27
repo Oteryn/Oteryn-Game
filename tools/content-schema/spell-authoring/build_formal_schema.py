@@ -64,8 +64,8 @@ d['expression'] = {
         obj({'op': enum('min', 'max'), 'args': array(use('expression'), 2)}, ('op', 'args')),
         obj({'fn': enum('level_base_damage_healing'), 'args': array(use('expression'), 1, maxItems=1)},
             ('fn', 'args'),
-            description='S5: the one world level curve (Canary Player::calculateFlatDamageHealing, Crystal '
-                        'calculateBaseDamageHealing); its exact rounding is an owner decision (S5).'),
+            description='S5: the world level curve of TibiaWiki Formulae: S = floor((sqrt(2L + 2025) + 5) / 10), '
+                        'B = floor((L + 1000) / S) + 50S - 450 (Crystal calculateBaseDamageHealing).'),
     ]}
 d['formula'] = obj({
     'identity': use('identity'), 'kind': {'const': 'player_expression'},

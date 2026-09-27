@@ -5,16 +5,18 @@ facts file keeps only short allowlisted infobox values plus page id, immutable r
 SHA-256 of that revision's wikitext, never article prose. Nothing here becomes Game truth by
 comparison alone; adoption is an owner decision (monster D15/D25 precedent).
 
-The cut is the monster D15 reference date: the last revision at or before 2026-07-29T00:00:00Z.
+Owner rule (2026-09-27): the wiki is read as of the fetch day, not at a historical cut, because the
+wikis carry the most current Reference data. `fetch --cut YYYY-MM-DD` (default: today, UTC) pins the
+last revision at or before the end of that day; the facts file records every revision id.
 Pages: every article embedding `Template:Infobox Spell` (instant and conjuring spells) and every
 member of `Category:Runes` (rune items, `Infobox Object`, matched to rune spells by item id).
 
 Usage:
     python wiki_spells.py fetch --cache <dir>            # network; writes <dir>/fandom-spells-cut.json
-    python wiki_spells.py facts --cache <dir> --out samples/wiki-spell-facts-fandom-2026-07-28.json
-    python wiki_spells.py compare --facts samples/wiki-spell-facts-fandom-2026-07-28.json \
+    python wiki_spells.py facts --cache <dir> --out samples/wiki-spell-facts-fandom-<cut>.json
+    python wiki_spells.py compare --facts samples/wiki-spell-facts-fandom-<cut>.json \
         --census samples/spell-census-canary-47dfd51f-crystal-ff7ede5.json \
-        --out samples/wiki-spell-compare-fandom-2026-07-28.json
+        --out samples/wiki-spell-compare-fandom-<cut>.json
     python wiki_spells.py self-test
 """
 import argparse
@@ -27,14 +29,14 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from collections import Counter
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 API = 'https://tibia.fandom.com/api.php'
 USER_AGENT = 'OterynSpellAuthoring/1.0 (+https://github.com/Oteryn/Oteryn-Game)'
 LICENSE_NOTE = ('TibiaWiki (Fandom), CC BY-SA; only short allowlisted infobox facts with page and revision ids '
                 'are recorded, never article prose.')
-TARGET_CUT = '2026-07-28'
-CUT_TIMESTAMP = '2026-07-29T00:00:00Z'
+FORMULAE_PAGE = 'Formulae'
 SPELL_TEMPLATE = 'Template:Infobox Spell'
 RUNE_CATEGORY = 'Category:Runes'
 THROTTLE_SECONDS = 0.5
@@ -87,8 +89,13 @@ def listing(params, key):
         params = {**params, **data['continue']}
 
 
-def cut_revision(title):
-    data = api({'action': 'query', 'prop': 'revisions', 'titles': title, 'rvlimit': 1, 'rvstart': CUT_TIMESTAMP,
+def cut_timestamp(cut):
+    day = datetime.strptime(cut, '%Y-%m-%d').replace(tzinfo=timezone.utc)
+    return (day + timedelta(days=1)).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def cut_revision(title, cut):
+    data = api({'action': 'query', 'prop': 'revisions', 'titles': title, 'rvlimit': 1, 'rvstart': cut_timestamp(cut),
                 'rvdir': 'older', 'rvprop': 'ids|timestamp|content', 'rvslots': 'main'})
     time.sleep(THROTTLE_SECONDS)
     page = data['query']['pages'][0]
@@ -102,15 +109,15 @@ def cut_revision(title):
             'content': content}
 
 
-def fetch(cache):
+def fetch(cache, cut):
     spells = listing({'action': 'query', 'list': 'embeddedin', 'eititle': SPELL_TEMPLATE, 'einamespace': 0,
                       'eilimit': 500}, 'embeddedin')
     runes = listing({'action': 'query', 'list': 'categorymembers', 'cmtitle': RUNE_CATEGORY, 'cmnamespace': 0,
                      'cmlimit': 500}, 'categorymembers')
     pages = {}
-    for title in sorted(set(spells) | set(runes)):
-        pages[title] = cut_revision(title)
-    snapshot = {'api': API, 'target_cut': TARGET_CUT, 'cut_rule': f'last revision at or before {CUT_TIMESTAMP}',
+    for title in sorted(set(spells) | set(runes) | {FORMULAE_PAGE}):
+        pages[title] = cut_revision(title, cut)
+    snapshot = {'api': API, 'target_cut': cut, 'cut_rule': f'last revision at or before {cut_timestamp(cut)}',
                 'spell_titles': sorted(spells), 'rune_titles': sorted(runes), 'pages': pages}
     cache.mkdir(parents=True, exist_ok=True)
     (cache / 'fandom-spells-cut.json').write_text(json.dumps(snapshot, ensure_ascii=False), encoding='utf-8')
@@ -163,6 +170,12 @@ def infobox(text, template):
     return top_level_fields(text, match.start()) if match else {}
 
 
+def level_curve(content):
+    """The two <math> formulas of the Formulae page 'Damage and Healing' section (S5), verbatim."""
+    start = content.find('The step size')
+    return re.findall(r'<math>(.*?)</math>', content[start:start + 800]) if start >= 0 else []
+
+
 def facts(snapshot):
     """Allowlisted infobox facts per page (no prose)."""
     out = []
@@ -170,6 +183,11 @@ def facts(snapshot):
         row = {k: page[k] for k in ('title', 'page_id', 'revision_id', 'timestamp', 'content_sha256') if k in page}
         if page.get('status'):
             row['status'] = page['status']
+            out.append(row)
+            continue
+        if title == FORMULAE_PAGE:
+            row['template'] = None
+            row['level_curve'] = level_curve(page['content'])
             out.append(row)
             continue
         spell = infobox(page['content'], 'Infobox Spell')
@@ -423,11 +441,13 @@ def main(argv=None):
     parser.add_argument('--facts', type=Path)
     parser.add_argument('--census', type=Path)
     parser.add_argument('--out', type=Path)
+    parser.add_argument('--cut', default=datetime.now(timezone.utc).strftime('%Y-%m-%d'),
+                        help='fetch: read each page as of the end of this UTC day (default: today)')
     args = parser.parse_args(argv)
     if args.command == 'self-test':
         return self_test()
     if args.command == 'fetch':
-        fetch(args.cache)
+        fetch(args.cache, args.cut)
         return 0
     if args.command == 'facts':
         snapshot = json.loads((args.cache / 'fandom-spells-cut.json').read_text(encoding='utf-8'))
