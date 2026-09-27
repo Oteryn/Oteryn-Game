@@ -4,25 +4,25 @@
 task_id: OTV2-20260927-cw2-b1-crystal-item-identity-bindings
 title: CW2-B1 Crystal Item identity bindings (explicit EXACT, 38,157 rows)
 mode: MIGRATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 996
 base_sha: ccef9bbe8ecf75c4b1b99b07237c78ebf4642dce
-head_sha: null
-final_head_sha: null
+head_sha: 015491160bd63009bbbcf5534825fd519830c220
+final_head_sha: 015491160bd63009bbbcf5534825fd519830c220
 final_head_frozen_at: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-27T00:00:00Z
-updated_at: 2026-09-27T15:00:00Z
+updated_at: 2026-09-27T19:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-census/g4_item_crystal_binding_generator.py
   - tools/content-census/g4_item_crystal_binding_generator_self_test.py
   - imports/crystalserver/bindings/items.json
-  - docs/agents/tasks/active/OTV2-20260927-cw2-b1-crystal-item-identity-bindings.md
+  - docs/agents/tasks/archive/OTV2-20260927-cw2-b1-crystal-item-identity-bindings.md
   - .github/workflows/g4-item-crystal-bindings.yml
 public_contracts: []
 depends_on:
@@ -106,7 +106,8 @@ only (Canary is out of scope). No canonical identity is minted; no
   `ALLOCATED_KEY_MISSING_FROM_DEFINITIONS:[i00002921]` because #987 promoted Gold Coin;
   #989 merged from the queue as `0c7098eb` before the repair could land; the repair
   (declared identity promotions) follows in PR #996
-- final head: pending
+- final head `01549116` (owner merged `main`): every required check green, including
+  `G4 Item Crystal identity bindings`, `game-gate`, Merge gate, governance and CodeQL
 
 ## Self-review
 
@@ -139,18 +140,20 @@ only (Canary is out of scope). No canonical identity is minted; no
 - unresolved review threads: none
 - related/superseded PRs: none
 - protected auto-merge: NOT_AUTHORIZED (owner merges)
-- merge commit/result: #989 merged as `0c7098eb`; follow-up repair #996 pending
-- ownership release: pending
+- merge commit/result: #989 merged as `0c7098eb`; repair #996 merged through the Merge Queue
+  as `0e48ae518842fafc8b9e0867eb8ce041dc1a4332`
+- ownership release: released; archived by the content coordination audit because the
+  implementing branch was deleted after merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: drift guard caught the #987 Gold Coin promotion after the main merge; generator now applies declared identity promotions
-status: validating
+last_progress: "#996 merged as 0e48ae51; bindings apply declared identity promotions"
+status: completed
 branch: claude/compassionate-albattani-s29syw
 pr: 996
-final_head_sha: null
-owner_action_required: "merge after exact-head CI is green"
+final_head_sha: 015491160bd63009bbbcf5534825fd519830c220
+owner_action_required: null
 blocker: null
-next_action: freeze the pushed head, confirm CI, mark ready for review
+next_action: null
 ```
