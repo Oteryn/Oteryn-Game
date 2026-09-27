@@ -4,19 +4,21 @@
 task_id: OTV2-20260927-dur03-native-audit-admission-decision-513
 title: Native MINT audit snapshot binding and staged admission decision
 mode: CONTRACT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/dur03-native-mint-audit-binding-513
 issue: 513
-pr: null
+pr: 1002
 base_sha: a0ef47246903041d76810c230137cf2cc5bef4e0
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 91544690ef6453095a7240987f8603b912a576fd
+final_head_sha: 91544690ef6453095a7240987f8603b912a576fd
+final_head_frozen_at: 2026-09-27T16:53:20Z
+freeze_reference: "Issue #162 comment 5857850828"
 owner: /root/dur03_max_shape_writer-local-architecture-author
 created_at: 2026-09-27T16:45:00Z
-updated_at: 2026-09-27T16:45:00Z
+updated_at: 2026-09-27T17:08:44Z
+completed_at: 2026-09-27T17:08:44Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
@@ -87,8 +89,8 @@ fence/DB/recovery qualification. No runtime proof is claimed here.
 - [x] Later separate TRANSFER/root prerequisite and ANL byte/semantic distinction.
 - [x] Existing item-P90D constraints; actual schema/profile/resource/physical
   admission remains gated; no product number or new identifier domain chosen.
-- [ ] Root-published exact-head freeze, applicable CI and independent review.
-- [ ] Normal protected integration; lifecycle archive separately allocated.
+- [x] Root-published exact-head freeze, applicable CI and independent review.
+- [x] Normal protected integration; lifecycle archive separately allocated.
 
 ## Excluded scope
 
@@ -120,31 +122,44 @@ Prepublication checks are not candidate-specific CI. Runtime/compiler/E2E:
 independent review remain pending the final remote freeze. Known foreign stale
 active packets at the protected baseline are not repairs or waivers in this task.
 
-## Independent review and lifecycle
+## Protected integration and terminal disposition
 
-Required YES: genuinely independent exact-head DUR/ANL/data-integrity/privacy
-review after root publication/freeze; architecture author is not its own reviewer.
-PR null/status implementing truthfully represent AUTHORING. Only root may bind
-the returned final remote SHA, create/attach PR, dispatch review and carry the
-normal protected lifecycle. No ready/MQ/canonicalization authority is delegated.
-Jira KAN-12 programme synchronization stays with root; #513/playability remain open.
+- PR #1002 source candidate `91544690ef6453095a7240987f8603b912a576fd` has sole
+  parent `a0ef47246903041d76810c230137cf2cc5bef4e0`; root froze it under Issue #162
+  comment `5857850828`; exact freeze time `2026-09-27T16:53:20Z`.
+- Independent review is recorded in PR comment `5857883379`.
+- Terminal Merge Queue workflow/group `36335231869`, `game-gate` check
+  `108666180792`, completed for the queued candidate. PR #1002 merged to protected
+  main `8b53439b716ff3a86c823c6a4795d15fd7e7444b`.
+- Protected-main blob identities: DUR-03 contract
+  `f77fa7365b930be7b1678d52cc1cac82b4d517e3`; this task record
+  `aed2be69e1dc3d5eb69214da599e1288aa326195`. Root terminal/allocation comment:
+  `5857988240`.
+
+This two-path closeout archives the completed documentation decision only; it has
+no further implementation authority and makes no CI claim for its own closeout
+head. Issue #513, Jira KAN-12, and playable Combat remain open. Next work is one
+coordinated generic-Game vertical slice: native event/profile/resource admission
+and legal Content/loot-source admission; production MINT SQL/runtime; then separate
+TRANSFER/client/E2E leases. No Rat hardcoding or product numbers are authorized.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: allocated two-path native MINT audit-binding decision authored
-status: implementing
+last_progress: PR #1002 merged and protected-main contract/task blobs identified; record archived
+status: completed
 branch: codex/dur03-native-mint-audit-binding-513
-head_sha: null
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
+head_sha: 91544690ef6453095a7240987f8603b912a576fd
+pr: 1002
+final_head_sha: 91544690ef6453095a7240987f8603b912a576fd
+final_head_frozen_at: 2026-09-27T16:53:20Z
+ci_trigger_source: pull_request/opened and ready_for_review
+ci_check_generation: 36335162840
+ci_checks_for_current_head: 2
+ci_run_ids: [36334915639, 36335162840]
 ci_job_ids: []
-runner_assignment_state: unknown
+merge_group_run_id: 36335231869
+runner_assignment_state: success
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -154,5 +169,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: root publishes the returned two-file candidate and freezes its final exact remote SHA
+next_action: coordinated successor work belongs to fresh separate leases under control-plane authority
 ```
