@@ -15,7 +15,7 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 38157, "Mount": 252,
-    "Creature": 1316, "Presentation": 1316, "Behavior": 1316, "Loot": 977, "Ability": 5245, "Effect": 3913, "Formula": 4216,
+    "Creature": 1316, "Presentation": 1336, "Behavior": 1336, "Loot": 977, "Ability": 5245, "Effect": 3913, "Formula": 4216,
 }
 assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1316}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
