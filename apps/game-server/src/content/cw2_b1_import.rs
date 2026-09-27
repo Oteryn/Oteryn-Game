@@ -1352,6 +1352,38 @@ const ITEM_TARGET_CONTINUITY_COMPILER_SHA256: &str =
 const ITEM_TARGET_CONTINUITY_MANIFEST_SHA256: &str =
     "6f3ab3bc0799ec13c24c8939e0fde9636bfa8f6fff1ed3e507c6e6a730f47aac";
 
+/// Pinned #1018 v1 lowering *candidate* (`tools/content-schema/item-authoring/
+/// lower_promotion_packet.py`, `samples/promotion-crystal-ff7ede5.json`), copied
+/// byte-for-byte into this Content/World-owned evidence file so this importer never
+/// depends on the live, independently-evolving authoring tool tree. Distinct schema/
+/// profile/status/next_action literals from `ITEM_SEMANTIC_PROMOTION_*` above keep the
+/// two packets from ever being mistaken for one another.
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET: &[u8] = include_bytes!(
+    "../../../../docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json"
+);
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_BYTES: usize = 3_500_315;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_SHA256: &str =
+    "85130953b4e366cf60b77b2b58281a446203bc7b2f7011971ab97580f68c49aa";
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT: usize = 13_292;
+pub const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT: usize = 10_674;
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA: &str =
+    "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PROFILE: &str =
+    "OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING_COMPILER/v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_STATUS: &str =
+    "CANDIDATE_ITEM_SEMANTIC_PROMOTION_LOWERING_PACKET";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_NEXT_ACTION: &str =
+    "REVIEW_AND_WIRE_INTO_CW2_B1_IMPORT_RUST_DECODER_IF_ACCEPTED";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_TARGET_DATE: &str = "2026-09-27";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_PATH: &str =
+    "tools/content-schema/item-authoring/lower_promotion_packet.py";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256: &str =
+    "72ffeaaf7841e8527c3a5661fdb0dd1e96837cd9c88b49bf2e129b095668c9fc";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SOURCE_PROFILE: &str =
+    "crystal_ff7ede5_item_definition_v1";
+const ITEM_SEMANTIC_PROMOTION_LOWERING_V1_BUNDLE_DIGEST: &str =
+    "806729f3b2733cd5e44e4582d5bc42bfd06b4e7ff1b690f27fbb568002a4702b";
+
 #[derive(Debug, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct ItemSemanticPromotionCompiler {
@@ -1968,6 +2000,345 @@ pub fn protected_cw2_b1_promoted_item_family_import(
     })
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1ArtifactDigest {
+    digest_mode: String,
+    sha256: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Lineage {
+    eligible_field_count: usize,
+    source_artifact_digests: BTreeMap<String, ItemSemanticPromotionLoweringV1ArtifactDigest>,
+    source_engine: String,
+    source_population_bundle_digest: String,
+    source_profile: String,
+    source_repository: String,
+    source_revision: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Invariants {
+    identity_reminted: bool,
+    mutable_wiki_revision_metadata_retained: bool,
+    name_only_identity_resolution: bool,
+    only_derived_eligible_fields_promoted: bool,
+    sibling_fields_default_unknown_or_existing_state: bool,
+    whole_item_promotion: bool,
+    wired_into_rust_importer: bool,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ItemSemanticPromotionLoweringV1Packet {
+    compiler: ItemSemanticPromotionCompiler,
+    counts: ItemSemanticPromotionCounts,
+    invariants: ItemSemanticPromotionLoweringV1Invariants,
+    next_action: String,
+    profile: String,
+    promotions: Vec<ItemSemanticPromotionRow>,
+    protected_lineage: ItemSemanticPromotionLoweringV1Lineage,
+    schema: String,
+    status: String,
+    target_date: String,
+}
+
+/// The 3 pinned source-file digests the #1018 lowering compiler bound this exact
+/// candidate to, keyed by repository-relative path to `(digest_mode, sha256)`. The
+/// `items.xml` entry is byte-identical to `CW2_B1_SOURCE_SHA256` above: the same
+/// pinned Crystal `items.xml` revision underlies both the existing wired packet and
+/// this lowering candidate.
+fn expected_item_semantic_promotion_lowering_v1_artifact_digests()
+-> BTreeMap<String, (&'static str, &'static str)> {
+    [
+        (
+            "data/items/appearances.dat",
+            (
+                "raw_bytes",
+                "6adb790d1064c2d31ffb2e5ce1a7aef376942ba672edea2adb6cafc620dd18f1",
+            ),
+        ),
+        (
+            "data/items/items.xml",
+            ("text_lf_normalized", CW2_B1_SOURCE_SHA256),
+        ),
+        (
+            "data/scripts/lib/task_board_delivery_items.lua",
+            (
+                "text_lf_normalized",
+                "7b30362470893f6e3ce6bdc0237ac5d3f13d6e5288ce10591a93fde2013b688d",
+            ),
+        ),
+    ]
+    .into_iter()
+    .map(|(path, digest)| (path.to_owned(), digest))
+    .collect()
+}
+
+fn expected_item_semantic_promotion_lowering_v1_counts() -> BTreeMap<String, usize> {
+    [
+        ("charges.count", 121_usize),
+        ("container.capacity", 453),
+        ("presentation.name", 10_674),
+        ("protection.armor", 429),
+        ("weapon.attack", 621),
+        ("weapon.defense", 636),
+        ("weapon.extra_defense", 160),
+        ("weapon.hit_chance", 56),
+        ("weapon.range_cells", 142),
+    ]
+    .into_iter()
+    .map(|(field, count)| (field.to_owned(), count))
+    .collect()
+}
+
+/// Pin the embedded lowering candidate's exact whole-file bytes before any JSON
+/// decoding, mirroring `validate_r7_p04_gold_coin_evidence`'s byte-length-plus-digest
+/// style for a compiled-in evidence file.
+fn validate_item_semantic_promotion_lowering_v1_bytes() -> Result<(), ProtectedCw2B1ImportError> {
+    if ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET.len()
+        != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_BYTES
+        || world_project_sha256(ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET)
+            != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 packet bytes",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_item_semantic_promotion_lowering_v1_packet(
+    packet: &ItemSemanticPromotionLoweringV1Packet,
+) -> Result<(), ProtectedCw2B1ImportError> {
+    if packet.schema != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SCHEMA
+        || packet.profile != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PROFILE
+        || packet.status != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_STATUS
+        || packet.target_date != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_TARGET_DATE
+        || packet.next_action != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_NEXT_ACTION
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 packet identity",
+        ));
+    }
+    if packet.compiler.path != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_PATH
+        || packet.compiler.sha256 != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_COMPILER_SHA256
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 compiler binding",
+        ));
+    }
+
+    let lineage = &packet.protected_lineage;
+    let expected_digests = expected_item_semantic_promotion_lowering_v1_artifact_digests();
+    let digests_match = lineage.source_artifact_digests.len() == expected_digests.len()
+        && lineage
+            .source_artifact_digests
+            .iter()
+            .all(|(path, digest)| {
+                expected_digests.get(path).is_some_and(|(mode, sha256)| {
+                    digest.digest_mode == *mode && digest.sha256 == *sha256
+                })
+            });
+    if lineage.eligible_field_count != 9
+        || lineage.source_engine != "crystal"
+        || lineage.source_profile != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_SOURCE_PROFILE
+        || lineage.source_repository != CW2_B1_SOURCE_REPOSITORY
+        || lineage.source_revision != CW2_B1_SOURCE_REVISION
+        || lineage.source_population_bundle_digest
+            != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_BUNDLE_DIGEST
+        || !digests_match
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 lineage binding",
+        ));
+    }
+
+    if packet.counts.promoted_fields != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        || packet.counts.promoted_items != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        || packet.counts.per_field != expected_item_semantic_promotion_lowering_v1_counts()
+        || packet.promotions.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 count partition",
+        ));
+    }
+
+    let invariants = &packet.invariants;
+    if invariants.identity_reminted
+        || invariants.mutable_wiki_revision_metadata_retained
+        || invariants.name_only_identity_resolution
+        || !invariants.only_derived_eligible_fields_promoted
+        || !invariants.sibling_fields_default_unknown_or_existing_state
+        || invariants.whole_item_promotion
+        || invariants.wired_into_rust_importer
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 invariant binding",
+        ));
+    }
+    Ok(())
+}
+
+/// Apply the pinned #1018 v1 lowering candidate (population-scale Crystal Item
+/// authored values, re-encoded for the same 9 typed field paths
+/// `decode_item_semantic_promotion_value` already accepts) to the full protected Item
+/// family. This is an independent promotion pass over the protected full-family
+/// import's own Default (`Unknown`) semantics; it does not compose with, or require,
+/// `protected_cw2_b1_promoted_item_family_import`'s existing 69-field packet.
+///
+/// The lowering candidate's own population census already resolves source item
+/// `3031` to its current, post-R7-P04 native key
+/// (`R7_P04_GOLD_COIN_KEY`/`oteryn:item.currency.gold_coin`), so this function applies
+/// that same pinned identity rename to its fresh full-family import before matching
+/// rows, exactly as `protected_r7_p04_gold_coin_item_family_import` does — without
+/// also inheriting that function's unrelated 69-field semantic promotion.
+pub fn protected_cw2_b1_item_semantic_promotion_lowering_v1_import(
+    evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    validate_item_semantic_promotion_lowering_v1_bytes()?;
+    let packet: ItemSemanticPromotionLoweringV1Packet =
+        serde_json::from_slice(ITEM_SEMANTIC_PROMOTION_LOWERING_V1_PACKET).map_err(|_| {
+            ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 packet JSON decoding",
+            )
+        })?;
+    validate_item_semantic_promotion_lowering_v1_packet(&packet)?;
+    validate_r7_p04_gold_coin_evidence(R7_P04_GOLD_COIN_EVIDENCE_PACKET)?;
+
+    let mut family = protected_cw2_b1_full_item_family_import(evidence_bytes)?;
+    apply_r7_p04_gold_coin_identity_rename(&mut family)?;
+
+    let mut source_to_native = BTreeMap::<u64, String>::new();
+    for candidate in &family.batch.candidates {
+        let source_item_id =
+            candidate
+                .source_numeric_id
+                .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                    "item semantic promotion lowering v1 source identity binding",
+                ))?;
+        let mut bindings = candidate.normalized_fields.iter().filter_map(|field| {
+            if field.field_path == "binding.native-item"
+                && let CandidateValue::NativeItemBinding(binding) = &field.value
+            {
+                return Some(binding);
+            }
+            None
+        });
+        let binding = bindings
+            .next()
+            .ok_or(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 native identity binding",
+            ))?;
+        if bindings.next().is_some()
+            || binding.identity.family != "Item"
+            || binding.identity.revision != CW2_B1_FULL_ITEM_REVISION
+            || candidate.candidate_target
+                != format!("{}@{}", binding.identity.key, binding.identity.revision)
+            || source_to_native
+                .insert(source_item_id, binding.identity.key.clone())
+                .is_some()
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 native identity closure",
+            ));
+        }
+    }
+    if source_to_native.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 source identity count",
+        ));
+    }
+
+    let mut record_index = BTreeMap::<String, usize>::new();
+    for (index, record) in family.records.iter().enumerate() {
+        let ProjectReferenceRecord::Item { identity, .. } = record else {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 non-Item record",
+            ));
+        };
+        if record_index.insert(identity.key.clone(), index).is_some() {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 record identity duplicate",
+            ));
+        }
+    }
+    if record_index.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 record identity count",
+        ));
+    }
+
+    let mut seen_atoms = BTreeSet::<(String, String)>::new();
+    let mut seen_items = BTreeSet::<String>::new();
+    let mut per_field = BTreeMap::<String, usize>::new();
+    let mut previous: Option<(&str, &str, u64)> = None;
+
+    for row in &packet.promotions {
+        if let Some((native_key, field_path, source_item_id)) = previous
+            && (native_key, field_path, source_item_id)
+                >= (
+                    row.native_key.as_str(),
+                    row.field_path.as_str(),
+                    row.source_item_id,
+                )
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 row ordering",
+            ));
+        }
+        previous = Some((&row.native_key, &row.field_path, row.source_item_id));
+
+        if source_to_native
+            .get(&row.source_item_id)
+            .map(String::as_str)
+            != Some(row.native_key.as_str())
+        {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 exact identity mismatch",
+            ));
+        }
+        if !seen_atoms.insert((row.native_key.clone(), row.field_path.clone())) {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 duplicate atom",
+            ));
+        }
+        seen_items.insert(row.native_key.clone());
+        *per_field.entry(row.field_path.clone()).or_default() += 1;
+
+        let value = decode_item_semantic_promotion_value(row)?;
+        let index = *record_index.get(&row.native_key).ok_or(
+            ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 record missing",
+            ),
+        )?;
+        let ProjectReferenceRecord::Item { semantics, .. } = &mut family.records[index] else {
+            return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+                "item semantic promotion lowering v1 record type drift",
+            ));
+        };
+        apply_item_semantic_promotion(semantics, &row.field_path, value)?;
+    }
+
+    if seen_atoms.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_FIELD_COUNT
+        || seen_items.len() != ITEM_SEMANTIC_PROMOTION_LOWERING_V1_ITEM_COUNT
+        || per_field != expected_item_semantic_promotion_lowering_v1_counts()
+    {
+        return Err(ProtectedCw2B1ImportError::EvidenceMismatch(
+            "item semantic promotion lowering v1 applied partition",
+        ));
+    }
+
+    Ok(ProtectedCw2B1PromotedItemFamilyImport {
+        family,
+        promoted_fields: seen_atoms.len(),
+        promoted_items: seen_items.len(),
+    })
+}
+
 fn validate_r7_p04_gold_coin_evidence(
     evidence_bytes: &[u8],
 ) -> Result<(), ProtectedCw2B1ImportError> {
@@ -2062,14 +2433,15 @@ fn validate_r7_p04_gold_coin_evidence(
 /// materializable and stack-capable, while every typed semantic field remains unknown. In
 /// particular, this function does not admit a stack maximum, weight, value, exchange rate,
 /// runtime activation, transaction behavior or Global parity.
-pub fn protected_r7_p04_gold_coin_item_family_import(
-    b1_evidence_bytes: &[u8],
-    gold_coin_evidence_bytes: &[u8],
-) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
-    validate_r7_p04_gold_coin_evidence(gold_coin_evidence_bytes)?;
-    let mut promoted = protected_cw2_b1_promoted_item_family_import(b1_evidence_bytes)?;
-    let family = &mut promoted.family;
-
+///
+/// Factored out of `protected_r7_p04_gold_coin_item_family_import` so
+/// `protected_cw2_b1_item_semantic_promotion_lowering_v1_import` can apply the exact same
+/// current identity allocation (the #1018 lowering candidate's population census already
+/// reflects this rename) to its own fresh, un-promoted full-family import, without also
+/// inheriting the unrelated existing 69-field semantic promotion.
+fn apply_r7_p04_gold_coin_identity_rename(
+    family: &mut ProtectedCw2B1FullItemFamilyImport,
+) -> Result<(), ProtectedCw2B1ImportError> {
     if family.records.iter().any(|record| {
         matches!(record, ProjectReferenceRecord::Item { identity, .. } if identity.key == R7_P04_GOLD_COIN_KEY)
     }) {
@@ -2278,6 +2650,16 @@ pub fn protected_r7_p04_gold_coin_item_family_import(
             .then_with(|| left.field_path.cmp(&right.field_path))
     });
 
+    Ok(())
+}
+
+pub fn protected_r7_p04_gold_coin_item_family_import(
+    b1_evidence_bytes: &[u8],
+    gold_coin_evidence_bytes: &[u8],
+) -> Result<ProtectedCw2B1PromotedItemFamilyImport, ProtectedCw2B1ImportError> {
+    validate_r7_p04_gold_coin_evidence(gold_coin_evidence_bytes)?;
+    let mut promoted = protected_cw2_b1_promoted_item_family_import(b1_evidence_bytes)?;
+    apply_r7_p04_gold_coin_identity_rename(&mut promoted.family)?;
     Ok(promoted)
 }
 
