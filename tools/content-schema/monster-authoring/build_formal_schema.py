@@ -170,13 +170,32 @@ d['condition']=obj({'type':use('conditionType'),'lifetime':enum('fixed_duration'
         description='D12: percent_of_base sets the attribute to value% of its base; add adds value.')},('type','lifetime'),allOf=[
     {'if':{'properties':{'lifetime':{'const':'damage_schedule'}},'required':['lifetime']},
      'then':{'required':['damage_over_time'],**forbid('speed_formula')},'else':forbid('damage_over_time')}])
-d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only','remove_condition'),
+d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','condition','appearance_transform','create_item','presentation_only','remove_condition',
+                     'remove_items','summon_creature'),
     'damage_type':use('damageType'),'formula':use('FormulaRef'),'duration_ms':use('ms'),'condition':use('condition'),
     'mitigated_by':array(enum('armor','shield'),1,True,description='Target defences that reduce this damage (Canary/Crystal '
         'blockedByArmor/blockedByShield); absent means neither. The reduction formula itself is a world combat rule.'),
     'appearance_transform':obj({'creature':use('CreatureRef'),'item':use('ItemRef')},oneOf=[
         {'required':['creature'],**forbid('item')},{'required':['item'],**forbid('creature')}]),
     'created_item':use('ItemRef'),
+    'affects':obj({'kind':enum('masterless_monsters','non_player_side','player_side','named_creatures'),
+        'creatures':array(use('CreatureRef'),1,True),'top_creature_only':use('bool'),'excludes_caster_name':use('bool'),
+        'includes_caster':use('bool')},
+        ('kind','top_creature_only','excludes_caster_name','includes_caster'),allOf=[
+        {'if':{'properties':{'kind':{'const':'named_creatures'}},'required':['kind']},'then':{'required':['creatures']},'else':forbid('creatures')}],
+        description='D18: which creatures in the ability area this damage/heal reaches instead of the combat targets. masterless_monsters = '
+            'monsters without a master; non_player_side = neither a player nor a player-owned summon; player_side = a player or a '
+            'player-owned summon; named_creatures = those creatures. top_creature_only: only the top creature of each tile; excludes_caster_name: not '
+            'creatures named like the caster; includes_caster: the caster is affected when it stands in the area.'),
+    'removed_items':obj({'items':array(use('ItemRef'),1,True),'selection':enum('first_listed_per_tile','top_item_first_tile')},
+        ('items','selection'),description='D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first '
+            'listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops.'),
+    'summon':obj({'creatures':array(use('CreatureRef'),1,True),'count_mode':enum('fill_to_limit','fixed'),'count':integer(1),
+        'only_below_summons':integer(1),'owned':use('bool'),'max_offset_tiles':integer(0)},
+        ('creatures','count_mode','count','only_below_summons','owned','max_offset_tiles'),
+        description='D18: summon_creature. Nothing is created unless the caster has fewer than only_below_summons summons; then '
+            'fill_to_limit creates count minus current summons, fixed creates count. Each creature is picked uniformly from creatures and '
+            'requested at the caster position offset by up to max_offset_tiles per axis; owned makes the caster its master.'),
     'removed_condition':{**use('conditionType'),'description':'remove_condition: every condition of this type on the target '
         'ends (Canary/Crystal COMBAT_PARAM_DISPEL, Creature::removeCombatCondition).'},
     'presentation':obj({'impact_asset_binding':use('assetBinding'),'projectile_asset_binding':use('assetBinding')})},
@@ -195,6 +214,11 @@ d['effect']=obj({'identity':use('identity'),'operation':enum('damage','heal','co
     {'if':{'properties':{'operation':{'const':'presentation_only'}},'required':['operation']},
      'then':{'required':['presentation'],'properties':{'presentation':{'minProperties':1}},**forbid('duration_ms')}},
     {'if':{'properties':{'operation':{'const':'damage'}},'required':['operation']},'then':{},'else':forbid('mitigated_by')},
+    {'if':{'properties':{'operation':{'enum':['damage','heal']}},'required':['operation']},'then':{},'else':forbid('affects')},
+    {'if':{'properties':{'operation':{'const':'remove_items'}},'required':['operation']},
+     'then':{'required':['removed_items'],**forbid('duration_ms')},'else':forbid('removed_items')},
+    {'if':{'properties':{'operation':{'const':'summon_creature'}},'required':['operation']},
+     'then':{'required':['summon'],**forbid('duration_ms')},'else':forbid('summon')},
     {'if':{'properties':{'operation':{'const':'remove_condition'}},'required':['operation']},
      'then':{'required':['removed_condition'],**forbid('duration_ms')},'else':forbid('removed_condition')}])
 d['formula']=obj({'identity':use('identity'),'kind':enum('range','melee_attack_skill','speed_modifier','caster_magnitude'),

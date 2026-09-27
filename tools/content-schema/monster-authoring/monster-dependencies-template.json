@@ -118,6 +118,43 @@
         "key": null,
         "revision": null
       },
+      "affects": {
+        "kind": null,
+        "creatures": [
+          {
+            "family": null,
+            "key": null,
+            "revision": null
+          }
+        ],
+        "top_creature_only": null,
+        "excludes_caster_name": null,
+        "includes_caster": null
+      },
+      "removed_items": {
+        "items": [
+          {
+            "family": null,
+            "key": null,
+            "revision": null
+          }
+        ],
+        "selection": null
+      },
+      "summon": {
+        "creatures": [
+          {
+            "family": null,
+            "key": null,
+            "revision": null
+          }
+        ],
+        "count_mode": null,
+        "count": null,
+        "only_below_summons": null,
+        "owned": null,
+        "max_offset_tiles": null
+      },
       "removed_condition": null,
       "presentation": {
         "impact_asset_binding": null,

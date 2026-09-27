@@ -147,7 +147,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 206 focused positive/negative cases
+python verify_formal_schema.py     # 219 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -272,12 +272,36 @@ so an undefined global (nil) is 0 and a constant of another enum selects by its 
 `COMBAT_UNDEFINEDDAMAGE`; the converter had read that spell as fire damage and now leaves it
 unresolved with the other undefined-damage entries.
 
+### 8.6 Data forms for three behaviour patterns (D18)
+
+Three D18 patterns are plain data, not native code:
+
+- `summon_creature` (`conditional_summon`): creatures, `count_mode` `fill_to_limit` or `fixed`,
+  `count`, `only_below_summons`, `owned` (the caster becomes master) and `max_offset_tiles`.
+- `remove_items` (`remove_magic_walls`): items in priority order and a `selection` rule over the
+  Ability area.
+- `affects` on a damage/heal Effect (`heal_allies_in_area`): `masterless_monsters`,
+  `non_player_side`, `player_side` or `named_creatures`, plus `top_creature_only`,
+  `excludes_caster_name` and `includes_caster` (`combat.cpp CombatFunc` passes the caster only to a
+  non-aggressive combat).
+
+The converter does not read these parameters from the model-assisted grouping. `spell_probes.py` runs
+each script against stub worlds (casters with 0-15 summons, players, player and monster summons,
+masterless and named monsters, tiles with and without the listed items, low and high random rolls)
+and records what it does; the parameters are derived only when the recorded behaviour matches the
+data form exactly. Everything else stays unresolved with the reason: summons on fixed map
+coordinates or without a limit (`plagirath`, `razzagorn`, `tenebris`: Encounter work under D18), a
+value rolled once while the script loads (`minotaur cult prophet mass healing`), engine item
+constants the stubs do not model (`destroy magic walls`) and scripts that need more world API.
+This resolves 21 more monsters.
+
 ## 9. Import readiness of the Canary population
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,308 convert, validate and resolve every manifest row (1,103 before registered spells were
-converted, 1,315 before wiki adoption, 1,298 before D19); 342 are blocked; 6 do not convert (five Soul War bosses
+files, 1,329 convert, validate and resolve every manifest row (1,103 before registered spells were
+converted, 1,315 before wiki adoption, 1,298 before D19, 1,308 before the probed D18 patterns); 321 are
+blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 

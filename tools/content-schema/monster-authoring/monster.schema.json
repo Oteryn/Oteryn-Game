@@ -2145,7 +2145,9 @@
             "appearance_transform",
             "create_item",
             "presentation_only",
-            "remove_condition"
+            "remove_condition",
+            "remove_items",
+            "summon_creature"
           ]
         },
         "damage_type": {
@@ -2217,6 +2219,143 @@
         },
         "created_item": {
           "$ref": "#/$defs/ItemRef"
+        },
+        "affects": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "masterless_monsters",
+                "non_player_side",
+                "player_side",
+                "named_creatures"
+              ]
+            },
+            "creatures": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/CreatureRef"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "top_creature_only": {
+              "$ref": "#/$defs/bool"
+            },
+            "excludes_caster_name": {
+              "$ref": "#/$defs/bool"
+            },
+            "includes_caster": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
+            "kind",
+            "top_creature_only",
+            "excludes_caster_name",
+            "includes_caster"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "kind": {
+                    "const": "named_creatures"
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
+              "then": {
+                "required": [
+                  "creatures"
+                ]
+              },
+              "else": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "creatures"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "description": "D18: which creatures in the ability area this damage/heal reaches instead of the combat targets. masterless_monsters = monsters without a master; non_player_side = neither a player nor a player-owned summon; player_side = a player or a player-owned summon; named_creatures = those creatures. top_creature_only: only the top creature of each tile; excludes_caster_name: not creatures named like the caster; includes_caster: the caster is affected when it stands in the area."
+        },
+        "removed_items": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/ItemRef"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "selection": {
+              "enum": [
+                "first_listed_per_tile",
+                "top_item_first_tile"
+              ]
+            }
+          },
+          "required": [
+            "items",
+            "selection"
+          ],
+          "description": "D18: remove_items over the ability area. first_listed_per_tile removes on every tile the first listed item present; top_item_first_tile removes the top item of the first tile where it is listed, then stops."
+        },
+        "summon": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "creatures": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/CreatureRef"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            },
+            "count_mode": {
+              "enum": [
+                "fill_to_limit",
+                "fixed"
+              ]
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "only_below_summons": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "owned": {
+              "$ref": "#/$defs/bool"
+            },
+            "max_offset_tiles": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "creatures",
+            "count_mode",
+            "count",
+            "only_below_summons",
+            "owned",
+            "max_offset_tiles"
+          ],
+          "description": "D18: summon_creature. Nothing is created unless the caster has fewer than only_below_summons summons; then fill_to_limit creates count minus current summons, fixed creates count. Each creature is picked uniformly from creatures and requested at the caster position offset by up to max_offset_tiles per axis; owned makes the caster its master."
         },
         "removed_condition": {
           "$ref": "#/$defs/conditionType",
@@ -2485,6 +2624,107 @@
                 {
                   "required": [
                     "mitigated_by"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "enum": [
+                  "damage",
+                  "heal"
+                ]
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {},
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "affects"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "remove_items"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "removed_items"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "removed_items"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "summon_creature"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "summon"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "duration_ms"
+                  ]
+                }
+              ]
+            }
+          },
+          "else": {
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "summon"
                   ]
                 }
               ]

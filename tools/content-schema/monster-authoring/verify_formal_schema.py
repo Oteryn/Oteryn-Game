@@ -209,6 +209,31 @@ if __name__=='__main__':
     case('remove condition names its condition',dispel({}))
     case('remove condition has no duration',dispel({'removed_condition':'paralyze','duration_ms':1000}))
     case('damage cannot remove a condition',set_value(('d','effects',0,'removed_condition'),'paralyze'))
+    def extra_effect(body):
+        def mutate(m,d,c):
+            d['effects'].append({'identity':ident('extra'),**body})
+            d['abilities'][0]['effects'].append(ref('Effect','extra'))
+            c['definitions'].append(ref('Creature','minion'))
+        return mutate
+    summon={'creatures':[ref('Creature','minion')],'count_mode':'fill_to_limit','count':4,'only_below_summons':4,'owned':True,'max_offset_tiles':0}
+    case('summon creature accepted (D18)',extra_effect({'operation':'summon_creature','summon':summon}),True)
+    def undeclared(m,d,c):
+        d['effects'].append({'identity':ident('extra'),'operation':'summon_creature','summon':{**summon,'creatures':[ref('Creature','ghost')]}})
+        d['abilities'][0]['effects'].append(ref('Effect','extra'))
+    case('summoned creature must be declared',undeclared)
+    case('summon count mode is closed',extra_effect({'operation':'summon_creature','summon':{**summon,'count_mode':'random'}}))
+    case('summon needs a creature',extra_effect({'operation':'summon_creature','summon':{**summon,'creatures':[]}}))
+    case('summon requires its parameters',extra_effect({'operation':'summon_creature'}))
+    case('only summon_creature carries summon',extra_effect({'operation':'presentation_only','presentation':{'impact_asset_binding':'oteryn:body_sprite'},'summon':summon}))
+    removal={'items':[ref('Item','coin')],'selection':'first_listed_per_tile'}
+    case('remove items accepted (D18)',extra_effect({'operation':'remove_items','removed_items':removal}),True)
+    case('remove items selection is closed',extra_effect({'operation':'remove_items','removed_items':{**removal,'selection':'all'}}))
+    affects={'kind':'masterless_monsters','top_creature_only':False,'excludes_caster_name':False,'includes_caster':True}
+    case('heal affects allies accepted (D18)',set_value(('d','effects',0,'affects'),affects),True)
+    case('named affects need creatures',set_value(('d','effects',0,'affects'),{**affects,'kind':'named_creatures'}))
+    case('named affects accepted',set_value(('d','effects',0,'affects'),{**affects,'kind':'named_creatures','creatures':[ref('Creature','creature')]}),True)
+    case('group affects forbid creatures',set_value(('d','effects',0,'affects'),{**affects,'creatures':[ref('Creature','creature')]}))
+    case('affects kind is closed',set_value(('d','effects',0,'affects'),{**affects,'kind':'everyone'}))
     def variants(nested=False,with_effects=False):
         def mutate(m,d,c):
             base=d['abilities'][0]

@@ -15,6 +15,7 @@ Contract and decisions: [`docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.m
 | `normalize_monster_fields.py` | Bounded helpers for already decoded source geometry and HP values. |
 | `canary_batch.py` | Converts the fixed Canary test batches into bundles + manifests (needs `lupa==2.8` and a Canary checkout). |
 | `wiki_compare.py` | Compares a batch's plain Canary conversion with TibiaWiki (Fandom) at the 2026-07-28 cut; records revisions, digests, wikitext lines and compared facts only, plus loot statistics and item ids for loot missing in Canary. |
+| `spell_probes.py` | Runs custom-logic Canary spell scripts against stub worlds and records their behaviour, from which the converter derives D18 `summon_creature`, `remove_items` and `affects` data. |
 | `wiki_scenes.py` | Compares TibiaWiki ability scenes (SceneBuilder shape, effect and missile ids) with the plain Canary conversion rebuilt with the engine area rules; evidence only. |
 | `population_census.py` | Converts every Canary monster file in memory with the D15 wiki values applied and records how many validate and resolve, with the blockers that remain; `--bundles DIR` writes the fully resolved bundles outside the repository and refreshes the bundle digest index. |
 | `spell_scripts.py` | Evaluates registered Canary spell scripts in a stubbed sandbox for the converter (which Combat runs, areas, conditions, variants). |

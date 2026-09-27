@@ -19,6 +19,7 @@ from fractions import Fraction
 from pathlib import Path
 
 from normalize_monster_fields import cast_geometry
+import spell_probes
 import spell_scripts
 
 ROOT = Path(__file__).resolve().parent
@@ -83,6 +84,7 @@ RULES = {
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-07-28.json'
 BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
+PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls')
 WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces '
                  'it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary '
                  'difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain '
@@ -968,7 +970,13 @@ class Converter:
         tag = f' D18 pattern `{pattern}` (samples/{BEHAVIOUR_PATTERNS}).' if pattern else ''
         if info.get('tier') == 'P4' or 'error' in info:
             reason = '; '.join(info.get('tier_reasons') or []) or info.get('error', '')
-            return 'UNRESOLVED', f'{where} has custom logic ({reason[:200]}); needs a native behaviour (D13).{tag}'
+            probe_note = ''
+            if pattern in PROBED_PATTERNS and 'error' not in info:
+                result, probe_note = self.probed_spell(name, info, where, spell, deps, asset, pattern)
+                if result:
+                    return result
+                probe_note = f' Probe: {probe_note}.'
+            return 'UNRESOLVED', f'{where} has custom logic ({reason[:200]}); needs a native behaviour (D13).{tag}{probe_note}'
         key = f'canary:ability/spell/{slug(name)}'
         flags = info['spell_calls']
         geometry = {'needs_target': bool(flags.get('needTarget', [False])[0] or flags.get('needCasterTargetOrDirection', [False])[0]),
@@ -1015,6 +1023,253 @@ class Converter:
         if spell.get('range'):
             extras['range_tiles'] = int(spell['range'])
         return key, ' '.join(dict.fromkeys(notes)) + ' ', extras
+
+    def probed_spell(self, name, info, where, spell, deps, asset, pattern):
+        """D18: model a custom-logic spell from its probed behaviour. Returns ((key, note, extras), '') or (None, reason)."""
+        key = f'canary:ability/spell/{slug(name)}'
+        flags = info['spell_calls']
+        geometry = {'needs_target': bool(flags.get('needTarget', [False])[0] or flags.get('needCasterTargetOrDirection', [False])[0]),
+                    'needs_direction': bool(flags.get('needDirection', [False])[0])}
+        range_tiles = int(flags.get('range', [0])[0] or 0)
+        notes = [f'{where}: custom logic modelled from its probed behaviour against stub worlds (D18 pattern `{pattern}`, '
+                 'spell_probes.py).']
+        if key not in {a['identity']['key'] for a in deps['abilities']}:
+            probe = spell_probes.Probe(self.canary, info['script'], self.spell_scripts.areas, {})
+            if probe.entries():
+                return None, 'the script rolls a value or touches the world while it loads (fixed per server start)'
+            lua_spell = probe.spell(name)
+            scratch = {'abilities': [], 'effects': [], 'formulas': []}
+            try:
+                if pattern == 'conditional_summon':
+                    self.probe_summon(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                elif pattern == 'heal_allies_in_area':
+                    self.probe_callbacks(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                else:
+                    self.probe_remove_items(probe, lua_spell, key, scratch, asset, notes)
+            except SpellUnresolved as exc:
+                return None, str(exc)
+            for family in ('abilities', 'effects', 'formulas'):
+                known = {e['identity']['key'] for e in deps[family]}
+                deps[family].extend(e for e in scratch[family] if e['identity']['key'] not in known)
+        extras = {}
+        if self.ability_uses_magnitude(key, deps):
+            low, high = abs(spell.get('minDamage', 0)), abs(spell.get('maxDamage', 0))
+            extras['magnitude'] = {'minimum': min(low, high), 'maximum': max(low, high)}
+            notes.append('Damage/heal magnitude of the combat itself comes from this monster entry (D11).')
+        if spell.get('range'):
+            extras['range_tiles'] = int(spell['range'])
+        return (key, ' '.join(dict.fromkeys(notes)) + ' ', extras), ''
+
+    def cast_runs(self, probe, lua_spell, summons=(0,), modes=('low', 'high')):
+        """onCastSpell against a caster with each summon count and random mode: {(summons, mode): (log, executed)}."""
+        runs = {}
+        for count in summons:
+            for mode in modes:
+                caster = probe.make('monster', 'caster', None, count)
+                probe.creatures['caster'] = caster
+                ok, log = probe.run(lua_spell['onCastSpell'], caster, probe.lua.table(), random=mode)
+                if not ok:
+                    raise SpellUnresolved('onCastSpell needs more of the world than the stubs model')
+                runs[count, mode] = (log, [c['__n'] for c in probe.rec['executed'].values()])
+        return runs
+
+    def executed_combat(self, probe, runs):
+        executed = {tuple(e) for _, e in runs.values()}
+        if len(executed) != 1 or len(next(iter(executed))) > 1:
+            raise SpellUnresolved(f'the casts execute different combats {sorted(executed)}')
+        numbers = next(iter(executed))
+        if not numbers:
+            return None
+        combat = next(c for c in probe.rec['combats'].values() if c['__n'] == numbers[0])
+        return self.spell_scripts._combat(probe.lua, combat)
+
+    def probe_summon(self, probe, lua_spell, key, geometry, range_tiles, deps, asset, notes):
+        runs = self.cast_runs(probe, lua_spell, summons=range(16))
+        for log, _ in runs.values():
+            other = {e[0] for e in log} - {'random', 'createMonster', 'setMaster', 'say'}
+            if other:
+                raise SpellUnresolved(f'the cast also does {sorted(other)}')
+        created = {k: [e for e in log if e[0] == 'createMonster'] for k, (log, _) in runs.items()}
+        counts = {s: len(created[s, 'low']) for s in range(16)}
+        if any(len(created[s, 'high']) != counts[s] for s in range(16)):
+            raise SpellUnresolved('the number of summons depends on a random roll')
+        limit = next((s for s in range(16) if counts[s] == 0), None)
+        if not limit or any(counts[s] for s in range(limit, 16)):
+            raise SpellUnresolved(f'created counts {counts} have no summon limit')
+        if all(counts[s] == limit - s for s in range(limit)):
+            mode, count = 'fill_to_limit', limit
+        elif len({counts[s] for s in range(limit)}) == 1:
+            mode, count = 'fixed', counts[0]
+        else:
+            raise SpellUnresolved(f'created counts {counts} are neither fixed nor filling to a limit')
+        every = [e for entries in created.values() for e in entries]
+        names = sorted({e[1] for e in every})
+        if len(names) != 1:
+            raise SpellUnresolved(f'the summons pick between {names}')
+        if any(e[4] for e in every):
+            raise SpellUnresolved('summons are placed on another floor')
+        low = {(e[2], e[3]) for s in range(limit) for e in created[s, 'low']}
+        high = {(e[2], e[3]) for s in range(limit) for e in created[s, 'high']}
+        reach = next(iter(high))[0] if len(high) == 1 else None
+        if not (len(low) == 1 and reach is not None and low == {(-reach, -reach)} and high == {(reach, reach)} and reach >= 0):
+            raise SpellUnresolved(f'summon positions {sorted(low | high)} are not the caster tile plus a uniform offset')
+        masters = [e for log, _ in runs.values() for e in log if e[0] == 'setMaster']
+        if masters and (len(masters) != len(every) or not all(e[2] for e in masters)):
+            raise SpellUnresolved('only some summons get the caster as master')
+        for text in sorted({e[1] for log, _ in runs.values() for e in log if e[0] == 'say'}):
+            notes.append(f'The cast says "{text}" first (voice line, not modelled).')
+        creature = f'canary:creature/{slug(names[0])}'
+        self.pending_definitions.add(('Creature', creature))
+        body = {'operation': 'summon_creature', 'summon': {
+            'creatures': [ref('Creature', creature)], 'count_mode': mode, 'count': count, 'only_below_summons': limit,
+            'owned': bool(masters), 'max_offset_tiles': reach}}
+        notes.append(f'Probed: {counts[0]} created with no summons, none from {limit} summons on; Game.createMonster at the caster '
+                     f'position{f" +-{reach} per axis" if reach else ""}; setMaster {"on every summon" if masters else "never"}. A '
+                     'failed placement (`if not mid then return`) ends that cast early in Canary.')
+        combat = self.executed_combat(probe, runs)
+        if combat is None:
+            deps['effects'].append({'identity': ident(f'{key}/effect-summon'), **body})
+            deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': range_tiles, **geometry,
+                                      'effects': [ref('Effect', f'{key}/effect-summon')]})
+            return
+        if combat['callbacks']:
+            raise SpellUnresolved('the executed combat has Lua callbacks')
+        self.combat_ability(key, combat, geometry, range_tiles, deps, asset, notes, extra=[('-summon', body)])
+
+    def probe_callbacks(self, probe, lua_spell, key, geometry, range_tiles, deps, asset, notes):
+        runs = self.cast_runs(probe, lua_spell)
+        if any(log for log, _ in runs.values()):
+            raise SpellUnresolved('onCastSpell does more than execute its combat')
+        combat = self.executed_combat(probe, runs)
+        if combat is None or not combat['callbacks']:
+            raise SpellUnresolved('no executed combat with a callback')
+        params = self.engine_params(combat.get('param_calls', []), [])
+        aggressive = params.get('COMBAT_PARAM_AGGRESSIVE', 1) != 0
+        extra = []
+        for callback, function_name in sorted(combat['callbacks'].items()):
+            function = probe.lua.globals()[function_name]
+            if callback == 'CALLBACK_PARAM_TARGETCREATURE':
+                extra += self.probe_target_creature(probe, function, key, len(extra), aggressive, deps)
+            elif callback == 'CALLBACK_PARAM_TARGETTILE':
+                extra += self.probe_target_tile(probe, function, key, len(extra), deps)
+            else:
+                raise SpellUnresolved(f'callback {callback}')
+        notes.append(f'Probed {", ".join(sorted(combat["callbacks"]))}: '
+                     + '; '.join(f'{b["operation"]} {b["affects"]["kind"]}' for _, b in extra) + '.')
+        self.combat_ability(key, {**combat, 'callbacks': {}}, geometry, range_tiles, deps, asset, notes, extra=extra)
+
+    def health_body(self, kind, low, high, affects, formula_key, deps):
+        damage = 'healing' if kind == 'COMBAT_HEALING' else DAMAGE.get(kind[len('COMBAT_'):])
+        if damage is None:
+            raise SpellUnresolved(f'callback combat type {kind}')
+        deps['formulas'].append({'identity': ident(formula_key), 'kind': 'range', 'magnitude': {'minimum': low, 'maximum': high}})
+        return {'operation': 'heal' if damage == 'healing' else 'damage', 'damage_type': damage,
+                'formula': ref('Formula', formula_key), 'affects': affects}
+
+    def probe_target_creature(self, probe, function, key, offset, aggressive, deps):
+        caster = probe.make('monster', 'caster')
+        probe.creatures['caster'] = caster
+        player = probe.make('player', 'player')
+        targets = {'player': player, 'player_summon': probe.make('monster', 'player summon', player),
+                   'monster_summon': probe.make('monster', 'monster summon', probe.make('monster', 'other master')),
+                   'monster': probe.make('monster', 'monster'), 'caster': caster}
+        groups = {}
+        for label, target in targets.items():
+            ok, log = probe.run(function, caster, target)
+            if not ok or any(e[0] != 'combatHealth' for e in log):
+                raise SpellUnresolved(f'the target callback does more than change health ({label})')
+            for e in log:
+                groups.setdefault((e[2].lstrip('@'), e[3], e[4]), set()).add(label)
+        kinds = {frozenset({'monster'}): 'masterless_monsters', frozenset({'monster', 'monster_summon'}): 'non_player_side',
+                 frozenset({'player', 'player_summon'}): 'player_side'}
+        extra = []
+        for n, ((kind, low, high), labels) in enumerate(sorted(groups.items()), offset + 1):
+            side = kinds.get(frozenset(labels - {'caster'}))
+            if side is None:
+                raise SpellUnresolved(f'the callback reaches {sorted(labels)}, which is no modelled target group')
+            affects = {'kind': side, 'top_creature_only': False, 'excludes_caster_name': False,
+                       # combat.cpp CombatFunc passes the caster only to a non-aggressive combat.
+                       'includes_caster': 'caster' in labels and not aggressive}
+            extra.append((f'-callback-{n}', self.health_body(kind, min(low, high), max(low, high), affects,
+                                                              f'{key}/formula-callback-{n}', deps)))
+        return extra
+
+    def probe_target_tile(self, probe, function, key, offset, deps):
+        text = probe.source
+        candidates = sorted({s.lower() for s in re.findall(r'"([^"\n]+)"', text)}) + ['zz unnamed monster']
+        position = probe.lua.eval('Position(1001, 1000, 7)')
+        caster = probe.make('monster', 'caster')
+        probe.creatures['caster'] = caster
+        healed, amounts = [], set()
+        for name in candidates:
+            per_mode = {}
+            for mode in ('low', 'high'):
+                probe.world['top'] = probe.make('monster', name)
+                ok, log = probe.run(function, caster, position, random=mode)
+                if not ok or any(e[0] not in ('tile', 'random', 'addHealth') for e in log):
+                    raise SpellUnresolved(f'the tile callback does more than add health ({name})')
+                per_mode[mode] = [e[2] for e in log if e[0] == 'addHealth']
+            if per_mode['low'] or per_mode['high']:
+                if len(per_mode['low']) != 1 or len(per_mode['high']) != 1:
+                    raise SpellUnresolved(f'{name} is healed a varying number of times')
+                healed.append(name)
+                amounts.add((per_mode['low'][0], per_mode['high'][0]))
+        if not healed or 'zz unnamed monster' in healed or len(amounts) != 1:
+            raise SpellUnresolved(f'tile callback heals {healed} by {sorted(amounts)}')
+        low, high = next(iter(amounts))
+
+        def heals(caster_name, top_is_caster):
+            me = probe.make('monster', caster_name)
+            probe.creatures['caster'] = me
+            probe.world['top'] = me if top_is_caster else probe.make('monster', caster_name)
+            ok, log = probe.run(function, me, position)
+            return ok and any(e[0] == 'addHealth' for e in log)
+
+        affects = {'kind': 'named_creatures', 'creatures': [], 'top_creature_only': True,
+                   'excludes_caster_name': not heals(healed[0], False), 'includes_caster': heals(healed[0], True)}
+        for name in healed:
+            creature = f'canary:creature/{slug(name)}'
+            self.pending_definitions.add(('Creature', creature))
+            affects['creatures'].append(ref('Creature', creature))
+        return [(f'-callback-{offset + 1}', self.health_body('COMBAT_HEALING', min(low, high), max(low, high), affects,
+                                                            f'{key}/formula-callback-{offset + 1}', deps))]
+
+    def probe_remove_items(self, probe, lua_spell, key, deps, asset, notes):
+        probe.world['items'] = probe.lua.table()
+        empty = self.cast_runs(probe, lua_spell, modes=('low',))[0, 'low'][0]
+        tiles = sorted({tuple(e[1:4]) for e in empty if e[0] == 'tile'})
+        queried = []
+        for e in empty:
+            if e[0] == 'getItemById' and e[4] not in queried:
+                queried.append(e[4])
+        if not tiles or not queried or any(dz for _, _, dz in tiles):
+            raise SpellUnresolved('the cast inspects no items on its own floor')
+        for present in (queried, queried[1:]):
+            probe.world['items'] = probe.lua.table_from({i: True for i in present})
+            log = self.cast_runs(probe, lua_spell, modes=('low',))[0, 'low'][0]
+            removed = [e for e in log if e[0] == 'removeItem']
+            if sorted(tuple(e[1:4]) for e in removed) != tiles or {e[4] for e in removed} != {present[0]}:
+                raise SpellUnresolved('item removal is not one first-listed item per inspected tile')
+            if any(e[0] not in ('tile', 'getItemById', 'removeItem', 'effect') for e in log):
+                raise SpellUnresolved('the cast does more than remove items')
+        effects = {e[4] for e in log if e[0] == 'effect'}
+        items = []
+        for item_id in queried:
+            item = ref('Item', f'canary:item/{int(item_id)}')
+            self.pending_definitions.add((item['family'], item['key']))
+            items.append(item)
+        body = {'operation': 'remove_items', 'removed_items': {'items': items, 'selection': 'first_listed_per_tile'}}
+        if len(effects) == 1:
+            binding, note = self.visual(next(iter(effects)), 'effect')
+            body['presentation'] = {'impact_asset_binding': asset(binding)}
+        xs, ys = [x for x, _, _ in tiles], [y for _, y, _ in tiles]
+        rows = [''.join(('C' if (x, y) == (0, 0) else 'x') if (x, y, 0) in tiles else ('c' if (x, y) == (0, 0) else '.')
+                        for x in range(min(xs), max(xs) + 1)) for y in range(min(ys), max(ys) + 1)]
+        notes.append(f'Probed: every tile of the area around the caster loses the first present of items {queried}.')
+        deps['effects'].append({'identity': ident(f'{key}/effect-remove'), **body})
+        deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': 0, 'needs_target': False,
+                                  'needs_direction': False, 'area': {'matrix': {'north': rows}},
+                                  'effects': [ref('Effect', f'{key}/effect-remove')]})
 
     def ability_uses_magnitude(self, key, deps):
         ability = next(a for a in deps['abilities'] if a['identity']['key'] == key)
@@ -1067,8 +1322,9 @@ class Converter:
                 params[name] = value_number
         return params
 
-    def combat_ability(self, key, combat, geometry, range_tiles, deps, asset, notes):
-        """One recorded Combat as an Ability plus its Effects; True when a damage/heal effect uses the caster magnitude."""
+    def combat_ability(self, key, combat, geometry, range_tiles, deps, asset, notes, extra=()):
+        """One recorded Combat as an Ability plus its Effects; True when a damage/heal effect uses the caster magnitude.
+        `extra` holds (suffix, body) Effects modelled from probed script logic (D18); they come first."""
         params = self.engine_params(combat.get('param_calls', []), notes)
         unsupported = set(params) - {'COMBAT_PARAM_TYPE', 'COMBAT_PARAM_EFFECT', 'COMBAT_PARAM_DISTANCEEFFECT',
                                      'COMBAT_PARAM_CHAIN_EFFECT', 'COMBAT_PARAM_CREATEITEM', 'COMBAT_PARAM_AGGRESSIVE',
@@ -1105,6 +1361,11 @@ class Converter:
             deps['effects'].append({'identity': ident(effect_key), **body})
             effects.append(ref('Effect', effect_key))
 
+        for suffix, body in extra:
+            add(suffix, body)
+        if params.get('COMBAT_PARAM_TYPE') == 'COMBAT_NONE':
+            notes.append('COMBAT_NONE: the combat itself changes no health; it shows its effects and runs its callbacks.')
+            params.pop('COMBAT_PARAM_TYPE')
         if 'COMBAT_PARAM_TYPE' in params:
             kind = params['COMBAT_PARAM_TYPE']
             if not (isinstance(kind, str) and kind.startswith('COMBAT_') and kind[7:] in DAMAGE):
@@ -1134,6 +1395,8 @@ class Converter:
                 if visual:
                     body['presentation'], visual = visual, {}
                 add(f'-condition-{n}', body)
+        if visual and extra:
+            add('-presentation', {'operation': 'presentation_only', 'presentation': visual})
         if not effects:
             if not visual:
                 raise SpellUnresolved('the combat has no effect a monster caster can produce.')
