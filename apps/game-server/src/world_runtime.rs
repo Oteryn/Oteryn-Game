@@ -695,6 +695,23 @@ impl LocalObjectRuntime {
                 "first CW4 child cannot bypass unresolved policy guards",
             ));
         }
+        // `prepare()` hard-codes Open -> empty blocking and Close -> full-footprint blocking; the
+        // linker only constrains collision class equality for RETAG-family transitions, so nothing
+        // else stops a definition whose OPEN target is collision-Present or whose CLOSE target is
+        // collision-Absent from binding here and then behaving inconsistently with its own declared
+        // vocabulary. Reject that mismatch at bind time instead of changing `prepare()`. Checked
+        // last among the OPEN/CLOSE structural invariants so an already-invalid pair (wrong
+        // definition, wrong intent family, swapped keys, etc.) keeps surfacing its own specific
+        // error first.
+        if local_object_state_collision(states, &open_transition.source_state)
+            != Some(LocalObjectCollisionPresence::Present)
+            || local_object_state_collision(states, &open_transition.target_state)
+                != Some(LocalObjectCollisionPresence::Absent)
+        {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "OPEN/CLOSE transition collision classes do not match runtime operations",
+            ));
+        }
 
         let collision_cells = absolute_collision_cells(placement)?;
         // D38 W1b mechanical adaptation: the linker now requires every LocalObject placement to
@@ -708,13 +725,11 @@ impl LocalObjectRuntime {
         // The initial state's own collision presence — not the OPEN/CLOSE operation identity —
         // decides whether the object starts blocking: an authored Absent (e.g. "open") start must
         // not block movement, and an authored Present (e.g. "closed") start must.
-        let initial_collision = states
-            .iter()
-            .find(|state| state.key == initial_state)
-            .map(|state| state.collision)
-            .ok_or(WorldRuntimeError::InvalidBinding(
+        let initial_collision = local_object_state_collision(states, &initial_state).ok_or(
+            WorldRuntimeError::InvalidBinding(
                 "placement's authored local object initial state is not declared by the local object",
-            ))?;
+            ),
+        )?;
         let initial_blocking = match initial_collision {
             LocalObjectCollisionPresence::Present => collision_cells.clone(),
             LocalObjectCollisionPresence::Absent => BTreeSet::new(),
@@ -1041,6 +1056,16 @@ fn unique_transition<'a>(
 
 fn local_object_states_contain(states: &[LocalObjectStateDefinition], key: &ProductionKey) -> bool {
     states.iter().any(|state| &state.key == key)
+}
+
+fn local_object_state_collision(
+    states: &[LocalObjectStateDefinition],
+    key: &ProductionKey,
+) -> Option<LocalObjectCollisionPresence> {
+    states
+        .iter()
+        .find(|state| &state.key == key)
+        .map(|state| state.collision)
 }
 
 fn absolute_collision_cells(
@@ -1698,6 +1723,31 @@ mod tests {
             WorldRuntimeError::InvalidBinding(
                 "OPEN/CLOSE transition intent families do not match runtime operations"
             )
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn mismatched_open_close_collision_classes_reject_before_runtime_creation()
+    -> Result<(), WorldRuntimeError> {
+        let mut content = synthetic_content("package-r1")?;
+        let ReferenceDefinitionKind::LocalObjectStates(states) = &mut content.definitions[0].kind
+        else {
+            return Err(fixture_error("local object definition"));
+        };
+        for state in states.iter_mut() {
+            state.collision = match state.collision {
+                LocalObjectCollisionPresence::Present => LocalObjectCollisionPresence::Absent,
+                LocalObjectCollisionPresence::Absent => LocalObjectCollisionPresence::Present,
+            };
+        }
+
+        let (_authority, _session, scope) = authority(50, 7, 1, 1)?;
+        assert!(matches!(
+            runtime_for(&content, scope, PLACEMENT_A, 1),
+            Err(WorldRuntimeError::InvalidBinding(
+                "OPEN/CLOSE transition collision classes do not match runtime operations"
+            ))
         ));
         Ok(())
     }

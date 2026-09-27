@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world build (session_01LphUANMfC2q2WKdfEb39eC)
 created_at: 2026-09-27T22:30:02Z
-updated_at: 2026-09-27T23:06:53Z
+updated_at: 2026-09-27T23:20:40Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
@@ -97,51 +97,62 @@ reason: >
 ## Implementation / findings
 
 - `reference_playable.rs`: added `LocalObjectCollisionPresence` (`Present|Absent`) and
-  `LocalObjectStateDefinition {key, collision}`; `ReferenceDefinitionKind::LocalObjectStates` /
-  `ClientSafeDefinitionKind::LocalObjectStates` hold `Vec<LocalObjectStateDefinition>` (was
-  `Vec<ProductionKey>`). Duplicate/empty checks now key off `.key`. `validate_transition` adds the
-  RETAG invariant on the new `LOCAL_OBJECT_RETAG_INTENT_FAMILY` constant (same collision class
-  required, no action-id field added). `PlacementRef` gains
-  `local_object_initial_state: Option<ProductionKey>`, required+in-vocabulary iff the placement's
-  definition is `LocalObject`, forbidden otherwise (fail-closed both directions).
+  `LocalObjectStateDefinition {key, collision}`; `LocalObjectStates` variants hold
+  `Vec<LocalObjectStateDefinition>` (was `Vec<ProductionKey>`). `validate_transition` adds the
+  RETAG invariant (`LOCAL_OBJECT_RETAG_INTENT_FAMILY`: same collision class required, no
+  action-id field). `PlacementRef` gains `local_object_initial_state: Option<ProductionKey>`,
+  required+in-vocabulary iff `LocalObject`, forbidden otherwise (fail-closed both directions).
 - `project.rs`: authored `LocalObject.states` mirrors the new per-state shape.
-- `world_runtime.rs` (not owned; smallest mechanical adaptation, reported per prompt): CW4 `bind()`
-  reads `placement.local_object_initial_state` instead of deriving it from the OPEN transition;
-  vocabulary-membership checks adapted to the new element type's `.key`. CW4 test fixture updated
-  to match, preserving prior observable behavior. `prepare()`'s Open/Close semantics untouched.
+- `world_runtime.rs` (not owned; smallest mechanical adaptation, reported per prompt): CW4
+  `bind()` reads the authored initial state instead of deriving it from OPEN; fixture updated to
+  match, preserving prior observable behavior. `prepare()` untouched.
 
-### Repair round 1 (Codex review on frozen head 969e9867, PR #1046, returned to AUTHORING)
+### Repair round 1 (Codex, head 969e9867): both P2 fixed
 
-- **P2 world_runtime.rs, fixed:** `bind()` used the authored initial state for `state` but still
-  unconditionally set `blocking_cells` to the full footprint, so an Absent/open initial state would
-  wrongly block movement. Fixed: look up the initial state's `LocalObjectCollisionPresence` in the
-  already-resolved `states` vocabulary (defensive `InvalidBinding` if absent) and set
-  `blocking_cells` to the footprint only when `Present`, empty when `Absent`. `prepare()` untouched.
-  New test `authored_open_initial_state_starts_unblocked_then_close_commits_and_blocks` covers it.
-- **P2 project.rs, fixed:** the `Vec<String>` → `Vec<LocalObjectStateDocument>` change broke
-  decoding any existing `OTERYN_WORLD_PROJECT_REFERENCE_RECORDS/v1` `LocalObject` record under the
-  same `v1` label. Per coordinator decision (minimum sufficient, no schema-wide v2 bump): new
-  `LocalObjectStateEntryDocument` (`#[serde(untagged)]`, `Legacy(String) | Typed(...)`) is now the
-  `states` element type. `Legacy` decodes but `.lower()` fails closed with
-  `ContentError::InvalidArtifact("legacy v1 LocalObject state lacks collision presence; re-author
-  with {key, collision}")` — never defaults a collision. The writer never emits `Legacy`.
-  Documented on both types. Tests: legacy string decodes; legacy lowering rejected; typed form
-  round-trips; a full legacy `LocalObject` JSON record decodes under `v1` and only fails at
-  `.lower()`. `tests/content_world_project.rs` (not owned; same principle) updated its one fixture.
+- world_runtime.rs: `bind()` set `blocking_cells` from the full footprint unconditionally even
+  for an Absent/open initial state. Fixed: derive it from that state's own
+  `LocalObjectCollisionPresence` (`Present` → footprint, `Absent` → empty), defensive
+  `InvalidBinding` if absent from vocabulary. `prepare()` untouched. New test:
+  `authored_open_initial_state_starts_unblocked_then_close_commits_and_blocks`.
+- project.rs: the `Vec<String>`→`Vec<LocalObjectStateDocument>` change broke decoding any
+  existing `v1` `LocalObject` record. Per coordinator decision (no v2 bump): new
+  `LocalObjectStateEntryDocument` (`#[serde(untagged)]`, `Legacy(String)|Typed(...)`); `Legacy`
+  decodes but `.lower()` fails closed (never defaults collision); writer only emits `Typed`.
+  4 new tests (legacy decode, legacy-lower rejection, typed round-trip, full legacy record).
+  `tests/content_world_project.rs` (not owned) updated its one fixture to match.
+
+### Repair round 2 (Codex, head 3934894c, FINAL round): P2 fixed
+
+- world_runtime.rs ~720: `bind()` now derives `blocking_cells` from the initial state, but
+  `prepare()` still hard-codes Open→empty/Close→full, and nothing constrained a definition whose
+  OPEN target is Present or CLOSE target is Absent — accepted but behaviorally inconsistent.
+  Coordinator decision (kept mechanical; `prepare()` untouched): `bind()` now rejects such a pair
+  with `InvalidBinding("OPEN/CLOSE transition collision classes do not match runtime
+  operations")` unless OPEN source=Present/target=Absent (CLOSE is the same pair reversed, per
+  the existing two-state-inverse check). Placed last among the OPEN/CLOSE structural checks so
+  an already-invalid pair (wrong definition/intent family/swapped keys) still surfaces its own
+  specific error first — this reordering was needed to keep
+  `swapped_open_close_intents_fail_closed_before_runtime_creation` passing. New test:
+  `mismatched_open_close_collision_classes_reject_before_runtime_creation` (swaps the fixture
+  states' collision presence, asserts this exact error). Added a small shared helper,
+  `local_object_state_collision`, reused by both this check and the round-1 initial-collision
+  lookup.
 
 ## Validation
 
-Commands (run after each round, all under
-`CARGO_TARGET_DIR=/home/user/.cargo-shared-target flock /home/user/.cargo-build.lock` for cargo):
+Commands (all cargo under
+`CARGO_TARGET_DIR=/home/user/.cargo-shared-target flock /home/user/.cargo-build.lock`):
 `cargo fmt --check`; `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`;
 `cargo test -p oteryn-game-server --test content_reference_playable --test content_world_project`;
+`cargo test -p oteryn-game-server --lib content::project`;
 `cargo test -p oteryn-game-server world_runtime`; `python3 tools/agents/validate_governance.py`;
 `python3 tools/repository/validate_repository_policy.py`.
 
-Latest (repair round 1) result: all PASS. `content_reference_playable` 38/38 (cross-checked
-against `grep -c '^#\[test\]'`); `content_world_project` 22/22 (cross-checked; 4 new legacy-
-compatibility tests over the prior 18); `world_runtime` unittests 19/19 (18 prior CW4 Open/Close +
-1 new). Both governance/policy validators clean. fmt/clippy clean with zero warnings.
+Latest (repair round 2) result: all PASS. `content_reference_playable` 38/38,
+`content_world_project` 22/22 (both cross-checked against `grep -c '^#\[test\]'`);
+`content::project` lib unittests 17/17 (includes the 4 round-1 legacy-compat tests);
+`world_runtime` unittests 20/20 (19 prior + 1 new this round). fmt/clippy clean, zero warnings.
+Both governance/policy validators clean.
 
 ### E2E
 
@@ -160,14 +171,14 @@ compatibility tests over the prior 18); `world_runtime` unittests 19/19 (18 prio
 
 - exact head: bound at commit (see PR)
 - method/reviewer: implementing/coordinating agent (mandatory; cannot be delegated away)
-- material findings: none found. Noted and deliberately scoped out: (1) `prepare()`'s Open/Close
-  `next_blocking` derivation stays operation-keyed, not state-collision-keyed — wiring per-state
-  collision into CW4 execution is future runtime work, not this content-model task; (2) one
-  transitively-broken non-owned test file (`tests/content_world_project.rs`, distinct from the
-  PR #1036-owned `tests/content_world_project_repository.rs`) needed the same mechanical
-  authored-form update as `project.rs`'s own `LocalObject` variant — applied and reported per the
-  same disjointness principle the prompt states for `world_runtime.rs`.
-- verdict: no blocking findings; ready for PR
+- material findings: none found after repair round 2. Both rounds' Codex P2 findings were
+  accepted and repaired (see Implementation/findings above); `prepare()`'s Open/Close semantics
+  remain intentionally untouched per the coordinator's own decision each round. One reordering
+  side-effect was caught and fixed by this agent before pushing: placing the new round-2 check
+  before the intent-family check would have changed the error message an existing test
+  (`swapped_open_close_intents_fail_closed_before_runtime_creation`) asserts — moved the new
+  check to last among the OPEN/CLOSE structural invariants instead.
+- verdict: no blocking findings; ready for final review (round 2 of 2, FINAL per coordinator)
 
 ## Independent review
 
@@ -191,7 +202,7 @@ compatibility tests over the prior 18); `world_runtime` unittests 19/19 (18 prio
 ## Context checkpoint
 
 ```yaml
-last_progress: repair round 1 (Codex review, frozen head 969e9867) pushed; both P2 findings fixed
+last_progress: repair round 2 (FINAL, Codex review, frozen head 3934894c) pushed; P2 fixed
 status: implementing
 branch: claude/cw3-local-object-state-model
 head_sha: null
@@ -213,5 +224,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: await coordinator's repair round 2 (if any) or PR review/merge
+next_action: await final review outcome (round 2 of 2 was FINAL per coordinator) or PR merge
 ```
