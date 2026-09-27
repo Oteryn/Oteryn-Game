@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-npc-admission-presentation-behavior
 title: NPC admission slice 2b - NPC Presentation and Behavior profiles (outfit, wander)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 999
 jira: KAN-16
 base_sha: c6a23eccc285a08dcbffd411ed58246894e7d631
 head_sha: null
