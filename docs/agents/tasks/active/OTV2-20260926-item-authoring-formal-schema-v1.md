@@ -23,6 +23,7 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260926-item-authoring-formal-schema-v1.md
   - docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md
   - tools/content-schema/item-authoring/**
+  - .github/workflows/item-authoring-schema.yml
 public_contracts: []
 depends_on:
   - docs/architecture/OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md
@@ -192,14 +193,12 @@ Accepted review repairs:
 - exact head: pending
 - method/auditor: three read-only Canary, Crystal and Wiki subagents, followed by bounded
   repair verification
-- material findings: the real-item follow-up found coupled trade booleans, an
-  unversioned appearance binding, missing per-page Wiki deltas and an unproven direct
-  `proficiency_id=238` mapping. Final review additionally found unvalidated evidence,
-  missing persisted capture time, unrestricted proficiency pairs, unenforced engine
-  source paths, incomplete Presentation/overlay regressions, unrelated route proofs
-  and missing raw-to-typed/source-extraction equality; all were repaired in the v3
-  candidate above. Review of 517daa6b found an incomplete leaf partition, crash paths,
-  unenforced date-time/digests, Canary bags.xml and an unbound Item key; fixed in v4
+- material findings: v1-v3 findings (trade booleans, appearance binding, Wiki deltas,
+  proficiency crosswalk, evidence/route/extraction proofs) repaired in v3; 517daa6b
+  review (leaf partition, crashes, date-time/digests, Canary bags.xml, unbound key)
+  repaired in v4; audit `AUDIT_2026-09-27.md` of 56a39d15 (F-01..F-07: Delivery Task
+  evidence vs decision, CRLF digests, package CI, Ruff pin, census self-check) being
+  repaired on the PR head
 - verdict: implementation repaired; fresh exact-head final review remains pending
 
 ## PR and closeout
