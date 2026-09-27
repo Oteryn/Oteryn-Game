@@ -29,7 +29,7 @@ from collections import Counter
 from pathlib import Path
 
 import lua_blocks
-from lua_writers import REGISTRATION, strip_code
+from lua_writers import REGISTRATION, expand_aliases, storage_aliases, strip_code
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
 from validate_quest_content import BLOCKED
@@ -64,15 +64,14 @@ class Script:
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
         self.roles, self.players, self.declared = {}, set(), {}
-        # `local ThreatenedDreams = Storage.Quest.U11_40.ThreatenedDreams` and the like, expanded in every line
-        self.aliases = {m.group(1): m.group(2) for line in self.lines
-                        if (m := re.match(r'\s*local\s+(\w+)\s*=\s*((?:Global)?Storage\.[\w.\[\]]+)\s*(--.*)?$', line))}
+        self.aliases = storage_aliases(self.lines)
 
     def bind(self, number, callback):
         """Name the callback parameters by their role and note the locals that hold the acting player."""
         params = re.search(r'\(([^)]*)\)', self.lines[number - 1]).group(1)
         names = [n.strip() for n in params.split(',')]
         self.roles = {n: r for n, r in zip(names, ROLES.get(callback, ())) if r}
+        self.callback = callback
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
         for line in self.lines[number:]:
@@ -94,10 +93,7 @@ class Script:
         return self.declared.get(norm(path), f'{self.namespace}:quest-progress/{path}')
 
     def raw(self, number):
-        text = re.sub(r'--.*$', '', self.lines[number - 1]).strip()
-        for alias, path in self.aliases.items():
-            text = re.sub(rf'(?<![\w.]){alias}(?=[.\[\s,)])', path, text)
-        return text
+        return expand_aliases(re.sub(r'--.*$', '', self.lines[number - 1]).strip(), self.aliases)
 
     def read_only(self, code):
         """A local assignment or table-constructor line whose calls only read state."""
@@ -166,7 +162,14 @@ class Script:
             found.append({'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED_MOVEMENT,
                           **({'to_anchor': self.anchor(pos.groups())} if pos else
                              {'to': 'previous_position'} if 'fromPosition' in raw else {'to_source_line': number})})
-        if re.search(r'[:.](transform|transformItem|createItem|removeItem|revertItem|remove|setActionId|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(', raw):
+        removal = re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(([^()]*)\)', raw)
+        consumed = removal and self.consumed(removal, number)
+        if consumed:
+            found.append(consumed)
+        elif removal and self.creature(removal.group(1)):
+            self.unresolved.append({'line': number, 'reason': 'creature removal without an accepted owner'})
+            return found
+        elif re.search(r'[:.](transform|transformItem|createItem|removeItem|revertItem|remove|setActionId|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(', raw):
             found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
         if (m := re.search(r'(\w+):addItem\(\s*(\d+)?\s*(?:,\s*(\d+)\s*)?', raw)) and m.group(1) in self.players | {'player'}:
             found.append({'owner': 'Item', 'request': 'hand_out',
@@ -188,6 +191,25 @@ class Script:
             if in_loop:
                 child['repeated'] = True
         return found
+
+    def consumed(self, removal, number):
+        """A removal that takes an item from its holder is DUR-03 consumption, never map state (D38): the player's
+        `removeItem`, or `remove` on the item used (`onUse`) or dropped onto the edge (`onAddItem`)."""
+        receiver, method, args = removal.groups()
+        if method == 'removeItem' and receiver in self.players | {'player'}:
+            m = re.fullmatch(r'\s*(\d+)\s*(?:,\s*(\d+)\s*)?', args)
+            return {'owner': 'Item', 'request': 'consume',
+                    **({'item': ref('Item', f'{self.namespace}:item/{m.group(1)}'), 'count': int(m.group(2) or 1)}
+                       if m else {'value_source_line': number})}
+        role = self.roles.get(receiver)
+        if method == 'remove' and ((role == 'source' and self.callback == 'onUse') or role == 'contact'):
+            return {'owner': 'Item', 'request': 'consume', 'object': 'used_item' if role == 'source' else 'contact'}
+        return None
+
+    def creature(self, receiver):
+        """A receiver that holds a creature, not an item."""
+        return (self.roles.get(receiver) == 'actor' or receiver in self.players
+                or re.search(r'(?i)creature|monster|boss|npc|summon|spectator', receiver) is not None)
 
     def convert(self, nodes):
         out = []

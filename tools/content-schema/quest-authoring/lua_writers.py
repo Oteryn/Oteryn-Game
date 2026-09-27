@@ -85,11 +85,58 @@ def guard_at_write(lines, guard_line, write_line, op, value):
     return {'op': op if keep else NEGATE[op], 'value': value, 'exact': exact}
 
 
+def dialogue_at_write(lines, start, write_line):
+    """The player keywords (`MsgContains`) and dialogue topics of the if-blocks that enclose an NPC write.
+
+    A stack of open blocks is kept from the callback start: `if`/`elseif` put their line on top, `else` and
+    loops put nothing, `end` pops. Only the conditions still open at the write count.
+    """
+    stack = []
+    for number in range(start, write_line):
+        code = strip_code(lines[number - 1]).strip()
+        if re.match(r'elseif\b', code) and stack:
+            stack[-1] = number
+        elif re.fullmatch(r'else', code) and stack:
+            stack[-1] = None
+        else:
+            opened = len(OPENER.findall(code)) - len(CLOSER.findall(code))
+            for _ in range(max(opened, 0)):
+                stack.append(number if re.match(r'if\b', code) else None)
+            for _ in range(min(-opened, len(stack))):
+                stack.pop()
+    # strip_code blanks string literals, so keywords come from the raw condition lines
+    conditions = [re.sub(r'--.*$', '', lines[n - 1]) for n in stack if n]
+    keywords = [k for c in conditions for k in re.findall(r'MsgContains\(\s*\w+\s*,\s*"([^"]+)"', c)]
+    topics = sorted({int(t) for c in conditions for t in re.findall(r'[Tt]opic\w*(?:\[[^\]]*\]|\([^)]*\))?\s*==\s*(\d+)', c)})
+    return {'keywords': keywords, 'topics': topics}
+
+
+ALIAS = re.compile(r'\s*local\s+(\w+)\s*=\s*((?:Global)?Storage\.[\w.\[\]]+)\s*(--.*)?$')
+
+
+def storage_aliases(lines):
+    """`local ThreatenedDreams = Storage.Quest.U11_40.ThreatenedDreams` and the like, by alias name."""
+    return {m.group(1): m.group(2) for line in lines if (m := ALIAS.match(line))}
+
+
+def expand_aliases(line, aliases):
+    """A line with its storage aliases written out. An alias that shadows `Storage` itself is expanded only
+    where it stands alone, so the full `Storage.…` paths of the same file stay as they are."""
+    if ALIAS.match(line):
+        return line
+    for alias, path in aliases.items():
+        follow = r'(?![\w.\[])' if alias in ('Storage', 'GlobalStorage') else r'(?=[.\[\s,)])'
+        line = re.sub(rf'(?<![\w.]){alias}{follow}', path, line)
+    return line
+
+
 def guard_pattern(target):
     return re.compile(r'getStorageValue\(\s*' + re.escape(target) + r'\s*\)\s*(==|~=|<=|>=|<|>)\s*(-?\d+)')
 
 
 def scan(text, path):
+    aliases = storage_aliases(text.split('\n'))
+    text = '\n'.join(expand_aliases(line, aliases) for line in text.split('\n'))
     lines = text.split('\n')
     objects, functions, registrations = {}, [], {}
     for number, line in enumerate(lines, 1):
@@ -127,5 +174,6 @@ def scan(text, path):
             owner = objects.get(obj, 'other')
         writes.append({'line': line, 'target': target, 'value': value[:60], **effect, 'from': guard, 'owner': owner,
                        'callback': enclosing[2] if enclosing else None,
-                       'registrations': sorted(set(registrations.get(obj, [])))[:6]})
+                       'registrations': sorted(set(registrations.get(obj, [])))[:6],
+                       **({'dialogue': dialogue_at_write(lines, start, line)} if owner == 'npc' else {})})
     return writes
