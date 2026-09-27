@@ -147,6 +147,12 @@ def repeat(entries):
     return {'kind': 'cooldown', 'hours': max(hours)}
 
 
+def quest_key(wiki):
+    """One identity per wiki quest across slices: the Canary namespace when Canary implements the quest at all."""
+    namespace = 'canary' if wiki.get('canary') in ('IMPLEMENTED', 'PARTIAL') else 'crystalserver'
+    return f'{namespace}:quest/{slug(wiki["title"])}'
+
+
 def joined(text):
     return ''.join(w for w in words(text) if not w.isdigit())
 
@@ -255,11 +261,11 @@ def build(repos, coverage):
         if wiki and basis == 'section':
             # the file's section headers do not always cover the entries below them (outlaw camp keys sit
             # under the Katana Quest header), so a section-only match is kept for review, not as a link
-            candidate = ref('Quest', f'{namespace}:quest/{slug(wiki["title"])}')
+            candidate = ref('Quest', quest_key(wiki))
         elif wiki:
-            quest_key = f'{namespace}:quest/{slug(wiki["title"])}'
-            quest = ref('Quest', quest_key)
-            entry = quests.setdefault(quest_key, {'identity': {'key': quest_key, 'revision': REVISION},
+            key_of_quest = quest_key(wiki)
+            quest = ref('Quest', key_of_quest)
+            entry = quests.setdefault(key_of_quest, {'identity': {'key': key_of_quest, 'revision': REVISION},
                                                   'display_name': wiki['title'], 'kind': 'reward_only',
                                                   'shown_in_quest_log': wiki['in_quest_log'],
                                                   'wiki': {k: wiki[k] for k in ('title', 'pageid', 'revid')},

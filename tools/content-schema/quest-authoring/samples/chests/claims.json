@@ -1097,7 +1097,7 @@
       "section": "Shadows of Yalahar Quest Mision 10",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -1473,7 +1473,7 @@
       "section": "Shadows of Yalahar Quest Mision 10",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -1643,7 +1643,7 @@
       "section": "Shadows of Yalahar Quest Mision 10",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -3252,7 +3252,7 @@
       "section": "Shadows of Yalahar Quest Mision 06",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -3299,7 +3299,7 @@
       "section": "Shadows of Yalahar Quest Mision 12",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -3348,7 +3348,7 @@
       "quest_link_basis": null,
       "quest_candidate_from_section": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "claim": {
@@ -4942,7 +4942,7 @@
       "section": "Shadows of Yalahar Quest Mision 07",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -6166,7 +6166,7 @@
       "section": "Shadows of Yalahar Quest Mision 10",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -6572,7 +6572,7 @@
       "section": "Shadows of Yalahar Quest Mision 08",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -7556,7 +7556,7 @@
       "section": "Shadows of Yalahar Quest Mision 10",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "label",
@@ -16504,7 +16504,7 @@
       "section": "The Inquisition Quest",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_inquisition_quest",
+        "key": "canary:quest/the_inquisition_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",

@@ -153,6 +153,8 @@ resolves source ids. The CW2 B3 loot binding evidence has every row still `UNRES
    underscores (`GraveDanger.Questline` and `QuestLine`) is the same rule.
 6. Empty containers without a reward are world objects, not claims: `approved_omission`, listed in
    `empty_containers.json`.
+7. A quest keeps one identity across slices and servers: the Canary namespace when Canary
+   implements it at all (the coverage sample), otherwise the CrystalServer namespace.
 
 ## 6. First transcription
 
@@ -170,7 +172,7 @@ resolves source ids. The CW2 B3 loot binding evidence has every row still `UNRES
 | Conflicts: decided by the wiki / open | 1 / 1 |
 | Claims linked to a wiki quest: KV name / storage key / own label | 92 / 151 / 37 |
 | Claims with a section-only candidate (review) / without a link | 35 / 21 |
-| Reward-only quests | 121 |
+| Reward-only quests | 120 |
 
 The Thieves Guild goblet chest hands out a golden goblet in Canary and a stolen golden goblet in
 CrystalServer. The wiki decides for CrystalServer: the spoiler says the chest behind the quest door

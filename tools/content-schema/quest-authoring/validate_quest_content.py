@@ -57,11 +57,15 @@ def validate(claims_doc, quests_doc, catalog=None, manifest=None):
             errors.append(f'{key}: quest and quest_link_basis must be set together')
         if claim['quest'] and claim['quest_candidate_from_section']:
             errors.append(f'{key}: a linked claim has no section candidate')
+    paths = {}
     for quest in quests:
         key = quest['identity']['key']
         if key in quest_keys:
             errors.append(f'{key}: duplicate quest key')
         quest_keys.add(key)
+        path = key.split(':', 1)[1]
+        if paths.setdefault(path, key) != key:
+            errors.append(f'{key}: the same quest is also {paths[path]} (one identity per quest across namespaces)')
         for claim_ref in quest['claims']:
             if claim_ref['family'] != 'RewardClaim' or claim_ref['key'] not in claim_keys:
                 errors.append(f'{key}: unknown claim {claim_ref["key"]}')

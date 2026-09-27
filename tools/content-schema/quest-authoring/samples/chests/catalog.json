@@ -2437,6 +2437,11 @@
     },
     {
       "family": "Quest",
+      "key": "canary:quest/shadows_of_yalahar_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
       "key": "canary:quest/shaman_treasure_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
@@ -2612,17 +2617,7 @@
     },
     {
       "family": "Quest",
-      "key": "crystalserver:quest/shadows_of_yalahar_quest",
-      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-    },
-    {
-      "family": "Quest",
       "key": "crystalserver:quest/targuna_quest",
-      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
-    },
-    {
-      "family": "Quest",
-      "key": "crystalserver:quest/the_inquisition_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     }
   ]

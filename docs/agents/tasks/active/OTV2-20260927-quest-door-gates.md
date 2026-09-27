@@ -54,7 +54,7 @@ fence, session, authority or persisted-recovery evidence is touched.
 
 ## Acceptance and evidence
 
-- `verify_quest_schema.py` 39/39 with the cause of each negative case checked.
+- `verify_quest_schema.py` 40/40 with the cause of each negative case checked.
 - `ots_chests.py` and `ots_doors.py` are deterministic; the chest and door samples validate
   together.
 - `validate_governance.py` and `validate_repository_policy.py` pass.

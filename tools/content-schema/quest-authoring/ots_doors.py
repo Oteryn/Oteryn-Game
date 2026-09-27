@@ -18,7 +18,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import lua_tables
-from ots_chests import REVISION, ROOT, SOURCES, check_checkout, git_blob, ref, slug, wiki_matcher
+from ots_chests import REVISION, ROOT, SOURCES, check_checkout, git_blob, quest_key, ref, slug, wiki_matcher
 
 TABLES = {
     'quest': ('startup/tables/door_quest.lua', 'QuestDoorAction'),
@@ -161,8 +161,7 @@ def build(repos, chests_dir, coverage):
         basis, wiki = next(((b, w) for b, w in ((b, match_quest(t)) for b, t in (
             ('storage_key', storage_quest.group(1) if storage_quest else None), ('label', gate['label']))) if w), (None, None))
         if wiki:
-            namespace = gate['identity']['key'].split(':', 1)[0]
-            gate['quest'], gate['quest_link_basis'] = ref('Quest', f'{namespace}:quest/{slug(wiki["title"])}'), basis
+            gate['quest'], gate['quest_link_basis'] = ref('Quest', quest_key(wiki)), basis
 
     gate_list = sorted(gates.values(), key=lambda g: g['identity']['key'])
     counts = Counter(e['status'] for e in manifest_entries)

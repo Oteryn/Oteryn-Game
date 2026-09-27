@@ -7748,7 +7748,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_dream_courts_quest",
+        "key": "canary:quest/the_dream_courts_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -7777,7 +7777,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_dream_courts_quest",
+        "key": "canary:quest/the_dream_courts_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -7806,7 +7806,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_dream_courts_quest",
+        "key": "canary:quest/the_dream_courts_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -7875,7 +7875,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_dream_courts_quest",
+        "key": "canary:quest/the_dream_courts_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -7904,7 +7904,7 @@
       "label": "The dream courts door (Andrew Lyze npc)",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_dream_courts_quest",
+        "key": "canary:quest/the_dream_courts_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -7937,7 +7937,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_order_of_the_lion_quest",
+        "key": "canary:quest/the_order_of_the_lion_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -7966,7 +7966,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_order_of_the_lion_quest",
+        "key": "canary:quest/the_order_of_the_lion_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -7995,7 +7995,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/blood_brothers_quest",
+        "key": "canary:quest/blood_brothers_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8052,7 +8052,7 @@
       "label": "Blood Brothers Quest",
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/blood_brothers_quest",
+        "key": "canary:quest/blood_brothers_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8081,7 +8081,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/blood_brothers_quest",
+        "key": "canary:quest/blood_brothers_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8126,7 +8126,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/blood_brothers_quest",
+        "key": "canary:quest/blood_brothers_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8159,7 +8159,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/blood_brothers_quest",
+        "key": "canary:quest/blood_brothers_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8196,7 +8196,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/blood_brothers_quest",
+        "key": "canary:quest/blood_brothers_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8241,7 +8241,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8274,7 +8274,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8307,7 +8307,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8340,7 +8340,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8373,7 +8373,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8410,7 +8410,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8443,7 +8443,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8504,7 +8504,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8537,7 +8537,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8582,7 +8582,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/shadows_of_yalahar_quest",
+        "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8615,7 +8615,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_isle_of_evil_quest",
+        "key": "canary:quest/the_isle_of_evil_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8648,7 +8648,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_isle_of_evil_quest",
+        "key": "canary:quest/the_isle_of_evil_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8681,7 +8681,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_isle_of_evil_quest",
+        "key": "canary:quest/the_isle_of_evil_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",
@@ -8714,7 +8714,7 @@
       "label": null,
       "quest": {
         "family": "Quest",
-        "key": "crystalserver:quest/the_isle_of_evil_quest",
+        "key": "canary:quest/the_isle_of_evil_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
       "quest_link_basis": "storage_key",

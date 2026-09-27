@@ -86,6 +86,24 @@ results[[r['name'] for r in results].index('duplicate claim key')] = {
     'name': 'duplicate claim key', 'expected_valid': False, 'passed': any('duplicate claim key' in e for e in errors),
     'first_error': errors[0] if errors else None}
 
+# one quest cannot appear under two namespaces
+claims, quests, catalog, manifest = fixture()
+twin = json.loads(json.dumps(quests['quests'][0]))
+twin['identity']['key'] = 'other:quest/annihilator'
+twin['claims'] = []
+twin['kind'] = 'reward_only'
+claims['claims'].append(json.loads(json.dumps(claims['claims'][0])))
+claims['claims'][1]['identity']['key'] = 'oteryn:reward-claim/second'
+claims['claims'][1]['quest'] = {'family': 'Quest', 'key': 'other:quest/annihilator', 'revision': 'r1'}
+for p in claims['claims'][1]['placements']:
+    p['position']['y'] += 50
+twin['claims'] = [{'family': 'RewardClaim', 'key': 'oteryn:reward-claim/second', 'revision': 'r1'}]
+quests['quests'].append(twin)
+manifest['entries'].append({'position': [100, 250, 7], 'status': 'mapped', 'destination': 'oteryn:reward-claim/second'})
+errors = validate(claims, quests, catalog, manifest)
+results.append({'name': 'one identity per quest across namespaces', 'expected_valid': False,
+                'passed': bool(errors) and 'one identity per quest' in errors[0], 'first_error': errors[0] if errors else None})
+
 # an unlinked claim keeps its section candidate and no quest lists it
 claims, quests, catalog, manifest = fixture()
 claims['claims'][0].update(quest=None, quest_link_basis=None, quest_candidate_from_section=ref('Quest', 'quest/annihilator'))
