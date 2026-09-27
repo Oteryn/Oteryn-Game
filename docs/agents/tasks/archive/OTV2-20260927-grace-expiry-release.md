@@ -52,3 +52,16 @@ Excluded:
 - protection during loss;
 - the logout block;
 - restart recovery of undecided or unexpired losses.
+
+## Independent review (head 1dcd5cc6)
+
+No safety blocker. The review confirmed:
+- no release happens before the deadline, for another session or account, or from stale rows;
+- a lost-ack reconcile never decides twice;
+- the lifecycle set polls and drains soundly.
+
+1. **Actor leak after an ambiguous commit whose reconcile also failed (fixed).** The retry read TERMINAL, returned `NotApplicable` and never removed the actor. A TERMINAL session now returns `Terminal`, and the owner removes the exact actor. The removal stays keyed to the exact session and slot generation.
+2. **Retries gave up after about 1.5 s of owner unavailability (fixed).** Store failures now back off exponentially with a 5 s cap, over up to 32 attempts (about two minutes). A sweeper for a loss left `Unknown` belongs to the restart-recovery child.
+3. **Every prepare error was silently "not applicable" (fixed).** Only `Stale` (ownership moved) is `NotApplicable`; other errors retry. Successor source times never precede a predecessor's (`max` with prior `observed_at`), so a row published on a faster host clock is retried, not abandoned.
+4. **Lifecycle growth is bounded by admission rate × (loss wait + grace) (accepted).** At most one lifecycle exists per admitted session.
+5. **The other-account assertion (clarified).** It is refused because no claim rows for that account name the session. Scenario 5 now asserts `Terminal` on the post-release replay.

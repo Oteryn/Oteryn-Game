@@ -1789,6 +1789,10 @@ pub enum ExpiredLossReleaseV1 {
     NotExpired { deadline: i64, now: i64 },
     /// The terminal release is durable (possibly by an earlier attempt).
     Released { decided_at: i64 },
+    /// The lost session is already TERMINAL (an earlier attempt's commit whose
+    /// acknowledgement was lost, or another terminal owner). The Channel actor
+    /// bound to this exact session is no longer controllable.
+    Terminal,
 }
 
 /// The owning release source for one expired loss: the current claim rows,
@@ -1842,6 +1846,9 @@ impl FreshAdmissionStore {
         account_id: &str,
     ) -> Result<ExpiredLossReleaseV1> {
         let (current, now) = self.current_session_at(session).await?;
+        if current.session_state() == GameSessionState::Terminal {
+            return Ok(ExpiredLossReleaseV1::Terminal);
+        }
         let Some(deadline) = current.current_original_grace_deadline() else {
             return Ok(ExpiredLossReleaseV1::NotApplicable);
         };
@@ -1866,6 +1873,13 @@ impl FreshAdmissionStore {
             .into_iter()
             .collect::<Option<Vec<_>>>()
             .ok_or(DurabilityError::Unavailable)?;
+        // Successor source times never precede a predecessor's (a row last
+        // published on a faster host clock): until the durable clock catches
+        // up, the fenced release refuses and a later attempt retries.
+        let prepared_at = predecessors
+            .iter()
+            .map(|row| row.source.source_observed_at)
+            .fold(now, i64::max);
         let mut successors = predecessors.clone();
         for row in &mut successors {
             row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
@@ -1882,7 +1896,7 @@ impl FreshAdmissionStore {
                 .ok_or(DurabilityError::InvalidStoredState)?;
             row.source.decision_identity =
                 format!("grace-expiry-release:{}", row.source.source_revision);
-            row.source.source_observed_at = now;
+            row.source.source_observed_at = prepared_at;
             row.source.clock_uncertainty_seconds = 0;
             match &mut row.state {
                 AdmissionAuthorityGuardStateV1::Account { security, presence } => {
@@ -1898,14 +1912,21 @@ impl FreshAdmissionStore {
             transition: AdmissionClaimTransitionEvidenceV1 {
                 predecessors,
                 successors,
-                prepared_at: now,
+                prepared_at,
             },
         };
-        // Ownership no longer names this session: not this release's to make.
-        let Ok(transition) =
-            TerminalReleaseClaimTransitionV1::prepare(&owner, account_id, current, now)
-        else {
-            return Ok(ExpiredLossReleaseV1::NotApplicable);
+        let transition = match TerminalReleaseClaimTransitionV1::prepare(
+            &owner,
+            account_id,
+            current,
+            prepared_at,
+        ) {
+            Ok(transition) => transition,
+            // Ownership no longer names this session: not this release's to make.
+            Err(AdmissionAuthorityPublicationErrorV1::Stale) => {
+                return Ok(ExpiredLossReleaseV1::NotApplicable);
+            }
+            Err(_) => return Err(DurabilityError::Unavailable),
         };
         match self.release(&transition).await {
             Ok(decided_at) => Ok(ExpiredLossReleaseV1::Released { decided_at }),

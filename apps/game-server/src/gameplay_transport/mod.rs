@@ -542,8 +542,9 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         };
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let account_id = canonical_uuid(&controller.account_id);
-        // The deadline is fixed, so waiting converges; the bound only guards a
-        // clock that never reaches it.
+        // The deadline is fixed, so waiting converges; store failures back off
+        // exponentially, and the bounds only guard an owner that never recovers.
+        let mut backoff = RECONCILE_BACKOFF;
         for _ in 0..EXPIRY_ATTEMPTS {
             let pause = match store
                 .release_expired_loss(admitted.game_session_id, &account_id)
@@ -554,7 +555,7 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                     Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
                         .saturating_add(EXPIRY_SLACK)
                 }
-                Ok(ExpiredLossReleaseV1::Released { .. }) => {
+                Ok(ExpiredLossReleaseV1::Released { .. } | ExpiredLossReleaseV1::Terminal) => {
                     // The durable TERMINAL session is the authoritative fact that
                     // allows removing the exact actor.
                     return match self
@@ -567,7 +568,11 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                         Err(_) => GraceExpiryResult::Unknown,
                     };
                 }
-                Err(_) => RECONCILE_BACKOFF,
+                Err(_) => {
+                    let pause = backoff;
+                    backoff = backoff.saturating_mul(2).min(EXPIRY_MAX_BACKOFF);
+                    pause
+                }
             };
             tokio::time::sleep(pause).await;
         }
@@ -747,8 +752,11 @@ impl ControlLossSourceV1 for ChannelOwnedLossSource {
 /// Bounded reconciliation of one possibly committed admission.
 const RECONCILE_ATTEMPTS: u32 = 5;
 const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
-/// Bound on grace-expiry release attempts (waits for the deadline and store retries).
-const EXPIRY_ATTEMPTS: u32 = 8;
+/// Bound on grace-expiry release attempts (waits for the deadline and store
+/// retries): with the capped backoff, about two minutes of owner unavailability.
+const EXPIRY_ATTEMPTS: u32 = 32;
+/// Cap of the grace-expiry store retry backoff.
+const EXPIRY_MAX_BACKOFF: Duration = Duration::from_secs(5);
 /// Whole-second durable clock: wait just past the deadline second.
 const EXPIRY_SLACK: Duration = Duration::from_millis(1100);
 
@@ -1455,6 +1463,13 @@ mod tests {
                     admit_client(material.client.clone(), address),
                 )
                 .await;
+                // The second client has left too; wait (bounded) until its end is served.
+                for _ in 0..40 {
+                    if authority.losses.load(Ordering::SeqCst) == 2 {
+                        break;
+                    }
+                    settle(50).await;
+                }
                 shutdown.cancel();
                 (first.is_ok(), pending, matches!(second, Ok(Ok(_))))
             };

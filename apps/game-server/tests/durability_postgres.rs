@@ -371,7 +371,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 assert!(matches!(store.commit_fresh_loss(loss.clone(), source.clone()).await?, ControlLossOutcomeV1::Committed { .. }));
                 assert!(matches!(store.release_expired_loss(id, account).await?, durability::fresh_admission::ExpiredLossReleaseV1::NotExpired { .. }));
                 tokio::time::sleep(std::time::Duration::from_millis(3100)).await;
-                // Another account never names this session's claims.
+                // Another account has no claim rows naming this session.
                 assert_eq!(store.release_expired_loss(id, "00000000-0000-4000-8000-000000000099").await.ok(), None);
                 let durability::fresh_admission::ExpiredLossReleaseV1::Released { decided_at } = store.release_expired_loss(id, account).await? else { return Err("expired loss was not released".into()); };
                 assert!(decided_at >= now + 2);
@@ -382,8 +382,9 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
                 let rows = guards.load(&keys).await?;
                 assert!(matches!(rows[0].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Account { presence: None, .. })));
                 assert!(matches!(rows[1].as_ref().map(|row| &row.state), Some(AdmissionAuthorityGuardStateV1::Character { holder: None, lease_generation, .. }) if *lease_generation == session.current_character_lease().generation()));
-                // Terminal: nothing further to release.
-                assert_eq!(store.release_expired_loss(id, account).await?, durability::fresh_admission::ExpiredLossReleaseV1::NotApplicable);
+                // Terminal (also after a lost acknowledgement): nothing further to
+                // release, and the owner may remove the exact actor.
+                assert_eq!(store.release_expired_loss(id, account).await?, durability::fresh_admission::ExpiredLossReleaseV1::Terminal);
                 pool.close().await;
                 return Ok(());
             }
