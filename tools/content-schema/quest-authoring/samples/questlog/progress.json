@@ -60438,9 +60438,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/liquid_black_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Liquid Black Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -60469,9 +60470,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/deeplings_worldchange"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Deeplings World Change",
       "writes": {
         "canary": 10,
         "crystalserver": 10
@@ -60857,9 +60859,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -60904,9 +60907,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 4
@@ -60975,9 +60979,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -61016,9 +61021,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 3
@@ -61082,9 +61088,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -61129,9 +61136,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 7
@@ -61239,9 +61247,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 3
@@ -61299,9 +61308,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -61342,9 +61352,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 6
@@ -61446,9 +61457,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 3
@@ -61503,9 +61515,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 1
@@ -61531,9 +61544,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 4
@@ -61612,9 +61626,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 3
@@ -61678,9 +61693,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -61719,9 +61735,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -61764,9 +61781,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -61809,9 +61827,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/kilmaresh_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Kilmaresh Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -61882,9 +61901,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -61917,9 +61937,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -61952,9 +61973,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -61987,9 +62009,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62022,9 +62045,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62057,9 +62081,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62092,9 +62117,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62127,9 +62153,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62162,9 +62189,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62197,9 +62225,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62232,9 +62261,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62267,9 +62297,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62302,9 +62333,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62337,9 +62369,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62372,9 +62405,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62407,9 +62441,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62442,9 +62477,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62477,9 +62513,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62512,9 +62549,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 2,
         "crystalserver": 2
@@ -62567,9 +62605,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62604,9 +62643,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62635,9 +62675,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62670,9 +62711,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -62705,9 +62747,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/the_gravedigger_of_drefia_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Gravedigger of Drefia Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -63710,9 +63753,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/roshamuul_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Roshamuul Quest",
       "writes": {
         "canary": 2,
         "crystalserver": 2
@@ -63777,9 +63821,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/tinder_box_quest_chyllfroest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Tinder Box Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -77015,9 +77060,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/poltergeist_outfits_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Poltergeist Outfits Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -77132,9 +77178,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/a_pirates_tail"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "A Pirate's Tail Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 1
@@ -77158,9 +77205,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/a_pirates_tail"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "A Pirate's Tail Quest",
       "writes": {
         "canary": 2,
         "crystalserver": 1
@@ -77206,9 +77254,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/primal_ordeal_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Primal Ordeal Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -77237,9 +77286,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/primal_ordeal_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Primal Ordeal Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -77345,9 +77395,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "crystalserver:quest/newhaven_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Newhaven Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 5
@@ -77434,9 +77485,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "crystalserver:quest/newhaven_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Newhaven Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 4
@@ -77512,9 +77564,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "crystalserver:quest/newhaven_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Newhaven Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 4
@@ -80301,9 +80354,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/tower_defence_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Tower Defence Quest",
       "writes": {
         "canary": 5,
         "crystalserver": 5
@@ -80560,9 +80614,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/elemental_spheres_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Elemental Spheres Quest",
       "writes": {
         "canary": 2,
         "crystalserver": 2
@@ -80611,9 +80666,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/elemental_spheres_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Elemental Spheres Quest",
       "writes": {
         "canary": 2,
         "crystalserver": 2
@@ -80666,9 +80722,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/demon_oak"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Demon Oak Quest",
       "writes": {
         "canary": 4,
         "crystalserver": 7
@@ -80809,9 +80866,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/demon_oak"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Demon Oak Quest",
       "writes": {
         "canary": 4,
         "crystalserver": 8
@@ -80957,9 +81015,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/demon_oak"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "The Demon Oak Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 2
@@ -81668,9 +81727,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/troll_sabotage_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Troll Sabotage Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -82770,9 +82830,10 @@
       "read_by_gates": [
         "canary:door-gate/progress/quest/u8_54/an_uneasy_alliance/quest_door"
       ],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/an_uneasy_alliance_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "An Uneasy Alliance Quest",
       "writes": {
         "canary": 2,
         "crystalserver": 2
@@ -82829,9 +82890,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/an_uneasy_alliance_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "An Uneasy Alliance Quest",
       "writes": {
         "canary": 5,
         "crystalserver": 5
@@ -84686,9 +84748,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/liquid_black_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Liquid Black Quest",
       "writes": {
         "canary": 5,
         "crystalserver": 5
@@ -85466,9 +85529,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/rotten_blood_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Rotten Blood Quest",
       "writes": {
         "canary": 0,
         "crystalserver": 2
@@ -85539,9 +85603,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 2,
         "crystalserver": 2
@@ -85570,9 +85635,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 3,
         "crystalserver": 3
@@ -85637,9 +85703,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -85668,9 +85735,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 3,
         "crystalserver": 3
@@ -85735,9 +85803,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -85766,9 +85835,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 6,
         "crystalserver": 6
@@ -85872,9 +85942,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 6,
         "crystalserver": 6
@@ -85978,9 +86049,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 6,
         "crystalserver": 6
@@ -86084,9 +86156,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -86119,9 +86192,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/grimvale_mini_world_change"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Grimvale Mini World Change",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -86156,9 +86230,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/grimvale_mini_world_change"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Grimvale Mini World Change",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -86281,9 +86356,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/hero_of_rathleton_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Hero of Rathleton Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -86411,9 +86487,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/grimvale_mini_world_change"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Grimvale Mini World Change",
       "writes": {
         "canary": 0,
         "crystalserver": 1
@@ -86439,9 +86516,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/grimvale_mini_world_change"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Grimvale Mini World Change",
       "writes": {
         "canary": 0,
         "crystalserver": 1
@@ -86524,9 +86602,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -86555,9 +86634,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
@@ -86586,9 +86666,10 @@
       "missions": [],
       "start_of": [],
       "read_by_gates": [],
-      "auxiliary_of": [],
+      "auxiliary_of": [
+        "canary:quest/heart_of_destruction_quest"
+      ],
       "owner_basis": "track_owners.json",
-      "wiki_quest": "Heart of Destruction Quest",
       "writes": {
         "canary": 1,
         "crystalserver": 1
