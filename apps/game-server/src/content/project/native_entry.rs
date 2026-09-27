@@ -271,6 +271,26 @@ impl NativeEntryProject {
         })
     }
 
+    /// The qualified start cell of this project (#935). It must exist in the qualified source and
+    /// be Walkable; otherwise there is no first-entry start.
+    pub fn entry_start(&self) -> Result<NativeEntryStart, ProjectError> {
+        self.source
+            .cells
+            .iter()
+            .find(|cell| {
+                cell.key.as_str() == accepted::START_CELL
+                    && cell.collision == crate::content::CollisionClass::Walkable
+            })
+            .map(|cell| NativeEntryStart {
+                x: cell.x,
+                y: cell.y,
+                floor: cell.z,
+            })
+            .ok_or(ProjectError::InvalidProject(
+                "native entry start cell is missing or not walkable",
+            ))
+    }
+
     /// The source-qualified native frame binding of this project (#935): the qualified frame and
     /// its digest over the World, source manifest and map revision it was qualified with.
     pub fn frame_binding(&self) -> NativeEntryFrameBinding {
@@ -330,6 +350,17 @@ impl NativeEntryFrameBinding {
 pub struct QualifiedNativeEntryRoom {
     compiled: crate::content::CompiledFirstProductionContent,
     frame_binding: NativeEntryFrameBinding,
+    entry_start: NativeEntryStart,
+    map_revision_digest: [u8; 32],
+}
+
+/// The first-entry start cell selected by the Game-owned first-entry source (#935): the accepted
+/// `oteryn:cell/entry-start`, attested by the qualified source to exist and be Walkable.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NativeEntryStart {
+    pub x: i32,
+    pub y: i32,
+    pub floor: i16,
 }
 
 impl QualifiedNativeEntryRoom {
@@ -339,6 +370,15 @@ impl QualifiedNativeEntryRoom {
 
     pub fn frame_binding(&self) -> &NativeEntryFrameBinding {
         &self.frame_binding
+    }
+
+    pub const fn entry_start(&self) -> NativeEntryStart {
+        self.entry_start
+    }
+
+    /// SHA-256 of the qualified map revision this room was compiled with.
+    pub const fn map_revision_digest(&self) -> [u8; 32] {
+        self.map_revision_digest
     }
 }
 
@@ -366,6 +406,10 @@ pub fn qualify_native_entry_room(
     Ok(QualifiedNativeEntryRoom {
         compiled,
         frame_binding: project.frame_binding(),
+        entry_start: project.entry_start()?,
+        map_revision_digest: crate::content::digest::sha256(
+            project.source().revisions.map.as_str().as_bytes(),
+        ),
     })
 }
 
@@ -494,6 +538,8 @@ pub mod accepted {
     ];
     pub const SPAWN: &str = "oteryn:spawn/entry-rat";
     pub const SPAWN_CELL: &str = "oteryn:cell/entry-east";
+    /// First-entry start cell (#935).
+    pub const START_CELL: &str = "oteryn:cell/entry-start";
     pub const FORMULA: &str = "oteryn:formula/entry-melee-r1";
     pub const EFFECT: &str = "oteryn:effect/bite";
     pub const ABILITY: &str = "oteryn:ability/bite";

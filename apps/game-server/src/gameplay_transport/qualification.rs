@@ -1010,6 +1010,13 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         );
     }
     evidence("channel_runtime committed_players=2 pending_reservations=0 disconnect_removed=0");
+    // #935: each committed player actor was positioned once, by the Channel
+    // owner, at the pinned generation's start cell under the pinned context.
+    let positioned = runtime.lock().await.players_positioned_at_entry_start();
+    if positioned != 2 {
+        return Err(format!("first-entry positioned players={positioned}").into());
+    }
+    evidence("first_entry positioned_players=2 start=entry-start context=pinned");
     evidence("shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED");
     Ok(())
 }

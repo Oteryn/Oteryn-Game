@@ -16,7 +16,7 @@ pub(crate) use runtime_actor_carrier::MovementActorFixture;
 pub(crate) use runtime_actor_carrier::{
     CarrierError, ChannelContentPin, ChannelRuntimeV1, CommittedLethalReceipt,
     CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
-    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef,
+    CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
     MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
     OwnerDamageResult, PlayerActorReservation, RuntimeCorpseProjection,
 };
