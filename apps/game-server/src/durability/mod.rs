@@ -8,6 +8,7 @@ pub mod admission_authority_guards;
 mod admission_journal;
 pub mod character_authority;
 pub mod character_authority_audit;
+pub mod character_progression;
 pub mod content_activation;
 mod db;
 pub mod fresh_admission;
@@ -20,6 +21,31 @@ mod schema;
 pub use admission_journal::AdmissionReconnectJournal;
 pub use db::{DB_PASS_DEADLINE, DurabilityRoot, DurabilityRootConfig};
 pub use schema::{MigrationExecutor, SchemaCompatibility};
+
+#[cfg(test)]
+mod character_progression_linkage {
+    use super::DurabilityRoot;
+    use super::character_progression::{
+        CharacterProgressionError, CharacterProgressionState, CommittedExperienceAward,
+        CurrentCharacterGameplayFence, ExperienceAwardRequest, ExperienceCommitOutcome,
+        ExperienceRewardOccurrence,
+    };
+
+    #[test]
+    fn character_progression_api_is_linked() {
+        let _ = std::mem::size_of::<CharacterProgressionError>();
+        let _ = std::mem::size_of::<CharacterProgressionState>();
+        let _ = std::mem::size_of::<CommittedExperienceAward>();
+        let _ = std::mem::size_of::<CurrentCharacterGameplayFence>();
+        let _ = std::mem::size_of::<ExperienceAwardRequest<2>>();
+        let _ = std::mem::size_of::<ExperienceCommitOutcome>();
+        let _ = ExperienceRewardOccurrence::from_bytes;
+        let _ = ExperienceRewardOccurrence::as_bytes;
+        let _ = DurabilityRoot::commit_character_experience::<2>;
+        let _ = DurabilityRoot::reconcile_character_experience;
+        let _ = DurabilityRoot::read_character_progression;
+    }
+}
 
 #[cfg(test)]
 mod fresh_admission_composition_linkage {
