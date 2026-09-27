@@ -1091,28 +1091,32 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     // KAN-26: every committed fresh admission holds exactly one player actor;
     // refused, replayed and losing attempts leave no reservation behind; and
     // ordinary disconnect (every client has closed by now) removes nothing.
+    // #822: the two lost actors were removed only by their durable grace-expiry
+    // release; the re-admitted character holds the one remaining actor, and a
+    // plain disconnect removed nothing (its loss window was cut by shutdown).
     let (committed_players, pending) = runtime.lock().await.player_slot_counts();
-    if committed_players != 2 || pending != 0 || committed_admissions(&url).await? != 2 {
+    if committed_players != 1 || pending != 0 || committed_admissions(&url).await? != 3 {
         return Err(
             format!("channel runtime committed={committed_players} pending={pending}").into(),
         );
     }
-    evidence("channel_runtime committed_players=2 pending_reservations=0 disconnect_removed=0");
-    // #935: each committed player actor was positioned once, by the Channel
-    // owner, at the pinned generation's start cell under the pinned context.
-    // #822: the admission-stage actor then stepped east and back (two applied
-    // Movement revisions); the concurrent-stage actor never stepped.
+    evidence(
+        "channel_runtime committed_players=1 pending_reservations=0 released_after_grace=2 disconnect_removed=0",
+    );
+    // #935: the remaining committed actor was positioned once, by the Channel
+    // owner, at the pinned generation's start cell under the pinned context,
+    // and never stepped.
     let revisions = runtime.lock().await.entry_start_player_revisions();
-    if revisions != [1, 3] {
+    if revisions != [1] {
         return Err(format!("entry-start player revisions={revisions:?}").into());
     }
-    evidence("first_entry positioned_players=2 start=entry-start context=pinned revisions=1,3");
-    // The Channel owner mirrors each committed loss on its still-present actor.
+    evidence("first_entry positioned_players=1 start=entry-start context=pinned revisions=1");
+    // Released actors leave no control-loss mark behind.
     let marks = runtime.lock().await.player_control_loss_epochs();
-    if marks != [1, 1] {
+    if !marks.is_empty() {
         return Err(format!("runtime control-loss marks={marks:?}").into());
     }
-    evidence("control_loss runtime_present_uncontrolled=2 epoch=1");
+    evidence("grace_expiry runtime_released_actors=2 marks_left=0");
     evidence("shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED");
     Ok(())
 }
@@ -1481,6 +1485,34 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
     }
     evidence(
         "control_loss closed_transport=reconnectable silent_transport=reconnectable epoch=1 grace_s=60 admissions=2",
+    );
+
+    evidence("stage=grace_expiry");
+    // FND-04B §6: with no resumed control, each lost session is terminally released once its
+    // original grace deadline passes; the released claims let the character enter again.
+    for (label, id) in [("closed", session), ("silent", concurrent[0])] {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(80);
+        while !matches!(session_loss_row(url, id).await?, Some((3, _, _))) {
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("{label} session was not released after grace").into());
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+    let generation = platform_generation(descriptor, &accounts[0]).await?;
+    let again = next_grant(&accounts[0], characters[0], generation);
+    let token = sign_grant(&again.borrowed(), now_seconds()?);
+    let reply = exchange(
+        address,
+        &exact,
+        &framed(&bootstrap(1, 1, &characters[0], &token)),
+    )
+    .await?;
+    if accepted_session(&reply).is_none() || committed_admissions(url).await? != 3 {
+        return Err(format!("released character was not admitted again: {reply:?}").into());
+    }
+    evidence(
+        "grace_expiry closed=terminal silent=terminal readmitted_after_release=1 admissions=3",
     );
     Ok(())
 }

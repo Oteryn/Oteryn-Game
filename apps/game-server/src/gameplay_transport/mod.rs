@@ -18,7 +18,7 @@ use crate::durability::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority,
 };
 use crate::durability::fresh_admission::{
-    FreshAdmissionStore, FreshLossReconciliation, FreshReconciliation,
+    ExpiredLossReleaseV1, FreshAdmissionStore, FreshLossReconciliation, FreshReconciliation,
 };
 use crate::durability::fresh_admission_composition::FreshAdmissionSubject;
 use crate::durability::runtime_scope_assignment::{AssignmentState, NodeIncarnationProof};
@@ -48,8 +48,8 @@ use crate::foundation::{
 };
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, ControlLossResult, ControllerBinding,
-    FirstEntryOutcome, FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, StepOutcome,
-    admit_frame, serve_admitted,
+    FirstEntryOutcome, FreshAdmissionAttempt, FreshAdmissionAuthority, GraceExpiryResult,
+    IDLE_LIVENESS, StepOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -125,7 +125,11 @@ pub(crate) async fn serve_listener<A, I, O>(
     O: ConnectionObserver,
 {
     let units = Semaphore::new(limits.handshake_units);
-    let mut connections: Vec<Pin<Box<dyn Future<Output = ()> + '_>>> = Vec::new();
+    let mut connections: Vec<Pin<Box<dyn Future<Output = Option<LostControl>> + '_>>> = Vec::new();
+    // Loss/grace lifecycles of ended admitted connections. They hold no socket
+    // and at most one exists per admitted session, so they stay outside the
+    // connection budget; shutdown cancels them.
+    let mut lifecycles: Vec<Pin<Box<dyn Future<Output = ()> + '_>>> = Vec::new();
     let mut stopping = pin!(shutdown.cancelled());
     let mut stopped = false;
     // After an accept error (e.g. EMFILE) accepting pauses instead of spinning.
@@ -160,8 +164,21 @@ pub(crate) async fn serve_listener<A, I, O>(
                 Poll::Pending => break,
             }
         }
-        connections.retain_mut(|connection| connection.as_mut().poll(context).is_pending());
-        if stopped && connections.is_empty() {
+        connections.retain_mut(|connection| match connection.as_mut().poll(context) {
+            Poll::Pending => true,
+            Poll::Ready(lost) => {
+                if let Some(lost) = lost {
+                    let mut lifecycle = Box::pin(control_loss_lifecycle(authority, lost, shutdown));
+                    // Registers the lifecycle's first wake-up.
+                    if lifecycle.as_mut().poll(context).is_pending() {
+                        lifecycles.push(lifecycle);
+                    }
+                }
+                false
+            }
+        });
+        lifecycles.retain_mut(|lifecycle| lifecycle.as_mut().poll(context).is_pending());
+        if stopped && connections.is_empty() && lifecycles.is_empty() {
             Poll::Ready(())
         } else {
             Poll::Pending
@@ -180,7 +197,8 @@ async fn serve_accepted<A, I, O>(
     identifiers: &I,
     observer: &O,
     shutdown: &CancellationToken,
-) where
+) -> Option<LostControl>
+where
     A: FreshAdmissionAuthority,
     I: ConnectionIdentifiers,
     O: ConnectionObserver,
@@ -201,7 +219,7 @@ async fn serve_accepted<A, I, O>(
     .await;
     let Some(Ok(Some((unit, mut stream, frame)))) = entry else {
         observer.ended(ConnectionEnd::TransportFailed);
-        return;
+        return None;
     };
     // The owning authority's decision is never cancelled midway.
     let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
@@ -237,9 +255,28 @@ async fn serve_accepted<A, I, O>(
     };
     drop(stream);
     observer.ended(end);
-    if let Some((session, wait)) = lost {
-        let _ = first(authority.lose_control(session, wait), shutdown.cancelled()).await;
-    }
+    lost.map(|(session, wait)| LostControl { session, wait })
+}
+
+/// An ended admitted connection whose control is lost after `wait` without restored control.
+struct LostControl {
+    session: AdmittedSession,
+    wait: Duration,
+}
+
+/// Durable loss, then grace-expiry release, of one ended admitted connection.
+/// Shutdown cancels it; a durable decision already in flight stays atomic.
+async fn control_loss_lifecycle<A: FreshAdmissionAuthority>(
+    authority: &A,
+    lost: LostControl,
+    shutdown: &CancellationToken,
+) {
+    let lifecycle = async {
+        if authority.lose_control(lost.session, lost.wait).await == ControlLossResult::Recorded {
+            let _ = authority.expire_control_loss(lost.session).await;
+        }
+    };
+    let _ = first(lifecycle, shutdown.cancelled()).await;
 }
 
 /// Output of `primary`, or `None` when `stop` completes first.
@@ -499,6 +536,44 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
     }
 
+    async fn expire_control_loss(&self, admitted: AdmittedSession) -> GraceExpiryResult {
+        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+            return GraceExpiryResult::NotApplicable;
+        };
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let account_id = canonical_uuid(&controller.account_id);
+        // The deadline is fixed, so waiting converges; the bound only guards a
+        // clock that never reaches it.
+        for _ in 0..EXPIRY_ATTEMPTS {
+            let pause = match store
+                .release_expired_loss(admitted.game_session_id, &account_id)
+                .await
+            {
+                Ok(ExpiredLossReleaseV1::NotApplicable) => return GraceExpiryResult::NotApplicable,
+                Ok(ExpiredLossReleaseV1::NotExpired { deadline, now }) => {
+                    Duration::from_secs(u64::try_from(deadline - now).unwrap_or(0))
+                        .saturating_add(EXPIRY_SLACK)
+                }
+                Ok(ExpiredLossReleaseV1::Released { .. }) => {
+                    // The durable TERMINAL session is the authoritative fact that
+                    // allows removing the exact actor.
+                    return match self
+                        .runtime
+                        .lock()
+                        .await
+                        .remove_terminal_session(admitted.game_session_id, actor)
+                    {
+                        Ok(()) => GraceExpiryResult::Released,
+                        Err(_) => GraceExpiryResult::Unknown,
+                    };
+                }
+                Err(_) => RECONCILE_BACKOFF,
+            };
+            tokio::time::sleep(pause).await;
+        }
+        GraceExpiryResult::Unknown
+    }
+
     async fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -672,6 +747,10 @@ impl ControlLossSourceV1 for ChannelOwnedLossSource {
 /// Bounded reconciliation of one possibly committed admission.
 const RECONCILE_ATTEMPTS: u32 = 5;
 const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);
+/// Bound on grace-expiry release attempts (waits for the deadline and store retries).
+const EXPIRY_ATTEMPTS: u32 = 8;
+/// Whole-second durable clock: wait just past the deadline second.
+const EXPIRY_SLACK: Duration = Duration::from_millis(1100);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ReconciliationDisposition {
@@ -1313,6 +1392,80 @@ mod tests {
             );
             assert_eq!(authority.calls.load(Ordering::SeqCst), 0);
             drop(clients);
+            Ok(())
+        })
+    }
+
+    /// Admits at once; every ended connection's loss is recorded and its
+    /// grace expiry then waits until shutdown.
+    struct LifecycleAuthority {
+        inner: GatedAuthority,
+        losses: AtomicUsize,
+        expiring: AtomicUsize,
+    }
+
+    impl FreshAdmissionAuthority for LifecycleAuthority {
+        async fn admit(
+            &self,
+            attempt: FreshAdmissionAttempt<'_>,
+        ) -> Result<AdmittedSession, AdmissionRefusal> {
+            self.inner.admit(attempt).await
+        }
+        async fn lose_control(&self, _: AdmittedSession, _: Duration) -> ControlLossResult {
+            self.losses.fetch_add(1, Ordering::SeqCst);
+            ControlLossResult::Recorded
+        }
+        async fn expire_control_loss(&self, _: AdmittedSession) -> GraceExpiryResult {
+            self.expiring.fetch_add(1, Ordering::SeqCst);
+            std::future::pending().await
+        }
+    }
+
+    #[test]
+    fn resource_loss_lifecycle_holds_no_connection_slot() -> Result<(), Box<dyn Error>> {
+        runtime()?.block_on(async {
+            let material = material()?;
+            let listener = TcpListener::bind("127.0.0.1:0").await?;
+            let address = listener.local_addr()?;
+            let limits = ListenerLimits::new(1, 1, Duration::from_millis(600)).ok_or("limits")?;
+            let authority = LifecycleAuthority {
+                inner: GatedAuthority::new(true),
+                losses: AtomicUsize::new(0),
+                expiring: AtomicUsize::new(0),
+            };
+            let ends = Ends::default();
+            let shutdown = CancellationToken::new();
+            let serve = serve_listener(
+                &listener,
+                &material.server,
+                limits,
+                &authority,
+                &SecureIdentifiers,
+                &ends,
+                &shutdown,
+            );
+            let check = async {
+                // The first admitted client leaves; its grace lifecycle stays pending.
+                let first = admit_client(material.client.clone(), address).await;
+                settle(200).await;
+                let pending = authority.expiring.load(Ordering::SeqCst);
+                // With a budget of one connection, a second admission still fits.
+                let second = tokio::time::timeout(
+                    Duration::from_secs(2),
+                    admit_client(material.client.clone(), address),
+                )
+                .await;
+                shutdown.cancel();
+                (first.is_ok(), pending, matches!(second, Ok(Ok(_))))
+            };
+            let ((), (first, pending, second)) = join(serve, check).await;
+            assert!(first);
+            assert_eq!(pending, 1, "first loss must be in its grace lifecycle");
+            assert!(
+                second,
+                "a pending grace lifecycle must not hold the only slot"
+            );
+            assert_eq!(authority.losses.load(Ordering::SeqCst), 2);
             Ok(())
         })
     }

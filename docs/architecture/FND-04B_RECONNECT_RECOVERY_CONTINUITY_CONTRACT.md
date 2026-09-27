@@ -130,7 +130,7 @@ The first composed owner records a fresh-origin loss in these cases:
 
 The loss decision revalidates claim ownership (presence and lease holder), not the byte identity of the claim rows. An independent owner re-observation that leaves ownership unchanged, such as a Platform security refresh, does not block loss. Loss removes control and grants nothing. Because account security and character eligibility are not loss conditions, every later resume or re-entry MUST revalidate them as current (§§12–13, item 10).
 
-The loss is timed on the durable owner's clock, the same clock that samples the final decision. The original deadline is fixed at that decision. The actor stays present and uncontrolled in its Channel. Expiry release and positive resume are separate children.
+The loss is timed on the durable owner's clock, the same clock that samples the final decision. The original deadline is fixed at that decision. The actor stays present and uncontrolled in its Channel. Once the deadline passes on the durable clock without resumed control, the owner terminally releases the session. The release is prepared from the current claim rows and committed through the exact fenced lifecycle release. Only after that TERMINAL fact does the Channel remove the exact actor, so the character may be admitted again. Positive resume is a separate child.
 
 ## 7. Exact 4-second defensive PvE protection
 
