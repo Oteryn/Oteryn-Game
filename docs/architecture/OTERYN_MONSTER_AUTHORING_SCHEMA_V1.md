@@ -287,3 +287,21 @@ is added only when its name resolves to one item: by name, by the item page `ite
 dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
 monsters 739 mitigations and 11,547 loot rows (probabilities and added items) are adopted; 988 of
 the fully resolved monsters carry at least one adopted value.
+
+### 9.2 Wiki ability scenes
+
+`samples/wiki-scenes-2026-07-28.json` (`wiki_scenes.py`) compares the ability scenes of the
+creature pages at the cut with the plain Canary conversion; nothing is adopted. A scene names a
+shape of `Module:SceneBuilder/data` (2 caster, 3 target, 1 hit tile) and effect/missile pages whose
+`effectid`/`missileid` is the client id. Canary areas are rebuilt with the engine's `AreaCombat`
+rules (radius table, length/spread cone, matrix; a directional area is anchored on the caster, a
+targeted one on its target, a combat without area always hits its target, and a missing effect shows
+the damage type's default hit effect from `Game::combatGetTypeInfo`). Hit sets are compared relative
+to the anchor under the four rotations.
+
+Over 1,029 monsters with an ability list: 1,986 wiki abilities have no scene; of those with a scene,
+1,045 match a Canary Ability and 418 do not. Among matched abilities the shape is equal in 739 and
+differs in 288 (mostly beam/wave lengths and single-target versus area), the effect id is equal in
+636 (45 of them through the default hit effect) and differs in 289, and the missile id is equal in
+290 and differs in 157. The scenes are drawings, so they are review evidence for a later owner
+decision, not an automatic D15 adoption.
