@@ -32,13 +32,20 @@ from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-API = 'https://tibia.fandom.com/api.php'
+WIKIS = {
+    'fandom': {'api': 'https://tibia.fandom.com/api.php', 'spell_template': 'Template:Infobox Spell',
+               'runes': ('category', 'Category:Runes'), 'formulae': 'Formulae'},
+    # TibiaWiki BR answers 403 (Cloudflare) from the build container; the capture runs on a hosted
+    # runner (.github/workflows/spell-wiki-capture.yml). Its field names are recorded, not assumed.
+    'br': {'api': 'https://www.tibiawiki.com.br/api.php', 'spell_template': 'Predefinição:Infobox Spell',
+           'runes': ('links', 'Runas'), 'formulae': 'Fórmulas'},
+}
+API = WIKIS['fandom']['api']
 USER_AGENT = 'OterynSpellAuthoring/1.0 (+https://github.com/Oteryn/Oteryn-Game)'
 LICENSE_NOTE = ('TibiaWiki (Fandom), CC BY-SA; only short allowlisted infobox facts with page and revision ids '
                 'are recorded, never article prose.')
-FORMULAE_PAGE = 'Formulae'
-SPELL_TEMPLATE = 'Template:Infobox Spell'
-RUNE_CATEGORY = 'Category:Runes'
+FORMULAE_PAGE = WIKIS['fandom']['formulae']
+MAX_ALL_FIELD_LENGTH = 200
 THROTTLE_SECONDS = 0.5
 RETRIES = 4
 SPELL_FIELDS = ('name', 'spellid', 'type', 'subclass', 'secondarygroup', 'runegroup', 'damagetype', 'words',
@@ -67,7 +74,8 @@ def api(params):
     delay, last = 1.0, None
     for attempt in range(RETRIES):
         try:
-            request = urllib.request.Request(API + '?' + query, headers={'User-Agent': USER_AGENT})
+            request = urllib.request.Request(API + '?' + query, headers={'User-Agent': USER_AGENT,
+                                                                          'Accept': 'application/json'})
             with urllib.request.urlopen(request, timeout=30) as response:
                 return json.load(response)
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
@@ -75,7 +83,7 @@ def api(params):
             if attempt + 1 < RETRIES:
                 time.sleep(delay)
                 delay *= 2
-    raise RuntimeError(f'Fandom API request failed after {RETRIES} attempts: {last}') from last
+    raise RuntimeError(f'{API} request failed after {RETRIES} attempts: {last}') from last
 
 
 def listing(params, key):
@@ -83,6 +91,19 @@ def listing(params, key):
     while True:
         data = api(params)
         titles.extend(p['title'] for p in data.get('query', {}).get(key, []))
+        time.sleep(THROTTLE_SECONDS)
+        if not data.get('continue'):
+            return titles
+        params = {**params, **data['continue']}
+
+
+def page_links(title):
+    titles = []
+    params = {'action': 'query', 'prop': 'links', 'titles': title, 'plnamespace': 0, 'pllimit': 500}
+    while True:
+        data = api(params)
+        for page in data.get('query', {}).get('pages', []):
+            titles.extend(link['title'] for link in page.get('links', []))
         time.sleep(THROTTLE_SECONDS)
         if not data.get('continue'):
             return titles
@@ -109,19 +130,26 @@ def cut_revision(title, cut):
             'content': content}
 
 
-def fetch(cache, cut):
-    spells = listing({'action': 'query', 'list': 'embeddedin', 'eititle': SPELL_TEMPLATE, 'einamespace': 0,
+def fetch(cache, cut, wiki='fandom'):
+    global API
+    config = WIKIS[wiki]
+    API = config['api']
+    spells = listing({'action': 'query', 'list': 'embeddedin', 'eititle': config['spell_template'], 'einamespace': 0,
                       'eilimit': 500}, 'embeddedin')
-    runes = listing({'action': 'query', 'list': 'categorymembers', 'cmtitle': RUNE_CATEGORY, 'cmnamespace': 0,
-                     'cmlimit': 500}, 'categorymembers')
+    kind, root = config['runes']
+    if kind == 'category':
+        runes = listing({'action': 'query', 'list': 'categorymembers', 'cmtitle': root, 'cmnamespace': 0,
+                         'cmlimit': 500}, 'categorymembers')
+    else:
+        runes = sorted(set(page_links(root)) | {root})
     pages = {}
-    for title in sorted(set(spells) | set(runes) | {FORMULAE_PAGE}):
+    for title in sorted(set(spells) | set(runes) | {config['formulae']}):
         pages[title] = cut_revision(title, cut)
-    snapshot = {'api': API, 'target_cut': cut, 'cut_rule': f'last revision at or before {cut_timestamp(cut)}',
+    snapshot = {'wiki': wiki, 'api': API, 'formulae_page': config['formulae'], 'target_cut': cut, 'cut_rule': f'last revision at or before {cut_timestamp(cut)}',
                 'spell_titles': sorted(spells), 'rune_titles': sorted(runes), 'pages': pages}
     cache.mkdir(parents=True, exist_ok=True)
-    (cache / 'fandom-spells-cut.json').write_text(json.dumps(snapshot, ensure_ascii=False), encoding='utf-8')
-    print(f'{len(spells)} spell pages, {len(runes)} rune category pages')
+    (cache / f'{wiki}-spells-cut.json').write_text(json.dumps(snapshot, ensure_ascii=False), encoding='utf-8')
+    print(f'{wiki}: {len(spells)} spell pages, {len(runes)} rune pages')
 
 
 # ------------------------------------------------------------------------------------------------
@@ -176,8 +204,22 @@ def level_curve(content):
     return re.findall(r'<math>(.*?)</math>', content[start:start + 800])[:2] if start >= 0 else []
 
 
-def facts(snapshot):
-    """Allowlisted infobox facts per page (no prose)."""
+def all_infoboxes(content):
+    """Every top-level `{{Infobox ...}}` template of a page with each value cut to MAX_ALL_FIELD_LENGTH.
+
+    Used for a wiki whose field names are not mapped yet (TibiaWiki BR): the result shows the field
+    names to map; it is a hosted-runner artifact and is not committed."""
+    found = {}
+    for match in re.finditer(r'\{\{\s*(Infobox[^|}\n]*)', content):
+        name = match.group(1).strip()
+        fields = top_level_fields(content, match.start())
+        found.setdefault(name, {k: v[:MAX_ALL_FIELD_LENGTH] for k, v in fields.items() if v})
+    return found
+
+
+def facts(snapshot, all_fields=False):
+    """Allowlisted infobox facts per page (no prose); all_fields records every infobox field, cut short."""
+    formulae = snapshot.get('formulae_page', FORMULAE_PAGE)
     out = []
     for title, page in sorted(snapshot['pages'].items()):
         row = {k: page[k] for k in ('title', 'page_id', 'revision_id', 'timestamp', 'content_sha256') if k in page}
@@ -185,9 +227,14 @@ def facts(snapshot):
             row['status'] = page['status']
             out.append(row)
             continue
-        if title == FORMULAE_PAGE:
+        if title == formulae:
             row['template'] = None
             row['level_curve'] = level_curve(page['content'])
+            out.append(row)
+            continue
+        if all_fields:
+            row['infoboxes'] = all_infoboxes(page['content'])
+            row['rune_page'] = title in snapshot['rune_titles']
             out.append(row)
             continue
         spell = infobox(page['content'], 'Infobox Spell')
@@ -201,7 +248,7 @@ def facts(snapshot):
         else:
             row['template'] = None
         out.append(row)
-    return {'schema': 'OTERYN_SPELL_WIKI_FACTS/v1', 'api': snapshot['api'], 'license': LICENSE_NOTE,
+    return {'schema': 'OTERYN_SPELL_WIKI_FACTS/v1', 'wiki': snapshot.get('wiki', 'fandom'), 'api': snapshot['api'], 'license': LICENSE_NOTE,
             'target_cut': snapshot['target_cut'], 'cut_rule': snapshot['cut_rule'], 'pages': out}
 
 
@@ -430,6 +477,8 @@ def self_test():
     assert words_match({'words': 'exura sio', 'hasParams': True}, words_key('exura sio "\'\'name\'\'"'))
     assert words_match({'words': 'exura sio', 'hasParams': True}, 'exura sio name')
     assert not words_match({'words': 'exura sio'}, 'exura sio name')
+    boxes = all_infoboxes('{{Infobox Spell|name=Cura Leve|palavras=exura}}\n{{Infobox Item|itemid=3155}}')
+    assert boxes == {'Infobox Spell': {'name': 'Cura Leve', 'palavras': 'exura'}, 'Infobox Item': {'itemid': '3155'}}, boxes
     print('wiki_spells self-test: ok')
     return 0
 
@@ -443,15 +492,18 @@ def main(argv=None):
     parser.add_argument('--out', type=Path)
     parser.add_argument('--cut', default=datetime.now(timezone.utc).strftime('%Y-%m-%d'),
                         help='fetch: read each page as of the end of this UTC day (default: today)')
+    parser.add_argument('--wiki', choices=sorted(WIKIS), default='fandom')
+    parser.add_argument('--all-fields', action='store_true',
+                        help='facts: record every infobox field (cut short) instead of the Fandom allowlist')
     args = parser.parse_args(argv)
     if args.command == 'self-test':
         return self_test()
     if args.command == 'fetch':
-        fetch(args.cache, args.cut)
+        fetch(args.cache, args.cut, args.wiki)
         return 0
     if args.command == 'facts':
-        snapshot = json.loads((args.cache / 'fandom-spells-cut.json').read_text(encoding='utf-8'))
-        document = facts(snapshot)
+        snapshot = json.loads((args.cache / f'{args.wiki}-spells-cut.json').read_text(encoding='utf-8'))
+        document = facts(snapshot, args.all_fields)
         write_lines(args.out, document, 'pages')
         return 0
     facts_doc = json.loads(args.facts.read_text(encoding='utf-8'))

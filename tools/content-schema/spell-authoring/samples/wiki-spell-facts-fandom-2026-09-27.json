@@ -1,5 +1,6 @@
 {
   "schema": "OTERYN_SPELL_WIKI_FACTS/v1",
+  "wiki": "fandom",
   "api": "https://tibia.fandom.com/api.php",
   "license": "TibiaWiki (Fandom), CC BY-SA; only short allowlisted infobox facts with page and revision ids are recorded, never article prose.",
   "target_cut": "2026-09-27",

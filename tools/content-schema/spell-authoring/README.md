@@ -38,4 +38,7 @@ python wiki_spells.py compare --facts samples/wiki-spell-facts-fandom-2026-09-27
 ```
 
 TibiaWiki BR (`tibiawiki.com.br`) answers HTTP 403 (Cloudflare) from the build container, as for
-NPCs; its capture runs on a hosted runner in phase P1 of the plan.
+NPCs. `.github/workflows/spell-wiki-capture.yml` runs `wiki_spells.py fetch --wiki br` and
+`facts --wiki br --all-fields` on a hosted runner and uploads the infobox fields (cut to 200
+characters, with revision ids) as the `spell-wiki-br-<sha>` artifact; the same workflow runs the schema
+checks above.
