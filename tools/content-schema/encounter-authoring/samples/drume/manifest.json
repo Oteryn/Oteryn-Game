@@ -10,6 +10,10 @@
     ],
     "LionCommanderDeath": [
       "canary:creature/lion_commander"
+    ],
+    "mType.onSpawn": [
+      "canary:creature/lion_commander",
+      "canary:creature/usurper_commander"
     ]
   },
   "sources": [
@@ -249,6 +253,79 @@
       ],
       "status": "approved_omission",
       "resolution": "The teleport effect is cosmetic."
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        114
+      ],
+      "status": "mapped",
+      "resolution": "Lion Commander is the lion_commander participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/2/creatures"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        114,
+        115,
+        116,
+        117,
+        118,
+        121,
+        122,
+        124,
+        126
+      ],
+      "status": "mapped",
+      "resolution": "onSpawn: five times one of lion archer, lion knight, lion warlock (uniform over the summon list), extended on the commander's tile, becomes its summon.",
+      "destination": "/encounter/rules/5"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        119,
+        120,
+        123
+      ],
+      "status": "approved_omission",
+      "resolution": "The teleport effect is cosmetic, and the Drume.Commander storage set on the commander and its summons is read by no script."
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        115
+      ],
+      "status": "mapped",
+      "resolution": "Usurper Commander is the usurper_commander participant; its file registers mType.onSpawn.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        123,
+        124,
+        126,
+        128
+      ],
+      "status": "mapped",
+      "resolution": "onSpawn: five times one of hardened usurper archer, hardened usurper warlock, hardened usurper knight (uniform over the summon list), extended on the commander's tile, becomes its summon.",
+      "destination": "/encounter/rules/6"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        121,
+        122,
+        125
+      ],
+      "status": "approved_omission",
+      "resolution": "The teleport effect is cosmetic, and the Drume.Commander storage set on the commander and its summons is read by no script."
     }
   ],
   "outcome_evidence": []

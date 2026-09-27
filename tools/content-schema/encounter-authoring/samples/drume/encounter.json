@@ -213,6 +213,586 @@
           "value": -1
         }
       ]
+    },
+    {
+      "key": "lion_commander_brings_its_guard",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "lion_commander"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/lion_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "usurper_commander_brings_its_guard",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "usurper_commander"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_archer",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_warlock",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/hardened_usurper_knight",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "subject",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        }
+      ]
     }
   ],
   "outcomes": []

@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-twelfth-encounter-slice
 title: Heart of Destruction minion forms and servant replicas (twelfth encounter slice)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1022
 jira: KAN-16
 base_sha: e422fc9d2962f63ccb6f0af9ee80ec5f449c2a31
-head_sha: null
-final_head_sha: null
+head_sha: be910606056a7e212ba68e7074bf005a83d2edc6
+final_head_sha: be910606056a7e212ba68e7074bf005a83d2edc6
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -57,3 +57,8 @@ Authority: owner direction in this session ("kontynuuj dalej to co możesz"). Ru
 - `population_census.py` reports 1,517 resolved, 133 blocked and 6 not converted.
 - Crystal (D30) carries identical scripts.
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1022 (`d93a0ffe86df9b754db2a6c289bc21e69057f050`) from final head `be91060`; required checks passed on that head.
+Owner released.

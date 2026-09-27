@@ -25,6 +25,16 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "iron_servant_replica",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/iron_servant_replica",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [],
@@ -62,6 +72,166 @@
           "kind": "emit_outcome",
           "outcome": "diamond_servant_replica_defeated",
           "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "iron_servant_becomes_either",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "iron_servant_replica"
+      },
+      "conditions": [
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/forgotten_knowledge_mechanism_diamond",
+          "op": ">=",
+          "value": 1
+        },
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/forgotten_knowledge_mechanism_golden",
+          "op": ">=",
+          "value": 1
+        },
+        {
+          "kind": "chance_percent",
+          "value": 70
+        }
+      ],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/diamond_servant_replica",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "role": "diamond_servant_replica",
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "none",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/golden_servant_replica",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "role": "golden_servant_replica",
+                  "count": 1,
+                  "at": "subject_position",
+                  "owner": "none",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "remove",
+          "triggering": true
+        }
+      ]
+    },
+    {
+      "key": "iron_servant_becomes_diamond",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "iron_servant_replica"
+      },
+      "conditions": [
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/forgotten_knowledge_mechanism_diamond",
+          "op": ">=",
+          "value": 1
+        },
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/forgotten_knowledge_mechanism_golden",
+          "op": "<",
+          "value": 1
+        },
+        {
+          "kind": "chance_percent",
+          "value": 70
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/diamond_servant_replica",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "diamond_servant_replica",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "remove",
+          "triggering": true
+        }
+      ]
+    },
+    {
+      "key": "iron_servant_becomes_golden",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "iron_servant_replica"
+      },
+      "conditions": [
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/forgotten_knowledge_mechanism_golden",
+          "op": ">=",
+          "value": 1
+        },
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/forgotten_knowledge_mechanism_diamond",
+          "op": "<",
+          "value": 1
+        },
+        {
+          "kind": "chance_percent",
+          "value": 70
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/golden_servant_replica",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "golden_servant_replica",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "remove",
+          "triggering": true
         }
       ]
     }

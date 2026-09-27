@@ -1,0 +1,125 @@
+{
+  "identity": {
+    "key": "canary:encounter/cobra_bastion",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Cobra Bastion: cobra flask",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "cobra_assassin",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cobra_assassin",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cobra_scout",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cobra_scout",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "cobra_vizier",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/cobra_vizier",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "cobra_assassin_weakened",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "cobra_assassin"
+      },
+      "conditions": [
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/cobra_flask_active",
+          "op": "==",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage",
+          "subject": {
+            "role": "cobra_assassin"
+          },
+          "amount": 2050,
+          "damage_type": "none"
+        }
+      ]
+    },
+    {
+      "key": "cobra_scout_weakened",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "cobra_scout"
+      },
+      "conditions": [
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/cobra_flask_active",
+          "op": "==",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage",
+          "subject": {
+            "role": "cobra_scout"
+          },
+          "amount": 2125,
+          "damage_type": "none"
+        }
+      ]
+    },
+    {
+      "key": "cobra_vizier_weakened",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "cobra_vizier"
+      },
+      "conditions": [
+        {
+          "kind": "world_state",
+          "state": "canary:world-state/cobra_flask_active",
+          "op": "==",
+          "value": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "damage",
+          "subject": {
+            "role": "cobra_vizier"
+          },
+          "amount": 2125,
+          "damage_type": "none"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

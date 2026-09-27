@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 133,
-    "fully_resolved": 1517,
+    "blocked": 127,
+    "fully_resolved": 1523,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1108
+    "wiki_adopted_monsters": 1112
   },
   "wiki_adopted_rows": {
     "Loot2": 12862,
@@ -54,17 +54,6 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics mType.onSpawn",
-      "monsters": 17,
-      "examples": [
-        "iron_servant_replica",
-        "cobra_assassin",
-        "cobra_scout",
-        "cobra_vizier",
-        "the_primal_menace"
-      ]
-    },
-    {
       "blocker": "unresolved_semantics mType.onThink",
       "monsters": 15,
       "examples": [
@@ -73,6 +62,17 @@
         "bony_sea_devil",
         "brachiodemon",
         "branchy_crawler"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics mType.onSpawn",
+      "monsters": 11,
+      "examples": [
+        "the_primal_menace",
+        "goshnar_s_greed",
+        "goshnar_s_hatred",
+        "mighty_splinter_of_madness",
+        "powerful_soul"
       ]
     },
     {
@@ -517,6 +517,9 @@
     "clomp",
     "clubarc_the_plunderer",
     "cobra",
+    "cobra_assassin",
+    "cobra_scout",
+    "cobra_vizier",
     "cockroach",
     "cold_percht_sleigh",
     "coldheart",
@@ -1001,6 +1004,7 @@
     "invading_demon",
     "irgix_the_flimsy",
     "iron_servant",
+    "iron_servant_replica",
     "ironblight",
     "island_troll",
     "jagged_earth_elemental",
@@ -1055,6 +1059,7 @@
     "liodile",
     "lion",
     "lion_archer",
+    "lion_commander",
     "lion_knight",
     "lion_warlock",
     "liquor_spirit",
@@ -1724,6 +1729,7 @@
     "urmahlullu_the_weakened",
     "ushuriel",
     "usurper_archer",
+    "usurper_commander",
     "usurper_knight",
     "usurper_warlock",
     "utua_stone_sting",

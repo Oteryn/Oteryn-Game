@@ -396,3 +396,14 @@ A twelfth slice. Crystal carries the same scripts.
 The King Zelos events stay unresolved: King Zelos's damage scales with the time the knights took, the Magnor shards share
 one life, and two deaths explode as authored areas. `UglyMonsterSpawn` draws its chance from the damage dealt. 78 encounters
 validate, 72 manifests resolve fully; the census rises from 1,511 to 1,517.
+
+A thirteenth slice transcribes `mType.onSpawn` callbacks as `creature_spawned` rules (D29):
+
+| Monster | Encounter | Notes |
+|---|---|---|
+| Iron Servant Replica | `replica_servants` | 70% become a diamond or golden replica, depending on the mechanism world values the quest domain publishes. |
+| Cobra Assassin, Cobra Scout, Cobra Vizier | `cobra_bastion` (`channel_shared`) | While the cobra flask works (a world value), each appears with 75% of its health: untyped damage of a quarter of its health. |
+| Lion Commander, Usurper Commander | `drume` | Each arrives with five summons drawn uniformly from its summon list. |
+
+Crystal's monster files carry none of these callbacks; Canary is transcribed (D30). 79 encounters validate, 73 manifests
+resolve fully; the census rises from 1,517 to 1,523.
