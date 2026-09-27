@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-creature-admission-wave-a
 title: Admit Canary wave A monsters (1,315) into WorldProject/v2 and the content tree (admission slice 3)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 990
 jira: KAN-16
 base_sha: 017b69404070f5f4547e9102cbd98985e9aa1082
 head_sha: null
