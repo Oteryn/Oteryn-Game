@@ -224,6 +224,8 @@ pub enum ProjectV2Declaration {
         offers: Vec<ProjectV2ServiceOffer>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         recipes: Vec<ProjectV2ServiceRecipe>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        routes: Vec<ProjectV2TravelRoute>,
         fields: Vec<ProjectV2CandidateField>,
     },
     Interaction {
@@ -334,10 +336,14 @@ impl ProjectV2Declaration {
             .sort_by(|left, right| left.field_path.cmp(&right.field_path));
         match self {
             Self::Service {
-                offers, recipes, ..
+                offers,
+                recipes,
+                routes,
+                ..
             } => {
                 offers.sort();
                 recipes.sort_by(|left, right| left.key.cmp(&right.key));
+                routes.sort_by(|left, right| left.key.cmp(&right.key));
                 for recipe in recipes {
                     recipe.canonicalize();
                 }
@@ -1095,6 +1101,55 @@ pub struct ProjectV2ServiceOffer {
     pub unit_price: u64,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub currency: Option<ProjectV2DefinitionRef>,
+    /// Units per trade row (a rune's charges, a stack); absent means one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub count: Option<u32>,
+    /// Fluid or charge subtype of the offered Item.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sub_type: Option<u16>,
+}
+
+impl ProjectV2ServiceOffer {
+    /// One row per Item, direction, currency, count and sub type; the price is the row's value.
+    fn row_key(
+        &self,
+    ) -> (
+        &ProjectV2DefinitionRef,
+        ProjectV2ServiceOfferDirection,
+        Option<&ProjectV2DefinitionRef>,
+        Option<u32>,
+        Option<u16>,
+    ) {
+        (
+            &self.item,
+            self.direction,
+            self.currency.as_ref(),
+            self.count,
+            self.sub_type,
+        )
+    }
+}
+
+/// A declarative travel route of an NPC travel Service. No runtime path executes it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2TravelRoute {
+    /// Destination keyword slug, unique within the Service.
+    pub key: String,
+    pub destination: ProjectV2TravelDestination,
+    pub price: u64,
+    pub premium: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub min_level: Option<u32>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2TravelDestination {
+    pub coordinate_frame: String,
+    pub x: i32,
+    pub y: i32,
+    pub floor: i16,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -1651,6 +1706,79 @@ fn validate_v2_item_quantities(
     Ok(())
 }
 
+fn validate_v2_service_offers(
+    offers: &[ProjectV2ServiceOffer],
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(
+        "v2 Service offers",
+        offers.len(),
+        limits.max_reference_records,
+    )?;
+    if offers.windows(2).any(|pair| pair[0] >= pair[1]) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service offers are not sorted and unique",
+        ));
+    }
+    let rows = offers
+        .iter()
+        .map(ProjectV2ServiceOffer::row_key)
+        .collect::<BTreeSet<_>>();
+    if rows.len() != offers.len() {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service offers repeat an Item row with different prices",
+        ));
+    }
+    if offers.iter().any(|offer| offer.count == Some(0)) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service offer count must be positive",
+        ));
+    }
+    Ok(())
+}
+
+fn validate_v2_travel_routes(
+    routes: &[ProjectV2TravelRoute],
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(
+        "v2 Service routes",
+        routes.len(),
+        limits.max_reference_records,
+    )?;
+    if routes.windows(2).any(|pair| pair[0].key >= pair[1].key) {
+        return Err(ProjectError::InvalidProject(
+            "v2 Service routes are not key sorted and unique",
+        ));
+    }
+    for route in routes {
+        let key_ok = !route.key.is_empty()
+            && route.key.len() <= 64
+            && route.key.split('_').all(|part| {
+                !part.is_empty()
+                    && part
+                        .bytes()
+                        .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit())
+            });
+        if !key_ok {
+            return Err(ProjectError::InvalidProject(
+                "v2 Service route key is not a lowercase slug",
+            ));
+        }
+        let destination = &route.destination;
+        if destination.coordinate_frame.is_empty()
+            || !(0..=i32::from(u16::MAX)).contains(&destination.x)
+            || !(0..=i32::from(u16::MAX)).contains(&destination.y)
+            || !(0..=15).contains(&destination.floor)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Service route destination is out of range",
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn validate_v2_declaration(
     declaration: &ProjectV2Declaration,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
@@ -1754,7 +1882,14 @@ fn validate_v2_declaration(
                 validate_v2_candidate_fields(&rank.fields)?;
             }
         }
-        ProjectV2Declaration::Service { recipes, .. } => {
+        ProjectV2Declaration::Service {
+            offers,
+            recipes,
+            routes,
+            ..
+        } => {
+            validate_v2_service_offers(offers, limits)?;
+            validate_v2_travel_routes(routes, limits)?;
             limits.check(
                 "v2 Service recipes",
                 recipes.len(),

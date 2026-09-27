@@ -100,10 +100,19 @@ definitions in one slice.
 - Validation covers ranges, sorting and uniqueness and exact Item references; everything stays
   candidate-only. Gated routes and offers are never admitted: a condition belongs to the runtime owner.
 
+Implemented in slice 2 (`apps/game-server/src/content/project/v2.rs`): `ProjectV2ServiceOffer.count`
+(positive) and `.sub_type`; `Service.routes` of `ProjectV2TravelRoute { key, destination:
+ProjectV2TravelDestination { coordinate_frame, x, y, floor }, price, premium, min_level }`. Offers are
+sorted and unique, with one price per Item row (Item, direction, currency, count, sub type); route keys
+are sorted, unique lowercase slugs (`[a-z0-9]+` joined by `_`, at most 64 bytes); destinations have a
+non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
+`apps/game-server/tests/content_world_project_v2_npc_admission.rs`.
+
 ## 7. Slices
 
 1. This decision (with the promotion candidates and the Item join in the same change).
 2. Rust: §6 extension, `canonicalize` and validation, focused positive and negative tests. No content change.
+   Done in `OTV2-20260927-npc-admission-v2-services`.
 3. Writer and pilot: about 20 NPCs through v2 load and validation, including a travel NPC, a shop with a
    non-gold currency, count and sub-type offers, and a single-source NPC decided by the wiki.
 4. Wave A in bulk (984 NPCs) and regeneration of the content tree with the NPC and Service families.
