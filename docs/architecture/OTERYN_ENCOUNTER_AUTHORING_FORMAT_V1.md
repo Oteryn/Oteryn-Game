@@ -70,7 +70,8 @@ The 131 unresolved events (263 monster references) use four handlers: `onDeath` 
 Encounter
   identity                      Game key + revision
   display_name
-  scope                         instance_per_party (default, D26) | channel_shared (explicit opt-in)
+  scope                         instance_per_party (default for boss fights, D26) | channel_shared
+                                (explicit; zone rules over open hunting grounds such as Soul War)
   entry                         admission anchor, party size limits, readiness (consumes the
                                 shared activity-instance admission contract; not defined here)
   participants[]                role key -> CreatureRef
@@ -106,7 +107,9 @@ Encounter
 
 `chance_percent`, `counter_compare(counter, op, value)`, `flag(name, value)`,
 `creature_present(role, anchor or radius, present/absent)`, `health_percent(role, op, value)`,
-`attacker_wears(ItemRef)` (the Asura counter items).
+`attacker_wears(ItemRef)` (the Asura counter items), `killer_progress(quest key, op, value)` - a
+read-only view of the killer's quest progress published by the quest domain (the Soul War taints);
+the encounter never writes it.
 
 ## 6. Actions
 
@@ -131,8 +134,11 @@ Encounter
 
 ## 7. Worked examples
 
-- `FourthTaintBossesPrepareDeath` (15 monsters): `lethal_damage(boss)` + `chance_percent 10` ->
-  `prevent_death`, `heal(boss, full)`.
+- `FourthTaintBossesPrepareDeath` (15 monsters): despite its name these are the ordinary Soul War
+  hunting monsters, not bosses (`soul_war_mechanics.lua` lines 66-84). It is a zone rule:
+  `lethal_damage(any participant)` + `killer_progress(soul war taint >= 4)` + in the Soul War zone
+  anchor + `chance_percent 10` -> `say`, `heal(full)`; the damage still applies, so the creature
+  survives with its health restored.
 - `UrmahlulluChanges`: `health_crossed(boss, N)` -> `transform(boss -> next stage, keep_absolute)`.
 - `HeartBossDeath`: `creature_died(boss)` -> `map_item(transform vortex at anchor)`, and for the
   final boss `remove(all_in(arena))`.
@@ -173,7 +179,7 @@ Encounter
 |---|---|---|
 | D26 | Encounters are instanced per party by default (a separate copy of the arena for each party), unlike Canary's one shared arena; `channel_shared` is an explicit opt-in per encounter. | Owner request 2026-09-27; `WorldId + InstanceId` in FND-ID-01; "Instanced dungeon" in the scope matrix. |
 | D27 | Encounters only emit named outcomes. Boss cooldowns, reward eligibility and reward rooms are consumed by the reward domain; quest steps by the quest domain. | Owner delegated the choice; the scope matrix already assigns boss reward eligibility to the reward domain. |
-| D28 | §4-6 plus phases is the v1 vocabulary under the rules of §9; work starts with `FourthTaintBossesPrepareDeath` (15 bosses), then the largest death events. | Owner delegated the choice. |
+| D28 | §4-6 plus phases is the v1 vocabulary under the rules of §9. Work starts with `FourthTaintBossesPrepareDeath` (15 Soul War hunting monsters, a `channel_shared` zone rule with a read-only quest-progress condition), then the largest death events. | Owner delegated the choice; the source shows the event is a zone rule, not a boss fight. |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
