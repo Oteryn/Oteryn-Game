@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 321,
-    "fully_resolved": 1329,
+    "blocked": 305,
+    "fully_resolved": 1345,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1004
+    "wiki_adopted_monsters": 1020
   },
   "wiki_adopted_rows": {
     "Loot2": 11547,
@@ -33,11 +33,12 @@
     "Infobox Creature.death modifier": 35,
     "Infobox Creature.holy modifier": 34,
     "Infobox Creature.physical modifier": 33,
-    "Infobox Creature.occurrence": 29,
+    "Infobox Creature.occurrence": 30,
     "Infobox Creature.pushable": 26,
     "Infobox Creature.illusionable": 18,
     "Infobox Creature.bestiarylevel": 12,
     "Infobox Creature.life_drain modifier": 8,
+    "Infobox Creature.bestiaryclass": 5,
     "Infobox Creature.drowning modifier": 4
   },
   "blockers_by_monster_count": [
@@ -141,17 +142,6 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics top-level script after mType:register",
-      "monsters": 11,
-      "examples": [
-        "headpecker",
-        "hulking_prehemoth",
-        "gore_horn",
-        "gorerilla",
-        "nighthunter"
-      ]
-    },
-    {
       "blocker": "unresolved_semantics attacks[] -> delayed_telegraphed_nuke",
       "monsters": 8,
       "examples": [
@@ -204,17 +194,6 @@
         "essence_of_malice",
         "ethershreck",
         "sharpclaw"
-      ]
-    },
-    {
-      "blocker": "unresolved_dependency Bestiary.race",
-      "monsters": 5,
-      "examples": [
-        "agrestic_chicken",
-        "crypt_defiler",
-        "terrified_elephant",
-        "haunted_dragon",
-        "crypt_warrior"
       ]
     },
     {
@@ -506,6 +485,7 @@
     "aggressive_lava",
     "aggressive_matter",
     "agressive_chicken",
+    "agrestic_chicken",
     "ahau",
     "alchemist_container",
     "amazon",
@@ -705,8 +685,10 @@
     "crimson_frog",
     "crocodile",
     "crustacea_gigantica",
+    "crypt_defiler",
     "crypt_shambler",
     "crypt_warden",
+    "crypt_warrior",
     "crystal_spider",
     "crystal_wolf",
     "crystalcrusher",
@@ -865,6 +847,7 @@
     "elvira_hammerthrust",
     "ember_beast",
     "emerald_damselfly",
+    "emerald_tortoise",
     "energetic_book",
     "energuardian_of_tales",
     "energy_elemental",
@@ -998,6 +981,8 @@
     "golden_servant",
     "goldhanded_cultist",
     "golgordan",
+    "gore_horn",
+    "gorerilla",
     "gorger_inferniarch",
     "gorgo",
     "gozzler",
@@ -1029,8 +1014,10 @@
     "hardened_usurper_archer",
     "harpy",
     "hateful_soul",
+    "haunted_dragon",
     "haunted_treeling",
     "haunter",
+    "headpecker",
     "hell_hole",
     "hellfire_fighter",
     "hellflayer",
@@ -1056,6 +1043,7 @@
     "horse",
     "hot_dog",
     "hulking_carnisylvan",
+    "hulking_prehemoth",
     "humongous_fungus",
     "humorless_fungus",
     "hunter",
@@ -1192,6 +1180,7 @@
     "man_in_the_cave",
     "manta_ray",
     "manticore",
+    "mantosaurus",
     "marid",
     "marsh_stalker",
     "massacre",
@@ -1301,6 +1290,7 @@
     "neutral_deepling_warrior",
     "nibblemaw",
     "nightfiend",
+    "nighthunter",
     "nightmare",
     "nightmare_of_gaz_haragoth",
     "nightmare_scion",
@@ -1313,6 +1303,7 @@
     "norgle_glacierbeard",
     "northern_pike",
     "novice_of_the_cult",
+    "noxious_ripptor",
     "nymph",
     "oberon_s_bile",
     "oberon_s_hate",
@@ -1473,6 +1464,7 @@
     "rukor_zad",
     "running_elite_orc_guard",
     "rustheap_golem",
+    "sabretooth",
     "sacred_snake",
     "sacred_spider",
     "salamander_trainer",
@@ -1572,6 +1564,7 @@
     "stabilizing_dread_intruder",
     "stabilizing_reality_reaver",
     "stalker",
+    "stalking_stalk",
     "stampor",
     "starving_wolf",
     "stolen_soul",
@@ -1586,6 +1579,7 @@
     "sugar_cube_worker",
     "sugar_daddy",
     "sugar_mommy",
+    "sulphider",
     "sulphur_scuttler",
     "sulphur_spouter",
     "sun_marked_goanna",
@@ -1609,6 +1603,7 @@
     "tentugly_s_head",
     "terofar",
     "terramite",
+    "terrified_elephant",
     "terror_bird",
     "terrorsleep",
     "thalas",

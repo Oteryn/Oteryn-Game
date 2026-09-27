@@ -299,9 +299,9 @@ This resolves 21 more monsters.
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,329 convert, validate and resolve every manifest row (1,103 before registered spells were
-converted, 1,315 before wiki adoption, 1,298 before D19, 1,308 before the probed D18 patterns); 321 are
-blocked; 6 do not convert (five Soul War bosses
+files, 1,345 convert, validate and resolve every manifest row (1,103 before registered spells were
+converted, 1,315 before wiki adoption, 1,298 before D19, 1,308 before the probed D18 patterns, 1,329
+before the two rules below); 305 are blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 
@@ -313,7 +313,11 @@ total drawn from a range may be 0 (`total_damage_range.minimum` may be 0); more 
 reduction equals 100%; `runHealth` above `maxHealth` equals `maxHealth`; summon counts are capped
 by `maxSummons`; an undefined Lua constant is nil; a numeric or wrong-enum `effect`/`shootEffect`
 selects that numeric id; items with `duration=0` do not decay; `lookAddons`/`lookMount` map to
-attachment bindings; a missing description is the monster name.
+attachment bindings; a missing description is the monster name. `RegisterPrimalPackBeast(monster)`
+after registration (11 monsters) registers a separate derived type "<name> (Primal)" and leaves the
+monster unchanged, so it is an approved omission (the derived Primal types are not generated yet). A
+Bestiary without a valid race (5 monsters) takes its taxonomy from its own class when the
+reference-date wiki `bestiaryclass` agrees (D15).
 
 Creature events come from `samples/events-canary-47dfd51f.json`: 193 events named by monster
 files, each classified by a model-assisted read of its registering script with evidence lines
@@ -321,13 +325,14 @@ files, each classified by a model-assisted read of its registering script with e
 `no_effect` events are omitted (D6, D9); `encounter_mechanic` (125) and `monster_behavior` (2)
 stay unresolved.
 
-Remaining blockers by affected monsters: encounter-mechanic events (215), registered spells with
-custom logic or an unsupported parameter in attacks (91) and defenses (40), inline `mType` callbacks (up to 28 per callback kind), a
-top-level script call after registration (11), Bestiary without a valid race (5), non-familiar
-monsters without a look type (4) and wiki loot that names no single Canary item (29 monsters;
-14 of them list `giant shimmering pearl`, which is two items, 281 green and 282 brown). These
-need D12/D13 spell work, Encounter definitions (D9), native behaviour decisions or an item
-decision; none is solved by relaxing validation.
+Remaining blockers by affected monsters: encounter-mechanic events (215; 168 monsters are blocked by
+events alone), inline `mType` callbacks (up to 28 per callback kind), custom spell logic grouped by
+D18 pattern (largest: `path_trail_missile` 11, `conditional_summon` on fixed map positions 14,
+`delayed_telegraphed_nuke` 8, `escalating_dot_curse` 6, `area_damage_named_target` 6), wiki loot that
+names no single Canary item (14 list `giant shimmering pearl`, which is two items, 281 green and 282
+brown), wiki loot without a Loot Statistics page (5) and the invisible wild magic traps without a look
+type (4). These need Encounter definitions (D9), native behaviour work, an item decision or a
+presentation decision; none is solved by relaxing validation.
 
 Population bundles are not committed (about 67 MB). `population_census.py --bundles DIR` writes
 the four files of each fully resolved monster under `DIR`, and

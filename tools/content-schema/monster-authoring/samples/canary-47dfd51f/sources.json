@@ -20,6 +20,7 @@
     "fixed_conditions": "monsters.cpp deserializeSpell outfit/invisible/drunk: default duration 10000 ms; outfit/invisible non-aggressive",
     "familiar_look": "data/libs/systems/familiar.lua FAMILIAR_ID gives the default look per vocation, which creaturescripts/familiar/on_login.lua assigns to a character without a selection",
     "nil_constant": "an undefined Lua global evaluates to nil in Canary",
+    "primal_pack_beast": "data-otservbr-global/lib/quests/the_primal_ordeal.lua RegisterPrimalPackBeast registers a separate type \"<name> (Primal)\" (named Primal Pack Beast, 0 experience, no loot, 70% health, no Bestiary, no corpse) and leaves this type unchanged; the derived Primal type is not generated here",
     "nil_zero": "src/lua/functions/lua_functions_loader.hpp getNumber reads nil with lua_tonumber as 0",
     "dispel": "src/creatures/combat/combat.cpp CombatDispelFunc removes every condition of COMBAT_PARAM_DISPEL type from each target after the health change (or on a combat without damage)",
     "element_over_100": "monster.cpp blockHit sets damage <= 0 to 0, so more than 100% reduction equals 100% (the excess only offsets the Wheel \"Ballistic Mastery\" element reduction)",

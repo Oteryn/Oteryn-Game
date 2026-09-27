@@ -65,6 +65,9 @@ RULES = {
     'familiar_look': 'data/libs/systems/familiar.lua FAMILIAR_ID gives the default look per vocation, which '
                      'creaturescripts/familiar/on_login.lua assigns to a character without a selection',
     'nil_constant': 'an undefined Lua global evaluates to nil in Canary',
+    'primal_pack_beast': 'data-otservbr-global/lib/quests/the_primal_ordeal.lua RegisterPrimalPackBeast registers a separate '
+                         'type "<name> (Primal)" (named Primal Pack Beast, 0 experience, no loot, 70% health, no Bestiary, no '
+                         'corpse) and leaves this type unchanged; the derived Primal type is not generated here',
     'nil_zero': 'src/lua/functions/lua_functions_loader.hpp getNumber reads nil with lua_tonumber as 0',
     'dispel': 'src/creatures/combat/combat.cpp CombatDispelFunc removes every condition of COMBAT_PARAM_DISPEL type from '
               'each target after the health change (or on a combat without damage)',
@@ -87,7 +90,7 @@ BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
 PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls')
 WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces '
                  'it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary '
-                 'difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain '
+                 'difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain '
                  '(? or ~) or unparsed wiki value')
 LOW_CONFIDENCE_DROPS = 10
 LOOT_RATE_RULE = ('D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; '
@@ -370,6 +373,10 @@ class Converter:
             return key
 
         for error in late_errors:
+            if 'RegisterPrimalPackBeast' in error:
+                row('RegisterPrimalPackBeast(monster)', 'approved_omission', 'script', line=line_of(r'^RegisterPrimalPackBeast'),
+                    resolution=RULES['primal_pack_beast'] + '.')
+                continue
             row('top-level script after mType:register', 'unresolved_semantics', 'script', line=len(lines),
                 resolution='A top-level Lua call after registration failed here; Canary keeps the registered type and runs '
                            f'the call at load. Needs a native decision: {error}')
@@ -519,19 +526,15 @@ class Converter:
             for element in m.get(source, []):
                 creature[target].append({'damage_type': DAMAGE[constant(element['type'], 'COMBAT_')], 'percent': ratio(element['percent'])})
         race = bestiary.get('race') if bestiary else None
+        self.pending_bestiary = None
         if bestiary and not (isinstance(race, str) and race.startswith('@BESTY_RACE_')):
+            self.pending_bestiary = (bestiary, len(rows))
             row('Bestiary.race', 'unresolved_dependency', 'dependency', line=line_of(r'^monster\.Bestiary'),
                 resolution=f'Bestiary without a valid race ({race!r}); Canary leaves the Bestiary race unset, so the entry '
                            'has no Bestiary class page. Bestiary omitted until a taxonomy is chosen.')
             bestiary = None
         if bestiary:
-            stars = bestiary.get('Stars', 0)
-            creature['bestiary'] = {'class': bestiary['class'], 'taxonomy': constant(bestiary['race'], 'BESTY_RACE_').lower(),
-                                    'difficulty': DIFFICULTY[stars], 'occurrence': OCCURRENCE[bestiary.get('Occurrence', 0)],
-                                    'stars': stars, 'kill_thresholds': [bestiary['FirstUnlock'], bestiary['SecondUnlock'], bestiary['toKill']],
-                                    'charm_points': bestiary['CharmsPoints']}
-            if bestiary.get('Locations', '').strip():
-                creature['bestiary']['locations'] = bestiary['Locations']
+            creature['bestiary'] = self.bestiary_payload(bestiary, constant(bestiary['race'], 'BESTY_RACE_').lower())
             row('Bestiary', 'mapped', destination='/monster/creature/bestiary', line=line_of(r'^monster\.Bestiary'),
                 resolution='difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare).')
         if 'bosstiary' in m:
@@ -839,10 +842,21 @@ class Converter:
             elif field == 'flee_health' and isinstance(value, int):
                 behavior['targeting']['flee_health'] = min(value, creature['stats']['max_health'])
                 adopt(diff, '/monster/behavior/targeting/flee_health', 'flags.runHealth', r'runHealth', 'runsat')
+            elif field == 'bestiary.class' and getattr(self, 'pending_bestiary', None) and isinstance(value, str):
+                source_bestiary, index = self.pending_bestiary
+                if value != str(source_bestiary.get('class', '')).lower().replace(' ', '_'):
+                    continue
+                creature['bestiary'] = self.bestiary_payload(source_bestiary, value)
+                rows[index].update({'status': 'mapped', 'kind': 'field', 'destination': '/monster/creature/bestiary',
+                                    'resolution': rows[index]['resolution'].split(' Bestiary omitted')[0] + ' The Bestiary '
+                                    f'class "{source_bestiary["class"]}" and the reference-date wiki class "{diff["wiki_raw"]}" '
+                                    f'agree, so the taxonomy is {value} ({WIKI_ADOPTION}).'})
+                wiki_row(page, title, diff.get('wiki_line', 1), 'Infobox Creature.bestiaryclass', '/monster/creature/bestiary/taxonomy',
+                         f'Wiki bestiaryclass "{diff["wiki_raw"]}" ({WIKI_ADOPTION}).')
             elif field in ('bestiary.difficulty', 'bestiary.occurrence') and 'bestiary' in creature and isinstance(value, str):
                 key = field.split('.')[1]
                 allowed = DIFFICULTY.values() if key == 'difficulty' else OCCURRENCE.values()
-                if value in allowed:
+                if value in allowed and creature['bestiary'][key] != value:
                     creature['bestiary'][key] = value
                     adopt(diff, f'/monster/creature/bestiary/{key}', f'Bestiary.{key}', r'^monster\.Bestiary',
                           'bestiarylevel' if key == 'difficulty' else 'occurrence')
@@ -1275,6 +1289,17 @@ class Converter:
         ability = next(a for a in deps['abilities'] if a['identity']['key'] == key)
         effects = {e['identity']['key']: e for e in deps['effects']}
         return any(effects[r['key']].get('formula', {}).get('key') == CASTER_MAGNITUDE for r in ability.get('effects', []))
+
+    @staticmethod
+    def bestiary_payload(bestiary, taxonomy):
+        stars = bestiary.get('Stars', 0)
+        payload = {'class': bestiary['class'], 'taxonomy': taxonomy, 'difficulty': DIFFICULTY[stars],
+                   'occurrence': OCCURRENCE[bestiary.get('Occurrence', 0)], 'stars': stars,
+                   'kill_thresholds': [bestiary['FirstUnlock'], bestiary['SecondUnlock'], bestiary['toKill']],
+                   'charm_points': bestiary['CharmsPoints']}
+        if bestiary.get('Locations', '').strip():
+            payload['locations'] = bestiary['Locations']
+        return payload
 
     def behaviour_patterns(self):
         """spell name -> D18 native behaviour pattern id from the committed pattern grouping."""
