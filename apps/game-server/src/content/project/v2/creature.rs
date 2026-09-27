@@ -931,12 +931,14 @@ pub(super) fn validate_behavior(
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
-    if let Some(wander) = behavior.movement.wander {
-        if !behavior.movement.can_walk || wander.interval_ms == 0 {
-            return Err(ProjectError::InvalidProject(
-                "v2 wander requires a walking creature and a positive interval",
-            ));
-        }
+    let movement = behavior.movement;
+    if movement
+        .wander
+        .is_some_and(|wander| !movement.can_walk || wander.interval_ms == 0)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 wander requires a walking creature and a positive interval",
+        ));
     }
     let targeting = behavior.targeting;
     ppm(

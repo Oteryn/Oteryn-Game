@@ -146,17 +146,15 @@ fn profiles() -> Vec<ProjectV2AuthoringProfile> {
 }
 
 fn behavior_mut(draft: &mut ProjectV2Draft) -> &mut ProjectV2BehaviorAuthoring {
-    match &mut draft
+    draft
         .state
         .authoring_profiles
         .iter_mut()
-        .find(|profile| profile.target.key == BEHAVIOR)
+        .find_map(|profile| match &mut profile.data {
+            ProjectV2AuthoringProfileData::Behavior(behavior) => Some(behavior),
+            _ => None,
+        })
         .expect("behavior profile")
-        .data
-    {
-        ProjectV2AuthoringProfileData::Behavior(behavior) => behavior,
-        _ => panic!("behavior profile kind"),
-    }
 }
 
 fn offer(
