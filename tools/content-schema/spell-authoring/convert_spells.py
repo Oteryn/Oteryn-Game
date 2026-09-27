@@ -237,7 +237,7 @@ class Execution:
                     'needs_direction': bool(reg.get('needDirection'))}
         range_tiles = int(reg.get('range') or 0) if (reg.get('range') or 0) > 0 else 0
         deps = {'abilities': [], 'effects': [], 'formulas': []}
-        key = f'candidate:ability/spell/{slug(record["name"])}'
+        key = f'candidate:ability/spell/{"rune/" if record["spell_type"] == "rune" else ""}{slug(record["name"])}'
         self.converter.pending_definitions = set()
         order = list(dict.fromkeys(info['variants']))
         keys = [key] if len(order) == 1 else [f'{key}/variant-{n}' for n in range(1, len(order) + 1)]
@@ -272,7 +272,8 @@ class Execution:
                         continue
                     if len(callbacks) != 1:
                         raise Unresolved(f'{self.source}: damage/heal combat without exactly one player formula callback')
-                    formula_key = f'candidate:formula/spell/{slug(record["name"])}/combat-{combat_index + 1}'
+                    formula_key = (f'candidate:formula/spell/{"rune/" if record["spell_type"] == "rune" else ""}'
+                                   f'{slug(record["name"])}/combat-{combat_index + 1}')
                     body = player_formula(callbacks[0], base_power, notes)
                     if not any(f['identity']['key'] == formula_key for f in deps['formulas']):
                         deps['formulas'].append({'identity': ident(formula_key), **body})
@@ -394,7 +395,8 @@ class Bundle:
         spell_pages = pages
         if carrier == 'rune':
             spell_pages = {w: self.wikis.spell_page(w, primary) for w in ('fandom', 'br')}
-        key = f'candidate:spell/{slug(self.name)}'
+        # A rune and its conjuring spell share a name ("sudden death rune"), so the carrier is part of the key.
+        key = f'candidate:spell/{"rune/" if carrier == "rune" else ""}{slug(self.name)}'
         spell = {'identity': ident(key), 'name': primary['name'], 'carrier': carrier}
         base = '/spell/spell'
         if carrier == 'instant':

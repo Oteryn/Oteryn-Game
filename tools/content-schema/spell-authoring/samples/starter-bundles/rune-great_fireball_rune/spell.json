@@ -1,7 +1,7 @@
 {
   "spell": {
     "identity": {
-      "key": "candidate:spell/great_fireball_rune",
+      "key": "candidate:spell/rune/great_fireball_rune",
       "revision": "spell-p2-r1"
     },
     "name": "great fireball rune",
@@ -66,7 +66,7 @@
     "execution": {
       "ability": {
         "family": "Ability",
-        "key": "candidate:ability/spell/great_fireball_rune",
+        "key": "candidate:ability/spell/rune/great_fireball_rune",
         "revision": "spell-p2-r1"
       }
     }
