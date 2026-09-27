@@ -452,6 +452,18 @@ fn exact_replay_reconcile_and_restart_readback_are_durable() -> TestResult {
             .bind(id(50).as_slice())
             .execute(&harness.pool)
             .await?;
+            assert!(matches!(
+                harness
+                    .root
+                    .commit_character_experience(
+                        &authority,
+                        &harness.node,
+                        fence(2)?,
+                        request(61, 5)?,
+                    )
+                    .await,
+                Err(CharacterProgressionError::AuthorityRejected)
+            ));
             let replay = harness
                 .root
                 .commit_character_experience(&authority, &harness.node, fence(1)?, award.clone())

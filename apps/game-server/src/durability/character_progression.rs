@@ -116,6 +116,38 @@ impl From<DurabilityError> for CharacterProgressionError {
     }
 }
 
+impl std::fmt::Display for CharacterProgressionError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidInput => formatter.write_str("invalid Character progression input"),
+            Self::AuthorityRejected => {
+                formatter.write_str("Character progression authority rejected")
+            }
+            Self::MissingProgressionState => {
+                formatter.write_str("Character progression state is missing")
+            }
+            Self::CharacterRevisionMismatch => {
+                formatter.write_str("Character revision does not match")
+            }
+            Self::ProgressionContextMismatch => {
+                formatter.write_str("Character progression context does not match")
+            }
+            Self::ConflictingOccurrence => {
+                formatter.write_str("reward occurrence was reused with different semantics")
+            }
+            Self::Calculation(error) => {
+                write!(formatter, "progression calculation rejected: {error:?}")
+            }
+            Self::Unavailable(error) => write!(
+                formatter,
+                "Character progression storage is unavailable: {error:?}"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for CharacterProgressionError {}
+
 impl DurabilityRoot {
     /// Commit one positive XP award.  Exact occurrence replay returns its
     /// retained result without reacquiring session authority; changed semantic
@@ -748,6 +780,7 @@ fn uuid_text(value: &str) -> std::result::Result<[u8; 16], DurabilityError> {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::domain::progression::LevelThreshold;

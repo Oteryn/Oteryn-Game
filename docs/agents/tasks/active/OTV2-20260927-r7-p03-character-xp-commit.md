@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: /root
 created_at: 2026-09-27T14:25:00Z
-updated_at: 2026-09-27T15:19:56Z
+updated_at: 2026-09-27T15:28:55Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_progression.rs
@@ -130,7 +130,9 @@ finding_dispositions:
     - decoupled bootstrap receipt revision one from current CharacterRevision integrity
     - added deferred cross-relation state/receipt/root consistency constraint
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - added direct new-occurrence rejection after the GameSession becomes terminal
+    - made all-target Clippy consume error payloads and scoped expect_used only to unit tests
 ```
 
 ## Acceptance criteria
@@ -181,6 +183,7 @@ previously unseen occurrence.
 - WSL focused and registered PostgreSQL target compile: PASS.
 - Protected `character_authority_postgres` target discovers the shared P03 cases: PASS.
 - WSL strict Clippy for `character_progression_postgres` with `--no-deps -D warnings`: PASS.
+- WSL full `cargo clippy --workspace --all-targets -- -D warnings`: PASS after exact-head repair.
 - GPT-6 Luna pre-freeze SQL/trigger/concurrency static audit: PASS, no material findings.
 - Pure binding regressions: present in `character_progression.rs`.
 
@@ -190,7 +193,7 @@ previously unseen occurrence.
 - Protected PostgreSQL 17.6 routing: shared cases are included by registered `character_authority_postgres`.
 - Local configured PostgreSQL: pending; no `OTERYN_TEST_POSTGRES_ADMIN_URL` and
   the installed Docker Desktop engine failed to initialize.
-- Hosted PostgreSQL 17.6 lane: required after exact remote freeze.
+- Hosted PostgreSQL 17.6 lane: container/classification reached on superseded SHA; execution pending final repaired exact head.
 
 ### E2E
 
@@ -217,7 +220,7 @@ previously unseen occurrence.
 - required: YES; durable Character mutation and recovery/session fencing
 - exact head: pending remote freeze
 - method/auditor: independent GPT-6 Luna subagent
-- material findings: pre-write review findings accepted and implemented; exact-head review pending
+- material findings: successor review found one P2 terminal-session coverage gap; fixed before final freeze
 - verdict: pending
 
 ## PR and closeout
@@ -232,7 +235,7 @@ previously unseen occurrence.
 ## Context checkpoint
 
 ```yaml
-last_progress: protected PostgreSQL target now compiles with the shared P03 cases
+last_progress: full-workspace Clippy and terminal-session negative coverage repaired
 status: implementing
 branch: codex/r7-p03-character-xp-commit
 head_sha: null
@@ -249,10 +252,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
-ci_recovery_actions_for_current_head: 0
+repair_cycles_for_current_gate: 3
+ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: validate routing successor, refresh main, freeze new SHA and rerun exact-head review
+next_action: refresh main, freeze repaired SHA, rerun exact-head review and PostgreSQL 17.6 CI
 ```
