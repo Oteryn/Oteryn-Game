@@ -4,12 +4,12 @@
 task_id: OTV2-20260926-monster-scripted-spells
 title: Convert registered Canary monster spell scripts (D11/D12)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 955
 jira: KAN-16
 base_sha: 139202f1aa790e573c0ae5d41f4e529fdc503016
 head_sha: null
