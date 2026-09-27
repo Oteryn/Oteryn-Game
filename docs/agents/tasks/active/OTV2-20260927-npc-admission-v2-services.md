@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-npc-admission-v2-services
 title: NPC admission slice 2 - typed WorldProject/v2 service offers and travel routes (D7)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 994
 jira: KAN-16
 base_sha: 3f29e7d9384b3e21b27032aaf8bdfbc27dae5a09
 head_sha: null
@@ -56,7 +56,8 @@ mutation, fence, session, authority or persisted-recovery evidence is touched.
   unknown route fields rejected; declarations never lower to executable Reference records.
 - Existing `content_world_project_v2` literals gain the new optional fields; serialized documents
   without them are unchanged (serde defaults, skipped when empty).
-- `cargo fmt --all --check` and `cargo clippy -p oteryn-game-server --all-targets -D warnings` pass.
+- `cargo fmt --all --check`, `cargo clippy -p oteryn-game-server --all-targets -D warnings` and the full
+  `cargo test -p oteryn-game-server` pass.
 
 ## Next action
 
