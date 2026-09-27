@@ -1,16 +1,6 @@
 name: Node boot physical qualification
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/node-boot-qualification.yml
-      - tools/qualification/node_boot/**
-      - apps/game-server/src/node/**
-      - apps/game-server/src/bin/oteryn-game-ops.rs
-      - apps/game-server/src/main.rs
-      - apps/game-server/src/gameplay_transport/**
-      - apps/game-server/src/character_recovery_fence.rs
-      - apps/game-server/migrations/**
   workflow_dispatch:
 
 permissions:

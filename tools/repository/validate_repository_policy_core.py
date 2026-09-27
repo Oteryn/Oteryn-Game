@@ -44,12 +44,14 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
     "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "de006d1d903c1b58de7d1fd21fc288398a80d7813e0b08f7e07f2784e813f6e7"
+    "eeb3e5f3c8244d412096b770071c2e1757505d9f0f180b10f36f5b9597beab13"
 )
-EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "e938f86b0485d8b05a7dd6233c50fa7620607ea97e085116caba5b8960496f2b"
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "c8564e6c8ce3df2a9ea57fdf17306cc23d7350fd712a8f55bf2b0215e27caccd"
 EXPECTED_MERGE_GATE_ROUTING_CONTRACT_JOB_SHA256 = "3db16b5afec9a2786506e7558af09b298d878a0cb5b0a8b20748f4a3afaddbd6"
 EXPECTED_ROUTING_CONTRACT_VALIDATOR_BLOB = "ce2fc840f22fd75c0ccb067d9807698a87650f77"
 EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256 = "0910d3ef6afed2e689c687d1c6692963336c4b737def32fea41bbb5c4c08eb40"
+EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256 = "be8c77c0d9a267c582a3bcfbdbc45005055a6e827af6af66fd4a1799cfa76d4f"
+EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256 = "66eb857be0512adc4df0b6854074deda5b4c323d5f7054996d0cb3d354f20095"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
 EXPECTED_POST_MERGE_RUST_SHA256 = "9447349d9129155ab5acd545a3e18d34547840e925da456057e8a273df546494"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
@@ -398,6 +400,16 @@ def main() -> int:
         )
         if atlas_fullworld_digest != EXPECTED_MERGE_GATE_ATLAS_FULLWORLD_JOB_SHA256:
             errors.append("merge gate Atlas fullworld job must exactly match the reviewed exact-head evidence contract")
+        for job, expected in (
+            ("node_boot", EXPECTED_MERGE_GATE_NODE_BOOT_JOB_SHA256),
+            ("server_seam", EXPECTED_MERGE_GATE_SERVER_SEAM_JOB_SHA256),
+        ):
+            job_block = indented_yaml_mapping_block(text, job, 2)
+            job_digest = hashlib.sha256(job_block.encode("utf-8")).hexdigest() if job_block else None
+            if job_digest != expected:
+                errors.append(
+                    f"merge gate {job} job must exactly match the reviewed exact-head physical qualification contract"
+                )
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
         if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
@@ -437,6 +449,8 @@ def main() -> int:
             "Merge gate / Rust Linux workspace",
             "Merge gate / Rust Windows client",
             "Merge gate / Rust supply chain",
+            "Merge gate / Node boot against the real Platform",
+            "Merge gate / Server Seam over TCP+TLS",
         ):
             if required_fragment not in text:
                 errors.append(f"merge gate missing required recovery/sub-gate contract: {required_fragment}")
