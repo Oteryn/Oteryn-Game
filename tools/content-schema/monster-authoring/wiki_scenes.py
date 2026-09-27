@@ -24,8 +24,9 @@ OUT = ROOT / 'samples' / 'wiki-scenes-2026-07-28.json'
 ELEMENTS = {'physical': 'physical', 'fire': 'fire', 'earth': 'earth', 'poison': 'earth', 'energy': 'energy', 'ice': 'ice',
             'holy': 'holy', 'death': 'death', 'life drain': 'life_drain', 'lifedrain': 'life_drain', 'mana drain': 'mana_drain',
             'manadrain': 'mana_drain', 'drown': 'drowning', 'drowning': 'drowning', 'healing': 'healing'}
-# game.cpp Game::combatGetTypeInfo: the hit effect shown when a combat has no effect of its own (physical depends on race).
-DEFAULT_HIT = {'energy': 'energyhit', 'earth': 'green_rings', 'drowning': 'loseenergy', 'fire': 'hitbyfire', 'ice': 'iceattack',
+# game.cpp Game::combatGetTypeInfo: the hit effect shown when a combat has no effect of its own. Physical depends on the
+# target race; a monster attack hits a player, whose race is blood (CONST_ME_DRAWBLOOD).
+DEFAULT_HIT = {'physical': 'drawblood', 'energy': 'energyhit', 'earth': 'green_rings', 'drowning': 'loseenergy', 'fire': 'hitbyfire', 'ice': 'iceattack',
                'holy': 'holydamage', 'death': 'smallclouds', 'life_drain': 'magic_red'}
 # combat.cpp AreaCombat::setupArea(int32_t radius): a tile is hit when 0 < cell <= radius; 1 is the centre.
 RADIUS_TABLE = [

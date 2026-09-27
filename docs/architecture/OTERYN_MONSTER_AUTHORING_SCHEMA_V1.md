@@ -347,8 +347,8 @@ the damage type's default hit effect from `Game::combatGetTypeInfo`). Hit sets a
 to the anchor under the four rotations.
 
 Over 1,029 monsters with an ability list: 1,986 wiki abilities have no scene; of those with a scene,
-1,045 match a Canary Ability and 418 do not. Among matched abilities the shape is equal in 739 and
-differs in 288 (mostly beam/wave lengths and single-target versus area), the effect id is equal in
-636 (45 of them through the default hit effect) and differs in 289, and the missile id is equal in
-290 and differs in 157. The scenes are drawings, so they are review evidence for a later owner
-decision, not an automatic D15 adoption.
+1,051 match a Canary Ability and 412 do not. Among matched abilities the shape is equal in 741 and
+differs in 291 (mostly beam/wave lengths and single-target versus area), the effect id is equal in
+656 (64 of them through the default hit effect; physical damage on a player shows blood) and
+differs in 274, and the missile id is equal in 290 and differs in 160. The scenes are drawings, so
+they are review evidence for a later owner decision, not an automatic D15 adoption (D18).
