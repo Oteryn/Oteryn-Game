@@ -10,6 +10,12 @@
     "gates": {"type": "array", "items": {"$ref": "#/$defs/gate"}}
   },
   "$defs": {
+    "text_ref": {
+      "description": "Narrative text is reserved content (LICENSE-ASSETS.md): a digest, length and placeholders, never the text.",
+      "type": "object", "additionalProperties": false, "required": ["sha256", "length", "placeholders"],
+      "properties": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}, "length": {"type": "integer", "minimum": 1},
+                     "placeholders": {"type": "array", "items": {"type": "string"}}}
+    },
     "identity": {
       "type": "object", "additionalProperties": false, "required": ["key", "revision"],
       "properties": {"key": {"type": "string", "pattern": "^[a-z0-9_-]+:[a-z0-9_./-]+$"}, "revision": {"type": "string", "minLength": 1}}
@@ -39,8 +45,8 @@
         "container": {"$ref": "#/$defs/ref"},
         "key_binding": {"type": ["string", "null"], "pattern": "^[a-z0-9_-]+:door-key/[0-9]+$"},
         "written_text": {
-          "type": "object", "additionalProperties": false, "required": ["item", "text"],
-          "properties": {"item": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]}, "text": {"type": "string", "minLength": 1}}
+          "type": "object", "additionalProperties": false, "required": ["item", "text_ref"],
+          "properties": {"item": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]}, "text_ref": {"$ref": "#/$defs/text_ref"}}
         }
       }
     },

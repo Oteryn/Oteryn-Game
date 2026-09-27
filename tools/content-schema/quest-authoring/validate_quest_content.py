@@ -27,11 +27,26 @@ def refs(value):
             yield from refs(child)
 
 
+def committed_text(value, where=''):
+    """Paths that carry narrative text; LICENSE-ASSETS.md reserves it, so only text references are committed."""
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if key in ('text', 'strings'):
+                yield f'{where}/{key}'
+            else:
+                yield from committed_text(child, f'{where}/{key}')
+    elif isinstance(value, list):
+        for index, child in enumerate(value):
+            yield from committed_text(child, f'{where}/{index}')
+
+
 def validate(claims_doc, quests_doc, catalog=None, manifest=None):
     schema = json.loads((ROOT / 'quest_content.schema.json').read_text())
     validator = jsonschema.Draft202012Validator(schema)
-    errors = [f'{"/".join(map(str, e.absolute_path))}: {e.message}'
-              for doc in (claims_doc, quests_doc) for e in validator.iter_errors(doc)]
+    errors = [f'{path}: narrative text must not be committed (use text_ref)'
+              for doc in (claims_doc, quests_doc) for path in committed_text(doc)]
+    errors += [f'{"/".join(map(str, e.absolute_path))}: {e.message}'
+               for doc in (claims_doc, quests_doc) for e in validator.iter_errors(doc)]
     if errors:
         return errors
     claims, quests = claims_doc['claims'], quests_doc['quests']

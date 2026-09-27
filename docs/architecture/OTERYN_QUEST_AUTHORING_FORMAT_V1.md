@@ -52,7 +52,10 @@ so neither chests nor doors are in that catalogue.
 4. The source mechanics are the reference, including where the two servers differ. Source defects
    are recorded, not reproduced (as in D25). Where the source is unclear, the reference-date wiki
    decides.
-5. The claim is character state (quest progress: Character persistence, strong durable, shared
+5. Narrative text (book texts, journal lines) is reserved content (`LICENSE-ASSETS.md`). As in the
+   NPC bundles, the samples keep a text reference (SHA-256, length, placeholders), never the text,
+   and the validator rejects committed text.
+6. The claim is character state (quest progress: Character persistence, strong durable, shared
    across channels, `MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md`). Items change hands under the item
    transaction contract (DUR-03). Character writes stay session-generation fenced.
 
@@ -66,7 +69,7 @@ so neither chests nor doors are in that catalogue.
 | Without a container Canary checks and hands out items one by one and marks the chest after the first item; a later capacity failure loses the rest | Defect, not reproduced: one item transaction for the whole reward, idempotent under retry. |
 | `container`: reward items go inside a container ("You have found a bag.") | `reward.container`. |
 | `isKey`/`keyAction`: the key item gets the door's action id | `reward.key_binding` names the door key (`…:door-key/<n>`); key doors read it (§3.1). |
-| `AttributeTable`: a written text on the reward, per unique id; Canary stamps every reward item, CrystalServer only the item it names | `reward.written_text` with the item that carries it. The CrystalServer fix is taken for chests present in both servers. |
+| `AttributeTable`: a written text on the reward, per unique id; Canary stamps every reward item, CrystalServer only the item it names | `reward.written_text`: the item that carries it and a text reference. The CrystalServer fix is taken for chests present in both servers. |
 | `achievementTable`: the Annihilator chests grant an achievement | `placement.achievement`. |
 | `randomReward`: one entry drawn per use (Canary writes the draw into the shared table) | `reward.random_one_of`, drawn per claim with auditable randomness. |
 | `time` (hours) with `storage`: meant as a cooldown, but the script only reads `timerStorage`, so both servers hand out the six Secret Library chests once | `repeat: {kind: cooldown, hours}` from the data; the wiki confirms it (Brass-Shod Chest: Falcon Bastion chests open once every 24h); `source_divergence` records the server defect. |
@@ -112,7 +115,7 @@ RewardClaim                          content/interactions/ (definition) + world 
       random_one_of[]                optional, at least two options
       container                      optional
       key_binding                    optional door key
-      written_text                   optional, with the carrying item
+      written_text                   optional: carrying item and text_ref (sha256, length, placeholders)
     achievement                      optional
   source_divergence                  optional note where the source contradicts its own data
 

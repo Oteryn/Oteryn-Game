@@ -20,7 +20,8 @@ def fixture():
             {'position': {'x': 102, 'y': 200, 'z': 7}, 'appearance': ref('Item', 'item/chest'),
              'reward': {'items': [], 'random_one_of': [{'item': ref('Item', 'item/gold'), 'count': 10}, {'item': ref('Item', 'item/key'), 'count': 1}],
                         'container': ref('Item', 'item/bag'), 'key_binding': 'oteryn:door-key/3800',
-                        'written_text': {'item': ref('Item', 'item/bag'), 'text': 'Hardek *'}}}]}
+                        'written_text': {'item': ref('Item', 'item/bag'),
+                                         'text_ref': {'sha256': '0' * 64, 'length': 8, 'placeholders': []}}}}]}
     quest = {'identity': {'key': 'oteryn:quest/annihilator', 'revision': 'r1'}, 'display_name': 'The Annihilator',
              'kind': 'reward_only', 'shown_in_quest_log': False, 'wiki': {'title': 'The Annihilator', 'pageid': 1, 'revid': 2},
              'requirements_from_wiki': {'premium': 'yes', 'lvl': '100'}, 'claims': [ref('RewardClaim', 'reward-claim/annihilator')]}
@@ -61,6 +62,7 @@ case('floor is bounded', lambda c, q, cat, m: c['placements'][0]['position'].upd
 case('two claims cannot share a position', lambda c, q, cat, m: c['placements'][1]['position'].update(x=100))
 case('unknown reward field', lambda c, q, cat, m: c['placements'][0]['reward'].update(weight=5.0))
 case('key binding names a door key', lambda c, q, cat, m: c['placements'][1]['reward'].update(key_binding='oteryn:storage/1'))
+case('no committed narrative text', lambda c, q, cat, m: c['placements'][1]['reward']['written_text'].update(text='Hardek *'))
 case('written text on an item not handed out', lambda c, q, cat, m: c['placements'][1]['reward']['written_text'].update(item=ref('Item', 'item/gold')))
 case('link basis without a quest', lambda c, q, cat, m: c.update(quest=None))
 case('section candidate on a linked claim', lambda c, q, cat, m: c.update(quest_candidate_from_section=ref('Quest', 'quest/x')))

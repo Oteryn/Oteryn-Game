@@ -42,6 +42,15 @@ WIKI_DECISIONS = {
 COOLDOWN_EVIDENCE = [('Brass-Shod_Chest', 1200697, 'Falcon Bastion chests can be opened once every 24h')]
 
 
+PLACEHOLDER = re.compile(r'%[-0-9.]*[dsif]|\|[A-Z_]+\|')
+
+
+def text_ref(text):
+    """Narrative text is reserved content (LICENSE-ASSETS.md): only its digest, length and placeholders are kept."""
+    return {'sha256': hashlib.sha256(text.encode('utf-8')).hexdigest(), 'length': len(text),
+            'placeholders': sorted(set(PLACEHOLDER.findall(text)))}
+
+
 def ref(family, key):
     return {'family': family, 'key': key, 'revision': REVISION}
 
@@ -122,7 +131,7 @@ def placement(entry):
     if entry['text']:
         text = entry['text']
         reward['written_text'] = {'item': ref('Item', f'{namespace}:item/{text["itemId"]}') if text.get('itemId') else None,
-                                  'text': text['text'].strip('\n')}
+                                  'text_ref': text_ref(text['text'].strip('\n'))}
     result = {'position': dict(zip('xyz', entry['position'])),
               'appearance': ref('Item', f'{namespace}:item/{value["itemId"]}') if value.get('itemId') else None,
               'reward': reward}
