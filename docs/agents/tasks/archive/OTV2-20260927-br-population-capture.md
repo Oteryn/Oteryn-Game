@@ -56,5 +56,5 @@ adopted until the owner decides how BR fills gaps left by Fandom.
 
 Merged as PR #1049 (`c5f59954689426954674333412d7487597ba631b`) from final head `d72a5f7`; required checks passed on that head. The capture found
 1,494 of 1,650 population titles on TibiaWiki BR. Where Fandom gives no certain value, BR fills health for 92 and
-experience for 81 monsters; the owner chose to adopt only those two fields (D35).
+experience for 81 monsters; the owner chose to adopt only those two fields (D43).
 Owner released.

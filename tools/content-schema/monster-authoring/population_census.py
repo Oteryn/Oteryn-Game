@@ -110,7 +110,7 @@ def main():
     report = {'source': {'repository': cb.REPOSITORY, 'revision': cb.REVISION, 'monster_dir': cb.MONSTER_DIR},
               'wiki_reference': {'file': str(WIKI.relative_to(ROOT)), 'sha256': hashlib.sha256(wiki_text.encode('utf-8')).hexdigest()},
               'br_fill_reference': {'file': str(BR_FILL.relative_to(ROOT)), 'sha256': hashlib.sha256(br_text.encode('utf-8')).hexdigest()},
-              'scope': 'In-memory conversion of every monster file with the D15 wiki values and the D35 TibiaWiki BR fills '
+              'scope': 'In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills '
                        'applied; structure validation '
                        'plus open manifest rows. Not runtime qualification.',
               'monster_files': len(files), 'outcome': dict(sorted(outcome.items())),

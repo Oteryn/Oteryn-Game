@@ -103,7 +103,7 @@ WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-09-27) wiki
                  '(? or ~) or unparsed wiki value')
 LOW_CONFIDENCE_DROPS = 10
 BR_API = 'https://www.tibiawiki.com.br/api.php'
-BR_ADOPTION = ('Owner decision D35: the owner\'s source order puts TibiaWiki BR after Fandom, so a BR health or experience '
+BR_ADOPTION = ('Owner decision D43: the owner\'s source order puts TibiaWiki BR after Fandom, so a BR health or experience '
                'value fills the field only where the reference-date (2026-09-27) Fandom page is missing or gives no certain '
                'value; BR element modifiers and speed are not used')
 LOOT_RATE_RULE = ('D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; '
@@ -820,7 +820,7 @@ class Converter:
         return s, monster, deps, catalog, manifest, source
 
     def adopt_br(self, s, monster, rows, sources, line_of):
-        """Fill health and experience from TibiaWiki BR where Fandom gives no certain value (D35, wiki_br_fill.py)."""
+        """Fill health and experience from TibiaWiki BR where Fandom gives no certain value (D43, wiki_br_fill.py)."""
         record = self.br.get(s)
         if not record:
             return

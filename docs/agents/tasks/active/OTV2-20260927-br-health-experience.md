@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260927-br-health-experience
-title: TibiaWiki BR health and experience where Fandom is uncertain (D35)
+title: TibiaWiki BR health and experience where Fandom is uncertain (D43)
 mode: CONTRACT
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -48,7 +48,7 @@ external_repositories: []
 
 ## Outcome
 
-Owner decision D35 ("Tylko HP i doświadczenie"): TibiaWiki BR fills health and experience where the 2026-09-27
+Owner decision D43 ("Tylko HP i doświadczenie"): TibiaWiki BR fills health and experience where the 2026-09-27
 Fandom page is missing or gives no certain value. The owner's source order puts BR after Fandom. BR element
 modifiers and speed are not used.
 

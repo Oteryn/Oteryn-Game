@@ -1,4 +1,4 @@
-"""Pick the TibiaWiki BR health and experience values that fill gaps left by the Fandom wiki (owner decision D35).
+"""Pick the TibiaWiki BR health and experience values that fill gaps left by the Fandom wiki (owner decision D43).
 
 Evidence tooling only. The owner's source order puts TibiaWiki (Fandom) before TibiaWiki BR, so a BR value is used
 only where the Fandom page at the target cut has no certain value: the page is missing, or its field is empty or
@@ -96,7 +96,7 @@ def main(argv=None):
     records = fill(capture, sample, fandom_infobox)
     document = {
         'source': capture['api'], 'target_cut': capture['target_cut'], 'cut_timestamp': capture['cut_timestamp'],
-        'rule': 'Owner decision D35: a TibiaWiki BR hp or exp fills the value only where the Fandom page at the target cut '
+        'rule': 'Owner decision D43: a TibiaWiki BR hp or exp fills the value only where the Fandom page at the target cut '
                 'is missing or its value is empty, uncertain or unparsed; the BR value must be a plain number.',
         'capture': {'workflow': '.github/workflows/monster-wiki-capture.yml', 'sha256': hashlib.sha256(capture_bytes).hexdigest(),
                     'pages': len(capture['pages']), 'found': sum(1 for p in capture['pages'] if 'revision_id' in p)},
