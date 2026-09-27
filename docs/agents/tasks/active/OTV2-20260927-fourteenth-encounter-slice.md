@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-fourteenth-encounter-slice
 title: D34 vocabulary for Grave Danger (fourteenth encounter slice)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1037
 jira: KAN-16
 base_sha: be0492e53ed39361cbb65565b51255ee14fac06a
 head_sha: null
