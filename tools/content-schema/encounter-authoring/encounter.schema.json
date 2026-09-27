@@ -136,8 +136,30 @@
                 "pattern": "^[a-z][a-z0-9_]*$"
               },
               "duration_ms": {
-                "type": "integer",
-                "minimum": 1
+                "oneOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "min": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "max": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "required": [
+                      "min",
+                      "max"
+                    ]
+                  }
+                ]
               },
               "repeat": {
                 "type": "boolean"
@@ -428,15 +450,56 @@
               "pattern": "^[a-z][a-z0-9_]*$"
             },
             "percent": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 100
+            },
+            "health": {
               "type": "integer",
-              "minimum": 1,
-              "maximum": 99
+              "minimum": 1
+            }
+          },
+          "required": [
+            "kind",
+            "role"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "creature_spawned"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "role"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "ability_cast"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "ability": {
+              "$ref": "#/$defs/AbilityRef"
             }
           },
           "required": [
             "kind",
             "role",
-            "percent"
+            "ability"
           ]
         },
         {
@@ -710,6 +773,24 @@
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
             },
+            "near": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "role": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "radius": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "role",
+                "radius"
+              ]
+            },
             "present": {
               "type": "boolean"
             }
@@ -717,8 +798,42 @@
           "required": [
             "kind",
             "role",
-            "anchor",
             "present"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "world_state"
+            },
+            "state": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]*:[a-z0-9_./-]+$"
+            },
+            "op": {
+              "enum": [
+                "==",
+                "!=",
+                "<",
+                "<=",
+                ">",
+                ">="
+              ]
+            },
+            "value": {
+              "type": [
+                "integer",
+                "boolean"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "state",
+            "op",
+            "value"
           ]
         },
         {
@@ -797,7 +912,7 @@
               ]
             },
             "value": {
-              "type": "integer",
+              "type": "number",
               "minimum": 0,
               "maximum": 100
             }
@@ -883,8 +998,30 @@
               "pattern": "^[a-z][a-z0-9_]*$"
             },
             "count": {
-              "type": "integer",
-              "minimum": 1
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "min": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "max": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "min",
+                    "max"
+                  ]
+                }
+              ]
             },
             "at": {
               "$ref": "#/$defs/position"
@@ -1003,8 +1140,30 @@
                   "const": "full"
                 },
                 {
-                  "type": "integer",
-                  "minimum": 1
+                  "oneOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "properties": {
+                        "min": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "max": {
+                          "type": "integer",
+                          "minimum": 1
+                        }
+                      },
+                      "required": [
+                        "min",
+                        "max"
+                      ]
+                    }
+                  ]
                 }
               ]
             }
@@ -1013,6 +1172,54 @@
             "kind",
             "subject",
             "amount"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "damage"
+            },
+            "subject": {
+              "$ref": "#/$defs/subject"
+            },
+            "amount": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "min": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "max": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "required": [
+                    "min",
+                    "max"
+                  ]
+                }
+              ]
+            },
+            "damage_type": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "subject",
+            "amount",
+            "damage_type"
           ]
         },
         {
@@ -1055,6 +1262,12 @@
               },
               "minItems": 0,
               "uniqueItems": true
+            },
+            "component": {
+              "enum": [
+                "all",
+                "primary"
+              ]
             },
             "sources": {
               "enum": [
@@ -1133,6 +1346,12 @@
               },
               "minItems": 0,
               "uniqueItems": true
+            },
+            "component": {
+              "enum": [
+                "all",
+                "primary"
+              ]
             }
           },
           "required": [
@@ -1230,6 +1449,10 @@
             "effect": {
               "type": "string",
               "minLength": 1
+            },
+            "interaction": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_.-]*:[a-z0-9_./-]+$"
             }
           },
           "required": [
@@ -1439,8 +1662,30 @@
           "$ref": "#/$defs/trigger"
         },
         "delay_ms": {
-          "type": "integer",
-          "minimum": 1
+          "oneOf": [
+            {
+              "type": "integer",
+              "minimum": 1
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "min": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "min",
+                "max"
+              ]
+            }
+          ]
         },
         "conditions": {
           "type": "array",
@@ -1465,5 +1710,5 @@
       ]
     }
   },
-  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D28)."
+  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D29)."
 }
