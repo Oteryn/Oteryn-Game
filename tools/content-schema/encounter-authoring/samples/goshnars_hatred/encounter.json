@@ -1,0 +1,338 @@
+{
+  "identity": {
+    "key": "canary:encounter/goshnars_hatred",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Soul War: Goshnar's Hatred",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "goshnars_hatred",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_hatred",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "burning_hatred",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ashes_of_burning_hatred",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/spark_of_burning_hatred",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/flame_of_burning_hatred",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/blaze_of_burning_hatred",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "hatred",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": [
+      {
+        "name": "ashes_of_burning_hatred_burns",
+        "duration_ms": 45000,
+        "repeat": false
+      },
+      {
+        "name": "spark_of_burning_hatred_burns",
+        "duration_ms": 45000,
+        "repeat": false
+      },
+      {
+        "name": "flame_of_burning_hatred_burns",
+        "duration_ms": 45000,
+        "repeat": false
+      },
+      {
+        "name": "blaze_of_burning_hatred_burns",
+        "duration_ms": 46000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "the_fire_is_lit",
+      "trigger": {
+        "kind": "encounter_started"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "ashes_of_burning_hatred_burns",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "fire_grows_from_ashes_of_burning_hatred",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "ashes_of_burning_hatred_burns"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "burning_hatred",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/spark_of_burning_hatred",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        },
+        {
+          "kind": "timer",
+          "timer": "spark_of_burning_hatred_burns",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "fire_grows_from_spark_of_burning_hatred",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "spark_of_burning_hatred_burns"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "burning_hatred",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/flame_of_burning_hatred",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        },
+        {
+          "kind": "timer",
+          "timer": "flame_of_burning_hatred_burns",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "fire_grows_from_flame_of_burning_hatred",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "flame_of_burning_hatred_burns"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "burning_hatred",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/blaze_of_burning_hatred",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        },
+        {
+          "kind": "timer",
+          "timer": "blaze_of_burning_hatred_burns",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "fire_grows_from_blaze_of_burning_hatred",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "blaze_of_burning_hatred_burns"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "transform",
+          "role": "burning_hatred",
+          "into": {
+            "family": "Creature",
+            "key": "canary:creature/ashes_of_burning_hatred",
+            "revision": "canary-47dfd51f"
+          },
+          "health": "full"
+        },
+        {
+          "kind": "timer",
+          "timer": "ashes_of_burning_hatred_burns",
+          "operation": "start"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "burning_hatred"
+          },
+          "text": "The fire of hatred fuels and empowers Goshnar's Hate!",
+          "mode": "say"
+        },
+        {
+          "kind": "counter",
+          "counter": "hatred",
+          "operation": "add",
+          "value": 10
+        },
+        {
+          "kind": "attribute",
+          "role": "goshnars_hatred",
+          "attribute": "outgoing_damage_percent",
+          "operation": "add",
+          "value": 10
+        }
+      ]
+    },
+    {
+      "key": "sorrow_douses_the_fire",
+      "trigger": {
+        "kind": "item_used",
+        "role": "burning_hatred",
+        "item": {
+          "family": "Item",
+          "key": "canary:item/33793",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "ashes_of_burning_hatred_burns",
+          "operation": "add",
+          "ms": 10000
+        },
+        {
+          "kind": "timer",
+          "timer": "spark_of_burning_hatred_burns",
+          "operation": "add",
+          "ms": 10000
+        },
+        {
+          "kind": "timer",
+          "timer": "flame_of_burning_hatred_burns",
+          "operation": "add",
+          "ms": 10000
+        },
+        {
+          "kind": "timer",
+          "timer": "blaze_of_burning_hatred_burns",
+          "operation": "add",
+          "ms": 10000
+        }
+      ]
+    },
+    {
+      "key": "hatred_hardens",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "goshnars_hatred",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "hatred",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "attribute",
+          "role": "goshnars_hatred",
+          "attribute": "defense",
+          "operation": "add",
+          "value": {
+            "counter": "hatred"
+          }
+        }
+      ]
+    },
+    {
+      "key": "hatred_begins_calm",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "goshnars_hatred"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "counter",
+          "counter": "hatred",
+          "operation": "set",
+          "value": 0
+        },
+        {
+          "kind": "attribute",
+          "role": "goshnars_hatred",
+          "attribute": "outgoing_damage_percent",
+          "operation": "reset"
+        }
+      ]
+    },
+    {
+      "key": "the_fire_dies_with_hatred",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "goshnars_hatred"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "burning_hatred"
+        },
+        {
+          "kind": "timer",
+          "timer": "ashes_of_burning_hatred_burns",
+          "operation": "stop"
+        },
+        {
+          "kind": "timer",
+          "timer": "spark_of_burning_hatred_burns",
+          "operation": "stop"
+        },
+        {
+          "kind": "timer",
+          "timer": "flame_of_burning_hatred_burns",
+          "operation": "stop"
+        },
+        {
+          "kind": "timer",
+          "timer": "blaze_of_burning_hatred_burns",
+          "operation": "stop"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

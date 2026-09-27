@@ -2,32 +2,32 @@
   "definitions": [
     {
       "family": "Creature",
-      "key": "canary:creature/lesser_splinter_of_madness",
+      "key": "canary:creature/goshnar_s_hatred",
       "revision": "canary-47dfd51f"
     },
     {
       "family": "Creature",
-      "key": "canary:creature/greater_splinter_of_madness",
+      "key": "canary:creature/ashes_of_burning_hatred",
       "revision": "canary-47dfd51f"
     },
     {
       "family": "Creature",
-      "key": "canary:creature/mighty_splinter_of_madness",
+      "key": "canary:creature/spark_of_burning_hatred",
       "revision": "canary-47dfd51f"
     },
     {
       "family": "Creature",
-      "key": "canary:creature/goshnar_s_megalomania_blue",
+      "key": "canary:creature/flame_of_burning_hatred",
       "revision": "canary-47dfd51f"
     },
     {
       "family": "Creature",
-      "key": "canary:creature/goshnar_s_megalomania_green",
+      "key": "canary:creature/blaze_of_burning_hatred",
       "revision": "canary-47dfd51f"
     },
     {
-      "family": "Creature",
-      "key": "canary:creature/goshnar_s_megalomania_purple",
+      "family": "Item",
+      "key": "canary:item/33793",
       "revision": "canary-47dfd51f"
     }
   ]

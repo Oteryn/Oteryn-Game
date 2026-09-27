@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-fourteenth-encounter-slice
 title: D34 vocabulary for Grave Danger (fourteenth encounter slice)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1037
 jira: KAN-16
 base_sha: be0492e53ed39361cbb65565b51255ee14fac06a
-head_sha: null
-final_head_sha: null
+head_sha: 72a30ed7617e0da154bc7fae506c4d3a8da67376
+final_head_sha: 72a30ed7617e0da154bc7fae506c4d3a8da67376
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -64,3 +64,8 @@ Authority: owner answer in this session ("Wszystkie 7" for the D34 vocabulary). 
   - the knight ritual of King Zelos;
   - the vampiric blood explosion.
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1037 (`dd209a1264e98f3d1f0f167ec3320124a071db53`) from final head `72a30ed`; required checks passed on that head.
+Owner released.
