@@ -2,34 +2,33 @@
   "classification": "OTS_HYPOTHESIS_ONLY",
   "join": "script path without its datapack",
   "counts": {
-    "interactions": 1219,
+    "interactions": 1221,
     "edges": {
       "ON_CONTACT": 6,
-      "ON_DEATH": 201,
-      "ON_ENTER": 399,
+      "ON_DEATH": 202,
+      "ON_ENTER": 400,
       "ON_LEAVE": 14,
       "USE": 599
     },
     "children_by_owner": {
-      "Ability": 198,
+      "Ability": 208,
       "Achievement": 30,
       "Item": 160,
-      "Movement": 798,
-      "Presentation": 2659,
-      "Quest": 939,
-      "WorldObject": 1112
+      "Movement": 800,
+      "Presentation": 2668,
+      "Quest": 944,
+      "WorldObject": 1117
     },
     "blocked_children": {
-      "Movement": 798,
-      "WorldObject": 1112
+      "Movement": 800,
+      "WorldObject": 1117
     },
-    "quest_children_naming_a_transition": 194,
-    "unresolved_lines": 2018,
-    "unresolved_conditions": 1957,
+    "quest_children_naming_a_transition": 193,
+    "unresolved_lines": 2016,
+    "unresolved_conditions": 1963,
     "by_status": {
-      "conflict": 60,
-      "mapped": 225,
-      "unresolved_semantics": 934
+      "mapped": 236,
+      "unresolved_semantics": 985
     }
   },
   "undeclared_progress_tracks": [
@@ -85,7 +84,6 @@
     "canary:quest-progress/quest/u10_70/the_cursed_crystal/small_crystal_bell",
     "canary:quest-progress/quest/u10_80/the_great_dragon_hunt/achievement",
     "canary:quest-progress/quest/u10_80/the_great_dragon_hunt/dragon_counter",
-    "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/bone",
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/bone_flute",
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/bone_flute_wall",
@@ -111,7 +109,6 @@
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/habitats/roshamuul",
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/habitats/venom",
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/habitats_access",
-    "canary:quest-progress/quest/u10_90/ferumbras_ascension/monster_door",
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/reward",
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/rift_runner",
     "canary:quest-progress/quest/u10_90/ferumbras_ascension/ring2",
@@ -300,7 +297,6 @@
     "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/interdimensional_potion",
     "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/message",
     "canary:quest-progress/quest/u8_6/wrath_of_the_emperor/prison_release_status",
-    "canary:quest-progress/quest/u8_7/rottin_wood_and_the_married_men/corpse",
     "canary:quest-progress/quest/u8_7/rottin_wood_and_the_married_men/rottin_start",
     "canary:quest-progress/quest/u8_7/spirit_hunters/charm_use",
     "canary:quest-progress/quest/u8_7/spirit_hunters/ghost_use",
@@ -350,7 +346,10 @@
     "crystalserver:quest-progress/kilmaresh/tem/bleeds",
     "crystalserver:quest-progress/kilmaresh/thirteen/lyre",
     "crystalserver:quest-progress/kilmaresh/thirteen/presente",
+    "crystalserver:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+    "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
     "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/mazoran_timer",
+    "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/monster_door",
     "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/plagirath_timer",
     "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/ragiaz_timer",
     "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/razzagorn_timer",
@@ -402,6 +401,12 @@
     "crystalserver:quest-progress/quest/u8_4/blood_brothers/castle_entrance_stg",
     "crystalserver:quest-progress/quest/u8_4/blood_brothers/map_marks",
     "crystalserver:quest-progress/quest/u8_4/blood_brothers/mirror_counter",
+    "crystalserver:quest-progress/quest/u8_4/blood_brothers/plant1",
+    "crystalserver:quest-progress/quest/u8_4/blood_brothers/plant2",
+    "crystalserver:quest-progress/quest/u8_4/blood_brothers/plant3",
+    "crystalserver:quest-progress/storage/14334",
+    "crystalserver:quest-progress/storage/14335",
+    "crystalserver:quest-progress/storage/14336",
     "crystalserver:quest-progress/storage/58001",
     "crystalserver:quest-progress/storage/58002",
     "crystalserver:quest-progress/storage/58103",
@@ -552,7 +557,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_1",
+      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_action",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -565,33 +570,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_2",
-      "status": "unresolved_semantics",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua",
-          "callback_line": 54,
-          "blob_sha1": "2c30c074b069c4b42c148132fb93b08c977adb35"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_3",
-      "status": "unresolved_semantics",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua",
-          "callback_line": 86,
-          "blob_sha1": "2c30c074b069c4b42c148132fb93b08c977adb35"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_4",
+      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_exit_cheesy",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -604,7 +583,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_5",
+      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_familiar_chess",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -612,6 +591,32 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua",
           "callback_line": 133,
+          "blob_sha1": "2c30c074b069c4b42c148132fb93b08c977adb35"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_portal_cheesy",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua",
+          "callback_line": 54,
+          "blob_sha1": "2c30c074b069c4b42c148132fb93b08c977adb35"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/a_pirates_tail_quest/actions_cheesy_key_portal_cheesy_chess",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua",
+          "callback_line": 86,
           "blob_sha1": "2c30c074b069c4b42c148132fb93b08c977adb35"
         }
       ]
@@ -1080,8 +1085,8 @@
     },
     {
       "destination": "canary:interaction/barbarian_test/action_mead",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki: Canary caps mead at 20 sips per honeycomb (wiki-correct); crystal allows 21, off-by-one., https://tibia.fandom.com/wiki/Barbarian_Test_Quest/Spoiler?oldid=1086713)",
       "sources": [
         {
           "source": "canary",
@@ -1567,7 +1572,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/bigfoot_burden/movements_task_shooting_1",
+      "destination": "canary:interaction/bigfoot_burden/movements_task_shooting_task_shooting",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -1586,7 +1591,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/bigfoot_burden/movements_task_shooting_2",
+      "destination": "canary:interaction/bigfoot_burden/movements_task_shooting_task_shooting_2",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -1726,20 +1731,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/blood_brothers_quest/actions_castle_book_1",
-      "status": "unresolved_semantics",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua",
-          "callback_line": 3,
-          "blob_sha1": "a771c01f66909c2e0a021a1755497c269c0d9c2a"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/blood_brothers_quest/actions_castle_book_2",
+      "destination": "crystalserver:interaction/blood_brothers_quest/actions_castle_book_action",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -1747,6 +1739,19 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua",
           "callback_line": 113,
+          "blob_sha1": "a771c01f66909c2e0a021a1755497c269c0d9c2a"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/blood_brothers_quest/actions_castle_book_blood_brothers_library",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua",
+          "callback_line": 3,
           "blob_sha1": "a771c01f66909c2e0a021a1755497c269c0d9c2a"
         }
       ]
@@ -1952,8 +1957,8 @@
     },
     {
       "destination": "canary:interaction/children_of_the_revolution/actions_mission4_grease_oil",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Crystal's actionid check always evaluates false (operator-precedence bug); gate variable also changed.)",
       "sources": [
         {
           "source": "canary",
@@ -2122,26 +2127,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/cradle_of_monsters/the_monster_fight_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua",
-          "callback_line": 117,
-          "blob_sha1": "d85bd3491e59e4eacad1a117d7806d452c9a9238"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua",
-          "callback_line": 117,
-          "blob_sha1": "d85bd3491e59e4eacad1a117d7806d452c9a9238"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/cradle_of_monsters/the_monster_fight_2",
+      "destination": "canary:interaction/cradle_of_monsters/the_monster_fight_alchemist_container_death",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -2160,7 +2146,26 @@
       ]
     },
     {
-      "destination": "canary:interaction/cradle_of_monsters/the_monster_fight_3",
+      "destination": "canary:interaction/cradle_of_monsters/the_monster_fight_antenna_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua",
+          "callback_line": 117,
+          "blob_sha1": "d85bd3491e59e4eacad1a117d7806d452c9a9238"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/cradle_of_monsters/the_monster_fight.lua",
+          "callback_line": 117,
+          "blob_sha1": "d85bd3491e59e4eacad1a117d7806d452c9a9238"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/cradle_of_monsters/the_monster_fight_monster_death",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -2179,7 +2184,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/cradle_of_monsters/the_monster_fight_4",
+      "destination": "canary:interaction/cradle_of_monsters/the_monster_fight_puddle_step_in",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -2832,7 +2837,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/cults_of_tibia/movements_tar_1",
+      "destination": "canary:interaction/cults_of_tibia/movements_tar_tar",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -2851,7 +2856,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/cults_of_tibia/movements_tar_2",
+      "destination": "canary:interaction/cults_of_tibia/movements_tar_tar_2",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -3136,7 +3141,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/dangerous_depth/creaturescripts_lost_exile_task_1",
+      "destination": "canary:interaction/dangerous_depth/creaturescripts_lost_exile_task_lost_exile_kill",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -3155,26 +3160,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/dangerous_depth/creaturescripts_lost_exile_task_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
-          "callback_line": 49,
-          "blob_sha1": "2802324b3c3faaa57fd9c514cad50a558a1c3d58"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
-          "callback_line": 49,
-          "blob_sha1": "2802324b3c3faaa57fd9c514cad50a558a1c3d58"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/dangerous_depth/creaturescripts_lost_exile_task_3",
+      "destination": "canary:interaction/dangerous_depth/creaturescripts_lost_exile_task_makeshift_kill",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -3188,6 +3174,25 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
           "callback_line": 70,
+          "blob_sha1": "2802324b3c3faaa57fd9c514cad50a558a1c3d58"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/dangerous_depth/creaturescripts_lost_exile_task_worm_kill",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
+          "callback_line": 49,
+          "blob_sha1": "2802324b3c3faaa57fd9c514cad50a558a1c3d58"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua",
+          "callback_line": 49,
           "blob_sha1": "2802324b3c3faaa57fd9c514cad50a558a1c3d58"
         }
       ]
@@ -3612,8 +3617,8 @@
     },
     {
       "destination": "canary:interaction/dawnport/movements_legion_helmet",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Player-storage check replaced with kv() scoped store for the same discovered-teleport flag.)",
       "sources": [
         {
           "source": "canary",
@@ -3820,7 +3825,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/demon_helmet/movement_walls_1",
+      "destination": "canary:interaction/demon_helmet/movement_walls_walls",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -3839,7 +3844,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/demon_helmet/movement_walls_2",
+      "destination": "canary:interaction/demon_helmet/movement_walls_walls_2",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -3991,7 +3996,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/devil_helmet/movements_sewer_1",
+      "destination": "canary:interaction/devil_helmet/movements_sewer_sewer",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -4010,7 +4015,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/devil_helmet/movements_sewer_2",
+      "destination": "canary:interaction/devil_helmet/movements_sewer_sewer_2",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -4029,7 +4034,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/draconia/action_lever_1",
+      "destination": "canary:interaction/draconia/action_lever_lever1",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -4048,7 +4053,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/draconia/action_lever_2",
+      "destination": "canary:interaction/draconia/action_lever_lever2",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -4352,7 +4357,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/dreamers_challenge_quest/movement_riddle_1",
+      "destination": "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -4371,7 +4376,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/dreamers_challenge_quest/movement_riddle_2",
+      "destination": "canary:interaction/dreamers_challenge_quest/movement_riddle_riddle_2",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -5831,8 +5836,8 @@
     },
     {
       "destination": "canary:interaction/ferumbras_ascension/movements_flower_puzzle",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Flower-tile position offsets in the puzzle table differ substantially between the two servers.)",
       "sources": [
         {
           "source": "canary",
@@ -6059,8 +6064,8 @@
     },
     {
       "destination": "canary:interaction/ferumbras_ascension/movements_vortex",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki: Boss spawns after 8 collected essences (wiki: 8 soul splinters) in canary; crystal uses 7., https://tibia.fandom.com/wiki/Ferumbras'_Ascension_Quest/Spoiler?oldid=1204031)",
       "sources": [
         {
           "source": "canary",
@@ -6161,8 +6166,8 @@
     },
     {
       "destination": "canary:interaction/forgotten_knowledge/actions_frozen_horror",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Crystal adds a per-player retry cooldown check on top of canary's global-only cooldown.)",
       "sources": [
         {
           "source": "canary",
@@ -6378,8 +6383,8 @@
     },
     {
       "destination": "canary:interaction/forgotten_knowledge/actions_time_machine",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki: Crystal deletes the Time Machine teleport entirely; wiki confirms it is a required quest step., https://tibia.fandom.com/wiki/Forgotten_Knowledge_Quest/Spoiler?oldid=1200256)",
       "sources": [
         {
           "source": "canary",
@@ -6511,8 +6516,8 @@
     },
     {
       "destination": "canary:interaction/forgotten_knowledge/creaturescripts_lloyd_preparedeath",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Crystal adds nil-safety guards around tile/creature lookups before removing and respawning.)",
       "sources": [
         {
           "source": "canary",
@@ -6682,8 +6687,8 @@
     },
     {
       "destination": "canary:interaction/forgotten_knowledge/movements_entrance_teleport",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Crystal registers 13 extra action ids on the same entrance move event; canary keeps one.)",
       "sources": [
         {
           "source": "canary",
@@ -6859,7 +6864,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/grave_danger/cobra_bastion/creaturescripts_ugly_monster_1",
+      "destination": "crystalserver:interaction/grave_danger/cobra_bastion/creaturescripts_ugly_monster_ugly_monster_cleanup",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -6872,7 +6877,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/grave_danger/cobra_bastion/creaturescripts_ugly_monster_2",
+      "destination": "crystalserver:interaction/grave_danger/cobra_bastion/creaturescripts_ugly_monster_ugly_monster_death",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -6911,7 +6916,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/grave_danger/movements_firewall_gaffir_1",
+      "destination": "crystalserver:interaction/grave_danger/movements_firewall_gaffir_gaffirwall",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -6924,7 +6929,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/grave_danger/movements_firewall_gaffir_2",
+      "destination": "crystalserver:interaction/grave_danger/movements_firewall_gaffir_gaffirwall_2",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -7002,7 +7007,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster_1",
+      "destination": "canary:interaction/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster_ugly_monster_cleanup",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -7015,7 +7020,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster_2",
+      "destination": "canary:interaction/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster_ugly_monster_death",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -7054,20 +7059,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_1",
-      "status": "unresolved_semantics",
-      "resolution": "present only in canary",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
-          "callback_line": 57,
-          "blob_sha1": "40e9bce49be6d3c888510407301bd419e1868dd5"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_2",
+      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_blood_death",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -7080,33 +7072,20 @@
       ]
     },
     {
-      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_3",
+      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_fetter_death",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
-          "callback_line": 124,
+          "callback_line": 208,
           "blob_sha1": "40e9bce49be6d3c888510407301bd419e1868dd5"
         }
       ]
     },
     {
-      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_4",
-      "status": "unresolved_semantics",
-      "resolution": "present only in canary",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
-          "callback_line": 167,
-          "blob_sha1": "40e9bce49be6d3c888510407301bd419e1868dd5"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_5",
+      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_magnor_death",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -7119,14 +7098,40 @@
       ]
     },
     {
-      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_6",
+      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_nargol_death",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
-          "callback_line": 208,
+          "callback_line": 124,
+          "blob_sha1": "40e9bce49be6d3c888510407301bd419e1868dd5"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_shard_death",
+      "status": "unresolved_semantics",
+      "resolution": "present only in canary",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+          "callback_line": 167,
+          "blob_sha1": "40e9bce49be6d3c888510407301bd419e1868dd5"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/grave_danger_quest/creaturescripts_king_zelos_zelos_init",
+      "status": "unresolved_semantics",
+      "resolution": "present only in canary",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua",
+          "callback_line": 57,
           "blob_sha1": "40e9bce49be6d3c888510407301bd419e1868dd5"
         }
       ]
@@ -7305,20 +7310,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/grimvale/conch_shell_horn_quest_1",
-      "status": "unresolved_semantics",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/grimvale/conch_shell_horn_quest.lua",
-          "callback_line": 5,
-          "blob_sha1": "f7f551828bb311c6ebdcebb1d3e22fad037595a0"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/grimvale/conch_shell_horn_quest_2",
+      "destination": "crystalserver:interaction/grimvale/conch_shell_horn_quest_conch_shell",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -7331,7 +7323,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/grimvale/conch_shell_horn_quest_3",
+      "destination": "crystalserver:interaction/grimvale/conch_shell_horn_quest_merge_conch_horn",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -7339,6 +7331,19 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/grimvale/conch_shell_horn_quest.lua",
           "callback_line": 36,
+          "blob_sha1": "f7f551828bb311c6ebdcebb1d3e22fad037595a0"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/grimvale/conch_shell_horn_quest_woodenmouthpiece",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/grimvale/conch_shell_horn_quest.lua",
+          "callback_line": 5,
           "blob_sha1": "f7f551828bb311c6ebdcebb1d3e22fad037595a0"
         }
       ]
@@ -7459,8 +7464,8 @@
     },
     {
       "destination": "canary:interaction/heart_of_destruction/actions_final_lever",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Canary spawns a nonexistent monster name; wiki confirms 'Spark of Destruction' plus a 3-column check., https://tibia.fandom.com/wiki/Heart_of_Destruction_Quest/Spoiler?oldid=1176143)",
       "sources": [
         {
           "source": "canary",
@@ -7725,8 +7730,8 @@
     },
     {
       "destination": "canary:interaction/heart_of_destruction/movements_ice_crack",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Canary places a decorative mud stain at the hole tile; crystal conjures a real hole.)",
       "sources": [
         {
           "source": "canary",
@@ -7763,8 +7768,8 @@
     },
     {
       "destination": "canary:interaction/heart_of_destruction/movements_teleport_heart",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Crystal's aid-registration loop skips the boss-access teleports, leaving several action ids unregistered.)",
       "sources": [
         {
           "source": "canary",
@@ -7800,7 +7805,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/heart_of_destruction/movements_vortex_crackler_1",
+      "destination": "canary:interaction/heart_of_destruction/movements_vortex_crackler_vortex_crackler",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -7819,7 +7824,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/heart_of_destruction/movements_vortex_crackler_2",
+      "destination": "canary:interaction/heart_of_destruction/movements_vortex_crackler_vortex_crackler_2",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -8143,8 +8148,8 @@
     },
     {
       "destination": "canary:interaction/hidden_threats/action_corym_works_doors",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Crystal hardcodes literal door action ids that equal the same storage constants canary references.)",
       "sources": [
         {
           "source": "canary",
@@ -8447,8 +8452,8 @@
     },
     {
       "destination": "canary:interaction/in_service_of_yalahar/actions_reward",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Reward-chest trigger id renumbered and message wording tweaked; same reward item and flow.)",
       "sources": [
         {
           "source": "canary",
@@ -8700,7 +8705,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_1",
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_paper",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -8713,7 +8718,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_2",
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_paper_scraps",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -8726,20 +8731,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_3",
-      "status": "mapped",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua",
-          "callback_line": 39,
-          "blob_sha1": "ff6d3950028fbc28549522fb970733698cb89ce6"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_4",
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_roof_top",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -8752,20 +8744,33 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_1",
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/2_ambassadors_treason_scrolls",
+      "status": "mapped",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/kilmaresh/1-fafnars-wrath/2-ambassadors-treason.lua",
+          "callback_line": 39,
+          "blob_sha1": "ff6d3950028fbc28549522fb970733698cb89ce6"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_energy_field",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua",
-          "callback_line": 21,
+          "callback_line": 117,
           "blob_sha1": "cc0d24c72817e14e8c9fd5fe973fd06fb0509196"
         }
       ]
     },
     {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_2",
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_left_mirror",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -8778,20 +8783,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_3",
-      "status": "mapped",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua",
-          "callback_line": 62,
-          "blob_sha1": "cc0d24c72817e14e8c9fd5fe973fd06fb0509196"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_4",
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_memory_shards",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -8804,14 +8796,27 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_5",
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_potion",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua",
-          "callback_line": 117,
+          "callback_line": 21,
+          "blob_sha1": "cc0d24c72817e14e8c9fd5fe973fd06fb0509196"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/kilmaresh/1_fafnars_wrath/6_mind_travel_right_mirror",
+      "status": "mapped",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/kilmaresh/1-fafnars-wrath/6-mind-travel.lua",
+          "callback_line": 62,
           "blob_sha1": "cc0d24c72817e14e8c9fd5fe973fd06fb0509196"
         }
       ]
@@ -9155,7 +9160,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_1",
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_paper",
       "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
@@ -9168,7 +9173,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_2",
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_paper_scraps",
       "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
@@ -9181,20 +9186,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_3",
-      "status": "mapped",
-      "resolution": "present only in canary",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/2-ambassadors-treason.lua",
-          "callback_line": 39,
-          "blob_sha1": "daf7dfb8f4f4131997e8088278a738413a31d796"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_4",
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_roof_top",
       "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
@@ -9207,20 +9199,33 @@
       ]
     },
     {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_1",
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/2_ambassadors_treason_scrolls",
+      "status": "mapped",
+      "resolution": "present only in canary",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/2-ambassadors-treason.lua",
+          "callback_line": 39,
+          "blob_sha1": "daf7dfb8f4f4131997e8088278a738413a31d796"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_energy_field",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/6-mind-travel.lua",
-          "callback_line": 21,
+          "callback_line": 117,
           "blob_sha1": "d36288eca7992c1c66cf45adea191a332fba5223"
         }
       ]
     },
     {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_2",
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_left_mirror",
       "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
@@ -9233,20 +9238,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_3",
-      "status": "mapped",
-      "resolution": "present only in canary",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/6-mind-travel.lua",
-          "callback_line": 62,
-          "blob_sha1": "d36288eca7992c1c66cf45adea191a332fba5223"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_4",
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_memory_shards",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -9259,14 +9251,27 @@
       ]
     },
     {
-      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_5",
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_potion",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/6-mind-travel.lua",
-          "callback_line": 117,
+          "callback_line": 21,
+          "blob_sha1": "d36288eca7992c1c66cf45adea191a332fba5223"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/kilmaresh_quest/1_fafnars_wrath/6_mind_travel_right_mirror",
+      "status": "mapped",
+      "resolution": "present only in canary",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/kilmaresh_quest/1-fafnars-wrath/6-mind-travel.lua",
+          "callback_line": 62,
           "blob_sha1": "d36288eca7992c1c66cf45adea191a332fba5223"
         }
       ]
@@ -9617,8 +9622,8 @@
     },
     {
       "destination": "canary:interaction/koshei_the_deathless_quest/action_boss",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for canary (wiki: Crystal drops the AmuletStatus==2 check; wiki's 'glad you didn't use it' line implies it matters., https://tibia.fandom.com/wiki/Koshei_the_Deathless_Quest/Spoiler?oldid=1037072)",
       "sources": [
         {
           "source": "canary",
@@ -9673,45 +9678,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/lions_rock/actions_lions_rock_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/lions_rock/actions_lions_rock.lua",
-          "callback_line": 44,
-          "blob_sha1": "fcadada99397adda381717385c5d89cc82fb9ae4"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/lions_rock/actions_lions_rock.lua",
-          "callback_line": 44,
-          "blob_sha1": "76109691eb6bf60e763abfe9b1606c55034b6d3f"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/lions_rock/actions_lions_rock_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/lions_rock/actions_lions_rock.lua",
-          "callback_line": 83,
-          "blob_sha1": "fcadada99397adda381717385c5d89cc82fb9ae4"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/lions_rock/actions_lions_rock.lua",
-          "callback_line": 83,
-          "blob_sha1": "76109691eb6bf60e763abfe9b1606c55034b6d3f"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/lions_rock/actions_lions_rock_3",
+      "destination": "canary:interaction/lions_rock/actions_lions_rock_lions_get_holy_water",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -9730,9 +9697,28 @@
       ]
     },
     {
-      "destination": "canary:interaction/lions_rock/actions_lions_rock_4",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "destination": "canary:interaction/lions_rock/actions_lions_rock_lions_get_lions_mane",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/lions_rock/actions_lions_rock.lua",
+          "callback_line": 83,
+          "blob_sha1": "fcadada99397adda381717385c5d89cc82fb9ae4"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/lions_rock/actions_lions_rock.lua",
+          "callback_line": 83,
+          "blob_sha1": "76109691eb6bf60e763abfe9b1606c55034b6d3f"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/lions_rock/actions_lions_rock_lions_rock_fountain",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Crystal guards addAchievement with a hasAchievement check to avoid granting it twice.)",
       "sources": [
         {
           "source": "canary",
@@ -9749,7 +9735,26 @@
       ]
     },
     {
-      "destination": "canary:interaction/lions_rock/movements_lions_rock_1",
+      "destination": "canary:interaction/lions_rock/actions_lions_rock_lions_rock_sacrifices_test",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/lions_rock/actions_lions_rock.lua",
+          "callback_line": 44,
+          "blob_sha1": "fcadada99397adda381717385c5d89cc82fb9ae4"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/lions_rock/actions_lions_rock.lua",
+          "callback_line": 44,
+          "blob_sha1": "76109691eb6bf60e763abfe9b1606c55034b6d3f"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_entrance",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -9768,45 +9773,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/lions_rock/movements_lions_rock_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/lions_rock/movements_lions_rock.lua",
-          "callback_line": 66,
-          "blob_sha1": "b3c0238d32d798969a3d2133968d461afb4ef74e"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/lions_rock/movements_lions_rock.lua",
-          "callback_line": 66,
-          "blob_sha1": "47a3973d00e08437c9af5d6555a6bc629d5423bf"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/lions_rock/movements_lions_rock_3",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/lions_rock/movements_lions_rock.lua",
-          "callback_line": 104,
-          "blob_sha1": "b3c0238d32d798969a3d2133968d461afb4ef74e"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/lions_rock/movements_lions_rock.lua",
-          "callback_line": 104,
-          "blob_sha1": "47a3973d00e08437c9af5d6555a6bc629d5423bf"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/lions_rock/movements_lions_rock_4",
+      "destination": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_message",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -9820,6 +9787,44 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/lions_rock/movements_lions_rock.lua",
           "callback_line": 131,
+          "blob_sha1": "47a3973d00e08437c9af5d6555a6bc629d5423bf"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_signs",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/lions_rock/movements_lions_rock.lua",
+          "callback_line": 104,
+          "blob_sha1": "b3c0238d32d798969a3d2133968d461afb4ef74e"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/lions_rock/movements_lions_rock.lua",
+          "callback_line": 104,
+          "blob_sha1": "47a3973d00e08437c9af5d6555a6bc629d5423bf"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/lions_rock/movements_lions_rock_lions_rock_translation_scroll",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/lions_rock/movements_lions_rock.lua",
+          "callback_line": 66,
+          "blob_sha1": "b3c0238d32d798969a3d2133968d461afb4ef74e"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/lions_rock/movements_lions_rock.lua",
+          "callback_line": 66,
           "blob_sha1": "47a3973d00e08437c9af5d6555a6bc629d5423bf"
         }
       ]
@@ -9958,26 +9963,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/marapur/actions_boss_timira_fight_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
-          "callback_line": 299,
-          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
-          "callback_line": 299,
-          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/marapur/actions_boss_timira_fight_2",
+      "destination": "canary:interaction/marapur/actions_boss_timira_fight_corrupted_water",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -9996,7 +9982,26 @@
       ]
     },
     {
-      "destination": "canary:interaction/marapur/actions_boss_timira_fight_3",
+      "destination": "canary:interaction/marapur/actions_boss_timira_fight_timira_bucket",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "callback_line": 299,
+          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/marapur/actions_boss_timira_fight.lua",
+          "callback_line": 299,
+          "blob_sha1": "dacd862aa244562f198999877b29c0d88791291b"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/marapur/actions_boss_timira_fight_timira_chest",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -10240,7 +10245,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/oramond/probing/actions_mono_detector_strange_probing_device_1",
+      "destination": "canary:interaction/oramond/probing/actions_mono_detector_strange_probing_device_actions_mono_detector",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -10259,7 +10264,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/oramond/probing/actions_mono_detector_strange_probing_device_2",
+      "destination": "canary:interaction/oramond/probing/actions_mono_detector_strange_probing_device_actions_strange_probing_device",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -10412,8 +10417,8 @@
     },
     {
       "destination": "canary:interaction/others/actions_fire_bug",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Canary is missing the entire Blood Brothers Boreth/Twines encounter that crystal implements, matching the wiki., https://tibia.fandom.com/wiki/Blood_Brothers_Quest/Spoiler?oldid=1132612)",
       "sources": [
         {
           "source": "canary",
@@ -10469,8 +10474,8 @@
     },
     {
       "destination": "canary:interaction/others/actions_holy_water",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Crystal drops the eclipse-cauldron item/questline validation, firing on ~147 unrelated actionid-2000 tiles.)",
       "sources": [
         {
           "source": "canary",
@@ -10582,7 +10587,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_1",
+      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_charged_flame_action",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -10601,45 +10606,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
-          "callback_line": 239,
-          "blob_sha1": "35b9728bd691b47235944f5f6295d259204d569a"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
-          "callback_line": 239,
-          "blob_sha1": "93eaaf18b233376c065649e78152dfb3590db279"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_3",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
-          "callback_line": 272,
-          "blob_sha1": "35b9728bd691b47235944f5f6295d259204d569a"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
-          "callback_line": 272,
-          "blob_sha1": "93eaaf18b233376c065649e78152dfb3590db279"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_4",
+      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_end_of_days_death",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -10658,7 +10625,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_5",
+      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_magma_bubble_death",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -10672,6 +10639,44 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
           "callback_line": 294,
+          "blob_sha1": "93eaaf18b233376c065649e78152dfb3590db279"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_magma_crystal_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
+          "callback_line": 272,
+          "blob_sha1": "35b9728bd691b47235944f5f6295d259204d569a"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
+          "callback_line": 272,
+          "blob_sha1": "93eaaf18b233376c065649e78152dfb3590db279"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/primal_ordeal_quest/magma_bubble_fight_shield_field",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
+          "callback_line": 239,
+          "blob_sha1": "35b9728bd691b47235944f5f6295d259204d569a"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/primal_ordeal_quest/magma_bubble_fight.lua",
+          "callback_line": 239,
           "blob_sha1": "93eaaf18b233376c065649e78152dfb3590db279"
         }
       ]
@@ -10956,26 +10961,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/roshamuul_quest/movements_lower_roshamuul_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/roshamuul_quest/movements_lower_roshamuul.lua",
-          "callback_line": 3,
-          "blob_sha1": "3f1128436426067ad7d4a4806ea25f01c0e81835"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/roshamuul_quest/movements_lower_roshamuul.lua",
-          "callback_line": 3,
-          "blob_sha1": "3f1128436426067ad7d4a4806ea25f01c0e81835"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/roshamuul_quest/movements_lower_roshamuul_2",
+      "destination": "canary:interaction/roshamuul_quest/movements_lower_roshamuul_lower_roshamuul1500",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -10994,20 +10980,26 @@
       ]
     },
     {
-      "destination": "canary:interaction/rotten_blood_quest/actions_entrances_1",
+      "destination": "canary:interaction/roshamuul_quest/movements_lower_roshamuul_lower_roshamuul20122",
       "status": "unresolved_semantics",
-      "resolution": "present only in canary",
+      "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/rotten_blood_quest/actions_entrances.lua",
-          "callback_line": 23,
-          "blob_sha1": "c09e9a8a1ce9ca7d2efe1010417c4e6d119d5198"
+          "path": "data-otservbr-global/scripts/quests/roshamuul_quest/movements_lower_roshamuul.lua",
+          "callback_line": 3,
+          "blob_sha1": "3f1128436426067ad7d4a4806ea25f01c0e81835"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/roshamuul_quest/movements_lower_roshamuul.lua",
+          "callback_line": 3,
+          "blob_sha1": "3f1128436426067ad7d4a4806ea25f01c0e81835"
         }
       ]
     },
     {
-      "destination": "canary:interaction/rotten_blood_quest/actions_entrances_2",
+      "destination": "canary:interaction/rotten_blood_quest/actions_entrances_bakragore_entrance",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -11020,33 +11012,20 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_1",
-      "status": "mapped",
-      "resolution": "present only in crystalserver",
+      "destination": "canary:interaction/rotten_blood_quest/actions_entrances_teleport_event",
+      "status": "unresolved_semantics",
+      "resolution": "present only in canary",
       "sources": [
         {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua",
-          "callback_line": 2,
-          "blob_sha1": "f5e5541fc954df8d376425c630fb9b28459cd159"
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/rotten_blood_quest/actions_entrances.lua",
+          "callback_line": 23,
+          "blob_sha1": "c09e9a8a1ce9ca7d2efe1010417c4e6d119d5198"
         }
       ]
     },
     {
-      "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_2",
-      "status": "mapped",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua",
-          "callback_line": 18,
-          "blob_sha1": "f5e5541fc954df8d376425c630fb9b28459cd159"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_3",
+      "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_enter_lever_ichgahal",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11059,7 +11038,33 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_4",
+      "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_enter_putrefactory",
+      "status": "mapped",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua",
+          "callback_line": 2,
+          "blob_sha1": "f5e5541fc954df8d376425c630fb9b28459cd159"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_exit_putrefactory",
+      "status": "mapped",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua",
+          "callback_line": 18,
+          "blob_sha1": "f5e5541fc954df8d376425c630fb9b28459cd159"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/rotten_blood_quest/actions_putrefactory_exit_putrefactory_lever",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11130,20 +11135,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/rotten_blood_quest/creaturescripts_bosses_killed_1",
-      "status": "unresolved_semantics",
-      "resolution": "present only in canary",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua",
-          "callback_line": 2,
-          "blob_sha1": "2bb1fa3d53c29f15df5e0267c109ea8abb75c797"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/rotten_blood_quest/creaturescripts_bosses_killed_2",
+      "destination": "canary:interaction/rotten_blood_quest/creaturescripts_bosses_killed_bakragore_on_death",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -11151,6 +11143,19 @@
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua",
           "callback_line": 26,
+          "blob_sha1": "2bb1fa3d53c29f15df5e0267c109ea8abb75c797"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/rotten_blood_quest/creaturescripts_bosses_killed_bosses_rotten_blood",
+      "status": "unresolved_semantics",
+      "resolution": "present only in canary",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/rotten_blood_quest/creaturescripts_bosses_killed.lua",
+          "callback_line": 2,
           "blob_sha1": "2bb1fa3d53c29f15df5e0267c109ea8abb75c797"
         }
       ]
@@ -11195,7 +11200,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/rotten_blood_quest/movements_blood_entrance_1",
+      "destination": "canary:interaction/rotten_blood_quest/movements_blood_entrance_access_blood",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -11214,7 +11219,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/rotten_blood_quest/movements_blood_entrance_2",
+      "destination": "canary:interaction/rotten_blood_quest/movements_blood_entrance_leave_blood",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -11233,20 +11238,20 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/rotten_blood_quest/movements_fields_1",
+      "destination": "crystalserver:interaction/rotten_blood_quest/movements_fields_create_spore",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/rotten_blood_quest/movements_fields.lua",
-          "callback_line": 3,
+          "callback_line": 52,
           "blob_sha1": "6d98dcd5ef22a2a01ee4a8ec0c5571d44b0b8e0c"
         }
       ]
     },
     {
-      "destination": "crystalserver:interaction/rotten_blood_quest/movements_fields_2",
+      "destination": "crystalserver:interaction/rotten_blood_quest/movements_fields_funghi_field",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11259,14 +11264,14 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/rotten_blood_quest/movements_fields_3",
+      "destination": "crystalserver:interaction/rotten_blood_quest/movements_fields_spore_field",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/rotten_blood_quest/movements_fields.lua",
-          "callback_line": 52,
+          "callback_line": 3,
           "blob_sha1": "6d98dcd5ef22a2a01ee4a8ec0c5571d44b0b8e0c"
         }
       ]
@@ -11325,8 +11330,8 @@
     },
     {
       "destination": "canary:interaction/rottin_wood_and_married_men/actions_corpse",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Wiki requires looting all 5 captured merchants; canary's corpse counter stops one short at 4., https://tibia.fandom.com/wiki/Rottin_Wood_and_the_Married_Men_Quest/Spoiler?oldid=928967)",
       "sources": [
         {
           "source": "canary",
@@ -11344,8 +11349,8 @@
     },
     {
       "destination": "canary:interaction/rottin_wood_and_married_men/actions_trap",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Wiki requires 5 nets; canary stops at 4, crystal allows 5 but oversummons the merchants., https://tibia.fandom.com/wiki/Rottin_Wood_and_the_Married_Men_Quest/Spoiler?oldid=928967)",
       "sources": [
         {
           "source": "canary",
@@ -11375,26 +11380,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/sea_of_light/actions_sea_of_light_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/sea_of_light/actions_sea_of_light.lua",
-          "callback_line": 4,
-          "blob_sha1": "0e08b95fa43f6bc2e7ca2dc053a0a3011133594a"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/sea_of_light/actions_sea_of_light.lua",
-          "callback_line": 4,
-          "blob_sha1": "0e08b95fa43f6bc2e7ca2dc053a0a3011133594a"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/sea_of_light/actions_sea_of_light_2",
+      "destination": "canary:interaction/sea_of_light/actions_sea_of_light_collector_corpse",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -11408,6 +11394,25 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/sea_of_light/actions_sea_of_light.lua",
           "callback_line": 26,
+          "blob_sha1": "0e08b95fa43f6bc2e7ca2dc053a0a3011133594a"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/sea_of_light/actions_sea_of_light_rare_crystal",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/sea_of_light/actions_sea_of_light.lua",
+          "callback_line": 4,
+          "blob_sha1": "0e08b95fa43f6bc2e7ca2dc053a0a3011133594a"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/sea_of_light/actions_sea_of_light.lua",
+          "callback_line": 4,
           "blob_sha1": "0e08b95fa43f6bc2e7ca2dc053a0a3011133594a"
         }
       ]
@@ -11578,20 +11583,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission02_1",
-      "status": "unresolved_semantics",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua",
-          "callback_line": 62,
-          "blob_sha1": "d7a373a0b6d85e348b173a80ad9071fb1cefc15f"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission02_2",
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission02_yalahar_core_dispenser",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11604,7 +11596,33 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_1",
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission02_yalahar_telescope",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua",
+          "callback_line": 62,
+          "blob_sha1": "d7a373a0b6d85e348b173a80ad9071fb1cefc15f"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_headache_pill",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua",
+          "callback_line": 95,
+          "blob_sha1": "8bdceb8592f4a471420ed987344240278718c33c"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_yalahari_folio",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11617,7 +11635,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_2",
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_yalahari_inkwell",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11625,19 +11643,6 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua",
           "callback_line": 68,
-          "blob_sha1": "8bdceb8592f4a471420ed987344240278718c33c"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission09_3",
-      "status": "unresolved_semantics",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua",
-          "callback_line": 95,
           "blob_sha1": "8bdceb8592f4a471420ed987344240278718c33c"
         }
       ]
@@ -11656,7 +11661,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission12_1",
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission12_action",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11669,7 +11674,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission12_2",
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/actions_mission12_elevator_fenrock",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11721,7 +11726,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/movements_mission12_1",
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/movements_mission12_fenrock_teleport",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11734,7 +11739,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/movements_mission12_2",
+      "destination": "crystalserver:interaction/shadows_of_yalahar_quest/movements_mission12_mission12_drunk_floor",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -11767,8 +11772,8 @@
     },
     {
       "destination": "canary:interaction/soul_war/moveevent_claustrophobic_inferno_raid",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Canary only spawns Brachiodemon; wiki also lists Infernal Demon and Infernal Phantom, which crystal adds., https://tibia.fandom.com/wiki/Claustrophobic_Inferno?oldid=1117102)",
       "sources": [
         {
           "source": "canary",
@@ -11785,45 +11790,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/moveevent_soul_war_entrances_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
-          "callback_line": 12,
-          "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
-          "callback_line": 12,
-          "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/moveevent_soul_war_entrances_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
-          "callback_line": 54,
-          "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
-          "callback_line": 54,
-          "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/moveevent_soul_war_entrances_3",
+      "destination": "canary:interaction/soul_war/moveevent_soul_war_entrances_claustrophobic_inferno_teleports",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -11842,7 +11809,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/moveevent_soul_war_entrances_4",
+      "destination": "canary:interaction/soul_war/moveevent_soul_war_entrances_goshnar_spite_entrance",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -11856,6 +11823,44 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
           "callback_line": 122,
+          "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/moveevent_soul_war_entrances_soul_war_entrances",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
+          "callback_line": 12,
+          "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
+          "callback_line": 12,
+          "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/moveevent_soul_war_entrances_soul_war_megalomania_entrance",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
+          "callback_line": 54,
+          "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/moveevent-soul_war_entrances.lua",
+          "callback_line": 54,
           "blob_sha1": "0d2bd4fffec696a98011a1208a6fd893ea9c1e11"
         }
       ]
@@ -11880,419 +11885,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 55,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 59,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_10",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 348,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 340,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_11",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 414,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 370,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_12",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 462,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 436,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_13",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 484,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 484,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_14",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 510,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 506,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_15",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 539,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 532,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_16",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 557,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 561,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_17",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 652,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 579,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_18",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 703,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 674,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_19",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 751,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 725,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 67,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 71,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_20",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 809,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 773,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_21",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 840,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 831,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_22",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 893,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 862,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_23",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 922,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 915,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_24",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 946,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 944,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_25",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 994,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 968,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_26",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 1011,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 1016,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_27",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 1029,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 1033,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_28",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 1046,
-          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 1051,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/soul_war/soul_war_mechanics_29",
-      "status": "unresolved_semantics",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 1068,
-          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_3",
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_bosses_death",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -12311,45 +11904,102 @@
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_4",
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_cleansed_sanity",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 122,
+          "callback_line": 946,
           "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 124,
+          "callback_line": 968,
           "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
         }
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_5",
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_condensed_remorse",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 142,
+          "callback_line": 652,
           "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 144,
+          "callback_line": 674,
           "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
         }
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_6",
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_ebb_and_flow_boat_teleports",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 462,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 484,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_ebb_and_flow_door",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 484,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 506,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_fourth_taint_bosses_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 67,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 71,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_goshnar_greed_entrance",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -12368,7 +12018,83 @@
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_7",
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_goshnar_greed_teleport",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 253,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 270,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_goshnar_spite_soul_fire",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 414,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 436,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_goshnars_hatred_access",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 539,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 561,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_goshnars_hatred_sorrow",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 557,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 579,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_greed_monster_death",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -12387,28 +12113,28 @@
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_8",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_greedy_maw",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 253,
+          "callback_line": 840,
           "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 213,
+          "callback_line": 862,
           "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
         }
       ]
     },
     {
-      "destination": "canary:interaction/soul_war/soul_war_mechanics_9",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_hazardous_phantom_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
@@ -12419,7 +12145,286 @@
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
-          "callback_line": 270,
+          "callback_line": 340,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_madness_reduce",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 922,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 944,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_megalomania_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 1029,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 1051,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_mirror_image_creation",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 122,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 124,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_mirrored_nightmare_apparition_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 142,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 144,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_necromantic_focus_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 1011,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 1033,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_necromantic_remains_reduce",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 994,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 1016,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_pulsating_energy",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 703,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 725,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_pulsating_energy_teleport_access",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 751,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 773,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_rotten_wasteland_shrines",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 510,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 532,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_soul_cage_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 55,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 59,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/soul_war/soul_war_mechanics_soul_sphere_death",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 213,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_soul_war_aspect_of_power_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 893,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 915,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_teleport_step_remove_icon",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 1046,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 1068,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_the_blood_of_cloak_step",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 809,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 831,
+          "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/soul_war/soul_war_mechanics_weeping_soul_corpse",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 348,
+          "blob_sha1": "f80094d2692dabd8f1737764b21126cea97606ba"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/soul_war/soul_war_mechanics.lua",
+          "callback_line": 370,
           "blob_sha1": "51d42e7e970a2f24fc8438a833aacac2c061dfc2"
         }
       ]
@@ -12877,20 +12882,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/targuna/movements_aragonia_1",
-      "status": "mapped",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/targuna/movements_aragonia.lua",
-          "callback_line": 10,
-          "blob_sha1": "d5e04b5ed70b15d7db0346eccbb4819f1298aca6"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/targuna/movements_aragonia_2",
+      "destination": "crystalserver:interaction/targuna/movements_aragonia_matilda_return",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -12903,20 +12895,33 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/targuna/movements_crimson_court_1",
+      "destination": "crystalserver:interaction/targuna/movements_aragonia_matilda_travel",
+      "status": "mapped",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/targuna/movements_aragonia.lua",
+          "callback_line": 10,
+          "blob_sha1": "d5e04b5ed70b15d7db0346eccbb4819f1298aca6"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/targuna/movements_crimson_court_boss_room_exit",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/targuna/movements_crimson_court.lua",
-          "callback_line": 29,
+          "callback_line": 91,
           "blob_sha1": "fb83cb3cb4e9219aa43f938f428b358490d7eede"
         }
       ]
     },
     {
-      "destination": "crystalserver:interaction/targuna/movements_crimson_court_2",
+      "destination": "crystalserver:interaction/targuna/movements_crimson_court_energy_portal",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -12929,7 +12934,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/targuna/movements_crimson_court_3",
+      "destination": "crystalserver:interaction/targuna/movements_crimson_court_inner_tp",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -12942,14 +12947,14 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/targuna/movements_crimson_court_4",
+      "destination": "crystalserver:interaction/targuna/movements_crimson_court_mv",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/targuna/movements_crimson_court.lua",
-          "callback_line": 91,
+          "callback_line": 29,
           "blob_sha1": "fb83cb3cb4e9219aa43f938f428b358490d7eede"
         }
       ]
@@ -13026,7 +13031,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/thais_lighthouse/movement_stair_1",
+      "destination": "canary:interaction/thais_lighthouse/movement_stair_stair",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -13045,7 +13050,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/thais_lighthouse/movement_stair_2",
+      "destination": "canary:interaction/thais_lighthouse/movement_stair_stair_2",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -13084,8 +13089,8 @@
     },
     {
       "destination": "canary:interaction/the_ancient_tombs/action_morguthis_wall",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Action var renamed and registered by aid instead of two hardcoded positions; same wall tile.)",
       "sources": [
         {
           "source": "canary",
@@ -13103,8 +13108,8 @@
     },
     {
       "destination": "canary:interaction/the_ancient_tombs/actions_active_teleport_switches",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Switch counter is per-player in canary, shared in crystal; wiki describes a coordinated team., https://tibia.fandom.com/wiki/The_Ancient_Tombs_Quest/Spoiler?oldid=1174796)",
       "sources": [
         {
           "source": "canary",
@@ -13255,8 +13260,8 @@
     },
     {
       "destination": "canary:interaction/the_ancient_tombs/movements_enter_diprath_teleport_switche_done",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Entry check reads the per-player counter in canary vs the shared global one in crystal., https://tibia.fandom.com/wiki/The_Ancient_Tombs_Quest/Spoiler?oldid=1174796)",
       "sources": [
         {
           "source": "canary",
@@ -13407,8 +13412,8 @@
     },
     {
       "destination": "canary:interaction/the_ancient_tombs/movements_enter_thalas_teleport_switches_done",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Same per-player vs global switch split as Dipthrah; wiki's Thalas puzzle needs a coordinated team., https://tibia.fandom.com/wiki/The_Ancient_Tombs_Quest/Spoiler?oldid=1174796)",
       "sources": [
         {
           "source": "canary",
@@ -13590,39 +13595,39 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_ape_city/actions_mission9_catacombs_lever_1",
+      "destination": "canary:interaction/the_ape_city/actions_mission9_catacombs_lever_gate",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua",
-          "callback_line": 25,
+          "callback_line": 51,
           "blob_sha1": "b1674b723db4adc15537e677cc94bcb4a9806ef8"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua",
-          "callback_line": 25,
+          "callback_line": 51,
           "blob_sha1": "b1674b723db4adc15537e677cc94bcb4a9806ef8"
         }
       ]
     },
     {
-      "destination": "canary:interaction/the_ape_city/actions_mission9_catacombs_lever_2",
+      "destination": "canary:interaction/the_ape_city/actions_mission9_catacombs_lever_lever",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua",
-          "callback_line": 51,
+          "callback_line": 25,
           "blob_sha1": "b1674b723db4adc15537e677cc94bcb4a9806ef8"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_ape_city/actions_mission9_catacombs_lever.lua",
-          "callback_line": 51,
+          "callback_line": 25,
           "blob_sha1": "b1674b723db4adc15537e677cc94bcb4a9806ef8"
         }
       ]
@@ -13667,8 +13672,8 @@
     },
     {
       "destination": "canary:interaction/the_cursed_crystal/actions_medusa_oil",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for crystalserver (wiki: Canary never implements the Prepared Bucket recipe that Thornfire firefighting requires; crystal adds it., https://tibia.fandom.com/wiki/Thornfire_World_Change/Spoiler?oldid=1020842)",
       "sources": [
         {
           "source": "canary",
@@ -13685,7 +13690,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_cursed_crystal/actions_misc_1",
+      "destination": "canary:interaction/the_cursed_crystal/actions_misc_cursed_misc_item",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -13704,7 +13709,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_cursed_crystal/actions_misc_2",
+      "destination": "canary:interaction/the_cursed_crystal/actions_misc_the_cursed_misc_action",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -15737,7 +15742,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_hidden_city_of_beregar/moviments_bellow_1",
+      "destination": "canary:interaction/the_hidden_city_of_beregar/moviments_bellow_bellow",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -15756,7 +15761,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_hidden_city_of_beregar/moviments_bellow_2",
+      "destination": "canary:interaction/the_hidden_city_of_beregar/moviments_bellow_bellow_2",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -15889,7 +15894,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_hunt_for_the_sea_serpent/actions_bait_1",
+      "destination": "canary:interaction/the_hunt_for_the_sea_serpent/actions_bait_bait",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -15908,7 +15913,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_hunt_for_the_sea_serpent/actions_bait_2",
+      "destination": "canary:interaction/the_hunt_for_the_sea_serpent/actions_bait_telescope",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -16232,8 +16237,8 @@
     },
     {
       "destination": "canary:interaction/the_inquisition_quest/movements_reward_room_text",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Sentinel storage value changed from 1 to 2 for the same one-time room text.)",
       "sources": [
         {
           "source": "canary",
@@ -16690,7 +16695,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_order_of_lion/action_elevator_1",
+      "destination": "canary:interaction/the_order_of_lion/action_elevator_elevator_bounac_action",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -16703,7 +16708,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_order_of_lion/action_elevator_2",
+      "destination": "canary:interaction/the_order_of_lion/action_elevator_elevator_bounac_move_event",
       "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
@@ -16716,7 +16721,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_order_of_lion/creatureevent_commander_kills_1",
+      "destination": "canary:interaction/the_order_of_lion/creatureevent_commander_kills_lion_commander_death",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -16729,7 +16734,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_order_of_lion/creatureevent_commander_kills_2",
+      "destination": "canary:interaction/the_order_of_lion/creatureevent_commander_kills_usurper_commander_death",
       "status": "unresolved_semantics",
       "resolution": "present only in canary",
       "sources": [
@@ -16794,7 +16799,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/the_order_of_lion_quest/creaturescripts_commander_kills_1",
+      "destination": "crystalserver:interaction/the_order_of_lion_quest/creaturescripts_commander_kills_lion_commander_death",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -16807,7 +16812,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/the_order_of_lion_quest/creaturescripts_commander_kills_2",
+      "destination": "crystalserver:interaction/the_order_of_lion_quest/creaturescripts_commander_kills_usurper_commander_death",
       "status": "unresolved_semantics",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -16898,20 +16903,7 @@
       ]
     },
     {
-      "destination": "crystalserver:interaction/the_order_of_lion_quest/moveevent_elevator_1",
-      "status": "mapped",
-      "resolution": "present only in crystalserver",
-      "sources": [
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua",
-          "callback_line": 2,
-          "blob_sha1": "d94ea55f4cbc1345a6a49e71982b9ad9756b6858"
-        }
-      ]
-    },
-    {
-      "destination": "crystalserver:interaction/the_order_of_lion_quest/moveevent_elevator_2",
+      "destination": "crystalserver:interaction/the_order_of_lion_quest/moveevent_elevator_elevator_bounac_down",
       "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
@@ -16919,6 +16911,19 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua",
           "callback_line": 21,
+          "blob_sha1": "d94ea55f4cbc1345a6a49e71982b9ad9756b6858"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/the_order_of_lion_quest/moveevent_elevator_elevator_bounac_up",
+      "status": "mapped",
+      "resolution": "present only in crystalserver",
+      "sources": [
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_order_of_lion_quest/moveevent_elevator.lua",
+          "callback_line": 2,
           "blob_sha1": "d94ea55f4cbc1345a6a49e71982b9ad9756b6858"
         }
       ]
@@ -17203,7 +17208,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_paradox_tower/movement_third_floor_ghoul_1",
+      "destination": "canary:interaction/the_paradox_tower/movement_third_floor_ghoul_third_floor_ghoul",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -17222,7 +17227,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_paradox_tower/movement_third_floor_ghoul_2",
+      "destination": "canary:interaction/the_paradox_tower/movement_third_floor_ghoul_third_floor_ghoul_2",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -17470,8 +17475,8 @@
     },
     {
       "destination": "canary:interaction/the_pits_of_inferno_quest/actions_walls",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Lever-to-firewall matching refactored from position lookup to item-uid lookup; same 5 walls.)",
       "sources": [
         {
           "source": "canary",
@@ -17526,7 +17531,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_pits_of_inferno_quest/movements_drawbridge_1",
+      "destination": "canary:interaction/the_pits_of_inferno_quest/movements_drawbridge_drawbridge",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -17545,7 +17550,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_pits_of_inferno_quest/movements_drawbridge_2",
+      "destination": "canary:interaction/the_pits_of_inferno_quest/movements_drawbridge_drawbridge_2",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -17602,7 +17607,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_pits_of_inferno_quest/movements_ladder_1",
+      "destination": "canary:interaction/the_pits_of_inferno_quest/movements_ladder_ladder",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -17621,7 +17626,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_pits_of_inferno_quest/movements_ladder_2",
+      "destination": "canary:interaction/the_pits_of_inferno_quest/movements_ladder_ladder_2",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -17869,8 +17874,8 @@
     },
     {
       "destination": "canary:interaction/the_queen_of_the_banshees/action_1_first_seal_lever",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Canary checks lever item ids absent from items.xml for uid 30012; CrystalServer uses plain lever ids.)",
       "sources": [
         {
           "source": "canary",
@@ -17925,9 +17930,9 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_1",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "destination": "canary:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_first_seal_close_mw",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki: Crystal relocates the hidden trigger tile far from the wiki spot, delays wall closing., https://tibia.fandom.com/wiki/The_Queen_of_the_Banshees_Quest/Spoiler?oldid=1057212)",
       "sources": [
         {
           "source": "canary",
@@ -17944,16 +17949,36 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_2",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "destination": "canary:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_first_seal_close_mw_2",
+      "status": "unresolved_semantics",
+      "resolution": "present only in canary",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_close_mw.lua",
           "callback_line": 23,
           "blob_sha1": "a20d9d3fe8787be9519560c0a9a34b5f75deea4b"
-        },
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_first_seal_close_mw_3",
+      "status": "mapped",
+      "resolution": "present only in canary",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_close_mw.lua",
+          "callback_line": 42,
+          "blob_sha1": "a20d9d3fe8787be9519560c0a9a34b5f75deea4b"
+        }
+      ]
+    },
+    {
+      "destination": "crystalserver:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_second_seal_close_mw",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
+      "sources": [
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_close_mw.lua",
@@ -17963,16 +17988,10 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_3",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "destination": "crystalserver:interaction/the_queen_of_the_banshees/movement_1_first_seal_close_mw_third_seal_close_mw",
+      "status": "unresolved_semantics",
+      "resolution": "present only in crystalserver",
       "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_close_mw.lua",
-          "callback_line": 42,
-          "blob_sha1": "a20d9d3fe8787be9519560c0a9a34b5f75deea4b"
-        },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_queen_of_the_banshees/movement-1-first_seal_close_mw.lua",
@@ -18210,7 +18229,26 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission02_defence_1",
+      "destination": "canary:interaction/the_rookie_guard/mission02_defence_heavy_stone",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission02_defence.lua",
+          "callback_line": 122,
+          "blob_sha1": "733121e1a837a766964b25e5cdf8234aab70de45"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission02_defence.lua",
+          "callback_line": 122,
+          "blob_sha1": "733121e1a837a766964b25e5cdf8234aab70de45"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission02_defence_mission_guide",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18229,7 +18267,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission02_defence_2",
+      "destination": "canary:interaction/the_rookie_guard/mission02_defence_stone_pile",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18243,25 +18281,6 @@
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_rookie_guard/mission02_defence.lua",
           "callback_line": 85,
-          "blob_sha1": "733121e1a837a766964b25e5cdf8234aab70de45"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission02_defence_3",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission02_defence.lua",
-          "callback_line": 122,
-          "blob_sha1": "733121e1a837a766964b25e5cdf8234aab70de45"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission02_defence.lua",
-          "callback_line": 122,
           "blob_sha1": "733121e1a837a766964b25e5cdf8234aab70de45"
         }
       ]
@@ -18305,45 +18324,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua",
-          "callback_line": 31,
-          "blob_sha1": "06fcf61aafdc8f500723f026525b54dbbb8206f3"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua",
-          "callback_line": 31,
-          "blob_sha1": "06fcf61aafdc8f500723f026525b54dbbb8206f3"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua",
-          "callback_line": 68,
-          "blob_sha1": "06fcf61aafdc8f500723f026525b54dbbb8206f3"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua",
-          "callback_line": 68,
-          "blob_sha1": "06fcf61aafdc8f500723f026525b54dbbb8206f3"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_3",
+      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_greasy_stone",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18362,7 +18343,45 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_4",
+      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_mission_guide",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua",
+          "callback_line": 31,
+          "blob_sha1": "06fcf61aafdc8f500723f026525b54dbbb8206f3"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua",
+          "callback_line": 31,
+          "blob_sha1": "06fcf61aafdc8f500723f026525b54dbbb8206f3"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_spider_lair_hole",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua",
+          "callback_line": 68,
+          "blob_sha1": "06fcf61aafdc8f500723f026525b54dbbb8206f3"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission05_web_terror.lua",
+          "callback_line": 68,
+          "blob_sha1": "06fcf61aafdc8f500723f026525b54dbbb8206f3"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_spider_queen_chamber_hole",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18381,7 +18400,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_5",
+      "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_spider_web",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18400,7 +18419,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_1",
+      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_mission_guide",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18419,66 +18438,9 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_2",
+      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_poacher_corpse",
       "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
-          "callback_line": 65,
-          "blob_sha1": "533ea7801a1beda00c08df4f4e1406f28212bb39"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
-          "callback_line": 65,
-          "blob_sha1": "d2aff33181330a5118e1ca5ea2d665a0f245ce70"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_3",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
-          "callback_line": 104,
-          "blob_sha1": "533ea7801a1beda00c08df4f4e1406f28212bb39"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
-          "callback_line": 104,
-          "blob_sha1": "d2aff33181330a5118e1ca5ea2d665a0f245ce70"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_4",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
-          "callback_line": 148,
-          "blob_sha1": "533ea7801a1beda00c08df4f4e1406f28212bb39"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
-          "callback_line": 148,
-          "blob_sha1": "d2aff33181330a5118e1ca5ea2d665a0f245ce70"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_5",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Crystal drops the Mission06 progress gate; pickup no longer needs that mission step.)",
       "sources": [
         {
           "source": "canary",
@@ -18495,7 +18457,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_6",
+      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_skinning_knife",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18514,7 +18476,26 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_7",
+      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_war_wolf_den_boost_tiles",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
+          "callback_line": 148,
+          "blob_sha1": "533ea7801a1beda00c08df4f4e1406f28212bb39"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
+          "callback_line": 148,
+          "blob_sha1": "d2aff33181330a5118e1ca5ea2d665a0f245ce70"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_war_wolf_den_chest",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18533,45 +18514,64 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission07_attack_1",
+      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_war_wolf_den_hole",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
+          "callback_line": 65,
+          "blob_sha1": "533ea7801a1beda00c08df4f4e1406f28212bb39"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
+          "callback_line": 65,
+          "blob_sha1": "d2aff33181330a5118e1ca5ea2d665a0f245ce70"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_war_wolf_den_tiles",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
+          "callback_line": 104,
+          "blob_sha1": "533ea7801a1beda00c08df4f4e1406f28212bb39"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission06_run_like_wolf.lua",
+          "callback_line": 104,
+          "blob_sha1": "d2aff33181330a5118e1ca5ea2d665a0f245ce70"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission07_attack_destroy_field_rune",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission07_attack.lua",
-          "callback_line": 25,
+          "callback_line": 120,
           "blob_sha1": "9116f2b4444e358a10e9e04c3f4047e1689c0a17"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_rookie_guard/mission07_attack.lua",
-          "callback_line": 25,
+          "callback_line": 120,
           "blob_sha1": "9116f2b4444e358a10e9e04c3f4047e1689c0a17"
         }
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission07_attack_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission07_attack.lua",
-          "callback_line": 59,
-          "blob_sha1": "9116f2b4444e358a10e9e04c3f4047e1689c0a17"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission07_attack.lua",
-          "callback_line": 59,
-          "blob_sha1": "9116f2b4444e358a10e9e04c3f4047e1689c0a17"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission07_attack_3",
+      "destination": "canary:interaction/the_rookie_guard/mission07_attack_fire_fields",
       "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
@@ -18590,26 +18590,45 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission07_attack_4",
+      "destination": "canary:interaction/the_rookie_guard/mission07_attack_library_vault_steps",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission07_attack.lua",
-          "callback_line": 120,
+          "callback_line": 59,
           "blob_sha1": "9116f2b4444e358a10e9e04c3f4047e1689c0a17"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_rookie_guard/mission07_attack.lua",
-          "callback_line": 120,
+          "callback_line": 59,
           "blob_sha1": "9116f2b4444e358a10e9e04c3f4047e1689c0a17"
         }
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission07_attack_5",
+      "destination": "canary:interaction/the_rookie_guard/mission07_attack_mission_guide",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission07_attack.lua",
+          "callback_line": 25,
+          "blob_sha1": "9116f2b4444e358a10e9e04c3f4047e1689c0a17"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission07_attack.lua",
+          "callback_line": 25,
+          "blob_sha1": "9116f2b4444e358a10e9e04c3f4047e1689c0a17"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission07_attack_treasure_chest",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18628,7 +18647,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission09_rock_troll_1",
+      "destination": "canary:interaction/the_rookie_guard/mission09_rock_troll_mission_guide",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18647,26 +18666,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission09_rock_troll_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission09_rock_troll.lua",
-          "callback_line": 67,
-          "blob_sha1": "2c117c9c4ac66dc0c692e43712085f4c2f8d07b6"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission09_rock_troll.lua",
-          "callback_line": 67,
-          "blob_sha1": "2c117c9c4ac66dc0c692e43712085f4c2f8d07b6"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission09_rock_troll_3",
+      "destination": "canary:interaction/the_rookie_guard/mission09_rock_troll_trunk_chest",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18685,7 +18685,26 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission10_tomb_raiding_1",
+      "destination": "canary:interaction/the_rookie_guard/mission09_rock_troll_tunnel_hole",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission09_rock_troll.lua",
+          "callback_line": 67,
+          "blob_sha1": "2c117c9c4ac66dc0c692e43712085f4c2f8d07b6"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission09_rock_troll.lua",
+          "callback_line": 67,
+          "blob_sha1": "2c117c9c4ac66dc0c692e43712085f4c2f8d07b6"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission10_tomb_raiding_mission_guide",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18704,7 +18723,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission10_tomb_raiding_2",
+      "destination": "canary:interaction/the_rookie_guard/mission10_tomb_raiding_sarcophagus",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18723,7 +18742,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission10_tomb_raiding_3",
+      "destination": "canary:interaction/the_rookie_guard/mission10_tomb_raiding_unholy_crypt_chests",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18742,7 +18761,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission11_sweet_poison_1",
+      "destination": "canary:interaction/the_rookie_guard/mission11_sweet_poison_mission_guide",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18761,9 +18780,9 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission11_sweet_poison_2",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "destination": "canary:interaction/the_rookie_guard/mission11_sweet_poison_special_flask",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Two storage reads merged into one inline condition; same mission-state check.)",
       "sources": [
         {
           "source": "canary",
@@ -18780,121 +18799,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_1",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 103,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 103,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_10",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 478,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 472,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_11",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 541,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 535,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_12",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 562,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 556,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_13",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 589,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 583,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_14",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 618,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 612,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_15",
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_boss_chests",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18913,7 +18818,102 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_16",
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_boss_death",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 562,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 556,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_boss_lair_teleport",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 348,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 348,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_enter_boss_room_teleport",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 541,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 535,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_enter_treasure_room_teleport",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 618,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 612,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_exit_boss_room_teleport",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 589,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 583,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_exit_treasure_room_teleport",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18932,7 +18932,83 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_17",
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_fleshy_bone",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 274,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 274,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_mission_energy_barriers",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 416,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 416,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_mission_guide",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 103,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 103,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_mission_levers",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 478,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 472,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_orc_fortress_chests",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -18951,83 +19027,7 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_2",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 164,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 164,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_3",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 206,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 206,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_4",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 229,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 229,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_5",
-      "status": "unresolved_semantics",
-      "resolution": "identical in both servers",
-      "sources": [
-        {
-          "source": "canary",
-          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 274,
-          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
-        },
-        {
-          "source": "crystalserver",
-          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 274,
-          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
-        }
-      ]
-    },
-    {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_6",
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_poison_flask",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -19046,7 +19046,26 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_7",
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_rolling_pin",
+      "status": "unresolved_semantics",
+      "resolution": "identical in both servers",
+      "sources": [
+        {
+          "source": "canary",
+          "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 206,
+          "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
+        },
+        {
+          "source": "crystalserver",
+          "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
+          "callback_line": 206,
+          "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
+        }
+      ]
+    },
+    {
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_tarantura_trap",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
@@ -19065,39 +19084,39 @@
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_8",
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_treasure_chest",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 348,
+          "callback_line": 164,
           "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 348,
+          "callback_line": 164,
           "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
         }
       ]
     },
     {
-      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_9",
+      "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_unconscious_orc",
       "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {
           "source": "canary",
           "path": "data-otservbr-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 416,
+          "callback_line": 229,
           "blob_sha1": "444b82a599049f0629001649cbfbe2ce6a2cb903"
         },
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/the_rookie_guard/mission12_into_fortress.lua",
-          "callback_line": 416,
+          "callback_line": 229,
           "blob_sha1": "4aede9c97a1f4a508f889dd1a18da83d31e9b1d7"
         }
       ]
@@ -19294,8 +19313,8 @@
     },
     {
       "destination": "canary:interaction/the_secret_library_quest/high_and_dry_isles/movements_step_in",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Crystal adds a turtle-feeding (fish item) requirement not documented anywhere on the quest's wiki page.)",
       "sources": [
         {
           "source": "canary",
@@ -19991,8 +20010,8 @@
     },
     {
       "destination": "canary:interaction/the_thieves_guild_quest/actions_fish_napping_door",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Crystal adds a requirement to be carrying the fishnapped goldfish to slip through the door.)",
       "sources": [
         {
           "source": "canary",
@@ -20010,8 +20029,8 @@
     },
     {
       "destination": "canary:interaction/the_thieves_guild_quest/actions_fish_napping_key",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for canary (equivalent: Matching door/key action id renumbered consistently in both scripts; same trigger tile.)",
       "sources": [
         {
           "source": "canary",
@@ -20890,8 +20909,8 @@
     },
     {
       "destination": "canary:interaction/what_a_foolish_quest/action_contract",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "mapped",
+      "resolution": "the servers differ; D25 decides for canary (wiki silent: Canary requires Contract storage exactly 1; crystal's '<1' check allows reuse after progress.)",
       "sources": [
         {
           "source": "canary",
@@ -21194,8 +21213,8 @@
     },
     {
       "destination": "canary:interaction/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre",
-      "status": "conflict",
-      "resolution": "the servers differ; the Canary transcription is kept",
+      "status": "unresolved_semantics",
+      "resolution": "the servers differ; D25 decides for canary (wiki: Crystal drops the per-room position checks; wiki confirms visiting all 4 incarnation rooms is required., https://tibia.fandom.com/wiki/Wrath_of_the_Emperor_Quest/Spoiler?oldid=1103771)",
       "sources": [
         {
           "source": "canary",

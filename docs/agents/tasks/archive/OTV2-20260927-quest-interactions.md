@@ -4,22 +4,22 @@
 task_id: OTV2-20260927-quest-interactions
 title: Quest format slice 4 - interaction definitions (D36) from every Canary + CrystalServer quest script
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 1007
 base_sha: 75f2f045700ea6aedf5cf864966a60235921e19d
-head_sha: null
-final_head_sha: null
+head_sha: 19fa171cfec824dc2655c228de046c2ac9b0715b
+final_head_sha: 19fa171cfec824dc2655c228de046c2ac9b0715b
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260927-quest-interactions.md
+  - docs/agents/tasks/archive/OTV2-20260927-quest-interactions.md
   - docs/agents/tasks/archive/OTV2-20260927-quest-staged-missions.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - tools/content-schema/quest-authoring/**

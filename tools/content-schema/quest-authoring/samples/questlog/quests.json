@@ -4584,7 +4584,7 @@
               {
                 "value": 1,
                 "text_ref": {
-                  "sha256": "e1f066d51a8d867afedabfa8e803609decaf0f6a2cc33283b962e276eca201bc",
+                  "sha256": "3913b7f9a0ac25e7c3193fe6c027870bb2380790a096af82361f4ab7a59411fe",
                   "length": 193,
                   "placeholders": []
                 }
@@ -4592,8 +4592,8 @@
               {
                 "value": 2,
                 "text_ref": {
-                  "sha256": "f1d66e55ce3be2b7639c14710762b912ce3be619bd5dae9ef0e3596749482e16",
-                  "length": 63,
+                  "sha256": "8483ea2522abce9fad5ba95be164c09e02ba45cd8617442968679a1d7f7e3e0d",
+                  "length": 64,
                   "placeholders": []
                 }
               }
@@ -4696,15 +4696,23 @@
           "name": "Mission 04: The Dark Lands",
           "progress": "canary:quest-progress/quest/u8_4/blood_brothers/mission04",
           "start_value": 1,
-          "end_value": 1,
+          "end_value": 2,
           "journal": {
             "kind": "per_stage",
             "stages": [
               {
                 "value": 1,
                 "text_ref": {
-                  "sha256": "34bc9c506e0936ff2343cb3cd1e7e16f2d7c6187da58e0a857508fed729e9495",
-                  "length": 198,
+                  "sha256": "fbd9ad490ef0329e87cce9065afc4831e94d520d66d16a999d6700f24c04bd23",
+                  "length": 192,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 2,
+                "text_ref": {
+                  "sha256": "46e602e06e1360c36a677cbab7c4b21d7bc4343a341353b0fe268cbf173ed998",
+                  "length": 65,
                   "placeholders": []
                 }
               }
@@ -7425,16 +7433,16 @@
               {
                 "value": 2,
                 "text_ref": {
-                  "sha256": "6620f86c3ae61674d421100fe94ad7dffa55c5b7e0f628e7dd8ea64578129738",
-                  "length": 23,
+                  "sha256": "208ba9f4cb086495f71902dacdeee4a4f3ff7642ddb09a7090cedc68d5c0a2ea",
+                  "length": 45,
                   "placeholders": []
                 }
               },
               {
                 "value": 3,
                 "text_ref": {
-                  "sha256": "26a4bdcbbe14330c429a5428b8336c6607c198c5f059c7b90504ebbb1f66d8e6",
-                  "length": 34,
+                  "sha256": "00ca4a35e791a8df55eb03a79a3ed1d164fbc318541864ceb6382e0b64bc55d8",
+                  "length": 67,
                   "placeholders": []
                 }
               }
@@ -7500,8 +7508,8 @@
               {
                 "value": 2,
                 "text_ref": {
-                  "sha256": "0399beba5f76056f1fe6b5289728478bfbb2aa83a31bce8d485f061088112991",
-                  "length": 34,
+                  "sha256": "9c834ced69256979f989e0baa19d57a9e5f200236c2eab1071fb6b743086729b",
+                  "length": 86,
                   "placeholders": []
                 }
               }
@@ -7552,16 +7560,16 @@
               {
                 "value": 2,
                 "text_ref": {
-                  "sha256": "6620f86c3ae61674d421100fe94ad7dffa55c5b7e0f628e7dd8ea64578129738",
-                  "length": 23,
+                  "sha256": "62571fc4c9aa9f43390d61bb3f4ba6b0ab1f8dd809696bb6a04fc21257fd028c",
+                  "length": 80,
                   "placeholders": []
                 }
               },
               {
                 "value": 3,
                 "text_ref": {
-                  "sha256": "0399beba5f76056f1fe6b5289728478bfbb2aa83a31bce8d485f061088112991",
-                  "length": 34,
+                  "sha256": "dd506e5edb22019b6cd9e7d0287de4a5d77861db265572194af0c42bd25f393d",
+                  "length": 84,
                   "placeholders": []
                 }
               }
@@ -7627,32 +7635,32 @@
               {
                 "value": 2,
                 "text_ref": {
-                  "sha256": "31102e83aefb1fb90ea12ac63bd5ed3ffaa59a319c37617272cedba15d133a1a",
-                  "length": 57,
+                  "sha256": "a502a9cfd55c0f435e28f6fd60e03ff0a156779daaffb161334374ff585b1822",
+                  "length": 89,
                   "placeholders": []
                 }
               },
               {
                 "value": 3,
                 "text_ref": {
-                  "sha256": "a03b6986e1cb538c29b0b43e76bbe943eedf9cd82e80fab8376dcd70f258b611",
-                  "length": 34,
+                  "sha256": "6fb0f8d1692d602656c9e37ca29ffe1f0a767e65dbb80c2a74499541134b1917",
+                  "length": 76,
                   "placeholders": []
                 }
               },
               {
                 "value": 4,
                 "text_ref": {
-                  "sha256": "1c20da71e41cb50727f2e8c6bdad7ddb2e075233c1d2f030fc87e90179b612fc",
-                  "length": 36,
+                  "sha256": "9738a2a34b84f8055e2de952e410cf5a0d5f444eedaea425d6a849b2d5f1b95a",
+                  "length": 166,
                   "placeholders": []
                 }
               },
               {
                 "value": 5,
                 "text_ref": {
-                  "sha256": "f4f8d757d5d617922be734240c87c86b777b8b8f4452aebf43ecd3a9c6e3a02d",
-                  "length": 29,
+                  "sha256": "dcc4b28cc89119a3f25d3bf2b57b1785addddfca287dd492f59b8e03a74c64d5",
+                  "length": 110,
                   "placeholders": []
                 }
               }
@@ -10057,7 +10065,7 @@
           "name": "Hot Cuisine",
           "progress": "canary:quest-progress/quest/u8_5/hot_cuisine_quest/quest_log",
           "start_value": 1,
-          "end_value": 16,
+          "end_value": 17,
           "journal": {
             "kind": "per_stage",
             "stages": [
@@ -10183,6 +10191,14 @@
               },
               {
                 "value": 16,
+                "text_ref": {
+                  "sha256": "caf07e4bdf3024291c41b19be1d8770ca98735cf4e3bf827a827383393ecb612",
+                  "length": 142,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 17,
                 "text_ref": {
                   "sha256": "5b07baa171e1cefd9a459e4948639b89bf76b24ed06b8ab449d2ef206f3ca4b6",
                   "length": 97,
@@ -36672,7 +36688,7 @@
           "name": "Reputation in Sabrehaven: Suspicious",
           "progress": "canary:quest-progress/quest/u7_8/the_shattered_isles/reputation_in_sabrehaven",
           "start_value": 2,
-          "end_value": 13,
+          "end_value": 12,
           "journal": {
             "kind": "per_stage",
             "stages": [
@@ -36687,69 +36703,13 @@
               {
                 "value": 3,
                 "text_ref": {
-                  "sha256": "b9194e33284ce05247486a617df1fb07cdd71919762d9fa2e94510ee7d0564d4",
-                  "length": 182,
+                  "sha256": "b0d2ef1d37fca271f24388ab680bee950dffc7038edc2d8a2880702bd50cfb81",
+                  "length": 116,
                   "placeholders": []
                 }
               },
               {
                 "value": 4,
-                "text_ref": {
-                  "sha256": "c5003fc1675b4ca628b85970e4221744588597ab27386edd163920312da0527e",
-                  "length": 120,
-                  "placeholders": []
-                }
-              },
-              {
-                "value": 5,
-                "text_ref": {
-                  "sha256": "553d29958f171d1a4248e9cb6df3834bbb376379fcb0d128021ddc8f55f1c626",
-                  "length": 110,
-                  "placeholders": []
-                }
-              },
-              {
-                "value": 6,
-                "text_ref": {
-                  "sha256": "d883aac0b495175713af40b157539d872dd339abc449b4bbb1b359757f9a3d69",
-                  "length": 183,
-                  "placeholders": []
-                }
-              },
-              {
-                "value": 7,
-                "text_ref": {
-                  "sha256": "292fd0c8a4231f7954bd7979a903a0e359d51fc475dd3817b7d221886e0709ba",
-                  "length": 103,
-                  "placeholders": []
-                }
-              },
-              {
-                "value": 8,
-                "text_ref": {
-                  "sha256": "e65ffee24331c8606713612b9a0401cda1b26619861766973e0407b779b8dfbf",
-                  "length": 185,
-                  "placeholders": []
-                }
-              },
-              {
-                "value": 9,
-                "text_ref": {
-                  "sha256": "385cafad929fa3bf20f33d52d5c55e13e154d983cf05a242a662c8d32e50a883",
-                  "length": 118,
-                  "placeholders": []
-                }
-              },
-              {
-                "value": 10,
-                "text_ref": {
-                  "sha256": "e8010e3061f0024a8178646ad089e1f91496858e83b79d9f60df1427de8cf859",
-                  "length": 184,
-                  "placeholders": []
-                }
-              },
-              {
-                "value": 11,
                 "text_ref": {
                   "sha256": "8bef56f3beaf9cfe9283e5feb8d601e28f404d960defb4e7cff63c9a3a4aee13",
                   "length": 140,
@@ -36757,10 +36717,66 @@
                 }
               },
               {
+                "value": 5,
+                "text_ref": {
+                  "sha256": "d48e665aeaa26e91c5f368ab553d886e6f244fbcf8c7d58a0ff9b005007bd678",
+                  "length": 125,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 6,
+                "text_ref": {
+                  "sha256": "c5003fc1675b4ca628b85970e4221744588597ab27386edd163920312da0527e",
+                  "length": 120,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 7,
+                "text_ref": {
+                  "sha256": "553d29958f171d1a4248e9cb6df3834bbb376379fcb0d128021ddc8f55f1c626",
+                  "length": 110,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 8,
+                "text_ref": {
+                  "sha256": "bec2cb943dc696c0d97ba8d177561279cd3044794847a0799e35e91a71d89f99",
+                  "length": 132,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 9,
+                "text_ref": {
+                  "sha256": "292fd0c8a4231f7954bd7979a903a0e359d51fc475dd3817b7d221886e0709ba",
+                  "length": 103,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 10,
+                "text_ref": {
+                  "sha256": "c955c9f95ffed8fc209485dcc1facefaf9d276ba586a79646086ee82ffb64540",
+                  "length": 127,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 11,
+                "text_ref": {
+                  "sha256": "385cafad929fa3bf20f33d52d5c55e13e154d983cf05a242a662c8d32e50a883",
+                  "length": 118,
+                  "placeholders": []
+                }
+              },
+              {
                 "value": 12,
                 "text_ref": {
-                  "sha256": "d895a7fdac1f730622ff052d5bb8f8d34526a531fcc66ecd178732abdc5a898a",
-                  "length": 95,
+                  "sha256": "e459a0bfcac49fe81e45e94575b6e994e0891da207428599f933ed3d52724cb3",
+                  "length": 68,
                   "placeholders": []
                 }
               }
@@ -38882,7 +38898,7 @@
               {
                 "value": 5,
                 "text_ref": {
-                  "sha256": "4bc726ac5addd580cad55d9ca46c014cf4b21c610ccb4d848074bd9f6cc1038d",
+                  "sha256": "bbc44e8fedf14a7ba07dd4d7b8f27d1d5765224d18e33b93c7189d5c50721f63",
                   "length": 102,
                   "placeholders": []
                 }
@@ -40127,68 +40143,26 @@
         {
           "key": "the_three_fold_path",
           "name": "The Three-Fold Path",
-          "progress": "canary:quest-progress/quest/u14_15/the_way_of_the_monk/missions/tree_fold_path",
-          "start_value": 1,
-          "end_value": 3,
+          "progress": "canary:quest-progress/quest/u15_00/the_way_of_the_monk/questline",
+          "start_value": 3,
+          "end_value": 4,
           "journal": {
             "kind": "per_stage",
             "stages": [
               {
-                "value": 1,
-                "template": {
-                  "parts": [
-                    {
-                      "sha256": "d4bf7e0159486ef274386085731f3bf6d0dc67b8cb8fcdffbe38b37a8f9f5854",
-                      "length": 364,
-                      "placeholders": [
-                        "%s"
-                      ]
-                    }
-                  ],
-                  "reads": [
-                    "quest/u14_15/the_way_of_the_monk/dawnport_first_shrine",
-                    "quest/u14_15/the_way_of_the_monk/dawnport_fourth_shrine",
-                    "quest/u14_15/the_way_of_the_monk/dawnport_second_shrine",
-                    "quest/u14_15/the_way_of_the_monk/dawnport_third_shrine"
-                  ]
-                }
-              },
-              {
-                "value": 2,
-                "template": {
-                  "parts": [
-                    {
-                      "sha256": "12886f9d00055adf24c40579e22d31b2b45f2023f892954ffd5567beb60825f8",
-                      "length": 6,
-                      "placeholders": []
-                    },
-                    {
-                      "sha256": "224bd99b00fd33659de61febd4ce6e8299ed6d77a5a243e2fd94e8c631b00dc5",
-                      "length": 350,
-                      "placeholders": [
-                        "%d",
-                        "%s"
-                      ]
-                    }
-                  ],
-                  "reads": [
-                    "quest/u14_15/the_way_of_the_monk/shrines_count"
-                  ]
-                }
-              },
-              {
                 "value": 3,
-                "template": {
-                  "parts": [
-                    {
-                      "sha256": "7207111ed5cbd9dbb2c6964c8832a545bf03964d8b0475e7f95a2b80fe56c278",
-                      "length": 32,
-                      "placeholders": [
-                        "%d"
-                      ]
-                    }
-                  ],
-                  "reads": []
+                "text_ref": {
+                  "sha256": "9aa9a68dd719ff5b2913cfc8b7bb1a945458daf6263f5f2c4eb36fb8c37d72e2",
+                  "length": 203,
+                  "placeholders": []
+                }
+              },
+              {
+                "value": 4,
+                "text_ref": {
+                  "sha256": "3fd731969add7c391ab10542520e7dcc3977c9708d70f8be4d23879ff5b40018",
+                  "length": 96,
+                  "placeholders": []
                 }
               }
             ]
@@ -40201,7 +40175,7 @@
               "from": null,
               "to": 1,
               "servers": [
-                "canary"
+                "crystalserver"
               ]
             },
             {
@@ -40211,7 +40185,27 @@
               "from": null,
               "to": 2,
               "servers": [
-                "canary"
+                "crystalserver"
+              ]
+            },
+            {
+              "key": "npc_3",
+              "owner": "npc",
+              "callback": null,
+              "from": null,
+              "to": 3,
+              "servers": [
+                "crystalserver"
+              ]
+            },
+            {
+              "key": "npc_4",
+              "owner": "npc",
+              "callback": null,
+              "from": null,
+              "to": 4,
+              "servers": [
+                "crystalserver"
               ]
             }
           ]
