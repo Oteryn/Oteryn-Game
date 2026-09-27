@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-heart-of-destruction-encounters
 title: Heart of Destruction boss encounters (ninth encounter slice)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1011
 jira: KAN-16
 base_sha: 3c9aef87a4dff22b9a8308d82a55f5bfe8469bf6
 head_sha: null
