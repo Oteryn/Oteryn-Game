@@ -268,3 +268,5 @@ A fifth slice uses the D29 vocabulary:
 | `mType.onSpawn` (Splinters of Madness) | 1 | 2 | Each stage grows into the next after 120 s (`creature_spawned` + `delay_ms`). Canary never lets a grown splinter grow again; the wiki says they do (D25). The mighty splinter's absorption into the boss stays unresolved. |
 
 Inline callbacks covered by an encounter manifest are relocated by the monster converter like events.
+52 encounters validate, 46 manifests resolve fully, `verify_encounter_schema.py` 63/63; the census rises
+from 1,453 to 1,463.
