@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-cw2-b1-crystal-item-identity-bindings
 title: CW2-B1 Crystal Item identity bindings (explicit EXACT, 38,157 rows)
 mode: MIGRATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
@@ -16,13 +16,14 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-27T00:00:00Z
-updated_at: 2026-09-27T00:00:00Z
+updated_at: 2026-09-27T15:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-census/g4_item_crystal_binding_generator.py
   - tools/content-census/g4_item_crystal_binding_generator_self_test.py
   - imports/crystalserver/bindings/items.json
   - docs/agents/tasks/active/OTV2-20260927-cw2-b1-crystal-item-identity-bindings.md
+  - .github/workflows/g4-item-crystal-bindings.yml
 public_contracts: []
 depends_on:
   - "docs/architecture/OTERYN_G4_MULTI_SOURCE_IDENTITY_BINDING_DECISION.md"
@@ -62,6 +63,7 @@ only (Canary is out of scope). No canonical identity is minted; no
 - [x] Generated `imports/crystalserver/bindings/items.json` has exactly 38,157 `EXACT` bindings, `identity_namespace: ots/item_server_id`, `source_key: oteryn:source.crystalserver`, `source_revision: ff7ede593c69d4c658b382c97443e8155926924a`, every `target.key` present in `content/items/definitions/*.json`.
 - [x] `tools/content-census/g4_item_crystal_binding_generator_self_test.py` exercises the fail-closed paths above at small scale.
 - [x] `python tools/agents/validate_governance.py`, the content-tree migration validators and ruff pass (see Validation).
+- [x] `.github/workflows/g4-item-crystal-bindings.yml` re-runs the self-test and `--check` whenever the generator, its output, `content/items/definitions/**`, the Rust allocator, the evidence catalogue or the TibiaWiki bindings change, so drift cannot land silently.
 
 ## Excluded scope
 
@@ -69,7 +71,7 @@ only (Canary is out of scope). No canonical identity is minted; no
 - No embedding of `source_bindings` into `content/items/definitions/*.json` records: only 165/38,157 records currently carry any embedded `source_bindings` (the TibiaWiki-matched subset, mirroring `imports/tibiawiki/bindings/items.json` exactly); no validator or doctrine text requires the same for the standalone `imports/crystalserver/bindings/items.json`, and `.github/workflows/content-tree-migration.yml` triggers only on `imports/tibiawiki/bindings/**`, not `imports/crystalserver/**`. Embedding into all 38,157 records would be a much larger, unrequired change, so it was not done; flagged here for an explicit owner call if full parity is later wanted.
 - No `content/items/definitions/*.json`, `content/world/**`, or `imports/tibiawiki/**` mutation.
 - No gameplay-field promotion, no Presentation/Asset/runtime identity change.
-- No commit/push: prepared for owner review per session instruction.
+- No consumer reads `imports/crystalserver/bindings/items.json` yet; the Item authoring work in PR #952 is its first intended consumer (canonical keys for real examples).
 
 ## Validation
 
@@ -79,8 +81,8 @@ only (Canary is out of scope). No canonical identity is minted; no
 - result: PASS bindings=38157 bytes=10864254
 - command/run: `venv/bin/python tools/content-census/g4_item_crystal_binding_generator_self_test.py`
 - result: PASS
-- command/run: `venv/bin/python -m ruff check tools/content-census/g4_item_crystal_binding_generator*.py`
-- result: only `EXE001` (shebang on a non-executable file), a pre-existing condition shared by every committed sibling in this directory (e.g. `g4_item_binding_pilot.py`); no repo ruff config and no CI workflow runs ruff over this directory, so this is non-gating.
+- command/run: `ruff check` and `ruff format --check` (0.16.1) on both scripts from the repo root
+- result: PASS (both scripts are executable, so `EXE001` no longer applies)
 
 ### Component/integration
 
@@ -95,61 +97,54 @@ only (Canary is out of scope). No canonical identity is minted; no
 
 ### Exact-head CI
 
-- final head: pending (not committed; owner reviews and commits per session instruction)
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: expected `auxiliary` (no `rust`/`windows` lane)
-- result: pending
+- head `de14e8a2` (before the drift-guard workflow): Merge gate (scope, governance,
+  routing contract, dependency review, CodeQL, trusted-base risk lanes, validate) and
+  `game-gate` success; classification `auxiliary` (Rust/Windows lanes skipped)
+- final head: pending (successor head adds the workflow and this record update)
 
 ## Self-review
 
-- exact head: pending (uncommitted)
-- method/reviewer: implementing agent
-- material findings: the embedded-`source_bindings` question above (documented under Excluded scope) is the one doctrine-adjacent judgment call in this change; no validator requires it, and doing it would exceed the requested bounded change.
-- verdict: ready for owner review and commit
+- exact head: `de14e8a2` content plus the drift-guard workflow
+- method/reviewer: implementing session
+- material findings: no CI job re-ran `--check` (fixed by the new workflow); stale record
+  and PR text (fixed)
+- verdict: ready for independent review of the final head
 
 ## Independent review
 
-- required: YES (owner explicitly requested review-before-commit for this identity/provenance change)
-- exact head: NOT_APPLICABLE (uncommitted)
-- method/auditor: pending (owner)
-- material findings: pending
-- verdict: pending
+- required: YES (identity/provenance change)
+- exact head: `de14e8a2` (content unchanged by the successor; workflow reviewed as the
+  uncommitted diff)
+- method/auditor: read-only independent review agent
+- material findings: mapping re-derived from `cw2_b1_import.rs` without the generator's
+  code, 0 of 38,157 rows differ; the opaque counter skips native rows exactly as the
+  allocator does; the pinned Crystal `items.xml` blob hashes to the catalogue's recorded
+  `c847293e...` and expands to the same 38,157 ids (3288 magic sword -> `i00003167`,
+  3388 demon armor -> `i00003256`); format and ordering match the TibiaWiki bindings;
+  self-test is fail-closed. Blocking: no drift guard in CI (fixed by the workflow, whose
+  trigger paths cover every file the generator reads). Nit: the
+  `SOURCE_ITEM_ID_DUPLICATE` branch is unreachable after the strict-ascending check;
+  kept as defensive code.
+- verdict: APPROVE, conditional on the workflow landing in this PR (done)
 
 ## PR and closeout
 
-- changed-file review: pending (owner)
-- unresolved review threads: NOT_APPLICABLE (no PR yet)
+- changed-file review: done (5 files)
+- unresolved review threads: none
 - related/superseded PRs: none
-- protected auto-merge: pending
+- protected auto-merge: NOT_AUTHORIZED (owner merges)
 - merge commit/result: pending
 - ownership release: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: generated and verified imports/crystalserver/bindings/items.json (38,157 EXACT rows) plus generator/self-test; all found validators pass; owner to review and commit
-status: implementing
+last_progress: drift-guard workflow added; independent review APPROVE; record and PR text updated
+status: validating
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
 pr: 989
 final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
-stall_warnings: 0
-owner_action_required: "review diff and commit (or request changes) -- no git write was performed by this session per instruction"
+owner_action_required: "merge after exact-head CI is green"
 blocker: null
-next_action: owner reviews the three new files and commits
+next_action: freeze the pushed head, confirm CI, mark ready for review
 ```
