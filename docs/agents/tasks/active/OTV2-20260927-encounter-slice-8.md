@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-encounter-slice-8
 title: Eighth encounter slice (Carlin soul remains, Ragiaz death dragons) and the Crystal comparison
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 973
 jira: KAN-16
 base_sha: a822326c9cf4607100e58bbc3673748f3fa299bb
 head_sha: null
