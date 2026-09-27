@@ -162,6 +162,7 @@ pub(crate) fn spell_from_bundle(
         cooldown_micros: u64::from(number(spell, "cooldown_ms")?) * 1000,
         groups,
         needs_target: flag(targeting, "needs_target")?,
+        self_target: flag(targeting, "self_target")?,
         aggressive: flag(targeting, "aggressive")?,
         range_tiles,
         base_power,

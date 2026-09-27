@@ -12,6 +12,7 @@
 
 pub(crate) mod authoring;
 pub(crate) mod formula;
+pub(crate) mod plan;
 #[cfg(test)]
 mod tests;
 
@@ -123,6 +124,7 @@ pub(crate) struct SpellDefinition {
     pub(crate) cooldown_micros: u64,
     pub(crate) groups: Vec<CooldownGroup>,
     pub(crate) needs_target: bool,
+    pub(crate) self_target: bool,
     pub(crate) aggressive: bool,
     pub(crate) range_tiles: Option<u32>,
     pub(crate) base_power: Option<i64>,

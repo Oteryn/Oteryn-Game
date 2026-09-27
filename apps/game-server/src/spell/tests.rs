@@ -7,7 +7,9 @@ use serde_json::Value;
 
 use super::authoring::spell_from_bundle;
 use super::formula::level_base_damage_healing;
+use super::plan::{CastPlanError, effect_plan};
 use super::*;
+use crate::ability::{AbilityEngine, AbilityOccurrence, RevisionSet};
 
 macro_rules! bundle {
     ($dir:literal) => {
@@ -358,4 +360,124 @@ fn spell_book_rejects_duplicate_words() {
         SpellBook::new(spells),
         Err(SpellBookError::Words(_))
     ));
+}
+
+fn occurrence(id: &str) -> AbilityOccurrence {
+    let revisions = RevisionSet::new(
+        "ruleset:r1",
+        "content:starter",
+        "world:r1",
+        "formula:s5",
+        "simulation:r1",
+    )
+    .expect("revisions");
+    AbilityOccurrence::new(id, revisions).expect("occurrence")
+}
+
+#[test]
+fn a_cast_becomes_an_ability_plan_that_the_engine_commits() {
+    let book = book();
+    let mut engine = AbilityEngine::new();
+
+    let exura = book.spoken("exura").expect("exura").spell;
+    let druid = caster(Vocation::Druid, 8, 0, 20);
+    let healed = resolve_cast(
+        exura,
+        &druid,
+        &Cooldowns::default(),
+        at(0),
+        false,
+        &mut highest,
+    )
+    .expect("cast");
+    let plan = effect_plan(
+        exura,
+        &healed,
+        "actor:druid",
+        None,
+        occurrence("cast:1"),
+        "channel:test",
+    )
+    .expect("plan");
+    assert_eq!(
+        plan.side_effects,
+        vec![ResolvedEffect::RemoveCondition {
+            condition: "paralyze".into()
+        }]
+    );
+    let receipt = engine.commit(plan.effects.expect("heal")).expect("commit");
+    assert!(receipt.applied());
+    assert_eq!(engine.fixture_health("actor:druid"), Some(12));
+
+    let strike = book.spoken("exori frigo").expect("exori frigo").spell;
+    let sorcerer = caster(Vocation::Sorcerer, 100, 50, 100);
+    let hit = resolve_cast(
+        strike,
+        &sorcerer,
+        &Cooldowns::default(),
+        at(0),
+        true,
+        &mut lowest,
+    )
+    .expect("cast");
+    assert_eq!(
+        effect_plan(
+            strike,
+            &hit,
+            "actor:sorcerer",
+            None,
+            occurrence("cast:2"),
+            "channel:test"
+        ),
+        Err(CastPlanError::MissingTarget)
+    );
+    let plan = effect_plan(
+        strike,
+        &hit,
+        "actor:sorcerer",
+        Some("actor:rat"),
+        occurrence("cast:2"),
+        "channel:test",
+    )
+    .expect("plan");
+    engine
+        .commit(plan.effects.clone().expect("damage"))
+        .expect("commit");
+    assert_eq!(engine.fixture_health("actor:rat"), Some(-98));
+    // The same occurrence commits once.
+    let again = engine
+        .commit(plan.effects.expect("damage"))
+        .expect("idempotent");
+    assert!(!again.applied());
+    assert_eq!(engine.fixture_health("actor:rat"), Some(-98));
+}
+
+#[test]
+fn a_conjure_has_no_ability_effects() {
+    let book = book();
+    let spell = book
+        .spoken("adori gran mort")
+        .expect("adori gran mort")
+        .spell;
+    let sorcerer = caster(Vocation::Sorcerer, 45, 15, 985);
+    let cast = resolve_cast(
+        spell,
+        &sorcerer,
+        &Cooldowns::default(),
+        at(0),
+        false,
+        &mut lowest,
+    )
+    .expect("cast");
+    let plan = effect_plan(
+        spell,
+        &cast,
+        "actor:sorcerer",
+        None,
+        occurrence("cast:3"),
+        "channel:test",
+    )
+    .expect("plan");
+    assert_eq!(plan.effects, None);
+    assert_eq!(plan.side_effects, cast.effects);
 }
