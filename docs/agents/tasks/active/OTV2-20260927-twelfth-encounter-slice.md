@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-twelfth-encounter-slice
 title: Heart of Destruction minion forms and servant replicas (twelfth encounter slice)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1022
 jira: KAN-16
 base_sha: e422fc9d2962f63ccb6f0af9ee80ec5f449c2a31
 head_sha: null
