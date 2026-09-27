@@ -239,12 +239,15 @@ def routing_surface(roots: dict[str, str], path: str) -> str:
 
 
 def file_reference_patterns(path: str) -> tuple[str, ...]:
-    """Return conservative literals for an exact repository-file consumer."""
-    parts = PurePosixPath(path).parts
-    patterns = {path, parts[-1]}
-    if len(parts) >= 2:
-        patterns.add("/".join(parts[-2:]))
-    return tuple(sorted(patterns, key=lambda value: (-len(value), value)))
+    """Return the repository-rooted literal for an exact file consumer.
+
+    Basename and short-suffix matching conflates unrelated auxiliary files such
+    as authoring samples named ``manifest.json`` with product-owned files that
+    happen to use the same conventional name. References that cross from a
+    Cargo package into an auxiliary top-level root retain this repository path
+    after any leading ``../`` components, so the rooted literal is sufficient.
+    """
+    return (path,)
 
 
 def directory_reference_patterns(path: str) -> tuple[str, ...]:
