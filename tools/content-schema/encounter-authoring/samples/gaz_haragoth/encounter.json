@@ -1,0 +1,138 @@
+{
+  "identity": {
+    "key": "canary:encounter/gaz_haragoth",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Roshamuul: Gaz'haragoth",
+  "scope": "channel_shared",
+  "participants": [
+    {
+      "role": "gaz_haragoth",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/gaz_haragoth",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "minion_of_gaz_haragoth",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/minion_of_gaz_haragoth",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [
+      {
+        "name": "heal_pending",
+        "initial": false
+      }
+    ],
+    "timers": [
+      {
+        "name": "nightmare_heal",
+        "duration_ms": 7000,
+        "repeat": false
+      }
+    ]
+  },
+  "rules": [
+    {
+      "key": "gaz_haragoth_draws_on_nightmares",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "gaz_haragoth",
+        "percent": 12.5
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "heal_pending",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "heal_pending",
+          "value": true
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "gaz_haragoth"
+          },
+          "text": "Gaz'haragoth begins to draw on the nightmares to HEAL himself!",
+          "mode": "yell"
+        },
+        {
+          "kind": "timer",
+          "timer": "nightmare_heal",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "gaz_haragoth_heals",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "nightmare_heal"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "gaz_haragoth"
+          },
+          "amount": 300000
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "gaz_haragoth"
+          },
+          "text": "Gaz'haragoth HEALS himself!",
+          "mode": "yell"
+        },
+        {
+          "kind": "flag",
+          "flag": "heal_pending",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "minion_leaves_a_vortex",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "minion_of_gaz_haragoth"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "create",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/20121",
+            "revision": "canary-47dfd51f"
+          },
+          "at": "death_position",
+          "revert_after_ms": 60000,
+          "interaction": "canary:interaction/33542"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

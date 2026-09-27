@@ -4,6 +4,9 @@
   "covers": {
     "CultsOfTibiaBossDeath": [
       "canary:creature/ravenous_hunger"
+    ],
+    "Splash": [
+      "canary:creature/wine_cask"
     ]
   },
   "sources": [
@@ -20,6 +23,20 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_bosses_mission_cults.lua",
       "blob_sha1": "5ce125af212e79be3d3ea5f7d2b209fe8a133ace"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/cults_of_tibia/bosses/wine_cask.lua",
+      "blob_sha1": "1f8e60247928b3041a46f873e2a59d50e00c9f44"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_splash.lua",
+      "blob_sha1": "bf8b0ac2d5981b442c1ca946628e51779925e516"
     }
   ],
   "entries": [
@@ -73,6 +90,76 @@
       "status": "mapped",
       "resolution": "onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage CultsOfTibia.Barkless.Mission to 6 when it is lower.",
       "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Wine Cask is the wine_cask participant; its file registers Splash.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        1,
+        3,
+        4,
+        5
+      ],
+      "status": "mapped",
+      "resolution": "onThink: below 85% health (Canary compares strictly).",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        6,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "addEvent(..., 100): the effect follows 100 ms later.",
+      "destination": "/encounter/rules/1/delay_ms"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        7,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "A liquor spirit on (33160, 31945, 15), not forced.",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        12
+      ],
+      "status": "mapped",
+      "resolution": "creature:say(\"SPLASH!\", TALKTYPE_MONSTER_YELL).",
+      "destination": "/encounter/rules/1/actions/1"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        13
+      ],
+      "status": "mapped",
+      "resolution": "The cask heals to full, so it crosses 85% again only after new damage.",
+      "destination": "/encounter/rules/1/actions/2"
+    },
+    {
+      "source_index": 3,
+      "source_lines": [
+        8,
+        9,
+        10
+      ],
+      "status": "approved_omission",
+      "resolution": "The closure tests the captured creature object, never nil; a delayed action on a creature that no longer exists does nothing (§9.2)."
     }
   ],
   "outcome_evidence": [

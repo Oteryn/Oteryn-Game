@@ -15,6 +15,16 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "tentacle",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/tentacle_of_the_deep_terror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
@@ -27,12 +37,32 @@
       "key": "next_destination",
       "kind": "point",
       "description": "Destination while open; Canary (33740, 31940, 15)."
+    },
+    {
+      "key": "tentacle_room",
+      "kind": "area",
+      "description": "Every tile within 13 tiles of Canary (33740, 31953, 14) on that floor."
+    },
+    {
+      "key": "tentacle_spawns",
+      "kind": "area",
+      "description": "Canary x 33736-33746, y 31948-31957, z 14."
+    },
+    {
+      "key": "deep_terror_spawn",
+      "kind": "point",
+      "description": "Canary (33741, 31953, 14)."
     }
   ],
   "phases": [],
   "state": {
     "counters": [],
-    "flags": [],
+    "flags": [
+      {
+        "name": "deep_terror_risen",
+        "initial": false
+      }
+    ],
     "timers": []
   },
   "rules": [
@@ -60,6 +90,82 @@
           "anchor": "exit_teleporter",
           "destination": "next_destination",
           "revert_after_ms": 120000
+        }
+      ]
+    },
+    {
+      "key": "tentacle_regrows",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "tentacle"
+      },
+      "delay_ms": 10000,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "tentacle",
+          "anchor": "tentacle_room",
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/tentacle_of_the_deep_terror",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "tentacle",
+          "count": 1,
+          "at": {
+            "random_in": "tentacle_spawns"
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "deep_terror_rises",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "tentacle"
+      },
+      "delay_ms": 5000,
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "tentacle",
+          "anchor": "tentacle_room",
+          "present": false
+        },
+        {
+          "kind": "flag",
+          "flag": "deep_terror_risen",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/deep_terror",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "deep_terror",
+          "count": 1,
+          "at": {
+            "anchor": "deep_terror_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "deep_terror_risen",
+          "value": true
         }
       ]
     }

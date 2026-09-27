@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-encounter-d29
 title: Encounter vocabulary extensions (D29) and the Urmahlullu, Alptramun and Splinter of Madness transcriptions
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 967
 jira: KAN-16
 base_sha: 76c2da68bde1928ab35e4e0f7828c675133cd297
-head_sha: null
-final_head_sha: null
+head_sha: 6a121d78c9a38be596afd3386f5c70d284709dbe
+final_head_sha: 6a121d78c9a38be596afd3386f5c70d284709dbe
 final_head_frozen_at: null
-owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -55,3 +55,8 @@ fence, session, authority or persisted-recovery evidence is touched.
   covered by an encounter are relocated by the monster converter. 52 encounters valid, 46
   manifests fully resolved.
 - `population_census.py` 1,463 of 1,656 fully resolved (1,453 before).
+
+## Completion
+
+Merged as PR #967 (`6f3da2f4079d2f668b8aa7aec5199857422cde6e`) from final head `6a121d7`; required checks passed on that head.
+Owner released.

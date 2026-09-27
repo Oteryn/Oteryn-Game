@@ -14,6 +14,16 @@
       "family": "Item",
       "key": "canary:item/22761",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/organic_matter",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/aggressive_matter",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

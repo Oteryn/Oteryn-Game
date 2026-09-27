@@ -15,9 +15,25 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "wine_cask",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/wine_cask",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
-  "anchors": [],
+  "anchors": [
+    {
+      "key": "liquor_spirit_spawn",
+      "kind": "point",
+      "description": "Canary (33160, 31945, 15)."
+    }
+  ],
   "phases": [],
   "state": {
     "counters": [],
@@ -43,6 +59,47 @@
           "kind": "emit_outcome",
           "outcome": "ravenous_hunger_defeated",
           "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "wine_cask_splashes",
+      "trigger": {
+        "kind": "health_crossed",
+        "role": "wine_cask",
+        "percent": 85
+      },
+      "delay_ms": 100,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/liquor_spirit",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "anchor": "liquor_spirit_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "say",
+          "subject": {
+            "role": "wine_cask"
+          },
+          "text": "SPLASH!",
+          "mode": "yell"
+        },
+        {
+          "kind": "heal",
+          "subject": {
+            "role": "wine_cask"
+          },
+          "amount": "full"
         }
       ]
     }
