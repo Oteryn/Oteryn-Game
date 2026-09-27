@@ -10,13 +10,13 @@ base_branch: main
 branch: agent/reference-manifest-v4-514
 issue: 514
 pr: 640
-base_sha: b44fefe08f6aaf1b2c1c23dedd92bab0de87146e
+base_sha: 0e48ae518842fafc8b9e0867eb8ce041dc1a4332
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: REFERENCE_MANIFEST_V4_514
 created_at: 2026-09-17T07:14:16Z
-updated_at: 2026-09-27T18:17:08Z
+updated_at: 2026-09-27T18:39:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
@@ -64,7 +64,7 @@ Advance the accepted Reference evidence/parity registry exactly once from manife
 - [x] Seven cases are admitted only at supported field/classification ceilings; none is `PARITY_CONFIRMED`.
 - [x] Every declared difference names the accepted Oteryn Reference death contract and the declared-difference case is scoped only to progression loss.
 - [x] Public-safe source packet records exact locators/source types, explicit unique evidence anchors, truthful date/timestamp precision, provenance/legal dispositions, and uncertainty.
-- [ ] Exact repaired generation passes pinned SourceMeta schema validation, JSON parse, governance validation, semantic audit, and diff checks.
+- [x] Exact repaired manifest/source generation passes pinned SourceMeta schema validation, JSON parse, semantic invariants, and diff checks; successor repository governance remains exact-head gated.
 - [ ] Exact-head hosted CI and whole-diff review complete with zero unresolved material threads.
 
 ## Excluded scope
@@ -80,14 +80,15 @@ Schema mutation/versioning; runtime/client/server/Content/Cargo/workflow/registr
 - Kept Oteryn implementation state `NOT_STARTED` and exact revision/test links empty for every added case.
 - Second repair generation narrowed `character.death.low_level_base_xp_skill_loss.v1` to Global progression-loss semantics only; the Oteryn difference remains parity-side through the accepted difference reference.
 - Second repair generation added explicit unique anchors for every manifest `artifact_id` and replaced unsupported synthetic midnight retrieval timestamps with `null` plus truthful date-precision notes.
-- Third repair generation adds the official 2009 death-history continuity source and lowers Goblin Intruder retaliation to fail-closed UNKNOWN after exact-head Luna review found two P1 evidence-classification gaps.
-- The reviewed predecessor is 40c12953bfc0862dd1d97eb947e139e26040cde8; the successor exact SHA is bound only by repository readback after atomic publication, so this packet does not self-assert its own commit ID.
+- Third repair generation added the official 2009 death-history continuity source and lowered Goblin Intruder retaliation to fail-closed UNKNOWN after exact-head Luna review found two P1 evidence-classification gaps.
+- Current-gate reconciliation merged protected main `0e48ae518842fafc8b9e0867eb8ce041dc1a4332` normally into the task branch because the original merge base predated the required routing validator. Reconciled predecessor `3708e5b01d06d083e2eb7ff12a6ca3514dc96414` preserved all three owned content blobs and introduced no additional PR paths.
+- The exact candidate containing this packet is bound by live branch/PR readback and the #162 freeze comment after publication; this packet intentionally does not self-assert its own commit ID or copy transient run state.
 
 ## Validation
 
 ### Focused
 
-Historical validation through first repair head `ee79acaa0a7d4b65f148eadddd87d3f6eac78bf8` passed pinned SourceMeta Draft 2020-12 validation, JSON parse, governance validation, semantic audit and `git diff --check`, but that evidence is stale for the second repair generation.
+Exact reconciled predecessor `3708e5b01d06d083e2eb7ff12a6ca3514dc96414` passed pinned SourceMeta Draft 2020-12 metaschema/instance validation on exact Git blobs, JSON parse, semantic invariants, LF/no-CR byte checks and `git diff --check`. The task-checkpoint repair changes no manifest, schema or source-packet byte; its successor still requires fresh exact-head repository governance, hosted CI and independent review.
 
 Required fresh checks for the resulting exact PR head:
 
@@ -102,7 +103,7 @@ Required fresh checks for the resulting exact PR head:
 
 ### Component/integration
 
-- Repository Agent Governance / Architecture Semantic Audit / Merge Gate: pending fresh exact-head CI after second repair generation.
+- Repository Agent Governance / Architecture Semantic Audit / Merge Gate: use the live exact-head checks on PR #640; every successor generation requires fresh qualification.
 
 ### E2E
 
@@ -110,24 +111,24 @@ Required fresh checks for the resulting exact PR head:
 
 ### Exact-head CI
 
-- final head: pending readback after task-record publication
-- trigger source: PR branch push
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: authoritative in live PR #640 and the corresponding #162 freeze comment after publication; intentionally not self-referential here
+- trigger source: PR branch mutation or metadata event as recorded by GitHub
+- workflow/run/job: authoritative in live exact-head checks
+- runner assignment: authoritative in live exact-head checks
+- classification: authoritative in live exact-head checks
+- result: pending successor qualification at task-checkpoint authoring time; use live checks for current status
 
 ## Self-review
 
-- exact head: pending readback after task-record publication
+- exact head: authoritative in live PR #640 and the corresponding #162 freeze comment after publication
 - method/reviewer: whole diff against #162 allocation, manifest owner pin, schema-v1 contract, and independent-review findings
-- material findings closed before the next freeze: progression-scope P1; artifact-anchor P2; retrieval-time P2; lifecycle-generation P2; missing death-continuity source P1; unsupported Goblin target continuity P1
-- verdict: pending fresh exact-head readback
+- material findings closed before the next freeze: progression-scope P1; artifact-anchor P2; retrieval-time P2; lifecycle-generation P2; missing death-continuity source P1; unsupported Goblin target continuity P1; stale checkpoint P2
+- verdict: pending fresh exact-head review of the successor containing this checkpoint repair
 
 ## Independent review
 
-- required: YES; allocation requires fresh whole-diff evidence/architecture review on the exact second-repair head
-- exact head: pending
+- required: YES; allocation requires fresh whole-diff evidence/architecture review on every exact successor head
+- exact head: authoritative in live PR #640 and the corresponding #162 freeze comment after publication
 - method/auditor: repository PR review/check surface
 - material findings: prior generation findings are stale after repair
 - verdict: pending
@@ -144,27 +145,29 @@ Required fresh checks for the resulting exact PR head:
 ## Context checkpoint
 
 ```yaml
-last_progress: third repair generation prepared to add the admitted official death-history source and lower Goblin retaliation to UNKNOWN
+last_progress: third evidence repair and current-gate reconciliation are complete; this packet routes subsequent exact-head lifecycle state to live PR/check/Issue authority
 status: validating
 branch: agent/reference-manifest-v4-514
-head_sha: null
+head_sha: null  # live PR #640 and #162 freeze comment after publication
 pr: 640
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: pull_request_branch_push
-ci_check_generation: pending_exact_head_readback
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+final_head_sha: null  # intentionally not self-referential
+final_head_frozen_at: null  # authoritative in #162 freeze comment
+ci_trigger_source: live_github_pr_events
+ci_check_generation: live_pr_exact_head
+ci_checks_for_current_head: live_pr_authoritative
+ci_run_ids:
+  - live_pr_640
+ci_job_ids:
+  - live_pr_640
+runner_assignment_state: live_pr_authoritative
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: live_pr_authoritative
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 5
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: atomically publish the bounded third repair, freeze exact successor, rerun pinned validation and hosted CI, then require fresh independent whole-diff review
+next_action: follow live PR #640 exact-head qualification and independent review through READY_FOR_INTEGRATION; do not amend this packet solely to copy transient SHA/run status
 ```
