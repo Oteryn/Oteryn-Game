@@ -6,6 +6,7 @@ use crate::domain::progression::{
 };
 use crate::domain::{CharacterId, CharacterRevision};
 use crate::durability::DurabilityRoot;
+use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
     ExperienceCommitOutcome, ExperienceRewardOccurrence,
@@ -13,6 +14,13 @@ use crate::durability::character_progression::{
 use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
+};
+use crate::foundation::admission_authority_publication::{
+    AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
+    AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
+    AdmissionAuthorityPublicationErrorV1, AdmissionAuthorityPublicationV1,
+    AdmissionPublicationPreconditionV1, AdmissionPublicationPurposeV1,
+    AdmissionPublicationSourceV1,
 };
 use crate::foundation::{ConnectionGeneration, RuntimeScopeRefV1, ScopeOwnershipGeneration};
 use oteryn_simulation_determinism::{ExactI64, RoundingMode};
@@ -205,12 +213,69 @@ fn bootstrap_binding() -> Vec<u8> {
     binding
 }
 
-fn channel_scope_key() -> [u8; 33] {
-    let mut key = [0_u8; 33];
-    key[0] = 1;
-    key[1..17].copy_from_slice(&id(42));
-    key[17..].copy_from_slice(&id(43));
-    key
+struct RuntimeReadiness(AdmissionAuthorityPublicationChangeV1);
+
+impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for RuntimeReadiness {}
+
+impl AdmissionAuthorityOwningPublisherV1 for RuntimeReadiness {
+    fn resolve_publication(
+        &self,
+        _now: i64,
+    ) -> Result<Vec<AdmissionAuthorityPublicationChangeV1>, AdmissionAuthorityPublicationErrorV1>
+    {
+        Ok(vec![self.0.clone()])
+    }
+}
+
+async fn publish_readiness(
+    pool: &sqlx::PgPool,
+    root: &DurabilityRoot,
+    node: &NodeIncarnationProof,
+    scope: RuntimeScopeRefV1,
+    ownership_generation: u64,
+) -> TestResult {
+    let now: i64 =
+        sqlx::query_scalar("SELECT floor(extract(epoch FROM statement_timestamp()))::bigint")
+            .fetch_one(pool)
+            .await?;
+    let change = AdmissionAuthorityPublicationChangeV1 {
+        key: AdmissionAuthorityGuardKeyV1::Runtime(scope),
+        source: AdmissionPublicationSourceV1 {
+            authority: "game-runtime-publisher".into(),
+            purpose: AdmissionPublicationPurposeV1::RuntimeOwnershipAndReadiness,
+            source_revision: 1,
+            decision_identity: "progression-runtime-ready-1".into(),
+            source_observed_at: now,
+            clock_uncertainty_seconds: 0,
+        },
+        precondition: AdmissionPublicationPreconditionV1::Bootstrap {
+            restored_publication_high_water: Some(0),
+        },
+        publication_revision: 1,
+        state: AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation,
+            ready: true,
+            route_revision: "route-1".into(),
+            runtime_observation_revision: "runtime-1".into(),
+            protocol_major: 1,
+            transport_profile: 1,
+            ruleset_revision: "ruleset-1".into(),
+            content_revision: "content-1".into(),
+            map_revision: "map-1".into(),
+            world_policy_revision: "world-policy-1".into(),
+            offer_revision: "offer-1".into(),
+        },
+    };
+    let publication = AdmissionAuthorityPublicationV1::prepare(&RuntimeReadiness(change), now)
+        .map_err(|error| format!("{error:?}"))?;
+    let disposition = root
+        .publish_runtime_readiness(node, &publication)
+        .await
+        .map_err(|error| format!("{error:?}"))?;
+    if disposition != GuardPublicationDisposition::Applied {
+        return Err(format!("unexpected readiness outcome: {disposition:?}").into());
+    }
+    Ok(())
 }
 
 async fn seed_character(
@@ -316,14 +381,6 @@ async fn seed_character(
     .bind(id(50).as_slice())
     .execute(pool)
     .await?;
-    sqlx::query(
-        "INSERT INTO game_durability_admission_runtime_guards VALUES \
-         ($1,1,true,1,'test',1,'runtime-current',1,0,'{}')",
-    )
-    .bind(channel_scope_key().as_slice())
-    .execute(pool)
-    .await?;
-
     let fact = node.fact();
     sqlx::query(
         "INSERT INTO game_control_scope_grants \
@@ -344,8 +401,7 @@ async fn seed_character(
     let assignment = writer
         .submit(&AssignmentRequest {
             operation_key: OperationKey::from_bytes([7_u8; 32]),
-            actor: ControlActor::new("oteryn_test_admin")
-                .map_err(|error| format!("{error:?}"))?,
+            actor: ControlActor::new("oteryn_test_admin").map_err(|error| format!("{error:?}"))?,
             command: AssignmentCommand::Assign {
                 scope,
                 target: fact,
@@ -353,9 +409,17 @@ async fn seed_character(
         })
         .await
         .map_err(|error| format!("{error:?}"))?;
-    if !matches!(assignment, AssignmentOutcome::Committed(_)) {
+    let AssignmentOutcome::Committed(receipt) = assignment else {
         return Err(format!("unexpected assignment outcome: {assignment:?}").into());
-    }
+    };
+    publish_readiness(
+        pool,
+        root,
+        node,
+        scope,
+        receipt.assignment.ownership_generation,
+    )
+    .await?;
     Ok(())
 }
 

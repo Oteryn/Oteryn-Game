@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: codex/r7-p03-character-xp-commit
 issue: 162
-pr: null
+pr: 998
 base_sha: 5ecf841c7b849a252ec239226361e6e76ac05239
-head_sha: null
+head_sha: 18d50d1fc7da667ed2422af6f9490703fbf4d8da
 final_head_sha: null
 final_head_frozen_at: null
 owner: /root
 created_at: 2026-09-27T14:25:00Z
-updated_at: 2026-09-27T15:28:55Z
+updated_at: 2026-09-27T16:22:30Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_progression.rs
@@ -55,12 +55,9 @@ same state. P03 does not wire Combat to XP and is not a playable milestone.
   transaction, exact-retry receipts, stale/conflicting rejection and restart readback.
 - `PROVEN`: FND-04 connection, lease and scope generations are separate fences
   and must be revalidated in the XP transaction.
-- `PROVEN`: `domain::progression::calculate_progression` is the existing pure,
-  persistence-neutral calculator and is reused without a second formula.
-- `PROVEN`: before freeze, AUTHORING fast-forwarded from allocated base
-  `56e5c8a39bf2d899cbbc24735d2d7440d4ecaec1` through `0d01e9841f9c7bbc6895d6bd928f8521e6f205f3`
-  and `0c7098eb5086fb8274527ec3a419fd4a2f862f38` to protected
-  `main@5ecf841c7b849a252ec239226361e6e76ac05239`; every integrated path is
+- `PROVEN`: the existing pure `calculate_progression` is reused without a second formula.
+- `PROVEN`: before freeze, AUTHORING refreshed to protected
+  `main@5ecf841c7b849a252ec239226361e6e76ac05239`; integrated paths were
   disjoint from all nine P03 paths and migration `0009` remained free.
 - `UNKNOWN`: Reference/Global formula parity, low-level bonuses, modifiers,
   party/shared XP, death loss commit and the runtime death-to-XP producer.
@@ -181,10 +178,10 @@ previously unseen occurrence.
 
 - WSL `cargo check -p oteryn-game-server --locked`: PASS.
 - WSL focused and registered PostgreSQL target compile: PASS.
-- Protected `character_authority_postgres` target discovers the shared P03 cases: PASS.
+- Protected `character_authority_postgres` discovers the four shared P03 cases: PASS.
 - WSL strict Clippy for `character_progression_postgres` with `--no-deps -D warnings`: PASS.
-- WSL full `cargo clippy --workspace --all-targets -- -D warnings`: PASS after exact-head repair.
-- GPT-6 Luna pre-freeze SQL/trigger/concurrency static audit: PASS, no material findings.
+- WSL strict Clippy for the registered protected target: PASS after each fixture repair.
+- GPT-6 Luna SQL/trigger/concurrency audit: PASS, no material findings.
 - Pure binding regressions: present in `character_progression.rs`.
 
 ### Component/integration
@@ -193,10 +190,14 @@ previously unseen occurrence.
 - Protected PostgreSQL 17.6 routing: shared cases are included by registered `character_authority_postgres`.
 - Local configured PostgreSQL: pending; no `OTERYN_TEST_POSTGRES_ADMIN_URL` and
   the installed Docker Desktop engine failed to initialize.
-- Hosted PostgreSQL 17.6: run `36329970211` exposed the insecure `/tmp` fixture
-  parent; run `36331164655` proved its `0700` repair, then rejected a direct scope
-  insert with `42501`. The successor uses the established control grant and
-  `RuntimeScopeAssignmentWriter`; configured rerun is pending.
+- Hosted PostgreSQL 17.6: `36329970211` exposed the insecure `/tmp` parent;
+  `36331164655` proved its `0700` repair, then rejected the direct scope insert.
+  On `18d50d1f`, run `36332161320` built, linted and ran the workspace, then all
+  four P03 cases reached the registered target and returned `Ambiguous`: the raw
+  guard was incompatible with the production assignment transition. The successor
+  removes that seed, assigns through `RuntimeScopeAssignmentWriter`, then publishes
+  holder readiness through `publish_runtime_readiness`. It also repairs the sole
+  rustfmt failure reported by policy job `108656176766`.
 
 ### E2E
 
@@ -223,7 +224,8 @@ previously unseen occurrence.
 - required: YES; durable Character mutation and recovery/session fencing
 - exact head: pending remote freeze
 - method/auditor: independent GPT-6 Luna subagent
-- material findings: successor review found one P2 terminal-session coverage gap; fixed before final freeze
+- material findings: earlier P2 terminal-session coverage gap fixed; `18d50d1f`
+  review found readiness was not republished after assignment, fixed in AUTHORING
 - verdict: pending
 
 ## PR and closeout
@@ -238,11 +240,11 @@ previously unseen occurrence.
 ## Context checkpoint
 
 ```yaml
-last_progress: hosted PostgreSQL fixture now uses the production scope-assignment authority path
+last_progress: removed the raw Runtime guard and now assign then publish holder readiness through production APIs
 status: implementing
 branch: codex/r7-p03-character-xp-commit
-head_sha: null
-pr: null
+head_sha: 18d50d1fc7da667ed2422af6f9490703fbf4d8da
+pr: 998
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -255,8 +257,8 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 5
-ci_recovery_actions_for_current_head: 3
+repair_cycles_for_current_gate: 6
+ci_recovery_actions_for_current_head: 4
 stall_warnings: 0
 owner_action_required: null
 blocker: null
