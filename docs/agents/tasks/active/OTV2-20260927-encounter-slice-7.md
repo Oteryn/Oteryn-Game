@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-encounter-slice-7
 title: Encounter vocabulary D31 and a seventh slice of Canary events (knowledge drops, skirmish, evaporation, drops)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 972
 jira: KAN-16
 base_sha: 4731bbefab6703dc9b43c6154d661033f7505690
 head_sha: null
