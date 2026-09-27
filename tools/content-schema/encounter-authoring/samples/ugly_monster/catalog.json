@@ -59,6 +59,16 @@
       "family": "Item",
       "key": "canary:item/30061",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/gaffir",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/guard_captain_quaid",
+      "revision": "canary-47dfd51f"
     }
   ]
 }
