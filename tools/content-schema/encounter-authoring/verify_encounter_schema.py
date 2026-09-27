@@ -24,7 +24,7 @@ def fixture():
                    'conditions': [{'kind': 'chance_percent', 'value': 10}],
                    'actions': [{'kind': 'prevent_death', 'role': 'boss'}, {'kind': 'heal', 'subject': {'role': 'boss'}, 'amount': 'full'}]},
                   {'key': 'death', 'trigger': {'kind': 'creature_died', 'role': 'boss'}, 'conditions': [],
-                   'actions': [{'kind': 'emit_outcome', 'outcome': 'victory'},
+                   'actions': [{'kind': 'emit_outcome', 'outcome': 'victory', 'credited': 'damage_contributors'},
                                {'kind': 'teleport', 'who': {'players_in': 'arena'}, 'to': 'exit'}]}],
         'outcomes': ['victory'], 'reset_after_ms': 300000}
     catalog = {'definitions': [ref('Creature', 'boss'), ref('Creature', 'add'), ref('Item', 'vortex')]}
@@ -58,7 +58,13 @@ case('rules are required', lambda e, c: e.update(rules=[]))
 case('unknown role in trigger', rule(trigger={'kind': 'creature_died', 'role': 'ghost'}))
 case('prevent_death outside lethal_damage', rule([{'kind': 'prevent_death', 'role': 'boss'}]))
 case('prevent_death for another role', lambda e, c: e['rules'][0]['actions'].__setitem__(0, {'kind': 'prevent_death', 'role': 'adds'}))
-case('undeclared outcome', rule([{'kind': 'emit_outcome', 'outcome': 'defeat'}]))
+case('undeclared outcome', rule([{'kind': 'emit_outcome', 'outcome': 'defeat', 'credited': 'damage_contributors'}]))
+case('outcome credit is required', rule([{'kind': 'emit_outcome', 'outcome': 'victory'}]))
+case('killer credit outside a death trigger', rule([{'kind': 'emit_outcome', 'outcome': 'victory', 'credited': 'killer'}]))
+case('players_in_anchor credit needs an area', rule([{'kind': 'emit_outcome', 'outcome': 'victory', 'credited': 'players_in_anchor',
+                                                      'anchor': 'exit'}]))
+case('has_master condition accepted', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                           conditions=[{'kind': 'has_master', 'role': 'boss', 'value': False}]), True)
 case('teleport to unknown anchor', rule([{'kind': 'teleport', 'who': {'role': 'boss'}, 'to': 'nowhere'}]))
 case('players_in needs an area', rule([{'kind': 'teleport', 'who': {'players_in': 'exit'}, 'to': 'exit'}]))
 case('unknown counter', rule([{'kind': 'counter', 'counter': 'missing', 'operation': 'add', 'value': 1}]))
@@ -78,6 +84,11 @@ case('map_item create forbids into', rule([{'kind': 'map_item', 'operation': 'cr
                                             'into': ref('Item', 'vortex'), 'anchor': 'exit'}]))
 case('timed map item accepted', rule([{'kind': 'map_item', 'operation': 'create', 'item': ref('Item', 'vortex'), 'anchor': 'exit',
                                        'revert_after_ms': 60000}]), True)
+case('teleporter with destinations accepted', rule([{'kind': 'map_item', 'operation': 'transform', 'item': ref('Item', 'vortex'),
+                                                    'into': ref('Item', 'vortex'), 'anchor': 'exit', 'destination': 'exit',
+                                                    'revert_after_ms': 60000, 'revert_destination': 'exit'}]), True)
+case('revert destination needs a revert time', rule([{'kind': 'map_item', 'operation': 'transform', 'item': ref('Item', 'vortex'),
+                                                      'into': ref('Item', 'vortex'), 'anchor': 'exit', 'revert_destination': 'exit'}]))
 case('remove needs exactly one target', rule([{'kind': 'remove', 'role': 'boss', 'all_in': 'arena'}]))
 case('spawn a new role accepted', rule([{'kind': 'spawn', 'creature': ref('Creature', 'add'), 'role': 'adds', 'count': 2,
                                          'at': {'random_in': 'arena'}, 'owner': 'none', 'health': 'full'}]), True)

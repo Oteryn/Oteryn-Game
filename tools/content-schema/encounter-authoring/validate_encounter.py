@@ -92,6 +92,8 @@ def semantic(e, catalog):
             elif ck == 'in_anchor':
                 subject(condition['subject'], at, trigger)
                 need_area(condition['anchor'], at)
+            elif ck == 'has_master':
+                need('role', condition['role'], known_roles, at)
             elif ck == 'health_percent':
                 need('role', condition['role'], known_roles, at)
             elif ck in ('killer_is_player', 'killer_progress') and kind not in ('creature_died', 'lethal_damage', 'damage_taken'):
@@ -124,6 +126,11 @@ def semantic(e, catalog):
                 need('anchor', action['anchor'], anchors, at)
                 if (action['operation'] == 'transform') != ('into' in action):
                     errors.append(f'{at}: map_item transform needs into, create/remove forbid it')
+                for field in ('destination', 'revert_destination'):
+                    if field in action:
+                        need('anchor', action[field], anchors, at)
+                if 'revert_destination' in action and 'revert_after_ms' not in action:
+                    errors.append(f'{at}: revert_destination needs revert_after_ms')
             if ak == 'counter':
                 need('counter', action['counter'], counters, at)
             if ak == 'flag':
@@ -138,6 +145,12 @@ def semantic(e, catalog):
                 need('timer', action['timer'], timers, at)
             if ak == 'emit_outcome':
                 need('outcome', action['outcome'], e['outcomes'], at)
+                if (action['credited'] == 'players_in_anchor') != ('anchor' in action):
+                    errors.append(f'{at}: players_in_anchor credit needs exactly its anchor')
+                if 'anchor' in action:
+                    need_area(action['anchor'], at)
+                if action['credited'] == 'killer' and kind not in ('creature_died', 'lethal_damage', 'damage_taken'):
+                    errors.append(f'{at}: killer credit needs a death, lethal damage or damage trigger')
     if catalog is not None:
         declared = {(r['family'], r['key'], r['revision']) for r in catalog['definitions']}
         for ref in refs(e):
@@ -159,6 +172,8 @@ def check_manifest(manifest):
             errors.append(f'manifest/entries/{n}: source_lines and resolution are required')
         if entry.get('status') == 'mapped' and not str(entry.get('destination', '')).startswith('/encounter/'):
             errors.append(f'manifest/entries/{n}: a mapped entry needs an /encounter/ destination')
+    if not isinstance(manifest.get('covers'), dict):
+        errors.append('manifest: covers must map each transcribed Canary event to the creature keys it resolves')
     return errors
 
 

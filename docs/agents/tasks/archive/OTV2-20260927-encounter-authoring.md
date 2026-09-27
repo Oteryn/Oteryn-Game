@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-encounter-authoring
 title: Encounter authoring format and first Canary encounter (D20, D26-D28)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 960
 jira: KAN-16
 base_sha: bfcbe853db95aa7f56c0354f7aa986912381164f
-head_sha: null
-final_head_sha: null
+head_sha: 60b883cb8506597b41f50e39e218ad23535a75df
+final_head_sha: 60b883cb8506597b41f50e39e218ad23535a75df
 final_head_frozen_at: null
-owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -54,3 +54,8 @@ fence, session, authority or persisted-recovery evidence is touched.
 - `samples/soul_war_taint_zones/`: 15 participants, valid, manifest fully mapped.
 - Monster converter records transcribed events as relocated; `population_census.py` 1,383 of 1,656
   fully resolved (1,377 before).
+
+## Completion
+
+Merged as PR #960 (`fcd965b30f96a98de3384ff845d7919dbb6f7a86`) from final head `60b883c`; required checks passed on that head.
+Owner released.

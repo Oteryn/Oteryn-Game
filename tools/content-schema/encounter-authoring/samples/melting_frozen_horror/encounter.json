@@ -1,0 +1,47 @@
+{
+  "identity": {
+    "key": "canary:encounter/melting_frozen_horror",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Forgotten Knowledge: Melting Frozen Horror",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "melting_frozen_horror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/melting_frozen_horror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "melting_frozen_horror_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "melting_frozen_horror"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "melting_frozen_horror_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "melting_frozen_horror_defeated"
+  ]
+}

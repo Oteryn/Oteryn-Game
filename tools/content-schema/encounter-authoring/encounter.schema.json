@@ -759,6 +759,27 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "has_master"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "value": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "role",
+            "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "health_percent"
             },
             "role": {
@@ -1176,6 +1197,18 @@
             "revert_after_ms": {
               "type": "integer",
               "minimum": 1
+            },
+            "destination": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "revert_destination": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "effect": {
+              "type": "string",
+              "minLength": 1
             }
           },
           "required": [
@@ -1353,11 +1386,23 @@
             "outcome": {
               "type": "string",
               "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "credited": {
+              "enum": [
+                "damage_contributors",
+                "killer",
+                "players_in_anchor"
+              ]
+            },
+            "anchor": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
             }
           },
           "required": [
             "kind",
-            "outcome"
+            "outcome",
+            "credited"
           ]
         }
       ]

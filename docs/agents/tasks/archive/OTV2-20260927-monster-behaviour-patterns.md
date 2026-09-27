@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-monster-behaviour-patterns
 title: Wiki ability scenes, spell behaviour patterns and plain-combat fields for Canary monsters (D18, D19)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 959
 jira: KAN-16
 base_sha: 39ab2aa4dac0fe1b11d3e00fde0d03967c60f0d3
-head_sha: null
-final_head_sha: null
+head_sha: 61c72b865773a36b6d7782c8c16bfef58034b12b
+final_head_sha: 61c72b865773a36b6d7782c8c16bfef58034b12b
 final_head_frozen_at: null
-owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -61,3 +61,8 @@ fence, session, authority or persisted-recovery evidence is touched.
 - `population_census.py`: 1,377 of 1,656 fully resolved (1,298 on PR #955), 0 structure-invalid.
   Batch 1 10/10, batch 2 9/10 manifests resolve; source coverage 242/242;
   `verify_formal_schema.py` 229/229.
+
+## Completion
+
+Merged as PR #959 (`bfcbe853db95aa7f56c0354f7aa986912381164f`) from final head `61c72b8`; required checks passed on that head.
+Owner released.

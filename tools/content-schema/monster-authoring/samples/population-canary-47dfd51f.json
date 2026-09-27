@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 267,
-    "fully_resolved": 1383,
+    "blocked": 261,
+    "fully_resolved": 1389,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1047
+    "wiki_adopted_monsters": 1052
   },
   "wiki_adopted_rows": {
     "Loot2": 11595,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 202,
+      "monsters": 190,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -1074,6 +1074,7 @@
     "malicious_minion",
     "malicious_soul",
     "malkhar_deathbringer_stop",
+    "malofur_mangrinder",
     "mammoth",
     "man_in_the_cave",
     "manta_ray",
@@ -1087,6 +1088,7 @@
     "massive_fire_elemental",
     "massive_water_elemental",
     "mawhawk",
+    "maxxenius",
     "meadow_strider",
     "mean_lost_soul",
     "mean_maw",
@@ -1289,6 +1291,7 @@
     "pixie",
     "plaguesmith",
     "plaguethrower",
+    "plant_abomination",
     "plant_attendant",
     "plunder_patriarch",
     "poacher",
@@ -1505,6 +1508,7 @@
     "tame_terror_bird",
     "tanjis",
     "tarantula",
+    "tarbaz",
     "tarnished_spirit",
     "tazhadur",
     "teleskor",
@@ -1548,9 +1552,11 @@
     "the_imperor",
     "the_keeper",
     "the_last_lore_keeper",
+    "the_lord_of_the_lice",
     "the_many",
     "the_masked_marauder",
     "the_mutated_pumpkin",
+    "the_nightmare_beast",
     "the_noxious_spawn",
     "the_obliverator",
     "the_old_widow",
