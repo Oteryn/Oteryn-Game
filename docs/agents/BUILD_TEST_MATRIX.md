@@ -78,6 +78,8 @@ The canonical Merge Queue workflow is `.github/workflows/merge-group-gate.yml`; 
 | Complete valid diff containing only Markdown under `docs/architecture/**` | candidate/governance, dependency review and CodeQL; heavy Rust/PostgreSQL/Windows/supply-chain may be unselected |
 | Everything else, including agent-governance/docs, mixed, special-mode, malformed or incomplete evidence | FULL Linux workspace, PostgreSQL 17.6, Windows client/input/SIM and supply chain plus always-required gates |
 
+The physical server qualifications (`Merge Queue / Node boot against the real Platform`, `Merge Queue / Server Seam over TCP+TLS`) are selected separately on the exact queue diff. The selection uses the protected-base `server_qualification_required` classifier with the same path rules as the pull-request gate, so a batched candidate is re-qualified whenever any of its changes can reach the shipped server. It fails closed: anything but a proven-unrelated diff selects them.
+
 Selected jobs must succeed. Only genuinely unselected jobs may be `skipped`; missing, failed, cancelled or selected-skipped evidence cannot qualify the candidate.
 
 A PR-head PASS does not prove integration. Require the real `merge_group` aggregate `game-gate` SUCCESS and protected-main readback.

@@ -84,6 +84,7 @@ d['trigger'] = {'oneOf': [
     kinded('area_entered', {'anchor': NAME, 'who': enum('player', 'role'), 'role': NAME}, ('anchor', 'who')),
     kinded('area_left', {'anchor': NAME, 'who': enum('player', 'role'), 'role': NAME}, ('anchor', 'who')),
     kinded('phase_entered', {'phase': NAME}, ('phase',)),
+    kinded('item_used', {'role': NAME, 'item': use('ItemRef')}, ('role', 'item')),
     kinded('encounter_started'), kinded('encounter_reset')]}
 
 d['condition'] = {'oneOf': [
@@ -128,9 +129,11 @@ d['action'] = {'oneOf': [
                         'revert_destination': NAME, 'effect': TEXT, 'interaction': KEY}, ('operation', 'item')),
     kinded('counter', {'counter': NAME, 'operation': enum('set', 'add'), 'value': {'type': 'integer'}}, ('counter', 'operation', 'value')),
     kinded('flag', {'flag': NAME, 'value': BOOL}, ('flag', 'value')),
-    kinded('timer', {'timer': NAME, 'operation': enum('start', 'stop')}, ('timer', 'operation')),
+    kinded('timer', {'timer': NAME, 'operation': enum('start', 'stop', 'add'), 'ms': integer(1)}, ('timer', 'operation')),
     kinded('set_phase', {'phase': NAME}, ('phase',)),
     kinded('move_lock', {'role': NAME, 'locked': BOOL}, ('role', 'locked')),
+    kinded('attribute', {'role': NAME, 'attribute': enum('outgoing_damage_percent', 'defense'), 'operation': enum('add', 'reset'),
+                         'value': {'oneOf': [integer(1), obj({'counter': NAME}, ('counter',))]}}, ('role', 'attribute', 'operation')),
     kinded('shared_life', {'role': NAME}, ('role',)),
     kinded('cast', {'ability': use('AbilityRef'), 'encounter_ability': NAME, 'at': use('position')}, ('at',)),
     kinded('say', {'subject': use('subject'), 'text': TEXT, 'mode': enum('say', 'yell')}, ('subject', 'text', 'mode')),

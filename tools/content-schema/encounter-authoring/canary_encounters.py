@@ -1777,6 +1777,83 @@ def king_zelos(build):
 
 
 
+def burning_hatred(build):
+    """BurningChangeForm, the Sorrow, GoshnarsHatredBuff and the callbacks of Goshnar's Hatred: the campfire grows every 45 s and each
+    new fire makes the boss stronger (the D34 boss attribute)."""
+    mechanics = 'data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua'
+    lib = 'data-otservbr-global/lib/quests/soul_war.lua'
+    hatred_file = 'data-otservbr-global/monster/quests/soul_war/goshnars_hatred.lua'
+    item = build.get('goshnars_hatred', "Soul War: Goshnar's Hatred", 'instance_per_party')
+    state = item['encounter']['state']
+    state['counters'].append({'name': 'hatred', 'initial': 0})
+    build.participant(item, 'goshnars_hatred', "Goshnar's Hatred", 'GoshnarsHatredBuff')
+    build.participant(item, 'goshnars_hatred', "Goshnar's Hatred", 'mType.onSpawn')
+    build.participant(item, 'goshnars_hatred', "Goshnar's Hatred", 'mType.onDisappear')
+    forms = ['Ashes of Burning Hatred', 'Spark of Burning Hatred', 'Flame of Burning Hatred', 'Blaze of Burning Hatred']
+    for form in forms:
+        build.participant(item, 'burning_hatred', form, 'BurningChangeForm')
+    sorrow = ref('Item', 'canary:item/33793')
+    build.define(item, sorrow)
+    steps = [f'{slug(form)}_burns' for form in forms]
+    state['timers'] += [{'name': step, 'duration_ms': 46000 if n == 3 else 45000, 'repeat': False} for n, step in enumerate(steps)]
+    path = build.rule(item, {'key': 'the_fire_is_lit', 'trigger': {'kind': 'encounter_started'}, 'conditions': [],
+                             'actions': [{'kind': 'timer', 'timer': steps[0], 'operation': 'start'}]})
+    build.entry(item, lib, [346, 347, 348, 349, 350, 351, 352, 353, 367, 368, 369, 370, 371], 'mapped', path,
+                'The lever creates Goshnar\'s Hatred and the Ashes of Burning Hatred and sets the burning time to 180.')
+    build.entry(item, mechanics, [578, 580, 581, 582, 583, 585, 586, 587, 588, 589, 590, 592, 594], 'mapped', path,
+                'Each think (1 s) of the fire lowers the shared burning time by one; at 0 it is set back to 180. One campfire '
+                'burns in the room, so the time falls by one a second: each form burns 45 s, and the Blaze one more second for '
+                'the reset. One timer per form, each started by the previous one.')
+    for stage, form in enumerate(forms):
+        following = forms[(stage + 1) % 4]
+        actions = [{'kind': 'transform', 'role': 'burning_hatred', 'into': creature(following), 'health': 'full'},
+                   {'kind': 'timer', 'timer': steps[(stage + 1) % 4], 'operation': 'start'}]
+        if following == forms[0]:
+            actions += [{'kind': 'say', 'subject': {'role': 'burning_hatred'}, 'text': "The fire of hatred fuels and empowers Goshnar's Hate!",
+                         'mode': 'say'},
+                        {'kind': 'counter', 'counter': 'hatred', 'operation': 'add', 'value': 10},
+                        {'kind': 'attribute', 'role': 'goshnars_hatred', 'attribute': 'outgoing_damage_percent', 'operation': 'add', 'value': 10}]
+        path = build.rule(item, {'key': f'fire_grows_from_{slug(form)}', 'trigger': {'kind': 'timer_elapsed', 'timer': steps[stage]},
+                                 'conditions': [], 'actions': actions})
+        build.entry(item, mechanics, [595, 596, 597, 598, 599] + ([601, 602, 603, 604, 605, 606, 607, 608, 609] if following == forms[0] else [])
+                    + [610, 611, 612, 614, 615, 617], 'mapped', path,
+                    f'At the burning times 180, 135, 90 and 45 the fire takes its next form with full health (setType(name, true)): '
+                    f'{form} becomes {following}.' + (' A new Ashes makes Goshnar\'s Hatred 10% stronger. The first Ashes, set by the '
+                                                     'lever, does not: it is already Ashes. The reset at 0 takes one more think, '
+                                                     'so a full cycle is 181 s.' if following == forms[0] else ''))
+    path = build.rule(item, {'key': 'sorrow_douses_the_fire', 'trigger': {'kind': 'item_used', 'role': 'burning_hatred', 'item': sorrow},
+                             'conditions': [],
+                             'actions': [{'kind': 'timer', 'timer': step, 'operation': 'add', 'ms': 10000} for step in steps]})
+    build.entry(item, mechanics, [555, 557, 558, 559, 560, 562, 563, 564, 565, 567, 568, 569, 570, 571, 572, 573, 575, 576], 'mapped', path,
+                'A Sorrow (the remains of a hateful soul) used on the fire is used up and adds 10 s to the burning time: the next form '
+                'comes 10 s later (only the running form timer changes). The player\'s line "The flame of hatred is doused!" is '
+                'said by the player, which the vocabulary does not voice; it is cosmetic.')
+    build.entry(item, lib, [5], 'mapped', '/encounter/rules/' + path.rsplit('/', 1)[1] + '/trigger/item', 'goshnarsHatredSorrowId = 33793.')
+    path = build.rule(item, {'key': 'hatred_hardens', 'trigger': {'kind': 'damage_taken', 'role': 'goshnars_hatred', 'source': 'player'},
+                             'conditions': [{'kind': 'counter_compare', 'counter': 'hatred', 'op': '>', 'value': 0}],
+                             'actions': [{'kind': 'attribute', 'role': 'goshnars_hatred', 'attribute': 'defense', 'operation': 'add',
+                                          'value': {'counter': 'hatred'}}]})
+    build.entry(item, mechanics, [619, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 632, 633, 634, 635, 636, 637, 638, 639,
+                                  640, 641, 642, 644, 645, 646, 648], 'mapped', path,
+                'GoshnarsHatredBuff: every hit by a player adds the hatred multiplier to the defense of Goshnar\'s Hatred; its hits '
+                'on players deal (1 + multiplier / 100) times their primary damage (the outgoing_damage_percent raised with each '
+                'new Ashes).')
+    build.entry(item, lib, [1304, 1305, 1306, 1308, 1309, 1310, 1311, 1313, 1314, 1315], 'mapped', '/encounter/state/counters/0',
+                'The hatred multiplier is kept per boss name; it starts at 0 and rises by 10 with each new Ashes.')
+    path = build.rule(item, {'key': 'hatred_begins_calm', 'trigger': {'kind': 'creature_spawned', 'role': 'goshnars_hatred'}, 'conditions': [],
+                             'actions': [{'kind': 'counter', 'counter': 'hatred', 'operation': 'set', 'value': 0},
+                                         {'kind': 'attribute', 'role': 'goshnars_hatred', 'attribute': 'outgoing_damage_percent',
+                                          'operation': 'reset'}]})
+    build.entry(item, hatred_file, [148, 149, 150], 'mapped', path, 'onSpawn resets the hatred multiplier.')
+    path = build.rule(item, {'key': 'the_fire_dies_with_hatred', 'trigger': {'kind': 'creature_died', 'role': 'goshnars_hatred'}, 'conditions': [],
+                             'actions': [{'kind': 'remove', 'role': 'burning_hatred'},
+                                         *({'kind': 'timer', 'timer': step, 'operation': 'stop'} for step in steps)]})
+    build.entry(item, hatred_file, [137, 138, 139, 140, 141, 142, 143, 144, 145, 146], 'mapped', path,
+                'onDisappear of Goshnar\'s Hatred removes every Burning Hatred form. The boss also disappears when the encounter '
+                'resets, which ends every rule anyway.')
+
+
+
 def small_boss_events(build):
     """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
     glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
@@ -1909,12 +1986,32 @@ def megalomania_splinters(build):
                 'The reference-date wiki (Soul War Quest/Spoiler: lesser splinters "will become Greater Splinters of Madness '
                 'and then Mighty Splinters of Madness") decides (D25): creature_spawned also fires for a creature transformed '
                 'into the role.')
-    build.participant(item, 'mighty_splinter_of_madness', 'Mighty Splinter of Madness')
-    build.entry(item, SPLINTERS + 'mighty_splinter_of_madness.lua', list(range(97, 111)), 'unresolved_semantics', None,
-                'After 120 s a mighty splinter is absorbed and Goshnar\'s Megalomania grows stronger (the wiki: "If a Mighty '
-                'Splinter of Madness is not removed in due time, it will be absorbed"). Canary\'s callback calls say and '
-                'remove on the undefined global `creature` and fails before increaseHatredDamageMultiplier(5); the boss '
-                'strength change (its hatred multiplier) is outside the vocabulary.')
+    build.participant(item, 'mighty_splinter_of_madness', 'Mighty Splinter of Madness', 'mType.onSpawn')
+    item['encounter']['state']['counters'].append({'name': 'madness', 'initial': 0})
+    text = "Goshnar's Megalomania feeds on its own madness and becomes stronger!"
+    path = build.rule(item, {'key': 'mighty_splinter_absorbed', 'trigger': {'kind': 'creature_spawned', 'role': 'mighty_splinter_of_madness'},
+                             'delay_ms': 120000, 'conditions': [],
+                             'actions': [{'kind': 'say', 'subject': {'role': 'mighty_splinter_of_madness'}, 'text': text, 'mode': 'say'},
+                                         {'kind': 'remove', 'triggering': True},
+                                         {'kind': 'counter', 'counter': 'madness', 'operation': 'add', 'value': 5}]})
+    build.entry(item, SPLINTERS + 'mighty_splinter_of_madness.lua', list(range(97, 111)), 'mapped', path,
+                'After 120 s a mighty splinter still in the room is absorbed and Goshnar\'s Megalomania grows stronger: its madness '
+                'rises by 5 (the wiki: "If a Mighty Splinter of Madness is not removed in due time, it will be absorbed by the '
+                'boss, increasing its Madness"). Canary\'s callback calls say and remove on the undefined global `creature` and '
+                'fails before increaseHatredDamageMultiplier(5); the wiki decides (D25).')
+    mechanics = 'data-otservbr-global/scripts/quests/soul_war/soul_war_mechanics.lua'
+    for form in ("Goshnar's Megalomania Blue", "Goshnar's Megalomania Green", "Goshnar's Megalomania Purple"):
+        build.participant(item, 'goshnars_megalomania', form, 'GoshnarsHatredBuff')
+    path = build.rule(item, {'key': 'madness_hardens_megalomania', 'trigger': {'kind': 'damage_taken', 'role': 'goshnars_megalomania', 'source': 'player'},
+                             'conditions': [{'kind': 'counter_compare', 'counter': 'madness', 'op': '>', 'value': 0}],
+                             'actions': [{'kind': 'attribute', 'role': 'goshnars_megalomania', 'attribute': 'defense', 'operation': 'add',
+                                          'value': {'counter': 'madness'}}]})
+    build.entry(item, mechanics, [619, 621, 622, 623, 624, 625, 626, 627, 628, 629, 630, 631, 640, 641, 642, 644, 645, 646, 648], 'mapped', path,
+                "GoshnarsHatredBuff: every hit by a player on Goshnar's Megalomania adds its madness to its defense (the wiki: "
+                '"The higher the Madness, the less damage Megalomania will take").')
+    build.entry(item, mechanics, [632, 633, 634, 635, 636, 637, 638, 639], 'approved_omission', None,
+                "The outgoing branch compares the name of the hit player with \"Goshnar's Megalomania\", so it never raises the "
+                'damage of Megalomania.')
 
 def world_boss_events(build):
     """Pythius, The First Dragon, the white deer, Dark Trails, The Shatterer, The Primal Menace, Gaz'haragoth, Tirecz and
@@ -2592,7 +2689,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred):
         transcribe(build)
     print(json.dumps(build.write()))
 
