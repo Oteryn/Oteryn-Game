@@ -107,6 +107,13 @@ Formula findings:
   closed form equals this table for every level 0–20000 (and gives 150 at level 800). Below level 500
   the bonus is `floor(level / 5)`, as players measured (Fandom `Talk:Formulae`); the older Canary
   scripts use the unfloored `level / 5`, and Canary's `calculateFlatDamageHealing` also rounds up.
+- No later change: the changelists of all 227 TibiaWiki update pages from 13.05.12613 to 15.33 (read
+  2026-09-27) change the level scaling only in 13.05.12657; later entries touch per-spell base damage,
+  the Wheel of Destiny (for example the flat +1/+2 Vessel Resonance bonus in 13.30) and hazard scaling,
+  not the level curve. The `Formulae` "Base Damage and Healing" section was written on 2022-10-17/18
+  and has only been reworded since (last on 2025-04-05). The 15.25.bd5a04 hotfix lowered several base
+  powers after 15.25.3a4a52 (great beams 170 → 155, Death Echo 85 → 75, Forked Glacier 97 → 90), which
+  is why Crystal (15.25 values) differs from the current wikis there.
 - Per-spell formulas: the `Formulae` section "Spell/Rune Damage/Healing" still lists the old
   `floor(lvl * 0.2) + mlvl * x + y` coefficients and marks them as no longer correct since 2020, so it
   is not a formula source. Crystal PR #797 (merged 2026-07-01, "15.25 Base Spell Power") implements
