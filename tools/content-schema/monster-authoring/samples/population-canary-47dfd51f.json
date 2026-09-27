@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 152,
-    "fully_resolved": 1498,
+    "blocked": 145,
+    "fully_resolved": 1505,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1102
+    "wiki_adopted_monsters": 1104
   },
   "wiki_adopted_rows": {
     "Loot2": 12862,
@@ -44,7 +44,7 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 80,
+      "monsters": 71,
       "examples": [
         "energized_raging_mage",
         "gaffir",
@@ -531,9 +531,13 @@
     "corym_charlatan",
     "corym_skirmisher",
     "corym_vanguard",
+    "cosmic_energy_prism_a",
     "cosmic_energy_prism_a_invu",
+    "cosmic_energy_prism_b",
     "cosmic_energy_prism_b_invu",
+    "cosmic_energy_prism_c",
     "cosmic_energy_prism_c_invu",
+    "cosmic_energy_prism_d",
     "cosmic_energy_prism_d_invu",
     "countess_sorrow",
     "courage_leech",
@@ -1058,6 +1062,7 @@
     "lizard_snakecharmer",
     "lizard_templar",
     "lizard_zaogun",
+    "lloyd",
     "lokathmor",
     "lokathmor_stuck",
     "lord_of_the_elements",
@@ -1597,6 +1602,7 @@
     "the_dreadorian",
     "the_duke_of_the_depths",
     "the_end_of_days",
+    "the_enraged_thorn_knight",
     "the_evil_eye",
     "the_false_god",
     "the_fear_feaster",
@@ -1634,6 +1640,7 @@
     "the_scion_of_havoc",
     "the_scourge_of_oblivion",
     "the_shatterer",
+    "the_shielded_thorn_knight",
     "the_sinister_hermit",
     "the_sinister_hermit_dirty",
     "the_snapper",
