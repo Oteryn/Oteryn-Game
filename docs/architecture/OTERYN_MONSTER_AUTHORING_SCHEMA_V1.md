@@ -225,6 +225,22 @@ with a constant-tick energy condition; `war golem skill reducer` is P3 with attr
 conditions). `knight_familiar` needs D11 (`sudden death rune` resolves to the rune, not the
 conjuring spell; `ice strike` is P1); its per-player familiar look is a separate gap.
 
+### 8.4 Native behaviour patterns for custom spell logic (D13 proposal)
+
+`samples/p4-behaviour-patterns-canary-47dfd51f.json` groups the 93 registered spell scripts that
+still block a converted monster into 19 shared, parameterized behaviours, each spell with its
+parameters and evidence lines (model-assisted read; four findings re-read by hand). By blocked
+monster references the largest are `conditional_summon` (23 spells), `remove_magic_walls` (2 spells,
+20 references), `heal_allies_in_area` (14), `path_trail_missile` (3 spells, 17 references: a drawn
+effect trail plus one single-target hit, not a real chain) and `plain_combat_unsupported_schema`
+(9 spells: plain combats blocked only by `BLOCKARMOR`, `DISPEL`, `COMBAT_LIFEDRAINDAMAGE` or a
+custom area constant, which need schema fields rather than a behaviour). Boss-specific logic
+(`boss_form_swap`, `boss_escape_utility`, `map_or_quest_specific`) belongs with the Encounter
+definitions of D9. Canary defects found on the way: `gorerilla small ring` uses the undefined
+`COMBAT_PHYSICALDAMAGEDAMAGE`, `metal gargoyle curse` has a one-step loop, `icicle heal` deals 100
+damage, and `gaz'haragoth summon` calls `setSummon` with an undefined value. The grouping is a
+proposal for owner review; no behaviour key is created by it.
+
 ## 9. Import readiness of the Canary population
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15

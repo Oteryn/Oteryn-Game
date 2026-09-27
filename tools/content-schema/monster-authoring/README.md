@@ -22,6 +22,7 @@ Contract and decisions: [`docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.m
 | `samples/canary-47dfd51f*/` | The two 10-monster Canary test batches and their findings (`README.md`). |
 | `samples/wiki-population-2026-07-28.json` | `wiki_compare.py --population`: every convertible Canary monster against TibiaWiki at the 2026-07-28 cut (counts for all facts, rows only for differences, every loot chance trimmed; one monster per line). |
 | `samples/wiki-scenes-2026-07-28.json` | Output of `wiki_scenes.py` (one monster per line; only unmatched abilities and differences listed). |
+| `samples/p4-behaviour-patterns-canary-47dfd51f.json` | Proposed D13 grouping of the registered spell scripts that still block monsters into shared parameterized native behaviours (model-assisted, with evidence lines). |
 | `samples/population-canary-47dfd51f.json` | Output of `population_census.py` (1,656 files). |
 | `samples/population-bundles-canary-47dfd51f.json` | One SHA-256 per fully resolved population bundle and the SHA-256 of the pinned wiki reference; the bundles themselves are not committed. |
 | `samples/events-canary-47dfd51f.json` | Classification of the 193 creature events named by Canary monster files; read by `canary_batch.py`. |
