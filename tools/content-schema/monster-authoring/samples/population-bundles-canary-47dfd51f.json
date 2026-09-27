@@ -6,7 +6,7 @@
   },
   "wiki_reference": {
     "file": "samples/wiki-population-2026-07-28.json",
-    "sha256": "4d37a41d3372dab23f21e7288b8c7b5647c01d6d3b5dca6dfe8d1182093879d4"
+    "sha256": "2cd5e2f8a284e1f325c14e41b4eb0c5856baa42105ac6302d309f38b70dbd464"
   },
   "generator": "population_census.py",
   "digest": "SHA-256 over the four bundle files in BUNDLE_FILES order, each prefixed by its name and byte length.",
@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1376,
+  "bundles": 1377,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -1004,6 +1004,7 @@
     {"monster":"renegade_quara_predator","file":"aquatics/renegade_quara_predator","sha256":"7f7c7c46c6253856c5568f8a2107e0cb28c2722a27a95300b5ab65e9b04e58a2"},
     {"monster":"retainer_of_baeloc","file":"quests/grave_danger/retainer_of_baeloc","sha256":"f85c8a1da65b82f8a191545948eb87515705fe27fa2efbda3ee2488eaf11344c"},
     {"monster":"retching_horror","file":"magicals/retching_horror","sha256":"f0fc0a3b1c322d917d07cab9722a358e5969c3862902517dc7d5c01f20d0abe9"},
+    {"monster":"rhindeer","file":"reptiles/rhindeer","sha256":"da386cffa13afec367403b3904218bbcb720017453b5db79e33cd67ba10ea4cf"},
     {"monster":"ribstride","file":"quests/killing_in_the_name_of/ribstride","sha256":"f78b4ffafcd756d000bf6666275f7db44c2a0deb990625aed274e978be84f3d5"},
     {"monster":"rift_breacher","file":"quests/the_secret_library/rift_breacher","sha256":"10ef66e9974dad7e7cbdc3a4bfb0885446ca2690018cbfe84f74960943aca7c8"},
     {"monster":"rift_brood","file":"quests/in_service_of_yalahar/rift_brood","sha256":"b503947e62b89aee4a56798203dd7a78d7298445f836024f822714565782d145"},

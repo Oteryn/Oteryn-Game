@@ -153,7 +153,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 222 focused positive/negative cases
+python verify_formal_schema.py     # 229 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -307,13 +307,32 @@ fails, the trail effect is sent on every path tile, then one combat hits the tar
 as a single-target Ability with `path_requirement` (search distance, clear sight) and the
 presentation `path_asset_binding`; the "chain" in the names hits only the target.
 
+### 8.7 Owner decisions D21-D25 in the converter
+
+- D21: the 393 random variants of `ghastly dragon curse` collapse into one `geometric` damage over
+  time (base 40-170, factor 6/5, 5-7 ticks, 4 s) only after every variant is checked against the
+  model (ticks computed by repeated double multiplication and truncated as `Condition:addDamage`
+  does) and every (base, tick count) pair occurs once. `metal gargoyle curse` calls
+  `math.random(2.32, 2.32)`, which LuaJIT returns as 2.32, so it is one fixed 24-tick schedule.
+- D22/D23/D25 loot: an item page listing several ids splits the estimate evenly; a disambiguation
+  page resolves through the variant whose `droppedby` names the monster, otherwise all variant ids
+  share it; an item page id that differs from the Canary name match decides; a row reached through
+  a disambiguation page is not added twice; no statistics or zero drops keep the Canary list.
+- D24: `lookType` 0 without `lookTypeEx` (the wild magic traps) is `appearance.selection:
+  invisible`, which forbids an asset.
+- D25 damage: an inline combat with an undefined type takes the element of the one wiki ability it
+  matches best by effect, missile, shape and maximum (score at least 3, no tie); the wiki abilities
+  of such monsters are recorded in the population wiki file. `grimeleech` attack 3, `angry sugar
+  fairy` and the shared `targetfirering` script stay unresolved because no single wiki ability
+  matches. An inline `effect`/`strength` entry without any visual has no effect and is omitted (D14).
+
 ## 9. Import readiness of the Canary population
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,350 convert, validate and resolve every manifest row (1,103 before registered spells were
+files, 1,377 convert, validate and resolve every manifest row (1,103 before registered spells were
 converted, 1,315 before wiki adoption, 1,298 before D19, 1,308 before the probed D18 patterns, 1,329
-before the two rules below, 1,345 before `path_requirement`); 300 are blocked; 6 do not convert (five Soul War bosses
+before the two rules below, 1,345 before `path_requirement`, 1,350 before D21-D25); 273 are blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 

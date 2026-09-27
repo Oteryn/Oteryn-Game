@@ -352,6 +352,7 @@ class Converter:
         late_errors = []
         name, m, callbacks = load_monster(path, late_errors)
         s = slug(name)
+        self.current_slug = s
         source_file = f'{MONSTER_DIR}/{relative}.lua'
         rows = []
         assets = set()
@@ -1379,6 +1380,42 @@ class Converter:
                                   'needs_direction': False, 'area': {'matrix': {'north': rows}},
                                   'effects': [ref('Effect', f'{key}/effect-remove')]})
 
+    def undefined_damage_from_wiki(self, spell):
+        """D25: the element of an undefined-damage combat from the one reference-date wiki ability it matches best."""
+        import wiki_scenes
+        record = (getattr(self, 'wiki', {}) or {}).get(getattr(self, 'current_slug', None)) or {}
+        abilities = record.get('abilities') or []
+        if not abilities:
+            return None, 'The reference-date wiki lists no ability to decide the element (owner decision D25).'
+        geometry = cast_geometry(length=spell.get('length', 0), spread=spell.get('spread', 0), radius=spell.get('radius'),
+                                 target=bool(spell.get('target', False)))
+        kind, tiles = wiki_scenes.canary_geometry({'identity': {'key': 'x/attack-1'}, 'kind': 'spell', **geometry})
+        effect = self.magic_effects.get(spell['effect'][1:]) if isinstance(spell.get('effect'), str) else spell.get('effect')
+        missile = self.missiles.get(spell['shootEffect'][1:]) if isinstance(spell.get('shootEffect'), str) else spell.get('shootEffect')
+        maximum = max(abs(spell.get('minDamage', 0)), abs(spell.get('maxDamage', 0)))
+        scored = []
+        for ability in abilities:
+            if ability.get('element') in (None, 'healing'):
+                continue
+            wiki_tiles = frozenset(tuple(t) for t in ability.get('tiles') or [])
+            points = (2 * (ability.get('effect') is not None and ability['effect'] == effect) +
+                      (ability.get('missile') is not None and ability['missile'] == missile) +
+                      (ability.get('kind') == kind) + (ability.get('kind') == kind and wiki_tiles in wiki_scenes.rotations(tiles)) +
+                      (ability.get('maximum') == maximum))
+            scored.append((points, ability))
+        scored.sort(key=lambda p: -p[0])
+        if not scored or scored[0][0] < 3 or (len(scored) > 1 and scored[1][0] == scored[0][0]):
+            return None, (f'No single reference-date wiki ability matches it by effect, missile, shape and maximum '
+                          f'(best scores {[p for p, _ in scored[:3]]}; owner decision D25).')
+        points, ability = scored[0]
+        damage = {'life drain': 'life_drain', 'lifedrain': 'life_drain', 'mana drain': 'mana_drain',
+                  'drown': 'drowning', 'poison': 'earth'}.get(ability['element'], ability['element'])
+        if damage not in DAMAGE.values():
+            return None, f'The matching wiki ability "{ability["name"]}" has element {ability["element"]!r} (owner decision D25).'
+        return damage, (f'The reference-date wiki page (page {record.get("page_id")}, revision {record.get("cut_revision_id")}) '
+                        f'ability "{ability["name"]}" ({ability["element_raw"]}) matches it best (score {points}), so the '
+                        f'element is {damage} (owner decision D25).')
+
     def geometric_dot(self, info):
         """D21: (template combat, condition Effect, note) when the random variants differ only in one damage-over-time whose
         ticks grow geometrically from an integer base, every (base, tick count) pair appearing exactly once; else None."""
@@ -1703,10 +1740,15 @@ class Converter:
         elif name in ('combat', *FIELD_ITEMS):
             if name == 'combat':
                 kind = spell.get('type')
-                if not (isinstance(kind, str) and kind.startswith('@COMBAT_') and kind[8:] in DAMAGE):
-                    return 'UNRESOLVED', (f'combat entry with type {kind!r}: a missing or undefined constant leaves Canary '
-                                          'MonsterSpell.combatType at COMBAT_UNDEFINEDDAMAGE, which has no authoring damage type.')
-                damage = DAMAGE[constant(kind, 'COMBAT_')]
+                if isinstance(kind, str) and kind.startswith('@COMBAT_') and kind[8:] in DAMAGE:
+                    damage = DAMAGE[constant(kind, 'COMBAT_')]
+                else:
+                    undefined = (f'combat entry with type {kind!r}: a missing or undefined constant leaves Canary '
+                                 'MonsterSpell.combatType at COMBAT_UNDEFINEDDAMAGE, which has no authoring damage type.')
+                    damage, wiki_note = self.undefined_damage_from_wiki(spell)
+                    if damage is None:
+                        return 'UNRESOLVED', f'{undefined} {wiki_note}'
+                    note = f'{undefined} {wiki_note} '
                 body = {'operation': 'heal' if damage == 'healing' else 'damage', 'damage_type': damage,
                         'formula': formula_range(spell.get('minDamage', 0), spell.get('maxDamage', 0))}
             else:
@@ -1717,7 +1759,7 @@ class Converter:
             area = spell.get('radius', 0) > 1 or spell.get('length') or spell.get('spread')
             if area and spell.get('effect') is None and 'field' not in name:
                 visual['impact_asset_binding'] = asset('canary.appearance:effect/poff')
-                note = RULES['area_effect'] + '. '
+                note += RULES['area_effect'] + '. '
             if body.get('damage_type') == 'physical' and body['operation'] == 'damage':
                 body['mitigated_by'] = ['armor']
                 note += RULES['armor_physical'] + '. '
@@ -1768,6 +1810,8 @@ class Converter:
             elif visual:
                 body = {'operation': 'presentation_only'}
                 note += RULES['inert_spells'] + '. '
+            elif name in ('strength', 'effect'):
+                return 'OMIT', RULES['inert_spells'] + ' (D14).'
             else:
                 return None
             if visual:

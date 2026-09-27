@@ -6,15 +6,15 @@
   },
   "wiki_reference": {
     "file": "samples/wiki-population-2026-07-28.json",
-    "sha256": "4d37a41d3372dab23f21e7288b8c7b5647c01d6d3b5dca6dfe8d1182093879d4"
+    "sha256": "2cd5e2f8a284e1f325c14e41b4eb0c5856baa42105ac6302d309f38b70dbd464"
   },
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 274,
-    "fully_resolved": 1376,
+    "blocked": 273,
+    "fully_resolved": 1377,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1040
+    "wiki_adopted_monsters": 1041
   },
   "wiki_adopted_rows": {
     "Loot2": 11595,
@@ -164,17 +164,6 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics attacks[]",
-      "monsters": 5,
-      "examples": [
-        "grimeleech",
-        "angry_sugar_fairy",
-        "priestess_of_the_wild_sun",
-        "sister_hetai",
-        "rhindeer"
-      ]
-    },
-    {
       "blocker": "unresolved_semantics attacks[] -> chain_bounce",
       "monsters": 5,
       "examples": [
@@ -205,6 +194,16 @@
         "omrafir",
         "the_welter",
         "tyrn"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[]",
+      "monsters": 4,
+      "examples": [
+        "grimeleech",
+        "angry_sugar_fairy",
+        "priestess_of_the_wild_sun",
+        "sister_hetai"
       ]
     },
     {
@@ -292,13 +291,6 @@
       "monsters": 1,
       "examples": [
         "charged_anomaly"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics defenses[]",
-      "monsters": 1,
-      "examples": [
-        "grimeleech"
       ]
     },
     {
@@ -1344,6 +1336,7 @@
     "renegade_quara_predator",
     "retainer_of_baeloc",
     "retching_horror",
+    "rhindeer",
     "ribstride",
     "rift_breacher",
     "rift_brood",

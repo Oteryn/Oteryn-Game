@@ -265,7 +265,7 @@ def compare(relative, canary, _batch_dir, cache):
     slug = cb.slug(name)
     # Compare the plain Canary conversion, never a bundle that already carries adopted wiki values.
     cb.CONVERTER.wiki, cb.CONVERTER.pending_definitions = {}, set()
-    _, monster, *_ = cb.CONVERTER.convert(relative)
+    _, monster, _, _, manifest, _ = cb.CONVERTER.convert(relative)
     record = fetch(name, cache)
     result = {'monster': slug, 'wiki_title': name, 'page_url': PAGE_URL + urllib.parse.quote(name.replace(' ', '_'))}
     if not record['cut']:
@@ -358,6 +358,12 @@ def compare(relative, canary, _batch_dir, cache):
             entry['note'] += ' Wiki disambiguated names (e.g. "book (grey)") are matched to the Canary base name.'
         rows.append(entry)
     result.update({'status': 'COMPARED', 'rows': rows})
+    if any('COMBAT_UNDEFINEDDAMAGE' in e.get('resolution', '') for e in manifest['entries']):
+        # D25: the converter decides an undefined combat element from these wiki abilities.
+        import wiki_scenes
+        _, shapes = wiki_scenes.scene_shapes(cache)
+        result['abilities'] = [{**{k: v for k, v in a.items() if k != 'tiles'}, 'tiles': sorted(map(list, a.get('tiles', ())))}
+                               for a in wiki_scenes.wiki_abilities(cut['content'], shapes, cache, {})]
     return result
 
 
