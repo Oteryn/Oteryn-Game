@@ -77,8 +77,9 @@ byte-for-byte on its Ability, Effect and Formula, otherwise the writer fails.
 Item identity map (`export_reference_item_identity_map`, allocation digest `ee9219cc…`) from
 the Crystal source item id to the Oteryn Item key. Canary and Crystal share the client item id
 space: of the 2,655 referenced ids present in both, 17 differ only by name variant ("remains
-of" or "dead") or by a missing Canary `items.xml` entry. Items stay identity records; no Item
-semantics are changed.
+of" or "dead") or by a missing Canary `items.xml` entry. Protected Item rekeys apply on top of the allocation map. The first is R7 P04, which renames the
+gold coin to `oteryn:item.currency.gold_coin`. The writer fails when a mapped key is absent from
+`content/world`. Items stay identity records; no Item semantics are changed.
 
 **Provenance.** Admission adds a source `oteryn:source.canary`: revision
 `47dfd51f45280a59a1d3e50ba7edd573d7234446`, evidence `OtsHypothesisOnly`. Each creature gets a

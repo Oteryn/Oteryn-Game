@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         379,
-        "8658d7a08e639c40c19844bb5a3591f739900650d8ca5e2848c2f21f720f6f51",
+        "d83af50eee39e858ced6e694e77fc623ef5136087114d9d8641fad829a1b67ee",
     ),
     (
         "definitions/declarations.json",
@@ -26,8 +26,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "definitions/reference.json",
-        13_502_336,
-        "d4bdfd7baff72b379c17baa3cd7d946a50131e02f97815f527c7427cf604f9d9",
+        13_502_340,
+        "f0ae3779fc17ab4b3952f8a0590c75d7f2d4ea41f847cd49ec6372b24fd70b28",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1939,
-        "4c278ffe0b4f32c4ce38b634b8d67d63da76693f5d4019c9d04b9bcf5be8de98",
+        "76b68ef177aa692373c2ec2babef75ce041c5ddcb7de30ff5db659494c8f3c98",
     ),
     (
         "presentations/bindings.json",
@@ -47,12 +47,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         395,
-        "c651f69891f317bf022a0abc31fcab4b4923d91a67faa9f7ddfe1a4fb27c143c",
+        "f2e7c84bfa57a19494f4f1c7e6a851207a3357d987c62e2ca8c4c0b8647f01b9",
     ),
     (
         "provenance/imports.json",
         3275,
-        "7e3e0cd25fe45910364d1251a64d746e8aa21f41d4f34e8d1e56a3be8fc01f6f",
+        "bc427eb182acac5b53cbc30ce2fee0ed8ebf703d5feb880b64fed28312d45d59",
     ),
     (
         "provenance/sources.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "6138397b430c905525938977687731cb802bb0ccf87e363d3192b4f778aed803";
+const TREE_SHA256: &str = "66671e2962d2ff5a6cd5ed669013e4f0ab14fd36c6918ddddeb7121bd8a42265";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -564,6 +564,20 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         .map(|definition| definition.definition.key().as_str())
         .collect::<BTreeSet<_>>();
     assert_eq!(keys.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS);
+    assert!(keys.contains(R7_P04_GOLD_COIN_KEY));
+    assert!(!keys.contains(R7_P04_GOLD_COIN_OLD_KEY));
+    assert!(keys.contains(R7_P04_UNRELATED_REGISTRY_KEY));
+    let gold_coin = linked
+        .definitions
+        .iter()
+        .find(|definition| definition.definition.key().as_str() == R7_P04_GOLD_COIN_KEY)
+        .expect("repository Gold Coin definition");
+    let ReferenceDefinitionKind::Item(gold_coin) = &gold_coin.kind else {
+        panic!("Gold Coin is an Item");
+    };
+    assert!(gold_coin.materializable);
+    assert_eq!(gold_coin.stack_class, ReferenceItemStackClass::StackCapable);
+    assert!(gold_coin.semantics.is_all_unknown());
     assert_eq!(
         linked
             .definitions

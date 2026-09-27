@@ -29,6 +29,9 @@ SCHEMA = 'OTERYN_CREATURE_ADMISSION_STAGED/v1'
 REVISION = 'definition-r1'
 CANARY_REVISION = '47dfd51f45280a59a1d3e50ba7edd573d7234446'
 ITEM_ALLOCATION_SHA256 = 'ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966'
+# Protected Item rekeys applied on top of the allocation map (the allocation keeps the old key).
+ITEM_REKEYS = (ROOT / 'docs/agents/evidence/OTV2-20260927-r7-p04-gold-coin.json',)
+REFERENCE = ROOT / 'content/world/definitions/reference.json'
 # Admission §2: a pilot covering each profile shape (shared spell, inline condition, summons,
 # voices, variants, chain, invisible and familiar appearance, skipped loot entry, bosstiary).
 PILOT = ('rat', 'dragon', 'dragon_lord', 'demon', 'warlock', 'orc_shaman', 'bonebeast', 'hydra',
@@ -508,7 +511,21 @@ def main() -> None:
     item_export = json.loads(args.item_map.read_text(encoding='utf-8'))
     if item_export['allocation_digest_sha256'] != ITEM_ALLOCATION_SHA256:
         raise StageError('Item identity map allocation drifted')
-    mapper = Mapper({row['source_item_id']: row['native_key'] for row in item_export['records']})
+    item_map = {row['source_item_id']: row['native_key'] for row in item_export['records']}
+    rekeys = []
+    for path in ITEM_REKEYS:
+        evidence = json.loads(path.read_text(encoding='utf-8'))['source_identity']
+        source_id, old, new = evidence['source_item_id'], evidence['current_native_key'], evidence['target_native_key']
+        if item_map.get(source_id) != old:
+            raise StageError(f'Item rekey {path.name} does not match the allocation map')
+        item_map[source_id] = new
+        rekeys.append({'source_item_id': source_id, 'from': old, 'to': new,
+                       'evidence_sha256': hashlib.sha256(path.read_bytes()).hexdigest()})
+    registered = {record['identity']['key'] for record in json.loads(REFERENCE.read_text(encoding='utf-8'))['records']
+                  if record['identity']['family'] == 'Item'}
+    if not set(item_map.values()) <= registered:
+        raise StageError('Item identity map names keys absent from content/world')
+    mapper = Mapper(item_map)
     index = json.loads(INDEX.read_text(encoding='utf-8'))
     covered = encounter_covered()
     candidates: dict[str, tuple[dict, dict, dict, set, set]] = {}
@@ -575,7 +592,7 @@ def main() -> None:
         'wave': 'pilot' if args.pilot else 'A',
         'source': {'repository': index['source']['repository'], 'revision': CANARY_REVISION,
                    'census_index_sha256': hashlib.sha256(INDEX.read_bytes()).hexdigest(),
-                   'item_allocation_sha256': ITEM_ALLOCATION_SHA256},
+                   'item_allocation_sha256': ITEM_ALLOCATION_SHA256, 'item_rekeys': rekeys},
         'counts': {'creatures': len(admitted), 'records': len(stage.records), 'profiles': len(stage.profiles),
                    'deferred_encounter': len(deferred['encounter']),
                    'deferred_unregistered_items': len(deferred['unregistered_items']),

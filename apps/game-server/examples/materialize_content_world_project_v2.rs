@@ -11,10 +11,10 @@ use oteryn_game_server::content::{
     ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile,
     ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
     ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
-    ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
-    ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
-    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
-    protected_cw2_b1_promoted_item_family_import,
+    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
+    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
+    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
+    ReferenceSignedPoints, ReferenceWeaponType, protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -63,9 +63,9 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "7906c07996c6c01eb0da27adf03c7c86b4fa95b169d2498a677e22484b6ffb9b";
+    "2f9a984dcb08d96f8e0ce8f978734574a9edb51489409925f67702cbf4868d72";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "c8673e996664df14d079bd2638cf66498a7f14ca60972787b771cb8dcec9ce2e";
+    "02ec69fb6dc42056a2049e9da9d274304fab5b5201fc0bc222fb84e6866fd714";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 const CANARY_BUNDLE_INDEX_SHA256: &str =
     "73495f76e0ab4f731e7605f31b9a7816e9fdce0b55410b3e583059d216a9501d";
@@ -1080,7 +1080,10 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let root = output_root()?;
-    let promoted = protected_cw2_b1_promoted_item_family_import(B1_EVIDENCE)?;
+    let promoted = protected_r7_p04_gold_coin_item_family_import(
+        B1_EVIDENCE,
+        R7_P04_GOLD_COIN_EVIDENCE_PACKET,
+    )?;
     if promoted.family.records.len() != CW2_B1_FULL_ITEM_FAMILY_COUNT {
         return Err("protected promoted Item family count drifted".into());
     }
