@@ -18,7 +18,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "ac7eb12d0482b33c9f51acd4ebf468975301f2f6"
+APPROVED = "83c0af24697c49c43a083e8430df23cc4886ebec"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 REGISTERED_POSTGRES_TARGETS = (
     ("durability_postgres", "apps/game-server/tests/durability_postgres.rs"),
@@ -106,6 +106,8 @@ def main() -> int:
         ("durability_postgres", "if: needs.candidate.outputs.rust == 'true'"),
         ("rust_windows", "if: needs.candidate.outputs.windows == 'true'"),
         ("rust_supply_chain", "if: needs.candidate.outputs.rust == 'true'"),
+        ("node_boot", "if: needs.candidate.outputs.server_qualification != 'false'"),
+        ("server_seam", "if: needs.candidate.outputs.server_qualification != 'false'"),
     ):
         block = core.indented_yaml_mapping_block(original, job, 2)
         assert block is not None and condition in block, (job, condition)
@@ -276,8 +278,10 @@ def main() -> int:
     predicates = (
         "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX",
         "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
+        "NODE_BOOT", "SERVER_SEAM",
     )
     env = dict(os.environ, **dict.fromkeys(predicates, "success"))
+    env.pop("SERVER_QUALIFICATION_REQUIRED", None)
     assert subprocess.run(["bash", "-c", script], env=env, check=False).returncode == 0
     for predicate in predicates:
         for failure in ("failure", "skipped", "cancelled", ""):
@@ -293,8 +297,23 @@ def main() -> int:
         DURABILITY_POSTGRES="skipped",
         RUST_WINDOWS="skipped",
         RUST_SUPPLY_CHAIN="skipped",
+        SERVER_QUALIFICATION_REQUIRED="false",
+        NODE_BOOT="skipped",
+        SERVER_SEAM="skipped",
     )
     assert subprocess.run(["bash", "-c", script], env=docs_env, check=False).returncode == 0
+    # Physical qualifications fail closed unless explicitly deselected.
+    for predicate in ("NODE_BOOT", "SERVER_SEAM"):
+        for required in ("true", ""):
+            assert subprocess.run(
+                ["bash", "-c", script],
+                env=dict(docs_env, SERVER_QUALIFICATION_REQUIRED=required),
+                check=False,
+            ).returncode != 0, (predicate, required)
+        for failure in ("failure", "cancelled", ""):
+            assert subprocess.run(
+                ["bash", "-c", script], env=dict(docs_env, **{predicate: failure}), check=False
+            ).returncode != 0, (predicate, failure)
     for predicate in ("RUST_LINUX", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN"):
         for failure in ("failure", "cancelled", ""):
             assert subprocess.run(
