@@ -111,11 +111,16 @@ d['assetBinding']=use('key')
 d['presentation']=obj({
     'identity':use('identity'),
     'appearance':obj({'asset_binding':use('assetBinding'),
-        'selection':{**enum('owner_familiar_look'),'description':'D16: the runtime shows the familiar look selected by the owner; '
-                                                               'asset_binding is the default look for a character without a selection.'},
+        'selection':{**enum('owner_familiar_look','invisible'),'description':'D16: owner_familiar_look shows the familiar look '
+            'selected by the owner; asset_binding is the default look for a character without a selection. D24: invisible means '
+            'the creature has no appearance at all (Canary lookType 0 without lookTypeEx) and forbids asset_binding.'},
         'palette_bindings':array(obj({'slot':enum('head','body','legs','feet','mount_head','mount_body','mount_legs','mount_feet'),'palette_binding':use('assetBinding')},('slot','palette_binding'))),
         'attachment_bindings':array(obj({'slot':enum('addon','mount','familiar','wing'),'asset_binding':use('assetBinding')},('slot','asset_binding'))),
-        'visual_effect_bindings':array(obj({'slot':enum('aura','effect','shader'),'asset_binding':use('assetBinding')},('slot','asset_binding')))},('asset_binding','palette_bindings','attachment_bindings','visual_effect_bindings')),
+        'visual_effect_bindings':array(obj({'slot':enum('aura','effect','shader'),'asset_binding':use('assetBinding')},('slot','asset_binding')))},
+        ('palette_bindings','attachment_bindings','visual_effect_bindings'),allOf=[
+        {'if':{'properties':{'selection':{'const':'invisible'}},'required':['selection']},
+         'then':{**forbid('asset_binding'),'properties':{'palette_bindings':{'maxItems':0},'attachment_bindings':{'maxItems':0}}},
+         'else':{'required':['asset_binding']}}]),
     'light':obj({'level':integer(0,255),'color_binding':use('assetBinding')},('level',)),
     'audio':obj({'event_bindings':array(obj({'event':enum('cast','impact','death','periodic'),'cue_id':text(),
         'asset_binding':use('assetBinding')},('event','cue_id','asset_binding')))},('event_bindings',)),

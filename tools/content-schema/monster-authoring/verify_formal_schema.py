@@ -236,6 +236,15 @@ if __name__=='__main__':
     case('path requirement accepted (D18)',set_value(('d','abilities',0,'path_requirement'),{'max_search_tiles':8,'clear_sight':True}),True)
     case('path requirement needs its search distance',set_value(('d','abilities',0,'path_requirement'),{'clear_sight':True}))
     case('path trail presentation accepted',set_value(('d','effects',0,'presentation'),{'path_asset_binding':'oteryn:body_sprite'}),True)
+    def invisible(extra=None):
+        def mutate(m,d,c):
+            appearance=m['presentation']['appearance']
+            appearance.pop('asset_binding'); appearance['selection']='invisible'
+            if extra: appearance.update(extra)
+        return mutate
+    case('invisible appearance accepted (D24)',invisible(),True)
+    case('invisible appearance forbids an asset',invisible({'asset_binding':'oteryn:creature_sprite'}))
+    case('visible appearance needs an asset',lambda m,d,c:m['presentation']['appearance'].pop('asset_binding'))
     case('affects kind is closed',set_value(('d','effects',0,'affects'),{**affects,'kind':'everyone'}))
     def variants(nested=False,with_effects=False):
         def mutate(m,d,c):

@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1367,
+  "bundles": 1371,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -1345,9 +1345,13 @@
     {"monster":"white_weretiger","file":"lycanthropes/white_weretiger","sha256":"e63a25772428f4606329e28c5a92356a0fb9f0cdd29c5457c8bca74319db45d1"},
     {"monster":"wiggler","file":"vermins/wiggler","sha256":"07f625adf20b95369d5c657715aa826fa4514eb42a00f979079bcb3b4cea822e"},
     {"monster":"wild_dog","file":"mammals/wild_dog","sha256":"3b9d693c1b93ffcb8364b802aa89430b89b5a68c44c4e96c7474bb789d25e761"},
+    {"monster":"wild_fire_magic","file":"wild_magics/wild_fire_magic","sha256":"f9b0de21715c7abe6608f766fc64cd09854709fe1fbb3bda70aa00b6dd53b2e0"},
+    {"monster":"wild_fury_magic","file":"wild_magics/wild_fury_magic","sha256":"9c3ce4447bf9f67d776f471f54927d1061af9222be95899c53a630365f4e62bb"},
     {"monster":"wild_horse","file":"mammals/wild_horse","sha256":"77b981bc6f9d83998e354b9afb464b55e2380a62b22eb123911e1de778ca6e69"},
     {"monster":"wild_knowledge","file":"quests/the_secret_library/wild_knowledge","sha256":"ef9712fca9ee80a4eb70130218eedf680f6777abeabd59c1b2efc0230e4698ee"},
+    {"monster":"wild_nature_magic","file":"wild_magics/wild_nature_magic","sha256":"0741ecdcdf3ada7cf6faa3ec82a5b7a2d165527878421f7660c37d17d3d2db41"},
     {"monster":"wild_warrior","file":"humans/wild_warrior","sha256":"ef6879d66ca6905df5d4c30132b645df9ce5642468b441ae937f04bbe7b2b302"},
+    {"monster":"wild_water_magic","file":"wild_magics/wild_water_magic","sha256":"1d0cc9a434306ce3a0c587b93a5022f7b1fc39d300fbcdc66e03674948fb5ea2"},
     {"monster":"willi_wasp","file":"bosses/williwasp","sha256":"3940c4a7f639a91a010f3645d51aa92903e80b133926460c5d75f76781ec7903"},
     {"monster":"wilting_leaf_golem","file":"plants/wilting_leaf_golem","sha256":"e82f1ee9fee1b4f3365d15c80453509a919ea10b1e760884ceb0b2d65bb7a878"},
     {"monster":"winter_wolf","file":"mammals/winter_wolf","sha256":"11e2460597bae1f0fccfea24bf4f726015b3335f939b7ea659df13b140ef4ae2"},

@@ -1300,9 +1300,10 @@
             },
             "selection": {
               "enum": [
-                "owner_familiar_look"
+                "owner_familiar_look",
+                "invisible"
               ],
-              "description": "D16: the runtime shows the familiar look selected by the owner; asset_binding is the default look for a character without a selection."
+              "description": "D16: owner_familiar_look shows the familiar look selected by the owner; asset_binding is the default look for a character without a selection. D24: invisible means the creature has no appearance at all (Canary lookType 0 without lookTypeEx) and forbids asset_binding."
             },
             "palette_bindings": {
               "type": "array",
@@ -1384,10 +1385,47 @@
             }
           },
           "required": [
-            "asset_binding",
             "palette_bindings",
             "attachment_bindings",
             "visual_effect_bindings"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "selection": {
+                    "const": "invisible"
+                  }
+                },
+                "required": [
+                  "selection"
+                ]
+              },
+              "then": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "asset_binding"
+                      ]
+                    }
+                  ]
+                },
+                "properties": {
+                  "palette_bindings": {
+                    "maxItems": 0
+                  },
+                  "attachment_bindings": {
+                    "maxItems": 0
+                  }
+                }
+              },
+              "else": {
+                "required": [
+                  "asset_binding"
+                ]
+              }
+            }
           ]
         },
         "light": {

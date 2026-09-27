@@ -642,17 +642,19 @@ class Converter:
             row('outfit.lookType', 'mapped', destination='/monster/presentation/appearance', line=line_of(r'^monster\.outfit'),
                 resolution='Owner decision D16: a familiar shows the look its owner selected (data/XML/familiars.xml, chosen per '
                            'character); ' + RULES['familiar_look'] + '. The monster file has no lookType.')
+        elif not outfit.get('lookType'):
+            appearance_key = None
+            row('outfit.lookType', 'mapped', destination='/monster/presentation/appearance/selection', line=line_of(r'^monster\.outfit'),
+                resolution='lookType 0 without lookTypeEx and not a familiar: the creature has no appearance (owner decision D24).')
         else:
             appearance_key = asset(f'canary.appearance:outfit/{outfit.get("lookType", 0)}')
-            if not outfit.get('lookType'):
-                row('outfit.lookType', 'unresolved_semantics', line=line_of(r'^monster\.outfit'),
-                    resolution='Source outfit has no lookType (lookType 0 placeholder) and the monster is not a familiar.')
         palette = [{'slot': slot, 'palette_binding': asset(f'canary.appearance:palette/{outfit[key]}')}
                    for slot, key in (('head', 'lookHead'), ('body', 'lookBody'), ('legs', 'lookLegs'), ('feet', 'lookFeet'))
                    if outfit.get(key)]
         light = m.get('light', {})
         presentation = {'identity': ident(f'canary:presentation/{s}'),
-                        'appearance': {'asset_binding': appearance_key, 'palette_bindings': palette,
+                        'appearance': {**({'asset_binding': appearance_key} if appearance_key else {'selection': 'invisible'}),
+                                       'palette_bindings': palette if appearance_key else [],
                                        'attachment_bindings': [], 'visual_effect_bindings': []},
                         'light': {'level': light.get('level', 0)}, 'audio': {'event_bindings': []}}
         if light.get('level', 0) > 0:
