@@ -1,12 +1,12 @@
 # Oteryn Item Authoring Formal Schema v1
 
-- Date: 2026-09-26
+- Date: 2026-09-27
 - Status: CANDIDATE; authoring/evidence contract only
 - Parent master: `OTERYN_ITEM_AUTHORING_MASTER_SCHEMA_V1.md`
 - Task: `OTV2-20260926-item-authoring-formal-schema-v1`
 - Parent control plane: #162
 - Programme: KAN-16 / #504
-- Admission main: `e300c14102f0e78be147d380779cf1265e76a182`
+- Current authoring candidate: v2 (v1 frozen SHA superseded after exhaustive source audit)
 - Package: `tools/content-schema/item-authoring/`
 
 ## 1. Decision
@@ -106,6 +106,29 @@ Fields admitted by this comparison include:
 - proficiency binding and lifecycle wrap/unwrap transforms;
 - consumable `consume_count`.
 
+The exhaustive v2 audit additionally types source facts that the first candidate had
+only sampled:
+
+- independent display flags for stack count, duration, attributes, client expiry timer
+  and client wear counter; `showcharges` remains charge display semantics;
+- signed source `presentation.display_weight`, while gameplay `physical.weight` remains
+  nonnegative;
+- signed movement-speed points, invisibility, numeric mantra points/damage types and a
+  closed elemental-bond damage type;
+- `dual_wielding`, premium-only requirements and Crystal's multiplicative level/magic
+  shortfall rule (one failed check = 1/2 damage; two = 1/4);
+- distinct launcher, ammunition, thrown-missile, shield and spellbook authoring kinds;
+- Crystal chain disable/override/default inheritance without collapsing it into
+  Oteryn-native targeting geometry;
+- typed wrapping state and `destroy` lifecycle transforms.
+
+The generated engine ledgers classify exactly 143 unique registered XML keys per
+engine (`movable` is duplicated in both source registries), plus item-root fields,
+14 nested definition fields, appearance-loaded inputs and reverse `bags.xml` relations.
+Canary-only `proficiency` and Crystal-only `meleeattackeffect` remain explicit. Six
+Canary and four Crystal registered keys are pinned source defects and have no formal
+Item destination; they are never silently promoted into executable truth.
+
 Canary does not expose a separate light radius at the pinned appearance revision, so
 `light.radius_cells` is optional evidence rather than a condition of `emits=true`.
 Canary proficiency augments lower into the existing typed WorldProject/v2 augment
@@ -144,7 +167,8 @@ The exact TibiaWiki BR infobox inventory remains the source-field census authori
 - `https://www.tibiawiki.com.br/index.php?stableid=424807&title=Predefini%C3%A7%C3%A3o%3AInfobox_Item`
 
 Fandom family/project material is corroborating taxonomy and authoring-shape evidence,
-not runtime authority:
+not runtime authority. The registry is explicitly the 84-row historical migration table
+at revision `1035268` (`2023-08-12T17:54:38Z`), not a claim of a current Fandom census:
 
 - `https://tibia.fandom.com/wiki/TibiaWiki:Projects/Merge_Items_and_Objects`
 
@@ -152,6 +176,11 @@ The comparison confirms the need for `requirements.min_magic_level`, explicit re
 write policy and container content constraints. It also confirms that community value,
 drops, NPC offers, quest membership and source numeric IDs must not become intrinsic
 portable Item truth.
+
+The TibiaWiki BR `modificadores` parameter maps to the typed `modifiers` aggregate.
+Editor notes alone cannot satisfy it, and any unparsed modifier clause blocks import
+readiness. Fandom `actualname`, `fansite` and `imbuements` remain explicitly unresolved
+at the pinned historical revision.
 
 ## 4. Boundary table
 
@@ -213,7 +242,13 @@ The schema validator checks:
 - source-field disposition and mapped JSON Pointer resolution;
 - exact equality between each declared source-field inventory and its dispositions;
 - the protected 71-field Wiki disposition registry, including reverse/external owners;
-- exact allowed formal JSON Pointer patterns for every mappable Wiki field;
+- the exact 84-row historical Fandom registry and both 143-key engine registries;
+- exact allowed formal JSON Pointer patterns for every mappable source field;
+- pinned source identity/revision and explicit registered-but-ineffective keys;
+- value-dependent owner routing and normalized destination values for type, event,
+  weapon action/kind, signed weight and inverse movement flags;
+- timezone-qualified capture timestamps, per-capture SHA-256 and the pinned Fandom
+  revision SHA-1 as separate provenance facts;
 - fail-closed `unresolved_semantics`, `unsupported_source_field` and `conflict` states.
 
 This candidate does not:
@@ -227,3 +262,4 @@ This candidate does not:
 
 Runtime lowering and corpus migration require separate accepted slices with exact-head
 evidence.
+
