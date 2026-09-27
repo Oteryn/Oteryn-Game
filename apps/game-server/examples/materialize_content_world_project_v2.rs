@@ -63,12 +63,12 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "2e3c3b44704b1ea1222c4604a5733ec539d5796e764d9e25e0e0c0f23bc9a32d";
+    "c78379bd89895c912494e22411b9cae6138d1f482655f7549e7c80cac320153f";
 const CREATURE_STAGE_TOOL_SHA256: &str =
     "02ec69fb6dc42056a2049e9da9d274304fab5b5201fc0bc222fb84e6866fd714";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "451cfecbc654afba28f5eb6f1751604aa0fdd5a3470e26f7d81c34766e000140";
+    "b27b5dd2199859cbfc2d9cf7d4dbf3f9a0670f99b50630411c6311b552deb17e";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const CREATURE_COUNT: usize = 1316;

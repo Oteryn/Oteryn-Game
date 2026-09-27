@@ -969,11 +969,12 @@ class Converter:
                 if (entry['min_count'], entry['max_count']) != canary:
                     canary_row['resolution'] += (f' Count {canary[0]}-{canary[1]} replaced by '
                                                  f'{entry["min_count"]}-{entry["max_count"]} ({LOOT_AMOUNT_RULE}).')
-                    wiki_row(stat, stats['page_title'], chance['wiki_line'], f'Loot2.{chance["item"]}.amount',
-                             f'/monster/loot/entries/{index}/max_count' if entry['max_count'] != canary[1]
-                             else f'/monster/loot/entries/{index}/min_count',
-                             f'Observed amount {chance["wiki_amount"]} over {chance["times"]} drops in {block}; Canary '
-                             f'{canary[0]}-{canary[1]} ({LOOT_AMOUNT_RULE}).')
+                    for bound, before in (('min_count', canary[0]), ('max_count', canary[1])):
+                        if entry[bound] != before:
+                            wiki_row(stat, stats['page_title'], chance['wiki_line'], f'Loot2.{chance["item"]}.amount',
+                                     f'/monster/loot/entries/{index}/{bound}',
+                                     f'Observed amount {chance["wiki_amount"]} over {chance["times"]} drops in {block}; '
+                                     f'Canary {canary[0]}-{canary[1]} ({LOOT_AMOUNT_RULE}).')
             elif chance['status'] in ('CONSISTENT', 'DIFF'):
                 canary_row['resolution'] += (f' Wiki {block}: {chance["times"]} drops, estimate {chance["wiki_percent"]}% (95% '
                                              f'interval {chance["interval_95_wilson"][0]}-{chance["interval_95_wilson"][1]}%), '
