@@ -178,6 +178,8 @@ def storyline_fixture():
                                    'from': {'op': '<', 'value': 1, 'exact': True}, 'to': 1, 'servers': ['canary', 'crystalserver']}]},
                  {'key': 'the_plague_seal', 'name': 'The Plague Seal', 'progress': progress('second_seal'), 'start_value': 1,
                   'end_value': 3, 'transitions': [{'key': 'npc_1', 'owner': 'npc', 'callback': None, 'from': None, 'increment': 1,
+                                                   'requested_by': {'npc': 'canary:npc/the_queen', 'keywords': ['mission', 'yes'],
+                                                                    'topics': [2]},
                                                    'servers': ['canary']}],
                   'journal': {'kind': 'per_stage', 'stages': [
                       {'value': 1, 'text_ref': TEXT},
@@ -218,6 +220,20 @@ storyline_case('quest names a known gate', lambda q, t: q['gates'].append(ref('G
 storyline_case('a transition has one effect', lambda q, t: q['missions'][0]['transitions'][0].update(increment=1))
 storyline_case('a transition has an effect', lambda q, t: q['missions'][0]['transitions'][0].pop('to'))
 storyline_case('transition owner is closed', lambda q, t: q['missions'][0]['transitions'][0].update(owner='wizard'))
+def auxiliary(owner):
+    return {'key': progress('seal_door'), 'missions': [], 'start_of': [], 'read_by_gates': [], 'auxiliary_of': [owner],
+            'owner_basis': 'mission track prefix', 'writes': {'canary': 1}, 'transitions': []}
+
+
+storyline_case('auxiliary track accepted', lambda q, t: t.append(auxiliary('oteryn:quest/banshees')), expected=True)
+storyline_case('auxiliary track names a known quest', lambda q, t: t.append(auxiliary('oteryn:quest/ghost')))
+storyline_case('an NPC transition names its dialogue', lambda q, t: q['missions'][1]['transitions'][0].pop('requested_by'))
+storyline_case('only NPC transitions name dialogue',
+               lambda q, t: q['missions'][0]['transitions'][0].update(requested_by={'npc': 'canary:npc/x', 'keywords': [], 'topics': []}))
+storyline_case('dialogue names an NPC bundle key',
+               lambda q, t: q['missions'][1]['transitions'][0]['requested_by'].update(npc='npc/the_queen'))
+storyline_case('dialogue keywords are short words',
+               lambda q, t: q['missions'][1]['transitions'][0]['requested_by'].update(keywords=['three short words']))
 storyline_case('increments are positive', lambda q, t: q['missions'][1]['transitions'][0].update(increment=0))
 storyline_case('transition keys are unique', lambda q, t: q['missions'][0]['transitions'].append(dict(q['missions'][0]['transitions'][0])))
 storyline_case('a transition has source evidence', lambda q, t: t[0]['transitions'].clear())

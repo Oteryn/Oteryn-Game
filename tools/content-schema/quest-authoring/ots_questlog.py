@@ -25,6 +25,13 @@ from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checko
 
 
 
+# read-only: the NPC authoring census lists every converted NPC bundle key of both servers
+NPC_KEYS = {row['key'] for path in sorted((ROOT.parent / 'npc-authoring' / 'samples').glob('census-*.json'))
+            for row in json.loads(path.read_text())['rows']}
+# the NPC authoring format keys bundles `<source>:npc/<file stem>` (its decision D1)
+NPC_NAMESPACE = {'canary': 'canary', 'crystalserver': 'crystal'}
+
+
 def norm(text):
     return re.sub(r'[^a-z0-9]', '', text.lower())
 
@@ -106,7 +113,7 @@ def effect_of(write):
 
 def transition_index(repos):
     """Per progress track: write counts per server and the union of both servers' candidate transitions (D35)."""
-    tracks = defaultdict(lambda: {'count': Counter(), 'transitions': {}})
+    tracks = defaultdict(lambda: {'count': Counter(), 'transitions': {}, 'paths': set()})
     for name, repo in repos.items():
         packs = [SOURCES[name]['datapack'], 'data'] + (['data-crystal'] if name == 'crystalserver' else [])
         for pack in packs:
@@ -116,14 +123,27 @@ def transition_index(repos):
                     target = int(write['target']) if write['target'].isdigit() else write['target']
                     track = tracks[norm(track_of(target))]
                     track['count'][name] += 1
+                    track['paths'].add((name, track_of(target)))
                     ident = json.dumps([script_of(rel), write['owner'], write['callback'], effect_of(write), write['from']],
                                        sort_keys=True)
                     entry = track['transitions'].setdefault(ident, {
                         'owner': write['owner'], 'callback': write['callback'], 'from': write['from'], **effect_of(write),
                         'script': script_of(rel), 'sources': {}})
                     entry['sources'].setdefault(name, {'path': rel, 'line': write['line'],
-                                                       'registrations': write['registrations']})
+                                                       'registrations': write['registrations'],
+                                                       **({'dialogue': write['dialogue']} if 'dialogue' in write else {})})
     return tracks
+
+
+def requested_by(entry):
+    """The NPC dialogue that requests an NPC-owned transition (D35): the NPC bundle key of the NPC authoring
+    format and the player keywords and topics of the if-blocks around the write, from Canary when it has it."""
+    server = 'canary' if 'canary' in entry['sources'] else 'crystalserver'
+    source = entry['sources'][server]
+    # a keyword of up to two words is a player command; a longer phrase is reserved text (LICENSE-ASSETS.md)
+    keywords = [k if len(k.split()) <= 2 and len(k) <= 20 else text_ref(k) for k in source['dialogue']['keywords']]
+    return {'npc': f'{NPC_NAMESPACE[server]}:npc/{Path(source["path"]).stem}', 'keywords': keywords,
+            'topics': source['dialogue']['topics']}
 
 
 def mission_transitions(found):
@@ -134,7 +154,67 @@ def mission_transitions(found):
         seen[entry['owner']] += 1
         effect = {k: entry[k] for k in ('to', 'increment', 'computed') if k in entry}
         out.append({'key': f'{entry["owner"]}_{seen[entry["owner"]]}', 'owner': entry['owner'], 'callback': entry['callback'],
-                    'from': entry['from'], **effect, 'servers': sorted(entry['sources']), '_entry': entry})
+                    'from': entry['from'], **effect, 'servers': sorted(entry['sources']),
+                    **({'requested_by': requested_by(entry)} if entry['owner'] == 'npc' else {}), '_entry': entry})
+    return out
+
+
+TRACK_OWNERS = {norm(track): owner for track, owner in json.loads((ROOT / 'track_owners.json').read_text())['tracks'].items()}
+
+
+def auxiliary_tracks(index, progress, catalogue, gates, repos):
+    """Declare every track a quest script writes outside the missions (D35): seal doors, counters, cooldowns.
+
+    The owning quest comes from the longest mission-track prefix that names one quest, else from the script
+    directory whose scripts write the missions of one quest, else from `track_owners.json`.
+    """
+    declared = {norm(t['key'].split('/', 1)[1]) for t in progress}
+    by_title = {q['display_name']: q['identity']['key'] for q in catalogue}
+    prefixes, directories = defaultdict(set), defaultdict(set)
+    for quest in catalogue:
+        for mission in quest.get('missions', []):
+            path = mission['progress'].split('/', 1)[1]
+            parts = path.split('/')
+            for k in range(2, len(parts)):
+                prefixes[norm('/'.join(parts[:k]))].add(quest['identity']['key'])
+            for t in index.get(norm(path), {'transitions': {}})['transitions'].values():
+                if t['script'].startswith('scripts/quests/'):
+                    directories[t['script'].split('/')[2]].add(quest['identity']['key'])
+    out, used, missing = [], set(), []
+    for key_norm, found in sorted(index.items()):
+        scripts = sorted({t['script'] for t in found['transitions'].values() if t['script'].startswith('scripts/quests/')})
+        if key_norm in declared or not scripts:
+            continue
+        owner = {}
+        prefix = max((p for p in prefixes if key_norm.startswith(p) and len(prefixes[p]) == 1), key=len, default=None)
+        by_directory = set().union(*(directories.get(s.split('/')[2], set()) for s in scripts))
+        if prefix:
+            owner = {'auxiliary_of': sorted(prefixes[prefix]), 'owner_basis': 'mission track prefix'}
+        elif len(by_directory) == 1:
+            owner = {'auxiliary_of': sorted(by_directory), 'owner_basis': 'script directory'}
+        elif key_norm in TRACK_OWNERS:
+            used.add(key_norm)
+            recorded = TRACK_OWNERS[key_norm]
+            quest = recorded.get('quest') or by_title.get(recorded.get('wiki_quest'))
+            owner = {'auxiliary_of': [quest] if quest else [], 'owner_basis': 'track_owners.json',
+                     **({'wiki_quest': recorded['wiki_quest']} if not quest and recorded.get('wiki_quest') else {}),
+                     **({'note': recorded['note']} if recorded.get('note') else {})}
+        else:
+            missing.append(key_norm)
+            continue
+        server = 'canary' if found['count']['canary'] else 'crystalserver'
+        path = sorted(p for n, p in found['paths'] if n == server)[0]
+        out.append({'key': f'{server}:quest-progress/{path}', 'missions': [], 'start_of': [],
+                    'read_by_gates': sorted(g['identity']['key'] for g in gates if g['condition'].get('progress')
+                                            and norm(g['condition']['progress'].split('/', 1)[1]) == key_norm),
+                    **owner, 'writes': {n: found['count'][n] for n in repos},
+                    'transitions': [{'key': t['key'], 'script': t['_entry']['script'], 'sources': t['_entry']['sources']}
+                                    for t in mission_transitions(found)]})
+    if missing:
+        raise SystemExit(f'no owner for the progress tracks {missing}; record them in track_owners.json')
+    stale = sorted(set(TRACK_OWNERS) - used)
+    if stale:
+        raise SystemExit(f'track_owners.json names tracks that need no record: {stale}')
     return out
 
 
@@ -259,6 +339,7 @@ def build(repos, chests_dir, doors_dir, coverage):
                          'writes': {n: found['count'][n] for n in repos},
                          'transitions': [{'key': t['key'], 'script': t['_entry']['script'], 'sources': t['_entry']['sources']}
                                          for t in mission_transitions(found)]})
+    progress += auxiliary_tracks(index, progress, catalogue, gates, repos)
     all_transitions = [t for q in storyline.values() for m in q['missions'] for t in m['transitions']]
     counts = Counter(e['status'] for e in manifest_entries)
     unused_decisions('missions', used_decisions)
@@ -281,6 +362,12 @@ def build(repos, chests_dir, doors_dir, coverage):
             'transitions_by_effect': dict(sorted(Counter(next(k for k in ('to', 'increment', 'computed') if k in t)
                                                         for t in all_transitions).items())),
             'transitions_with_known_from': sum(1 for t in all_transitions if t['from']),
+            'npc_transitions': {
+                'total': sum(1 for t in all_transitions if 'requested_by' in t),
+                'with_keywords': sum(1 for t in all_transitions if t.get('requested_by', {}).get('keywords')),
+                'with_topics': sum(1 for t in all_transitions if t.get('requested_by', {}).get('topics')),
+                'npc_in_npc_census': sum(1 for t in all_transitions if t.get('requested_by', {}).get('npc') in NPC_KEYS),
+            },
             'transitions_in_both_servers': sum(1 for t in all_transitions if len(t['servers']) == 2),
             'storyline_quests_linked_to_wiki': sum(1 for q in storyline.values() if 'wiki' in q),
             'reward_only_quests_absorbed': len(absorbed),

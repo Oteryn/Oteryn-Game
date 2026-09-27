@@ -29,7 +29,7 @@ from collections import Counter
 from pathlib import Path
 
 import lua_blocks
-from lua_writers import REGISTRATION, strip_code
+from lua_writers import REGISTRATION, expand_aliases, storage_aliases, strip_code
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
 from validate_quest_content import BLOCKED
@@ -64,9 +64,7 @@ class Script:
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
         self.roles, self.players, self.declared = {}, set(), {}
-        # `local ThreatenedDreams = Storage.Quest.U11_40.ThreatenedDreams` and the like, expanded in every line
-        self.aliases = {m.group(1): m.group(2) for line in self.lines
-                        if (m := re.match(r'\s*local\s+(\w+)\s*=\s*((?:Global)?Storage\.[\w.\[\]]+)\s*(--.*)?$', line))}
+        self.aliases = storage_aliases(self.lines)
 
     def bind(self, number, callback):
         """Name the callback parameters by their role and note the locals that hold the acting player."""
@@ -94,10 +92,7 @@ class Script:
         return self.declared.get(norm(path), f'{self.namespace}:quest-progress/{path}')
 
     def raw(self, number):
-        text = re.sub(r'--.*$', '', self.lines[number - 1]).strip()
-        for alias, path in self.aliases.items():
-            text = re.sub(rf'(?<![\w.]){alias}(?=[.\[\s,)])', path, text)
-        return text
+        return expand_aliases(re.sub(r'--.*$', '', self.lines[number - 1]).strip(), self.aliases)
 
     def read_only(self, code):
         """A local assignment or table-constructor line whose calls only read state."""

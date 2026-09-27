@@ -2946,7 +2946,7 @@
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "crystalserver:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
+              "progress": "canary:quest-progress/quest/u12_60/apirates_tail/tentugly_killed",
               "to": 1,
               "repeated": true
             },
@@ -44267,7 +44267,7 @@
                                         {
                                           "owner": "Quest",
                                           "request": "set_progress",
-                                          "progress": "crystalserver:quest-progress/storage/14334",
+                                          "progress": "canary:quest-progress/storage/14334",
                                           "to": 1,
                                           "repeated": true
                                         },
@@ -44287,7 +44287,7 @@
                                         {
                                           "owner": "Quest",
                                           "request": "set_progress",
-                                          "progress": "crystalserver:quest-progress/storage/14335",
+                                          "progress": "canary:quest-progress/storage/14335",
                                           "to": 1,
                                           "repeated": true
                                         },
@@ -44307,7 +44307,7 @@
                                         {
                                           "owner": "Quest",
                                           "request": "set_progress",
-                                          "progress": "crystalserver:quest-progress/storage/14336",
+                                          "progress": "canary:quest-progress/storage/14336",
                                           "to": 1,
                                           "repeated": true
                                         },
@@ -48867,7 +48867,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u11_50/hidden_threats/quest_line",
-                      "to": 3
+                      "to": 3,
+                      "transition": "canary:quest/tibia_tales#hidden_threats:movement_1"
                     }
                   ]
                 }
@@ -59825,7 +59826,7 @@
                             "any": [
                               {
                                 "quest_stage": {
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                                   "op": ">=",
                                   "value": 8
                                 },
@@ -59833,7 +59834,7 @@
                               },
                               {
                                 "quest_stage": {
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/bone_flute",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/bone_flute",
                                   "op": "<",
                                   "value": 1
                                 },
@@ -59850,7 +59851,7 @@
                             {
                               "when": {
                                 "quest_stage": {
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                                   "op": "<",
                                   "value": 0
                                 },
@@ -59860,7 +59861,7 @@
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                                   "to": 0
                                 }
                               ]
@@ -59872,7 +59873,7 @@
                             {
                               "when": {
                                 "quest_stage": {
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                                   "op": "==",
                                   "value": 7
                                 },
@@ -59894,7 +59895,7 @@
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/monster_door",
+                                  "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/monster_door",
                                   "to": 1
                                 }
                               ]
@@ -59910,7 +59911,7 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
+                          "progress": "canary:quest-progress/quest/u10_90/ferumbras_ascension/basin_counter",
                           "value_source_line": 95
                         },
                         {
@@ -66322,7 +66323,8 @@
                   "owner": "Quest",
                   "request": "set_progress",
                   "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/mission09",
-                  "to": 2
+                  "to": 2,
+                  "transition": "canary:quest/shadows_of_yalahar_quest#mission_09_researching_the_ritual:action_1"
                 },
                 {
                   "owner": "WorldObject",
@@ -66738,7 +66740,8 @@
                   "owner": "Quest",
                   "request": "set_progress",
                   "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/mission11",
-                  "to": 2
+                  "to": 2,
+                  "transition": "canary:quest/shadows_of_yalahar_quest#mission_11_take_a_shower:movement_1"
                 }
               ]
             }
@@ -72126,7 +72129,8 @@
                                   "owner": "Quest",
                                   "request": "set_progress",
                                   "progress": "crystalserver:quest-progress/quest/u15_24/targuna/burning_heart/mission",
-                                  "to": 5
+                                  "to": 5,
+                                  "transition": "crystalserver:quest/targuna_quest#burning_heat:action_1"
                                 }
                               ]
                             }
@@ -72391,7 +72395,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "crystalserver:quest-progress/quest/u15_24/targuna/long_lost_treasure/mission",
-                      "to": 5
+                      "to": 5,
+                      "transition": "crystalserver:quest/targuna_quest#a_long_lost_treasure:action_1"
                     },
                     {
                       "owner": "Presentation",
@@ -72651,7 +72656,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "crystalserver:quest-progress/quest/u15_24/targuna/long_lost_treasure/mission",
-                          "to": 2
+                          "to": 2,
+                          "transition": "crystalserver:quest/targuna_quest#a_long_lost_treasure:movement_1"
                         }
                       ]
                     }
@@ -73075,7 +73081,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "crystalserver:quest-progress/quest/u15_24/targuna/ancient_enemy/mission",
-                          "to": 1
+                          "to": 1,
+                          "transition": "crystalserver:quest/targuna_quest#an_ancient_enemy:movement_1"
                         }
                       ]
                     }
@@ -76723,7 +76730,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+                          "progress": "canary:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
                           "op": "==",
                           "value": 2
                         },
@@ -76745,7 +76752,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+                              "progress": "canary:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
                               "to": 3
                             },
                             {
@@ -76825,7 +76832,7 @@
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "crystalserver:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
+                                  "progress": "canary:quest-progress/quest/u10_70/the_cursed_crystal/oneeyedjoe",
                                   "to": 2
                                 },
                                 {
@@ -77880,7 +77887,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/lake_word",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/lake_word",
                               "op": "<",
                               "value": 1
                             },
@@ -77892,7 +77899,7 @@
                                 {
                                   "when": {
                                     "quest_stage": {
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
                                       "op": "<",
                                       "value": 0
                                     },
@@ -77902,7 +77909,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
                                       "to": 0
                                     }
                                   ]
@@ -77912,13 +77919,13 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
                               "value_source_line": 20
                             },
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/lake_word",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/lake_word",
                               "to": 1
                             },
                             {
@@ -77985,7 +77992,7 @@
                       },
                       {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
                           "op": ">=",
                           "value": 4
                         },
@@ -77998,7 +78005,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
-                      "to": 3
+                      "to": 3,
+                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_1"
                     },
                     {
                       "owner": "Presentation",
@@ -78126,13 +78134,13 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/ward_stones/count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/ward_stones/count",
                               "value_source_line": 25
                             },
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/ward_stones/port_hope_stone",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/ward_stones/port_hope_stone",
                               "to": 1
                             },
                             {
@@ -78195,7 +78203,7 @@
             {
               "when": {
                 "quest_stage": {
-                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/mush_room",
+                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/mush_room",
                   "op": "==",
                   "value": 1
                 },
@@ -78211,13 +78219,13 @@
                 {
                   "owner": "Quest",
                   "request": "set_progress",
-                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/mush_room",
+                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/mush_room",
                   "to": 2
                 },
                 {
                   "owner": "Quest",
                   "request": "set_progress",
-                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                   "value_source_line": 7
                 }
               ]
@@ -78264,14 +78272,14 @@
         {
           "owner": "Quest",
           "request": "set_progress",
-          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
           "to": 0,
           "repeated": true
         },
         {
           "owner": "Quest",
           "request": "set_progress",
-          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
+          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/word_count",
           "value_source_line": 132,
           "repeated": true
         },
@@ -78323,7 +78331,7 @@
             {
               "when": {
                 "quest_stage": {
-                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
+                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
                   "op": "<",
                   "value": 1
                 },
@@ -78342,13 +78350,13 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible",
                           "to": 1
                         },
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                           "value_source_line": 13
                         },
                         {
@@ -78432,13 +78440,13 @@
               "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
               "to": 6,
-              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_1",
+              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_2",
               "repeated": true
             },
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/ward_stones/count",
+              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/ward_stones/count",
               "value_source_line": 83,
               "repeated": true
             },
@@ -78580,7 +78588,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/dream_scar/last_boss_curse",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/dream_scar/last_boss_curse",
                               "op": "<",
                               "value": 1
                             },
@@ -78601,7 +78609,7 @@
                                         {
                                           "when": {
                                             "quest_stage": {
-                                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
+                                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
                                               "op": ">=",
                                               "value": 1
                                             },
@@ -78611,7 +78619,7 @@
                                             {
                                               "owner": "Quest",
                                               "request": "set_progress",
-                                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
+                                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
                                               "to": 0
                                             },
                                             {
@@ -78623,7 +78631,7 @@
                                             {
                                               "owner": "Quest",
                                               "request": "set_progress",
-                                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
+                                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/nightmare_curse",
                                               "to": 1
                                             },
                                             {
@@ -78873,14 +78881,14 @@
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/idol_count",
+              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/idol_count",
               "value_source_line": 44,
               "repeated": true
             },
             {
               "owner": "Quest",
               "request": "set_progress",
-              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
+              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
               "to": 1,
               "repeated": true
             },
@@ -78889,7 +78897,7 @@
               "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
               "to": 2,
-              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_2",
+              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_3",
               "repeated": true
             },
             {
@@ -79036,7 +79044,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
                               "to": 1
                             },
                             {
@@ -79046,7 +79054,7 @@
                                     "all": [
                                       {
                                         "quest_stage": {
-                                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
                                           "op": "==",
                                           "value": 1
                                         },
@@ -79054,7 +79062,7 @@
                                       },
                                       {
                                         "quest_stage": {
-                                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+                                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
                                           "op": "==",
                                           "value": 1
                                         },
@@ -79062,7 +79070,7 @@
                                       },
                                       {
                                         "quest_stage": {
-                                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
+                                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
                                           "op": "==",
                                           "value": 1
                                         },
@@ -79076,7 +79084,7 @@
                                       "request": "set_progress",
                                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
                                       "to": 2,
-                                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_3"
+                                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_4"
                                     }
                                   ]
                                 }
@@ -79192,7 +79200,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "op": "<",
                           "value": 1
                         },
@@ -79214,13 +79222,13 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "to": 1
                         },
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                           "value_source_line": 26
                         }
                       ]
@@ -79241,7 +79249,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "op": "==",
                           "value": 2
                         },
@@ -79285,7 +79293,7 @@
                     {
                       "when": {
                         "quest_stage": {
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "op": "==",
                           "value": 1
                         },
@@ -79301,7 +79309,7 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/painting",
                           "to": 2
                         }
                       ]
@@ -79371,7 +79379,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                               "op": "==",
                               "value": 6
                             },
@@ -79396,7 +79404,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                               "to": 7
                             },
                             {
@@ -79560,7 +79568,7 @@
         {
           "owner": "Quest",
           "request": "set_progress",
-          "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
           "value_source_line": 114,
           "repeated": true
         },
@@ -79699,7 +79707,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/rose_bush",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/rose_bush",
                               "op": "<=",
                               "value": 1
                             },
@@ -79715,7 +79723,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/rose_bush",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/rose_bush",
                               "to": 2
                             },
                             {
@@ -79723,7 +79731,7 @@
                                 {
                                   "when": {
                                     "quest_stage": {
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                                       "op": "<",
                                       "value": 0
                                     },
@@ -79733,7 +79741,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                                       "to": 0
                                     }
                                   ]
@@ -79743,7 +79751,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                               "value_source_line": 21
                             },
                             {
@@ -79845,7 +79853,7 @@
                 {
                   "when": {
                     "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "op": "<",
                       "value": 0
                     },
@@ -79855,7 +79863,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "to": 0
                     }
                   ]
@@ -79877,7 +79885,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "value_source_line": 44,
                       "repeated": true
                     },
@@ -79897,7 +79905,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "to": 0,
                       "repeated": true
                     },
@@ -79923,7 +79931,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/burried_catedral/sequence_books",
                       "to": 0,
                       "repeated": true
                     },
@@ -79932,6 +79940,7 @@
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
                       "to": 4,
+                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_5",
                       "repeated": true
                     }
                   ]
@@ -79987,7 +79996,7 @@
                 {
                   "when": {
                     "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
                       "op": "<",
                       "value": 0
                     },
@@ -79997,7 +80006,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
                       "to": 0
                     }
                   ]
@@ -80016,7 +80025,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/sequence_skulls",
                       "value_source_line": 44,
                       "repeated": true
                     },
@@ -80043,7 +80052,7 @@
                     {
                       "owner": "Quest",
                       "request": "set_progress",
-                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                       "value_source_line": 49,
                       "repeated": true
                     }
@@ -80975,7 +80984,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+                              "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
                               "op": "<",
                               "value": 1
                             },
@@ -80994,7 +81003,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+                                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
                                       "to": 1
                                     },
                                     {
@@ -81015,7 +81024,7 @@
                                             "all": [
                                               {
                                                 "quest_stage": {
-                                                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
                                                   "op": "==",
                                                   "value": 1
                                                 },
@@ -81023,7 +81032,7 @@
                                               },
                                               {
                                                 "quest_stage": {
-                                                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
+                                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/cellar",
                                                   "op": "==",
                                                   "value": 1
                                                 },
@@ -81031,7 +81040,7 @@
                                               },
                                               {
                                                 "quest_stage": {
-                                                  "progress": "crystalserver:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
+                                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/temple",
                                                   "op": "==",
                                                   "value": 1
                                                 },
@@ -81300,7 +81309,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
-                      "to": 3
+                      "to": 3,
+                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_6"
                     },
                     {
                       "owner": "Presentation",
@@ -81650,7 +81660,7 @@
                         {
                           "owner": "Quest",
                           "request": "set_progress",
-                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/door_invisible/quest/u12_00/the_dream_courts/the_seven_keys/count",
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/the_seven_keys/count",
                           "value_source_line": 13
                         },
                         {
@@ -81734,7 +81744,7 @@
               "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
               "to": 6,
-              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_4",
+              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_7",
               "repeated": true
             },
             {
@@ -82191,7 +82201,7 @@
               "request": "set_progress",
               "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
               "to": 2,
-              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_5",
+              "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_8",
               "repeated": true
             },
             {
@@ -82378,7 +82388,7 @@
                                       "request": "set_progress",
                                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
                                       "to": 2,
-                                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_6"
+                                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_9"
                                     }
                                   ]
                                 }
@@ -83136,6 +83146,7 @@
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
                       "to": 4,
+                      "transition": "canary:quest/the_dream_courts_quest#haunted_house:action_10",
                       "repeated": true
                     }
                   ]
@@ -93505,7 +93516,8 @@
                               "owner": "Quest",
                               "request": "set_progress",
                               "progress": "crystalserver:quest-progress/quest/u8_5/the_isle_of_evil/mission07",
-                              "to": 2
+                              "to": 2,
+                              "transition": "canary:quest/the_isle_of_evil_quest#mission_07_the_master_of_evil:action_1"
                             }
                           ]
                         }
@@ -93726,7 +93738,8 @@
                                   "owner": "Quest",
                                   "request": "set_progress",
                                   "progress": "crystalserver:quest-progress/quest/u8_5/the_isle_of_evil/mission04",
-                                  "to": 3
+                                  "to": 3,
+                                  "transition": "canary:quest/the_isle_of_evil_quest#mission_04_the_technomancer_s_machine:action_1"
                                 }
                               ]
                             }
@@ -94828,6 +94841,7 @@
           "request": "set_progress",
           "progress": "canary:quest-progress/quest/u8_54/the_new_frontier/mission09_1",
           "to": 2,
+          "transition": "canary:quest/the_new_frontier_quest#mission_09_mortal_combat:creature_event_1",
           "repeated": true
         },
         {
@@ -95130,13 +95144,15 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u8_54/the_new_frontier/mission07_1",
-                      "to": 2
+                      "to": 2,
+                      "transition": "canary:quest/the_new_frontier_quest#mission_07_messengers_of_peace:movement_1"
                     },
                     {
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u8_54/the_new_frontier/mission08",
-                      "to": 1
+                      "to": 1,
+                      "transition": "canary:quest/the_new_frontier_quest#mission_08_an_offer_you_can_t_refuse:movement_1"
                     },
                     {
                       "owner": "Quest",
@@ -95216,7 +95232,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u8_54/the_new_frontier/mission01",
-                      "to": 2
+                      "to": 2,
+                      "transition": "canary:quest/the_new_frontier_quest#mission_01_new_land:movement_1"
                     },
                     {
                       "owner": "Quest",
@@ -109498,7 +109515,8 @@
                                       "owner": "Quest",
                                       "request": "set_progress",
                                       "progress": "canary:quest-progress/quest/u11_80/the_secret_library/asuras/questline",
-                                      "to": 6
+                                      "to": 6,
+                                      "transition": "canary:quest/the_secret_library_quest#asuri_the_lament:movement_1"
                                     }
                                   ]
                                 }
@@ -112797,7 +112815,8 @@
                           "owner": "Quest",
                           "request": "set_progress",
                           "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                          "to": 3
+                          "to": 3,
+                          "transition": "canary:quest/threatened_dreams_quest#troubled_animals:action_1"
                         }
                       ]
                     }
@@ -113498,7 +113517,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                      "to": 9
+                      "to": 9,
+                      "transition": "canary:quest/threatened_dreams_quest#troubled_animals:action_2"
                     }
                   ]
                 }
@@ -113890,7 +113910,8 @@
                       "owner": "Quest",
                       "request": "set_progress",
                       "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                      "to": 7
+                      "to": 7,
+                      "transition": "canary:quest/threatened_dreams_quest#troubled_animals:movement_1"
                     }
                   ]
                 }
@@ -114008,7 +114029,8 @@
                                       "owner": "Quest",
                                       "request": "set_progress",
                                       "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01_1",
-                                      "to": 14
+                                      "to": 14,
+                                      "transition": "canary:quest/threatened_dreams_quest#troubled_animals:movement_2"
                                     }
                                   ]
                                 }
@@ -114198,7 +114220,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
                                       "to": 1
                                     }
                                   ]
@@ -114208,7 +114230,7 @@
                                 {
                                   "owner": "Quest",
                                   "request": "set_progress",
-                                  "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                  "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
                                   "value_source_line": 54
                                 }
                               ]
@@ -114460,7 +114482,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_moon_mirror",
                                       "to": 5
                                     }
                                   ]
@@ -114739,7 +114761,7 @@
                   },
                   {
                     "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
+                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
                       "op": "<",
                       "value": 1
                     },
@@ -114767,7 +114789,7 @@
                 {
                   "owner": "Quest",
                   "request": "set_progress",
-                  "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
+                  "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/poacher_notes",
                   "to": 1
                 }
               ]
@@ -115049,7 +115071,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_starlight_vial",
                                       "to": 5
                                     }
                                   ]
@@ -115315,7 +115337,7 @@
                                     {
                                       "owner": "Quest",
                                       "request": "set_progress",
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/charged_sun_catcher",
                                       "to": 5
                                     }
                                   ]
@@ -116191,7 +116213,7 @@
                         {
                           "when": {
                             "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
                               "op": "<",
                               "value": 5
                             },
@@ -116201,7 +116223,7 @@
                             {
                               "owner": "Quest",
                               "request": "set_progress",
-                              "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+                              "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
                               "value_source_line": 38
                             },
                             {
@@ -116230,7 +116252,7 @@
                                 {
                                   "when": {
                                     "quest_stage": {
-                                      "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission01/feathers_count",
                                       "op": "==",
                                       "value": 5
                                     },

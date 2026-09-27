@@ -120,6 +120,15 @@ branch, negated in `else` or after an early `return`, unknown otherwise, and not
 condition is compound. It is a line-level reading, not an evaluation; the transcription of each
 owner confirms it.
 
+A transition written by an NPC script names its dialogue in `requested_by`:
+- the NPC bundle key of the NPC authoring format (`canary:npc/<file>`, `crystal:npc/<file>`);
+- the player keywords (`MsgContains`) of the if-blocks around the write;
+- the dialogue topics those if-blocks test.
+
+The NPC side binds this to its dialogue nodes once its promotion needs it. Until then the node keeps
+its opaque `LUA_ACTION` and the quest side carries the reference, so no NPC-owned file changes (O4
+is settled by D35).
+
 Missions whose storage is a bare number (the 70 Killing in the Name of tasks) keep it as the track
 `storage/<n>`. A mission graph with typed, branching objectives (option B) is added only for a quest
 that staged missions cannot express (D34).
@@ -299,15 +308,16 @@ storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` t
 | Quest-log entries: Canary / CrystalServer / CrystalServer only | 51 / 59 / 7 |
 | Storyline quests / missions | 58 / 529 |
 | Journals: per stage / fixed / template | 468 / 38 / 23 |
-| Progress tracks / set by both servers' Lua / with no literal writer found | 557 / 332 / 179 |
+| Progress tracks (mission and start / auxiliary, §6.5) / set by both servers' Lua / with no literal writer found | 1,001 (556 / 445) / 704 / 109 |
 | Storyline quests linked to a wiki quest | 52 |
 | Reward-only quests absorbed by a storyline quest / catalogue quests | 21 / 157 |
 | Gates / reward claims attached to storyline quests | 138 / 98 |
 | Missions mapped / of which decided from a conflict (§6.4) | 529 / 35 |
-| Transitions / missions with at least one | 1,616 / 355 |
-| Transitions by owner: NPC / action / movement / creature event / library / other | 1,257 / 169 / 68 / 27 / 40 / 55 |
-| Effects: new value / step / computed | 1,513 / 61 / 42 |
-| Transitions with a known `from` stage (exact) / in both servers | 383 (312) / 1,298 |
+| Transitions / missions with at least one | 1,832 / 422 |
+| Transitions by owner: NPC / action / movement / creature event / library / other | 1,442 / 182 / 78 / 31 / 40 / 59 |
+| Effects: new value / step / computed | 1,727 / 63 / 42 |
+| Transitions with a known `from` stage (exact) / in both servers | 441 (343) / 1,371 |
+| NPC transitions / with keywords / with topics / whose NPC is in the NPC census | 1,442 / 1,240 / 739 / 1,442 |
 
 The 35 conflicts were mostly journal texts; the rest storage names or value ranges. They are decided
 in §6.4. "No literal writer" means the index found no
@@ -334,16 +344,14 @@ joined by that key; `interaction.schema.json` and
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
 | Children: Quest / Ability / Item / Achievement / Presentation | 944 / 208 / 160 / 30 / 2,668 |
 | Children blocked: Movement / WorldObject | 800 / 1,117 |
-| Quest children naming a mission transition | 193 |
+| Quest children naming a mission transition | 215 |
 | Unresolved statements / conditions | 2,016 / 1,963 |
 | Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 236 / 985 / 37 |
-| Progress tracks written but not declared by the catalogue | 373 |
 
 An independent spot check of 56 randomly sampled classified lines against their source found no
 misclassification. Most interactions keep some unresolved part: local tables and lookups,
 boss-room loops and delayed callbacks are the common ones. They stay with their source line
-rather than being guessed. The 373 undeclared tracks are the quest domain's to declare before the
-requests can run (D35).
+rather than being guessed. Every track a quest child writes is declared by the catalogue (§6.5).
 
 The Queen of the Banshees shows the result for one quest: 18 interactions; its seven seal flames
 request the seven movement transitions of slice 3 (one per mission, the last one opening the final
@@ -379,6 +387,29 @@ A first pass found 60 interaction conflicts. Twenty-three were callbacks paired 
 a file, so one server's added callback shifted the pairs; they are now joined by their script object.
 Interactions decided for CrystalServer keep the quest's Canary identity (D33).
 
+### 6.5 Declared auxiliary tracks
+
+Quest scripts also write tracks outside any mission: seal doors, counters, cooldowns and puzzle
+state. Under D35 the quest domain owns them too, so the catalogue declares each one (445) in
+`progress.json` with `auxiliary_of`. The owning quest comes from three sources, in this order:
+
+| Owner basis | Tracks |
+|---|---:|
+| The longest mission-track prefix that names one quest | 279 |
+| The script directory whose scripts write the missions of one quest | 8 |
+| `track_owners.json`: assigned from the track and script names and the script code, checked by sampling | 158 |
+
+- 81 tracks belong to a wiki quest that is not in the catalogue yet (`wiki_quest`).
+- 8 belong to no quest; their `note` gives the reason, for example world changes, generic helpers and
+  an example script.
+- 33 auxiliary tracks are read by door gates.
+
+The converter stops when a written track has no owner, and when `track_owners.json` names a track
+that needs no record. No interaction writes an undeclared track.
+
+Both converters expand `local X = Storage.…` aliases before reading writes. That added 216
+transitions to slice 3. A file that shadows `Storage` itself keeps its full paths.
+
 ## 7. Ownership
 
 - Static claim and placement: Content (`content/interactions/`, `content/world/placements/`),
@@ -399,13 +430,15 @@ Interactions decided for CrystalServer keep the quest's Canary identity (D33).
 
 ## 8. Next slices
 
-1. Owner transcription: bind each transition to its owner's content. The movement and action
-   scripts are transcribed (§6.3) and all conflicts are decided (§6.4); next the undeclared progress
-   tracks join their missions. Then NPC dialogue nodes (the NPC schema's open decision O4 is settled by D35: dialogue requests transitions and reads
-   stages, the quest domain owns the state).
+1. Owner transcription. The movement and action scripts are transcribed (§6.3), all conflicts are
+   decided (§6.4), the tracks the scripts write are declared (§6.5) and NPC transitions name their
+   dialogue (§3.2). Next, the NPC format binds `requested_by` to its dialogue nodes when it promotes
+   dialogue; that work lives in the NPC-owned files.
 2. NPC-driven outfit and addon quests (under the NPC service boundary).
-3. The dedicated-script doors (vocation doors, Katana, Secret Service).
-4. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
+3. Movement and world-object owners: the decision package
+   `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` waits for the owner.
+4. The dedicated-script doors (vocation doors, Katana, Secret Service).
+5. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
    Cloudflare challenge.
 
 ## 9. Owner decisions
