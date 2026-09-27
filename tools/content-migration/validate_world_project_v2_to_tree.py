@@ -159,6 +159,7 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
     require(canonical_sorted(migrated_bindings) == canonical_sorted(legacy_bindings), "CREATURE_BINDING_ROUNDTRIP")
     require(len(legacy_bindings) == CREATURE_FAMILY_COUNTS["Creature"], "CREATURE_BINDING_COUNT")
     require(load(ROOT / "imports/canary/bindings/creatures.json")["bindings"] == legacy_bindings, "IMPORT_CREATURE_BINDINGS")
+    require(load(ROOT / "imports/canary/index.json")["population_state"] == "POPULATED", "IMPORT_CANARY_MARKER_STATE")
     return sum(CREATURE_FAMILY_COUNTS.values()), len(migrated_profiles), len(migrated_bindings)
 
 
