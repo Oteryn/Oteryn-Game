@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: R7_XP_THRESHOLDS_MANIFEST_V5
 created_at: 2026-09-27T19:35:40Z
-updated_at: 2026-09-27T19:54:18Z
+updated_at: 2026-09-27T19:58:44Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
@@ -112,7 +112,7 @@ Schema mutation/versioning; Runtime, Combat, Server Seam, Movement, native-room,
 ## Context checkpoint
 
 ```yaml
-last_progress: exact successor published and externally frozen by #162 comment 5859208184; exact-head review and hosted gates are in progress
+last_progress: candidate content complete; the exact published successor is bound by the live #162 freeze record created after publication, and exact-head review plus hosted gates follow that external record
 status: validating
 branch: codex/r7-xp-thresholds-manifest-v5
 head_sha: null
