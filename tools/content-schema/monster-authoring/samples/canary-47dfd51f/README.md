@@ -49,6 +49,11 @@ item-look outfits, non-zero light and registered spell scripts.
 
 ## Wiki comparison at the 2026-07-28 reference cut
 
+> Since D33 (2026-09-27) the batch is compared at the 2026-09-27 target date in `wiki-2026-09-27.json`:
+> 229 MATCH, 12 DIFF, 10 WIKI_UNCERTAIN and 8 WIKI_UNKNOWN facts; loot chances 64 consistent, 25 outside the interval and
+> 5 not observed (for example dragon trophy now 13 drops and stone skin amulet 3 drops). The figures below record
+> the first comparison at the 2026-07-28 cut.
+
 `wiki-2026-07-28.json`, produced by `../../wiki_compare.py`, compares these bundles with TibiaWiki
 (Fandom): for each page the last revision at or before `2026-07-29T00:00:00Z`, its SHA-256, the
 current revision, and only the compared infobox facts (no wiki prose). No page changed after
@@ -76,7 +81,7 @@ The comparison is always made against the plain Canary conversion, so it keeps l
 ## Adopted wiki values (D15)
 
 The owner decided that where the reference-date wiki differs from Canary, the wiki value wins.
-`canary_batch.py` reads `wiki-2026-07-28.json` and applies it to the bundles:
+`canary_batch.py` reads `wiki-2026-09-27.json` (at the 2026-07-28 cut: `wiki-2026-07-28.json`) and applies it to the bundles:
 
 - `mitigation_percent` for the 9 monsters with a wiki value, as exact decimal ratios.
 - fire_elemental `pushable=true`.
