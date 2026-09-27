@@ -211,7 +211,7 @@ def main() -> int:
         "imports/canary/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["source_repository"] == "opentibiabr/canary"]},
         "imports/canary/bindings/creatures.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Creature", "bindings": creature_bindings},
         "imports/tibiawiki/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.tibiawiki"]},
-        "imports/tibiawiki/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["source_repository"] == "tibiawiki.com.br"]},
+        "imports/tibiawiki/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["batch_id"] in {source["import_batch_id"] for source in sources["sources"] if source["key"] == "oteryn:source.tibiawiki"}]},
         "imports/tibiawiki/bindings/items.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Item", "bindings": item_bindings},
         "imports/tibiawiki/bindings/mounts.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Mount", "bindings": mount_bindings},
         "imports/tibiawiki/facts/items-wave1.json": {
