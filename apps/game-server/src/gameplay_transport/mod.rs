@@ -226,6 +226,9 @@ where
     let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
     drop(unit);
     let (end, served) = match admitted {
+        // A durably admitted or resumed session whose acceptance could not be delivered
+        // still has a controller that is gone: it enters the loss lifecycle, never limbo.
+        Err(end @ ConnectionEnd::AdmittedThenDisconnected(_)) => (end, true),
         Err(end) => (end, false),
         Ok(admitted) => match first(
             serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),

@@ -2589,9 +2589,18 @@ impl FreshAdmissionStore {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         }
         let runtime = store.guards.load_locked(&mut tx, &AdmissionAuthorityGuardKeyV1::Runtime(current.current_runtime_scope())).await?;
+        // The runtime owner is ready at the session's scope generation and still serves exactly
+        // the ruleset/content/map/world-policy revisions the credential was verified against.
+        let revisions = &original.recovery;
         if !matches!(runtime.as_ref().map(|row| &row.state),
-            Some(AdmissionAuthorityGuardStateV1::Runtime { ownership_generation, ready: true, .. })
-            if *ownership_generation == current.current_scope_generation().get())
+            Some(AdmissionAuthorityGuardStateV1::Runtime {
+                ownership_generation, ready: true, ruleset_revision, content_revision, map_revision, world_policy_revision, ..
+            })
+            if *ownership_generation == current.current_scope_generation().get()
+                && *ruleset_revision == revisions.ruleset_revision
+                && *content_revision == revisions.content_revision
+                && *map_revision == revisions.map_revision
+                && *world_policy_revision == revisions.world_policy_revision)
         {
             return Ok(CompleteReconnectOutcomeV1::Rejected);
         }

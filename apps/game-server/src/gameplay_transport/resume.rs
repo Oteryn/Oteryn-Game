@@ -9,7 +9,9 @@
 //! committed switch restores control of the still-present actor and returns the resumed
 //! session. A refused or unproven PREPARE is withdrawn, never left to strand the session.
 
-use super::connection::{AdmissionRefusal, AdmittedSession, ControllerBinding, ResumeAttempt};
+use super::connection::{
+    AdmissionRefusal, AdmittedSession, ControllerBinding, FreshAdmissionAuthority, ResumeAttempt,
+};
 use super::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
 use super::{ComposedFreshAdmission, canonical_uuid};
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
@@ -293,12 +295,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             flow.take_request(CompleteReconnectRequestKindV1::Prepare)
                 .map_err(|_| Rejected)?,
         );
-        let prepared = self
+        // The resumed session as the candidate connection would serve it.
+        let mut resumed = lost;
+        resumed.controller = Some(ControllerBinding {
+            transport: attempt.transport,
+            account_id: controller.account_id,
+        });
+        resumed.continuity.connection_generation = successor;
+        let prepared = match self
             .decide(&store, prepare, source.clone(), flow.operation())
-            .await?;
-        if !matches!(prepared, CompleteReconnectOutcomeV1::Prepared { .. }) {
-            return Err(Rejected);
-        }
+            .await
+        {
+            Ok(outcome @ CompleteReconnectOutcomeV1::Prepared { .. }) => outcome,
+            refused => {
+                // A PREPARE that landed but could not be proven must not stay named.
+                let _ = store.abort_complete_reconnect(&identity).await;
+                return Err(refused.err().unwrap_or(Rejected));
+            }
+        };
         let committed = async {
             let budget = recovery_budget_of(&store, session_id, epoch).await?;
             {
@@ -311,16 +325,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 outcome: prepared,
             })))
             .map_err(|_| Unavailable)?;
-            // COMMIT is reauthorized from a fresh verification, never from PREPARE's.
+            // COMMIT is reauthorized from a fresh verification at a fresh durable time,
+            // never from PREPARE's capability.
             let fresh = verify().await?;
+            let (_, final_now) = store
+                .current_session_at(session_id)
+                .await
+                .map_err(|_| Unavailable)?;
             let authorization = CompleteReconnectAuthorizationV1::reauthorize_history(
                 flow.operation().recovery.clone(),
                 CompleteReconnectProofV1::V2(Box::new(fresh)),
                 source.as_ref(),
-                now,
+                final_now,
             )
             .map_err(|_| Rejected)?;
-            flow.resume_prepared(authorization, source.as_ref(), now)
+            flow.resume_prepared(authorization, source.as_ref(), final_now)
                 .map_err(|_| Rejected)?;
             let commit = Arc::new(
                 flow.take_request(CompleteReconnectRequestKindV1::Commit)
@@ -330,25 +349,30 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .await
         }
         .await;
-        if !matches!(committed, Ok(CompleteReconnectOutcomeV1::Committed { .. })) {
-            // Never leave a prepared attempt to strand the session until grace expiry.
-            let _ = store.abort_complete_reconnect(&identity).await;
-            return Err(committed.err().unwrap_or(Rejected));
+        match committed {
+            Ok(CompleteReconnectOutcomeV1::Committed { .. }) => {}
+            Err(AdmissionRefusal::Unavailable) => {
+                // The COMMIT may have landed without proof. If it did, the session is ACTIVE on
+                // a candidate that will never serve: release it (only that exact transport),
+                // never strand it. If it did not, withdraw the prepared attempt.
+                let _ = self.release_abandoned(resumed).await;
+                let _ = store.abort_complete_reconnect(&identity).await;
+                return Err(Unavailable);
+            }
+            refused => {
+                let _ = store.abort_complete_reconnect(&identity).await;
+                return Err(refused.err().unwrap_or(Rejected));
+            }
         }
-        // The durable session is ACTIVE on the candidate connection: the still-present
-        // actor is controlled again, from the lost connection's FND-02 continuity.
-        self.runtime
+        // The durable session is ACTIVE on the candidate connection: the still-present actor
+        // is controlled again, from the lost connection's FND-02 continuity. The durable
+        // switch stands even if the runtime mark could not be cleared.
+        let _ = self
+            .runtime
             .lock()
             .await
-            .restore_control(actor, session_id, epoch.get())
-            .map_err(|_| Unavailable)?;
+            .restore_control(actor, session_id, epoch.get());
         self.forget_lost(session_id, lost.continuity.connection_generation);
-        let mut resumed = lost;
-        resumed.controller = Some(ControllerBinding {
-            transport: attempt.transport,
-            account_id: controller.account_id,
-        });
-        resumed.continuity.connection_generation = successor;
         Ok(resumed)
     }
 

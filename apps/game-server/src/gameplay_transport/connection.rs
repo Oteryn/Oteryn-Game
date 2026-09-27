@@ -455,12 +455,14 @@ where
     };
     let error = match decode_wire_envelope(&frame) {
         Err(error) => error,
-        Ok(envelope) if envelope.connection_generation() != ADMITTED_GENERATION => {
+        Ok(envelope)
+            if envelope.connection_generation() != admitted.continuity.connection_generation =>
+        {
             FoundationProtocolError::StaleConnectionGeneration
         }
         Ok(_) => FoundationProtocolError::UnknownMessageType,
     };
-    let _ = send_error(stream, error, ADMITTED_GENERATION).await;
+    let _ = send_error(stream, error, admitted.continuity.connection_generation).await;
     ConnectionEnd::AdmittedThenClosed(admitted, error)
 }
 

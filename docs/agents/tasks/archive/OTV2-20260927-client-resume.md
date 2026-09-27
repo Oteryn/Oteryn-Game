@@ -62,3 +62,22 @@ Excluded:
 - fast-reconnect proof issuance;
 - early terminal replacement;
 - moving the post-reentry protection from 4 s to ~10 s (the tuning stage).
+
+## Independent review (head ded2f695)
+
+The review found no security or authority blocker. It confirmed:
+- only a durably lost session of this Channel can be resumed, by its own account, within grace and with a fresh credential revalidated against fenced S2 floors;
+- the nonce is single-use;
+- a healthy controller cannot be preempted;
+- the lock order has no cycle;
+- `release_abandoned_session` cannot release the wrong session.
+
+1. **(Medium, fixed) Committed but undelivered resume left the session stranded.**
+   - A failed `ServerResumeAccepted` write, and likewise a failed `ServerAccepted` write, now enter the loss lifecycle; a resumed session is then released as resumed history.
+   - A COMMIT whose outcome cannot be proven triggers `release_abandoned` on the exact candidate transport, which releases it only if it landed, and then withdraws the attempt.
+   - A failure to clear the runtime mark no longer discards a durable switch.
+2. **(Medium, fixed) Unproven PREPARE was never withdrawn.** Every non-`Prepared` outcome, including a reconcile error, now withdraws the attempt.
+3. **(Low, accepted) Recovery evidence refresh runs before credential verification.** This follows the same pattern as fresh admission. The only impact is liveness, and session ids are random.
+4. **(Low, fixed) Content revisions.** The deciding transaction now also requires the runtime guard's ruleset, content, map and world-policy revisions to equal the verified credential's current evidence.
+5. **(Low, fixed) `hold_admitted`** uses the session's own connection generation.
+6. **(Low, fixed)** COMMIT is reauthorized at a fresh durable time.
