@@ -207,6 +207,8 @@ Accepted review repairs:
 - unresolved review threads: pending
 - related/superseded PRs: none known
 - protected auto-merge: NOT_AUTHORIZED
+- owner authorization: 2026-09-27 owner explicitly authorized `.github/workflows/item-authoring-schema.yml`
+  (policy `explicit_owner_authorization_plus_merge_queue`, approvals 0)
 - merge commit/result: pending
 - ownership release: pending
 
