@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-quest-staged-missions
 title: Quest format slice 3 - staged missions (D34), transitions (D35) and the Canary + CrystalServer quest-log transcription
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 993
 base_sha: d833f6c258007a8183a8c66cab214998e590ae29
 head_sha: null
 final_head_sha: null
