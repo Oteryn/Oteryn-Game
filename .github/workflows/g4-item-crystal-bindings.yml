@@ -1,0 +1,54 @@
+name: G4 Item Crystal Identity Bindings
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - tools/content-census/g4_item_crystal_binding_generator.py
+      - tools/content-census/g4_item_crystal_binding_generator_self_test.py
+      - imports/crystalserver/bindings/**
+      - imports/tibiawiki/bindings/items.json
+      - content/items/definitions/**
+      - apps/game-server/src/content/cw2_b1_import.rs
+      - docs/agents/evidence/OTV2-20260919-content-world-cw2-b1-item-identity-catalog.json
+      - .github/workflows/g4-item-crystal-bindings.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: g4-item-crystal-bindings-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: G4 Item Crystal identity bindings
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Self-test and regenerate the bindings byte-identically
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/content-census/g4_item_crystal_binding_generator.py \
+            tools/content-census/g4_item_crystal_binding_generator_self_test.py
+          python tools/content-census/g4_item_crystal_binding_generator_self_test.py
+          python tools/content-census/g4_item_crystal_binding_generator.py --check
