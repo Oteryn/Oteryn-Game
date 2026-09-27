@@ -181,6 +181,35 @@ case('worn slot accepted', rule(conditions=[{'kind': 'attacker_wears', 'item': r
                                 trigger={'kind': 'heal_received', 'role': 'boss', 'source': 'player'}), True)
 case('unknown worn slot', rule(conditions=[{'kind': 'attacker_wears', 'item': ref('Item', 'vortex'), 'wears': False, 'slot': 'backpack'}],
                                trigger={'kind': 'damage_taken', 'role': 'boss', 'source': 'player'}))
+case('amount chance accepted', rule(conditions=[{'kind': 'chance_from_amount', 'per': 1000000}],
+                                    trigger={'kind': 'damage_taken', 'role': 'boss', 'source': 'any'}), True)
+case('amount chance needs a health change', rule(conditions=[{'kind': 'chance_from_amount', 'per': 1000000}]))
+case('move lock accepted', rule([{'kind': 'move_lock', 'role': 'boss', 'locked': True}]), True)
+case('move lock needs a known role', rule([{'kind': 'move_lock', 'role': 'nobody', 'locked': True}]))
+case('time-scaled modifier accepted', rule([{'kind': 'damage_modifier', 'role': 'boss', 'multiplier_percent': {'timer_remaining': 'enrage', 'floor': 1},
+                                              'sources': 'any', 'until': 'reset'}]), True)
+case('time-scaled modifier needs a known timer', rule([{'kind': 'damage_modifier', 'role': 'boss',
+                                                        'multiplier_percent': {'timer_remaining': 'nothing', 'floor': 1},
+                                                        'sources': 'any', 'until': 'reset'}]))
+case('time-scaled modifier needs a timer that does not repeat',
+     lambda e, c: (e['state']['timers'][0].update(repeat=True),
+                   rule([{'kind': 'damage_modifier', 'role': 'boss', 'multiplier_percent': {'timer_remaining': 'enrage', 'floor': 1},
+                          'sources': 'any', 'until': 'reset'}])(e, c)))
+case('shared life accepted', rule([{'kind': 'shared_life', 'role': 'boss'}]), True)
+case('shared life needs a known role', rule([{'kind': 'shared_life', 'role': 'nobody'}]))
+EXPLOSION = {'key': 'explosion', 'area': {'shape': 'circle', 'radius': 2}, 'damage': {'damage_type': 'life_drain', 'min': 2000, 'max': 2500},
+             'affects': {'players': True, 'creatures': []}}
+case('encounter ability cast accepted',
+     lambda e, c: (e.update(abilities=[EXPLOSION]),
+                   rule([{'kind': 'cast', 'encounter_ability': 'explosion', 'at': 'death_position'}], trigger=died)(e, c)), True)
+case('encounter ability must be authored', rule([{'kind': 'cast', 'encounter_ability': 'explosion', 'at': 'death_position'}], trigger=died))
+case('cast takes one ability',
+     lambda e, c: (e.update(abilities=[EXPLOSION]),
+                   rule([{'kind': 'cast', 'encounter_ability': 'explosion', 'ability': ref('Ability', 'summon'), 'at': 'death_position'}],
+                        trigger=died)(e, c)))
+case('encounter ability creatures are catalogued',
+     lambda e, c: (e.update(abilities=[{**EXPLOSION, 'affects': {'players': True, 'creatures': [ref('Creature', 'stranger')]}}]),
+                   rule([{'kind': 'cast', 'encounter_ability': 'explosion', 'at': 'death_position'}], trigger=died)(e, c)))
 case('remembered health accepted', rule([{**add(), 'role': 'boss', 'health': 'remembered'}], trigger=died), True)
 case('remembered health needs a role', rule([{**add(), 'health': 'remembered'}], trigger=died))
 case('transform cannot remember health', rule([{'kind': 'transform', 'role': 'boss', 'into': ref('Creature', 'add'), 'health': 'remembered'}], trigger=died))

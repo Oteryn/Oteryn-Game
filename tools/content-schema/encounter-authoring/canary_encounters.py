@@ -1549,6 +1549,234 @@ def spawn_callbacks(build):
 
 
 
+def ugly_monster_spawn(build):
+    """UglyMonsterSpawn, UglyMonsterCleanup and UglyMonsterDeath: a hit on Gaffir or Guard Captain Quaid may call the Ugly
+    Monster, with a chance equal to the amount of the change per million (D34)."""
+    path_ = 'data-otservbr-global/scripts/quests/grave_danger_quest/cobra_bastion/creaturescripts_ugly_monster.lua'
+    item = build.items['ugly_monster']
+    state = item['encounter']['state']
+    state['flags'].append({'name': 'ugly_monster_present', 'initial': False})
+    state['timers'].append({'name': 'ugly_monster_leaves', 'duration_ms': 60000, 'repeat': False})
+    build.entry(item, path_, [15, 16, 17], 'mapped', '/encounter/state',
+                'GlobalStorage.UglyMonster (1 while an ugly monster is out) is shared by the whole channel, like this encounter; '
+                'the pending removal is a 60 s timer.')
+    for boss in ('Gaffir', 'Guard Captain Quaid'):
+        role = slug(boss)
+        called = f'{role}_called_ugly_monster'
+        state['flags'].append({'name': called, 'initial': False})
+        build.participant(item, role, boss, 'UglyMonsterSpawn')
+        build.participant(item, role, boss, 'UglyMonsterCleanup')
+        for source_kind in ('damage_taken', 'heal_received'):
+            path = build.rule(item, {
+                'key': f'{role}_calls_ugly_monster_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': role, 'source': 'any'},
+                'conditions': [{'kind': 'flag', 'flag': called, 'value': False},
+                               {'kind': 'flag', 'flag': 'ugly_monster_present', 'value': False},
+                               {'kind': 'chance_from_amount', 'per': 1000000}],
+                'actions': [{'kind': 'spawn', 'creature': creature('Ugly Monster'), 'role': 'ugly_monster', 'count': 1,
+                             'at': 'subject_position', 'owner': 'none', 'health': 'full'},
+                            {'kind': 'flag', 'flag': called, 'value': True},
+                            {'kind': 'flag', 'flag': 'ugly_monster_present', 'value': True},
+                            {'kind': 'timer', 'timer': 'ugly_monster_leaves', 'operation': 'start'}]})
+            build.entry(item, path_, [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 37, 39, 40, 42], 'mapped', path,
+                        f'onHealthChange of {boss} ({"damage" if source_kind == "damage_taken" else "heals too"}): '
+                        'math.random(1, 1000000) < primary + secondary, i.e. a chance of the change amount per million, once '
+                        f'per {boss} and only while no ugly monster is out; it appears (not forced) on the boss\'s tile.')
+        build.entry(item, path_, [44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 56], 'approved_omission', None,
+                    f'UglyMonsterCleanup forgets the dead {boss.lower()} in the per-creature table; a new {boss.lower()} is a '
+                    'new creature, so its own flag starts false in a new encounter instance.')
+    path = build.rule(item, {'key': 'ugly_monster_leaves', 'trigger': {'kind': 'timer_elapsed', 'timer': 'ugly_monster_leaves'},
+                             'conditions': [], 'actions': [{'kind': 'remove', 'role': 'ugly_monster'},
+                                                           {'kind': 'flag', 'flag': 'ugly_monster_present', 'value': False}]})
+    build.entry(item, path_, [31, 32, 33, 34, 35, 36], 'mapped', path, 'After 60 s the ugly monster is removed and the channel flag cleared.')
+    build.participant(item, 'ugly_monster', 'Ugly Monster', 'UglyMonsterDeath')
+    path = build.rule(item, {'key': 'ugly_monster_death', 'trigger': {'kind': 'creature_died', 'role': 'ugly_monster'}, 'conditions': [],
+                             'actions': [{'kind': 'timer', 'timer': 'ugly_monster_leaves', 'operation': 'stop'},
+                                         {'kind': 'flag', 'flag': 'ugly_monster_present', 'value': False}]})
+    build.entry(item, path_, [58, 59, 60, 61, 62, 63, 64, 66], 'mapped', path,
+                'onDeath of the ugly monster cancels the removal and clears the channel flag.')
+
+
+
+def baeloc_and_nictros(build):
+    """BossHealthCheck: the brothers Sir Nictros and Sir Baeloc take turns; a waiting brother stands still (move_lock, D34)."""
+    path_ = 'data-otservbr-global/scripts/quests/grave_danger_quest/actions_baeloc_nictros.lua'
+    item = build.get('sir_baeloc', 'Grave Danger: Sir Baeloc and Sir Nictros', 'instance_per_party')
+    item['encounter']['anchors'] += [
+        {'key': 'nictros_post', 'kind': 'point', 'description': 'Canary (33427, 31428, 13), where Sir Nictros waits.'},
+        {'key': 'baeloc_entry', 'kind': 'point', 'description': 'Canary (33426, 31435, 13).'},
+        {'key': 'nictros_entry', 'kind': 'point', 'description': 'Canary (33424, 31435, 13).'}]
+    state = item['encounter']['state']
+    state['flags'] += [{'name': 'nictros_stepped_back', 'initial': False}, {'name': 'brothers_together', 'initial': False}]
+    build.participant(item, 'sir_nictros', 'Sir Nictros', 'BossHealthCheck')
+    build.participant(item, 'sir_baeloc', 'Sir Baeloc', 'BossHealthCheck')
+    path = build.rule(item, {'key': 'baeloc_waits', 'trigger': {'kind': 'encounter_started'}, 'conditions': [],
+                             'actions': [{'kind': 'move_lock', 'role': 'sir_baeloc', 'locked': True}]})
+    build.entry(item, path_, [1, 2, 4, 5, 6, 7, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 30], 'mapped', path,
+                'The lever creates both brothers with BossHealthCheck: Sir Nictros fights, Sir Baeloc stands still, and both '
+                'health marks start false.')
+    for source_kind in ('damage_taken', 'heal_received'):
+        path = build.rule(item, {
+            'key': f'nictros_steps_back_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': 'sir_nictros', 'source': 'any'},
+            'conditions': [{'kind': 'flag', 'flag': 'nictros_stepped_back', 'value': False},
+                           {'kind': 'health_percent', 'role': 'sir_nictros', 'op': '<=', 'value': 85}],
+            'actions': [{'kind': 'flag', 'flag': 'nictros_stepped_back', 'value': True},
+                        {'kind': 'say', 'subject': {'role': 'sir_nictros'}, 'text': "I'll step back now. Let's see how you handle my brother!",
+                         'mode': 'say'},
+                        {'kind': 'teleport', 'who': {'role': 'sir_nictros'}, 'to': 'nictros_post'},
+                        {'kind': 'move_lock', 'role': 'sir_nictros', 'locked': True},
+                        {'kind': 'teleport', 'who': {'role': 'sir_baeloc'}, 'to': 'baeloc_entry'},
+                        {'kind': 'move_lock', 'role': 'sir_baeloc', 'locked': False},
+                        {'kind': 'say', 'subject': {'role': 'sir_baeloc'}, 'text': 'My turn! Let me show you my skills!', 'mode': 'say'}]})
+        build.entry(item, path_, [82, 84, 85, 86, 87, 89, 91, 92, 93, 94, 95, 97, 99, 100, 102, 103, 104, 106, 107, 108, 109, 111, 112, 113],
+                    'mapped', path,
+                    'onHealthChange of Sir Nictros (heals too), with the health before the change at or below 85%, once: he says '
+                    'his line, returns to (33427, 31428, 13) and stands still; Sir Baeloc comes to (33426, 31435, 13), may move '
+                    'and says his line.')
+        path = build.rule(item, {
+            'key': f'baeloc_calls_his_brother_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': 'sir_baeloc', 'source': 'any'},
+            'conditions': [{'kind': 'flag', 'flag': 'nictros_stepped_back', 'value': True},
+                           {'kind': 'flag', 'flag': 'brothers_together', 'value': False},
+                           {'kind': 'health_percent', 'role': 'sir_baeloc', 'op': '<=', 'value': 85}],
+            'actions': [{'kind': 'flag', 'flag': 'brothers_together', 'value': True},
+                        {'kind': 'say', 'subject': {'role': 'sir_baeloc'}, 'text': 'Brother! I need your assistance!', 'mode': 'say'},
+                        {'kind': 'move_lock', 'role': 'sir_nictros', 'locked': False},
+                        {'kind': 'teleport', 'who': {'role': 'sir_nictros'}, 'to': 'nictros_entry'},
+                        {'kind': 'say', 'subject': {'role': 'sir_nictros'}, 'text': 'Now we fight together, brother!', 'mode': 'say'}]})
+        build.entry(item, path_, [82, 84, 89, 97, 114, 115, 117, 119, 120, 121, 122, 123, 124, 125, 126, 128, 129, 131], 'mapped', path,
+                    'After that, Sir Baeloc at or below 85% (health before the change), once: he calls his brother, who may move '
+                    'again, comes to (33424, 31435, 13) and says his line.')
+    build.entry(item, path_, [110], 'approved_omission', None, "Sir Baeloc's facing south is cosmetic.")
+
+
+
+def king_zelos(build):
+    """The King Zelos events: the four knights, their helpers and the time-scaled damage of King Zelos (D34)."""
+    path_ = 'data-otservbr-global/scripts/quests/grave_danger_quest/creaturescripts_king_zelos.lua'
+    item = build.get('king_zelos', 'Grave Danger: King Zelos', 'instance_per_party')
+    encounter = item['encounter']
+    encounter['anchors'] += [
+        {'key': 'knights_hall', 'kind': 'area', 'description': 'Canary (33414, 31520, 13) to (33474, 31574, 13): the four knight rooms '
+                                                                'and the room of King Zelos.'},
+        {'key': 'rewar_room', 'kind': 'area', 'description': 'Canary (33458, 31556, 13) to (33467, 31566, 13), where the fetters appear.'},
+        {'key': 'nargol_post', 'kind': 'point', 'description': 'Canary (33423, 31529, 13), where Nargol the Impaler and his regenerating '
+                                                               'mass appear.'}]
+    state = encounter['state']
+    state['counters'].append({'name': 'knights_defeated', 'initial': 0})
+    state['flags'].append({'name': 'shards_defeated', 'initial': False})
+    state['timers'] += [{'name': 'zelos_ritual', 'duration_ms': 800000, 'repeat': False},
+                        {'name': 'mass_regenerates', 'duration_ms': 30000, 'repeat': False}]
+    red_knight = creature('The Red Knight')
+    encounter['abilities'] = [
+        {'key': 'blood_explosion', 'area': {'shape': 'square', 'radius': 1},
+         'damage': {'damage_type': 'drowning', 'min': 20000, 'max': 25000}, 'affects': {'players': True, 'creatures': [red_knight]}},
+        {'key': 'shard_explosion', 'area': {'shape': 'circle', 'radius': 2},
+         'damage': {'damage_type': 'life_drain', 'min': 2000, 'max': 2500}, 'affects': {'players': True, 'creatures': []},
+         'effect': 'canary.appearance:effect/magic_red'}]
+    build.participant(item, 'king_zelos', 'King Zelos', 'zelos_damage')
+    build.participant(item, 'king_zelos', 'King Zelos', 'zelos_init')
+    build.participant(item, 'rewar_the_bloody', 'Rewar The Bloody', 'rewar_the_bloody')
+    build.participant(item, 'rewar_the_bloody', 'Rewar The Bloody', 'blood_death')
+    build.participant(item, 'rewar_the_bloody', 'Rewar The Bloody Inv', 'rewar_the_bloody')
+    build.participant(item, 'fetter', 'Fetter', 'fetter_death')
+    build.participant(item, 'magnor_mournbringer', 'Magnor Mournbringer', 'magnor_death')
+    build.participant(item, 'shard_of_magnor', 'Shard Of Magnor', 'shard_death')
+    build.participant(item, 'nargol_the_impaler', 'Nargol The Impaler', 'nargol_death')
+    build.participant(item, 'regenerating_mass', 'Regenerating Mass')
+    build.participant(item, 'the_red_knight', 'The Red Knight')
+    build.participant(item, 'vampiric_blood', 'Vampiric Blood')
+    build.entry(item, path_, list(range(1, 34)), 'approved_omission', None,
+                'The config table (room, summons, exits, storages) is not read by any handler in this file.')
+
+    not_summoned = lambda role: {'kind': 'has_master', 'role': role, 'value': False}
+    path = build.rule(item, {'key': 'ritual_begins', 'trigger': {'kind': 'encounter_started'}, 'conditions': [],
+                             'actions': [{'kind': 'timer', 'timer': 'zelos_ritual', 'operation': 'start'}]})
+    build.entry(item, path_, [55, 57, 73, 75, 76, 78], 'mapped', path,
+                'zelos_init reads the start time from storage 1 of King Zelos and turns it into the seconds the knights took. '
+                'Canary registers zelos_init only on King Zelos and never writes the start time, so its King Zelos takes normal '
+                'damage. The wiki (D25) describes the ritual: the longer the four knights live, the stronger King Zelos '
+                'becomes. The ritual is timed from the start of the encounter.')
+    for role, extra in (('rewar_the_bloody', []), ('the_red_knight', []), ('regenerating_mass', []),
+                        ('shard_of_magnor', [{'kind': 'flag', 'flag': 'shards_defeated', 'value': False}])):
+        actions = [{'kind': 'counter', 'counter': 'knights_defeated', 'operation': 'add', 'value': 1}]
+        if extra:
+            actions.insert(0, {'kind': 'flag', 'flag': 'shards_defeated', 'value': True})
+        path = build.rule(item, {'key': f'{role}_defeated', 'trigger': {'kind': 'creature_died', 'role': role},
+                                 'conditions': [not_summoned(role)] + extra, 'actions': actions})
+        build.entry(item, path_, [58, 60, 61, 62, 64, 66, 67, 68, 69, 70, 71], 'mapped', path,
+                    'The knights are done when none of Nargol, Magnor, The Red Knight, Rewar, a shard or the regenerating mass '
+                    'is left. A knight counts when its last form dies: Rewar, The Red Knight, the regenerating mass of Nargol, '
+                    'and the four shards of Magnor, which share one life and die together (counted once).')
+    path = build.rule(item, {'key': 'knights_defeated', 'trigger': {'kind': 'counter_reached', 'counter': 'knights_defeated', 'value': 4},
+                             'conditions': [],
+                             'actions': [{'kind': 'damage_modifier', 'role': 'king_zelos',
+                                          'multiplier_percent': {'timer_remaining': 'zelos_ritual', 'floor': 1},
+                                          'component': 'all', 'sources': 'any', 'until': 'reset'}]})
+    build.entry(item, path_, [35, 37, 38, 39, 41, 42, 43, 44, 45, 46, 47, 48, 50, 51, 53, 80, 81, 82, 84], 'mapped', path,
+                'Every hit on King Zelos, both parts together, is reduced by the ritual seconds / 800, and by 99% from 800 s on: '
+                'the percent of the 800 s timer still left, at least 1%. Heals are unchanged.')
+
+    path = build.rule(item, {'key': 'vampiric_blood_explodes', 'trigger': {'kind': 'creature_died', 'role': 'vampiric_blood'},
+                             'conditions': [not_summoned('vampiric_blood')],
+                             'actions': [{'kind': 'cast', 'encounter_ability': 'blood_explosion', 'at': 'death_position'}]})
+    build.entry(item, path_, list(range(86, 121)), 'mapped', path,
+                'The blood explosion: every player and The Red Knight on the 3x3 square around the dead creature (the top '
+                'creature of each tile) take 20,000-25,000 drown damage. Canary registers blood_death on Rewar the Bloody; the '
+                'wiki (D25) says the vampiric bloods explode when they die and that this is the only damage The Red Knight takes.')
+
+    path = build.rule(item, {'key': 'nargol_regenerates', 'trigger': {'kind': 'creature_died', 'role': 'nargol_the_impaler'},
+                             'conditions': [not_summoned('nargol_the_impaler')],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Regenerating Mass'), 'role': 'regenerating_mass', 'count': 1,
+                                          'at': {'anchor': 'nargol_post'}, 'owner': 'none', 'health': 'full'},
+                                         {'kind': 'timer', 'timer': 'mass_regenerates', 'operation': 'start'}]})
+    build.entry(item, path_, [122, 124, 125, 127, 128, 129, 131, 133, 139, 141, 142, 144], 'mapped', path,
+                'When Nargol dies, a regenerating mass appears at his post for 30 s.')
+    path = build.rule(item, {'key': 'nargol_returns', 'trigger': {'kind': 'timer_elapsed', 'timer': 'mass_regenerates'},
+                             'conditions': [{'kind': 'creature_present', 'role': 'regenerating_mass', 'anchor': 'knights_hall', 'present': True}],
+                             'actions': [{'kind': 'remove', 'role': 'regenerating_mass'},
+                                         {'kind': 'spawn', 'creature': creature('Nargol The Impaler'), 'role': 'nargol_the_impaler',
+                                          'count': 1, 'at': {'anchor': 'nargol_post'}, 'owner': 'none', 'health': 'full'}]})
+    build.entry(item, path_, [133, 134, 135, 136, 137, 138, 139], 'mapped', path,
+                'If the mass is still alive after 30 s it is removed and Nargol returns with full health.')
+    path = build.rule(item, {'key': 'mass_destroyed', 'trigger': {'kind': 'creature_died', 'role': 'regenerating_mass'}, 'conditions': [],
+                             'actions': [{'kind': 'timer', 'timer': 'mass_regenerates', 'operation': 'stop'}]})
+    build.entry(item, path_, [134, 135], 'mapped', path, 'A killed mass cannot bring Nargol back.')
+
+    path = build.rule(item, {'key': 'magnor_shatters', 'trigger': {'kind': 'creature_died', 'role': 'magnor_mournbringer'},
+                             'conditions': [not_summoned('magnor_mournbringer')],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Shard Of Magnor'), 'role': 'shard_of_magnor', 'count': 4,
+                                          'at': 'death_position', 'owner': 'none', 'health': 'full'},
+                                         {'kind': 'shared_life', 'role': 'shard_of_magnor'}]})
+    build.entry(item, path_, list(range(183, 205)), 'mapped', path,
+                'Magnor becomes four shards on the free tiles nearest its death position; they share one life (SharedLife, '
+                'data/libs/functions/monster.lua): a change to one sets the others to the same health, and a lethal hit kills them '
+                'all. Each shard carries shard_death.')
+    path = build.rule(item, {'key': 'shard_explodes', 'trigger': {'kind': 'creature_died', 'role': 'shard_of_magnor'},
+                             'conditions': [not_summoned('shard_of_magnor')],
+                             'actions': [{'kind': 'cast', 'encounter_ability': 'shard_explosion', 'at': 'death_position'}]})
+    build.entry(item, path_, list(range(146, 182)), 'mapped', path,
+                'Each dying shard explodes: every player on the radius-2 circle around it (the top creature of each tile) takes '
+                '2,000-2,500 life drain damage, with the red magic effect.')
+
+    path = build.rule(item, {'key': 'rewar_calls_fetters', 'trigger': {'kind': 'damage_accumulated', 'role': 'rewar_the_bloody', 'amount': 12500},
+                             'conditions': [],
+                             'actions': [{'kind': 'spawn', 'creature': creature('Fetter'), 'role': 'fetter', 'count': {'min': 1, 'max': 3},
+                                          'at': {'random_in': 'rewar_room'}, 'owner': 'none', 'health': 'full'},
+                                         {'kind': 'transform', 'role': 'rewar_the_bloody', 'into': creature('Rewar The Bloody Inv'),
+                                          'health': 'keep_absolute'}]})
+    build.entry(item, path_, list(range(230, 264)), 'mapped', path,
+                'Every 5% of its 250,000 health taken as damage, Rewar calls one to three fetters at random tiles of its room and '
+                'becomes Rewar The Bloody Inv, which is immune to every element. Heals are not counted.')
+    path = build.rule(item, {'key': 'rewar_unfettered', 'trigger': {'kind': 'creature_died', 'role': 'fetter'},
+                             'conditions': [not_summoned('fetter'),
+                                            {'kind': 'creature_present', 'role': 'fetter', 'anchor': 'rewar_room', 'present': False}],
+                             'actions': [{'kind': 'transform', 'role': 'rewar_the_bloody', 'into': creature('Rewar The Bloody'),
+                                          'health': 'keep_absolute'}]})
+    build.entry(item, path_, list(range(206, 229)), 'mapped', path,
+                'When the last fetter dies, Rewar becomes vulnerable again.')
+    build.define(item, red_knight)
+
+
+
 def small_boss_events(build):
     """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
     glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
@@ -2364,7 +2592,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos):
         transcribe(build)
     print(json.dumps(build.write()))
 

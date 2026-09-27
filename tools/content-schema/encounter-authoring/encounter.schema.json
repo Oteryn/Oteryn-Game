@@ -196,6 +196,94 @@
       "minItems": 0,
       "uniqueItems": true
     },
+    "abilities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "area": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "shape": {
+                "enum": [
+                  "square",
+                  "circle"
+                ]
+              },
+              "radius": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "shape",
+              "radius"
+            ]
+          },
+          "damage": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "damage_type": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9_]*$"
+              },
+              "min": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "damage_type",
+              "min",
+              "max"
+            ]
+          },
+          "affects": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "players": {
+                "type": "boolean"
+              },
+              "creatures": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/CreatureRef"
+                },
+                "minItems": 0,
+                "uniqueItems": true
+              }
+            },
+            "required": [
+              "players",
+              "creatures"
+            ]
+          },
+          "effect": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "key",
+          "area",
+          "damage",
+          "affects"
+        ]
+      },
+      "minItems": 0
+    },
     "reset_after_ms": {
       "type": "integer",
       "minimum": 1
@@ -760,6 +848,23 @@
           "required": [
             "kind",
             "value"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "chance_from_amount"
+            },
+            "per": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          "required": [
+            "kind",
+            "per"
           ]
         },
         {
@@ -1333,8 +1438,31 @@
               "pattern": "^[a-z][a-z0-9_]*$"
             },
             "multiplier_percent": {
-              "type": "integer",
-              "minimum": 0
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "timer_remaining": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]*$"
+                    },
+                    "floor": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 100
+                    }
+                  },
+                  "required": [
+                    "timer_remaining",
+                    "floor"
+                  ]
+                }
+              ]
             },
             "damage_types": {
               "type": "array",
@@ -1638,10 +1766,52 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "move_lock"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "locked": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "kind",
+            "role",
+            "locked"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "shared_life"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            }
+          },
+          "required": [
+            "kind",
+            "role"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "cast"
             },
             "ability": {
               "$ref": "#/$defs/AbilityRef"
+            },
+            "encounter_ability": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
             },
             "at": {
               "$ref": "#/$defs/position"
@@ -1649,7 +1819,6 @@
           },
           "required": [
             "kind",
-            "ability",
             "at"
           ]
         },
@@ -1862,5 +2031,5 @@
       ]
     }
   },
-  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31)."
+  "description": "Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34)."
 }
