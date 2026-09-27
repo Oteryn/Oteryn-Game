@@ -27,6 +27,9 @@ Architecture and boundaries:
 | `templates/*.json` | Thirteen valid starting points for materially different authoring shapes. |
 | `validate_item.py` | Structural, semantic, exact-reference and import-readiness validation. |
 | `verify_formal_schema.py` | Focused positive/negative contract checks and deterministic fixtures. |
+| `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding. Digest-verifies every input file first. |
+| `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every bundle, and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage). |
+| `samples/population-crystal-ff7ede5.json`, `samples/population-canary-47dfd51f.json` | Committed census outputs for the two pinned engine revisions. |
 
 The profiles are guidance inside one schema. Missing a common capability produces a
 warning; optional capabilities preserve the wider census union without warning noise.
@@ -40,6 +43,20 @@ python build_formal_schema.py && git diff --exit-code -- .
 python verify_formal_schema.py
 python validate_item.py synthetic-valid-item.json synthetic-valid-dependencies.json --manifest synthetic-valid-import-readiness.json
 ```
+
+Engine population census (pinned Crystal/Canary checkouts, digests verified before read;
+Crystal also needs `data/scripts/lib/task_board_delivery_items.lua` for
+`delivery_task_eligible`):
+
+```text
+python population_census.py --engine crystal --source /path/to/crystalserver --self-check
+python population_census.py --engine canary --source /path/to/canary --self-check
+python engine_items.py --engine crystal --source /path/to/crystalserver --id 3288
+```
+
+`population_census.py` is evidence tooling: it proves what the pinned engine sources
+convert to under this schema today, not a corpus migration or Game truth. It never
+commits per-item rows, only counters and capped examples in `samples/`.
 
 Successful validation proves authoring shape and declared dependency closure only. It
 does not prove runtime lowering, gameplay parity, corpus migration or production

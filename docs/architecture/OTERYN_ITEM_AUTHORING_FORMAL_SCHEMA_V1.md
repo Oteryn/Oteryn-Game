@@ -376,6 +376,31 @@ transformation items start from the nearest template and add only evidenced capa
 groups. Light remains a cross-cutting capability rather than a separate incompatible
 Item schema.
 
+## 5a. Engine population census
+
+`engine_items.py` converts every pinned Crystal and Canary `items.xml` +
+`appearances.dat` entry into a candidate Item bundle and `population_census.py`
+validates all of them (`samples/population-*.json`; counters and capped examples only,
+no per-item rows). Keys reproduce the Game's committed allocator (the CW2 B1 identity
+catalog plus the 64 `NATIVE_ITEM_BATCH` semantic keys; Crystal `3288` →
+`oteryn:item.registry.i00003167`), recorded as `cw2_b1_allocator_reproduced` unless an
+exact TibiaWiki binding exists. This is provenance for the census, not a G4 binding.
+
+| | Crystal `ff7ede5` | Canary `47dfd51` |
+|---|---|---|
+| entries | 38,157 | 37,527 |
+| validator errors | 0 | 0 |
+| valid, only the sprite-atlas blocker | 2,521 | 2,481 |
+| valid, other blockers | 9,465 | 9,125 |
+| no family profile (not converted) | 26,171 | 25,921 |
+
+Most unconverted entries are immovable map objects (`flags.unmove`, about 23,000), which
+this schema routes to WorldObject/Terrain. The largest Item-side gaps are converter
+work (`flags.container`, `flags.cumulative`, upgrade classification, proficiency IDs)
+and catalog `unresolved_semantics` fields (`type`, `weapontype`, `forceuse`). Engine data
+has no per-item Forge tier and no `stacksize`, so `forge` and `stack.max_count` need
+another source.
+
 ## 6. Validation and non-claims
 
 The schema validator checks:
