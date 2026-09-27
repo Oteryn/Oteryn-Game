@@ -383,6 +383,9 @@
         "key": "canary:formula/morshabaal/attack-1-1",
         "revision": "canary-47dfd51f"
       },
+      "mitigated_by": [
+        "armor"
+      ],
       "presentation": {
         "impact_asset_binding": "canary.appearance:effect/white_energy_spark"
       }
@@ -414,7 +417,11 @@
         "family": "Formula",
         "key": "canary:formula/morshabaal/attack-3-1",
         "revision": "canary-47dfd51f"
-      }
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
     },
     {
       "identity": {

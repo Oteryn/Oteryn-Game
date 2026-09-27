@@ -30,7 +30,7 @@
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/0",
-      "resolution": "Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
+      "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by). Melee chance normalized to 100: monsters.cpp deserializeSpell: melee is scheduled by interval; the declared chance is not applied."
     },
     {
       "source_index": 0,
@@ -40,7 +40,7 @@
       "kind": "field",
       "status": "mapped",
       "destination": "/monster/behavior/attacks/1",
-      "resolution": "Inline Canary spell branch mapped to Ability/Effect/Formula."
+      "resolution": "src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR on an inline physical combat, so its damage is reduced by the target armor (mitigated_by)."
     },
     {
       "source_index": 0,
@@ -60,7 +60,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/0",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10196 \"orc tooth\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.15% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 10196 \"orc tooth\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 0.15% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -70,7 +70,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/1",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 23986 \"heavy old tome\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 1.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -90,7 +90,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/3",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3308 \"machete\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 3.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3308 \"machete\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 3.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -100,7 +100,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/4",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3376 \"studded helmet\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 9.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3376 \"studded helmet\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 9.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -110,7 +110,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/5",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3362 \"studded legs\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 10.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3362 \"studded legs\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 10.0% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -120,7 +120,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/6",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3277 \"spear\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 17.44% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3277 \"spear\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 17.44% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -130,7 +130,7 @@
       "kind": "dependency",
       "status": "mapped",
       "destination": "/monster/loot/entries/7",
-      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 25.05% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000. Item 3031 \"gold coin\" is a declared source-scoped reference, not an admitted canonical Item. Probability taken from the wiki estimate (source 2); Canary had 25.05% (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -329,7 +329,7 @@
       "source_field": "defenses.mitigation",
       "kind": "field",
       "status": "approved_omission",
-      "resolution": "Canary value 0.3 superseded by the reference-date wiki value 0.48 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
+      "resolution": "Canary value 0.3 superseded by the reference-date wiki value 0.48 (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value)."
     },
     {
       "source_index": 0,
@@ -367,7 +367,7 @@
       "source_field": "Infobox Creature.mitigation",
       "kind": "field",
       "status": "mapped",
-      "resolution": "Wiki mitigation \"0.48\" (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
+      "resolution": "Wiki mitigation \"0.48\" (Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain (? or ~) or unparsed wiki value).",
       "destination": "/monster/creature/stats/mitigation_percent"
     },
     {

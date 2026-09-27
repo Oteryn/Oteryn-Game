@@ -13,7 +13,7 @@ SPELL_LIB = 'data/scripts/lib/register_spells.lua'
 ENGINE_DEFINITIONS = 'src/creatures/creatures_definitions.hpp'
 SCRIPT_DIRS = ('data/scripts', 'data-otservbr-global/scripts')
 SHARED_DIRS = ('data/scripts/spells/', 'data/scripts/runes/')
-MAX_RANDOM_RANGE = 64
+MAX_RANDOM_RANGE = 512
 
 LUA_SANDBOX = r'''
 local rec = {combats = {}, conditions = {}, spells = {}, executed = {}, randoms = {}}
@@ -99,20 +99,40 @@ def body_tier(text, shared, callbacks):
     return tier, reasons
 
 
+ENUMS = ('ConditionParam_t', 'ConditionType_t', 'CombatParam_t', 'CallBackParam_t', 'CombatType_t')
+
+
+def enum_values(text, enum):
+    """name -> value of a C++ enum: explicit integer values, otherwise the previous value plus one."""
+    body = re.search(r'enum ' + enum + r'[^{]*\{(.*?)\};', text, re.S).group(1)
+    values, current = {}, -1
+    for line in body.splitlines():
+        line = line.split('//')[0].strip().rstrip(',')
+        match = re.match(r'([A-Z][A-Z0-9_]+)\s*(?:=\s*(.+))?$', line)
+        if not match:
+            continue
+        name, expression = match.groups()
+        if expression is None:
+            current += 1
+        elif expression in values:
+            current = values[expression]
+        else:
+            shift = re.fullmatch(r'1\s*<<\s*(\d+)', expression)
+            current = 1 << int(shift.group(1)) if shift else int(expression, 0)
+        values[name] = current
+    return values
+
+
 def engine_enums(canary):
-    """Names of the Canary ConditionParam_t, ConditionType_t, CombatParam_t and CallBackParam_t enums."""
+    """name -> value of the Canary enums a spell script passes to Combat and Condition."""
     text = (canary / ENGINE_DEFINITIONS).read_text(encoding='utf-8')
-    names = {}
-    for enum in ('ConditionParam_t', 'ConditionType_t', 'CombatParam_t', 'CallBackParam_t'):
-        body = re.search(r'enum ' + enum + r'[^{]*\{(.*?)\};', text, re.S).group(1)
-        names[enum] = set(re.findall(r'^\s*([A-Z][A-Z0-9_]+)', body, re.M))
-    return names
+    return {enum: enum_values(text, enum) for enum in ENUMS}
 
 
 def area_constants(canary):
     """Top-level `NAME = { ... }` table blocks of the Canary spell library (AREA_* and friends)."""
     text = (canary / SPELL_LIB).read_text(encoding='utf-8', errors='replace')
-    return '\n'.join(re.findall(r'^[A-Z][A-Z0-9_]* = \{.*?^\}', text, re.M | re.S))
+    return '\n'.join(re.findall(r'^[A-Z]\w* = \{.*?^\}', text, re.M | re.S))
 
 
 def index_spells(canary):
@@ -193,9 +213,14 @@ class SpellScripts:
             if len(ranges) != 1:
                 return {**result, 'error': f'{len(ranges)} random draws per cast'}
             low, high = (1, ranges[0][0]) if len(ranges[0]) == 1 else ranges[0]
-            if not (isinstance(low, int) and isinstance(high, int)) or high - low > MAX_RANDOM_RANGE:
+            if low == high:
+                # LuaJIT math.random(m, n) returns floor(r * (n - m + 1)) + m, which is m itself when m == n.
+                values = [low]
+            elif not (isinstance(low, int) and isinstance(high, int)) or high - low > MAX_RANDOM_RANGE:
                 return {**result, 'error': f'random range {ranges[0]} is not a small integer range'}
-            for value in range(low, high + 1):
+            else:
+                values = range(low, high + 1)
+            for value in values:
                 ok, _ = cast(spell, value)
                 ran = [c['__n'] for c in rec['executed'].values()]
                 if not ok or len(ran) != 1:
@@ -210,10 +235,11 @@ class SpellScripts:
         return result
 
     def _combat(self, lua, combat):
-        data = {'params': {}, 'callbacks': {}, 'conditions': [], 'area': None, 'formula': None}
+        data = {'params': {}, 'param_calls': [], 'callbacks': {}, 'conditions': [], 'area': None, 'formula': None}
         for method, args in calls(combat):
             if method == 'setParameter' and len(args) >= 2:
                 data['params'][str(args[0]).lstrip('@')] = args[1].lstrip('@') if isinstance(args[1], str) else args[1]
+                data['param_calls'].append([str(args[0]).lstrip('@'), args[1].lstrip('@') if isinstance(args[1], str) else args[1]])
             elif method == 'setArea' and args and isinstance(args[0], dict):
                 data['area'] = {'north': args[0].get('north'), 'diagonal': args[0].get('ext')}
             elif method == 'setCallback' and len(args) >= 2:

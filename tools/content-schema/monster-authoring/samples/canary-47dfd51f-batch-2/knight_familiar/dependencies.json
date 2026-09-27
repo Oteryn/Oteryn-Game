@@ -161,7 +161,11 @@
         "family": "Formula",
         "key": "canary:formula/knight_familiar/attack-1-1",
         "revision": "canary-47dfd51f"
-      }
+      },
+      "mitigated_by": [
+        "armor",
+        "shield"
+      ]
     },
     {
       "identity": {

@@ -19,6 +19,7 @@ from fractions import Fraction
 from pathlib import Path
 
 from normalize_monster_fields import cast_geometry
+import spell_probes
 import spell_scripts
 
 ROOT = Path(__file__).resolve().parent
@@ -41,6 +42,12 @@ BATCH_2 = ['bosses/morshabaal', 'humanoids/dworc_voodoomaster', 'fey/wisp',
            'constructs/war_golem']
 BATCHES = {REV: BATCH_1, REV + '-batch-2': BATCH_2}
 RULES = {
+    'armor_melee': 'src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR and COMBAT_PARAM_BLOCKSHIELD '
+                   'on a monster melee, so its damage is reduced by the target armor and shield defense (mitigated_by)',
+    'armor_physical': 'src/creatures/monsters/monsters.cpp deserializeSpell sets COMBAT_PARAM_BLOCKARMOR on an inline physical '
+                      'combat, so its damage is reduced by the target armor (mitigated_by)',
+    'armor_script': 'src/creatures/combat/combat.cpp Combat::setParam maps COMBAT_PARAM_BLOCKARMOR/BLOCKSHIELD to '
+                    'blockedByArmor/blockedByShield, which Creature::blockHit applies (mitigated_by)',
     'loot_scale': 'src/utils/const.hpp MAX_LOOTCHANCE=100000, so percent = chance/1000',
     'loot_order': 'register_monster_type.lua SortLootByChance sorts the table by ascending chance before registration',
     'loot_defaults': 'creatures_definitions.hpp LootBlock countmin=countmax=1; unique=false',
@@ -58,6 +65,12 @@ RULES = {
     'familiar_look': 'data/libs/systems/familiar.lua FAMILIAR_ID gives the default look per vocation, which '
                      'creaturescripts/familiar/on_login.lua assigns to a character without a selection',
     'nil_constant': 'an undefined Lua global evaluates to nil in Canary',
+    'primal_pack_beast': 'data-otservbr-global/lib/quests/the_primal_ordeal.lua RegisterPrimalPackBeast registers a separate '
+                         'type "<name> (Primal)" (named Primal Pack Beast, 0 experience, no loot, 70% health, no Bestiary, no '
+                         'corpse) and leaves this type unchanged; the derived Primal type is not generated here',
+    'nil_zero': 'src/lua/functions/lua_functions_loader.hpp getNumber reads nil with lua_tonumber as 0',
+    'dispel': 'src/creatures/combat/combat.cpp CombatDispelFunc removes every condition of COMBAT_PARAM_DISPEL type from '
+              'each target after the health change (or on a combat without damage)',
     'element_over_100': 'monster.cpp blockHit sets damage <= 0 to 0, so more than 100% reduction equals 100% '
                         '(the excess only offsets the Wheel "Ballistic Mastery" element reduction)',
     'zero_condition': 'condition.cpp ConditionDamage::init: a damage condition with zero total damage never starts',
@@ -73,9 +86,15 @@ RULES = {
 # Owner decisions 2026-09-26 (docs/architecture/OTERYN_MONSTER_AUTHORING_SCHEMA_V1.md section 3).
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-07-28.json'
+BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
+PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile')
+PATH_TRAIL = (r'local target = Creature\(var\.number\) if not target then return false end local creaturePos = creature:getPosition\(\) '
+              r'local path = creaturePos:getPathTo\(target:getPosition\(\), 0, 0, true, (true|false), (\d+)\) if not path or #path == 0 '
+              r'then return false end for i = 1, #path do creaturePos:getNextPosition\(path\[i\], 1\) '
+              r'creaturePos:sendMagicEffect\((CONST_ME_\w+)\) end return combat:execute\(creature, var\)')
 WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces '
                  'it; applied to health, experience, armor, mitigation, element modifiers, flags, flee health, Bestiary '
-                 'difficulty/occurrence, loot items missing in Canary and loot probabilities; never to an uncertain '
+                 'difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain '
                  '(? or ~) or unparsed wiki value')
 LOW_CONFIDENCE_DROPS = 10
 LOOT_RATE_RULE = ('D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; '
@@ -333,6 +352,7 @@ class Converter:
         late_errors = []
         name, m, callbacks = load_monster(path, late_errors)
         s = slug(name)
+        self.current_slug = s
         source_file = f'{MONSTER_DIR}/{relative}.lua'
         rows = []
         assets = set()
@@ -358,6 +378,10 @@ class Converter:
             return key
 
         for error in late_errors:
+            if 'RegisterPrimalPackBeast' in error:
+                row('RegisterPrimalPackBeast(monster)', 'approved_omission', 'script', line=line_of(r'^RegisterPrimalPackBeast'),
+                    resolution=RULES['primal_pack_beast'] + '.')
+                continue
             row('top-level script after mType:register', 'unresolved_semantics', 'script', line=len(lines),
                 resolution='A top-level Lua call after registration failed here; Canary keeps the registered type and runs '
                            f'the call at load. Needs a native decision: {error}')
@@ -507,19 +531,15 @@ class Converter:
             for element in m.get(source, []):
                 creature[target].append({'damage_type': DAMAGE[constant(element['type'], 'COMBAT_')], 'percent': ratio(element['percent'])})
         race = bestiary.get('race') if bestiary else None
+        self.pending_bestiary = None
         if bestiary and not (isinstance(race, str) and race.startswith('@BESTY_RACE_')):
+            self.pending_bestiary = (bestiary, len(rows))
             row('Bestiary.race', 'unresolved_dependency', 'dependency', line=line_of(r'^monster\.Bestiary'),
                 resolution=f'Bestiary without a valid race ({race!r}); Canary leaves the Bestiary race unset, so the entry '
                            'has no Bestiary class page. Bestiary omitted until a taxonomy is chosen.')
             bestiary = None
         if bestiary:
-            stars = bestiary.get('Stars', 0)
-            creature['bestiary'] = {'class': bestiary['class'], 'taxonomy': constant(bestiary['race'], 'BESTY_RACE_').lower(),
-                                    'difficulty': DIFFICULTY[stars], 'occurrence': OCCURRENCE[bestiary.get('Occurrence', 0)],
-                                    'stars': stars, 'kill_thresholds': [bestiary['FirstUnlock'], bestiary['SecondUnlock'], bestiary['toKill']],
-                                    'charm_points': bestiary['CharmsPoints']}
-            if bestiary.get('Locations', '').strip():
-                creature['bestiary']['locations'] = bestiary['Locations']
+            creature['bestiary'] = self.bestiary_payload(bestiary, constant(bestiary['race'], 'BESTY_RACE_').lower())
             row('Bestiary', 'mapped', destination='/monster/creature/bestiary', line=line_of(r'^monster\.Bestiary'),
                 resolution='difficulty is derived from Stars (0 harmless .. 5 challenging) and occurrence from Occurrence (0 common .. 3 very rare).')
         if 'bosstiary' in m:
@@ -623,17 +643,19 @@ class Converter:
             row('outfit.lookType', 'mapped', destination='/monster/presentation/appearance', line=line_of(r'^monster\.outfit'),
                 resolution='Owner decision D16: a familiar shows the look its owner selected (data/XML/familiars.xml, chosen per '
                            'character); ' + RULES['familiar_look'] + '. The monster file has no lookType.')
+        elif not outfit.get('lookType'):
+            appearance_key = None
+            row('outfit.lookType', 'mapped', destination='/monster/presentation/appearance/selection', line=line_of(r'^monster\.outfit'),
+                resolution='lookType 0 without lookTypeEx and not a familiar: the creature has no appearance (owner decision D24).')
         else:
             appearance_key = asset(f'canary.appearance:outfit/{outfit.get("lookType", 0)}')
-            if not outfit.get('lookType'):
-                row('outfit.lookType', 'unresolved_semantics', line=line_of(r'^monster\.outfit'),
-                    resolution='Source outfit has no lookType (lookType 0 placeholder) and the monster is not a familiar.')
         palette = [{'slot': slot, 'palette_binding': asset(f'canary.appearance:palette/{outfit[key]}')}
                    for slot, key in (('head', 'lookHead'), ('body', 'lookBody'), ('legs', 'lookLegs'), ('feet', 'lookFeet'))
                    if outfit.get(key)]
         light = m.get('light', {})
         presentation = {'identity': ident(f'canary:presentation/{s}'),
-                        'appearance': {'asset_binding': appearance_key, 'palette_bindings': palette,
+                        'appearance': {**({'asset_binding': appearance_key} if appearance_key else {'selection': 'invisible'}),
+                                       'palette_bindings': palette if appearance_key else [],
                                        'attachment_bindings': [], 'visual_effect_bindings': []},
                         'light': {'level': light.get('level', 0)}, 'audio': {'event_bindings': []}}
         if light.get('level', 0) > 0:
@@ -827,10 +849,21 @@ class Converter:
             elif field == 'flee_health' and isinstance(value, int):
                 behavior['targeting']['flee_health'] = min(value, creature['stats']['max_health'])
                 adopt(diff, '/monster/behavior/targeting/flee_health', 'flags.runHealth', r'runHealth', 'runsat')
+            elif field == 'bestiary.class' and getattr(self, 'pending_bestiary', None) and isinstance(value, str):
+                source_bestiary, index = self.pending_bestiary
+                if value != str(source_bestiary.get('class', '')).lower().replace(' ', '_'):
+                    continue
+                creature['bestiary'] = self.bestiary_payload(source_bestiary, value)
+                rows[index].update({'status': 'mapped', 'kind': 'field', 'destination': '/monster/creature/bestiary',
+                                    'resolution': rows[index]['resolution'].split(' Bestiary omitted')[0] + ' The Bestiary '
+                                    f'class "{source_bestiary["class"]}" and the reference-date wiki class "{diff["wiki_raw"]}" '
+                                    f'agree, so the taxonomy is {value} ({WIKI_ADOPTION}).'})
+                wiki_row(page, title, diff.get('wiki_line', 1), 'Infobox Creature.bestiaryclass', '/monster/creature/bestiary/taxonomy',
+                         f'Wiki bestiaryclass "{diff["wiki_raw"]}" ({WIKI_ADOPTION}).')
             elif field in ('bestiary.difficulty', 'bestiary.occurrence') and 'bestiary' in creature and isinstance(value, str):
                 key = field.split('.')[1]
                 allowed = DIFFICULTY.values() if key == 'difficulty' else OCCURRENCE.values()
-                if value in allowed:
+                if value in allowed and creature['bestiary'][key] != value:
                     creature['bestiary'][key] = value
                     adopt(diff, f'/monster/creature/bestiary/{key}', f'Bestiary.{key}', r'^monster\.Bestiary',
                           'bestiarylevel' if key == 'difficulty' else 'occurrence')
@@ -846,15 +879,16 @@ class Converter:
         title = record['wiki_title']
         if stats.get('status') != 'COMPARED':
             for name in only_wiki:
-                wiki_row(1, title, loot_diff['wiki_line'], f'Infobox Creature.loot={name}', None, status='unresolved_semantics',
-                         resolution='Wiki lists the item but no Loot Statistics page gives a probability.')
+                wiki_row(1, title, loot_diff['wiki_line'], f'Infobox Creature.loot={name}', None, status='approved_omission',
+                         resolution='Wiki lists the item but no Loot Statistics page gives a probability, so the Canary loot '
+                                    'list is kept and the item is not added (owner decision D23).')
             return
         stat = source(stats['page_title'], stats['page_id'], stats['cut_revision_id'], stats['cut_content_sha256'])
         block = f'the version {stats["version"]} block of {stats["page_title"]} ({stats["kills"]} kills)'
         entries = monster['loot']['entries']
 
-        def estimate(times):
-            exact = Fraction(times * 100, stats['kills'])
+        def estimate(times, share=1):
+            exact = Fraction(times * 100, stats['kills']) / share
             percent = (Decimal(exact.numerator) / Decimal(exact.denominator)).quantize(Decimal('0.0001'), ROUND_HALF_EVEN)
             return exact, int(percent) if percent == percent.to_integral_value() else float(percent)
 
@@ -884,25 +918,53 @@ class Converter:
             else:
                 canary_row['resolution'] += ' ' + chance.get('note', '') + ' Canary probability kept.'
 
-        for item in (i for i in stats['items'] if i['name'] in only_wiki):
+        wiki_items = [i for i in stats['items'] if i['name'] in only_wiki]
+        # Rows resolved through a disambiguation page come last, so a row naming the exact item page wins.
+        wiki_items.sort(key=lambda i: bool((i.get('item_page') or {}).get('variants')))
+        listed = {e['item']['key'] for e in entries}
+        for item in wiki_items:
             candidates = self.index.get(item['name'], [])
             page_ids = (item.get('item_page') or {}).get('item_ids', [])
+            variants = (item.get('item_page') or {}).get('variants', [])
+            if variants:
+                mine = [v for v in variants if title.lower() in v.get('dropped_by', [])]
+                chosen = mine if len(mine) == 1 else variants
+                page_ids = sorted({i for v in chosen for i in v['item_ids']})
+                for v in chosen:
+                    source(v['page_title'], v['page_id'], v['cut_revision_id'], v['cut_content_sha256'])
+                item = {**item, 'item_page': {**item['item_page'], 'item_ids': page_ids}}
+                candidates = [] if len(mine) == 1 else candidates
+                note_variant = (f' The wiki page is a disambiguation; its item page "{mine[0]["page_title"]}" names {title} in '
+                                f'droppedby (line {mine[0]["droppedby_line"]}) and declares itemid {page_ids} (owner decision '
+                                'D25).' if len(mine) == 1 else
+                                f' The wiki page is a disambiguation and no variant names {title} in droppedby, so every '
+                                f'variant id {page_ids} is used (owner decision D22).')
+            else:
+                note_variant = ''
             narrowed = [i for i in candidates if i in page_ids]
-            id_note = ''
+            id_note = note_variant
             if len(candidates) > 1 and len(narrowed) == 1:
                 page_info = item['item_page']
                 page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
                                      page_info['cut_content_sha256'])
-                id_note = (f' The name matches ids {sorted(candidates)}; the item page (source {page_source}, line '
+                id_note += (f' The name matches ids {sorted(candidates)}; the item page (source {page_source}, line '
                            f'{page_info["itemid_line"]}) declares itemid {narrowed[0]}.')
                 candidates = narrowed
+            elif candidates and page_ids and not narrowed and len(page_ids) == 1 and page_ids[0] in self.names:
+                page_info = item['item_page']
+                page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
+                                     page_info['cut_content_sha256'])
+                id_note += (f' The name matches Canary ids {sorted(candidates)}, but the item page (source {page_source}, line '
+                           f'{page_info["itemid_line"]}) declares itemid {page_ids[0]} ("{self.names[page_ids[0]]}"); the '
+                           'wiki decides (owner decision D25).')
+                candidates = page_ids
             elif len(candidates) == 1 and page_ids and candidates[0] not in page_ids:
                 candidates = []
             elif not candidates and len(page_ids) == 1 and page_ids[0] in self.names:
                 page_info = item['item_page']
                 page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
                                      page_info['cut_content_sha256'])
-                id_note = (f' No Canary item has the wiki name; the item page (source {page_source}, line '
+                id_note += (f' No Canary item has the wiki name; the item page (source {page_source}, line '
                            f'{page_info["itemid_line"]}) declares itemid {page_ids[0]}.')
                 candidates = page_ids
             if len(candidates) > 1:
@@ -915,23 +977,45 @@ class Converter:
                     id_note += (f' Ids {sorted(pool)} share the name; {sorted(worn & set(pool))} is the equipped state '
                                 f'(items.xml transformEquipTo), so the dropped item is {unworn[0]}.')
                     candidates = unworn
-            if item['times'] == 0 or len(candidates) != 1:
+            page_set = sorted(set(page_ids))
+            if len(candidates) != 1 and len(page_set) > 1 and (set(candidates) == set(page_set) or
+                                                               (not candidates and all(i in self.names for i in page_set))):
+                page_info = item['item_page']
+                page_source = source(page_info['page_title'], page_info['page_id'], page_info['cut_revision_id'],
+                                     page_info['cut_content_sha256'])
+                id_note += (f' The item page (source {page_source}, line {page_info["itemid_line"]}) lists ids {page_set} for '
+                            f'this name, so each id gets an equal share of the probability (owner decision D22).')
+                candidates = page_set
+            elif item['times'] and len(candidates) != 1:
                 wiki_row(stat, stats['page_title'], item['line'] or stats['kills_line'], f'Loot2.{item["name"]}', None,
                          status='unresolved_dependency',
                          resolution=f'{item["times"]} drops recorded; item name resolves to {len(candidates)} ids.')
                 continue
-            item_id = candidates[0]
-            exact, value = estimate(item['times'])
-            low, _, high = item['amount'].partition('-')
-            entries.append({'item': ref('Item', f'canary:item/{item_id}'), 'min_count': int(low), 'max_count': int(high or low),
-                            'probability_percent': value, 'skip_later_same_item_after_success': False})
-            definitions.add(('Item', f'canary:item/{item_id}'))
-            confidence = '' if item['times'] >= LOW_CONFIDENCE_DROPS else ' Low confidence: fewer than 10 drops.'
-            wiki_row(stat, stats['page_title'], item['line'], f'Loot2.{item["name"]}', f'/monster/loot/entries/{len(entries) - 1}',
-                     f'Listed in the {title} infobox loot (source 1, line {loot_diff["wiki_line"]}), absent in Canary. '
-                     f'Probability = {item["times"]} drops / {stats["kills"]} kills in {block}, {float(exact):.6f}% rounded '
-                     f'half-even to 1 ppm ({WIKI_ADOPTION}).{confidence}{id_note} Item {item_id} "{self.names.get(item_id)}" is a '
-                     f'declared source-scoped reference, not an admitted canonical Item.')
+            if item['times'] == 0:
+                wiki_row(stat, stats['page_title'], item['line'] or stats['kills_line'], f'Loot2.{item["name"]}', None,
+                         status='approved_omission', resolution=f'0 drops in {block}: no probability, so the Canary loot '
+                                                                'list is kept (owner decision D23).')
+                continue
+            if variants and all(f'canary:item/{i}' in listed for i in candidates):
+                wiki_row(stat, stats['page_title'], item['line'] or stats['kills_line'], f'Loot2.{item["name"]}', None,
+                         status='approved_omission', resolution=f'{note_variant.strip()} The id is already in this loot table '
+                         'under its own statistics row, so this row is not added again.')
+                continue
+            for item_id in candidates:
+                listed.add(f'canary:item/{item_id}')
+                exact, value = estimate(item['times'], len(candidates))
+                low, _, high = item['amount'].partition('-')
+                entries.append({'item': ref('Item', f'canary:item/{item_id}'), 'min_count': int(low), 'max_count': int(high or low),
+                                'probability_percent': value, 'skip_later_same_item_after_success': False})
+                definitions.add(('Item', f'canary:item/{item_id}'))
+                confidence = '' if item['times'] >= LOW_CONFIDENCE_DROPS else ' Low confidence: fewer than 10 drops.'
+                share = f' / {len(candidates)} ids' if len(candidates) > 1 else ''
+                wiki_row(stat, stats['page_title'], item['line'], f'Loot2.{item["name"]}' + (f'#{item_id}' if share else ''),
+                         f'/monster/loot/entries/{len(entries) - 1}',
+                         f'Listed in the {title} infobox loot (source 1, line {loot_diff["wiki_line"]}), absent in Canary. '
+                         f'Probability = {item["times"]} drops / {stats["kills"]} kills{share} in {block}, {float(exact):.6f}% '
+                         f'rounded half-even to 1 ppm ({WIKI_ADOPTION}).{confidence}{id_note} Item {item_id} '
+                         f'"{self.names.get(item_id)}" is a declared source-scoped reference, not an admitted canonical Item.')
 
         # Keep the registrar's ascending-probability order (stable) and move every loot pointer with its entry.
         order = sorted(range(len(entries)), key=lambda i: entries[i]['probability_percent'])
@@ -954,9 +1038,17 @@ class Converter:
         where = f'registered {info["kind"]} spell "{name}" ({info["script"]})'
         if info.get('tier') == 'NOOP':
             return 'OMIT', f'{where} returns false for a non-player caster, so it has no effect in Canary (D14).'
+        pattern = self.behaviour_patterns().get(name)
+        tag = f' D18 pattern `{pattern}` (samples/{BEHAVIOUR_PATTERNS}).' if pattern else ''
         if info.get('tier') == 'P4' or 'error' in info:
             reason = '; '.join(info.get('tier_reasons') or []) or info.get('error', '')
-            return 'UNRESOLVED', f'{where} has custom logic ({reason[:200]}); needs a native behaviour (D13).'
+            probe_note = ''
+            if pattern in PROBED_PATTERNS and 'error' not in info:
+                result, probe_note = self.probed_spell(name, info, where, spell, deps, asset, pattern)
+                if result:
+                    return result
+                probe_note = f' Probe: {probe_note}.'
+            return 'UNRESOLVED', f'{where} has custom logic ({reason[:200]}); needs a native behaviour (D13).{tag}{probe_note}'
         key = f'canary:ability/spell/{slug(name)}'
         flags = info['spell_calls']
         geometry = {'needs_target': bool(flags.get('needTarget', [False])[0] or flags.get('needCasterTargetOrDirection', [False])[0]),
@@ -965,6 +1057,19 @@ class Converter:
         notes = [f'{where}, tier {info["tier"]}: resolved by name as Canary does (rune, instant, then built-in kind; D10).']
         notes += info.get('tier_reasons') or []
         existing = {a['identity']['key'] for a in deps['abilities']}
+        geometric = self.geometric_dot(info) if len(info['variants']) > 2 else None
+        if geometric and key not in existing:
+            template, body, summary = geometric
+            try:
+                uses_magnitude = self.combat_ability(key, template, geometry, range_tiles, deps, asset, notes,
+                                                     extra=[('-condition-1', body)])
+            except SpellUnresolved as exc:
+                return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.{tag}'
+            notes.append(summary)
+            return self.spell_result(key, spell, notes, uses_magnitude)
+        if geometric:
+            notes.append(geometric[2])
+            return self.spell_result(key, spell, notes, self.ability_uses_magnitude(key, deps))
         if len(info['variants']) > 1 and key not in existing:
             payloads = set()
             for combat in info['variants']:
@@ -993,7 +1098,10 @@ class Converter:
                     uses_magnitude = any(self.ability_uses_magnitude(k, deps) for k in variant_keys)
                 notes.append(f'{len(variant_keys)} variants picked uniformly by math.random (D12).')
         except SpellUnresolved as exc:
-            return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.'
+            return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.{tag}'
+        return self.spell_result(key, spell, notes, uses_magnitude)
+
+    def spell_result(self, key, spell, notes, uses_magnitude):
         extras = {}
         if uses_magnitude:
             low, high = abs(spell.get('minDamage', 0)), abs(spell.get('maxDamage', 0))
@@ -1004,22 +1112,427 @@ class Converter:
             extras['range_tiles'] = int(spell['range'])
         return key, ' '.join(dict.fromkeys(notes)) + ' ', extras
 
+    def probed_spell(self, name, info, where, spell, deps, asset, pattern):
+        """D18: model a custom-logic spell from its probed behaviour. Returns ((key, note, extras), '') or (None, reason)."""
+        key = f'canary:ability/spell/{slug(name)}'
+        flags = info['spell_calls']
+        geometry = {'needs_target': bool(flags.get('needTarget', [False])[0] or flags.get('needCasterTargetOrDirection', [False])[0]),
+                    'needs_direction': bool(flags.get('needDirection', [False])[0])}
+        range_tiles = int(flags.get('range', [0])[0] or 0)
+        notes = [f'{where}: custom logic modelled from its probed behaviour against stub worlds (D18 pattern `{pattern}`, '
+                 'spell_probes.py).']
+        if key not in {a['identity']['key'] for a in deps['abilities']}:
+            probe = spell_probes.Probe(self.canary, info['script'], self.spell_scripts.areas, {})
+            if probe.entries():
+                return None, 'the script rolls a value or touches the world while it loads (fixed per server start)'
+            lua_spell = probe.spell(name)
+            scratch = {'abilities': [], 'effects': [], 'formulas': []}
+            try:
+                if pattern == 'conditional_summon':
+                    self.probe_summon(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                elif pattern == 'path_trail_missile':
+                    self.path_trail(probe, key, geometry, range_tiles, scratch, asset, notes)
+                elif pattern == 'heal_allies_in_area':
+                    self.probe_callbacks(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                else:
+                    self.probe_remove_items(probe, lua_spell, key, scratch, asset, notes)
+            except SpellUnresolved as exc:
+                return None, str(exc)
+            for family in ('abilities', 'effects', 'formulas'):
+                known = {e['identity']['key'] for e in deps[family]}
+                deps[family].extend(e for e in scratch[family] if e['identity']['key'] not in known)
+        extras = {}
+        if self.ability_uses_magnitude(key, deps):
+            low, high = abs(spell.get('minDamage', 0)), abs(spell.get('maxDamage', 0))
+            extras['magnitude'] = {'minimum': min(low, high), 'maximum': max(low, high)}
+            notes.append('Damage/heal magnitude of the combat itself comes from this monster entry (D11).')
+        if spell.get('range'):
+            extras['range_tiles'] = int(spell['range'])
+        return (key, ' '.join(dict.fromkeys(notes)) + ' ', extras), ''
+
+    def cast_runs(self, probe, lua_spell, summons=(0,), modes=('low', 'high')):
+        """onCastSpell against a caster with each summon count and random mode: {(summons, mode): (log, executed)}."""
+        runs = {}
+        for count in summons:
+            for mode in modes:
+                caster = probe.make('monster', 'caster', None, count)
+                probe.creatures['caster'] = caster
+                ok, log = probe.run(lua_spell['onCastSpell'], caster, probe.lua.table(), random=mode)
+                if not ok:
+                    raise SpellUnresolved('onCastSpell needs more of the world than the stubs model')
+                runs[count, mode] = (log, [c['__n'] for c in probe.rec['executed'].values()])
+        return runs
+
+    def executed_combat(self, probe, runs):
+        executed = {tuple(e) for _, e in runs.values()}
+        if len(executed) != 1 or len(next(iter(executed))) > 1:
+            raise SpellUnresolved(f'the casts execute different combats {sorted(executed)}')
+        numbers = next(iter(executed))
+        if not numbers:
+            return None
+        combat = next(c for c in probe.rec['combats'].values() if c['__n'] == numbers[0])
+        return self.spell_scripts._combat(probe.lua, combat)
+
+    def probe_summon(self, probe, lua_spell, key, geometry, range_tiles, deps, asset, notes):
+        runs = self.cast_runs(probe, lua_spell, summons=range(16))
+        for log, _ in runs.values():
+            other = {e[0] for e in log} - {'random', 'createMonster', 'setMaster', 'say'}
+            if other:
+                raise SpellUnresolved(f'the cast also does {sorted(other)}')
+        created = {k: [e for e in log if e[0] == 'createMonster'] for k, (log, _) in runs.items()}
+        counts = {s: len(created[s, 'low']) for s in range(16)}
+        if any(len(created[s, 'high']) != counts[s] for s in range(16)):
+            raise SpellUnresolved('the number of summons depends on a random roll')
+        limit = next((s for s in range(16) if counts[s] == 0), None)
+        if not limit or any(counts[s] for s in range(limit, 16)):
+            raise SpellUnresolved(f'created counts {counts} have no summon limit')
+        if all(counts[s] == limit - s for s in range(limit)):
+            mode, count = 'fill_to_limit', limit
+        elif len({counts[s] for s in range(limit)}) == 1:
+            mode, count = 'fixed', counts[0]
+        else:
+            raise SpellUnresolved(f'created counts {counts} are neither fixed nor filling to a limit')
+        every = [e for entries in created.values() for e in entries]
+        names = sorted({e[1] for e in every})
+        if len(names) != 1:
+            raise SpellUnresolved(f'the summons pick between {names}')
+        if any(e[4] for e in every):
+            raise SpellUnresolved('summons are placed on another floor')
+        low = {(e[2], e[3]) for s in range(limit) for e in created[s, 'low']}
+        high = {(e[2], e[3]) for s in range(limit) for e in created[s, 'high']}
+        reach = next(iter(high))[0] if len(high) == 1 else None
+        if not (len(low) == 1 and reach is not None and low == {(-reach, -reach)} and high == {(reach, reach)} and reach >= 0):
+            raise SpellUnresolved(f'summon positions {sorted(low | high)} are not the caster tile plus a uniform offset')
+        masters = [e for log, _ in runs.values() for e in log if e[0] == 'setMaster']
+        if masters and (len(masters) != len(every) or not all(e[2] for e in masters)):
+            raise SpellUnresolved('only some summons get the caster as master')
+        for text in sorted({e[1] for log, _ in runs.values() for e in log if e[0] == 'say'}):
+            notes.append(f'The cast says "{text}" first (voice line, not modelled).')
+        creature = f'canary:creature/{slug(names[0])}'
+        self.pending_definitions.add(('Creature', creature))
+        body = {'operation': 'summon_creature', 'summon': {
+            'creatures': [ref('Creature', creature)], 'count_mode': mode, 'count': count, 'only_below_summons': limit,
+            'owned': bool(masters), 'max_offset_tiles': reach}}
+        notes.append(f'Probed: {counts[0]} created with no summons, none from {limit} summons on; Game.createMonster at the caster '
+                     f'position{f" +-{reach} per axis" if reach else ""}; setMaster {"on every summon" if masters else "never"}. A '
+                     'failed placement (`if not mid then return`) ends that cast early in Canary.')
+        combat = self.executed_combat(probe, runs)
+        if combat is None:
+            deps['effects'].append({'identity': ident(f'{key}/effect-summon'), **body})
+            deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': range_tiles, **geometry,
+                                      'effects': [ref('Effect', f'{key}/effect-summon')]})
+            return
+        if combat['callbacks']:
+            raise SpellUnresolved('the executed combat has Lua callbacks')
+        self.combat_ability(key, combat, geometry, range_tiles, deps, asset, notes, extra=[('-summon', body)])
+
+    def probe_callbacks(self, probe, lua_spell, key, geometry, range_tiles, deps, asset, notes):
+        runs = self.cast_runs(probe, lua_spell)
+        if any(log for log, _ in runs.values()):
+            raise SpellUnresolved('onCastSpell does more than execute its combat')
+        combat = self.executed_combat(probe, runs)
+        if combat is None or not combat['callbacks']:
+            raise SpellUnresolved('no executed combat with a callback')
+        params = self.engine_params(combat.get('param_calls', []), [])
+        aggressive = params.get('COMBAT_PARAM_AGGRESSIVE', 1) != 0
+        extra = []
+        for callback, function_name in sorted(combat['callbacks'].items()):
+            function = probe.lua.globals()[function_name]
+            if callback == 'CALLBACK_PARAM_TARGETCREATURE':
+                extra += self.probe_target_creature(probe, function, key, len(extra), aggressive, deps)
+            elif callback == 'CALLBACK_PARAM_TARGETTILE':
+                extra += self.probe_target_tile(probe, function, key, len(extra), deps)
+            else:
+                raise SpellUnresolved(f'callback {callback}')
+        notes.append(f'Probed {", ".join(sorted(combat["callbacks"]))}: '
+                     + '; '.join(f'{b["operation"]} {b["affects"]["kind"]}' for _, b in extra) + '.')
+        self.combat_ability(key, {**combat, 'callbacks': {}}, geometry, range_tiles, deps, asset, notes, extra=extra)
+
+    def health_body(self, kind, low, high, affects, formula_key, deps):
+        damage = 'healing' if kind == 'COMBAT_HEALING' else DAMAGE.get(kind[len('COMBAT_'):])
+        if damage is None:
+            raise SpellUnresolved(f'callback combat type {kind}')
+        deps['formulas'].append({'identity': ident(formula_key), 'kind': 'range', 'magnitude': {'minimum': low, 'maximum': high}})
+        return {'operation': 'heal' if damage == 'healing' else 'damage', 'damage_type': damage,
+                'formula': ref('Formula', formula_key), 'affects': affects}
+
+    def probe_target_creature(self, probe, function, key, offset, aggressive, deps):
+        caster = probe.make('monster', 'caster')
+        probe.creatures['caster'] = caster
+        player = probe.make('player', 'player')
+        targets = {'player': player, 'player_summon': probe.make('monster', 'player summon', player),
+                   'monster_summon': probe.make('monster', 'monster summon', probe.make('monster', 'other master')),
+                   'monster': probe.make('monster', 'monster'), 'caster': caster}
+        groups = {}
+        for label, target in targets.items():
+            ok, log = probe.run(function, caster, target)
+            if not ok or any(e[0] != 'combatHealth' for e in log):
+                raise SpellUnresolved(f'the target callback does more than change health ({label})')
+            for e in log:
+                groups.setdefault((e[2].lstrip('@'), e[3], e[4]), set()).add(label)
+        kinds = {frozenset({'monster'}): 'masterless_monsters', frozenset({'monster', 'monster_summon'}): 'non_player_side',
+                 frozenset({'player', 'player_summon'}): 'player_side'}
+        extra = []
+        for n, ((kind, low, high), labels) in enumerate(sorted(groups.items()), offset + 1):
+            side = kinds.get(frozenset(labels - {'caster'}))
+            if side is None:
+                raise SpellUnresolved(f'the callback reaches {sorted(labels)}, which is no modelled target group')
+            affects = {'kind': side, 'top_creature_only': False, 'excludes_caster_name': False,
+                       # combat.cpp CombatFunc passes the caster only to a non-aggressive combat.
+                       'includes_caster': 'caster' in labels and not aggressive}
+            extra.append((f'-callback-{n}', self.health_body(kind, min(low, high), max(low, high), affects,
+                                                              f'{key}/formula-callback-{n}', deps)))
+        return extra
+
+    def probe_target_tile(self, probe, function, key, offset, deps):
+        text = probe.source
+        candidates = sorted({s.lower() for s in re.findall(r'"([^"\n]+)"', text)}) + ['zz unnamed monster']
+        position = probe.lua.eval('Position(1001, 1000, 7)')
+        caster = probe.make('monster', 'caster')
+        probe.creatures['caster'] = caster
+        healed, amounts = [], set()
+        for name in candidates:
+            per_mode = {}
+            for mode in ('low', 'high'):
+                probe.world['top'] = probe.make('monster', name)
+                ok, log = probe.run(function, caster, position, random=mode)
+                if not ok or any(e[0] not in ('tile', 'random', 'addHealth') for e in log):
+                    raise SpellUnresolved(f'the tile callback does more than add health ({name})')
+                per_mode[mode] = [e[2] for e in log if e[0] == 'addHealth']
+            if per_mode['low'] or per_mode['high']:
+                if len(per_mode['low']) != 1 or len(per_mode['high']) != 1:
+                    raise SpellUnresolved(f'{name} is healed a varying number of times')
+                healed.append(name)
+                amounts.add((per_mode['low'][0], per_mode['high'][0]))
+        if not healed or 'zz unnamed monster' in healed or len(amounts) != 1:
+            raise SpellUnresolved(f'tile callback heals {healed} by {sorted(amounts)}')
+        low, high = next(iter(amounts))
+
+        def heals(caster_name, top_is_caster):
+            me = probe.make('monster', caster_name)
+            probe.creatures['caster'] = me
+            probe.world['top'] = me if top_is_caster else probe.make('monster', caster_name)
+            ok, log = probe.run(function, me, position)
+            return ok and any(e[0] == 'addHealth' for e in log)
+
+        affects = {'kind': 'named_creatures', 'creatures': [], 'top_creature_only': True,
+                   'excludes_caster_name': not heals(healed[0], False), 'includes_caster': heals(healed[0], True)}
+        for name in healed:
+            creature = f'canary:creature/{slug(name)}'
+            self.pending_definitions.add(('Creature', creature))
+            affects['creatures'].append(ref('Creature', creature))
+        return [(f'-callback-{offset + 1}', self.health_body('COMBAT_HEALING', min(low, high), max(low, high), affects,
+                                                            f'{key}/formula-callback-{offset + 1}', deps))]
+
+    def path_trail(self, probe, key, geometry, range_tiles, deps, asset, notes):
+        """The Canary single-target 'chain' template: a path trail effect, then one combat on the target."""
+        match = re.fullmatch(PATH_TRAIL, spell_scripts.cast_body(probe.source) or '')
+        combats = list(probe.rec['combats'].values())
+        if not match or len(combats) != 1:
+            raise SpellUnresolved('onCastSpell is not the path trail template')
+        clear_sight, search, trail = match.group(1) == 'true', int(match.group(2)), match.group(3)
+        combat = self.spell_scripts._combat(probe.lua, combats[0])
+        if combat['callbacks'] or combat['area']:
+            raise SpellUnresolved('the path trail combat has callbacks or an area')
+        self.combat_ability(key, combat, {**geometry, 'needs_target': True}, range_tiles, deps, asset, notes)
+        ability = deps['abilities'][-1]
+        ability['path_requirement'] = {'max_search_tiles': search, 'clear_sight': clear_sight}
+        first = next(e for e in deps['effects'] if e['identity']['key'] == ability['effects'][0]['key'])
+        first.setdefault('presentation', {})['path_asset_binding'] = asset(self.visual('@' + trail, 'effect')[0])
+        notes.append(f'Template match: Position:getPathTo(target, 0, 0, true, {match.group(1)}, {search}) must find a path or '
+                     f'the cast returns false; {trail} is sent on every path tile, then the combat runs on the target. The '
+                     'name says chain but only the target is hit.')
+
+    def probe_remove_items(self, probe, lua_spell, key, deps, asset, notes):
+        probe.world['items'] = probe.lua.table()
+        empty = self.cast_runs(probe, lua_spell, modes=('low',))[0, 'low'][0]
+        tiles = sorted({tuple(e[1:4]) for e in empty if e[0] == 'tile'})
+        queried = []
+        for e in empty:
+            if e[0] == 'getItemById' and e[4] not in queried:
+                queried.append(e[4])
+        if not tiles or not queried or any(dz for _, _, dz in tiles):
+            raise SpellUnresolved('the cast inspects no items on its own floor')
+        for present in (queried, queried[1:]):
+            probe.world['items'] = probe.lua.table_from({i: True for i in present})
+            log = self.cast_runs(probe, lua_spell, modes=('low',))[0, 'low'][0]
+            removed = [e for e in log if e[0] == 'removeItem']
+            if sorted(tuple(e[1:4]) for e in removed) != tiles or {e[4] for e in removed} != {present[0]}:
+                raise SpellUnresolved('item removal is not one first-listed item per inspected tile')
+            if any(e[0] not in ('tile', 'getItemById', 'removeItem', 'effect') for e in log):
+                raise SpellUnresolved('the cast does more than remove items')
+        effects = {e[4] for e in log if e[0] == 'effect'}
+        items = []
+        for item_id in queried:
+            item = ref('Item', f'canary:item/{int(item_id)}')
+            self.pending_definitions.add((item['family'], item['key']))
+            items.append(item)
+        body = {'operation': 'remove_items', 'removed_items': {'items': items, 'selection': 'first_listed_per_tile'}}
+        if len(effects) == 1:
+            binding, note = self.visual(next(iter(effects)), 'effect')
+            body['presentation'] = {'impact_asset_binding': asset(binding)}
+        xs, ys = [x for x, _, _ in tiles], [y for _, y, _ in tiles]
+        rows = [''.join(('C' if (x, y) == (0, 0) else 'x') if (x, y, 0) in tiles else ('c' if (x, y) == (0, 0) else '.')
+                        for x in range(min(xs), max(xs) + 1)) for y in range(min(ys), max(ys) + 1)]
+        notes.append(f'Probed: every tile of the area around the caster loses the first present of items {queried}.')
+        deps['effects'].append({'identity': ident(f'{key}/effect-remove'), **body})
+        deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': 0, 'needs_target': False,
+                                  'needs_direction': False, 'area': {'matrix': {'north': rows}},
+                                  'effects': [ref('Effect', f'{key}/effect-remove')]})
+
+    def undefined_damage_from_wiki(self, spell):
+        """D25: the element of an undefined-damage combat from the one reference-date wiki ability it matches best."""
+        import wiki_scenes
+        record = (getattr(self, 'wiki', {}) or {}).get(getattr(self, 'current_slug', None)) or {}
+        abilities = record.get('abilities') or []
+        if not abilities:
+            return None, 'The reference-date wiki lists no ability to decide the element (owner decision D25).'
+        geometry = cast_geometry(length=spell.get('length', 0), spread=spell.get('spread', 0), radius=spell.get('radius'),
+                                 target=bool(spell.get('target', False)))
+        kind, tiles = wiki_scenes.canary_geometry({'identity': {'key': 'x/attack-1'}, 'kind': 'spell', **geometry})
+        effect = self.magic_effects.get(spell['effect'][1:]) if isinstance(spell.get('effect'), str) else spell.get('effect')
+        missile = self.missiles.get(spell['shootEffect'][1:]) if isinstance(spell.get('shootEffect'), str) else spell.get('shootEffect')
+        maximum = max(abs(spell.get('minDamage', 0)), abs(spell.get('maxDamage', 0)))
+        scored = []
+        for ability in abilities:
+            if ability.get('element') in (None, 'healing'):
+                continue
+            wiki_tiles = frozenset(tuple(t) for t in ability.get('tiles') or [])
+            points = (2 * (ability.get('effect') is not None and ability['effect'] == effect) +
+                      (ability.get('missile') is not None and ability['missile'] == missile) +
+                      (ability.get('kind') == kind) + (ability.get('kind') == kind and wiki_tiles in wiki_scenes.rotations(tiles)) +
+                      (ability.get('maximum') == maximum))
+            scored.append((points, ability))
+        scored.sort(key=lambda p: -p[0])
+        if not scored or scored[0][0] < 3 or (len(scored) > 1 and scored[1][0] == scored[0][0]):
+            return None, (f'No single reference-date wiki ability matches it by effect, missile, shape and maximum '
+                          f'(best scores {[p for p, _ in scored[:3]]}; owner decision D25).')
+        points, ability = scored[0]
+        damage = {'life drain': 'life_drain', 'lifedrain': 'life_drain', 'mana drain': 'mana_drain',
+                  'drown': 'drowning', 'poison': 'earth'}.get(ability['element'], ability['element'])
+        if damage not in DAMAGE.values():
+            return None, f'The matching wiki ability "{ability["name"]}" has element {ability["element"]!r} (owner decision D25).'
+        return damage, (f'The reference-date wiki page (page {record.get("page_id")}, revision {record.get("cut_revision_id")}) '
+                        f'ability "{ability["name"]}" ({ability["element_raw"]}) matches it best (score {points}), so the '
+                        f'element is {damage} (owner decision D25).')
+
+    def geometric_dot(self, info):
+        """D21: (template combat, condition Effect, note) when the random variants differ only in one damage-over-time whose
+        ticks grow geometrically from an integer base, every (base, tick count) pair appearing exactly once; else None."""
+        combats = [info['combats'][n] for n in info['variants']]
+        shape = {json.dumps({k: v for k, v in combats[0].items() if k != 'conditions'}, sort_keys=True, default=str)}
+        pairs, header, factor = [], set(), None
+        for combat in combats:
+            shape.add(json.dumps({k: v for k, v in combat.items() if k != 'conditions'}, sort_keys=True, default=str))
+            if len(shape) != 1 or len(combat['conditions']) != 1:
+                return None
+            condition = combat['conditions'][0]
+            damages = [a for m, a in condition['calls'] if m == 'addDamage']
+            others = tuple(tuple(a) for m, a in condition['calls'] if m != 'addDamage')
+            if any(m not in ('addDamage', 'setParameter') for m, _ in condition['calls']) or len(damages) < 2:
+                return None
+            if any(r != 1 or v >= 0 for r, _, v in damages) or len({ms for _, ms, _ in damages}) != 1:
+                return None
+            values = [-v for _, _, v in damages]
+            header.add((condition['type'], others, damages[0][1]))
+            factor = factor or values[1] / values[0]
+            expected, current = [values[0]], values[0]
+            for _ in values[1:]:
+                current = current * factor
+                expected.append(current)
+            if values != expected or values[0] != int(values[0]):
+                return None
+            pairs.append((int(values[0]), len(values)))
+        bases, counts = {b for b, _ in pairs}, {n for _, n in pairs}
+        full = {(b, n) for b in range(min(bases), max(bases) + 1) for n in counts}
+        if len(header) != 1 or len(pairs) != len(set(pairs)) or set(pairs) != full:
+            return None
+        kind, others, interval = header.pop()
+        params = dict(others)
+        delayed = params.pop('CONDITION_PARAM_DELAYED', 0)
+        params.pop('CONDITION_PARAM_SUBID', None)
+        if params:
+            return None
+        body = {'operation': 'condition', 'condition': {'type': kind[len('CONDITION_'):].lower(), 'lifetime': 'damage_schedule',
+                'damage_over_time': {'tick_profile': 'geometric', 'first_tick': 'after_interval' if delayed else 'immediate',
+                                     'geometric': {'base_range': {'minimum': min(bases), 'maximum': max(bases)},
+                                                   'factor': ratio(factor), 'tick_counts': sorted(counts),
+                                                   'tick_interval_ms': int(interval)}}}}
+        note = (f'{len(combats)} random variants differ only in a {kind} whose ticks start at an integer base '
+                f'{min(bases)}-{max(bases)} and grow by x{factor} for {sorted(counts)} ticks, each pair once, so they are '
+                'authored as one geometric damage over time (owner decision D21; Condition:addDamage truncates each tick).')
+        return {**combats[0], 'conditions': []}, body, note
+
     def ability_uses_magnitude(self, key, deps):
         ability = next(a for a in deps['abilities'] if a['identity']['key'] == key)
         effects = {e['identity']['key']: e for e in deps['effects']}
         return any(effects[r['key']].get('formula', {}).get('key') == CASTER_MAGNITUDE for r in ability.get('effects', []))
 
-    def combat_ability(self, key, combat, geometry, range_tiles, deps, asset, notes):
-        """One recorded Combat as an Ability plus its Effects; True when a damage/heal effect uses the caster magnitude."""
+    @staticmethod
+    def bestiary_payload(bestiary, taxonomy):
+        stars = bestiary.get('Stars', 0)
+        payload = {'class': bestiary['class'], 'taxonomy': taxonomy, 'difficulty': DIFFICULTY[stars],
+                   'occurrence': OCCURRENCE[bestiary.get('Occurrence', 0)], 'stars': stars,
+                   'kill_thresholds': [bestiary['FirstUnlock'], bestiary['SecondUnlock'], bestiary['toKill']],
+                   'charm_points': bestiary['CharmsPoints']}
+        if bestiary.get('Locations', '').strip():
+            payload['locations'] = bestiary['Locations']
+        return payload
+
+    def behaviour_patterns(self):
+        """spell name -> D18 native behaviour pattern id from the committed pattern grouping."""
+        if getattr(self, '_patterns', None) is None:
+            path = ROOT / 'samples' / BEHAVIOUR_PATTERNS
+            spells = json.loads(path.read_text(encoding='utf-8'))['spells'] if path.exists() else []
+            self._patterns = {s['spell']: s['pattern'] for s in spells}
+        return self._patterns
+
+    def engine_params(self, param_calls, notes):
+        """Combat:setParameter calls as the engine applies them, in call order: key and value are read as numbers
+        (combat_functions.cpp luaCombatSetParameter), so an undefined global (nil) is 0 and a constant of another
+        enum selects the parameter or value with its number. Values are named again by the parameter they set."""
         enums = self.spell_scripts.enums
-        params = dict(combat['params'])
-        for name in list(params):
-            if name not in enums['CombatParam_t']:
-                notes.append(f'{name} is not a Canary constant (nil), so setParameter has no effect.')
-                params.pop(name)
+        by_number = {v: k for k, v in enums['CombatParam_t'].items()}
+        tables = (*enums.values(), self.magic_effects, self.missiles)
+
+        def number(value):
+            if isinstance(value, bool):
+                return int(value)
+            if isinstance(value, (int, float)):
+                return int(value)
+            return next((table[value] for table in tables if value in table), None)
+
+        value_names = {'COMBAT_PARAM_TYPE': enums['CombatType_t'], 'COMBAT_PARAM_DISPEL': enums['ConditionType_t'],
+                       'COMBAT_PARAM_CHAIN_EFFECT': self.magic_effects}
+        params = {}
+        for key, value in param_calls:
+            key_number, value_number = number(key), number(value)
+            if key_number is None:
+                key_number = 0
+                notes.append(f'{key} is not a Canary constant: {RULES["nil_zero"]}, so this call sets {by_number[0]}.')
+            elif key not in enums['CombatParam_t']:
+                notes.append(f'{key} is {key_number}, which the engine reads as {by_number.get(key_number, "no combat parameter")}.')
+            if key_number not in by_number:
+                continue
+            name = by_number[key_number]
+            if value_number is None:
+                value_number = 0
+                notes.append(f'{value} is not a Canary constant: {RULES["nil_zero"]}.')
+            if name in value_names:
+                reverse = {v: k for k, v in value_names[name].items()}
+                params[name] = reverse.get(value_number, value_number)
+            else:
+                params[name] = value_number
+        return params
+
+    def combat_ability(self, key, combat, geometry, range_tiles, deps, asset, notes, extra=()):
+        """One recorded Combat as an Ability plus its Effects; True when a damage/heal effect uses the caster magnitude.
+        `extra` holds (suffix, body) Effects modelled from probed script logic (D18); they come first."""
+        params = self.engine_params(combat.get('param_calls', []), notes)
         unsupported = set(params) - {'COMBAT_PARAM_TYPE', 'COMBAT_PARAM_EFFECT', 'COMBAT_PARAM_DISTANCEEFFECT',
                                      'COMBAT_PARAM_CHAIN_EFFECT', 'COMBAT_PARAM_CREATEITEM', 'COMBAT_PARAM_AGGRESSIVE',
-                                     'COMBAT_PARAM_USECHARGES', 'COMBAT_PARAM_IMPACTSOUND', 'COMBAT_PARAM_CASTSOUND'}
+                                     'COMBAT_PARAM_USECHARGES', 'COMBAT_PARAM_IMPACTSOUND', 'COMBAT_PARAM_CASTSOUND',
+                                     'COMBAT_PARAM_BLOCKARMOR', 'COMBAT_PARAM_BLOCKSHIELD', 'COMBAT_PARAM_DISPEL'}
         if unsupported:
             raise SpellUnresolved(f'combat parameter(s) {sorted(unsupported)} have no authoring field.')
         if combat.get('formula'):
@@ -1051,6 +1564,11 @@ class Converter:
             deps['effects'].append({'identity': ident(effect_key), **body})
             effects.append(ref('Effect', effect_key))
 
+        for suffix, body in extra:
+            add(suffix, body)
+        if params.get('COMBAT_PARAM_TYPE') == 'COMBAT_NONE':
+            notes.append('COMBAT_NONE: the combat itself changes no health; it shows its effects and runs its callbacks.')
+            params.pop('COMBAT_PARAM_TYPE')
         if 'COMBAT_PARAM_TYPE' in params:
             kind = params['COMBAT_PARAM_TYPE']
             if not (isinstance(kind, str) and kind.startswith('COMBAT_') and kind[7:] in DAMAGE):
@@ -1058,19 +1576,30 @@ class Converter:
             damage = DAMAGE[kind[7:]]
             if not any(f['identity']['key'] == CASTER_MAGNITUDE for f in deps['formulas']):
                 deps['formulas'].append({'identity': ident(CASTER_MAGNITUDE), 'kind': 'caster_magnitude'})
+            mitigated = [name for name, param in (('armor', 'COMBAT_PARAM_BLOCKARMOR'), ('shield', 'COMBAT_PARAM_BLOCKSHIELD'))
+                         if params.get(param) not in (None, 0, False)]
+            if mitigated and damage != 'healing':
+                notes.append(RULES['armor_script'] + '.')
             add('', {'operation': 'heal' if damage == 'healing' else 'damage', 'damage_type': damage,
-                     'formula': ref('Formula', CASTER_MAGNITUDE), **({'presentation': visual} if visual else {})})
+                     'formula': ref('Formula', CASTER_MAGNITUDE),
+                     **({'mitigated_by': mitigated} if mitigated and damage != 'healing' else {}),
+                     **({'presentation': visual} if visual else {})})
             visual, uses_magnitude = {}, True
         if 'COMBAT_PARAM_CREATEITEM' in params:
             item = ref('Item', f'canary:item/{int(params["COMBAT_PARAM_CREATEITEM"])}')
             self.pending_definitions.add((item['family'], item['key']))
             add('-item', {'operation': 'create_item', 'created_item': item})
+        if params.get('COMBAT_PARAM_DISPEL') not in (None, 'CONDITION_NONE'):
+            notes.append(RULES['dispel'] + '.')
+            add('-dispel', {'operation': 'remove_condition', 'removed_condition': params['COMBAT_PARAM_DISPEL'][len('CONDITION_'):].lower()})
         for n, condition in enumerate(combat['conditions'], 1):
             body = self.script_condition(condition, deps, f'{key}/formula-{n}', notes)
             if body:
                 if visual:
                     body['presentation'], visual = visual, {}
                 add(f'-condition-{n}', body)
+        if visual and extra:
+            add('-presentation', {'operation': 'presentation_only', 'presentation': visual})
         if not effects:
             if not visual:
                 raise SpellUnresolved('the combat has no effect a monster caster can produce.')
@@ -1203,16 +1732,23 @@ class Converter:
                 formula = ref('Formula', key)
             else:
                 formula = formula_range(spell.get('minDamage', 0), spell.get('maxDamage', 0))
-            add_effect('', {'operation': 'damage', 'damage_type': 'physical', 'formula': formula, **({'presentation': presentation()} if presentation() else {})})
+            add_effect('', {'operation': 'damage', 'damage_type': 'physical', 'formula': formula, 'mitigated_by': ['armor', 'shield'],
+                            **({'presentation': presentation()} if presentation() else {})})
+            note = RULES['armor_melee'] + '. '
             geometry = {'needs_target': True, 'needs_direction': False}
             kind, range_tiles = 'melee', 1
         elif name in ('combat', *FIELD_ITEMS):
             if name == 'combat':
                 kind = spell.get('type')
-                if not (isinstance(kind, str) and kind.startswith('@COMBAT_') and kind[8:] in DAMAGE):
-                    return 'UNRESOLVED', (f'combat entry with type {kind!r}: a missing or undefined constant leaves Canary '
-                                          'MonsterSpell.combatType at COMBAT_UNDEFINEDDAMAGE, which has no authoring damage type.')
-                damage = DAMAGE[constant(kind, 'COMBAT_')]
+                if isinstance(kind, str) and kind.startswith('@COMBAT_') and kind[8:] in DAMAGE:
+                    damage = DAMAGE[constant(kind, 'COMBAT_')]
+                else:
+                    undefined = (f'combat entry with type {kind!r}: a missing or undefined constant leaves Canary '
+                                 'MonsterSpell.combatType at COMBAT_UNDEFINEDDAMAGE, which has no authoring damage type.')
+                    damage, wiki_note = self.undefined_damage_from_wiki(spell)
+                    if damage is None:
+                        return 'UNRESOLVED', f'{undefined} {wiki_note}'
+                    note = f'{undefined} {wiki_note} '
                 body = {'operation': 'heal' if damage == 'healing' else 'damage', 'damage_type': damage,
                         'formula': formula_range(spell.get('minDamage', 0), spell.get('maxDamage', 0))}
             else:
@@ -1223,7 +1759,10 @@ class Converter:
             area = spell.get('radius', 0) > 1 or spell.get('length') or spell.get('spread')
             if area and spell.get('effect') is None and 'field' not in name:
                 visual['impact_asset_binding'] = asset('canary.appearance:effect/poff')
-                note = RULES['area_effect'] + '. '
+                note += RULES['area_effect'] + '. '
+            if body.get('damage_type') == 'physical' and body['operation'] == 'damage':
+                body['mitigated_by'] = ['armor']
+                note += RULES['armor_physical'] + '. '
             if visual:
                 body['presentation'] = visual
             add_effect('', body)
@@ -1271,6 +1810,8 @@ class Converter:
             elif visual:
                 body = {'operation': 'presentation_only'}
                 note += RULES['inert_spells'] + '. '
+            elif name in ('strength', 'effect'):
+                return 'OMIT', RULES['inert_spells'] + ' (D14).'
             else:
                 return None
             if visual:
