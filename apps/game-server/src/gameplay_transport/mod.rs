@@ -17,7 +17,9 @@ use crate::durability::admission_authority_guards::{
 use crate::durability::character_authority::{
     CharacterAuthorityError, ReconciledCharacterAuthority,
 };
-use crate::durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
+use crate::durability::fresh_admission::{
+    FreshAdmissionStore, FreshLossReconciliation, FreshReconciliation,
+};
 use crate::durability::fresh_admission_composition::FreshAdmissionSubject;
 use crate::durability::runtime_scope_assignment::{AssignmentState, NodeIncarnationProof};
 use crate::foundation::admission_authority_publication::{
@@ -25,12 +27,18 @@ use crate::foundation::admission_authority_publication::{
 };
 use crate::foundation::fnd04_verifier::{
     FreshDurabilityCurrentAuthorityV1, FreshDurabilityTrustContext, fresh_grant_signing_key_id,
-    verify_fresh_grant_durability_v1,
+    recovery_source_sealed, verify_fresh_grant_durability_v1,
 };
 use crate::foundation::fresh_admission_durability::{
     FreshAdmissionCommitAuthorizationV1, FreshAdmissionCommitRequestV1,
     FreshAdmissionDurabilityFlowV1, FreshAdmissionDurabilityPortV1, FreshAdmissionDurableOutcomeV1,
     FreshAdmissionOperationV1, FreshAdmissionSubmissionV1,
+};
+use crate::foundation::{
+    AccountPresenceClaimV1, ControlLossAuthorizationV1, ControlLossCauseV1, ControlLossEpochRefV1,
+    ControlLossFlowV1, ControlLossHistoryV1, ControlLossMark, ControlLossObservationV1,
+    ControlLossOutcomeV1, ControlLossSourceV1, ReconnectDurabilityErrorV1,
+    RecoveryProtectionContinuityV1, RecoveryProtectionRearmV1, RecoveryProtectionUseV1,
 };
 use crate::foundation::{
     AuthenticatedTransportRefV1, CarrierError, ChannelId, ChannelRuntimeV1,
@@ -39,9 +47,9 @@ use crate::foundation::{
     RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
 };
 use connection::{
-    AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FirstEntryOutcome,
-    FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, StepOutcome, admit_frame,
-    serve_admitted,
+    AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, ControlLossResult, ControllerBinding,
+    FirstEntryOutcome, FreshAdmissionAttempt, FreshAdmissionAuthority, IDLE_LIVENESS, StepOutcome,
+    admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -198,16 +206,40 @@ async fn serve_accepted<A, I, O>(
     // The owning authority's decision is never cancelled midway.
     let admitted = admit_frame(&mut stream, &frame, authority, identifiers).await;
     drop(unit);
-    let end = match admitted {
-        Err(end) => end,
-        Ok(admitted) => first(
+    let (end, served) = match admitted {
+        Err(end) => (end, false),
+        Ok(admitted) => match first(
             serve_admitted(&mut stream, admitted, authority, IDLE_LIVENESS),
             shutdown.cancelled(),
         )
         .await
-        .unwrap_or(ConnectionEnd::AdmittedThenDisconnected(admitted)),
+        {
+            Some(end) => (end, true),
+            // A shutdown drain is not evidence of lost playable control.
+            None => (ConnectionEnd::AdmittedThenDisconnected(admitted), false),
+        },
     };
+    // Liveness proved the loss: record it now. A closed or failed transport alone is not
+    // proof (FND-04B §4): control is lost once the detection window passes unanswered.
+    let lost = match (&end, served) {
+        (ConnectionEnd::AdmittedThenControlLost(session), true) => Some((*session, Duration::ZERO)),
+        (
+            ConnectionEnd::AdmittedThenDisconnected(session)
+            | ConnectionEnd::AdmittedThenClosed(session, _),
+            true,
+        ) => Some((
+            *session,
+            IDLE_LIVENESS
+                .interval
+                .saturating_mul(IDLE_LIVENESS.missed_limit),
+        )),
+        _ => None,
+    };
+    drop(stream);
     observer.ended(end);
+    if let Some((session, wait)) = lost {
+        let _ = first(authority.lose_control(session, wait), shutdown.cancelled()).await;
+    }
 }
 
 /// Output of `primary`, or `None` when `stop` completes first.
@@ -458,6 +490,15 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
         }
     }
 
+    async fn lose_control(&self, admitted: AdmittedSession, wait: Duration) -> ControlLossResult {
+        let (Some(actor), Some(controller)) = (admitted.runtime_actor, admitted.controller) else {
+            return ControlLossResult::NotApplicable;
+        };
+        tokio::time::sleep(wait).await;
+        self.commit_control_loss(admitted.game_session_id, actor, controller)
+            .await
+    }
+
     async fn admit(
         &self,
         attempt: FreshAdmissionAttempt<'_>,
@@ -597,7 +638,34 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             channel_id: self.channel_id,
             runtime_actor: Some(actor),
             first_entry,
+            controller: Some(ControllerBinding {
+                transport: attempt.transport,
+                account_id: *record.account_id.as_bytes(),
+            }),
         })
+    }
+}
+
+/// Same-session grace from the authoritative `ControlLossEpoch` boundary: registry row
+/// `FND04B-SAME-SESSION-GRACE-S` (`DISCONNECT-PROTECTION-V1` §4, provisional until measured).
+pub(crate) const SAME_SESSION_GRACE_SECONDS: i64 = 60;
+
+/// The owning loss decision, resolved once from the current owners at decision time. It is
+/// never built from a request or receipt; the durable adapter re-checks every durable fact.
+struct ChannelOwnedLossSource(ControlLossObservationV1);
+
+impl recovery_source_sealed::Sealed for ChannelOwnedLossSource {}
+
+impl ControlLossSourceV1 for ChannelOwnedLossSource {
+    fn resolve_loss(
+        &self,
+        session: GameSessionId,
+        _now: i64,
+    ) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> {
+        if self.0.session.current_game_session_id() != session {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        }
+        Ok(self.0.clone())
     }
 }
 
@@ -616,6 +684,139 @@ enum ReconciliationDisposition {
 }
 
 impl ComposedFreshAdmission<'_, '_, '_> {
+    /// Record authoritative unexpected control loss for a fresh-origin session. The owning
+    /// source is composed at decision time from the Channel owner (actor present, placement,
+    /// assignment revision), the current durable GameSession and the admitted account; the
+    /// durable commit revalidates session, claims and runtime guard under its relation locks.
+    async fn commit_control_loss(
+        &self,
+        game_session_id: GameSessionId,
+        actor: ExactActorRef,
+        controller: ControllerBinding,
+    ) -> ControlLossResult {
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        // Loss is timed on the durable owner's clock, the same clock that
+        // samples the final decision time.
+        let Ok((session, now)) = store.current_session_at(game_session_id).await else {
+            return ControlLossResult::Unknown;
+        };
+        // Only this controller's still-ACTIVE, never-lost session: a replaced, released or
+        // already reconnectable session is not this connection's to lose.
+        if session.session_state() != GameSessionState::Active
+            || session.current_transport() != Some(controller.transport)
+            || session.current_control_loss_epoch().is_some()
+            || session.current_runtime_scope()
+                != RuntimeScopeRefV1::channel(self.world_id, self.channel_id)
+        {
+            return ControlLossResult::NotApplicable;
+        }
+        let Some(grace_deadline) = now.checked_add(SAME_SESSION_GRACE_SECONDS) else {
+            return ControlLossResult::Unknown;
+        };
+        let (Ok(epoch), Ok(account_presence)) = (
+            ControlLossEpochRefV1::new(1),
+            AccountPresenceClaimV1::new(
+                &canonical_uuid(&controller.account_id),
+                session.commit().character_id(),
+            ),
+        ) else {
+            return ControlLossResult::Refused;
+        };
+        let observation = {
+            let runtime = self.runtime.lock().await;
+            let Ok(facts) = runtime.player_control_facts(actor, game_session_id) else {
+                return ControlLossResult::Refused;
+            };
+            if facts.control_loss.is_some() {
+                return ControlLossResult::NotApplicable;
+            }
+            let source_revision = runtime.binding().source_revision();
+            ControlLossObservationV1 {
+                source_authority: session.current_runtime_scope(),
+                source_revision,
+                accepted_source_revision: source_revision,
+                decision_identity: epoch,
+                accepted_decision_identity: epoch,
+                observed_at: now,
+                session,
+                account_presence,
+                placement_identity: facts.placement_identity,
+                placement_revision: facts.placement_revision,
+                actor_present: true,
+                runtime_ready: true,
+                cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss,
+                loss_epoch: epoch,
+                loss_origin: now,
+                original_grace_deadline: grace_deadline,
+                history: ControlLossHistoryV1::FreshOrigin,
+                protection: RecoveryProtectionContinuityV1 {
+                    usage: RecoveryProtectionUseV1::Unused {
+                        entitlement_generation: 1,
+                    },
+                    rearm: RecoveryProtectionRearmV1::NotRearmed {
+                        generation: 1,
+                        stable_control_started_at: None,
+                        accepted_deadline: None,
+                    },
+                },
+            }
+        };
+        let source = std::sync::Arc::new(ChannelOwnedLossSource(observation));
+        let Ok(authorization) =
+            ControlLossAuthorizationV1::authorize(source.as_ref(), game_session_id, now)
+        else {
+            return ControlLossResult::Refused;
+        };
+        let mut flow = ControlLossFlowV1::begin(authorization);
+        let Ok(request) = flow.take_request() else {
+            return ControlLossResult::Refused;
+        };
+        let request = std::sync::Arc::new(request);
+        match store
+            .commit_fresh_loss(request.clone(), source.clone())
+            .await
+        {
+            Ok(ControlLossOutcomeV1::Committed { .. }) => {}
+            Ok(ControlLossOutcomeV1::Rejected) => return ControlLossResult::Refused,
+            // The commit may have landed with its acknowledgement lost: reconcile the exact
+            // immutable operation; never re-decide with a new observation.
+            Ok(ControlLossOutcomeV1::Ambiguous) | Err(_) => {
+                let mut proven = None;
+                for _ in 0..RECONCILE_ATTEMPTS {
+                    match store.reconcile_fresh_loss(request.operation()).await {
+                        Ok(FreshLossReconciliation::Committed { .. }) => {
+                            proven = Some(true);
+                            break;
+                        }
+                        Ok(FreshLossReconciliation::Absent | FreshLossReconciliation::Conflict) => {
+                            proven = Some(false);
+                            break;
+                        }
+                        Err(_) => tokio::time::sleep(RECONCILE_BACKOFF).await,
+                    }
+                }
+                match proven {
+                    Some(true) => {}
+                    Some(false) => return ControlLossResult::Refused,
+                    None => return ControlLossResult::Unknown,
+                }
+            }
+        }
+        let mark = ControlLossMark {
+            epoch: epoch.get(),
+            grace_deadline,
+        };
+        match self
+            .runtime
+            .lock()
+            .await
+            .record_control_loss(actor, game_session_id, mark)
+        {
+            Ok(()) => ControlLossResult::Recorded,
+            Err(_) => ControlLossResult::Unknown,
+        }
+    }
+
     async fn reserve_runtime_player(
         &self,
         game_session_id: GameSessionId,
@@ -935,6 +1136,7 @@ mod tests {
                     .map_err(|_| AdmissionRefusal::Unavailable)?,
                 runtime_actor: None,
                 first_entry: FirstEntryOutcome::NotApplicable,
+                controller: None,
             })
         }
     }

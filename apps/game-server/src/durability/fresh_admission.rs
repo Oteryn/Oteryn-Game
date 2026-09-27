@@ -558,7 +558,7 @@ impl FreshAdmissionStore {
             claims.push(store.guards.load_locked(&mut tx, &expected.key).await?);
         }
         if original.authorization.account_id != observation.account_presence.account_id()
-            || validate_claim_preserving_session_v1(
+            || validate_claim_ownership_v1(
                 &original.authorization.account_id,
                 observation.session,
                 current.current_session,
@@ -1681,6 +1681,39 @@ impl FreshAdmissionStore {
                     let current = store.current_session_locked(&mut tx, session).await?;
                     super::admission_journal::commit_pass_transaction(tx, deadline).await?;
                     Ok(current)
+                })
+            })
+            .await
+    }
+
+    /// The current canonical session together with the database clock sampled
+    /// in the same fenced pass. Loss observations are timed on this clock: the
+    /// final decision samples it again, so a faster host clock cannot refuse
+    /// a loss (`observed_at > decided_at`) or shorten its grace.
+    pub async fn current_session_at(
+        &self,
+        session: GameSessionId,
+    ) -> Result<(
+        GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        i64,
+    )> {
+        let store = self.clone();
+        let backend = self.guards.backend.clone();
+        let issued = backend.try_issue_root()?;
+        backend
+            .run_pass(issued, move |holder, deadline| {
+                Box::pin(async move {
+                    let mut tx =
+                        super::admission_journal::begin_pass_transaction(holder, deadline).await?;
+                    super::db::lock_admission_relations(&mut tx).await?;
+                    let current = store.current_session_locked(&mut tx, session).await?;
+                    let now: i64 = sqlx::query_scalar(
+                        "SELECT floor(extract(epoch FROM clock_timestamp()))::bigint",
+                    )
+                    .fetch_one(&mut *tx)
+                    .await?;
+                    super::admission_journal::commit_pass_transaction(tx, deadline).await?;
+                    Ok((current, now))
                 })
             })
             .await

@@ -1107,6 +1107,12 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         return Err(format!("entry-start player revisions={revisions:?}").into());
     }
     evidence("first_entry positioned_players=2 start=entry-start context=pinned revisions=1,3");
+    // The Channel owner mirrors each committed loss on its still-present actor.
+    let marks = runtime.lock().await.player_control_loss_epochs();
+    if marks != [1, 1] {
+        return Err(format!("runtime control-loss marks={marks:?}").into());
+    }
+    evidence("control_loss runtime_present_uncontrolled=2 epoch=1");
     evidence("shutdown=drained FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED");
     Ok(())
 }
@@ -1441,15 +1447,61 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         exchange(address, &exact, &raw),
     )
     .await;
-    let accepted = [left?, right?]
+    let concurrent: Vec<[u8; 16]> = [left?, right?]
         .iter()
-        .filter(|reply| accepted_session(reply).is_some())
-        .count();
+        .filter_map(accepted_session)
+        .collect();
+    let accepted = concurrent.len();
     if accepted != 1 || committed_admissions(url).await? != 2 {
         return Err(format!("concurrent same-grant admission accepted {accepted}").into());
     }
     evidence("concurrent_same_grant accepted=1 admissions=2");
+
+    evidence("stage=control_loss");
+    // DISCONNECT-PROTECTION-V1: the admission-stage transport closed on a command gap and the
+    // concurrent-stage transport went silent. Neither answers liveness, so each durable
+    // GameSession becomes RECONNECTABLE with loss epoch 1 and a 60 s same-session grace.
+    for (label, id) in [("closed", session), ("silent", concurrent[0])] {
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+        loop {
+            if let Some((1, epoch, grace)) = session_loss_row(url, id).await? {
+                if epoch != "1" || !(58..=62).contains(&grace) {
+                    return Err(format!("{label} loss epoch={epoch} grace={grace}").into());
+                }
+                break;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("{label} session never became reconnectable").into());
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    }
+    if committed_admissions(url).await? != 2 {
+        return Err("control loss changed the admission count".into());
+    }
+    evidence(
+        "control_loss closed_transport=reconnectable silent_transport=reconnectable epoch=1 grace_s=60 admissions=2",
+    );
     Ok(())
+}
+
+/// Durable session state, loss epoch and grace seconds counted from the loss decision.
+async fn session_loss_row(url: &str, session: [u8; 16]) -> TestResult<Option<(i16, String, i64)>> {
+    let mut connection = sqlx::PgConnection::connect(url).await?;
+    let row: Option<(i16, Option<String>, Option<i64>)> = sqlx::query_as(
+        "SELECT s.session_state, s.control_loss_epoch::text, \
+         s.original_grace_deadline - r.decided_at \
+         FROM game_durability_reconnect_sessions s \
+         LEFT JOIN game_durability_admission_lifecycle_receipts r \
+           ON r.operation_key = 'owning-loss-v1'::bytea || uuid_send(s.game_session_id) \
+              || int8send(1) \
+         WHERE s.game_session_id = encode($1, 'hex')::uuid",
+    )
+    .bind(session.as_slice())
+    .fetch_optional(&mut connection)
+    .await?;
+    connection.close().await?;
+    Ok(row.map(|(state, epoch, grace)| (state, epoch.unwrap_or_default(), grace.unwrap_or(-1))))
 }
 
 /// Owned account for a grant built inside a closure.

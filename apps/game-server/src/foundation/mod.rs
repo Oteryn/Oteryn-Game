@@ -14,7 +14,7 @@ mod runtime_actor_carrier;
 pub(crate) use runtime_actor_carrier::MovementActorFixture;
 #[allow(unused_imports)]
 pub(crate) use runtime_actor_carrier::{
-    CarrierError, ChannelContentPin, ChannelRuntimeV1, CommittedLethalReceipt,
+    CarrierError, ChannelContentPin, ChannelRuntimeV1, CommittedLethalReceipt, ControlLossMark,
     CreatureDeathOccurrenceRef, CurrentOwnerCombatDeath, CurrentOwnerExactActorCommit,
     CurrentOwnerExactActorLookup, CurrentOwnerMovementPosition, ExactActorRef, FirstEntryPosition,
     MovementLocalPosition, MovementPositionContext, MovementPositionSnapshot, OwnerDamageCommand,
