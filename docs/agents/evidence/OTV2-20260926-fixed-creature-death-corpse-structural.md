@@ -75,10 +75,25 @@ Linux LF checkout, avoiding Windows CRLF conversion in byte-sensitive tests.
   (`23 files`, `42 workflows`).
 - `git diff --check` and clean-checkout readback: **PASS**.
 
-The final successor only archives this packet and records the qualification;
-it must preserve the five Rust blobs byte-for-byte, pass the document-aware
-validators on its exact SHA and receive hosted exact-head CI plus independent
-review. Before freeze, the branch was merged up to
-`main@d6c6c18eb1690208213b8871a30c992681ee4f2d`; those upstream changes are
-path-disjoint from this task. No production or process-restart claim is made.
-Merge Queue and protected-main readback remain control-plane owned.
+After native-entry activation PR #953 integrated as protected
+`main@139202f1aa790e573c0ae5d41f4e529fdc503016`, this task returned explicitly
+to authoring and merged that protected head. The only textual conflict was the
+`foundation/mod.rs` re-export list. Its resolution preserves the union of
+`ChannelContentPin` and the lethal/death/corpse types; the carrier implementation
+auto-merged without a manual behavior edit. The composed authoring head
+`2250fac64fe1edfe48a893269703d8a28d8126d2` was checked from a fresh native
+Linux LF checkout:
+
+- full game-server library: **612 passed, 0 failed, 2 ignored**;
+- the ten Combat death tests and three native-entry activation tests passed in
+  that run;
+- strict all-target Clippy with `-D warnings`: **PASS**;
+- rustfmt, governance (`22 documents`, `9 lanes`), repository policy
+  (`23 files`, `43 workflows`), diff check and clean-checkout readback: **PASS**.
+
+The final documentation-only successor must preserve the composed Rust blobs,
+pass the document-aware validators on its exact SHA and receive fresh hosted
+exact-head CI plus independent review. Candidate-specific evidence from the
+superseded pre-composition head is not terminal evidence for that successor.
+No production or process-restart claim is made. Merge Queue and protected-main
+readback remain control-plane owned.

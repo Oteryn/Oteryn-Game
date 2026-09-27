@@ -14,6 +14,8 @@ jira_story: KAN-12
 profile: NONSHIPPING_FIXED_ONE_CREATURE
 base_sha: f6b267126d6a4ee505f614a7b740ab16aa86b7b6
 head_sha: a98033b59092f5dd1a74e69bb67ccb962b5b6254
+composition_main_sha: 139202f1aa790e573c0ae5d41f4e529fdc503016
+composition_head_sha: 2250fac64fe1edfe48a893269703d8a28d8126d2
 final_head_sha: null
 owner: Codex Combat Lead
 created_at: 2026-09-26T20:40:00Z
