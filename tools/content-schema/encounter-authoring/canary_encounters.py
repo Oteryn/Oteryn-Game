@@ -1469,6 +1469,86 @@ def replica_servants(build):
 
 
 
+MONSTERS = 'data-otservbr-global/monster/'
+
+
+def spawn_callbacks(build):
+    """mType.onSpawn of the iron servant replica, the Cobra Bastion humans and the Drume commanders."""
+    # The iron servant becomes a golden or diamond replica once the quest has built their mechanisms.
+    path_ = MONSTERS + 'constructs/iron_servant_replica.lua'
+    item = build.items['replica_servants']
+    role = 'iron_servant_replica'
+    build.participant(item, role, 'Iron Servant Replica', 'mType.onSpawn')
+    diamond = {'kind': 'world_state', 'state': 'canary:world-state/forgotten_knowledge_mechanism_diamond', 'op': '>=', 'value': 1}
+    golden = {'kind': 'world_state', 'state': 'canary:world-state/forgotten_knowledge_mechanism_golden', 'op': '>=', 'value': 1}
+
+    def replica(name):
+        return {'kind': 'spawn', 'creature': creature(name), 'role': slug(name), 'count': 1, 'at': 'subject_position', 'owner': 'none',
+                'health': 'full'}
+    chance = {'kind': 'chance_percent', 'value': 70}
+    remove = {'kind': 'remove', 'triggering': True}
+    for key, conditions, actions, lines, text in (
+            ('iron_servant_becomes_either', [diamond, golden, chance],
+             [{'kind': 'one_of', 'branches': [{'weight': 1, 'actions': [replica('Diamond Servant Replica')]},
+                                              {'weight': 1, 'actions': [replica('Golden Servant Replica')]}]}, remove],
+             [116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 137],
+             'With both mechanisms built, 70% (random(100) > 30) of the iron servants become a diamond or a golden replica, '
+             'uniformly, on their tile.'),
+            ('iron_servant_becomes_diamond', [diamond, {**golden, 'op': '<'}, chance], [replica('Diamond Servant Replica'), remove],
+             [116, 117, 127, 128, 129, 130, 131, 137], 'With only the diamond mechanism, 70% become a diamond replica.'),
+            ('iron_servant_becomes_golden', [golden, {**diamond, 'op': '<'}, chance], [replica('Golden Servant Replica'), remove],
+             [116, 117, 133, 134, 135, 136, 137], 'With only the golden mechanism, 70% become a golden replica.')):
+        path = build.rule(item, {'key': key, 'trigger': {'kind': 'creature_spawned', 'role': role}, 'conditions': conditions,
+                                 'actions': actions})
+        build.entry(item, path_, lines, 'mapped', path,
+                    text + ' MechanismDiamond and MechanismGolden are world values the quest domain publishes (D29).')
+
+    # Cobra Bastion: while the cobra flask works, the cobras appear with 75% of their health.
+    lib = 'data-otservbr-global/scripts/lib/monster_functions.lua'
+    item = build.get('cobra_bastion', 'Cobra Bastion: cobra flask', 'channel_shared')
+    for name, file_, health, lines in (('Cobra Assassin', 'humans/cobra_assassin.lua', 8200, [124, 125, 126]),
+                                       ('Cobra Scout', 'humans/cobra_scout.lua', 8500, [129, 130, 131]),
+                                       ('Cobra Vizier', 'humans/cobra_vizier.lua', 8500, [132, 133, 134])):
+        role = slug(name)
+        build.participant(item, role, name, 'mType.onSpawn')
+        path = build.rule(item, {'key': f'{role}_weakened', 'trigger': {'kind': 'creature_spawned', 'role': role},
+                                 'conditions': [{'kind': 'world_state', 'state': 'canary:world-state/cobra_flask_active', 'op': '==',
+                                                 'value': True}],
+                                 'actions': [{'kind': 'damage', 'subject': {'role': role}, 'amount': health // 4, 'damage_type': 'none'}]})
+        build.entry(item, MONSTERS + file_, lines, 'mapped', path, f'onSpawn calls handleCobraOnSpawn.')
+        build.entry(item, lib, [1, 2, 3, 5, 7, 8], 'mapped', path,
+                    f'While Global.Storage.CobraFlask is still running (the quest domain publishes it, D29), setHealth(max * 0.75) '
+                    f'takes the fresh {name.lower()} from {health} to {health * 3 // 4}: {health // 4} untyped damage that credits '
+                    'no one (D31).')
+    build.entry(item, lib, [4], 'approved_omission', None, 'The green rings effect is cosmetic.')
+    build.entry(item, lib, [6], 'approved_omission', None,
+                'An expired flask is reset to -1 in the world value; the quest domain owns that value.')
+
+    # Drume: each commander arrives with five summons from its summon list.
+    item = build.items['drume']
+    for name, file_, summons, lines, omitted in (('Lion Commander', 'quests/the_order_of_lion/lion_commander.lua',
+                                         ['Lion Archer', 'Lion Knight', 'Lion Warlock'],
+                                         [114, 115, 116, 117, 118, 121, 122, 124, 126], [119, 120, 123]),
+                                        ('Usurper Commander', 'quests/the_order_of_lion/usurper_commander.lua',
+                                         ['Hardened Usurper Archer', 'Hardened Usurper Warlock', 'Hardened Usurper Knight'],
+                                         [115, 116, 117, 118, 119, 120, 123, 124, 126, 128], [121, 122, 125])):
+        role = slug(name)
+        build.participant(item, role, name, 'mType.onSpawn')
+        for summon in summons:
+            build.define(item, creature(summon))
+        branches = [{'weight': 1, 'actions': [{'kind': 'spawn', 'creature': creature(summon), 'count': 1, 'at': 'subject_position',
+                                                'owner': 'subject', 'health': 'full'}]} for summon in summons]
+        path = build.rule(item, {'key': f'{role}_brings_its_guard', 'trigger': {'kind': 'creature_spawned', 'role': role},
+                                 'conditions': [], 'actions': [{'kind': 'one_of', 'branches': branches} for _ in range(5)]})
+        build.entry(item, MONSTERS + file_, lines, 'mapped', path,
+                    f'onSpawn: five times one of {", ".join(s.lower() for s in summons)} (uniform over the summon list), extended '
+                    'on the commander\'s tile, becomes its summon.')
+        build.entry(item, MONSTERS + file_, omitted, 'approved_omission', None,
+                    'The teleport effect is cosmetic, and the Drume.Commander storage set on the commander and its summons is read '
+                    'by no script.')
+
+
+
 def small_boss_events(build):
     """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
     glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
@@ -2284,7 +2364,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks):
         transcribe(build)
     print(json.dumps(build.write()))
 
