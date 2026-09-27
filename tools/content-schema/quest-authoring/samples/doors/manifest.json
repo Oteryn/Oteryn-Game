@@ -102,8 +102,7 @@
     "progress_gates_linked_to_wiki_quest": 176,
     "by_status": {
       "approved_omission": 1,
-      "conflict": 10,
-      "mapped": 426,
+      "mapped": 436,
       "unresolved_semantics": 16
     }
   },
@@ -3727,8 +3726,8 @@
         31922,
         8
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_20/grave_danger/bosses/king_zelos/room; crystalserver progress/quest/u12_20/grave_danger/bosses/king_zelos_door",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_20/grave_danger/bosses/king_zelos/room; crystalserver progress/quest/u12_20/grave_danger/bosses/king_zelos_door; D25 decides for canary (implementation detail: Naming only: 'Room' vs 'KingZelosDoor' suffix; same boss-room gate.)",
       "destination": "canary:door-gate/progress/quest/u12_20/grave_danger/bosses/king_zelos/room",
       "sources": [
         {
@@ -4065,8 +4064,8 @@
         31476,
         7
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/access_door; crystalserver progress/kilmaresh/access_door",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/access_door; crystalserver progress/kilmaresh/access_door; D25 decides for canary (implementation detail: Naming/namespace only difference; same overall Kilmaresh access gate.)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/access_door",
       "sources": [
         {
@@ -4110,8 +4109,8 @@
         31536,
         9
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask; crystalserver progress/kilmaresh/sixth/favor",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/gryphon_mask",
       "sources": [
         {
@@ -4136,8 +4135,8 @@
         31496,
         9
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask; crystalserver progress/kilmaresh/sixth/favor",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask",
       "sources": [
         {
@@ -4162,8 +4161,8 @@
         31496,
         9
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask; crystalserver progress/kilmaresh/sixth/favor",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/ivory_mask",
       "sources": [
         {
@@ -4188,8 +4187,8 @@
         31510,
         9
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/mirror_mask; crystalserver progress/kilmaresh/sixth/favor",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/mirror_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/mirror_mask",
       "sources": [
         {
@@ -4214,8 +4213,8 @@
         31450,
         9
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask; crystalserver progress/kilmaresh/sixth/favor",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask",
       "sources": [
         {
@@ -4240,8 +4239,8 @@
         31466,
         9
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask; crystalserver progress/kilmaresh/sixth/favor",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask; crystalserver progress/kilmaresh/sixth/favor; D25 decides for canary (wiki: Canary uses per-mask storage; crystalserver shares one favour counter for all masks., https://tibia.fandom.com/wiki/Kilmaresh_Quest/Spoiler?oldid=1199254)",
       "destination": "canary:door-gate/progress/quest/u12_20/kilmaresh_quest/sixth/silver_mask",
       "sources": [
         {
@@ -4266,8 +4265,8 @@
         32461,
         7
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_40/the_order_of_the_lion/access_east_side; crystalserver progress/quest/u12_40/the_order_of_the_lion/access_eastern_side",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_40/the_order_of_the_lion/access_east_side; crystalserver progress/quest/u12_40/the_order_of_the_lion/access_eastern_side; D25 decides for canary (implementation detail: Naming only: 'east_side' vs 'eastern_side'; same access gate.)",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_east_side",
       "sources": [
         {
@@ -4292,8 +4291,8 @@
         32461,
         8
       ],
-      "status": "conflict",
-      "resolution": "servers disagree: canary progress/quest/u12_40/the_order_of_the_lion/access_east_side; crystalserver progress/quest/u12_40/the_order_of_the_lion/access_eastern_side",
+      "status": "mapped",
+      "resolution": "servers disagree: canary progress/quest/u12_40/the_order_of_the_lion/access_east_side; crystalserver progress/quest/u12_40/the_order_of_the_lion/access_eastern_side; D25 decides for canary (implementation detail: Naming only: 'east_side' vs 'eastern_side'; same access gate.)",
       "destination": "canary:door-gate/progress/quest/u12_40/the_order_of_the_lion/access_east_side",
       "sources": [
         {

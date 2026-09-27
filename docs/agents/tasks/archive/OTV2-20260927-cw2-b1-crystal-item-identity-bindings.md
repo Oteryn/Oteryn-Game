@@ -4,25 +4,25 @@
 task_id: OTV2-20260927-cw2-b1-crystal-item-identity-bindings
 title: CW2-B1 Crystal Item identity bindings (explicit EXACT, 38,157 rows)
 mode: MIGRATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 996
 base_sha: ccef9bbe8ecf75c4b1b99b07237c78ebf4642dce
-head_sha: null
-final_head_sha: null
+head_sha: 015491160bd63009bbbcf5534825fd519830c220
+final_head_sha: 015491160bd63009bbbcf5534825fd519830c220
 final_head_frozen_at: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-27T00:00:00Z
-updated_at: 2026-09-27T15:00:00Z
+updated_at: 2026-09-27T19:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-census/g4_item_crystal_binding_generator.py
   - tools/content-census/g4_item_crystal_binding_generator_self_test.py
   - imports/crystalserver/bindings/items.json
-  - docs/agents/tasks/active/OTV2-20260927-cw2-b1-crystal-item-identity-bindings.md
+  - docs/agents/tasks/archive/OTV2-20260927-cw2-b1-crystal-item-identity-bindings.md
   - .github/workflows/g4-item-crystal-bindings.yml
 public_contracts: []
 depends_on:
@@ -106,7 +106,8 @@ only (Canary is out of scope). No canonical identity is minted; no
   `ALLOCATED_KEY_MISSING_FROM_DEFINITIONS:[i00002921]` because #987 promoted Gold Coin;
   #989 merged from the queue as `0c7098eb` before the repair could land; the repair
   (declared identity promotions) follows in PR #996
-- final head: pending
+- final head `01549116` (owner merged `main`): every required check green, including
+  `G4 Item Crystal identity bindings`, `game-gate`, Merge gate, governance and CodeQL
 
 ## Self-review
 
@@ -139,60 +140,20 @@ only (Canary is out of scope). No canonical identity is minted; no
 - unresolved review threads: none
 - related/superseded PRs: none
 - protected auto-merge: NOT_AUTHORIZED (owner merges)
-- merge commit/result: #989 merged as `0c7098eb`; follow-up repair #996 pending
-- ownership release: pending
+- merge commit/result: #989 merged as `0c7098eb`; repair #996 merged through the Merge Queue
+  as `0e48ae518842fafc8b9e0867eb8ce041dc1a4332`
+- ownership release: released; archived by the content coordination audit because the
+  implementing branch was deleted after merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: drift guard caught the #987 Gold Coin promotion after the main merge; generator now applies declared identity promotions
-status: validating
+last_progress: "#996 merged as 0e48ae51; bindings apply declared identity promotions"
+status: completed
 branch: claude/compassionate-albattani-s29syw
 pr: 996
-final_head_sha: null
-owner_action_required: "merge after exact-head CI is green"
+final_head_sha: 015491160bd63009bbbcf5534825fd519830c220
+owner_action_required: null
 blocker: null
-next_action: freeze the pushed head, confirm CI, mark ready for review
+next_action: null
 ```
-
-## Terminal lifecycle closeout — 2026-09-27
-
-This section supersedes the historical implementing/validating/pending metadata and
-checkpoint above. The complete delivery record remains verbatim as historical
-evidence; this archive is not an active dispatch surface.
-
-`PROVEN` (from `git log origin/main`, no GitHub API call): PR #989
-("feat(content): record Crystal Item identity bindings explicitly") merged into
-protected `main` as commit `0c7098eb` (author `blakinio`, committer `GitHub`,
-commit date `2026-09-27T14:57:46+00:00`), sole parent
-`b0241e5c4a8a5e473a2592255a31ce4c047d220c`, tree
-`a5ed030096823d867f53e0a6f4f4fced6a8dc6d7`; 5 files changed, 705 insertions
-(`.github/workflows/g4-item-crystal-bindings.yml`, this task record,
-`imports/crystalserver/bindings/items.json`,
-`tools/content-census/g4_item_crystal_binding_generator.py`,
-`tools/content-census/g4_item_crystal_binding_generator_self_test.py`).
-
-As recorded above, the drift guard added in that PR caught a real drift: after
-owner-merged `main` moved (#987 promoted Gold Coin), head `d62d32c4` failed
-`ALLOCATED_KEY_MISSING_FROM_DEFINITIONS:[i00002921]` before the repair could land.
-The repair, PR #996 ("fix(content): apply declared Item identity promotions to
-Crystal bindings"), merged into protected `main` as commit `0e48ae51` (author
-`blakinio`, committer `GitHub`, commit date `2026-09-27T18:18:29+00:00`), sole
-parent `75f2f045700ea6aedf5cf864966a60235921e19d`, tree
-`273c045d5e7089d143d5732dd36fd78215cfc016`; 4 files changed, 90 insertions(+),
-7 deletions(-) (this task record, `imports/crystalserver/bindings/items.json`,
-`tools/content-census/g4_item_crystal_binding_generator.py`,
-`tools/content-census/g4_item_crystal_binding_generator_self_test.py`).
-
-This closeout performs no fresh exact-head independent review of its own; the
-"Independent review" section above records what was reviewed before the #989
-freeze, and #996 is the accepted, drift-guard-driven repair it anticipated. This
-closeout itself performs no code, schema or content mutation; it only moves this
-record from `docs/agents/tasks/active/` to `docs/agents/tasks/archive/` and records
-the exact merge facts from `git log`, not from an unread GitHub check-run API.
-
-The delivery task status is `completed`: `imports/crystalserver/bindings/items.json`
-(38,157 explicit `EXACT` Crystal Item identity bindings, repaired for declared
-identity promotions) is committed on protected `main` at commit `0e48ae51` and
-later. Aggregate issue #162 and Jira `KAN-16` remain open for related follow-up
-work.

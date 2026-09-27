@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "manifest_revision": 4,
+  "manifest_revision": 5,
   "canonical_digest": null,
   "status": "ACCEPTED",
   "reference_target": {
@@ -832,6 +832,226 @@
           "reason": "Issue #514 under the exact #162 allocation in comment 5710521667; source and uncertainty boundaries are recorded in the revision-4 public source packet."
         }
       ]
+    },
+    {
+      "case_id": "character.progression.experience_threshold.level_7.v1",
+      "domain": "CHARACTER",
+      "title": "Candidate cumulative experience threshold for level 7",
+      "scope": {
+        "summary": "Bounded cumulative experience threshold candidate for level 7; low-level kill bonuses, awarded kill XP, death loss, delevel behavior and rounding are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut.",
+          "Threshold means cumulative experience required to reach the stated level; kill modifiers and death-loss arithmetic are separate mechanics."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "Interpret 2,600 as cumulative total experience at level 7, not the experience awarded by one event."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "DERIVED target candidate: XPThreshold(7) = 2,600 cumulative experience.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://www.tibiawiki.com.br/index.php?oldid=440226&title=Tabela_de_Experi%C3%AAncia",
+            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s3-tibiawiki-br-target-near-revision",
+            "effective_date": "2026-07-12",
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Pinned target-near revision 440226, timestamp 2026-07-12T14:43:40Z and MediaWiki SHA-1 fc404abd0b107a111ad0f898b3c650280d4a4fcc, lists level 7 at 2,600 and level 8 at 4,200. It remains community corroboration."
+          },
+          {
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://tibia.fandom.com/wiki/Experience_Table?oldid=1038127",
+            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s4-fandom-historical-revision",
+            "effective_date": "2023-09-15",
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, contains the cumulative-XP formula. Direct substitution of x=7 and x=8 yields 2,600 and 4,200. Its dynamic ExpTable module invocation was not separately pinned. This is historical community corroboration, not primary target evidence."
+          }
+        ],
+        "confidence_notes": "MEDIUM_HIGH. A pinned community revision sixteen days before the target records 2,600, and an older pinned community revision contains a cumulative-XP formula that yields 2,600 for x=7.",
+        "uncertainty_notes": "No exact primary observation at the 2026-07-28 boundary was captured. The post-target official table is retained only as a current-state observation and is excluded from target support because continuity is unproven. The evidence supports a bounded candidate but not PROVEN continuity, a runtime policy, or modifier and rounding semantics.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public factual table values and revision metadata are paraphrased. Clearance applies only to the bounded threshold candidate and does not promote community evidence to primary authority."
+      },
+      "history": [
+        {
+          "date": "2026-09-27",
+          "summary": "Registered the level-7 cumulative experience threshold as a bounded DERIVED candidate.",
+          "reason": "R7 Reference evidence completion under #483 and #486; exact target-boundary primary capture remains unavailable."
+        }
+      ]
+    },
+    {
+      "case_id": "character.progression.experience_threshold.level_8.v1",
+      "domain": "CHARACTER",
+      "title": "Candidate cumulative experience threshold for level 8",
+      "scope": {
+        "summary": "Bounded cumulative experience threshold candidate for level 8; low-level kill bonuses, awarded kill XP, death loss, delevel behavior and rounding are excluded.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut.",
+          "Threshold means cumulative experience required to reach the stated level; kill modifiers and death-loss arithmetic are separate mechanics."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "Interpret 4,200 as cumulative total experience at level 8, not the experience awarded by one event."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "DERIVED target candidate: XPThreshold(8) = 4,200 cumulative experience.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "OFFICIAL_PUBLIC",
+            "locator": "https://www.tibia.com/charactertrade/?auctionid=2158982&page=details&subtopic=pastcharactertrades",
+            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s2-official-level-8-auction",
+            "effective_date": "2026-05-21",
+            "observed_at": null,
+            "retrieved_at": "2026-09-27T19:06:25Z",
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "The official archived auction for Hoogari Phlen started on 2026-05-21 and reports Level 8 with Experience 4,200. It proves this one pre-target official observation, not the complete threshold table or uninterrupted continuity by itself."
+          },
+          {
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://www.tibiawiki.com.br/index.php?oldid=440226&title=Tabela_de_Experi%C3%AAncia",
+            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s3-tibiawiki-br-target-near-revision",
+            "effective_date": "2026-07-12",
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Pinned target-near revision 440226, timestamp 2026-07-12T14:43:40Z and MediaWiki SHA-1 fc404abd0b107a111ad0f898b3c650280d4a4fcc, lists level 7 at 2,600 and level 8 at 4,200. It remains community corroboration."
+          },
+          {
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://tibia.fandom.com/wiki/Experience_Table?oldid=1038127",
+            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s4-fandom-historical-revision",
+            "effective_date": "2023-09-15",
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, contains the cumulative-XP formula. Direct substitution of x=7 and x=8 yields 2,600 and 4,200. Its dynamic ExpTable module invocation was not separately pinned. This is historical community corroboration, not primary target evidence."
+          }
+        ],
+        "confidence_notes": "HIGH. An official pre-target auction shows a level-8 character at 4,200, a pinned community revision sixteen days before the target records 4,200, and an older pinned community formula yields the same value for x=8.",
+        "uncertainty_notes": "The admitted target sources predate the target but do not capture the exact server-save boundary or prove uninterrupted policy continuity. The post-target official table is retained only as a current-state observation and is excluded from target support. This remains DERIVED and does not establish bonus, death-loss or rounding semantics.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Public official and community factual values are paraphrased with exact locators and revision/capture metadata. Clearance does not upgrade the target claim beyond DERIVED."
+      },
+      "history": [
+        {
+          "date": "2026-09-27",
+          "summary": "Registered the level-8 cumulative experience threshold as a bounded DERIVED candidate.",
+          "reason": "R7 Reference evidence completion under #483 and #486 using official pre/post-target observations plus pinned community corroboration."
+        }
+      ]
+    },
+    {
+      "case_id": "character.progression.level_xp_span.level_7.v1",
+      "domain": "CHARACTER",
+      "title": "Candidate cumulative experience span from level 7 to level 8",
+      "scope": {
+        "summary": "Arithmetic span between the separate level-7 and level-8 cumulative threshold candidates; it is not a death-loss rate or awarded kill-XP rule.",
+        "profiles": ["Reference"],
+        "world_assumptions": [
+          "Global Tibia production-observable behavior at the immutable 2026-07-28 post-server-save target cut.",
+          "Threshold means cumulative experience required to reach the stated level; kill modifiers and death-loss arithmetic are separate mechanics."
+        ]
+      },
+      "preconditions": [
+        {
+          "id": "precondition-1",
+          "description": "Both threshold candidates are interpreted as cumulative experience values under the same progression table."
+        }
+      ],
+      "target": {
+        "expected_observable_behavior": "DERIVED target candidate: LevelXPSpan(7) = XPThreshold(8) - XPThreshold(7) = 4,200 - 2,600 = 1,600 experience.",
+        "evidence_class": "DERIVED",
+        "sources": [
+          {
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://www.tibiawiki.com.br/index.php?oldid=440226&title=Tabela_de_Experi%C3%AAncia",
+            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s3-tibiawiki-br-target-near-revision",
+            "effective_date": "2026-07-12",
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Pinned target-near revision 440226, timestamp 2026-07-12T14:43:40Z and MediaWiki SHA-1 fc404abd0b107a111ad0f898b3c650280d4a4fcc, lists level 7 at 2,600 and level 8 at 4,200. It remains community corroboration."
+          },
+          {
+            "source_type": "COMMUNITY_CORROBORATION",
+            "locator": "https://tibia.fandom.com/wiki/Experience_Table?oldid=1038127",
+            "artifact_id": "docs/agents/evidence/OTV2-20260927-r7-xp-thresholds-source-packet.md#s4-fandom-historical-revision",
+            "effective_date": "2023-09-15",
+            "observed_at": null,
+            "retrieved_at": null,
+            "provenance_state": "CLEARED",
+            "uncertainty_notes": "Pinned revision 1038127, timestamp 2023-09-15T00:13:19Z and MediaWiki SHA-1 215beba01255525fced93bd9e1cadd7387ec1670, contains the cumulative-XP formula. Direct substitution of x=7 and x=8 yields 2,600 and 4,200. Its dynamic ExpTable module invocation was not separately pinned. This is historical community corroboration, not primary target evidence."
+          }
+        ],
+        "confidence_notes": "MEDIUM_HIGH. The subtraction is exact once the two bounded threshold candidates are accepted; confidence is limited by their target-continuity ceiling.",
+        "uncertainty_notes": "The 1,600 span does not establish a 10% death loss, a 160-XP penalty, low-level bonus ordering, delevel behavior or any rounding rule. Those remain separate evidence questions.",
+        "conflicts": []
+      },
+      "oteryn": {
+        "implementation_state": "NOT_STARTED",
+        "exact_revision": null,
+        "fixture_or_test_links": [],
+        "conflicts": []
+      },
+      "parity": {
+        "status": "PARITY_PENDING_EVIDENCE",
+        "accepted_difference_reference": null
+      },
+      "provenance": {
+        "state": "CLEARED",
+        "legal_review_state": "CLEARED",
+        "notes": "Arithmetic is derived only from the two bounded threshold candidates. No additional upstream or runtime claim is introduced."
+      },
+      "history": [
+        {
+          "date": "2026-09-27",
+          "summary": "Registered the level-7 to level-8 cumulative experience span as a bounded DERIVED candidate.",
+          "reason": "Exact subtraction of the separately evidenced threshold candidates; target continuity remains bounded by those inputs."
+        }
+      ]
     }
   ],
   "policy": {
@@ -885,6 +1105,12 @@
       "date": "2026-09-17",
       "summary": "Register six bounded DERIVED cases for Newhaven/Targuna chronology, Discovery movement reward range, the Global/Oteryn death progression distinction, corpse-loot authority, Newhaven trade shape and target-near Rat static fields, plus one fail-closed UNKNOWN current Goblin retaliation observation; preserve all revision-3 cases and unknown boundaries; no parity is confirmed.",
       "issue": "#514"
+    },
+    {
+      "manifest_revision": 5,
+      "date": "2026-09-27",
+      "summary": "Register bounded DERIVED cumulative experience thresholds for levels 7 and 8 plus their level-7 span from one pre-target official observation and pinned pre-target TibiaWiki BR/Fandom corroboration; retain the post-target official table only as a separate current-state observation and keep exact target-boundary continuity, modifiers, death arithmetic, runtime implementation and parity confirmation unresolved.",
+      "issue": "#483"
     }
   ]
 }

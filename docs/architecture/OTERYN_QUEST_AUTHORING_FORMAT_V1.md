@@ -230,7 +230,8 @@ resolves source ids. The CW2 B3 loot binding evidence has every row still `UNRES
 4. One server has an invalid claim marker and the other a valid one: the valid one is taken. Canary
    uid 6093 stores the undefined global `keyAction` and CrystalServer the key storage.
 5. Otherwise: `conflict`. The manifest keeps both values for the wiki to decide (D25); until then the
-   claim or gate carries the Canary value. A storage name that differs only in letter case or
+   claim or gate carries the Canary value. A decision recorded in `conflict_decisions.json` (§6.4)
+   maps the conflict to the chosen server and cites its basis. A storage name that differs only in letter case or
    underscores (`GraveDanger.Questline` and `QuestLine`) is the same rule.
 6. Empty containers without a reward are world objects, not claims: `approved_omission`, listed in
    `empty_containers.json`.
@@ -250,7 +251,7 @@ resolves source ids. The CW2 B3 loot binding evidence has every row still `UNRES
 | Choice groups (several placements, one claim) | 11 |
 | Containers / door keys / written texts / random rewards / cooldowns | 68 / 27 / 14 / 6 / 6 |
 | Empty containers and duplicate markers (approved omissions) | 134 |
-| Conflicts: decided by the wiki / open | 1 / 1 |
+| Conflicts: decided by the wiki / as equivalent (§6.4) | 1 / 1 |
 | Claims linked to a wiki quest: KV name / storage key / own label | 92 / 151 / 37 |
 | Claims with a section-only candidate (review) / without a link | 35 / 21 |
 | Reward-only quests | 120 |
@@ -277,14 +278,15 @@ links):
 | Quest gates reading a reward claim (the Annihilator door) | 1 |
 | Key gates whose key comes from a chest | 24 |
 | Quest gates linked to a wiki quest | 176 |
-| Conflicts | 10 |
+| Conflicts (decided, §6.4) | 10 |
 | Unresolved: dedicated-script doors / bare-number quest doors | 7 / 9 |
 
 The ten conflicts are storage names that the servers model differently. Canary gives each of the
 six Kilmaresh sixth-mission mask doors a storage per mask, while CrystalServer gates all six on one
 `Kilmaresh.Sixth.Favor`. The Kilmaresh access door, the two Order of the Lion eastern doors
 (`AccessEastSide`, `AccessEasternSide`) and King Zelos's door (`KingZelos.Room`, `KingZelosDoor`)
-are renamed. They are left for the quest domain, which defines the progress these gates read.
+are renamed. The wiki gives each mask its own catacomb door, so the Canary storages are kept; the
+renamed doors are an implementation detail and keep Canary too (§6.4).
 
 ### 6.2 Quest log
 
@@ -301,15 +303,14 @@ storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` t
 | Storyline quests linked to a wiki quest | 52 |
 | Reward-only quests absorbed by a storyline quest / catalogue quests | 21 / 157 |
 | Gates / reward claims attached to storyline quests | 138 / 98 |
-| Missions mapped / in conflict | 494 / 35 |
+| Missions mapped / of which decided from a conflict (§6.4) | 529 / 35 |
 | Transitions / missions with at least one | 1,616 / 355 |
 | Transitions by owner: NPC / action / movement / creature event / library / other | 1,257 / 169 / 68 / 27 / 40 / 55 |
 | Effects: new value / step / computed | 1,513 / 61 / 42 |
 | Transitions with a known `from` stage (exact) / in both servers | 383 (312) / 1,298 |
 
-The 35 conflicts are mostly journal texts (21); the rest are storage names or value ranges
-(The Way of the Monk, Hot Cuisine, The Shattered Isles reputation, Bigfoot's Burden recruitment).
-The Canary value is kept until the wiki decides (D25). "No literal writer" means the index found no
+The 35 conflicts were mostly journal texts; the rest storage names or value ranges. They are decided
+in §6.4. "No literal writer" means the index found no
 `setStorageValue(<storage>, …)` call; such tracks are set through a variable, a loop or a KV store,
 as the task counters are.
 
@@ -323,19 +324,19 @@ reward claims hand out the final chests.
 
 `samples/interactions/` (`ots_interactions.py`, deterministic, reads the quest-log sample)
 transcribes every script under `scripts/quests/` of both servers (130 quest directories), keyed
-`interaction/<quest>/<script>` and joined by that path; `interaction.schema.json` and
+`interaction/<quest>/<script>` (plus the script object when a file holds several callbacks) and
+joined by that key; `interaction.schema.json` and
 `validate_quest_content.py --interactions` validate it with the quest catalogue.
 
 | | Count |
 |---|---:|
-| Interactions / in both servers | 1,219 / 864 |
-| Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 399 / 201 / 14 / 6 |
-| Children: Quest / Ability / Item / Achievement / Presentation | 939 / 198 / 160 / 30 / 2,659 |
-| Children blocked: Movement / WorldObject | 798 / 1,112 |
-| Quest children naming a mission transition | 194 |
-| Unresolved statements: vocabulary / loops / deferred `addEvent` / other function literals | 1,264 / 376 / 300 / 78 |
-| Unresolved conditions | 1,957 |
-| Interactions mapped / unresolved / in conflict | 225 / 934 / 60 |
+| Interactions | 1,221 |
+| Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
+| Children: Quest / Ability / Item / Achievement / Presentation | 944 / 208 / 160 / 30 / 2,668 |
+| Children blocked: Movement / WorldObject | 800 / 1,117 |
+| Quest children naming a mission transition | 193 |
+| Unresolved statements / conditions | 2,016 / 1,963 |
+| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 236 / 985 / 37 |
 | Progress tracks written but not declared by the catalogue | 373 |
 
 An independent spot check of 56 randomly sampled classified lines against their source found no
@@ -346,9 +347,37 @@ requests can run (D35).
 
 The Queen of the Banshees shows the result for one quest: 18 interactions; its seven seal flames
 request the seven movement transitions of slice 3 (one per mission, the last one opening the final
-battle); 9 tracks (the seal doors and two helper counters) are undeclared. Its four conflicts are
-real: the first seal lever uses other item ids in CrystalServer, and the first seal's magic walls
-sit on another trigger position there and come back after two minutes. The wiki decides them (D25).
+battle); 9 tracks (the seal doors and two helper counters) are undeclared. Its two conflicts keep
+Canary: the first seal lever's item ids (the wiki is silent) and the first seal's magic walls, which
+CrystalServer triggers elsewhere and closes late, against the wiki.
+
+### 6.4 Conflict decisions (D25)
+
+`conflict_decisions.json` records one decision per conflict of the four transcriptions. Each gives
+the chosen server, its basis and the difference in our own words; no wiki, journal or dialogue text
+is copied. The converters apply it and stop when a recorded decision no longer matches a conflict.
+
+| Basis | Chests | Doors | Missions | Interactions |
+|---|---:|---:|---:|---:|
+| Equivalent behaviour or implementation detail (Canary kept) | 1 | 4 | 6 | 10 |
+| Wording: spelling or grammar (the correct version) | | | 6 | |
+| Wiki decides for Canary | | 6 | | 6 |
+| Wiki decides for CrystalServer | | | 8 | 9 |
+| Wiki silent (Canary kept) | | | 15 | 12 |
+
+CrystalServer wins where Canary is outdated or broken. Examples:
+- Hot Cuisine: the 15th dish added with the Monk vocation.
+- The Way of the Monk: the ten-shrine pilgrimage.
+- The Thieves Guild: Percybald is in Carlin.
+- Blood Brothers: Boreth's plant-burning encounter.
+- Heart of Destruction: Canary summons a creature name that does not exist.
+- Rottin Wood and the Married Men: five nets and merchants, where Canary stops at four.
+- The Ancient Tombs: switch puzzles shared by the players.
+- The Thornfire prepared bucket.
+
+A first pass found 60 interaction conflicts. Twenty-three were callbacks paired by their position in
+a file, so one server's added callback shifted the pairs; they are now joined by their script object.
+Interactions decided for CrystalServer keep the quest's Canary identity (D33).
 
 ## 7. Ownership
 
@@ -371,10 +400,9 @@ sit on another trigger position there and come back after two minutes. The wiki 
 ## 8. Next slices
 
 1. Owner transcription: bind each transition to its owner's content. The movement and action
-   scripts are transcribed (§6.3); next the undeclared progress tracks join their missions and the
-   interaction conflicts go to the wiki. Then NPC dialogue nodes (the NPC schema's open decision O4 is settled by D35: dialogue requests transitions and reads
-   stages, the quest domain owns the state); then settle the ten door conflicts and the 35 mission
-   conflicts.
+   scripts are transcribed (§6.3) and all conflicts are decided (§6.4); next the undeclared progress
+   tracks join their missions. Then NPC dialogue nodes (the NPC schema's open decision O4 is settled by D35: dialogue requests transitions and reads
+   stages, the quest domain owns the state).
 2. NPC-driven outfit and addon quests (under the NPC service boundary).
 3. The dedicated-script doors (vocation doors, Katana, Secret Service).
 4. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a

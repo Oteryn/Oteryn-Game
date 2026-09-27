@@ -387,22 +387,22 @@
       "per_stage": 468,
       "fixed": 38
     },
-    "progress_tracks": 557,
+    "progress_tracks": 556,
     "tracks_written_by_both_servers": 332,
     "tracks_without_a_writer": 179,
-    "transitions": 1616,
+    "transitions": 1618,
     "transitions_by_owner": {
       "action": 169,
       "creature_event": 27,
       "library": 40,
       "movement": 68,
-      "npc": 1257,
+      "npc": 1259,
       "other": 55
     },
     "transitions_by_effect": {
       "computed": 42,
       "increment": 61,
-      "to": 1513
+      "to": 1515
     },
     "transitions_with_known_from": 383,
     "transitions_in_both_servers": 1298,
@@ -410,8 +410,7 @@
     "reward_only_quests_absorbed": 21,
     "catalogue_quests": 157,
     "by_status": {
-      "conflict": 35,
-      "mapped": 494
+      "mapped": 529
     }
   },
   "reward_only_absorbed": [
@@ -814,8 +813,8 @@
     {
       "quest": "canary:quest/the_white_raven_monastery_quest",
       "mission": "access_to_the_isle_of_kings",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (implementation detail: Same text; canary uses array, crystalserver a keyed map.)",
       "sources": [
         {
           "source": "canary",
@@ -881,8 +880,8 @@
     {
       "quest": "canary:quest/threatened_dreams_quest",
       "mission": "an_unlikely_couple",
-      "status": "conflict",
-      "resolution": "servers disagree on storageId; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on storageId; D25 decides for canary (implementation detail: Only storage key name differs; no range or journal differences.)",
       "sources": [
         {
           "source": "canary",
@@ -2083,8 +2082,8 @@
     {
       "quest": "canary:quest/grave_danger_quest",
       "mission": "grave_danger_the_lich_knights",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wording: Typo: CrystalServer misspells a word.)",
       "sources": [
         {
           "source": "canary",
@@ -2204,8 +2203,8 @@
     {
       "quest": "canary:quest/hot_cuisine_quest",
       "mission": "hot_cuisine",
-      "status": "conflict",
-      "resolution": "servers disagree on endValue, states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on endValue, states; D25 decides for crystalserver (wiki: Crystalserver adds a 15th dish (Zaoan Sauce); canary is one dish short., https://tibia.fandom.com/wiki/Hot_Cuisine_Quest/Spoiler?oldid=1160750)",
       "sources": [
         {
           "source": "canary",
@@ -2698,8 +2697,8 @@
     {
       "quest": "canary:quest/blood_brothers_quest",
       "mission": "mission_01_gaining_trust",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary leaves two journal stages blank; crystalserver fills in trust-building details., https://tibia.fandom.com/wiki/Blood_Brothers_Quest/Spoiler?oldid=1132612)",
       "sources": [
         {
           "source": "canary",
@@ -2804,8 +2803,8 @@
     {
       "quest": "canary:quest/blood_brothers_quest",
       "mission": "mission_02_bad_eggs",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for crystalserver (wording: CrystalServer fixes a misspelled creature name and some wording; Canary keeps the typo.)",
       "sources": [
         {
           "source": "canary",
@@ -2979,8 +2978,8 @@
     {
       "quest": "canary:quest/blood_brothers_quest",
       "mission": "mission_03_his_true_face",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary leaves a stage blank; crystalserver adds text about testing all suspects., https://tibia.fandom.com/wiki/Blood_Brothers_Quest/Spoiler?oldid=1132612)",
       "sources": [
         {
           "source": "canary",
@@ -3144,8 +3143,8 @@
     {
       "quest": "canary:quest/blood_brothers_quest",
       "mission": "mission_04_the_dark_lands",
-      "status": "conflict",
-      "resolution": "servers disagree on endValue, states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on endValue, states; D25 decides for crystalserver (wiki: Crystalserver adds a final completion stage and matching range value canary lacks., https://tibia.fandom.com/wiki/Blood_Brothers_Quest/Spoiler?oldid=1132612)",
       "sources": [
         {
           "source": "canary",
@@ -3801,8 +3800,8 @@
     {
       "quest": "canary:quest/the_rookie_guard_quest",
       "mission": "mission_09_rock_n_troll",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wording: Typo: CrystalServer misspells a word.)",
       "sources": [
         {
           "source": "canary",
@@ -4612,8 +4611,8 @@
     {
       "quest": "canary:quest/the_thieves_guild_quest",
       "mission": "mission_4_bridge_robbery",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for crystalserver (wiki: Percybald's town differs: canary says Venore, crystalserver correctly says Carlin., https://tibia.fandom.com/wiki/The_Thieves_Guild_Quest/Spoiler?oldid=1086330)",
       "sources": [
         {
           "source": "canary",
@@ -5379,8 +5378,8 @@
     {
       "quest": "canary:quest/threatened_dreams_quest",
       "mission": "nightmare_intruders",
-      "status": "conflict",
-      "resolution": "servers disagree on storageId; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on storageId; D25 decides for canary (implementation detail: Only storage key name differs; ranges and journal text otherwise match.)",
       "sources": [
         {
           "source": "canary",
@@ -5559,8 +5558,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_behemoths",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -5775,8 +5774,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_destroyers",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -5793,8 +5792,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_drakens",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -5919,8 +5918,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_ghastly_dragons",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -5991,8 +5990,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_hellhounds",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -6081,8 +6080,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_hydras",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -6225,8 +6224,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_medusae",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -6459,8 +6458,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_sea_serpents",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -6477,8 +6476,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_serpent_spawns",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -6801,8 +6800,8 @@
     {
       "quest": "canary:quest/killing_in_the_name_of_quest",
       "mission": "paw_and_fur_undead_dragons",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for canary (wiki silent: Canary adds an extra final state (with a typo) crystalserver lacks., https://tibia.fandom.com/wiki/Killing_in_the_Name_of..._Quest/Spoiler?oldid=1206121)",
       "sources": [
         {
           "source": "canary",
@@ -7179,8 +7178,8 @@
     {
       "quest": "canary:quest/bigfoot_s_burden_quest",
       "mission": "recruitment_gnomish_warfare",
-      "status": "conflict",
-      "resolution": "servers disagree on description, endValue, startValue, storageId; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on description, endValue, startValue, storageId; D25 decides for canary (equivalent: Formatting-only difference; content is equivalent.)",
       "sources": [
         {
           "source": "canary",
@@ -7251,8 +7250,8 @@
     {
       "quest": "canary:quest/the_shattered_isles_quest",
       "mission": "reputation_in_sabrehaven_cordial",
-      "status": "conflict",
-      "resolution": "servers disagree on endValue, startValue; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on endValue, startValue; D25 decides for canary (wiki silent: Reputation-tier start/end storage values differ numerically; no journal text present., https://tibia.fandom.com/wiki/The_Shattered_Isles_Quest/Spoiler?oldid=1205805)",
       "sources": [
         {
           "source": "canary",
@@ -7269,8 +7268,8 @@
     {
       "quest": "canary:quest/the_shattered_isles_quest",
       "mission": "reputation_in_sabrehaven_friendly",
-      "status": "conflict",
-      "resolution": "servers disagree on endValue, startValue, states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on endValue, startValue, states; D25 decides for canary (wiki silent: Same journal text; start/end storage values are offset by two., https://tibia.fandom.com/wiki/The_Shattered_Isles_Quest/Spoiler?oldid=1205805)",
       "sources": [
         {
           "source": "canary",
@@ -7287,8 +7286,8 @@
     {
       "quest": "canary:quest/the_shattered_isles_quest",
       "mission": "reputation_in_sabrehaven_loyal",
-      "status": "conflict",
-      "resolution": "servers disagree on endValue, startValue, states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on endValue, startValue, states; D25 decides for canary (wiki silent: Same journal text; start/end storage values are offset by four., https://tibia.fandom.com/wiki/The_Shattered_Isles_Quest/Spoiler?oldid=1205805)",
       "sources": [
         {
           "source": "canary",
@@ -7305,8 +7304,8 @@
     {
       "quest": "canary:quest/the_shattered_isles_quest",
       "mission": "reputation_in_sabrehaven_suspicious",
-      "status": "conflict",
-      "resolution": "servers disagree on endValue, states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on endValue, states; D25 decides for crystalserver (wiki: Mission order and endValue differ; crystalserver's NPC order matches the wiki., https://tibia.fandom.com/wiki/The_Shattered_Isles_Quest/Spoiler?oldid=1205805)",
       "sources": [
         {
           "source": "canary",
@@ -7938,8 +7937,8 @@
     {
       "quest": "canary:quest/dawnport_quest",
       "mission": "the_dorm_key",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for crystalserver (wiki: Crystalserver notes the worm-bait requirement from the quest's equipment list; canary omits it., https://tibia.fandom.com/wiki/Dawnport_Quest/Spoiler?oldid=1040650)",
       "sources": [
         {
           "source": "canary",
@@ -8370,8 +8369,8 @@
     {
       "quest": "canary:quest/dawnport_quest",
       "mission": "the_lost_amulet",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for crystalserver (wording: Canary has a grammar mistake in the closing stage; CrystalServer is correct.)",
       "sources": [
         {
           "source": "canary",
@@ -8689,8 +8688,8 @@
     {
       "quest": "canary:quest/grave_danger_quest",
       "mission": "the_order_of_the_cobra",
-      "status": "conflict",
-      "resolution": "servers disagree on states, storageId; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states, storageId; D25 decides for canary (wording: Typo: CrystalServer misspells a word; storage name also differs.)",
       "sources": [
         {
           "source": "canary",
@@ -8779,8 +8778,8 @@
     {
       "quest": "canary:quest/dawnport_quest",
       "mission": "the_rare_herb",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for crystalserver (wiki: Crystalserver's stages match the wiki's herb-harvest description; canary's text is generic., https://tibia.fandom.com/wiki/Dawnport_Quest/Spoiler?oldid=1040650)",
       "sources": [
         {
           "source": "canary",
@@ -8995,8 +8994,8 @@
     {
       "quest": "canary:quest/dawnport_quest",
       "mission": "the_stolen_log_book",
-      "status": "conflict",
-      "resolution": "servers disagree on states; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states; D25 decides for crystalserver (wiki: Crystalserver's final stage mentions troll caves/reward matching wiki; canary is generic., https://tibia.fandom.com/wiki/Dawnport_Quest/Spoiler?oldid=1040650)",
       "sources": [
         {
           "source": "canary",
@@ -9013,8 +9012,8 @@
     {
       "quest": "canary:quest/cults_of_tibia_quest",
       "mission": "the_strengthtening_of_the_minotaurs",
-      "status": "conflict",
-      "resolution": "servers disagree on description, endValue, startValue, states, storageId; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on description, endValue, startValue, states, storageId; D25 decides for canary (equivalent: Formatting-only difference; content is equivalent.)",
       "sources": [
         {
           "source": "canary",
@@ -9085,8 +9084,8 @@
     {
       "quest": "canary:quest/the_way_of_the_monk_quest",
       "mission": "the_three_fold_path",
-      "status": "conflict",
-      "resolution": "servers disagree on endValue, startValue, states, storageId; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on endValue, startValue, states, storageId; D25 decides for crystalserver (wiki: Canary's outdated 4-shrine/Dawnport text is wrong; crystalserver matches the real 10-shrine pilgrimage., https://tibia.fandom.com/wiki/The_Way_of_the_Monk_Quest/Spoiler?oldid=1203780)",
       "sources": [
         {
           "source": "canary",
@@ -9255,8 +9254,8 @@
     {
       "quest": "canary:quest/tibia_tales",
       "mission": "to_outfox_a_fox",
-      "status": "conflict",
-      "resolution": "servers disagree on storageId; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on storageId; D25 decides for canary (implementation detail: Only storage key name differs (added 'questline' suffix); no other change.)",
       "sources": [
         {
           "source": "canary",
@@ -9345,8 +9344,8 @@
     {
       "quest": "canary:quest/threatened_dreams_quest",
       "mission": "troubled_animals",
-      "status": "conflict",
-      "resolution": "servers disagree on states, storageId; the Canary value is kept",
+      "status": "mapped",
+      "resolution": "servers disagree on states, storageId; D25 decides for canary (wording: Typo: CrystalServer misspells a word; storage name also differs.)",
       "sources": [
         {
           "source": "canary",

@@ -11,10 +11,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 139,
-    "fully_resolved": 1511,
+    "blocked": 127,
+    "fully_resolved": 1523,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1106
+    "wiki_adopted_monsters": 1112
   },
   "wiki_adopted_rows": {
     "Loot2": 12862,
@@ -44,24 +44,13 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 61,
+      "monsters": 55,
       "examples": [
         "energized_raging_mage",
         "gaffir",
         "guard_captain_quaid",
         "izcandar_champion_of_summer",
         "izcandar_champion_of_winter"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics mType.onSpawn",
-      "monsters": 17,
-      "examples": [
-        "iron_servant_replica",
-        "cobra_assassin",
-        "cobra_scout",
-        "cobra_vizier",
-        "the_primal_menace"
       ]
     },
     {
@@ -73,6 +62,17 @@
         "bony_sea_devil",
         "brachiodemon",
         "branchy_crawler"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics mType.onSpawn",
+      "monsters": 11,
+      "examples": [
+        "the_primal_menace",
+        "goshnar_s_greed",
+        "goshnar_s_hatred",
+        "mighty_splinter_of_madness",
+        "powerful_soul"
       ]
     },
     {
@@ -501,6 +501,7 @@
     "chakoya_toolshaper",
     "chakoya_tribewarden",
     "chakoya_windcaller",
+    "charged_disruption",
     "charged_energy_elemental",
     "charger",
     "chasm_spawn",
@@ -516,6 +517,9 @@
     "clomp",
     "clubarc_the_plunderer",
     "cobra",
+    "cobra_assassin",
+    "cobra_scout",
+    "cobra_vizier",
     "cockroach",
     "cold_percht_sleigh",
     "coldheart",
@@ -543,6 +547,7 @@
     "countess_sorrow",
     "courage_leech",
     "crab",
+    "crackler",
     "crape_man",
     "crawler",
     "crazed_beggar",
@@ -639,6 +644,7 @@
     "demon_skeleton",
     "demon_slave",
     "demon_summoner",
+    "depolarized_crackler",
     "depowered_minotaur",
     "despair",
     "desperate_soul",
@@ -649,6 +655,7 @@
     "dharalion",
     "diabolic_imp",
     "diamond_servant",
+    "diamond_servant_replica",
     "diblis_the_fair",
     "dipthrah",
     "dire_penguin",
@@ -658,6 +665,7 @@
     "diseased_dan",
     "diseased_fred",
     "disgusting_ooze",
+    "disruption",
     "distorted_phantom",
     "doctor_perhaps",
     "dog",
@@ -884,6 +892,7 @@
     "goblin_scavenger",
     "goggle_cake",
     "golden_servant",
+    "golden_servant_replica",
     "goldhanded_cultist",
     "golgordan",
     "gore_horn",
@@ -995,6 +1004,7 @@
     "invading_demon",
     "irgix_the_flimsy",
     "iron_servant",
+    "iron_servant_replica",
     "ironblight",
     "island_troll",
     "jagged_earth_elemental",
@@ -1049,6 +1059,7 @@
     "liodile",
     "lion",
     "lion_archer",
+    "lion_commander",
     "lion_knight",
     "lion_warlock",
     "liquor_spirit",
@@ -1718,6 +1729,7 @@
     "urmahlullu_the_weakened",
     "ushuriel",
     "usurper_archer",
+    "usurper_commander",
     "usurper_knight",
     "usurper_warlock",
     "utua_stone_sting",

@@ -24,7 +24,6 @@ owned_paths:
   - imports/official/client-assets/15.30/README.md
   - docs/architecture/OTERYN_CLIENT_ASSET_VERSION_OWNER_DECISION_2026-09-27.md
   - docs/agents/tasks/active/OTV2-20260927-client-asset-version-pin.md
-  - docs/agents/tasks/archive/OTV2-20260927-cw2-b1-crystal-item-identity-bindings.md
   - docs/agents/tasks/archive/OTV2-20260927-item-authoring-followups-lowering-v1.md
 public_contracts: []
 depends_on:
@@ -87,11 +86,11 @@ implementation is touched.
 - [x] `docs/architecture/OTERYN_CLIENT_ASSET_VERSION_OWNER_DECISION_2026-09-27.md`
   records owner decisions 1-3, non-claims and follow-ups, mirroring the header
   style of an existing owner decision doc, at 72 lines (<= 80).
-- [x] The two finished predecessor task records
-  (`OTV2-20260927-cw2-b1-crystal-item-identity-bindings`,
-  `OTV2-20260927-item-authoring-followups-lowering-v1`) are archived with their
-  real merge commits/dates taken from `git log origin/main` (PR #989 -> `0c7098eb`,
-  repair PR #996 -> `0e48ae51`, PR #1018 -> `d8285019`).
+- [x] The finished predecessor task record
+  `OTV2-20260927-item-authoring-followups-lowering-v1` is archived with its real
+  merge commit taken from `git log origin/main` (PR #1018 -> `d8285019`).
+  `OTV2-20260927-cw2-b1-crystal-item-identity-bindings` was already archived on
+  `main` by #1017, so this task no longer touches it.
 - [ ] `python3 tools/agents/validate_governance.py` and the imports-path-covering
   validators pass on the frozen head.
 - [ ] Changed-path checks pass on the frozen head.
