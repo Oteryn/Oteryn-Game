@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 13,
-  "checks": 82,
-  "passed": 82,
+  "checks": 143,
+  "passed": 143,
   "failed": 0,
   "results": [
     {
@@ -33,6 +33,48 @@
       "expected_valid": true,
       "error_count": 0,
       "warning_count": 1
+    },
+    {
+      "name": "Crystal and Canary typed capability additions validate together",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject negative gameplay weight while signed display weight remains available",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject invented level-magic shortfall multiplier",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 0
+    },
+    {
+      "name": "reject zero chain override coefficient because zero means disabled",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject free-form mantra",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject legacy collapsed distance weapon kind",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
     },
     {
       "name": "template validates: ammunition.json",
@@ -302,14 +344,14 @@
       "name": "reject unresolved manifest semantics",
       "passed": true,
       "expected_valid": false,
-      "error_count": 2,
+      "error_count": 3,
       "warning_count": 0
     },
     {
       "name": "reject mapped manifest destination that does not exist",
       "passed": true,
       "expected_valid": false,
-      "error_count": 1,
+      "error_count": 2,
       "warning_count": 0
     },
     {
@@ -323,7 +365,7 @@
       "name": "reject terrain mapped into portable Item",
       "passed": true,
       "expected_valid": false,
-      "error_count": 1,
+      "error_count": 3,
       "warning_count": 0
     },
     {
@@ -411,10 +453,255 @@
       "warning_count": 0
     },
     {
+      "name": "reject approved omission of a typed TibiaWiki BR field",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
       "name": "Wiki attack maps to the formal attack leaf",
       "passed": true,
       "expected_valid": true,
       "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "Canary pinned no-effect parser key is explicitly accepted without an Item destination",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject Canary pinned no-effect parser key promoted to gameplay truth",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 4,
+      "warning_count": 0
+    },
+    {
+      "name": "Crystal showcharges maps to charge display semantics",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "negative engine weight routes only to signed presentation weight",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "appearance unmove=true maps by checked inversion to movable=false",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject appearance unmove inversion when destination stays movable",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject negative engine weight routed to gameplay mass",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 2,
+      "warning_count": 0
+    },
+    {
+      "name": "nonnegative TibiaWiki BR weight routes to gameplay mass",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "engine type value routes a portable container into Item taxonomy",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject engine type route when taxonomy value disagrees",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "engine type value routes bed outside portable Item",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject value-dependent engine type without source_value",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "nested equip eventtype routes to typed equipment",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "nested stepin eventtype remains Interaction-owned",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "nested removecharge action selects consume_charge",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "nested chain=false selects disabled mode",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject chain=false mapped to an override",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "positive chain coefficient is preserved exactly",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject nested action when consumption mode disagrees",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "engine missile weapon kind normalizes to thrown_missile",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject source field unknown to its pinned engine profile",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Fandom historical name maps with exact revision profile",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject Fandom profile with an unpinned URL",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject Fandom profile with the wrong revision SHA-1",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Fandom unresolved historical imbuements field blocks readiness",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Fandom immobile=false maps by checked inversion to movable=true",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject Fandom immobile inversion when the destination value disagrees",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Fandom immobile=true remains WorldObject-owned",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "reject engine profile paired with the wrong pinned revision",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject invalid provenance capture timestamp",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Wiki modificadores requires typed modifier content",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "reject TibiaWiki BR profile with an unpinned stable source",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
+      "warning_count": 0
+    },
+    {
+      "name": "Wiki modificadores maps to a typed modifier aggregate",
+      "passed": true,
+      "expected_valid": true,
+      "error_count": 0,
+      "warning_count": 0
+    },
+    {
+      "name": "Wiki modificadores rejects unresolved modifier clauses",
+      "passed": true,
+      "expected_valid": false,
+      "error_count": 1,
       "warning_count": 0
     },
     {
@@ -437,6 +724,86 @@
     },
     {
       "name": "Wiki disposition catalog exactly matches the protected 71-field census",
+      "passed": true
+    },
+    {
+      "name": "all TibiaWiki BR destinations exist in the formal Item schema",
+      "passed": true
+    },
+    {
+      "name": "Canary catalog rows exactly equal the union of inventoried origins",
+      "passed": true
+    },
+    {
+      "name": "Canary mapped destinations all exist in the formal Item schema",
+      "passed": true
+    },
+    {
+      "name": "Canary mapped and routed rows have destinations iff mapped",
+      "passed": true
+    },
+    {
+      "name": "Crystal catalog rows exactly equal the union of inventoried origins",
+      "passed": true
+    },
+    {
+      "name": "Crystal mapped destinations all exist in the formal Item schema",
+      "passed": true
+    },
+    {
+      "name": "Crystal mapped and routed rows have destinations iff mapped",
+      "passed": true
+    },
+    {
+      "name": "Fandom mapped destinations all exist in the formal Item schema",
+      "passed": true
+    },
+    {
+      "name": "Fandom mapped and routed rows have destinations iff mapped",
+      "passed": true
+    },
+    {
+      "name": "Canary parser registry has exactly 143 unique classified keys",
+      "passed": true
+    },
+    {
+      "name": "Canary preserves the exact 144 registrations and movable duplicate",
+      "passed": true
+    },
+    {
+      "name": "Canary inventories the upgrade-classification value leaf",
+      "passed": true
+    },
+    {
+      "name": "Canary records required aliases and source-value routing metadata",
+      "passed": true
+    },
+    {
+      "name": "Crystal parser registry has exactly 143 unique classified keys",
+      "passed": true
+    },
+    {
+      "name": "Crystal preserves the exact 144 registrations and movable duplicate",
+      "passed": true
+    },
+    {
+      "name": "Crystal inventories the upgrade-classification value leaf",
+      "passed": true
+    },
+    {
+      "name": "Crystal records required aliases and source-value routing metadata",
+      "passed": true
+    },
+    {
+      "name": "Fandom historical catalog has exactly the pinned 84 rows",
+      "passed": true
+    },
+    {
+      "name": "Canary pinned no-effect set is exact and has no Item destinations",
+      "passed": true
+    },
+    {
+      "name": "Crystal pinned no-effect set is exact and has no Item destinations",
       "passed": true
     },
     {
@@ -509,3 +876,4 @@
     }
   ]
 }
+
