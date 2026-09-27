@@ -1519,6 +1519,1548 @@ mod candidate {
         value.iter().map(|byte| format!("{byte:02x}")).collect()
     }
 
+    // Independent revision: never reinterpret historical unsigned revision 1.
+    pub(super) mod v2 {
+        use super::*;
+
+        #[derive(Clone, PartialEq, Eq, Message)]
+        struct SignedGround {
+            #[prost(bytes = "vec", tag = "1")]
+            world_id: Vec<u8>,
+            #[prost(bytes = "vec", tag = "2")]
+            channel_id: Vec<u8>,
+            #[prost(bytes = "vec", tag = "3")]
+            corpse_occurrence_id: Vec<u8>,
+            #[prost(uint64, tag = "4")]
+            corpse_revision: u64,
+            #[prost(sint32, tag = "5")]
+            x: i32,
+            #[prost(sint32, tag = "6")]
+            y: i32,
+            #[prost(sint32, tag = "7")]
+            floor: i32,
+        }
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, prost::Enumeration)]
+        #[repr(i32)]
+        enum FixtureRootPosition {
+            Unspecified = 0,
+            SyntheticDirectRoot = 1,
+        }
+        #[derive(Clone, PartialEq, Eq, Message)]
+        struct RootInventory {
+            #[prost(bytes = "vec", tag = "1")]
+            character_id: Vec<u8>,
+            #[prost(uint64, tag = "2")]
+            session_generation: u64,
+            #[prost(enumeration = "FixtureRootPosition", tag = "3")]
+            fixture_root_position: i32,
+        }
+        #[derive(Clone, PartialEq, Eq, Message)]
+        struct SignedMint {
+            #[prost(message, optional, tag = "1")]
+            after: Option<ItemState>,
+            #[prost(message, optional, tag = "2")]
+            destination: Option<SignedGround>,
+            #[prost(message, optional, tag = "3")]
+            source: Option<Provenance>,
+        }
+        #[derive(Clone, PartialEq, Eq, Message)]
+        struct SignedTransfer {
+            #[prost(message, optional, tag = "1")]
+            before: Option<ItemState>,
+            #[prost(message, optional, tag = "2")]
+            after: Option<ItemState>,
+            #[prost(message, optional, tag = "3")]
+            source: Option<SignedGround>,
+            #[prost(message, optional, tag = "4")]
+            destination: Option<RootInventory>,
+            #[prost(message, optional, tag = "5")]
+            cause: Option<Provenance>,
+        }
+        #[derive(Clone, PartialEq, Eq, prost::Oneof)]
+        enum SignedOperation {
+            #[prost(message, tag = "2")]
+            Mint(SignedMint),
+            #[prost(message, tag = "3")]
+            Transfer(SignedTransfer),
+        }
+        #[derive(Clone, PartialEq, Eq, Message)]
+        struct SignedPayload {
+            #[prost(uint32, tag = "1")]
+            interpretation_revision: u32,
+            #[prost(oneof = "SignedOperation", tags = "2, 3")]
+            operation: Option<SignedOperation>,
+        }
+
+        // Supplied independently by the caller, never reconstructed from event
+        // geometry or immutable provenance. No product World activation implied.
+        #[derive(Clone)]
+        struct WorldFacts {
+            bindings: Facts,
+            revision: &'static str,
+            x: [i64; 2],
+            y: [i64; 2],
+            floors: &'static [i16],
+        }
+        impl WorldFacts {
+            fn check(&self) -> Result<(), Failure> {
+                let low = i64::from(i32::MIN);
+                let high = i64::from(i32::MAX) + 1;
+                for [min, max] in [self.x, self.y] {
+                    if min < low || max > high || min >= max {
+                        return Err(Failure::Facts);
+                    }
+                }
+                string(self.revision)?;
+                if self.floors.is_empty() || !self.floors.windows(2).all(|pair| pair[0] < pair[1]) {
+                    return Err(Failure::Facts);
+                }
+                for id in [
+                    self.bindings.world,
+                    self.bindings.channel,
+                    self.bindings.corpse,
+                    self.bindings.character,
+                    self.bindings.session,
+                ] {
+                    identity(&id)?;
+                }
+                if self.bindings.generation == 0
+                    || self.bindings.corpse_revision == 0
+                    || self.bindings.definition_revision == 0
+                {
+                    return Err(Failure::Facts);
+                }
+                Ok(())
+            }
+            fn position(&self, position: [i32; 3]) -> Result<(), Failure> {
+                self.check()?;
+                let floor = i16::try_from(position[2]).map_err(|_| Failure::Facts)?;
+                if i64::from(position[0]) < self.x[0]
+                    || i64::from(position[0]) >= self.x[1]
+                    || i64::from(position[1]) < self.y[0]
+                    || i64::from(position[1]) >= self.y[1]
+                    || self.floors.binary_search(&floor).is_err()
+                {
+                    return Err(Failure::Facts);
+                }
+                Ok(())
+            }
+        }
+        fn world_fixture() -> WorldFacts {
+            WorldFacts {
+                bindings: current_fixture(),
+                revision: "synthetic_world_r2",
+                x: [-200, 200],
+                y: [-200, 200],
+                floors: &[-1, 0, 7],
+            }
+        }
+
+        fn sum(values: &[usize]) -> Result<usize, Failure> {
+            values.iter().try_fold(0_usize, |n, value| {
+                n.checked_add(*value).ok_or(Failure::Overflow)
+            })
+        }
+        fn varint_width(mut value: u64) -> usize {
+            let mut width = 1;
+            while value >= 128 {
+                width += 1;
+                value >>= 7;
+            }
+            width
+        }
+        fn delimited(tag: u32, length: usize) -> Result<usize, Failure> {
+            sum(&[
+                varint_width((u64::from(tag) << 3) | 2),
+                varint_width(u64::try_from(length).map_err(|_| Failure::Overflow)?),
+                length,
+            ])
+        }
+        fn scalar(tag: u32, width: usize) -> Result<usize, Failure> {
+            sum(&[varint_width(u64::from(tag) << 3), width])
+        }
+        #[derive(Clone, Copy)]
+        struct Upper {
+            state: usize,
+            ground: usize,
+            inventory: usize,
+            provenance: usize,
+            inner: usize,
+            payload: usize,
+            envelope_overhead: usize,
+            envelope: usize,
+            retained_dynamic: usize,
+        }
+        // Algebra only: never prost::encoded_len, observed fixtures, padding or
+        // a gameplay ceiling. Includes mutually incompatible optional scopes.
+        fn upper(kind: Kind) -> Result<Upper, Failure> {
+            let state = sum(&[18, 18, 6, 6, 6, 2])?;
+            let ground = sum(&[18, 18, 18, 11, 6, 6, 4])?;
+            let inventory = sum(&[18, 11, 2])?;
+            let provenance = sum(&[2, 18, 18])?;
+            let inner = if kind == Kind::Mint {
+                sum(&[
+                    delimited(1, state)?,
+                    delimited(2, ground)?,
+                    delimited(3, provenance)?,
+                ])?
+            } else {
+                sum(&[
+                    delimited(1, state)?,
+                    delimited(2, state)?,
+                    delimited(3, ground)?,
+                    delimited(4, inventory)?,
+                    delimited(5, provenance)?,
+                ])?
+            };
+            let payload = sum(&[
+                scalar(1, 1)?,
+                delimited(if kind == Kind::Mint { 2 } else { 3 }, inner)?,
+            ])?;
+            let runtime = sum(&[11, 11])?;
+            let membership = sum(&[18, 2, 2])?;
+            let command = sum(&[18, 11])?;
+            let cause = delimited(2, command)?;
+            let actor = sum(&[delimited(1, STRING_MAX)?, 11, 18])?;
+            let envelope_overhead = sum(&[
+                2,
+                18,
+                2,
+                2,
+                2,
+                delimited(7, STRING_MAX)?,
+                11,
+                18,
+                18,
+                18,
+                18,
+                18,
+                11,
+                delimited(15, runtime)?,
+                12,
+                19,
+                delimited(18, membership)?,
+                19,
+                delimited(20, cause)?,
+                delimited(21, actor)?,
+                7,
+                delimited(23, STRING_MAX)?,
+                delimited(24, STRING_MAX)?,
+                delimited(25, STRING_MAX)?,
+                delimited(27, 32)?,
+            ])?;
+            let envelope = sum(&[envelope_overhead, delimited(26, payload)?])?;
+            // Owned semantic payload and full wire are separate retained copies.
+            // All optional UUID side vectors + four strings and actor domain.
+            let retained_dynamic = sum(&[
+                envelope,
+                payload,
+                16,
+                32,
+                80,
+                32,
+                16,
+                16,
+                16,
+                5 * STRING_MAX,
+            ])?;
+            Ok(Upper {
+                state,
+                ground,
+                inventory,
+                provenance,
+                inner,
+                payload,
+                envelope_overhead,
+                envelope,
+                retained_dynamic,
+            })
+        }
+
+        #[derive(Clone, Copy)]
+        enum Schema2 {
+            Envelope,
+            Payload,
+            Mint,
+            Transfer,
+            State,
+            Ground,
+            Inventory,
+            Provenance,
+            Runtime,
+            Membership,
+            Causation,
+            Command,
+            Actor,
+        }
+        #[derive(Clone, Copy)]
+        enum Field2 {
+            U32,
+            U64,
+            Constant(u64),
+            Floor,
+            Id,
+            Hash,
+            Text,
+            Message(Schema2),
+        }
+        fn field2(schema: Schema2, tag: u32) -> Result<Field2, Failure> {
+            use Field2::{Constant, Floor, Hash, Id, Message as Nested, Text, U32, U64};
+            use Schema2::*;
+            let result = match (schema, tag) {
+                (Envelope, 1) => Constant(1),
+                (Envelope, 4 | 5) => Constant(2),
+                (Envelope, 6) => Constant(3),
+                (Envelope, 2 | 9..=13 | 17 | 19) => Id,
+                (Envelope, 7 | 23..=25) | (Actor, 1) => Text,
+                (Envelope, 8 | 14 | 16) | (Runtime, 1 | 2) | (Command, 2) | (Actor, 2) => U64,
+                (Envelope, 22) => U32,
+                (Envelope, 15) => Nested(Runtime),
+                (Envelope, 18) => Nested(Membership),
+                (Envelope, 20) => Nested(Causation),
+                (Envelope, 21) => Nested(Actor),
+                (Envelope, 26) => Nested(Payload),
+                (Envelope, 27) => Hash,
+                (Payload, 1) => Constant(2),
+                (Payload, 2) => Nested(Mint),
+                (Payload, 3) => Nested(Transfer),
+                (Mint, 1) | (Transfer, 1 | 2) => Nested(State),
+                (Mint, 2) | (Transfer, 3) => Nested(Ground),
+                (Mint, 3) | (Transfer, 5) => Nested(Provenance),
+                (Transfer, 4) => Nested(Inventory),
+                (State, 1 | 2)
+                | (Ground, 1..=3)
+                | (Inventory | Membership | Command, 1)
+                | (Provenance, 2 | 3)
+                | (Causation, 1 | 3 | 4)
+                | (Actor, 3) => Id,
+                (State, 3..=5) | (Ground, 5 | 6) => U32,
+                (State, 6) | (Provenance, 1) | (Inventory, 3) | (Membership, 2 | 3) => Constant(1),
+                (Ground, 4) | (Inventory, 2) => U64,
+                (Ground, 7) => Floor,
+                (Causation, 2) => Nested(Command),
+                _ => return Err(Failure::Unsupported),
+            };
+            Ok(result)
+        }
+        fn read_varint(input: &[u8], cursor: &mut usize) -> Result<u64, Failure> {
+            let mut value = 0_u64;
+            for index in 0..10 {
+                let byte = *input.get(*cursor).ok_or(Failure::Facts)?;
+                *cursor = cursor.checked_add(1).ok_or(Failure::Overflow)?;
+                if index == 9 && byte > 1 {
+                    return Err(Failure::Overflow);
+                }
+                value |= u64::from(byte & 127) << (index * 7);
+                if byte < 128 {
+                    if varint_width(value) != index + 1 {
+                        return Err(Failure::Facts);
+                    }
+                    return Ok(value);
+                }
+            }
+            Err(Failure::Overflow)
+        }
+        fn required(schema: Schema2) -> u32 {
+            let tags: &[u32] = match schema {
+                Schema2::Envelope => &[1, 2, 4, 5, 6, 7, 8, 9, 10, 15, 18, 23, 24, 25, 26, 27],
+                Schema2::Payload => &[1],
+                Schema2::Mint
+                | Schema2::Inventory
+                | Schema2::Provenance
+                | Schema2::Membership
+                | Schema2::Actor => &[1, 2, 3],
+                Schema2::Transfer => &[1, 2, 3, 4, 5],
+                Schema2::State => &[1, 2, 3, 4, 5, 6],
+                Schema2::Ground => &[1, 2, 3, 4],
+                Schema2::Runtime | Schema2::Command => &[1, 2],
+                Schema2::Causation => &[],
+            };
+            tags.iter().fold(0, |mask, tag| mask | (1_u32 << tag))
+        }
+        // Borrowed finite grammar walk before prost or any input-sized copy.
+        // Strict canonical order is candidate-local, NOT general ANL admission.
+        fn preflight2(input: &[u8], schema: Schema2, depth: usize) -> Result<(), Failure> {
+            bounded(depth, 5)?;
+            let maximum = match schema {
+                Schema2::Envelope => upper(Kind::Transfer)?.envelope,
+                Schema2::Payload => upper(Kind::Transfer)?.payload,
+                Schema2::Mint => upper(Kind::Mint)?.inner,
+                Schema2::Transfer => upper(Kind::Transfer)?.inner,
+                Schema2::State => 56,
+                Schema2::Ground => 81,
+                Schema2::Inventory => 31,
+                Schema2::Provenance => 38,
+                Schema2::Runtime => 22,
+                Schema2::Membership => 22,
+                Schema2::Causation => 31,
+                Schema2::Command => 29,
+                Schema2::Actor => 160,
+            };
+            bounded(input.len(), maximum)?;
+            let mut cursor = 0;
+            let mut seen = 0_u32;
+            let mut previous = 0;
+            while cursor < input.len() {
+                let key = read_varint(input, &mut cursor)?;
+                let tag = u32::try_from(key >> 3).map_err(|_| Failure::Unsupported)?;
+                if tag == 0 || tag > 27 || tag <= previous {
+                    return Err(Failure::Unsupported);
+                }
+                previous = tag;
+                seen |= 1_u32 << tag;
+                let field = field2(schema, tag)?;
+                match field {
+                    Field2::U32 | Field2::U64 | Field2::Constant(_) | Field2::Floor => {
+                        if key & 7 != 0 {
+                            return Err(Failure::Facts);
+                        }
+                        let value = read_varint(input, &mut cursor)?;
+                        match field {
+                            Field2::U32 if value > u64::from(u32::MAX) => {
+                                return Err(Failure::Facts);
+                            }
+                            Field2::Floor if value > u64::from(u16::MAX) => {
+                                return Err(Failure::Facts);
+                            }
+                            Field2::Constant(expected) if value != expected => {
+                                return Err(Failure::Unsupported);
+                            }
+                            _ => {}
+                        }
+                        // Encoded zero non-optional scalar is not canonical;
+                        // optional presence can encode zero, then semantics reject.
+                        if value == 0
+                            && !(matches!(schema, Schema2::Envelope) && matches!(tag, 14 | 16 | 22))
+                        {
+                            return Err(Failure::Facts);
+                        }
+                    }
+                    _ => {
+                        if key & 7 != 2 {
+                            return Err(Failure::Facts);
+                        }
+                        let length = usize::try_from(read_varint(input, &mut cursor)?)
+                            .map_err(|_| Failure::Overflow)?;
+                        let end = cursor.checked_add(length).ok_or(Failure::Overflow)?;
+                        let value = input.get(cursor..end).ok_or(Failure::Facts)?;
+                        match field {
+                            Field2::Id => identity(value)?,
+                            Field2::Hash => {
+                                if value.len() != 32 {
+                                    return Err(Failure::Facts);
+                                }
+                            }
+                            Field2::Text => {
+                                string(std::str::from_utf8(value).map_err(|_| Failure::Facts)?)?
+                            }
+                            Field2::Message(nested) => preflight2(
+                                value,
+                                nested,
+                                depth.checked_add(1).ok_or(Failure::Overflow)?,
+                            )?,
+                            _ => return Err(Failure::Facts),
+                        }
+                        cursor = end;
+                    }
+                }
+            }
+            let mask = required(schema);
+            if seen & mask != mask {
+                return Err(Failure::Facts);
+            }
+            if matches!(schema, Schema2::Payload)
+                && (seen & ((1 << 2) | (1 << 3))).count_ones() != 1
+                || matches!(schema, Schema2::Causation) && seen.count_ones() != 1
+            {
+                return Err(Failure::Unsupported);
+            }
+            Ok(())
+        }
+
+        fn make_payload(
+            kind: Kind,
+            position: [i32; 3],
+            facts: &WorldFacts,
+        ) -> Result<SignedPayload, Failure> {
+            facts.position(position)?;
+            let base = &facts.bindings;
+            let state = ItemState {
+                item_instance_id: uuid_fixture(3).to_vec(),
+                world_id: base.world.to_vec(),
+                definition_key: 1,
+                definition_revision: base.definition_revision,
+                quantity: 1,
+                lifecycle: 1,
+            };
+            let ground = SignedGround {
+                world_id: base.world.to_vec(),
+                channel_id: base.channel.to_vec(),
+                corpse_occurrence_id: base.corpse.to_vec(),
+                corpse_revision: base.corpse_revision,
+                x: position[0],
+                y: position[1],
+                floor: position[2],
+            };
+            let provenance = Provenance {
+                source_kind: 1,
+                occurrence_id: base.corpse.to_vec(),
+                cause_id: uuid_fixture(if kind == Kind::Mint { 10 } else { 11 }).to_vec(),
+            };
+            let operation = if kind == Kind::Mint {
+                SignedOperation::Mint(SignedMint {
+                    after: Some(state),
+                    destination: Some(ground),
+                    source: Some(provenance),
+                })
+            } else {
+                SignedOperation::Transfer(SignedTransfer {
+                    before: Some(state.clone()),
+                    after: Some(state),
+                    source: Some(ground),
+                    destination: Some(RootInventory {
+                        character_id: base.character.to_vec(),
+                        session_generation: base.generation,
+                        fixture_root_position: FixtureRootPosition::SyntheticDirectRoot as i32,
+                    }),
+                    cause: Some(provenance),
+                })
+            };
+            Ok(SignedPayload {
+                interpretation_revision: 2,
+                operation: Some(operation),
+            })
+        }
+        fn validate2(value: &Envelope, facts: &WorldFacts) -> Result<Kind, Failure> {
+            facts.check()?;
+            preflight2(&value.payload, Schema2::Payload, 1)?;
+            let payload =
+                SignedPayload::decode(value.payload.as_slice()).map_err(|_| Failure::Facts)?;
+            let (kind, before, after, ground, inventory, source) =
+                match payload.operation.as_ref().ok_or(Failure::Unsupported)? {
+                    SignedOperation::Mint(mint) => (
+                        Kind::Mint,
+                        None,
+                        mint.after.as_ref(),
+                        mint.destination.as_ref(),
+                        None,
+                        mint.source.as_ref(),
+                    ),
+                    SignedOperation::Transfer(transfer) => (
+                        Kind::Transfer,
+                        transfer.before.as_ref(),
+                        transfer.after.as_ref(),
+                        transfer.source.as_ref(),
+                        transfer.destination.as_ref(),
+                        transfer.cause.as_ref(),
+                    ),
+                };
+            let after = after.ok_or(Failure::Facts)?;
+            state(after, &facts.bindings)?;
+            // This positive fixture's quantity=1 is not a promoted u32/game cap.
+            if after.item_instance_id != uuid_fixture(3) || after.quantity != 1 {
+                return Err(Failure::Facts);
+            }
+            if kind == Kind::Transfer && before != Some(after) {
+                return Err(Failure::Conflict);
+            }
+            let ground = ground.ok_or(Failure::Facts)?;
+            if ground.world_id != facts.bindings.world
+                || ground.channel_id != facts.bindings.channel
+                || ground.corpse_occurrence_id != facts.bindings.corpse
+                || ground.corpse_revision != facts.bindings.corpse_revision
+            {
+                return Err(Failure::Facts);
+            }
+            facts.position([ground.x, ground.y, ground.floor])?;
+            provenance(source.ok_or(Failure::Facts)?, kind, &facts.bindings)?;
+            if kind == Kind::Transfer {
+                let root = inventory.ok_or(Failure::Facts)?;
+                if root.character_id != facts.bindings.character
+                    || root.session_generation != facts.bindings.generation
+                    || root.fixture_root_position != FixtureRootPosition::SyntheticDirectRoot as i32
+                {
+                    return Err(Failure::Facts);
+                }
+            }
+            let is_transfer = kind == Kind::Transfer;
+            let runtime = value.runtime_order.as_ref().ok_or(Failure::Facts)?;
+            let member = value.transaction_event.as_ref().ok_or(Failure::Facts)?;
+            if value.envelope_revision != 1
+                || value.event_type_id != 0
+                || value.event_schema_revision != 2
+                || value.durability_class != 2
+                || value.privacy_class != 3
+                || value.occurred_at_unix_ms <= 0
+                || value.retention_profile_id != "offline_item_unaccepted"
+                || value.server_build_id != "offline"
+                || value.world_id.as_deref() != Some(facts.bindings.world.as_slice())
+                || value.channel_id.as_deref() != Some(facts.bindings.channel.as_slice())
+                || value.instance_id.is_some()
+                || runtime.scope_ownership_generation != facts.bindings.generation
+                || runtime.runtime_execution_ordinal != u64::from(kind.tag())
+                || member.transaction_id != uuid_fixture(if is_transfer { 23 } else { 22 })
+                || member.ordinal != 1
+                || member.count != 1
+                || value.event_id != uuid_fixture(if is_transfer { 21 } else { 20 })
+                || value.ruleset_revision.as_deref() != Some("fixture2")
+                || value.content_revision.as_deref() != Some(facts.revision)
+                || value.payload_sha256.as_slice() != Sha256::digest(&value.payload).as_slice()
+                || value.game_session_id.as_deref()
+                    != is_transfer.then_some(facts.bindings.session.as_slice())
+                || value.connection_generation != is_transfer.then_some(facts.bindings.generation)
+                || value.command_id != is_transfer.then_some(2)
+                || value.node_id.is_some()
+                || value.operation_id.is_some()
+                || value.correlation_id.is_some()
+                || value.analytics_actor.is_some()
+                || value.protocol_major.is_some()
+            {
+                return Err(Failure::Facts);
+            }
+            match value
+                .causation
+                .as_ref()
+                .and_then(|cause| cause.cause.as_ref())
+            {
+                None if !is_transfer => {}
+                Some(Cause::Command(command))
+                    if is_transfer
+                        && command.game_session_id == facts.bindings.session
+                        && command.command_id == 2 => {}
+                _ => return Err(Failure::Facts),
+            }
+            Ok(kind)
+        }
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        struct Frozen2 {
+            semantic: Envelope,
+            wire: Vec<u8>,
+        }
+        fn dynamic2(value: &Frozen2) -> Result<usize, Failure> {
+            let env = &value.semantic;
+            let mut charges = vec![
+                value.wire.capacity(),
+                env.payload.capacity(),
+                env.event_id.capacity(),
+                env.payload_sha256.capacity(),
+                env.retention_profile_id.capacity(),
+                env.server_build_id.capacity(),
+            ];
+            for id in [
+                &env.world_id,
+                &env.channel_id,
+                &env.instance_id,
+                &env.node_id,
+                &env.game_session_id,
+                &env.operation_id,
+                &env.correlation_id,
+            ]
+            .into_iter()
+            .flatten()
+            {
+                charges.push(id.capacity());
+            }
+            for text in [&env.ruleset_revision, &env.content_revision]
+                .into_iter()
+                .flatten()
+            {
+                charges.push(text.capacity());
+            }
+            if let Some(member) = &env.transaction_event {
+                charges.push(member.transaction_id.capacity());
+            }
+            if let Some(cause) = env
+                .causation
+                .as_ref()
+                .and_then(|cause| cause.cause.as_ref())
+            {
+                charges.push(match cause {
+                    Cause::Command(command) => command.game_session_id.capacity(),
+                    Cause::Event(id) | Cause::Operation(id) | Cause::Transaction(id) => {
+                        id.capacity()
+                    }
+                });
+            }
+            if let Some(actor) = &env.analytics_actor {
+                charges.extend([
+                    actor.identity_domain.capacity(),
+                    actor.analytics_actor_id.capacity(),
+                ]);
+            }
+            sum(&charges)
+        }
+        impl Frozen2 {
+            fn decode(wire: &[u8], facts: &WorldFacts) -> Result<Self, Failure> {
+                facts.check()?;
+                preflight2(wire, Schema2::Envelope, 1)?;
+                let semantic = Envelope::decode(wire).map_err(|_| Failure::Facts)?;
+                let kind = validate2(&semantic, facts)?;
+                bounded(wire.len(), upper(kind)?.envelope)?;
+                let value = Self {
+                    semantic,
+                    wire: wire.to_vec(),
+                };
+                bounded(dynamic2(&value)?, upper(kind)?.retained_dynamic)?;
+                Ok(value)
+            }
+            fn check(&self, facts: &WorldFacts) -> Result<Kind, Failure> {
+                preflight2(&self.wire, Schema2::Envelope, 1)?;
+                let decoded = Envelope::decode(self.wire.as_slice()).map_err(|_| Failure::Facts)?;
+                if decoded != self.semantic {
+                    return Err(Failure::Conflict);
+                }
+                let kind = validate2(&self.semantic, facts)?;
+                bounded(dynamic2(self)?, upper(kind)?.retained_dynamic)?;
+                Ok(kind)
+            }
+        }
+        #[derive(Clone, Copy)]
+        struct Budget2 {
+            payload: usize,
+            envelope: usize,
+            retained: usize,
+            retry_work: u64,
+        }
+        fn budget2() -> Result<Budget2, Failure> {
+            Ok(Budget2 {
+                payload: upper(Kind::Transfer)?.payload,
+                envelope: upper(Kind::Transfer)?.envelope,
+                retained: sum(&[
+                    size_of::<Model2>(),
+                    upper(Kind::Mint)?.retained_dynamic,
+                    upper(Kind::Transfer)?.retained_dynamic,
+                ])?,
+                retry_work: 6,
+            })
+        }
+        fn freeze2(
+            kind: Kind,
+            position: [i32; 3],
+            facts: &WorldFacts,
+            budget: Budget2,
+        ) -> Result<Frozen2, Failure> {
+            // All caller facts and finite reservations precede private carriers.
+            facts.position(position)?;
+            let maximum = upper(kind)?;
+            bounded(maximum.payload, budget.payload)?;
+            bounded(maximum.envelope, budget.envelope)?;
+            bounded(budget2()?.retained, budget.retained)?;
+            let payload = encode(
+                &make_payload(kind, position, facts)?,
+                maximum.payload,
+                budget.payload,
+            )?;
+            let transfer = kind == Kind::Transfer;
+            let value = Envelope {
+                envelope_revision: 1,
+                event_id: uuid_fixture(if transfer { 21 } else { 20 }).to_vec(),
+                event_type_id: 0,
+                event_schema_revision: 2,
+                durability_class: 2,
+                privacy_class: 3,
+                retention_profile_id: "offline_item_unaccepted".into(),
+                occurred_at_unix_ms: 1,
+                world_id: Some(facts.bindings.world.to_vec()),
+                channel_id: Some(facts.bindings.channel.to_vec()),
+                runtime_order: Some(RuntimeOrder {
+                    scope_ownership_generation: facts.bindings.generation,
+                    runtime_execution_ordinal: u64::from(kind.tag()),
+                }),
+                transaction_event: Some(Membership {
+                    transaction_id: uuid_fixture(if transfer { 23 } else { 22 }).to_vec(),
+                    ordinal: 1,
+                    count: 1,
+                }),
+                game_session_id: transfer.then(|| facts.bindings.session.to_vec()),
+                connection_generation: transfer.then_some(facts.bindings.generation),
+                command_id: transfer.then_some(2),
+                causation: transfer.then(|| Causation {
+                    cause: Some(Cause::Command(Command {
+                        game_session_id: facts.bindings.session.to_vec(),
+                        command_id: 2,
+                    })),
+                }),
+                ruleset_revision: Some("fixture2".into()),
+                content_revision: Some(facts.revision.into()),
+                server_build_id: "offline".into(),
+                payload_sha256: Sha256::digest(&payload).to_vec(),
+                payload,
+                ..Envelope::default()
+            };
+            validate2(&value, facts)?;
+            let wire = encode(&value, maximum.envelope, budget.envelope)?;
+            preflight2(&wire, Schema2::Envelope, 1)?;
+            let frozen = Frozen2 {
+                semantic: value,
+                wire,
+            };
+            bounded(dynamic2(&frozen)?, maximum.retained_dynamic)?;
+            Ok(frozen)
+        }
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        // Identity/world/quantity/lifecycle are the closed fixed synthetic tuple
+        // validated above; Ground additionally retains its actual signed position.
+        enum Custody2 {
+            Absent,
+            Ground([i32; 3]),
+            Inventory,
+        }
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        enum Outcome2 {
+            KnownNoncommit,
+            CommittedResponseLost,
+            Acknowledged,
+        }
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        struct Record2 {
+            event: Frozen2,
+            committed: bool,
+            acknowledged: bool,
+            retry_work: u64,
+        }
+        #[derive(Clone, Debug, PartialEq, Eq)]
+        struct Model2 {
+            custody: Custody2,
+            records: [Option<Record2>; 2],
+        }
+        impl Model2 {
+            fn new() -> Self {
+                Self {
+                    custody: Custody2::Absent,
+                    records: [None, None],
+                }
+            }
+            fn attempt(
+                &mut self,
+                event: Frozen2,
+                facts: &WorldFacts,
+                budget: Budget2,
+                outcome: Outcome2,
+            ) -> Result<(), Failure> {
+                let kind = event.check(facts)?;
+                let slot = usize::from(kind == Kind::Transfer);
+                if let Some(record) = &mut self.records[slot] {
+                    if record.event != event {
+                        return Err(Failure::Conflict);
+                    }
+                    let work = record.retry_work.checked_add(3).ok_or(Failure::Overflow)?;
+                    if work > budget.retry_work {
+                        return Err(Failure::Budget("retry work"));
+                    }
+                    // Ambiguous immutable record cannot fall back to remint.
+                    if record.committed && !record.acknowledged {
+                        return Err(Failure::Conflict);
+                    }
+                    if record.committed {
+                        record.retry_work = work;
+                        return Ok(());
+                    }
+                    // Known noncommit: same frozen bytes, never new identities.
+                    if outcome == Outcome2::KnownNoncommit {
+                        record.retry_work = work;
+                        return Ok(());
+                    }
+                }
+                let payload = SignedPayload::decode(event.semantic.payload.as_slice())
+                    .map_err(|_| Failure::Facts)?;
+                let ground = match payload.operation.as_ref().ok_or(Failure::Facts)? {
+                    SignedOperation::Mint(mint) => mint.destination.as_ref(),
+                    SignedOperation::Transfer(transfer) => transfer.source.as_ref(),
+                }
+                .ok_or(Failure::Facts)?;
+                let position = [ground.x, ground.y, ground.floor];
+                let expected = if kind == Kind::Mint {
+                    Custody2::Absent
+                } else {
+                    Custody2::Ground(position)
+                };
+                if self.custody != expected
+                    || kind == Kind::Transfer
+                        && !self.records[0]
+                            .as_ref()
+                            .is_some_and(|record| record.committed && record.acknowledged)
+                {
+                    return Err(Failure::Custody);
+                }
+                if let Some(SignedOperation::Transfer(transfer)) = payload.operation.as_ref() {
+                    let minted = self.records[0].as_ref().ok_or(Failure::Custody)?;
+                    preflight2(&minted.event.semantic.payload, Schema2::Payload, 1)?;
+                    let minted_payload =
+                        SignedPayload::decode(minted.event.semantic.payload.as_slice())
+                            .map_err(|_| Failure::Facts)?;
+                    let Some(SignedOperation::Mint(mint)) = minted_payload.operation.as_ref()
+                    else {
+                        return Err(Failure::Custody);
+                    };
+                    // Current facts validate this attempted event, but cannot
+                    // replace the immutable source tuple created by prior MINT.
+                    if mint.after != transfer.before
+                        || mint.destination != transfer.source
+                        || minted.event.semantic.content_revision != event.semantic.content_revision
+                    {
+                        return Err(Failure::Custody);
+                    }
+                }
+                let maximum = upper(kind)?;
+                bounded(maximum.payload, budget.payload)?;
+                bounded(maximum.envelope, budget.envelope)?;
+                bounded(budget2()?.retained, budget.retained)?;
+                let committed = outcome != Outcome2::KnownNoncommit;
+                let work = self.records[slot].as_ref().map_or(Ok(0), |record| {
+                    record.retry_work.checked_add(3).ok_or(Failure::Overflow)
+                })?;
+                let record = Record2 {
+                    event,
+                    committed,
+                    acknowledged: outcome == Outcome2::Acknowledged,
+                    retry_work: work,
+                };
+                // Single fixture publication after the complete budget decision.
+                self.records[slot] = Some(record);
+                if committed {
+                    self.custody = if kind == Kind::Mint {
+                        Custody2::Ground(position)
+                    } else {
+                        Custody2::Inventory
+                    };
+                }
+                Ok(())
+            }
+            fn reconcile(
+                &mut self,
+                kind: Kind,
+                observed_commit: Option<bool>,
+                budget: Budget2,
+            ) -> Result<(), Failure> {
+                let record = self.records[usize::from(kind == Kind::Transfer)]
+                    .as_mut()
+                    .ok_or(Failure::Conflict)?;
+                let work = record.retry_work.checked_add(3).ok_or(Failure::Overflow)?;
+                if work > budget.retry_work {
+                    return Err(Failure::Budget("retry work"));
+                }
+                if observed_commit.is_some_and(|committed| committed != record.committed) {
+                    return Err(Failure::Conflict);
+                }
+                record.retry_work = work;
+                if observed_commit == Some(true) {
+                    record.acknowledged = true;
+                }
+                Ok(())
+            }
+        }
+
+        // Canonically encoded width witnesses, deliberately NOT semantically
+        // admitted transactions. Full optional superset may violate scope rules.
+        fn algebraic_vector(kind: Kind) -> Result<Envelope, Failure> {
+            let mut payload = make_payload(kind, [100, -100, 7], &world_fixture())?;
+            let (states, ground, inventory) =
+                match payload.operation.as_mut().ok_or(Failure::Facts)? {
+                    SignedOperation::Mint(mint) => (
+                        vec![mint.after.as_mut().ok_or(Failure::Facts)?],
+                        mint.destination.as_mut().ok_or(Failure::Facts)?,
+                        None,
+                    ),
+                    SignedOperation::Transfer(transfer) => (
+                        vec![
+                            transfer.before.as_mut().ok_or(Failure::Facts)?,
+                            transfer.after.as_mut().ok_or(Failure::Facts)?,
+                        ],
+                        transfer.source.as_mut().ok_or(Failure::Facts)?,
+                        transfer.destination.as_mut(),
+                    ),
+                };
+            for state in states {
+                state.definition_key = u32::MAX;
+                state.definition_revision = u32::MAX;
+                state.quantity = u32::MAX;
+            }
+            ground.corpse_revision = u64::MAX;
+            ground.x = i32::MIN;
+            ground.y = i32::MAX;
+            ground.floor = i32::from(i16::MIN);
+            if let Some(root) = inventory {
+                root.session_generation = u64::MAX;
+            }
+            let payload = encode(&payload, upper(kind)?.payload, PAYLOAD_MAX)?;
+            let mut value = freeze2(kind, [100, -100, 7], &world_fixture(), budget2()?)?.semantic;
+            value.payload_sha256 = Sha256::digest(&payload).to_vec();
+            value.payload = payload;
+            value.retention_profile_id = "r".repeat(STRING_MAX);
+            value.occurred_at_unix_ms = i64::MIN;
+            value.instance_id = Some(uuid_fixture(30).to_vec());
+            value.node_id = Some(uuid_fixture(31).to_vec());
+            value.game_session_id = Some(uuid_fixture(7).to_vec());
+            value.connection_generation = Some(u64::MAX);
+            value.runtime_order = Some(RuntimeOrder {
+                scope_ownership_generation: u64::MAX,
+                runtime_execution_ordinal: u64::MAX,
+            });
+            value.command_id = Some(u64::MAX);
+            value.operation_id = Some(uuid_fixture(32).to_vec());
+            value.correlation_id = Some(uuid_fixture(33).to_vec());
+            value.causation = Some(Causation {
+                cause: Some(Cause::Command(Command {
+                    game_session_id: uuid_fixture(7).to_vec(),
+                    command_id: u64::MAX,
+                })),
+            });
+            value.analytics_actor = Some(Actor {
+                identity_domain: "a".repeat(STRING_MAX),
+                identity_epoch: u64::MAX,
+                analytics_actor_id: uuid_fixture(34).to_vec(),
+            });
+            value.protocol_major = Some(u32::MAX);
+            value.ruleset_revision = Some("r".repeat(STRING_MAX));
+            value.content_revision = Some("c".repeat(STRING_MAX));
+            value.server_build_id = "b".repeat(STRING_MAX);
+            Ok(value)
+        }
+        pub(crate) fn report(reverse: bool) -> Result<Value, Failure> {
+            let facts = world_fixture();
+            let budget = budget2()?;
+            let mut model = Model2::new();
+            for kind in [Kind::Mint, Kind::Transfer] {
+                let event = freeze2(kind, [100, -100, 7], &facts, budget)?;
+                // A distinct duplicate MINT exercises the acknowledged terminal
+                // path without creating another item or changing its frozen bytes.
+                if kind == Kind::Mint {
+                    model.attempt(event.clone(), &facts, budget, Outcome2::KnownNoncommit)?;
+                    model.attempt(event.clone(), &facts, budget, Outcome2::Acknowledged)?;
+                    model.attempt(event, &facts, budget, Outcome2::Acknowledged)?;
+                    continue;
+                }
+                model.attempt(event, &facts, budget, Outcome2::CommittedResponseLost)?;
+                if kind == Kind::Transfer {
+                    model.reconcile(kind, None, budget)?;
+                }
+                model.reconcile(kind, Some(true), budget)?;
+            }
+            let mut operations = Vec::new();
+            for (slot, record) in model.records.iter().enumerate() {
+                let record = record.as_ref().ok_or(Failure::Conflict)?;
+                let kind = if slot == 0 {
+                    Kind::Mint
+                } else {
+                    Kind::Transfer
+                };
+                let bound = upper(kind)?;
+                let algebra = algebraic_vector(kind)?;
+                let wire = encode(&algebra, bound.envelope, ENVELOPE_MAX)?;
+                preflight2(&wire, Schema2::Envelope, 1)?;
+                let actual = &record.event;
+                if Frozen2::decode(&actual.wire, &facts)? != *actual {
+                    return Err(Failure::Conflict);
+                }
+                operations.push(json!({
+                    "operation":kind.label(),"payload_encoded_bytes":actual.semantic.payload.len(),"envelope_encoded_bytes":actual.wire.len(),"aggregate":{"count":1,"ordinal":1,"bytes":actual.wire.len()},
+                    "event_id":hex(&actual.semantic.event_id),"transaction_id":hex(&actual.semantic.transaction_event.as_ref().ok_or(Failure::Facts)?.transaction_id),"payload_sha256":hex(&actual.semantic.payload_sha256),"exact_payload_hex":hex(&actual.semantic.payload),"exact_envelope_hex":hex(&actual.wire),
+                    "representation_superset_upper":{"item_state":bound.state,"signed_ground":bound.ground,"typed_inventory":bound.inventory,"provenance":bound.provenance,"operation_body":bound.inner,"payload":bound.payload,"envelope_nonpayload_fields":bound.envelope_overhead,"envelope_and_complete_aggregate":bound.envelope,"retained_dynamic_capacity_reservation":bound.retained_dynamic},
+                    "algebraic_width_witness":{"semantically_admitted":false,"payload_bytes":algebra.payload.len(),"envelope_bytes":wire.len(),"payload_sha256":hex(&algebra.payload_sha256),"envelope_sha256":hex(&Sha256::digest(&wire))},
+                    "actual_retained":{"frozen_inline_bytes":size_of::<Frozen2>(),"wire_len":actual.wire.len(),"wire_capacity":actual.wire.capacity(),"semantic_payload_len":actual.semantic.payload.len(),"semantic_payload_capacity":actual.semantic.payload.capacity(),"all_dynamic_vector_string_capacities":dynamic2(actual)?,"inline_plus_dynamic":sum(&[size_of::<Frozen2>(),dynamic2(actual)?])?},"retry_work_units":record.retry_work
+                }));
+            }
+            if reverse {
+                operations.reverse();
+            }
+            operations.sort_by_key(|value| if value["operation"] == "MINT" { 0 } else { 1 });
+            let dynamic = model
+                .records
+                .iter()
+                .flatten()
+                .try_fold(0_usize, |total, record| {
+                    sum(&[total, dynamic2(&record.event)?])
+                })?;
+            Ok(json!({
+                "classification":"UNREGISTERED_OFFLINE_REVISION_2_EVIDENCE_CANDIDATE","interpretation_revision":2,"source_base_sha":"56e5c8a39bf2d899cbbc24735d2d7440d4ecaec1","allocation":"5856736427","custody_refinement":"5856742846",
+                "source_blobs_at_base":{"example":"3e5400fa139854d986c6d8dc9240397f01a90ad3","historical_json":"0c63b65809bbd7b0541dc289d2aed0cfd6cae95d","historical_markdown":"022463e01180f408908b6d321894fc0234a62a09"},
+                "historical_v1":"UNCHANGED_SCHEMA_GOLDENS_AND_MEASUREMENTS","bound_scope":"finite canonical serialized representation superset, not necessarily tight reachable shape; not a gameplay/production maximum","world":{"id":hex(&facts.bindings.world),"revision":facts.revision,"x_half_open":facts.x,"y_half_open":facts.y,"floors":facts.floors,"independent_current_facts":true,"production_activation":false},
+                "fixture_root":"SyntheticDirectRoot enum 1; NOT revision1 slot0 or a product slot index","quantity_and_content":"private fixture key1 revision1 quantity1; production Content/stack semantics UNKNOWN",
+                "closed_wire_preflight":"borrowed finite graph before prost allocations; exact UUID/hash widths, bounded ASCII text, canonical minimal key/length/scalar varints, u32 and checked-i16 floor widths; unknown/duplicate/out-of-order fields, unknown enums and crossrevision reject",
+                "operations":operations,"retained_model":{"fixed_inline_including_two_slots":size_of::<Model2>(),"actual_dynamic_capacity_bytes":dynamic,"actual_inline_plus_dynamic":sum(&[size_of::<Model2>(),dynamic])?,"injected_reservation":budget.retained,"records":2,"custody":"CharacterInventory/synthetic-direct-root","authoritative_items":1,"immediate_locations":1},
+                "work":{"logical_shape_units_derived_not_execution_measurement":{"plan":{"MINT":2,"TRANSFER":3},"apply":{"MINT":2,"TRANSFER":3}},"retry_per_call":3,"injected_retry_work_per_record":budget.retry_work,"scope":"one logical unit per participant/custody effect, publication receipt, or retry inspect/compare/disposition; excludes parser/hash/allocation/string scans/World profile checks, CPU instructions, latency, RSS, SQL and production retry ceiling"},
+                "rows":{"DUR03-RL-01":"one item, qty1 positive fixture; u32 width is only conservative representation bound","DUR03-RL-02":"MINT one establish; TRANSFER remove+establish; single tuple publication","DUR03-RL-03":"not applicable/0; no value/account surface","DUR03-RL-04":"not applicable/0; no transform surface","DUR03-RL-05":"closed synthetic direct-root only; no container expansion","DUR03-RL-06":"physically represented fixed two-record model plus owned vector/string capacities","DUR03-RL-07":"PROVEN candidate-only finite payload/envelope/complete one-member aggregate upper; production EVIDENCE_GAP unchanged","DUR03-RL-08":"in-memory immutable frozen ambiguity/retry/reconcile only; restart/DB EVIDENCE_GAP"},
+                "not_proven":["production event/profile/resource registration","Content quantity/stack/root legality","runtime or PostgreSQL atomicity/fencing/restart","allocator metadata, transient decode/copies or peak RSS","Tibia floor adapter or Reference parity"]
+            }))
+        }
+
+        #[cfg(test)]
+        mod tests2 {
+            use super::*;
+            #[test]
+            fn independent_literal_signed_fixture_goldens() -> Result<(), Failure> {
+                // Independently hand-encoded by the read-only oracle: field keys,
+                // fixed IDs, zigzag 200/199/14 and nested length prefixes.
+                let literals = [
+                    (
+                        Kind::Mint,
+                        "08021298010a2c0a1000000000000170008000000000000003121000000000000170008000000000000001180120012801300112400a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c200128c80130c701380e1a26080112100000000000017000800000000000000c1a100000000000017000800000000000000a",
+                        157,
+                    ),
+                    (
+                        Kind::Transfer,
+                        "08021ade010a2c0a10000000000001700080000000000000031210000000000001700080000000000000011801200128013001122c0a100000000000017000800000000000000312100000000000017000800000000000000118012001280130011a400a10000000000001700080000000000000011210000000000001700080000000000000061a100000000000017000800000000000000c200128c80130c701380e22160a1000000000000170008000000000000002100118012a26080112100000000000017000800000000000000c1a100000000000017000800000000000000b",
+                        227,
+                    ),
+                ];
+                for (kind, literal, size) in literals {
+                    let event = freeze2(kind, [100, -100, 7], &world_fixture(), budget2()?)?;
+                    assert_eq!(hex(&event.semantic.payload), literal);
+                    assert_eq!(event.semantic.payload.len(), size);
+                    preflight2(&event.semantic.payload, Schema2::Payload, 1)?;
+                    let decoded = SignedPayload::decode(event.semantic.payload.as_slice())
+                        .map_err(|_| Failure::Facts)?;
+                    assert_eq!(decoded.encode_to_vec(), event.semantic.payload);
+                }
+                Ok(())
+            }
+            #[test]
+            fn conservative_algebra_matches_canonical_width_witness_not_admission()
+            -> Result<(), Failure> {
+                for (kind, payload, envelope) in
+                    [(Kind::Mint, 186, 1194), (Kind::Transfer, 277, 1285)]
+                {
+                    let bound = upper(kind)?;
+                    assert_eq!(
+                        (
+                            bound.state,
+                            bound.ground,
+                            bound.inventory,
+                            bound.provenance,
+                            bound.payload,
+                            bound.envelope_overhead,
+                            bound.envelope
+                        ),
+                        (56, 81, 31, 38, payload, 1004, envelope)
+                    );
+                    let algebra = algebraic_vector(kind)?;
+                    let wire = encode(&algebra, bound.envelope, ENVELOPE_MAX)?;
+                    assert_eq!((algebra.payload.len(), wire.len()), (payload, envelope));
+                    preflight2(&wire, Schema2::Envelope, 1)?;
+                    assert!(validate2(&algebra, &world_fixture()).is_err());
+                }
+                Ok(())
+            }
+            #[test]
+            fn signed_world_extremes_and_independent_profile_rejections() -> Result<(), Failure> {
+                let mut facts = world_fixture();
+                facts.x = [i64::from(i32::MIN), i64::from(i32::MAX) + 1];
+                facts.y = facts.x;
+                facts.floors = &[i16::MIN, 0, i16::MAX];
+                for position in [
+                    [i32::MIN, i32::MAX, i32::from(i16::MIN)],
+                    [i32::MAX, i32::MIN, i32::from(i16::MAX)],
+                    [0, 0, 0],
+                ] {
+                    let event = freeze2(Kind::Mint, position, &facts, budget2()?)?;
+                    Frozen2::decode(&event.wire, &facts)?;
+                }
+                for position in [
+                    [0, 0, i32::from(i16::MAX) + 1],
+                    [0, 0, i32::from(i16::MIN) - 1],
+                    [0, 0, 1],
+                ] {
+                    assert!(freeze2(Kind::Mint, position, &facts, budget2()?).is_err());
+                }
+                let event = freeze2(Kind::Mint, [100, -100, 7], &world_fixture(), budget2()?)?;
+                for x in [
+                    [-200, 100],
+                    [101, 200],
+                    [2, 2],
+                    [2, 1],
+                    [i64::from(i32::MIN) - 1, 200],
+                    [-200, i64::from(i32::MAX) + 2],
+                ] {
+                    let mut wrong = world_fixture();
+                    wrong.x = x;
+                    assert!(Frozen2::decode(&event.wire, &wrong).is_err());
+                }
+                for floors in [&[][..], &[7, 7][..], &[7, 0][..], &[0, 1][..]] {
+                    let mut wrong = world_fixture();
+                    wrong.floors = floors;
+                    assert!(Frozen2::decode(&event.wire, &wrong).is_err());
+                }
+                let mut wrong = world_fixture();
+                wrong.revision = "synthetic_world_r3";
+                assert!(Frozen2::decode(&event.wire, &wrong).is_err());
+                let mut wrong = world_fixture();
+                wrong.bindings.world = uuid_fixture(40);
+                assert!(Frozen2::decode(&event.wire, &wrong).is_err());
+                let mut wrong = world_fixture();
+                wrong.bindings.definition_revision = 0;
+                assert!(make_payload(Kind::Mint, [100, -100, 7], &wrong).is_err());
+                Ok(())
+            }
+            #[test]
+            fn canonical_parser_rejects_unknown_duplicate_varints_and_overwidth_before_decode()
+            -> Result<(), Failure> {
+                // Standalone scalar carriers exercise the borrowed grammar only.
+                for bytes in [
+                    &[0x08, 0x82, 0][..],
+                    &[0x88, 0, 2][..],
+                    &[0x08, 2, 0x08, 2][..],
+                    &[0x08, 2, 0x20, 1][..],
+                    &[0x08, 2, 0x12, 0x80, 0][..],
+                ] {
+                    assert!(preflight2(bytes, Schema2::Payload, 1).is_err());
+                }
+                let event = freeze2(Kind::Mint, [100, -100, 7], &world_fixture(), budget2()?)?;
+                let mut unknown = event.wire.clone();
+                unknown.extend([0xe0, 1, 1]);
+                assert!(Frozen2::decode(&unknown, &world_fixture()).is_err());
+                let mut overlarge = event.wire.clone();
+                overlarge.resize(upper(Kind::Transfer)?.envelope + 1, 0);
+                assert!(Frozen2::decode(&overlarge, &world_fixture()).is_err());
+                let mut cursor = 0;
+                assert_eq!(
+                    read_varint(
+                        &[0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 1],
+                        &mut cursor
+                    )?,
+                    u64::MAX
+                );
+                for bytes in [
+                    &[0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 2][..],
+                    &[0x80][..],
+                    &[0x80, 0][..],
+                ] {
+                    let mut cursor = 0;
+                    assert!(read_varint(bytes, &mut cursor).is_err());
+                }
+                let mut algebra = algebraic_vector(Kind::Transfer)?;
+                for length in [1, 127, 128] {
+                    algebra.server_build_id = "b".repeat(length);
+                    let wire = encode(&algebra, upper(Kind::Transfer)?.envelope, ENVELOPE_MAX)?;
+                    preflight2(&wire, Schema2::Envelope, 1)?;
+                }
+                algebra.server_build_id = "b".repeat(129);
+                let wire = algebra.encode_to_vec();
+                assert!(preflight2(&wire, Schema2::Envelope, 1).is_err());
+                assert_eq!(
+                    (
+                        varint_width(127),
+                        varint_width(128),
+                        varint_width(16383),
+                        varint_width(16384)
+                    ),
+                    (1, 2, 2, 3)
+                );
+                assert_eq!(delimited(1, 127)?, 129);
+                assert_eq!(delimited(1, 128)?, 131);
+                assert_eq!(delimited(26, usize::MAX), Err(Failure::Overflow));
+                assert_eq!(sum(&[usize::MAX, 1]), Err(Failure::Overflow));
+                Ok(())
+            }
+            #[test]
+            fn crossrevision_and_unknown_root_never_reinterpret() -> Result<(), Failure> {
+                let event = freeze2(Kind::Transfer, [100, -100, 7], &world_fixture(), budget2()?)?;
+                assert!(FrozenEvent::decode(&event.wire, &current_fixture()).is_err());
+                let (mint, _, _) = super::super::super::fixture().map_err(|_| Failure::Facts)?;
+                let plan = super::super::super::Model::default()
+                    .plan(mint, super::super::super::audit_probe())?;
+                let old = freeze(&plan)?;
+                assert!(Frozen2::decode(&old.wire, &world_fixture()).is_err());
+                let mut payload = make_payload(Kind::Transfer, [100, -100, 7], &world_fixture())?;
+                for root in [0, 2, i32::MAX] {
+                    if let Some(SignedOperation::Transfer(transfer)) = &mut payload.operation {
+                        transfer
+                            .destination
+                            .as_mut()
+                            .ok_or(Failure::Facts)?
+                            .fixture_root_position = root;
+                    }
+                    assert!(preflight2(&payload.encode_to_vec(), Schema2::Payload, 1).is_err());
+                }
+                Ok(())
+            }
+            #[test]
+            fn one_invariant_per_semantic_negative_and_actual_source_tuple() -> Result<(), Failure>
+            {
+                let facts = world_fixture();
+                let budget = budget2()?;
+                let event = freeze2(Kind::Transfer, [100, -100, 7], &facts, budget)?;
+                let mutations: &[fn(&mut Envelope)] = &[
+                    |e| {
+                        e.transaction_event
+                            .as_mut()
+                            .expect("fixture membership")
+                            .count = 2
+                    },
+                    |e| {
+                        e.transaction_event
+                            .as_mut()
+                            .expect("fixture membership")
+                            .ordinal = 2
+                    },
+                    |e| e.world_id = Some(uuid_fixture(40).to_vec()),
+                    |e| e.channel_id = Some(uuid_fixture(40).to_vec()),
+                    |e| e.game_session_id = Some(uuid_fixture(40).to_vec()),
+                    |e| e.connection_generation = Some(2),
+                    |e| {
+                        e.runtime_order
+                            .as_mut()
+                            .expect("fixture order")
+                            .scope_ownership_generation = 2
+                    },
+                    |e| e.content_revision = Some("synthetic_world_r3".into()),
+                    |e| e.event_schema_revision = 1,
+                    |e| e.payload_sha256[0] ^= 1,
+                    |e| e.command_id = Some(3),
+                ];
+                for mutate in mutations {
+                    let mut wrong = event.semantic.clone();
+                    mutate(&mut wrong);
+                    assert!(Frozen2::decode(&wrong.encode_to_vec(), &facts).is_err());
+                }
+                // Valid syntactic carrier, wrong quantity/source/floor or omitted
+                // mandatory state. Rehashing cannot turn these into admission.
+                for changed in 0..4 {
+                    let mut payload = make_payload(Kind::Transfer, [100, -100, 7], &facts)?;
+                    if let Some(SignedOperation::Transfer(transfer)) = &mut payload.operation {
+                        match changed {
+                            0 => transfer.after.as_mut().ok_or(Failure::Facts)?.quantity = 2,
+                            1 => {
+                                transfer.cause.as_mut().ok_or(Failure::Facts)?.cause_id =
+                                    uuid_fixture(40).to_vec()
+                            }
+                            2 => transfer.source.as_mut().ok_or(Failure::Facts)?.floor = 32768,
+                            _ => transfer.before = None,
+                        }
+                    }
+                    let mut wrong = event.semantic.clone();
+                    wrong.payload = payload.encode_to_vec();
+                    wrong.payload_sha256 = Sha256::digest(&wrong.payload).to_vec();
+                    assert!(Frozen2::decode(&wrong.encode_to_vec(), &facts).is_err());
+                }
+                let mut model = Model2::new();
+                model.attempt(
+                    freeze2(Kind::Mint, [100, -100, 7], &facts, budget)?,
+                    &facts,
+                    budget,
+                    Outcome2::Acknowledged,
+                )?;
+                let unchanged = model.clone();
+                // World-admitted coordinate but not the retained source tuple.
+                assert!(
+                    model
+                        .attempt(
+                            freeze2(Kind::Transfer, [101, -100, 7], &facts, budget)?,
+                            &facts,
+                            budget,
+                            Outcome2::Acknowledged
+                        )
+                        .is_err()
+                );
+                assert_eq!(model, unchanged);
+                // A new valid payload under the same EventId/TransactionId is a
+                // conflict, not a second mint or a source resurrection.
+                assert!(
+                    model
+                        .attempt(
+                            freeze2(Kind::Mint, [101, -100, 7], &facts, budget)?,
+                            &facts,
+                            budget,
+                            Outcome2::Acknowledged
+                        )
+                        .is_err()
+                );
+                assert_eq!(model, unchanged);
+                model.records[0].as_mut().ok_or(Failure::Facts)?.retry_work = u64::MAX;
+                let unchanged = model.clone();
+                assert_eq!(
+                    model.reconcile(
+                        Kind::Mint,
+                        None,
+                        Budget2 {
+                            retry_work: u64::MAX,
+                            ..budget
+                        }
+                    ),
+                    Err(Failure::Overflow)
+                );
+                assert_eq!(model, unchanged);
+                Ok(())
+            }
+            #[test]
+            fn otherwise_complete_fields_cannot_hide_overwidth_or_default_type()
+            -> Result<(), Failure> {
+                let payload = make_payload(Kind::Mint, [100, -100, 7], &world_fixture())?;
+                let Some(SignedOperation::Mint(mint)) = payload.operation else {
+                    return Err(Failure::Facts);
+                };
+                let mut state = mint.after.ok_or(Failure::Facts)?.encode_to_vec();
+                state.truncate(state.len() - 4);
+                // quantity = 2^32 (five minimal bytes), then lifecycle=1.
+                state.extend([0x28, 0x80, 0x80, 0x80, 0x80, 0x10, 0x30, 1]);
+                assert!(preflight2(&state, Schema2::State, 1).is_err());
+                let event = freeze2(Kind::Mint, [100, -100, 7], &world_fixture(), budget2()?)?;
+                let mut default_type = event.wire.clone();
+                // After revision and EventId, tag3 default0 is explicitly present.
+                default_type.splice(20..20, [0x18, 0]);
+                assert!(preflight2(&default_type, Schema2::Envelope, 1).is_err());
+                Ok(())
+            }
+            #[test]
+            fn cross_transaction_source_fact_substitution_rejects_before_publication()
+            -> Result<(), Failure> {
+                let original = world_fixture();
+                let budget = budget2()?;
+                let mutations: &[fn(&mut WorldFacts)] = &[
+                    |f| f.bindings.world = uuid_fixture(24),
+                    |f| f.bindings.definition_revision = 2,
+                    |f| f.bindings.channel = uuid_fixture(24),
+                    |f| f.bindings.corpse = uuid_fixture(24),
+                    |f| f.bindings.corpse_revision = 2,
+                    |f| f.revision = "synthetic_world_r3",
+                ];
+                for (case, mutate) in mutations.iter().enumerate() {
+                    let mut model = Model2::new();
+                    model.attempt(
+                        freeze2(Kind::Mint, [100, -100, 7], &original, budget)?,
+                        &original,
+                        budget,
+                        Outcome2::Acknowledged,
+                    )?;
+                    let mut changed = original.clone();
+                    mutate(&mut changed);
+                    let transfer = freeze2(Kind::Transfer, [100, -100, 7], &changed, budget)?;
+                    // Counterfactual is otherwise internally valid/current under
+                    // independently supplied facts, changing only one binding.
+                    assert_eq!(transfer.check(&changed)?, Kind::Transfer);
+                    let unchanged = model.clone();
+                    assert!(
+                        model
+                            .attempt(transfer, &changed, budget, Outcome2::Acknowledged)
+                            .is_err(),
+                        "source substitution case {case}"
+                    );
+                    assert_eq!(model, unchanged);
+                }
+                Ok(())
+            }
+            #[test]
+            fn proposed_retained_capacity_is_charged_before_publication() -> Result<(), Failure> {
+                let facts = world_fixture();
+                let budget = budget2()?;
+                for capacity_case in 0..4 {
+                    let mut mint = freeze2(Kind::Mint, [100, -100, 7], &facts, budget)?;
+                    match capacity_case {
+                        0 => mint.semantic.server_build_id.reserve(budget.retained),
+                        1 => mint.wire.reserve(budget.retained),
+                        2 => mint.semantic.payload.reserve(budget.retained),
+                        _ => mint
+                            .semantic
+                            .transaction_event
+                            .as_mut()
+                            .ok_or(Failure::Facts)?
+                            .transaction_id
+                            .reserve(budget.retained),
+                    }
+                    assert_eq!(mint.semantic.server_build_id, "offline");
+                    let mut model = Model2::new();
+                    let unchanged = model.clone();
+                    assert!(
+                        model
+                            .attempt(mint, &facts, budget, Outcome2::Acknowledged)
+                            .is_err(),
+                        "capacity case {capacity_case}"
+                    );
+                    assert_eq!(model, unchanged);
+                }
+                Ok(())
+            }
+            #[test]
+            fn budget_failure_before_publication_and_frozen_ambiguity() -> Result<(), Failure> {
+                let facts = world_fixture();
+                let budget = budget2()?;
+                let mint = freeze2(Kind::Mint, [100, -100, 7], &facts, budget)?;
+                for lowered in [
+                    Budget2 {
+                        payload: 185,
+                        ..budget
+                    },
+                    Budget2 {
+                        envelope: 1193,
+                        ..budget
+                    },
+                    Budget2 {
+                        retained: budget.retained - 1,
+                        ..budget
+                    },
+                ] {
+                    assert!(freeze2(Kind::Mint, [100, -100, 7], &facts, lowered).is_err());
+                }
+                let mut model = Model2::new();
+                let unchanged = model.clone();
+                assert!(
+                    model
+                        .attempt(
+                            mint.clone(),
+                            &facts,
+                            Budget2 {
+                                retained: budget.retained - 1,
+                                ..budget
+                            },
+                            Outcome2::Acknowledged
+                        )
+                        .is_err()
+                );
+                assert_eq!(model, unchanged);
+                model.attempt(mint.clone(), &facts, budget, Outcome2::KnownNoncommit)?;
+                assert_eq!(model.custody, Custody2::Absent);
+                model.attempt(
+                    mint.clone(),
+                    &facts,
+                    budget,
+                    Outcome2::CommittedResponseLost,
+                )?;
+                assert_eq!(model.custody, Custody2::Ground([100, -100, 7]));
+                let unchanged = model.clone();
+                assert!(
+                    model
+                        .attempt(mint.clone(), &facts, budget, Outcome2::Acknowledged)
+                        .is_err()
+                );
+                assert_eq!(model, unchanged);
+                model.reconcile(Kind::Mint, Some(true), budget)?;
+                let transfer = freeze2(Kind::Transfer, [100, -100, 7], &facts, budget)?;
+                model.attempt(
+                    transfer.clone(),
+                    &facts,
+                    budget,
+                    Outcome2::CommittedResponseLost,
+                )?;
+                let unchanged = model.clone();
+                assert!(
+                    model
+                        .reconcile(Kind::Transfer, Some(false), budget)
+                        .is_err()
+                );
+                assert_eq!(model, unchanged);
+                model.reconcile(Kind::Transfer, None, budget)?;
+                assert_eq!(model.custody, Custody2::Inventory);
+                assert_eq!(
+                    model.records[1].as_ref().ok_or(Failure::Facts)?.event,
+                    transfer
+                );
+                model.reconcile(Kind::Transfer, Some(true), budget)?;
+                let unchanged = model.clone();
+                assert!(model.reconcile(Kind::Transfer, None, budget).is_err());
+                assert_eq!(model, unchanged);
+                let mut conflicting = mint;
+                conflicting.semantic.event_id = uuid_fixture(41).to_vec();
+                assert!(
+                    model
+                        .attempt(conflicting, &facts, budget, Outcome2::Acknowledged)
+                        .is_err()
+                );
+                assert_eq!(model.custody, Custody2::Inventory);
+                Ok(())
+            }
+        }
+    }
+
     #[cfg(test)]
     mod tests {
         use super::super::{
@@ -2416,7 +3958,7 @@ fn normalized_report(reverse: bool) -> Result<String, Box<dyn Error>> {
                 .checked_add(record.event.dynamic_retained_bytes()?)
                 .ok_or(Failure::Overflow)
         })?;
-    let report = json!({
+    let mut report = json!({
         "schema_version": 1,
         "classification": "NONPRODUCTION_OFFLINE_CANDIDATE_SCHEMA_MEASUREMENT",
         "task_id": "OTV2-20260927-dur03-one-item-audit-offline-measurement-513",
@@ -2466,6 +4008,7 @@ fn normalized_report(reverse: bool) -> Result<String, Box<dyn Error>> {
             "real Content definition mapping, natural Rat loot probability and Reference parity"
         ]
     });
+    report["signed_offline_candidate_v2"] = candidate::v2::report(reverse)?;
     Ok(format!("{}\n", serde_json::to_string_pretty(&report)?))
 }
 
