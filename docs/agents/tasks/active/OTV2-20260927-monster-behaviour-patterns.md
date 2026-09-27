@@ -11,7 +11,7 @@ branch: claude/nice-edison-h9aqh0
 issue: 162
 pr: null
 jira: KAN-16
-base_sha: null
+base_sha: 39ab2aa4dac0fe1b11d3e00fde0d03967c60f0d3
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -51,9 +51,13 @@ fence, session, authority or persisted-recovery evidence is touched.
 - `samples/p4-behaviour-patterns-canary-47dfd51f.json`: 93 blocking spell scripts in 19 patterns
   (model-assisted, evidence lines); the converter tags blocking rows with their pattern.
 - Schema: damage `mitigated_by`; operations `remove_condition`, `remove_items`, `summon_creature`;
-  damage/heal `affects`; Ability `path_requirement`; presentation `path_asset_binding`;
-  `verify_formal_schema.py` 222/222.
+  damage/heal `affects`; Ability `path_requirement`; presentation `path_asset_binding`; damage over
+  time `geometric`; appearance `selection: invisible`.
 - Converter: engine-faithful `setParameter` binding (undefined constant = 0), `spell_probes.py`
   behaviour probes, `RegisterPrimalPackBeast` omission, race-less Bestiary class from agreeing wiki.
-- `population_census.py`: 1,350 of 1,656 fully resolved (1,298 on PR #955), 0 structure-invalid.
-  Batch 1 10/10, batch 2 9/10 manifests resolve; source coverage 242/242.
+- Owner decisions D20-D25: Encounter design to be drafted (D20); geometric damage over time (D21);
+  ambiguous wiki loot split by id (D22); no statistics keeps Canary (D23); invisible appearance
+  (D24); the wiki decides undefined elements and other uncertain source values (D25).
+- `population_census.py`: 1,377 of 1,656 fully resolved (1,298 on PR #955), 0 structure-invalid.
+  Batch 1 10/10, batch 2 9/10 manifests resolve; source coverage 242/242;
+  `verify_formal_schema.py` 229/229.
