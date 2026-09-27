@@ -2792,12 +2792,36 @@
           "field",
           "value",
           "wiki_source"
-        ]
+        ],
+        "not": {
+          "required": [
+            "candidates"
+          ]
+        }
       },
       "else": {
         "required": [
           "candidates"
-        ]
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "field"
+              ]
+            },
+            {
+              "required": [
+                "value"
+              ]
+            },
+            {
+              "required": [
+                "wiki_source"
+              ]
+            }
+          ]
+        }
       }
     }
   }

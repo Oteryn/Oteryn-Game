@@ -1122,8 +1122,20 @@ def build_item_schema():
         ),
         **{
             "if": {"properties": {"resolution": {"const": "direct"}}},
-            "then": {"required": ["field", "value", "wiki_source"]},
-            "else": {"required": ["candidates"]},
+            "then": {
+                "required": ["field", "value", "wiki_source"],
+                "not": {"required": ["candidates"]},
+            },
+            "else": {
+                "required": ["candidates"],
+                "not": {
+                    "anyOf": [
+                        {"required": ["field"]},
+                        {"required": ["value"]},
+                        {"required": ["wiki_source"]},
+                    ]
+                },
+            },
         },
     )
     properties = {

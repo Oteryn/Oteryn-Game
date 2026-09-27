@@ -1459,6 +1459,48 @@ def test_wiki_fallback_loader_accepts_valid_direct_record():
         check(resolved[key]["evidence"]["wiki_source"]["page_id"] == 1, resolved[key])
 
 
+def test_committed_wiki_fallback_snapshot_loads_fail_closed():
+    """The committed snapshot must pass the same fail-closed loader the converter uses."""
+    resolved = engine_items.load_wiki_family_fallback(
+        engine_items.WIKI_FAMILY_FALLBACK_PATH, engine_items.build_identity_index()
+    )
+    check(len(resolved) == 881, len(resolved))
+    check(
+        all(
+            entry["profile"] in engine_items.PROFILE_ITEM_CLASS
+            for entry in resolved.values()
+        ),
+        "every committed record resolves to a known profile",
+    )
+
+
+def test_family_profile_evidence_shapes_are_mutually_exclusive():
+    import jsonschema
+
+    schema = json.loads(
+        (engine_items.ROOT / "item.schema.json").read_text(encoding="utf-8")
+    )
+    validator = jsonschema.Draft202012Validator(
+        {"$ref": "#/$defs/familyProfileEvidence", "$defs": schema["$defs"]}
+    )
+    resolved = engine_items.load_wiki_family_fallback(
+        engine_items.WIKI_FAMILY_FALLBACK_PATH, engine_items.build_identity_index()
+    )
+    evidence = [entry["evidence"] for entry in resolved.values()]
+    direct = next(item for item in evidence if item["resolution"] == "direct")
+    disambiguation = next(
+        item for item in evidence if item["resolution"] == "disambiguation"
+    )
+    for valid in (direct, disambiguation):
+        errors = list(validator.iter_errors(valid))
+        check(not errors, [error.message for error in errors])
+    mixed_direct = {**direct, "candidates": disambiguation["candidates"]}
+    mixed_disambiguation = {**disambiguation, "field": direct["field"]}
+    for mixed in (mixed_direct, mixed_disambiguation):
+        validators = sorted({error.validator for error in validator.iter_errors(mixed)})
+        check(validators == ["not"], (mixed["resolution"], validators))
+
+
 def test_wiki_fallback_loader_rejects_unadmitted_broad_bucket_value():
     key = FIXTURE_ITEM_KEYS[101]
     record = {
@@ -2197,6 +2239,8 @@ def main():
         test_wiki_fallback_loader_rejects_unknown_top_level_key,
         test_wiki_fallback_loader_rejects_duplicate_json_key,
         test_resolve_wiki_family_value_admitted_mapping,
+        test_committed_wiki_fallback_snapshot_loads_fail_closed,
+        test_family_profile_evidence_shapes_are_mutually_exclusive,
         test_crystal_item_bindings_reject_duplicate_target_key,
     ]
     for test in tests:
