@@ -8,7 +8,7 @@ import json
 import sys
 from pathlib import Path
 
-from validate_spell import validate
+from validate_spell import level_base_damage_healing, validate
 
 ROOT = Path(__file__).resolve().parent
 
@@ -177,6 +177,17 @@ NEGATIVE = {
 }
 
 
+def official_level_bonus(level):
+    """Tibia news 2022-10-17 (patch 13.05.12657): +1 every 5 levels up to 500, then +1 every 6 levels for
+    501-1100, 7 for 1101-1800, 8 for 1801-2600, 9 for 2601-3500, each span 100 levels longer."""
+    if level <= 500:
+        return level // 5
+    total, threshold, step, span = 100, 500, 6, 600
+    while level > threshold + span:
+        total, threshold, step, span = total + span // step, threshold + span, step + 1, span + 100
+    return total + (level - threshold) // step
+
+
 def write_fixtures():
     for name, (spell, deps) in POSITIVE.items():
         (ROOT / f'synthetic-valid-{name.replace("_", "-")}.json').write_text(
@@ -200,6 +211,11 @@ def main():
         report.append({'case': name, 'passed': passed, 'expected': expect, 'errors': errors})
         if not passed:
             failures.append(f'{name}: expected "{expect}", got {errors}')
+    curve = [level for level in range(20001) if level_base_damage_healing(level) != official_level_bonus(level)]
+    report.append({'case': 'level curve equals the official table for levels 0-20000', 'passed': not curve,
+                   'errors': curve[:10]})
+    if curve or level_base_damage_healing(800) != 150:
+        failures.append(f'level curve differs from the official table at {curve[:10]}')
     (ROOT / 'formal-schema-validation-report.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf-8')
     print(f'{len(report) - len(failures)} of {len(report)} cases passed')
     for failure in failures:

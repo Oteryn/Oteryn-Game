@@ -99,6 +99,14 @@ Formula findings:
   `B = floor((L + 1000) / S) + 50S - 450`. This is exactly Crystal's function (S5). The curve is
   unchanged in the current client 15.30 (July 2026); the 15.25 vocation adjustment (June 2026,
   `Updates/15.25.3a4a52`) changed per-spell base powers, not the curve.
+- Primary evidence for the curve: the official news "Adjustment of Damage and Healing Scaling per
+  Level" (tibia.com news 6972, server save of 2022-10-18; tibia.com answers 403 here, the full text
+  is mirrored on tibiopedia.pl and tibiaevents.com): +1 every 5 levels up to 500, every 6 for 501–1100,
+  7 for 1101–1800, 8 for 1801–2600, 9 for 2601–3500, "above level 3500 it continues with the same logic",
+  and the worked example "level 800: 160 before, 150 after". `verify_formal_schema.py` checks that the
+  closed form equals this table for every level 0–20000 (and gives 150 at level 800). Below level 500
+  the bonus is `floor(level / 5)`, as players measured (Fandom `Talk:Formulae`); the older Canary
+  scripts use the unfloored `level / 5`, and Canary's `calculateFlatDamageHealing` also rounds up.
 - Per-spell formulas: the `Formulae` section "Spell/Rune Damage/Healing" still lists the old
   `floor(lvl * 0.2) + mlvl * x + y` coefficients and marks them as no longer correct since 2020, so it
   is not a formula source. Crystal PR #797 (merged 2026-07-01, "15.25 Base Spell Power") implements
@@ -228,7 +236,7 @@ From `tools/content-schema/spell-authoring/` with `requirements.txt` installed:
 
 ```text
 python build_formal_schema.py && git diff --exit-code -- .   # schemas and template regenerate byte-identically
-python verify_formal_schema.py                               # 3 valid fixtures + 34 focused negative cases
+python verify_formal_schema.py                               # 3 valid fixtures, 34 negative cases, level curve check
 python spell_census.py self-test && python wiki_spells.py self-test
 ```
 
@@ -246,7 +254,7 @@ of spells a new character actually uses.
 
 | Phase | Result | Scope | Exit evidence |
 |---|---|---|---|
-| **P0** (this change) | Schema candidate, census, Fandom comparison, plan | `tools/content-schema/spell-authoring/`, this document | validator + 37 cases green; census and compare regenerate |
+| **P0** (this change) | Schema candidate, census, Fandom comparison, plan | `tools/content-schema/spell-authoring/`, this document | validator + 38 cases green; census and compare regenerate |
 | **P1** Reference data | Done for capture and crosswalk (§4.1, §4.2); remaining: owner resolution of the BR ↔ Fandom conflicts and decisions S1, S2, S6–S10 | `.github/workflows/spell-wiki-capture.yml` (BR answers 403 here), `wiki_spells.py --wiki br` | every player spell has a per-field disposition: MATCH, adopted wiki value, CONFLICT or UNKNOWN |
 | **P2** Converter and readiness | `convert_spells.py`: census of both sources → Spell bundles + dependencies + manifests for `plain_combat` (declarative), `conjure` and runes, field by field under S4 with S3 wiki adoption; `population_census.py` for spells | `tools/content-schema/spell-authoring/` | all declarative spells validate and resolve; blockers grouped by pattern (§3), like monster §9 |
 | **P3** First castable slice (runtime) | A character casts the starter set: Light Healing (`exura`), Intense Healing (`exura gran`), Ice Strike and Energy Strike (shared with monsters), Haste (`utani hur`), Sudden Death rune + its conjuring spell, Great Fireball rune (area) | v2 GAP fields for this set; content compiler; server: words → cast intent, requirement checks (vocation, level, mana, soul, premium), cooldown and group cooldown state, `player_expression` evaluator and `level_base_damage_healing`, rune use-with and charges, conjure; reuse the ability engine (`apps/game-server/src/ability/`) for effects and commit | Rust unit + integration tests per rule; reference evidence per spell (`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json`); `game-gate` green |
