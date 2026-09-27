@@ -91,7 +91,9 @@ d['behavior']=obj({
         'field_permissions':obj({k:use('bool') for k in ('energy','fire','poison')},('energy','fire','poison'))},('can_walk','pass_through','pushable','push_items','push_creatures','field_permissions')),
     'targeting':obj({'hostile':use('bool'),'can_target':use('bool'),'sense_invisible':use('bool'),
         'target_distance_tiles':integer(),'static_attack_chance_percent':use('percent'),
-        'change_target':obj({'interval_ms':use('ms'),'chance_percent':use('percent')},('interval_ms','chance_percent')),
+        'change_target':obj({'interval_ms':integer(0,description='0 disables timed target changes; a nonzero chance still lets the monster '
+                                                                'switch to an opponent that blocks its path to the current target.'),
+                             'chance_percent':use('percent')},('interval_ms','chance_percent')),
         'strategy_weights':obj({k:integer() for k in ('nearest','damage','health','random')},('nearest','damage','health','random')),
         'flee_health':integer()},('hostile','can_target','sense_invisible','target_distance_tiles','static_attack_chance_percent','flee_health')),
     'attacks':array(use('schedule')),'defenses':array(use('schedule')),'voices':use('voices'),
@@ -106,6 +108,8 @@ d['assetBinding']=use('key')
 d['presentation']=obj({
     'identity':use('identity'),
     'appearance':obj({'asset_binding':use('assetBinding'),
+        'selection':{**enum('owner_familiar_look'),'description':'D16: the runtime shows the familiar look selected by the owner; '
+                                                               'asset_binding is the default look for a character without a selection.'},
         'palette_bindings':array(obj({'slot':enum('head','body','legs','feet','mount_head','mount_body','mount_legs','mount_feet'),'palette_binding':use('assetBinding')},('slot','palette_binding'))),
         'attachment_bindings':array(obj({'slot':enum('addon','mount','familiar','wing'),'asset_binding':use('assetBinding')},('slot','asset_binding'))),
         'visual_effect_bindings':array(obj({'slot':enum('aura','effect','shader'),'asset_binding':use('assetBinding')},('slot','asset_binding')))},('asset_binding','palette_bindings','attachment_bindings','visual_effect_bindings')),
@@ -134,7 +138,9 @@ d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range
 d['initialTick']=obj({'mode':enum('automatic','fixed'),'amount':integer(1)},('mode',),allOf=[
     {'if':{'properties':{'mode':{'const':'fixed'}},'required':['mode']},'then':{'required':['amount']},'else':forbid('amount')}])
 d['damageOverTime']=obj({
-    'total_damage_range':obj({'minimum':integer(1),'maximum':integer(1)},('minimum','maximum')),
+    'total_damage_range':obj({'minimum':integer(0,description='0 is allowed: the total is drawn uniformly from the range and a '
+                                                               'zero draw means the condition does not start (condition.cpp ConditionDamage::init).'),
+                              'maximum':integer(1)},('minimum','maximum')),
     'tick_interval_ms':use('ms'),'initial_tick':use('initialTick'),
     'tick_profile':enum('decreasing'),'first_tick':enum('after_interval')},
     ('total_damage_range','tick_interval_ms','initial_tick','tick_profile','first_tick'),

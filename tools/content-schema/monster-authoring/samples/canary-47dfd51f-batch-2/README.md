@@ -27,12 +27,12 @@ exercised from this source.
 
 - 10/10 bundles pass `validate_monster.py`; 7/10 manifests resolve every declared row.
 - Blocked, as intended:
-  - `knight_familiar`: registered spells `sudden death rune` and `ice strike` need a native
-    Ability resolution; the monster file has no `lookType` because familiar looks are chosen per
-    player in `data/XML/familiars.xml`.
-  - `war_golem`: registered spells `war golem electrify` and `war golem skill reducer`.
+  - `knight_familiar`: registered spells `sudden death rune` (the rune) and `ice strike` (P1,
+    D11). Its look is resolved by D16: the default Skullfrost look 991 with
+    `selection=owner_familiar_look`.
+  - `war_golem`: registered spells `war golem electrify` and `war golem skill reducer` (D12).
   - `the_enraged_thorn_knight`: `HealthForgotten` doubles damage taken unless a Possessed Tree is
-    near (D9: Encounter mechanic); addon outfit attachments are not mapped.
+    near (D9: Encounter mechanic). Its addons are now mapped as attachment bindings.
 - Schema change from this batch: bosstiary points are per stage (D8).
 - Familiar profile is not in the monster file: vocation and mana come from
   `data/scripts/spells/familiar/`, duration from `CreateFamiliarSpell` with config default

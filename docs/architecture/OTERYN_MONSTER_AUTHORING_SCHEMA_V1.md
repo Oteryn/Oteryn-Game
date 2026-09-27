@@ -80,6 +80,8 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D13 | A spell with custom logic becomes an `Ability` with a `native_behavior` key and its data parameters. Native behaviours are shared and parameterized by pattern (e.g. one path-chain behaviour with an element parameter), not one per source script. The content compiler rejects a key without an implementation. No Lua is admitted; an implementation is written only when a playable monster needs it, and until then the manifest row stays `unresolved_semantics`. | 44 custom-logic scripts cluster into recurring patterns (path chains, summon-N, cast-then-remove-self); §8. |
 | D14 | A spell reference that has no effect in Canary is recorded as `approved_omission`; when the reference-date wiki shows that attack, it is authored as an ordinary Ability from the wiki instead. | `energy beam` returns false for a non-player caster (4 monsters). |
 | D15 | Where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it. So far this is applied to mitigation, `pushable`, loot items missing in Canary and loot probabilities. Loot rate rule: use the highest-version `Loot Statistics` block at the cut (the largest-sample source; other sites such as Tibiopedia are cross-checks only); estimate = drops / kills rounded half-even to 1 ppm, with a 95% Wilson interval recorded. At 10 or more drops the estimate replaces the Canary probability; below 10 the Canary probability is kept and marked low confidence (an item missing in Canary is still added, marked low confidence). An item the infobox lists but the statistics block does not show keeps its Canary probability (probably added after that version). An ambiguous item name is resolved by the item page `itemid`. | The wiki tracks Tibia Global more closely than OTS sources. Batch 1 comparison: `samples/canary-47dfd51f/wiki-2026-07-28.json`. |
+| D16 | A familiar is split three ways: the familiar creature (one per vocation) stays a monster with `is_familiar`; the summon parameters (vocation, level, mana, cooldown, duration) belong to the player summon `Ability`; the familiar looks are a character cosmetic catalogue with per-character unlocks and selection. The monster keeps `presentation.appearance.selection=owner_familiar_look` with the vocation default look as `asset_binding`. Moving the summon parameters out of the creature and the look catalogue are later admission work. | TibiaWiki: familiars of one vocation differ only by name and look, chosen in "Customize Character". Canary: `data/libs/systems/familiar.lua` `FAMILIAR_ID` default looks, set by `creaturescripts/familiar/on_login.lua`; per-character choice from `data/XML/familiars.xml`. |
+| D17 | Any Item can be a monster corpse; the validator no longer requires the Item capability `is_corpse`. | Canary drops whatever Item id the monster names (45 monster files use ashes, fish, remains and similar items without the corpse flag). |
 
 ## 4. Carried semantics
 
@@ -143,7 +145,7 @@ From `tools/content-schema/monster-authoring/` with `requirements.txt` installed
 
 ```text
 python build_formal_schema.py      # regenerates the 3 schemas and 2 empty templates byte-identically
-python verify_formal_schema.py     # 177 focused positive/negative cases
+python verify_formal_schema.py     # 180 focused positive/negative cases
 python verify_source_coverage.py   # 242 inventoried Canary/Crystal registrar/spell paths accounted for
 python validate_monster.py <monster.json> <dependencies.json> [--catalog C] [--manifest M]
 ```
@@ -199,3 +201,33 @@ Batch 2 impact: `war_golem` needs the first four D12 extensions (`war golem elec
 with a constant-tick energy condition; `war golem skill reducer` is P3 with attribute
 conditions). `knight_familiar` needs D11 (`sudden death rune` resolves to the rune, not the
 conjuring spell; `ice strike` is P1); its per-player familiar look is a separate gap.
+
+## 9. Import readiness of the Canary population
+
+`population_census.py` converts every Canary `47dfd51f` monster file in memory and records the
+result in `samples/population-canary-47dfd51f.json`: of 1,656 files, 1,103 convert, validate and
+resolve every manifest row; 547 are blocked; 6 do not convert (five Soul War bosses need quest
+configuration at load and one file is a helper library, not a monster). No bundle fails
+structure validation.
+
+Converter rules transcribed from the engine for this result (all recorded in `sources.json`
+`rules` and in the manifest rows): a chance above 100 behaves as 100; `changeTarget.interval=0`
+disables timed target changes while a nonzero chance still retargets onto a blocking opponent
+(`change_target.interval_ms` may be 0); a zero-total damage condition never starts; a condition
+total drawn from a range may be 0 (`total_damage_range.minimum` may be 0); more than 100% element
+reduction equals 100%; `runHealth` above `maxHealth` equals `maxHealth`; summon counts are capped
+by `maxSummons`; an undefined Lua constant is nil; a numeric or wrong-enum `effect`/`shootEffect`
+selects that numeric id; items with `duration=0` do not decay; `lookAddons`/`lookMount` map to
+attachment bindings; a missing description is the monster name.
+
+Creature events come from `samples/events-canary-47dfd51f.json`: 193 events named by monster
+files, each classified by a model-assisted read of its registering script with evidence lines
+(five classifications re-read by hand). Only high-confidence `quest`, `encounter_bookkeeping` and
+`no_effect` events are omitted (D6, D9); `encounter_mechanic` (125) and `monster_behavior` (2)
+stay unresolved.
+
+Remaining blockers by affected monsters: registered spell scripts in attacks (353) and defenses
+(46), encounter-mechanic events (215), inline `mType` callbacks (up to 28 per callback kind), a
+top-level script call after registration (11), Bestiary without a valid race (5) and non-familiar
+monsters without a look type (4). These need D12/D13 spell work, Encounter definitions (D9) or
+native behaviour decisions; none is solved by relaxing validation.
