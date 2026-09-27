@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: 989
+pr: 996
 base_sha: ccef9bbe8ecf75c4b1b99b07237c78ebf4642dce
 head_sha: null
 final_head_sha: null
@@ -104,7 +104,8 @@ only (Canary is out of scope). No canonical identity is minted; no
 - head `60dac2d9`: all checks green, including the new drift guard
 - head `d62d32c4` (owner merged `main`): the drift guard failed with
   `ALLOCATED_KEY_MISSING_FROM_DEFINITIONS:[i00002921]` because #987 promoted Gold Coin;
-  repaired by applying declared identity promotions (successor head)
+  #989 merged from the queue as `0c7098eb` before the repair could land; the repair
+  (declared identity promotions) follows in PR #996
 - final head: pending
 
 ## Self-review
@@ -138,7 +139,7 @@ only (Canary is out of scope). No canonical identity is minted; no
 - unresolved review threads: none
 - related/superseded PRs: none
 - protected auto-merge: NOT_AUTHORIZED (owner merges)
-- merge commit/result: pending
+- merge commit/result: #989 merged as `0c7098eb`; follow-up repair #996 pending
 - ownership release: pending
 
 ## Context checkpoint
@@ -147,7 +148,7 @@ only (Canary is out of scope). No canonical identity is minted; no
 last_progress: drift guard caught the #987 Gold Coin promotion after the main merge; generator now applies declared identity promotions
 status: validating
 branch: claude/compassionate-albattani-s29syw
-pr: 989
+pr: 996
 final_head_sha: null
 owner_action_required: "merge after exact-head CI is green"
 blocker: null
