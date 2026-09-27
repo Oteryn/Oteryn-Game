@@ -12,18 +12,17 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: 86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1
+protected_main_sha: 961c74ab573d87807ed24cbd414a46d8072f72d3
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-09-22
+updated_at: 2026-09-27
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
 public_contracts: []
 depends_on: []
-blocks:
-  - WP5_G0_READINESS_FOR_SERVER_SEAM
+blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories: []
 ```
@@ -36,13 +35,11 @@ This file is a **single current checkpoint**. Historical coordinator checkpoints
 
 ## Current checkpoint
 
-- Admission protected Game main for this checkpoint: `86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1`.
-- WP5 Issue #319 is the material Server-Seam critical path. Material #416 routing PR #739 is protected as `cf5c5f35476559450b6bbaf87dce519f7eead9d0`.
-- S2 qualification/repair continues on canonical PR #757; S3-A real-interoperability remains a separately gated successor. WP5 G0/source-composition readiness is **not yet proven**.
-- Server Seam Issue #247 remains preserved at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e` and must not resume before fresh `WP5_G0_READINESS_PROVEN`.
-- Content D6-M1 Item Schema Readiness continues on canonical PR #749. The measured artifact resource profile is accepted; production schema/codec qualification is the active successor, not a new source import.
-- Governance Issue #745 Phase 1 is protected. Phase 2 is waiting for a fresh bounded allocation; no Phase-2 branch/PR is implied by this checkpoint.
-- Agent hygiene Issue #740 is in final closeout only; completed lifecycle records are no longer live writer custody.
+- Admission protected Game main for this checkpoint: `961c74ab573d87807ed24cbd414a46d8072f72d3`.
+- WP5 G0 is met (`WP5_G0_READY`, #319 comment `5809797683`). Server Seam #247 is closed (PR #823); ClientResume #822, Item schema readiness #749 and governance #745 are complete.
+- The current vertical is "click -> Use / backpack / door -> client result". Its lane register and gates are in #162 comment `5860494545` and the live allocations snapshot.
+- Content/World allocations are issued as #162 comments (latest `5860394705`); released tasks keep their own active packets.
+- Architecture package A1-A3 (GAME-INTERACTION-01 successor + D37/D38 acceptance, the next control-wire owner decision, the scope progression input owner) is with the Supervising Architect and blocks no other lane.
 
 ## Ownership discipline
 
@@ -58,16 +55,12 @@ Before every new allocation or resumed writer:
 ## Current dependency shape
 
 ```text
-ACTIVE / QUALIFY:
-  WP5 #319 -> S2 #757 + S3/source-composition successors
-  Content D6-M1 #749
-  Governance #745 Phase 2 -> fresh allocation required
-
-HELD:
-  Server Seam #247 -> WP5_G0_READINESS_PROVEN
-  downstream Client/QA -> Server Seam
-  Movement -> Client/QA
-  Combat -> Movement
+WAITING:
+  CW4 door execution -> CW3 local-object state model
+  impl interaction -> architecture A1
+  seam command dispatch + native client entry -> architecture A2
+  pickup / inventory -> #513 B3 allocation (DUR-03 lineage)
+  UI input -> L-CARGO release + UI-P1
 ```
 
 ## Validation / closeout rule
@@ -77,19 +70,15 @@ A downstream release or terminal closeout requires its actual accepted gate, not
 ## Context checkpoint
 
 ```yaml
-last_progress: lifecycle hygiene removed terminal task packets; #739 and #748 are protected while active work is WP5, D6-M1 and future #745 Phase 2
+last_progress: refreshed stale G0/Server Seam routing; recorded the click-Use-backpack-door lane register and architecture package A1-A3 on #162
 status: implementing
 programme_state: ACTIVE
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: 86e25ab6c830159d9cb32aee1c3c8ff7726cdcd1
-wp5_issue: 319
-wp5_state: ACTIVE_S2_S3_COMPOSITION
+protected_main_sha: 961c74ab573d87807ed24cbd414a46d8072f72d3
+wp5_g0_state: READY
 server_seam_issue: 247
-server_seam_state: WAITING_WP5_G0
-content_item_pr: 749
-content_item_state: ACTIVE_SCHEMA_READINESS
-governance_simplification_issue: 745
-governance_simplification_state: WAITING_PHASE2_ALLOCATION
+server_seam_state: DONE
+vertical_click_use_state: WAITING_ARCHITECTURE_AND_CUSTODY
 owner_action_required: null
-next_action: continue canonical WP5 and D6-M1 lineages; keep Server Seam held until G0; allocate #745 Phase 2 only after fresh overlap/custody readback
+next_action: integrate released Content/World tasks; resume each vertical lane when its #162-recorded gate is met
 ```
