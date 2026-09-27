@@ -28,8 +28,8 @@ use crate::foundation::fresh_admission_durability::{
 };
 use crate::foundation::{
     AuthenticatedTransportRefV1, CarrierError, ChannelId, ChannelRuntimeV1,
-    GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, PlayerActorReservation,
-    RuntimeScopeRefV1, WorldId,
+    CharacterWorldEligibilityClaimV1, ExactActorRef, GameSessionAuthoritySnapshot, GameSessionId,
+    GameSessionState, PlayerActorReservation, RuntimeScopeRefV1, WorldId,
 };
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, FreshAdmissionAttempt,
@@ -483,6 +483,12 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             .await
             .commit_fresh_session(reservation)
             .map_err(|_| Unavailable)?;
+        // #935: only after both COMMITs, revalidate current authority and let
+        // the Channel owner write the first-entry position. A failure here
+        // writes nothing and fabricates no rollback: the committed actor stays
+        // unpositioned and is not input-eligible.
+        self.initialize_first_entry(&request, attempt.game_session_id, attempt.transport, actor)
+            .await;
         Ok(AdmittedSession {
             game_session_id: attempt.game_session_id,
             world_id: self.world_id,
@@ -512,6 +518,21 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         game_session_id: GameSessionId,
     ) -> Result<PlayerActorReservation, AdmissionRefusal> {
         use AdmissionRefusal::{Rejected, Unavailable};
+        self.reserve_precondition().await?;
+        self.runtime
+            .lock()
+            .await
+            .reserve_fresh_session(game_session_id)
+            .map_err(|error| match error {
+                CarrierError::CapacityExceeded => Rejected,
+                _ => Unavailable,
+            })
+    }
+
+    /// The current assignment still names this node incarnation and matches
+    /// the exact committed assignment this runtime was composed from.
+    async fn reserve_precondition(&self) -> Result<(), AdmissionRefusal> {
+        use AdmissionRefusal::{Rejected, Unavailable};
         let scope = RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
         let assignment = self
             .root
@@ -535,14 +556,57 @@ impl ComposedFreshAdmission<'_, '_, '_> {
         {
             return Err(Rejected);
         }
-        self.runtime
+        Ok(())
+    }
+
+    /// Immediately before the position write, resolve the current GameSession
+    /// (owned by this socket: active, same connection generation and transport,
+    /// no control loss), its current Character lease and World eligibility, and
+    /// its current runtime scope and ownership generation, plus the current
+    /// assignment of this runtime. Immutable request fields are only the
+    /// expected values compared against those current reads.
+    async fn initialize_first_entry(
+        &self,
+        request: &FreshAdmissionCommitRequestV1,
+        game_session_id: GameSessionId,
+        transport: AuthenticatedTransportRefV1,
+        actor: ExactActorRef,
+    ) {
+        let store = FreshAdmissionStore::from_root(self.root.clone());
+        let Ok(FreshReconciliation::Committed(snapshot)) =
+            store.reconcile(request.operation()).await
+        else {
+            return;
+        };
+        let current = snapshot.current_session;
+        let commit = current.commit();
+        let scope = RuntimeScopeRefV1::channel(self.world_id, self.channel_id);
+        let binding = self.runtime.lock().await.binding();
+        let current_authority = owns_fresh_session(current, game_session_id, transport)
+            && commit.world_id() == self.world_id
+            && commit.channel_id() == self.channel_id
+            && current.current_character_lease().character_id() == commit.character_id()
+            && current.current_character_lease().generation()
+                == commit.character_lease_generation()
+            && current
+                .current_character_world_eligibility()
+                .is_none_or(|claim| {
+                    claim
+                        == CharacterWorldEligibilityClaimV1::new(
+                            commit.character_id(),
+                            self.world_id,
+                        )
+                })
+            && current.current_runtime_scope() == scope
+            && current.current_scope_generation() == binding.scope_generation();
+        if !current_authority || self.reserve_precondition().await.is_err() {
+            return;
+        }
+        let _ = self
+            .runtime
             .lock()
             .await
-            .reserve_fresh_session(game_session_id)
-            .map_err(|error| match error {
-                CarrierError::CapacityExceeded => Rejected,
-                _ => Unavailable,
-            })
+            .initialize_first_entry_position(actor);
     }
 
     async fn rollback_runtime_player(

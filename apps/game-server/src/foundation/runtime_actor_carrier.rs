@@ -167,6 +167,10 @@ impl ChannelRuntimeAssignmentBinding {
         self.channel_id
     }
 
+    pub(crate) const fn scope_generation(self) -> ScopeOwnershipGeneration {
+        self.scope_generation
+    }
+
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn matches_committed_assignment(
         self,
@@ -345,9 +349,11 @@ impl CurrentOwnerExactActorLookup<'_> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct ActorState(u64);
 
-/// These opaque numeric markers are fixture inputs, not Content/Reference
-/// activation evidence. Production composition must provide its own accepted
-/// context binding before this private carrier can be used by gameplay.
+/// The binding a position is valid under. In production the Channel's fixed
+/// Content pin (#935) holds the full binding once; each slot keeps only this
+/// compact per-runtime reference to it (the measured 192-byte slot footprint
+/// is unchanged): the frame-binding and map-revision digest prefixes and the
+/// activation sequence. Test fixtures use synthetic values.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct PreProductionPositionContext {
     world_id: WorldId,
@@ -431,6 +437,9 @@ pub(crate) struct ChannelContentPin {
     server_artifact_digest: [u8; 32],
     client_artifact_digest: [u8; 32],
     frame_binding_digest: [u8; 32],
+    map_revision_digest: [u8; 32],
+    /// The first-entry start cell the active generation attests as Walkable.
+    entry_start: LocalPosition,
 }
 
 impl ChannelContentPin {
@@ -440,6 +449,8 @@ impl ChannelContentPin {
         server_artifact_digest: [u8; 32],
         client_artifact_digest: [u8; 32],
         frame_binding_digest: [u8; 32],
+        map_revision_digest: [u8; 32],
+        entry_start: (i32, i32, i16),
     ) -> Self {
         Self {
             world_id,
@@ -447,13 +458,19 @@ impl ChannelContentPin {
             server_artifact_digest,
             client_artifact_digest,
             frame_binding_digest,
+            map_revision_digest,
+            entry_start: LocalPosition {
+                x: entry_start.0,
+                y: entry_start.1,
+                floor: entry_start.2,
+            },
         }
     }
 
     /// Synthetic pin for runtime tests that do not exercise Content activation.
     #[cfg(test)]
     pub(crate) const fn test(world_id: WorldId) -> Self {
-        Self::from_activation(world_id, 1, [1; 32], [2; 32], [3; 32])
+        Self::from_activation(world_id, 1, [1; 32], [2; 32], [3; 32], [4; 32], (0, 0, 0))
     }
 
     pub(crate) const fn world_id(&self) -> WorldId {
@@ -475,6 +492,15 @@ impl ChannelContentPin {
     pub(crate) const fn frame_binding_digest(&self) -> [u8; 32] {
         self.frame_binding_digest
     }
+}
+
+/// Outcome of a first-entry position initialization.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FirstEntryPosition {
+    /// This call wrote the start position.
+    Initialized(MovementPositionSnapshot),
+    /// The same initialization had already completed; nothing was written.
+    Reconciled(MovementPositionSnapshot),
 }
 
 /// The first composed Channel runtime. The fixed-slot carrier is the only actor
@@ -550,6 +576,58 @@ impl ChannelRuntimeV1 {
     pub(crate) fn borrow_movement_position(&mut self) -> CurrentOwnerMovementPosition<'_> {
         self.carrier
             .current_owner_movement_position(&self.continuity)
+    }
+
+    /// The compact position context of this runtime's fixed Content pin.
+    fn pinned_position_context(&self) -> PreProductionPositionContext {
+        let prefix = |digest: &[u8; 32]| {
+            u64::from_be_bytes([
+                digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], digest[6],
+                digest[7],
+            ])
+        };
+        PreProductionPositionContext {
+            world_id: self.binding.world_id,
+            channel_id: self.binding.channel_id,
+            scope_generation: self.binding.scope_generation,
+            coordinate_frame_marker: prefix(&self.content.frame_binding_digest),
+            map_revision_marker: prefix(&self.content.map_revision_digest),
+            content_generation_marker: self.content.activation_sequence,
+        }
+    }
+
+    /// #935 first-entry position initialization: the Channel owner writes the
+    /// pinned generation's start cell for one committed, unpositioned player
+    /// actor. The context comes only from this runtime's assignment binding and
+    /// Content pin. An exact retry reconciles the completed initialization
+    /// without another write (later Movement is not undone); a stale or
+    /// recycled actor, or one positioned under another context, gets no write.
+    pub(crate) fn initialize_first_entry_position(
+        &mut self,
+        actor: ExactActorRef,
+    ) -> Result<FirstEntryPosition, CarrierError> {
+        let context = self.pinned_position_context();
+        match self.carrier.initialize_position(
+            &self.continuity,
+            actor.0,
+            context,
+            self.content.entry_start,
+        ) {
+            Ok(snapshot) => Ok(FirstEntryPosition::Initialized(MovementPositionSnapshot(
+                snapshot,
+            ))),
+            Err(CarrierError::PositionAlreadyInitialized) => {
+                let current = self.carrier.read_position(&self.continuity, actor.0)?;
+                if current.version.context == context {
+                    Ok(FirstEntryPosition::Reconciled(MovementPositionSnapshot(
+                        current,
+                    )))
+                } else {
+                    Err(CarrierError::PositionAlreadyInitialized)
+                }
+            }
+            Err(error) => Err(error),
+        }
     }
 
     /// Synthetic context is confined to tests. A committed session still goes through
@@ -636,6 +714,26 @@ impl ChannelRuntimeV1 {
                 } => (committed, pending + 1),
                 _ => (committed, pending),
             })
+    }
+
+    /// Test-only census: committed player actors positioned at the pinned
+    /// start cell under the pinned context by one initialization (revision 1).
+    #[cfg(test)]
+    pub(crate) fn players_positioned_at_entry_start(&self) -> usize {
+        self.carrier
+            .slots
+            .iter()
+            .filter(|slot| {
+                matches!(slot, Slot::Occupied {
+                    game_session_id: Some(_),
+                    committed: true,
+                    position: Some(version),
+                    ..
+                } if version.position == self.content.entry_start
+                    && version.revision == 1
+                    && version.context == self.pinned_position_context())
+            })
+            .count()
     }
 
     #[cfg(test)]
@@ -1709,6 +1807,71 @@ mod tests {
             Err(CarrierError::PlayerReservationMismatch)
         );
         assert!(runtime.contains_committed_session(session(41), actor));
+    }
+
+    #[test]
+    fn first_entry_position_is_written_once_and_retry_reconciles() {
+        let mut runtime = runtime(2);
+        let reservation = runtime.reserve_fresh_session(session(60)).expect("reserve");
+        let actor = runtime.commit_fresh_session(reservation).expect("commit");
+        let outcome = runtime
+            .initialize_first_entry_position(actor)
+            .expect("initialize");
+        assert!(matches!(outcome, FirstEntryPosition::Initialized(_)));
+        let first = runtime
+            .borrow_movement_position()
+            .read(actor)
+            .expect("positioned");
+        assert_eq!(
+            first.position(),
+            MovementLocalPosition {
+                x: 0,
+                y: 0,
+                floor: 0
+            }
+        );
+        assert_eq!(first.revision(), 1);
+        assert_eq!(runtime.players_positioned_at_entry_start(), 1);
+        // Exact retry: same actor generation, same pin -> no second write.
+        assert_eq!(
+            runtime.initialize_first_entry_position(actor),
+            Ok(FirstEntryPosition::Reconciled(first))
+        );
+        assert_eq!(runtime.players_positioned_at_entry_start(), 1);
+    }
+
+    #[test]
+    fn first_entry_position_refuses_other_context_and_stale_actor() {
+        let mut runtime = runtime(2);
+        // An actor positioned under another context never gets a replacement.
+        let reservation = runtime.reserve_fresh_session(session(61)).expect("reserve");
+        let other = runtime.commit_fresh_session(reservation).expect("commit");
+        let synthetic = runtime
+            .initialize_movement_test_position(
+                other,
+                MovementLocalPosition {
+                    x: 1,
+                    y: 0,
+                    floor: 0,
+                },
+            )
+            .expect("synthetic position");
+        assert_eq!(
+            runtime.initialize_first_entry_position(other),
+            Err(CarrierError::PositionAlreadyInitialized)
+        );
+        assert_eq!(
+            runtime.borrow_movement_position().read(other),
+            Ok(synthetic)
+        );
+        // A removed (stale) actor reference gets no write.
+        let reservation = runtime.reserve_fresh_session(session(62)).expect("reserve");
+        let stale = runtime.commit_fresh_session(reservation).expect("commit");
+        runtime
+            .remove_terminal_session(session(62), stale)
+            .expect("terminal cleanup");
+        assert!(runtime.initialize_first_entry_position(stale).is_err());
+        assert_eq!(runtime.players_positioned_at_entry_start(), 0);
     }
 
     #[test]

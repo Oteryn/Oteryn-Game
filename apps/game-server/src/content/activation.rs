@@ -429,6 +429,8 @@ pub struct NativeEntryContentPin {
     identity: GenerationIdentity,
     activation_sequence: u64,
     frame_binding: super::NativeEntryFrameBinding,
+    entry_start: super::NativeEntryStart,
+    map_revision_digest: [u8; 32],
 }
 
 impl NativeEntryContentPin {
@@ -444,6 +446,10 @@ impl NativeEntryContentPin {
         &self.frame_binding
     }
 
+    pub const fn entry_start(&self) -> super::NativeEntryStart {
+        self.entry_start
+    }
+
     /// The digest-level pin the Channel runtime is created with. Consuming the activation pin
     /// keeps one active generation per Channel creation.
     pub(crate) fn into_channel_pin(self) -> crate::foundation::ChannelContentPin {
@@ -453,6 +459,12 @@ impl NativeEntryContentPin {
             self.identity.server_artifact_digest(),
             self.identity.client_artifact_digest(),
             self.frame_binding.digest(),
+            self.map_revision_digest,
+            (
+                self.entry_start.x,
+                self.entry_start.y,
+                self.entry_start.floor,
+            ),
         )
     }
 }
@@ -560,6 +572,8 @@ pub fn activate_native_entry_room(
         identity: active.identity().clone(),
         activation_sequence: active.activation_sequence(),
         frame_binding: room.frame_binding().clone(),
+        entry_start: room.entry_start(),
+        map_revision_digest: room.map_revision_digest(),
     })
 }
 
@@ -1065,6 +1079,14 @@ mod tests {
         assert_eq!(pin.identity().world_id(), world);
         assert_eq!(pin.activation_sequence(), 7);
         assert_eq!(pin.frame_binding(), room.frame_binding());
+        assert_eq!(
+            pin.entry_start(),
+            super::super::NativeEntryStart {
+                x: 0,
+                y: 0,
+                floor: 0
+            }
+        );
         assert_eq!(
             pin.identity().server_artifact_digest(),
             issuance.server_artifact_digest
