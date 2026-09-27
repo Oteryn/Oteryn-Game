@@ -1,0 +1,182 @@
+{
+  "encounter": "canary:encounter/replica_servants",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "ReplicaServantDeath": [
+      "canary:creature/golden_servant_replica",
+      "canary:creature/diamond_servant_replica"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/constructs/golden_servant_replica.lua",
+      "blob_sha1": "de1225e952f48b10150331b4e2d24fb6110341a9"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_replica_servants.lua",
+      "blob_sha1": "d2dbe4a1b4e5885f8e1bdb2bd971444e92ae51b9"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/constructs/diamond_servant_replica.lua",
+      "blob_sha1": "228b63c3a55239db25846051f7c7e026d259dd39"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Golden Servant Replica is the golden_servant_replica participant; its file registers ReplicaServantDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        37,
+        38,
+        40,
+        2,
+        3,
+        4,
+        5
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a golden servant replica.",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        18,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "status": "mapped",
+      "resolution": "The quest domain raises the world count ForgottenKnowledge.GoldenServant, opens the teleport (item 10840, action 26665) on (32815, 32870, 13) once both world counts reach 5, and raises ForgottenKnowledge.GoldenServantCounter of the top damage dealer (D27).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Diamond Servant Replica is the diamond_servant_replica participant; its file registers ReplicaServantDeath.",
+      "destination": "/encounter/participants/1/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        1,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        37,
+        38,
+        40,
+        6,
+        7,
+        8,
+        9
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of a diamond servant replica.",
+      "destination": "/encounter/rules/1/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        18,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36
+      ],
+      "status": "mapped",
+      "resolution": "The quest domain raises the world count ForgottenKnowledge.DiamondServant, opens the teleport (item 10840, action 26665) on (32815, 32870, 13) once both world counts reach 5, and raises ForgottenKnowledge.DiamondServantCounter of the top damage dealer (D27).",
+      "destination": "/encounter/rules/1/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        17,
+        19
+      ],
+      "status": "approved_omission",
+      "resolution": "The guard compares the storage key, not its value, with 0, so it never runs; the world count starts at 0 in the quest domain."
+    }
+  ],
+  "outcome_evidence": [
+    {
+      "outcome": "golden_servant_replica_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "world_counter": "Storage.Quest.U11_02.ForgottenKnowledge.GoldenServant",
+        "player_counter": "Storage.Quest.U11_02.ForgottenKnowledge.GoldenServantCounter",
+        "player": "the top damage contributor (Canary mostDamageKiller)",
+        "teleport": "item 10840 with action id 26665 on Canary (32815, 32870, 13) once GoldenServant and DiamondServant both reach 5"
+      }
+    },
+    {
+      "outcome": "diamond_servant_replica_defeated",
+      "credited": "damage_contributors",
+      "quest_domain": {
+        "world_counter": "Storage.Quest.U11_02.ForgottenKnowledge.DiamondServant",
+        "player_counter": "Storage.Quest.U11_02.ForgottenKnowledge.DiamondServantCounter",
+        "player": "the top damage contributor (Canary mostDamageKiller)",
+        "teleport": "item 10840 with action id 26665 on Canary (32815, 32870, 13) once GoldenServant and DiamondServant both reach 5"
+      }
+    }
+  ]
+}

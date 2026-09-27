@@ -384,3 +384,15 @@ An eleventh slice. Crystal carries the same scripts.
 `BurningChangeForm` changes a boss attribute (the Hatred damage multiplier), which D31 does not add. `izcandarThink` and the
 King Zelos events stay for a later slice. 76 encounters validate, 70 manifests resolve fully, `verify_encounter_schema.py`
 91/91; the census rises from 1,505 to 1,511.
+
+A twelfth slice. Crystal carries the same scripts.
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `DisruptionTransform`, `ChargedDisruptionTransform` | 1 | 2 | Counted thinks: a disruption becomes a charged disruption 12-13 s after it appears, a charged one becomes overcharged after 18-19 s (a rule delay range, D29). |
+| `CracklerTransform`, `DepolarizedTransform` | 1 | 2 | On every think (a repeating 1 s timer) cracklers turn depolarized while the room is polarized and back when it is not, keeping their health. The polarization is written by the vortex tiles (`movements_vortex_crackler.lua`), a stepped-on mechanic transcribed with the room. |
+| `ReplicaServantDeath` | 1 | 2 | A `channel_shared` outcome: the quest domain counts the servants for the world and for the top damage dealer, and opens the teleport at five of each. |
+
+The King Zelos events stay unresolved: King Zelos's damage scales with the time the knights took, the Magnor shards share
+one life, and two deaths explode as authored areas. `UglyMonsterSpawn` draws its chance from the damage dealt. 78 encounters
+validate, 72 manifests resolve fully; the census rises from 1,511 to 1,517.
