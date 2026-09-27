@@ -790,6 +790,7 @@ PRIMARYTYPE_PROFILE = {
     "grass": "plant",
     "trees": "plant",
     "mushrooms": "plant",
+    "soul cores": "material_valuable",
 }
 PROFILE_ITEM_CLASS = {
     "equipment_armor": "equipment",
@@ -814,17 +815,6 @@ PROFILE_ITEM_CLASS = {
     "food": "food",
     "fluid": "fluid",
     "plant": "plant",
-}
-WEAPON_TYPE_MAP = {
-    "sword": "sword",
-    "axe": "axe",
-    "club": "club",
-    "fist": "fist",
-    "distance": "distance_launcher",
-    "ammunition": "ammunition",
-    "ammo": "ammunition",
-    "missile": "thrown_missile",
-    "wand": "wand",
 }
 WEAPON_TYPE_PROFILE = {
     "sword": "weapon_melee",
@@ -862,7 +852,24 @@ CLOTHES_SLOT_MAP = {
 }
 
 
-def classify_family_profile(attrs, primarytype):
+# A clothes slot with no primarytype/weapontype/containersize signal still names a real
+# equipment family through the slot it occupies; slot 3 (back, ambiguous between a cloak
+# and a backpack) is deliberately left unresolved rather than guessed either way.
+CLOTHES_SLOT_PROFILE = {
+    1: "equipment_armor",  # head
+    4: "equipment_armor",  # armor
+    7: "equipment_armor",  # legs
+    8: "equipment_armor",  # feet
+    2: "equipment_offhand",  # neck
+    9: "equipment_offhand",  # ring
+    10: "weapon_distance",  # ammo
+}
+# xml attributes with no other classification signal but a readable/writable capability
+# name a document (a book/sign/letter), matching the readable-only real-item convention.
+READABLE_FALLBACK_ATTRS = ("writeable", "maxtextlen", "writeonceitemid")
+
+
+def classify_family_profile(attrs, primarytype, clothes_slot=None):
     if primarytype in PRIMARYTYPE_PROFILE:
         return PRIMARYTYPE_PROFILE[primarytype]
     weapon_type = attrs.get("weapontype")
@@ -874,7 +881,71 @@ def classify_family_profile(attrs, primarytype):
         return "key"
     if "containersize" in attrs:
         return "container_equipment" if "slottype" in attrs else "container"
+    if clothes_slot in CLOTHES_SLOT_PROFILE:
+        return CLOTHES_SLOT_PROFILE[clothes_slot]
+    if clothes_slot in (5, 6):
+        return "equipment_offhand"
+    if any(field in attrs for field in READABLE_FALLBACK_ATTRS):
+        return "document"
     return None
+
+
+# --- non-Item routing (corpses, placeholder sprite slots, Terrain/WorldObject types) ---
+#
+# These items are never candidate Items at all: the pinned catalogs route their deciding
+# fields to WorldObject/Terrain/Interaction (`flags.corpse`/`flags.player_corpse`, and the
+# `primarytype` values below have no engine attribute correlate other than terrain/fixture
+# behavior owned outside Item). An appearance whose engine name is one of the reserved
+# placeholder sprite-sheet labels and which carries no other items.xml attribute is a
+# sprite-sheet reservation, not a game object. Recognizing these here keeps them out of
+# `family_profile_unresolved`/`not_converted`, which would otherwise misreport an owner
+# decision the catalogs already made as a converter gap.
+CORPSE_FLAGS = ("flags.corpse", "flags.player_corpse")
+WORLD_OBJECT_PRIMARYTYPES = {
+    "artificial tiles": "Terrain",
+    "natural tiles": "Terrain",
+    "fields": "Terrain",
+    "walls": "Terrain",
+    "constructions": "WorldObject",
+    "machines (objects)": "WorldObject",
+    "machines": "WorldObject",
+    "traps": "WorldObject",
+}
+PLACEHOLDER_APPEARANCE_NAMES = {"reserved sprite", "deprecated item", "empty sprite"}
+
+
+def non_item_route(xml_record, attrs, flags):
+    """Return (owner, reason) when this id names a non-Item owner; else None."""
+    if any(flags.get(flag) for flag in CORPSE_FLAGS):
+        return "WorldObject", "corpse"
+    name = (xml_record.get("name") if xml_record else None) or ""
+    if name.strip().lower() in PLACEHOLDER_APPEARANCE_NAMES and not attrs:
+        return "WorldObject", "appearance_placeholder_slot"
+    primarytype = attrs.get("primarytype")
+    if primarytype in WORLD_OBJECT_PRIMARYTYPES:
+        return WORLD_OBJECT_PRIMARYTYPES[primarytype], "primarytype_world_object"
+    return None
+
+
+# `flags.unmove` map geometry with no Item family profile (see formal schema §5a): walls
+# (`flags.bottom`+`unpass`), ground (`flags.bank`/`fullbank`), borders (`flags.clip`), top
+# decorations (`flags.top`), and named doors/stairs/ramps/windows all carry no items.xml
+# attribute this converter's family classifiers recognize, because they are immovable map
+# geometry owned by WorldObject/Terrain, not an Item family gap. This only applies once
+# `classify_family_profile` has already failed to resolve a family: an unmove=true entry
+# that does resolve a family (e.g. a heavy, non-pickupable weapon or container) stays a
+# converted Item with `physical.movable=false`, exactly as the unmove->movable mapping
+# already produces.
+GROUND_OR_BORDER_FLAGS = ("flags.bank", "flags.fullbank", "flags.clip")
+
+
+def immovable_non_item_route(flags):
+    """Return (owner, reason) for an unmove=true entry with no resolved family; else None."""
+    if not flags.get("flags.unmove"):
+        return None
+    if any(flags.get(flag) for flag in GROUND_OR_BORDER_FLAGS):
+        return "Terrain", "ground_or_border"
+    return "WorldObject", "immovable_unclassified"
 
 
 AMBIGUOUS_HAND_PATTERNS = {
@@ -1128,6 +1199,40 @@ IMPLEMENTED_FIELDS = {
     "market.category",
     "market.minimum_level",
     "market.restrict_to_profession",
+    # VALUE_DEPENDENT fields: every source_value_routes entry each catalog pins is
+    # applied exactly (see `route_for_value`/`resolve_value_dependent_field`); a value
+    # this converter does not recognize stays an `unresolved:<field>=<value>` blocker
+    # rather than silently defaulting.
+    "type",
+    "action",
+    "eventtype",
+    "flags.unmove",
+    "flags.container",
+    "flags.cumulative",
+    "unproperly",
+    "flags.expire",
+    "flags.expirestop",
+    "flags.clockexpire",
+    "flags.wearout",
+    "showcount",
+    "showattributes",
+    "showduration",
+    "effect",
+    "shoottype",
+    "meleeattackeffect",
+    "loottype",
+    "stopduration",
+    "flags.liquidcontainer",
+    "flags.changedtoexpire",
+    "changedtoexpire.former_object_typeid",
+    "flags.dual_wielding",
+    "flags.write",
+    "write.max_text_length",
+    "flags.write_once",
+    "write_once.max_text_length_once",
+    "elementalbond",
+    "reflectdamage",
+    "chain",
 }
 
 
@@ -1268,6 +1373,21 @@ def build_modifiers(attrs):
             "flat": to_int(attrs["speed"]),
             "unit": "speed_points",
         }
+    # elementalbond: every value observed in both pinned engines (physical/energy/earth)
+    # is exactly the schema's restricted damage_type enum for this modifier.
+    if attrs.get("elementalbond") in ("physical", "energy", "earth"):
+        modifiers["elemental_bond"] = {"damage_type": attrs["elementalbond"]}
+    # reflectdamage: a whole-percent reflect (item_parse.cpp casts it unscaled, like
+    # absorbpercent*/hitchance); every pinned occurrence is on a physical-oriented item
+    # (absorbpercentphysical/skill* alongside it, no elemental reflect attribute exists
+    # separately), so physical is the damage_type this raw fact corroborates.
+    if "reflectdamage" in attrs:
+        modifiers.setdefault("reflection", []).append(
+            {
+                "damage_type": "physical",
+                "percent": ratio_value(to_int(attrs["reflectdamage"])),
+            }
+        )
     return modifiers
 
 
@@ -1456,17 +1576,47 @@ ROUTED_STATUSES = {
 }
 
 
-def field_status_row(field, disposition_row):
+_NO_VALUE = object()
+
+
+def route_for_value(disposition_row, raw_value):
+    """Return the `source_value_routes` entry pinned for `raw_value`, or None."""
+    for route in disposition_row.get("source_value_routes") or ():
+        if route.get("source_value") == raw_value:
+            return route
+    return None
+
+
+def field_status_row(field, disposition_row, raw_value=_NO_VALUE):
+    """(status, blocker_key) for one field. `raw_value` is the value actually observed
+    on this item; it is only consulted for a `VALUE_DEPENDENT` disposition, whose own
+    top-level `status` is always `unresolved_semantics` regardless of any per-value
+    route (the route, not the field, decides mapped/routed/unresolved per Rule 2)."""
     if disposition_row is None:
-        return "unsupported"
+        return "unsupported", field
     status = disposition_row["status"]
     if status == "mapped":
-        return "mapped" if field in IMPLEMENTED_FIELDS else "converter_missing"
+        return ("mapped" if field in IMPLEMENTED_FIELDS else "converter_missing"), field
+    if (
+        disposition_row.get("disposition") == "VALUE_DEPENDENT"
+        and raw_value is not _NO_VALUE
+    ):
+        route = route_for_value(disposition_row, raw_value)
+        if route is None:
+            return "unresolved", f"{field}={raw_value}"
+        route_status = route["status"]
+        if route_status == "mapped":
+            return (
+                "mapped" if field in IMPLEMENTED_FIELDS else "converter_missing"
+            ), field
+        if route_status in ROUTED_STATUSES:
+            return "routed", field
+        return "unresolved", f"{field}={raw_value}"
     if status == "unresolved_semantics":
-        return "unresolved"
+        return "unresolved", field
     if status in ROUTED_STATUSES:
-        return "routed"
-    return "unsupported"
+        return "routed", field
+    return "unsupported", field
 
 
 def convert_item(sources, item_id):
@@ -1479,13 +1629,21 @@ def convert_item(sources, item_id):
     blockers = []
     field_status = {}
 
-    def note(field, present):
+    def note(field, present, raw_value=_NO_VALUE):
         if not present:
             return
-        status = field_status_row(field, disposition.get(field))
+        status, blocker_key = field_status_row(field, disposition.get(field), raw_value)
         field_status[field] = status
         if status in ("converter_missing", "unresolved", "unsupported"):
-            blockers.append(f"{status}:{field}")
+            blockers.append(f"{status}:{blocker_key}")
+
+    def demote_to_converter_missing(field):
+        """Correct an already-'mapped' field_status for one occurrence whose destination
+        this converter could not actually produce (Rule 1: the engine data this specific
+        item carries is insufficient, not a general coding gap for the field)."""
+        if field_status.get(field) == "mapped":
+            field_status[field] = "converter_missing"
+            blockers.append(f"converter_missing:{field}")
 
     identity_entry = identity_index.get(item_id)
     if identity_entry is None:
@@ -1510,9 +1668,11 @@ def convert_item(sources, item_id):
     root_fields = ("id", "fromid", "toid", "name", "article", "plural", "editorsuffix")
     for name in disposition:
         if name.startswith("flags.") or "." in name:
-            note(name, name in flags)
+            present = name in flags
+            note(name, present, flags.get(name) if present else _NO_VALUE)
         elif name not in root_fields:
-            note(name, name in attrs)
+            present = name in attrs
+            note(name, present, attrs.get(name) if present else _NO_VALUE)
     note("name", bool(xml_record and xml_record.get("name")))
     note("article", bool(xml_record and xml_record.get("article")))
     note("plural", bool(xml_record and xml_record.get("plural")))
@@ -1521,9 +1681,44 @@ def convert_item(sources, item_id):
     note("appearance.description", bool(appearance and appearance.get("description")))
     note("appearance.frame_group", bool(appearance and appearance.get("frame_groups")))
 
+    non_item = non_item_route(xml_record, attrs, flags)
+    if non_item is not None:
+        owner, reason = non_item
+        return (
+            None,
+            None,
+            {
+                "item_id": item_id,
+                "key": key,
+                "identity_basis": identity_basis,
+                "converted": False,
+                "routed_non_item": {"owner": owner, "reason": reason},
+                "blockers": blockers,
+                "field_status": field_status,
+            },
+        )
+
     primarytype = attrs.get("primarytype")
-    family_profile = classify_family_profile(attrs, primarytype)
+    family_profile = classify_family_profile(
+        attrs, primarytype, flags.get("clothes.slot")
+    )
     if family_profile is None:
+        immovable_route = immovable_non_item_route(flags)
+        if immovable_route is not None:
+            owner, reason = immovable_route
+            return (
+                None,
+                None,
+                {
+                    "item_id": item_id,
+                    "key": key,
+                    "identity_basis": identity_basis,
+                    "converted": False,
+                    "routed_non_item": {"owner": owner, "reason": reason},
+                    "blockers": blockers,
+                    "field_status": field_status,
+                },
+            )
         blockers.append("family_profile_unresolved")
         return (
             None,
@@ -1598,6 +1793,31 @@ def convert_item(sources, item_id):
         definitions[ref["key"]] = ref
         return ref
 
+    # type: source_value_routes exact-value taxonomy override (Rule 2). Values not
+    # covered by a route are `unresolved:type=<value>`, or automatically routed when
+    # the matched route's own status is external_domain (a WorldObject/Terrain type
+    # value the taxonomy field itself never claims).
+    type_route = route_for_value(disposition.get("type") or {}, attrs.get("type"))
+    if (
+        type_route
+        and type_route["status"] == "mapped"
+        and "destination_value_equals" in type_route
+    ):
+        item["taxonomy"]["item_class"] = type_route["destination_value_equals"]
+
+    # loottype: a free-text engine loot-source label; slugged into the tags namespace
+    # (tags need no "ns:local" prefix, unlike most other keys in this schema).
+    if "loottype" in attrs:
+        tag = re.sub(r"[^a-z0-9_.-]+", "_", attrs["loottype"].strip().lower()).strip(
+            "_"
+        )
+        if tag and re.match(r"^[a-z][a-z0-9_.-]*$", tag):
+            tags = item["taxonomy"].setdefault("tags", [])
+            if tag not in tags:
+                tags.append(tag)
+        else:
+            demote_to_converter_missing("loottype")
+
     # physical
     physical = {}
     if "weight" in attrs:
@@ -1606,8 +1826,15 @@ def convert_item(sources, item_id):
             physical["weight"] = payload
         else:
             item.setdefault("presentation", {})["display_weight"] = payload
+    # flags.unmove: VALUE_DEPENDENT, both source_value_routes (true and false) map to
+    # /item/physical/movable via `boolean_not_source` (movable = not unmove); an explicit
+    # engine-level immovable fact wins over the xml `movable` attribute when both are
+    # present, since unmove is the more specific, appearance-level fact.
     if "movable" in attrs:
         physical["movable"] = truthy(attrs["movable"])
+    if "flags.unmove" in flags:
+        movable_from_unmove = not flags["flags.unmove"]
+        physical["movable"] = physical.get("movable", True) and movable_from_unmove
     if "pickupable" in attrs or "allowpickupable" in attrs or flags.get("flags.take"):
         physical["pickupable"] = truthy(
             attrs.get("pickupable", attrs.get("allowpickupable", "1"))
@@ -1635,19 +1862,95 @@ def convert_item(sources, item_id):
             build_presentation_dependency(profile, item_id, appearance)
         )
         blockers.append("sprite_atlas_not_admitted")
+    # display_flags: client-side HUD toggles with no gameplay effect of their own; each
+    # is a plain boolean fact from whichever engine surface carries it (appearance flag
+    # or xml attribute), so several source fields can and do corroborate the same leaf.
+    display_flags = {}
+    if (
+        flags.get("flags.expire") is not None
+        or flags.get("flags.expirestop") is not None
+        or flags.get("flags.clockexpire") is not None
+    ):
+        display_flags["client_expiry_timer"] = bool(
+            flags.get("flags.expire")
+            or flags.get("flags.expirestop")
+            or flags.get("flags.clockexpire")
+        )
+    if flags.get("flags.wearout") is not None:
+        display_flags["client_wear_counter"] = bool(flags["flags.wearout"])
+    if "showcount" in attrs:
+        display_flags["stack_count"] = truthy(attrs["showcount"])
+    if "showattributes" in attrs:
+        display_flags["attributes"] = truthy(attrs["showattributes"])
+    if "showduration" in attrs:
+        display_flags["duration"] = truthy(attrs["showduration"])
+    if display_flags:
+        presentation["display_flags"] = display_flags
+    # effects/projectile_effect/attack_effect: asset-bound identifiers, registered into
+    # dependencies["assets"] the same way the existing light color_binding is, so the
+    # validator's asset-resolution pass can confirm every reference used is declared.
+    engine = sources["engine"]
+    if "effect" in attrs:
+        asset_key = f"{engine}.appearance:effect/{attrs['effect']}"
+        dependencies["assets"].append(asset_key)
+        presentation["effects"] = [asset_key]
+    if "shoottype" in attrs:
+        asset_key = f"{engine}.appearance:projectile/{attrs['shoottype']}"
+        dependencies["assets"].append(asset_key)
+        presentation["projectile_effect"] = asset_key
+    if "meleeattackeffect" in attrs:
+        asset_key = (
+            f"{engine}.appearance:melee-attack-effect/{attrs['meleeattackeffect']}"
+        )
+        dependencies["assets"].append(asset_key)
+        presentation["attack_effect"] = asset_key
     if presentation:
         item["presentation"] = presentation
 
     # equipment
     equipment = build_equipment(attrs, flags.get("clothes.slot"))
     quiver_container = family_profile == "container_equipment"
+    # eventtype: only "equip"/"deequip" are mapped (to activation events "equip"/
+    # "unequip"); the other routed values (stepin/stepout/additem/removeitem) are
+    # external_domain and need no Item-side application. The destination is an
+    # equipment activation event, so it can only be applied when `equipment` itself was
+    # built (compact slot/hands form); an eventtype on an item with no resolvable slot
+    # is the one case this converter cannot represent and stays a precise blocker.
+    eventtype_route = route_for_value(
+        disposition.get("eventtype") or {}, attrs.get("eventtype")
+    )
+    eventtype_event = (
+        eventtype_route.get("destination_array_contains")
+        if eventtype_route and eventtype_route["status"] == "mapped"
+        else None
+    )
     if equipment:
+        if flags.get("flags.dual_wielding"):
+            equipment["dual_wielding"] = True
+        if eventtype_event:
+            equipment["activation_events"] = [eventtype_event]
         item["equipment"] = equipment
+    elif eventtype_event:
+        demote_to_converter_missing("eventtype")
 
     # weapon
+    # weapontype: VALUE_DEPENDENT; weapon_type is taken from the catalog's own
+    # `destination_value_equals` for the matched route (never a static local table), so
+    # a raw value the catalog does not authorize (e.g. the synonym "ammunition" the
+    # engines also emit alongside the catalog's own "ammo") stays an
+    # `unresolved:weapontype=<value>` blocker instead of silently passing through.
     weapon_type_raw = attrs.get("weapontype")
-    if family_profile in ("weapon_melee", "weapon_distance", "weapon_magic"):
-        weapon = {"weapon_type": WEAPON_TYPE_MAP.get(weapon_type_raw, "sword")}
+    weapon_type_route = route_for_value(
+        disposition.get("weapontype") or {}, weapon_type_raw
+    )
+    weapon_type_value = (
+        weapon_type_route["destination_value_equals"]
+        if weapon_type_route and weapon_type_route["status"] == "mapped"
+        else None
+    )
+    build_weapon = weapon_type_value is not None or family_profile == "weapon_melee"
+    if build_weapon:
+        weapon = {"weapon_type": weapon_type_value or "sword"}
         for field, dest in (
             ("attack", "attack"),
             ("defense", "defense"),
@@ -1697,7 +2000,43 @@ def convert_item(sources, item_id):
         ]
         if elemental_attack:
             weapon["elemental_attack"] = elemental_attack
+        # action: VALUE_DEPENDENT, each mapped route pins an exact consumption_mode.
+        action_route = route_for_value(
+            disposition.get("action") or {}, attrs.get("action")
+        )
+        if (
+            action_route
+            and action_route["status"] == "mapped"
+            and "destination_value_equals" in action_route
+        ):
+            weapon["consumption_mode"] = action_route["destination_value_equals"]
+        # chain: a nested-script coefficient (e.g. "0.9"); absent means "inherit engine
+        # defaults" per the schema, so it is only ever applied when present.
+        if "chain" in attrs:
+            try:
+                coefficient = Fraction(str(attrs["chain"]).strip())
+            except (ValueError, ZeroDivisionError):
+                coefficient = None
+            if coefficient and coefficient > 0:
+                weapon["chain"] = {
+                    "mode": "override",
+                    "skill_formula_coefficient": {
+                        "numerator": coefficient.numerator,
+                        "denominator": coefficient.denominator,
+                    },
+                }
+            else:
+                demote_to_converter_missing("chain")
         item["weapon"] = weapon
+    else:
+        if "action" in attrs:
+            action_route = route_for_value(
+                disposition.get("action") or {}, attrs.get("action")
+            )
+            if action_route and action_route["status"] == "mapped":
+                demote_to_converter_missing("action")
+        if "chain" in attrs:
+            demote_to_converter_missing("chain")
 
     # protection
     protection = {}
@@ -1723,6 +2062,24 @@ def convert_item(sources, item_id):
             "capacity": to_int(attrs["containersize"]),
             "content_kind": content_kind,
         }
+    elif flags.get("flags.container"):
+        # The appearance says this is a container, but no `containersize` attribute
+        # gives the required capacity; /item/container has no admitted default (unlike
+        # stack/max_count), so this occurrence stays a precise blocker rather than an
+        # invented capacity.
+        demote_to_converter_missing("flags.container")
+
+    # stack: flags.cumulative is VALUE_DEPENDENT-shaped in practice (present == true in
+    # both pinned engines) but the field itself is a plain boolean fact; max_count has no
+    # per-item source (neither engine's items.xml ever sets `stacksize`) so it takes the
+    # admitted engine-default normalization already encoded in validate_item.py's
+    # non-source-default rule: stackable -> 100, not stackable -> 1.
+    if "flags.cumulative" in flags:
+        stackable = bool(flags["flags.cumulative"])
+        item["stack"] = {
+            "stackable": stackable,
+            "max_count": 100 if stackable else 1,
+        }
 
     # charges
     if "charges" in attrs:
@@ -1742,7 +2099,15 @@ def convert_item(sources, item_id):
             ref = add_item_ref(decay_target_id)
             if ref:
                 temporal["decay_target"] = ref
+        if "stopduration" in attrs:
+            temporal["stop_duration_while_unequipped"] = truthy(attrs["stopduration"])
         item["temporal"] = temporal
+    elif "stopduration" in attrs:
+        # stop_duration_while_unequipped lives on /item/temporal, which requires
+        # duration_ms + consumption_mode; almost every pinned occurrence lacks a
+        # decayto/duration pair to build that object from, so this stays a precise
+        # blocker rather than fabricating a temporal object with no source duration.
+        demote_to_converter_missing("stopduration")
     transforms = []
     for field, trigger in (
         ("destroyto", "destroy"),
@@ -1759,6 +2124,27 @@ def convert_item(sources, item_id):
         ref = add_item_ref(decay_target_id)
         if ref:
             transforms.append({"trigger": "decay", "target": ref})
+    # changedtoexpire/former_object_typeid: an appearance-level alternate source for the
+    # same decay fact as decayto/duration. In both pinned engines every occurrence but
+    # one already carries a matching decayto (verified against former_object_typeid), so
+    # it corroborates the already-built decay transform; former_object_typeid alone
+    # cannot build /item/temporal (which also requires a source duration this appearance
+    # flag does not carry), so a genuine mismatch stays a precise blocker.
+    if flags.get("flags.changedtoexpire"):
+        former_target_id = to_int(flags.get("changedtoexpire.former_object_typeid", 0))
+        decay_trigger_target = next(
+            (t["target"] for t in transforms if t["trigger"] == "decay"), None
+        )
+        corroborated = (
+            former_target_id
+            and decay_trigger_target is not None
+            and item_ref(identity_index, former_target_id) is not None
+            and decay_trigger_target["key"]
+            == item_ref(identity_index, former_target_id)["key"]
+        )
+        if not corroborated:
+            demote_to_converter_missing("flags.changedtoexpire")
+            demote_to_converter_missing("changedtoexpire.former_object_typeid")
     wrapping = {}
     if flags.get("flags.wrap"):
         wrapping["wrap_enabled"] = True
@@ -1784,6 +2170,12 @@ def convert_item(sources, item_id):
     if "imbuementslot" in attrs:
         item["imbuement"] = {"slot_count": to_int(attrs["imbuementslot"])}
 
+    # fluid: flags.liquidcontainer marks the item itself as the vessel that holds a
+    # fluid (schema role "container"), distinct from role "content" (a poured-out fluid
+    # unit, which this converter has no source field for).
+    if flags.get("flags.liquidcontainer"):
+        item["fluid"] = {"role": "container"}
+
     # light
     if flags.get("flags.light"):
         brightness = to_int(flags.get("light.brightness", 0))
@@ -1804,6 +2196,14 @@ def convert_item(sources, item_id):
         requirements["min_level"] = min_level
     if "premium" in attrs:
         requirements["premium_only"] = truthy(attrs["premium"])
+    # unproperly: every pinned occurrence in both engines is "true" (a weapon usable
+    # below its level/vocation requirement at a fixed damage penalty); the schema's
+    # `level_magic_shortfall` policy has exactly one admitted shape for this.
+    if truthy(attrs.get("unproperly", "0")):
+        requirements["level_magic_shortfall"] = {
+            "policy": "allow_with_multiplicative_damage_penalty",
+            "damage_multiplier_per_failed_check": {"numerator": 1, "denominator": 2},
+        }
     professions = flags.get("market.restrict_to_profession")
     vocations = (
         sorted(
@@ -1844,20 +2244,50 @@ def convert_item(sources, item_id):
         item["trade"] = trade
 
     # readable
-    if "readable" in attrs or "writeable" in attrs:
+    # flags.write/flags.write_once are an appearance-level alternate source for the same
+    # readable/writable/write_policy facts as the writeable/maxtextlen/writeonceitemid xml
+    # attributes; write.max_text_length_once/write_once.max_text_length_once corroborate
+    # or supply max_characters when the xml attribute is absent.
+    has_write_flag = bool(flags.get("flags.write") or flags.get("flags.write_once"))
+    if "readable" in attrs or "writeable" in attrs or has_write_flag:
         readable = {"readable": True}
-        writable = truthy(attrs.get("writeable", "0"))
+        writable = (
+            truthy(attrs.get("writeable", "0"))
+            or bool(flags.get("flags.write"))
+            or bool(flags.get("flags.write_once"))
+        )
         readable["writable"] = writable
-        if writable and to_int(attrs.get("maxtextlen", 0)) > 0:
-            readable["write_policy"] = (
-                "write_once" if "writeonceitemid" in attrs else "rewrite"
-            )
-            readable["max_characters"] = to_int(attrs["maxtextlen"])
-            if "writeonceitemid" in attrs:
-                ref = add_item_ref(to_int(attrs["writeonceitemid"]))
-                if ref:
-                    readable["write_once_target"] = ref
+        max_len = to_int(attrs.get("maxtextlen", 0))
+        if max_len <= 0:
+            max_len = to_int(flags.get("write_once.max_text_length_once", 0))
+        if max_len <= 0:
+            max_len = to_int(flags.get("write.max_text_length", 0))
+        wants_write_once = "writeonceitemid" in attrs or bool(
+            flags.get("flags.write_once")
+        )
+        write_once_ref = (
+            add_item_ref(to_int(attrs["writeonceitemid"]))
+            if "writeonceitemid" in attrs
+            else None
+        )
+        if (
+            writable
+            and max_len > 0
+            and (not wants_write_once or write_once_ref is not None)
+        ):
+            readable["write_policy"] = "write_once" if wants_write_once else "rewrite"
+            readable["max_characters"] = max_len
+            if wants_write_once:
+                readable["write_once_target"] = write_once_ref
         elif writable:
+            # write_policy write_once requires write_once_target (schema); without a
+            # writeonceitemid this converter has no target to point at, and write_policy
+            # rewrite would misrepresent a write-once item as freely rewritable, so this
+            # occurrence downgrades to non-writable rather than guessing either shape.
+            if wants_write_once and write_once_ref is None:
+                demote_to_converter_missing("flags.write_once")
+                if "write_once.max_text_length_once" in flags:
+                    demote_to_converter_missing("write_once.max_text_length_once")
             note("maxtextlen", False)
             writable = False
             readable["writable"] = False
@@ -1888,6 +2318,28 @@ def convert_item(sources, item_id):
     modifiers = build_modifiers(attrs)
     if modifiers:
         item["modifiers"] = modifiers
+    if "elementalbond" in attrs and attrs["elementalbond"] not in (
+        "physical",
+        "energy",
+        "earth",
+    ):
+        # Every value observed in both pinned engines is within the schema's restricted
+        # enum; a value outside it has no admitted damage_type and stays a blocker.
+        demote_to_converter_missing("elementalbond")
+
+    # proficiency: a numeric source proficiency id maps only through an admitted exact
+    # crosswalk (Rule 1/`proficiency_profiles`). That crosswalk exists for exactly one id
+    # (Magic Sword, 238) but `validate_item.py` additionally requires *both* the Canary
+    # and Crystal source identities to corroborate the same target
+    # ("exact Canary and Crystal source corroboration is required") before it accepts a
+    # profile_binding; a single-engine converter run only ever has its own engine's
+    # crosswalk entry to offer, so it can never satisfy that check alone. Every
+    # proficiency_id therefore stays a precise blocker in this per-engine converter:
+    # `proficiency_crosswalk_not_admitted:<id>` even for 238, since "admitted" here means
+    # "provable from this one engine's evidence", which no id currently is.
+    proficiency_id = flags.get("proficiency.proficiency_id")
+    if proficiency_id is not None:
+        blockers.append(f"proficiency_crosswalk_not_admitted:{proficiency_id}")
 
     if definitions:
         dependencies["definitions"] = [definitions[k] for k in sorted(definitions)]

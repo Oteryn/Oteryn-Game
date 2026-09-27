@@ -256,6 +256,864 @@ def check(condition, message):
         raise AssertionError(message)
 
 
+# --- synthetic sources: real identity index + real disposition catalog, fabricated
+# items/appearances. This skips the items.xml/appearances.dat round trip entirely
+# (no network, no engine checkout) while still exercising the real
+# `engine_items.convert_item` field-mapping code against the real pinned catalogs. -----
+
+
+def synthetic_sources(engine, item_records):
+    """`item_records`: {item_id: {"attrs": {...}, "flags": {...}, "name": ..., ...}}."""
+    profile = (
+        engine_items.CRYSTAL_PROFILE
+        if engine == "crystal"
+        else engine_items.CANARY_PROFILE
+    )
+    items = {}
+    appearances = {}
+    for item_id, record in item_records.items():
+        items[item_id] = {
+            "name": record.get("name", f"synthetic item {item_id}"),
+            "article": record.get("article", "a"),
+            "plural": record.get("plural"),
+            "attrs": record.get("attrs", {}),
+        }
+        if "flags" in record or "appearance_name" in record:
+            appearances[item_id] = {
+                "id": item_id,
+                "flags": record.get("flags", {}),
+                "frame_groups": record.get("frame_groups", []),
+                "name": record.get("appearance_name"),
+                "description": record.get("appearance_description"),
+            }
+    return {
+        "engine": engine,
+        "profile": profile,
+        "repository": engine_items.ENGINES[engine]["repository"],
+        "revision": engine_items.ENGINES[engine]["revision"],
+        "items": items,
+        "appearances": appearances,
+        "identity_index": engine_items.build_identity_index(),
+        "delivery_member_ids": set(),
+        "delivery_source": engine_items.DELIVERY_SOURCE_NAME[engine],
+        "crystal_list_ids": set(),
+        "crystal_list_entries": 0,
+        "delivery_overrides": {},
+        "disposition": engine_items.load_disposition_catalog(profile),
+    }
+
+
+def convert(item_records, item_id=200, engine="crystal"):
+    sources = synthetic_sources(engine, item_records)
+    return engine_items.convert_item(sources, item_id)
+
+
+def test_value_dependent_type_field():
+    # mapped route: exact passthrough into taxonomy/item_class.
+    item, _deps, report = convert(
+        {200: {"attrs": {"primarytype": "valuables", "type": "key"}}}
+    )
+    check(item["taxonomy"]["item_class"] == "key", item)
+    check(report["field_status"]["type"] == "mapped", report)
+    check(
+        not any(
+            b.startswith(("unresolved:type", "converter_missing:type"))
+            for b in report["blockers"]
+        ),
+        report,
+    )
+
+    # external_domain route (WorldObject/Terrain type): routed, never a blocker, and the
+    # taxonomy override is not applied (no `destination_value_equals` on that route).
+    item, _deps, report = convert(
+        {201: {"attrs": {"primarytype": "valuables", "type": "door"}}}, item_id=201
+    )
+    check(report["field_status"]["type"] == "routed", report)
+    check(item["taxonomy"]["item_class"] != "door", item)
+
+    # a value the catalog does not authorize at all stays a precise, value-labeled blocker.
+    item, _deps, report = convert(
+        {202: {"attrs": {"primarytype": "valuables", "type": "not-a-real-value"}}},
+        item_id=202,
+    )
+    check(report["field_status"]["type"] == "unresolved", report)
+    check("unresolved:type=not-a-real-value" in report["blockers"], report)
+
+
+def test_value_dependent_weapontype_field():
+    # mapped route on a non-weapon-profile item (shield): weapon_type is still applied.
+    item, _deps, report = convert(
+        {
+            210: {
+                "attrs": {
+                    "primarytype": "shields",
+                    "weapontype": "shield",
+                    "defense": "10",
+                }
+            }
+        },
+        item_id=210,
+    )
+    check(item["family_profile"] == "equipment_offhand", item)
+    check(item["weapon"]["weapon_type"] == "shield", item)
+    check(report["field_status"]["weapontype"] == "mapped", report)
+
+    # the raw synonym "ammunition" (as opposed to the catalog's own "ammo") has no
+    # authorized route and stays a value-labeled blocker; no weapon_type is fabricated.
+    item, _deps, report = convert(
+        {
+            211: {
+                "attrs": {"primarytype": "distance weapons", "weapontype": "ammunition"}
+            }
+        },
+        item_id=211,
+    )
+    check(report["field_status"]["weapontype"] == "unresolved", report)
+    check("unresolved:weapontype=ammunition" in report["blockers"], report)
+    check("weapon" not in item, item)
+
+
+def test_value_dependent_action_field():
+    # mapped route applied when a weapon object already exists.
+    item, _deps, report = convert(
+        {
+            220: {
+                "attrs": {
+                    "primarytype": "sword weapons",
+                    "weapontype": "sword",
+                    "action": "removecharge",
+                }
+            }
+        },
+        item_id=220,
+    )
+    check(item["weapon"]["consumption_mode"] == "consume_charge", item)
+    check(report["field_status"]["action"] == "mapped", report)
+
+    # a mapped route with nowhere to land (no weapon object) is a precise blocker rather
+    # than fabricating a weapon object just to hold it.
+    item, _deps, report = convert(
+        {221: {"attrs": {"primarytype": "valuables", "action": "removecount"}}},
+        item_id=221,
+    )
+    check("weapon" not in item, item)
+    check(report["field_status"]["action"] == "converter_missing", report)
+    check("converter_missing:action" in report["blockers"], report)
+
+
+def test_value_dependent_eventtype_field():
+    # mapped route ("equip" -> activation_events contains "equip") on an equippable item.
+    item, _deps, report = convert(
+        {
+            230: {
+                "attrs": {
+                    "primarytype": "helmets",
+                    "slot": "head",
+                    "eventtype": "equip",
+                }
+            }
+        },
+        item_id=230,
+    )
+    check(item["equipment"]["activation_events"] == ["equip"], item)
+    check(report["field_status"]["eventtype"] == "mapped", report)
+
+    # external_domain route: routed, never a blocker.
+    item, _deps, report = convert(
+        {
+            231: {
+                "attrs": {
+                    "primarytype": "helmets",
+                    "slot": "head",
+                    "eventtype": "stepin",
+                }
+            }
+        },
+        item_id=231,
+    )
+    check("activation_events" not in item.get("equipment", {}), item)
+    check(report["field_status"]["eventtype"] == "routed", report)
+
+
+def test_flags_unmove_boolean_invert():
+    item, _deps, report = convert(
+        {240: {"attrs": {"primarytype": "valuables"}, "flags": {"flags.unmove": True}}},
+        item_id=240,
+    )
+    check(item["physical"]["movable"] is False, item)
+    check(report["field_status"]["flags.unmove"] == "mapped", report)
+
+    item, _deps, _report = convert(
+        {
+            241: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {"flags.unmove": False},
+            }
+        },
+        item_id=241,
+    )
+    check(item["physical"]["movable"] is True, item)
+
+    # an explicit engine-level immovable fact wins over a conflicting xml `movable=1`.
+    item, _deps, _report = convert(
+        {
+            242: {
+                "attrs": {"primarytype": "valuables", "movable": "1"},
+                "flags": {"flags.unmove": True},
+            }
+        },
+        item_id=242,
+    )
+    check(item["physical"]["movable"] is False, item)
+
+
+def test_flags_container_guarded_on_capacity():
+    item, _deps, report = convert(
+        {
+            250: {
+                "attrs": {"primarytype": "containers", "containersize": "20"},
+                "flags": {"flags.container": True},
+            }
+        },
+        item_id=250,
+    )
+    check(item["container"] == {"capacity": 20, "content_kind": "items"}, item)
+    check(report["field_status"]["flags.container"] == "mapped", report)
+
+    # flags.container without a containersize has no admitted capacity default: a
+    # precise blocker, not a fabricated capacity.
+    item, _deps, report = convert(
+        {
+            251: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {"flags.container": True},
+            }
+        },
+        item_id=251,
+    )
+    check("container" not in item, item)
+    check(report["field_status"]["flags.container"] == "converter_missing", report)
+    check("converter_missing:flags.container" in report["blockers"], report)
+
+
+def test_flags_cumulative_stack():
+    item, _deps, report = convert(
+        {
+            260: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {"flags.cumulative": True},
+            }
+        },
+        item_id=260,
+    )
+    check(item["stack"] == {"stackable": True, "max_count": 100}, item)
+    check(report["field_status"]["flags.cumulative"] == "mapped", report)
+
+    item, _deps, _report = convert(
+        {
+            261: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {"flags.cumulative": False},
+            }
+        },
+        item_id=261,
+    )
+    check(item["stack"] == {"stackable": False, "max_count": 1}, item)
+
+
+def test_unproperly_level_magic_shortfall():
+    item, _deps, report = convert(
+        {
+            270: {
+                "attrs": {
+                    "primarytype": "sword weapons",
+                    "weapontype": "sword",
+                    "unproperly": "true",
+                }
+            }
+        },
+        item_id=270,
+    )
+    check(
+        item["requirements"]["level_magic_shortfall"]
+        == {
+            "policy": "allow_with_multiplicative_damage_penalty",
+            "damage_multiplier_per_failed_check": {"numerator": 1, "denominator": 2},
+        },
+        item,
+    )
+    check(report["field_status"]["unproperly"] == "mapped", report)
+
+
+def test_presentation_display_flags_and_assets():
+    item, _deps, report = convert(
+        {
+            280: {
+                "attrs": {
+                    "primarytype": "valuables",
+                    "showcount": "1",
+                    "showattributes": "1",
+                    "showduration": "1",
+                    "effect": "bluebubble",
+                    "shoottype": "arrow",
+                    "meleeattackeffect": "monkstaff",
+                },
+                "flags": {
+                    "flags.expire": True,
+                    "flags.wearout": True,
+                },
+            }
+        },
+        item_id=280,
+    )
+    display_flags = item["presentation"]["display_flags"]
+    check(display_flags["stack_count"] is True, display_flags)
+    check(display_flags["attributes"] is True, display_flags)
+    check(display_flags["duration"] is True, display_flags)
+    check(display_flags["client_expiry_timer"] is True, display_flags)
+    check(display_flags["client_wear_counter"] is True, display_flags)
+    check(
+        item["presentation"]["effects"] == ["crystal.appearance:effect/bluebubble"],
+        item,
+    )
+    check(
+        item["presentation"]["projectile_effect"]
+        == "crystal.appearance:projectile/arrow",
+        item,
+    )
+    check(
+        item["presentation"]["attack_effect"]
+        == "crystal.appearance:melee-attack-effect/monkstaff",
+        item,
+    )
+    for field in (
+        "showcount",
+        "showattributes",
+        "showduration",
+        "effect",
+        "shoottype",
+        "meleeattackeffect",
+        "flags.expire",
+        "flags.wearout",
+    ):
+        check(report["field_status"][field] == "mapped", (field, report))
+
+
+def test_loottype_tags():
+    item, _deps, report = convert(
+        {290: {"attrs": {"primarytype": "valuables", "loottype": "creature products"}}},
+        item_id=290,
+    )
+    check(item["taxonomy"]["tags"] == ["creature_products"], item)
+    check(report["field_status"]["loottype"] == "mapped", report)
+
+    # a value that slugs to nothing usable stays a precise blocker.
+    item, _deps, report = convert(
+        {291: {"attrs": {"primarytype": "valuables", "loottype": "!!!"}}}, item_id=291
+    )
+    check("tags" not in item["taxonomy"], item)
+    check(report["field_status"]["loottype"] == "converter_missing", report)
+
+
+def test_stopduration_guarded_on_temporal():
+    item, _deps, report = convert(
+        {
+            300: {
+                "attrs": {
+                    "primarytype": "food",
+                    "decayto": "301",
+                    "duration": "60",
+                    "stopduration": "1",
+                }
+            }
+        },
+        item_id=300,
+    )
+    check(item["temporal"]["stop_duration_while_unequipped"] is True, item)
+    check(report["field_status"]["stopduration"] == "mapped", report)
+
+    # stopduration with no decayto/duration pair has no /item/temporal to attach to.
+    item, _deps, report = convert(
+        {302: {"attrs": {"primarytype": "food", "stopduration": "1"}}}, item_id=302
+    )
+    check("temporal" not in item, item)
+    check(report["field_status"]["stopduration"] == "converter_missing", report)
+
+
+def test_flags_liquidcontainer_fluid_role():
+    item, _deps, report = convert(
+        {
+            310: {
+                "attrs": {"primarytype": "fluid containers", "containersize": "1"},
+                "flags": {"flags.liquidcontainer": True},
+            }
+        },
+        item_id=310,
+    )
+    check(item["fluid"] == {"role": "container"}, item)
+    check(report["field_status"]["flags.liquidcontainer"] == "mapped", report)
+
+
+def test_changedtoexpire_corroborates_decayto():
+    _item, _deps, report = convert(
+        {
+            320: {
+                "attrs": {"primarytype": "food", "decayto": "104", "duration": "60"},
+                "flags": {
+                    "flags.changedtoexpire": True,
+                    "changedtoexpire.former_object_typeid": 104,
+                },
+            }
+        },
+        item_id=320,
+    )
+    check(report["field_status"]["flags.changedtoexpire"] == "mapped", report)
+    check(
+        report["field_status"]["changedtoexpire.former_object_typeid"] == "mapped",
+        report,
+    )
+
+    # a mismatched former_object_typeid cannot corroborate the decayto transform and
+    # /item/temporal has no source duration of its own to build from: a precise blocker.
+    _item, _deps, report = convert(
+        {
+            321: {
+                "attrs": {"primarytype": "food", "decayto": "104", "duration": "60"},
+                "flags": {
+                    "flags.changedtoexpire": True,
+                    "changedtoexpire.former_object_typeid": 105,
+                },
+            }
+        },
+        item_id=321,
+    )
+    check(
+        report["field_status"]["flags.changedtoexpire"] == "converter_missing", report
+    )
+    check(
+        report["field_status"]["changedtoexpire.former_object_typeid"]
+        == "converter_missing",
+        report,
+    )
+
+
+def test_flags_dual_wielding():
+    item, _deps, report = convert(
+        {
+            330: {
+                "attrs": {
+                    "primarytype": "fist weapons",
+                    "weapontype": "fist",
+                    "slot": "hand",
+                },
+                "flags": {"flags.dual_wielding": True},
+            }
+        },
+        item_id=330,
+    )
+    check(item["equipment"]["dual_wielding"] is True, item)
+    check(report["field_status"]["flags.dual_wielding"] == "mapped", report)
+
+
+def test_readable_write_and_write_once():
+    # flags.write: a plain rewrite policy, no target required.
+    item, _deps, report = convert(
+        {
+            340: {
+                "attrs": {"primarytype": "documents and papers"},
+                "flags": {"flags.write": True, "write.max_text_length": 200},
+            }
+        },
+        item_id=340,
+    )
+    check(item["readable"]["writable"] is True, item)
+    check(item["readable"]["write_policy"] == "rewrite", item)
+    check(item["readable"]["max_characters"] == 200, item)
+    check(report["field_status"]["flags.write"] == "mapped", report)
+
+    # flags.write_once with a resolvable target: applied in full.
+    item, _deps, report = convert(
+        {
+            341: {
+                "attrs": {
+                    "primarytype": "documents and papers",
+                    "writeonceitemid": "104",
+                },
+                "flags": {
+                    "flags.write_once": True,
+                    "write_once.max_text_length_once": 50,
+                },
+            }
+        },
+        item_id=341,
+    )
+    check(item["readable"]["write_policy"] == "write_once", item)
+    check(
+        item["readable"]["write_once_target"]["key"]
+        == engine_items.item_ref(engine_items.build_identity_index(), 104)["key"],
+        item,
+    )
+    check(report["field_status"]["flags.write_once"] == "mapped", report)
+
+    # flags.write_once with no writeonceitemid target: write_policy write_once requires
+    # a target the engine data does not carry here, so this downgrades to non-writable
+    # rather than fabricating either a target or an unlimited-rewrite policy.
+    item, _deps, report = convert(
+        {
+            342: {
+                "attrs": {"primarytype": "documents and papers"},
+                "flags": {
+                    "flags.write_once": True,
+                    "write_once.max_text_length_once": 50,
+                },
+            }
+        },
+        item_id=342,
+    )
+    check(item["readable"]["writable"] is False, item)
+    check(item["readable"]["write_policy"] == "none", item)
+    check(report["field_status"]["flags.write_once"] == "converter_missing", report)
+    check(
+        report["field_status"]["write_once.max_text_length_once"]
+        == "converter_missing",
+        report,
+    )
+
+
+def test_elementalbond_and_reflectdamage():
+    item, _deps, report = convert(
+        {
+            350: {
+                "attrs": {
+                    "primarytype": "fist weapons",
+                    "weapontype": "fist",
+                    "elementalbond": "energy",
+                }
+            }
+        },
+        item_id=350,
+    )
+    check(item["modifiers"]["elemental_bond"] == {"damage_type": "energy"}, item)
+    check(report["field_status"]["elementalbond"] == "mapped", report)
+
+    # a damage_type outside the schema's restricted enum has no admitted mapping.
+    item, _deps, report = convert(
+        {351: {"attrs": {"primarytype": "valuables", "elementalbond": "fire"}}},
+        item_id=351,
+    )
+    check("elemental_bond" not in item.get("modifiers", {}), item)
+    check(report["field_status"]["elementalbond"] == "converter_missing", report)
+
+    item, _deps, report = convert(
+        {
+            352: {
+                "attrs": {
+                    "primarytype": "shields",
+                    "weapontype": "shield",
+                    "reflectdamage": "42",
+                }
+            }
+        },
+        item_id=352,
+    )
+    check(
+        item["modifiers"]["reflection"]
+        == [
+            {"damage_type": "physical", "percent": {"numerator": 42, "denominator": 1}}
+        ],
+        item,
+    )
+    check(report["field_status"]["reflectdamage"] == "mapped", report)
+
+
+def test_chain_weapon_coefficient():
+    item, _deps, report = convert(
+        {
+            360: {
+                "attrs": {
+                    "primarytype": "axe weapons",
+                    "weapontype": "axe",
+                    "chain": "0.9",
+                }
+            }
+        },
+        item_id=360,
+    )
+    check(
+        item["weapon"]["chain"]
+        == {
+            "mode": "override",
+            "skill_formula_coefficient": {"numerator": 9, "denominator": 10},
+        },
+        item,
+    )
+    check(report["field_status"]["chain"] == "mapped", report)
+
+    # chain with no resolvable weapon object stays a precise blocker.
+    item, _deps, report = convert(
+        {361: {"attrs": {"primarytype": "valuables", "chain": "0.5"}}}, item_id=361
+    )
+    check("weapon" not in item, item)
+    check(report["field_status"]["chain"] == "converter_missing", report)
+
+
+def test_proficiency_id_stays_a_precise_blocker():
+    """Every proficiency_id, including the one id with an admitted canonical crosswalk
+    (238, Magic Sword), stays blocked from a single-engine converter run:
+    `validate_item.py` requires exact Canary AND Crystal source corroboration for a
+    profile_binding, which no single-engine bundle can ever offer alone."""
+    for proficiency_id in (238, 999):
+        item, _deps, report = convert(
+            {
+                370: {
+                    "attrs": {"primarytype": "valuables"},
+                    "flags": {"proficiency.proficiency_id": proficiency_id},
+                }
+            },
+            item_id=370,
+        )
+        check("proficiency" not in item, item)
+        check(
+            report["field_status"]["proficiency.proficiency_id"] == "converter_missing",
+            report,
+        )
+        check(
+            f"proficiency_crosswalk_not_admitted:{proficiency_id}"
+            in report["blockers"],
+            report,
+        )
+
+
+def test_fields_with_no_admitted_engine_data_stay_blocked():
+    """Rule 1 cases this converter deliberately does not implement: the schema needs
+    data (forge.max_tier, an Ability identity crosswalk, an augment target/value kind
+    crosswalk, or mantra damage_types) that neither pinned engine's evidence supplies."""
+    item, _deps, report = convert(
+        {
+            380: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {
+                    "flags.upgradeclassification": True,
+                    "upgradeclassification.upgrade_classification": 2,
+                },
+            }
+        },
+        item_id=380,
+    )
+    check("forge" not in item, item)
+    check(
+        report["field_status"]["flags.upgradeclassification"] == "converter_missing",
+        report,
+    )
+
+    item, _deps, report = convert(
+        {381: {"attrs": {"primarytype": "food", "runespellname": "adito grav"}}},
+        item_id=381,
+    )
+    check("use" not in item or "ability" not in item.get("use", {}), item)
+    check(report["field_status"]["runespellname"] == "converter_missing", report)
+
+    item, _deps, report = convert(
+        {382: {"attrs": {"primarytype": "valuables", "mantra": "10"}}}, item_id=382
+    )
+    check("mantra" not in item.get("modifiers", {}), item)
+    check(report["field_status"]["mantra"] == "converter_missing", report)
+
+    # flags.forceuse is UNRESOLVED with no source_value_routes at all: unchanged.
+    item, _deps, report = convert(
+        {
+            383: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {"flags.forceuse": True},
+            }
+        },
+        item_id=383,
+    )
+    check(report["field_status"]["flags.forceuse"] == "unresolved", report)
+    check("unresolved:flags.forceuse" in report["blockers"], report)
+
+
+def test_routed_non_item_corpse_and_placeholder_and_terrain():
+    # flags.corpse/flags.player_corpse: routed to WorldObject, never a converter failure.
+    item, _deps, report = convert(
+        {390: {"attrs": {}, "flags": {"flags.corpse": True}}}, item_id=390
+    )
+    check(item is None, report)
+    check(report["converted"] is False, report)
+    check(
+        report["routed_non_item"] == {"owner": "WorldObject", "reason": "corpse"},
+        report,
+    )
+    check(report["blockers"] == [], report)
+
+    item, _deps, report = convert(
+        {391: {"attrs": {}, "flags": {"flags.player_corpse": True}}}, item_id=391
+    )
+    check(report["routed_non_item"]["owner"] == "WorldObject", report)
+
+    # a reserved sprite-sheet placeholder with no other attribute: routed, not unresolved.
+    item, _deps, report = convert(
+        {392: {"attrs": {}, "name": "RESERVED SPRITE"}}, item_id=392
+    )
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "appearance_placeholder_slot"},
+        report,
+    )
+
+    # a Terrain-owned primarytype: routed, never family_profile_unresolved.
+    item, _deps, report = convert(
+        {393: {"attrs": {"primarytype": "artificial tiles"}}}, item_id=393
+    )
+    check(
+        report["routed_non_item"]
+        == {"owner": "Terrain", "reason": "primarytype_world_object"},
+        report,
+    )
+    check("family_profile_unresolved" not in report["blockers"], report)
+
+    # a name that merely contains "reserved sprite" as a substring, or one with other
+    # attributes present, is not a placeholder slot and proceeds normally.
+    item, _deps, report = convert(
+        {
+            394: {
+                "attrs": {"primarytype": "valuables"},
+                "name": "reserved sprite of doom",
+            }
+        },
+        item_id=394,
+    )
+    check(report.get("routed_non_item") is None, report)
+    check(report["converted"] is True, report)
+
+
+def test_routed_non_item_unmove_map_geometry():
+    # unmove=true + a ground/border flag, no resolvable family: Terrain/ground_or_border.
+    item, _deps, report = convert(
+        {395: {"attrs": {}, "flags": {"flags.unmove": True, "flags.bank": True}}},
+        item_id=395,
+    )
+    check(item is None, report)
+    check(report["converted"] is False, report)
+    check(
+        report["routed_non_item"] == {"owner": "Terrain", "reason": "ground_or_border"},
+        report,
+    )
+    check("family_profile_unresolved" not in report["blockers"], report)
+
+    item, _deps, report = convert(
+        {396: {"attrs": {}, "flags": {"flags.unmove": True, "flags.fullbank": True}}},
+        item_id=396,
+    )
+    check(
+        report["routed_non_item"] == {"owner": "Terrain", "reason": "ground_or_border"},
+        report,
+    )
+
+    item, _deps, report = convert(
+        {397: {"attrs": {}, "flags": {"flags.unmove": True, "flags.clip": True}}},
+        item_id=397,
+    )
+    check(
+        report["routed_non_item"] == {"owner": "Terrain", "reason": "ground_or_border"},
+        report,
+    )
+
+    # unmove=true with no ground/border flag (a wall/top decoration/door-style entry)
+    # and no resolvable family: WorldObject/immovable_unclassified.
+    item, _deps, report = convert(
+        {398: {"attrs": {}, "flags": {"flags.unmove": True, "flags.bottom": True}}},
+        item_id=398,
+    )
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "immovable_unclassified"},
+        report,
+    )
+
+    # negative: unmove=true with a resolvable family still converts as an ordinary Item,
+    # movable false, and is never routed away from Item.
+    item, _deps, report = convert(
+        {
+            399: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {"flags.unmove": True},
+            }
+        },
+        item_id=399,
+    )
+    check(report.get("routed_non_item") is None, report)
+    check(report["converted"] is True, report)
+    check(item["physical"]["movable"] is False, item)
+
+    # negative: no unmove and no resolvable family stays editorial backlog
+    # (family_profile_unresolved), never routed_non_item.
+    item, _deps, report = convert({450: {"attrs": {}}}, item_id=450)
+    check(report.get("routed_non_item") is None, report)
+    check(report["converted"] is False, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_family_profile_fallbacks():
+    # soul cores: a new PRIMARYTYPE_PROFILE entry.
+    item, _deps, report = convert(
+        {400: {"attrs": {"primarytype": "soul cores"}}}, item_id=400
+    )
+    check(item["family_profile"] == "material_valuable", report)
+
+    # clothes-slot fallback: no primarytype/weapontype/containersize, only an appearance
+    # clothes slot. Slot 1 = head -> equipment_armor.
+    item, _deps, report = convert(
+        {
+            401: {
+                "attrs": {},
+                "flags": {"flags.clothes": True, "clothes.slot": 1},
+            }
+        },
+        item_id=401,
+    )
+    check(item["family_profile"] == "equipment_armor", report)
+    check(item["equipment"]["slot"] == "head", item)
+
+    # ambiguous hand slots (5/6) default to equipment_offhand.
+    item, _deps, report = convert(
+        {
+            402: {
+                "attrs": {},
+                "flags": {"flags.clothes": True, "clothes.slot": 5},
+            }
+        },
+        item_id=402,
+    )
+    check(item["family_profile"] == "equipment_offhand", report)
+
+    # slot 3 (back) is deliberately left ambiguous: no fallback classification.
+    item, _deps, report = convert(
+        {
+            403: {
+                "attrs": {},
+                "flags": {"flags.clothes": True, "clothes.slot": 3},
+            }
+        },
+        item_id=403,
+    )
+    check(report["converted"] is False, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+    # readable-attrs fallback: no primarytype, but a readable/writable capability names
+    # a document.
+    item, _deps, report = convert(
+        {404: {"attrs": {"writeable": "1", "maxtextlen": "50"}}}, item_id=404
+    )
+    check(item["family_profile"] == "document", report)
+
+    # the ~heterogeneous tail with no structural signal at all stays unresolved; no
+    # name-pattern guess is made for it.
+    item, _deps, report = convert({405: {"attrs": {}}}, item_id=405)
+    check(report["converted"] is False, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
 def test_lf_and_crlf_text_fixtures_byte_identical():
     for engine in ("crystal", "canary"):
         with (
@@ -695,6 +1553,28 @@ def main():
         test_invalid_overrides_file_fails,
         test_override_for_unknown_key_fails,
         test_item_without_allocator_key_keeps_the_blocker_and_no_field,
+        test_value_dependent_type_field,
+        test_value_dependent_weapontype_field,
+        test_value_dependent_action_field,
+        test_value_dependent_eventtype_field,
+        test_flags_unmove_boolean_invert,
+        test_flags_container_guarded_on_capacity,
+        test_flags_cumulative_stack,
+        test_unproperly_level_magic_shortfall,
+        test_presentation_display_flags_and_assets,
+        test_loottype_tags,
+        test_stopduration_guarded_on_temporal,
+        test_flags_liquidcontainer_fluid_role,
+        test_changedtoexpire_corroborates_decayto,
+        test_flags_dual_wielding,
+        test_readable_write_and_write_once,
+        test_elementalbond_and_reflectdamage,
+        test_chain_weapon_coefficient,
+        test_proficiency_id_stays_a_precise_blocker,
+        test_fields_with_no_admitted_engine_data_stay_blocked,
+        test_routed_non_item_corpse_and_placeholder_and_terrain,
+        test_routed_non_item_unmove_map_geometry,
+        test_family_profile_fallbacks,
     ]
     for test in tests:
         test()

@@ -187,6 +187,8 @@ def build_census(sources, engine, bundles_dir=None):
     validator_error_counts = Counter()
     validator_error_examples = defaultdict(list)
     field_items = Counter()
+    routed_non_item_counts = Counter()
+    routed_non_item_examples = defaultdict(list)
     bundles = {}
 
     for item_id in sorted(sources["items"]):
@@ -198,6 +200,18 @@ def build_census(sources, engine, bundles_dir=None):
         basis = report.get("identity_basis")
         if basis:
             identity_basis_counts[basis] += 1
+
+        routed_non_item = report.get("routed_non_item")
+        if routed_non_item:
+            # A non-Item owner decision the catalogs already made (WorldObject/Terrain
+            # corpse behavior, a sprite-sheet placeholder slot, a Terrain primarytype):
+            # never a converter failure, so it is counted apart from `not_converted`.
+            outcome["routed_non_item"] += 1
+            owner_key = f"{routed_non_item['owner']}:{routed_non_item['reason']}"
+            routed_non_item_counts[owner_key] += 1
+            if len(routed_non_item_examples[owner_key]) < 5 and report.get("key"):
+                routed_non_item_examples[owner_key].append(report["key"])
+            continue
 
         if not report["converted"]:
             outcome["not_converted"] += 1
@@ -270,6 +284,16 @@ def build_census(sources, engine, bundles_dir=None):
         "outcome": dict(sorted(outcome.items())),
         "by_profile": dict(sorted(by_profile.items())),
         "identity_basis": dict(sorted(identity_basis_counts.items())),
+        "routed_non_item": [
+            {
+                "owner_reason": owner_key,
+                "items": count,
+                "examples": routed_non_item_examples[owner_key],
+            }
+            for owner_key, count in sorted(
+                routed_non_item_counts.items(), key=lambda row: (-row[1], row[0])
+            )
+        ],
         "delivery_task": {
             "observation": {
                 "source": sources["delivery_source"],

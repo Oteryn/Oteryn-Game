@@ -29,8 +29,8 @@ Architecture and boundaries:
 | `verify_formal_schema.py` | Focused positive/negative contract checks and deterministic fixtures. |
 | `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding, and the `delivery_task_eligible` decision from the `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` authoring rule. Digest-verifies every input artifact first (text artifacts after CRLF->LF normalization, `appearances.dat` as exact raw bytes); a missing pinned artifact is a hard error. |
 | `delivery-task-overrides.json` | Per-Item exceptions to the Delivery Task adoption rule (`{key: {eligible, reason}}`), strictly validated; starts empty. |
-| `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every emitted bundle (the real `delivery_task_eligible` decision, not a proposal), and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage, Delivery Task decision/observation/crystal-list counts). `--self-check` runs required engine-specific assertions for both engines; `--check` diffs an in-memory regeneration against the committed file instead of writing. |
-| `test_engine_items.py` | Fixture-checkout tests for `engine_items`/`population_census`: LF/CRLF digest portability, per-engine Delivery Task pool parsing, the Crystal-list adoption rule and its per-item overrides. Run with `python test_engine_items.py`. |
+| `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every emitted bundle (the real `delivery_task_eligible` decision, not a proposal), and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage, Delivery Task decision/observation/crystal-list counts, and a `routed_non_item` owner/reason breakdown). `--self-check` runs required engine-specific assertions for both engines; `--check` diffs an in-memory regeneration against the committed file instead of writing. |
+| `test_engine_items.py` | Fixture-checkout tests for `engine_items`/`population_census`: LF/CRLF digest portability, per-engine Delivery Task pool parsing, the Crystal-list adoption rule and its per-item overrides, plus direct synthetic-`sources` tests (real identity index and disposition catalogs, fabricated `items`/`appearances`) for every implemented field family and value route. Run with `python test_engine_items.py`. |
 | `samples/population-crystal-ff7ede5.json`, `samples/population-canary-47dfd51f.json` | Committed census outputs for the two pinned engine revisions. |
 
 The profiles are guidance inside one schema. Missing a common capability produces a
@@ -69,6 +69,55 @@ python test_engine_items.py
 `population_census.py` is evidence tooling: it proves what the pinned engine sources
 convert to under this schema today, not a corpus migration or Game truth. It never
 commits per-item rows, only counters and capped examples in `samples/`.
+
+### Value-dependent fields and non-Item routing
+
+A `VALUE_DEPENDENT` catalog field (`disposition == "VALUE_DEPENDENT"`, top-level
+`status` always `unresolved_semantics`) is resolved per observed value against that
+field's own `source_value_routes`: a route whose own `status` is `mapped` is applied
+exactly as pinned (`destination_value_equals`/`destination_array_contains`/
+`destination_value_transform`) and counts as `mapped`/`converter_missing` like any other
+field; a route whose own status is a routed status (e.g. `external_domain`) counts as
+`routed`, never a blocker; a value with no route at all is a distinct
+`unresolved:<field>=<value>` blocker, so the remaining tail stays diagnosable by value
+instead of collapsing into one generic bucket. `flags.unmove` is one such field: **both**
+its `true` and `false` routes map to `/item/physical/movable` (`boolean_not_source`); the
+field itself does not route to a non-Item owner. An `flags.unmove=true` entry that *does*
+resolve a `family_profile` (e.g. a heavy, non-pickupable weapon or container) still
+converts as an ordinary Item with `physical.movable: false`.
+
+Some ids are never Item candidates at all: `flags.corpse`/`flags.player_corpse`
+(WorldObject/Interaction-owned corpse behavior), a reserved sprite-sheet placeholder
+appearance name (`reserved sprite`, `deprecated item`, `empty sprite`, case-insensitive,
+with no other `items.xml` attribute), and a `primarytype` naming a Terrain/WorldObject
+fixture (`artificial tiles`, `natural tiles`, `fields`, `walls`, `constructions`,
+`machines (objects)`, `machines`, `traps`). `convert_item` recognizes these before
+attempting `family_profile` classification and reports them as `routed_non_item`
+(`{"owner": ..., "reason": ...}`) with `converted: false` and no blockers; the census
+counts them under the `routed_non_item` outcome, separate from `not_converted`.
+
+Separately, once `family_profile` classification has already failed to resolve a family,
+an `flags.unmove=true` entry (formal schema §5a: immovable map geometry — walls, ground,
+borders, top decorations, doors/stairs/ramps/windows — with no Item family profile) is
+also routed to `routed_non_item` instead of staying `family_profile_unresolved`: owner
+`Terrain`/reason `ground_or_border` when `flags.bank`, `flags.fullbank` or `flags.clip` is
+set, otherwise owner `WorldObject`/reason `immovable_unclassified`. An `unmove=false` (or
+absent) entry with no resolved family keeps `family_profile_unresolved`, since that case
+stays editorial backlog rather than a known non-Item owner decision.
+
+A field this converter cannot implement because the schema needs data neither pinned
+engine's evidence supplies keeps a precise blocker rather than a guessed value:
+`flags.upgradeclassification`/`upgradeclassification.upgrade_classification`
+(`/item/forge` also requires `max_tier`, which only a Wiki infobox field supplies),
+`augments` (the nested augment tree's target/value kind has no admitted crosswalk),
+`mantra` (its `damage_types` are not derivable from the single `points` attribute),
+`runespellname` (no admitted Ability identity crosswalk is wired into this package), and
+`proficiency.proficiency_id` (the one admitted crosswalk, Magic Sword/238, still cannot
+satisfy `validate_item.py`'s requirement that both the Canary *and* Crystal source
+identities corroborate the same target, which a single-engine converter run can never
+offer alone; every id, including 238, keeps `converter_missing:proficiency.proficiency_id`
+plus a `proficiency_crosswalk_not_admitted:<id>` blocker). `flags.forceuse` is `UNRESOLVED`
+with no route at all and is intentionally left as `unresolved:flags.forceuse`.
 
 Successful validation proves authoring shape and declared dependency closure only. It
 does not prove runtime lowering, gameplay parity, corpus migration or production
