@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260927-quest-tracks-dialogue-owners
-title: Quest format - declared auxiliary tracks, NPC dialogue binding, relocation and world-object owners (D37-D38)
+title: Quest format - declared tracks, NPC dialogue binding, owner decisions D37-D42
 mode: CONTRACT
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -10,7 +10,7 @@ base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: null
-base_sha: null
+base_sha: 9367bb33e91a8f3c74b1eba70fc0c9db6f8534e6
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -22,6 +22,8 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260927-quest-tracks-dialogue-owners.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
+  - docs/architecture/OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md
+  - docs/agents/tasks/archive/OTV2-20260927-quest-conflict-decisions.md
   - tools/content-schema/quest-authoring/**
 public_contracts: []
 depends_on: []
@@ -46,6 +48,11 @@ Owner request (2026-09-27, this session): do three next steps.
 3. **NPC dialogue binding.** NPC transitions (1,442) name their dialogue in `requested_by`: the NPC
    authoring bundle key, the player keywords and the dialogue topics. A longer phrase becomes a
    text reference. No NPC-owned file changes.
+
+4. **Reward chest decisions.** `OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md` records
+   D39-D42 for the smallest playable slice (a reward chest). They follow a comparison with both
+   servers and were taken by the owner (2026-09-27). One composition point with the character
+   revision chain must be settled before implementation.
 
 Runtime, persistence and `content/**` stay unchanged.
 
