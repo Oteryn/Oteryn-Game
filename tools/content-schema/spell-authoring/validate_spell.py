@@ -21,7 +21,7 @@ SCHEMAS = {name: json.loads(path.read_text(encoding='utf-8')) for name, path in 
 REGISTRY = Registry().with_resources((s['$id'], Resource.from_contents(s)) for s in SCHEMAS.values())
 CATALOG_FAMILIES = {'Item', 'Interaction', 'Creature', 'Ability', 'Effect', 'Formula', 'Spell'}
 INPUT_SETS = {
-    'level_magic': {'level', 'magic_level', 'base_power'},
+    'level_magic': {'level', 'magic_level', 'base_power', 'shielding_skill'},
     'skill': {'level', 'attack_skill', 'attack_value', 'attack_factor', 'base_power', 'shielding_skill'},
 }
 # Evaluation grid for the semantic range check: every combination must give 0 <= minimum <= maximum.

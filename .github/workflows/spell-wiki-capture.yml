@@ -55,6 +55,10 @@ jobs:
             --catalog synthetic-catalog.json
           python spell_census.py self-test
           python wiki_spells.py self-test
+          for bundle in samples/starter-bundles/*/; do
+            python validate_spell.py "$bundle/spell.json" "$bundle/dependencies.json" \
+              --catalog "$bundle/catalog.json" --manifest "$bundle/manifest.json" > /dev/null
+          done
 
   wiki-br:
     # TibiaWiki BR answers 403 (Cloudflare) from the build container; this job reads it from a hosted

@@ -69,9 +69,9 @@ d['expression'] = {
     ]}
 d['formula'] = obj({
     'identity': use('identity'), 'kind': {'const': 'player_expression'},
-    'inputs': {**enum('level_magic', 'skill'), 'description': 'level_magic: level, magic_level, base_power; '
-               'skill: level, attack_skill, attack_value, attack_factor, base_power, shielding_skill. The engine '
-               'fills attack_* from the wielded weapon (a world combat rule).'},
+    'inputs': {**enum('level_magic', 'skill'), 'description': 'level_magic: level, magic_level, base_power and '
+               'the caster\'s shielding_skill (knight healing); skill: level, attack_skill, attack_value, attack_factor, '
+               'base_power, shielding_skill. The engine fills attack_* from the wielded weapon (a world combat rule).'},
     'minimum': use('expression'), 'maximum': use('expression')},
     ('identity', 'kind', 'inputs', 'minimum', 'maximum'),
     description='S5: magnitude range of a damage or heal Effect cast by a player. Each bound is evaluated, '
@@ -79,8 +79,9 @@ d['formula'] = obj({
 d['rune'] = obj({
     'item': {**use('ItemRef'), 'description': 'S2: the rune Item (Item authority stays with the Item catalogue).'},
     'charges': integer(1), 'magic_level': integer(), 'allow_far_use': use('bool'),
-    'blocking': {**enum('solid', 'creature', 'none'), 'description': 'Canary/Crystal isBlocking(true, false) '
-                 'as solid/creature; absent call = none.'}},
+    'blocking': obj({'solid': use('bool'), 'creature': use('bool')}, ('solid', 'creature'),
+                    description='Canary/Crystal rune:isBlocking(blockingSolid, blockingCreature): the target tile may not '
+                                'hold a solid item / a creature; engine default false, false.')},
     ('item', 'charges', 'magic_level', 'allow_far_use', 'blocking'))
 d['conjure'] = obj({'reagent': use('ItemRef'), 'result': use('ItemRef'), 'count': integer(1)}, ('result', 'count'),
                    description='S2: removes one reagent (when present) and creates count result items.')
@@ -98,7 +99,8 @@ d['spell'] = obj({
     'words': text(maxLength=64, description='Spoken words, lowercase; required for instant spells.'),
     'reference_spell_id': integer(1, description='Client spell id (Canary/Crystal spell:id, wiki spellid).'),
     'requirements': obj({
-        'vocations': array(use('vocation'), 1, True), 'level': integer(1), 'premium': use('bool'),
+        'vocations': array(use('vocation'), 1, True),
+        'level': integer(0, description='Required character level; 0 = none (monk starter spells).'), 'premium': use('bool'),
         'learning_required': use('bool'),
         'acquisition_interactions': array(use('InteractionRef'), 1, True, description='S10: trainer NPC services.')},
         ('vocations', 'level', 'premium', 'learning_required')),
@@ -111,7 +113,8 @@ d['spell'] = obj({
     'targeting': obj({
         'aggressive': use('bool'), 'self_target': use('bool'), 'needs_target': use('bool'),
         'needs_direction': use('bool'), 'target_or_direction': use('bool'), 'range_tiles': integer(),
-        'block_walls': use('bool'), 'allow_on_self': use('bool'), 'check_floor': use('bool'),
+        'block_walls': {**use('bool'), 'description': 'The cast needs a clear line of sight (Canary/Crystal '
+                        'blockWalls = checkLineOfSight, engine default true).'}, 'allow_on_self': use('bool'), 'check_floor': use('bool'),
         'parameter': enum('none', 'player_name', 'text')},
         ('aggressive', 'self_target', 'needs_target', 'needs_direction', 'target_or_direction', 'block_walls',
          'parameter')),

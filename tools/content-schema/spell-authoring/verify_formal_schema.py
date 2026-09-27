@@ -85,10 +85,10 @@ SUDDEN_DEATH_RUNE = {'spell': {
                                    'master_sorcerer', 'monk', 'paladin', 'royal_paladin', 'sorcerer'],
                      'level': 45, 'premium': False, 'learning_required': False},
     'costs': {'mana': 0, 'soul': 0}, 'cooldown_ms': 2000, 'groups': [{'group': 'attack', 'cooldown_ms': 2000}],
-    'targeting': targeting(aggressive=True, needs_target=True), 'pz_locks_caster': False, 'needs_weapon': False,
+    'targeting': targeting(aggressive=True, needs_target=True, block_walls=True), 'pz_locks_caster': False, 'needs_weapon': False,
     'base_power': 150,
     'rune': {'item': ref('Item', 'oteryn:item.sudden_death_rune'), 'charges': 3, 'magic_level': 15,
-             'allow_far_use': True, 'blocking': 'solid'},
+             'allow_far_use': True, 'blocking': {'solid': True, 'creature': False}},
     'execution': {'ability': ref('Ability', 'oteryn:ability.spell.sudden_death_rune')}}}
 SUDDEN_DEATH_RUNE_DEPS = {
     'abilities': [{'identity': identity('oteryn:ability.spell.sudden_death_rune'), 'kind': 'spell',

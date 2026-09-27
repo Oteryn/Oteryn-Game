@@ -1,12 +1,12 @@
 {
   "spell": {
     "identity": {
-      "key": "oteryn:spell.sudden_death_rune",
-      "revision": "definition-r1"
+      "key": "candidate:spell/great_fireball_rune",
+      "revision": "spell-p2-r1"
     },
-    "name": "sudden death rune",
+    "name": "great fireball rune",
     "carrier": "rune",
-    "reference_spell_id": 21,
+    "reference_spell_id": 16,
     "requirements": {
       "vocations": [
         "druid",
@@ -20,7 +20,7 @@
         "royal_paladin",
         "sorcerer"
       ],
-      "level": 45,
+      "level": 30,
       "premium": false,
       "learning_required": false
     },
@@ -38,34 +38,36 @@
     "targeting": {
       "aggressive": true,
       "self_target": false,
-      "needs_target": true,
+      "needs_target": false,
       "needs_direction": false,
       "target_or_direction": false,
       "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
       "parameter": "none"
     },
     "pz_locks_caster": false,
     "needs_weapon": false,
-    "base_power": 150,
+    "base_power": 50,
     "rune": {
       "item": {
         "family": "Item",
-        "key": "oteryn:item.sudden_death_rune",
-        "revision": "definition-r1"
+        "key": "candidate:item/3191",
+        "revision": "spell-p2-r1"
       },
-      "charges": 3,
-      "magic_level": 15,
+      "charges": 4,
+      "magic_level": 4,
       "allow_far_use": true,
       "blocking": {
-        "solid": true,
+        "solid": false,
         "creature": false
       }
     },
     "execution": {
       "ability": {
         "family": "Ability",
-        "key": "oteryn:ability.spell.sudden_death_rune",
-        "revision": "definition-r1"
+        "key": "candidate:ability/spell/great_fireball_rune",
+        "revision": "spell-p2-r1"
       }
     }
   }

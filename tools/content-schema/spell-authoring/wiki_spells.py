@@ -535,12 +535,12 @@ CROSSWALK_RUNE_FIELDS = ('levelrequired', 'mlrequired', 'basepower', 'damagetype
 def crosswalk_value(field, value):
     if value is None:
         return None
-    if field == 'voc':
+    if field in ('voc', 'vocrequired'):
         return wiki_vocations(value) or None
-    if field in ('cooldown', 'cooldowngroup'):
+    if field in ('cooldown', 'cooldowngroup', 'cooldowngroup2'):
         ms = wiki_seconds_ms(value)
         return ms if ms is not None else plain(value)
-    if field in ('levelrequired', 'mana', 'soul', 'basepower', 'amount', 'mlrequired'):
+    if field in ('levelrequired', 'mana', 'soul', 'basepower', 'amount', 'mlrequired', 'spellrange'):
         number = wiki_number(value)
         if number is not None:
             return number

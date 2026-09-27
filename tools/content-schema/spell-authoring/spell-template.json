@@ -48,7 +48,10 @@
       "charges": "<integer>",
       "magic_level": "<integer>",
       "allow_far_use": "<bool>",
-      "blocking": "<solid|creature|none>"
+      "blocking": {
+        "solid": "<bool>",
+        "creature": "<bool>"
+      }
     },
     "execution": {
       "ability": "<AbilityRef>"

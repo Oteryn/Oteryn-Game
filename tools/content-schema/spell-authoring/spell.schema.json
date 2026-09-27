@@ -260,7 +260,7 @@
             "level_magic",
             "skill"
           ],
-          "description": "level_magic: level, magic_level, base_power; skill: level, attack_skill, attack_value, attack_factor, base_power, shielding_skill. The engine fills attack_* from the wielded weapon (a world combat rule)."
+          "description": "level_magic: level, magic_level, base_power and the caster's shielding_skill (knight healing); skill: level, attack_skill, attack_value, attack_factor, base_power, shielding_skill. The engine fills attack_* from the wielded weapon (a world combat rule)."
         },
         "minimum": {
           "$ref": "#/$defs/expression"
@@ -298,12 +298,21 @@
           "$ref": "#/$defs/bool"
         },
         "blocking": {
-          "enum": [
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "solid": {
+              "$ref": "#/$defs/bool"
+            },
+            "creature": {
+              "$ref": "#/$defs/bool"
+            }
+          },
+          "required": [
             "solid",
-            "creature",
-            "none"
+            "creature"
           ],
-          "description": "Canary/Crystal isBlocking(true, false) as solid/creature; absent call = none."
+          "description": "Canary/Crystal rune:isBlocking(blockingSolid, blockingCreature): the target tile may not hold a solid item / a creature; engine default false, false."
         }
       },
       "required": [
@@ -437,7 +446,8 @@
             },
             "level": {
               "type": "integer",
-              "minimum": 1
+              "minimum": 0,
+              "description": "Required character level; 0 = none (monk starter spells)."
             },
             "premium": {
               "$ref": "#/$defs/bool"
@@ -550,7 +560,8 @@
               "minimum": 0
             },
             "block_walls": {
-              "$ref": "#/$defs/bool"
+              "$ref": "#/$defs/bool",
+              "description": "The cast needs a clear line of sight (Canary/Crystal blockWalls = checkLineOfSight, engine default true)."
             },
             "allow_on_self": {
               "$ref": "#/$defs/bool"
