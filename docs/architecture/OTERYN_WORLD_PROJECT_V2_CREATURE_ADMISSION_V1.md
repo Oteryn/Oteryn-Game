@@ -77,8 +77,9 @@ byte-for-byte on its Ability, Effect and Formula, otherwise the writer fails.
 Item identity map (`export_reference_item_identity_map`, allocation digest `ee9219cc…`) from
 the Crystal source item id to the Oteryn Item key. Canary and Crystal share the client item id
 space: of the 2,655 referenced ids present in both, 17 differ only by name variant ("remains
-of" or "dead") or by a missing Canary `items.xml` entry. Items stay identity records; no Item
-semantics are changed.
+of" or "dead") or by a missing Canary `items.xml` entry. Protected Item rekeys apply on top of the allocation map. The first is R7 P04, which renames the
+gold coin to `oteryn:item.currency.gold_coin`. The writer fails when a mapped key is absent from
+`content/world`. Items stay identity records; no Item semantics are changed.
 
 **Provenance.** Admission adds a source `oteryn:source.canary`: revision
 `47dfd51f45280a59a1d3e50ba7edd573d7234446`, evidence `OtsHypothesisOnly`. Each creature gets a
@@ -101,16 +102,17 @@ Each admitted monster adds records the current linker accepts unchanged:
 
 The Reference profile knows only the `Damage` and `Heal` effect families. The other effect
 operations of wave A have no executable semantics yet, so they are not Reference records.
-They remain typed inline effects of their Ability's authoring profile (§5):
+They remain typed inline effects of their Ability's authoring profile (§5). The admitted wave A
+Abilities carry, each shared spell counted once:
 
 | Operation | Count |
 |---|---:|
-| condition | 1,718 |
-| appearance transform | 107 |
-| presentation only | 63 |
-| create item | 57 |
-| summon | 10 |
-| remove condition | 6 |
+| condition | 1,313 |
+| appearance transform | 105 |
+| create item | 56 |
+| presentation only | 47 |
+| summon | 7 |
+| remove condition | 4 |
 | remove items | 1 |
 
 The Ability record lists its executable effects in authored order. The profile keeps the full
@@ -130,7 +132,10 @@ Python authoring validator stays the semantic source.
 | Ability (extended) | kind, range, target and direction needs, area geometry, chain, variants, path requirement, and inline non-executable effects |
 | Effect (new) | damage type, mitigation, affected side and presentation of damage and heal effects |
 | Formula (new) | kind (`range`, `speed_modifier`, `caster_magnitude`, `melee_attack_skill`) with its parameters |
-| Loot (new) | `skip_later_same_item_after_success`, true on 16 entries, which the Reference Loot entry lacks |
+| Loot (new) | `skip_later_same_item_after_success`, true on 13 wave A entries, which the Reference Loot entry lacks |
+
+Surrounding whitespace is trimmed from voice lines and bestiary locations; four Canary voice lines
+and one location list carry it, and v2 source text rejects it.
 
 A profile never overrides a Reference record field. When both carry a value, the writer emits
 equal values or fails. Health admits `max_health` as `health`; every wave A monster has
@@ -154,10 +159,11 @@ monster of each profile shape.
 1. This decision.
 2. Rust: the §5 profiles, `canonicalize`, `validate_v2_authoring_profile` and focused positive
    and negative tests. No content change.
-3. Writer and pilot: 25 monsters through admission and linking. They include a shared spell,
-   inline condition effects, a skipped loot entry, and the four creatures the pilot monsters
-   summon.
-4. Wave A in bulk (1,315) and regeneration of the content tree.
+3. Writer and wave A in bulk (1,315), with regeneration of the content tree. The pilot (`--pilot`,
+   25 monsters) proved the route locally first: it covers a shared spell, inline condition effects,
+   a skipped loot entry, and the four creatures the pilot monsters summon. The full wave then found
+   two cases the pilot lacked: two addons sharing the attachment slot, and whitespace around texts.
+4. (Merged into slice 3.)
 5. Later: the 59 Item-blocked monsters after the Item domain registers the 68 items; Duke
    Krule after a zero-count loot decision; the 101 encounter monsters with an Encounter runtime
    slice; the 14 reference-blocked monsters as their references become admitted.
