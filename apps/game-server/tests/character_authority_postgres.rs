@@ -1837,3 +1837,8 @@ async fn fresh_rerun(database: &Database) -> TestResult {
     std::fs::remove_dir_all(retained)?;
     Ok(())
 }
+
+// R7 P03 shares its cases with the focused standalone target so the established
+// protected PostgreSQL 17.6 lane executes the exact same qualification.
+#[path = "support/character_progression_postgres_cases.rs"]
+mod character_progression_postgres_cases;

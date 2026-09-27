@@ -1,13 +1,15 @@
 #![allow(clippy::expect_used)]
 
-//! OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §6: typed trade offers with count and sub type and
-//! typed travel routes on declarative NPC Services.
+//! OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §4 and §6: an NPC bound to Presentation and Behavior
+//! profiles (outfit, wander), with typed trade offers and travel routes on declarative Services.
 
 use oteryn_game_server::content::*;
 use serde_json::{Value, json};
 
 const REVISION: &str = "definition-r1";
 const NPC: &str = "oteryn:npc.captain_bluebear";
+const PRESENTATION: &str = "oteryn:presentation.npc.captain_bluebear";
+const BEHAVIOR: &str = "oteryn:behavior.npc.captain_bluebear";
 const TRADE: &str = "oteryn:service.trade.captain_bluebear";
 const TRAVEL: &str = "oteryn:service.travel.captain_bluebear";
 const AXE: &str = "oteryn:item.registry.i00003155";
@@ -58,6 +60,101 @@ fn item(key: &str) -> ProjectReferenceRecord {
         stack_class: ItemStackDocument::Unknown,
         semantics: ReferenceItemSemantics::default(),
     }
+}
+
+fn generic(family: &str, key: &str, projection: ProjectionDocument) -> ProjectReferenceRecord {
+    ProjectReferenceRecord::Generic {
+        identity: DefinitionIdentityDocument {
+            family: family.into(),
+            key: key.into(),
+            revision: REVISION.into(),
+        },
+        client_projection: projection,
+    }
+}
+
+fn wander() -> ProjectV2Wander {
+    ProjectV2Wander {
+        interval_ms: 2_000,
+        radius_tiles: 2,
+    }
+}
+
+fn profiles() -> Vec<ProjectV2AuthoringProfile> {
+    let palette = |slot, color: u16| ProjectV2SlotBinding {
+        slot,
+        asset_binding: format!("canary.appearance:palette/{color}"),
+    };
+    vec![
+        ProjectV2AuthoringProfile {
+            target: reference(ProjectV2Family::Presentation, PRESENTATION),
+            data: ProjectV2AuthoringProfileData::Presentation(ProjectV2PresentationAuthoring {
+                asset_binding: Some("canary.appearance:outfit/129".into()),
+                selection: None,
+                palette_bindings: vec![
+                    palette(ProjectV2PaletteSlot::Head, 19),
+                    palette(ProjectV2PaletteSlot::Body, 69),
+                    palette(ProjectV2PaletteSlot::Legs, 125),
+                    palette(ProjectV2PaletteSlot::Feet, 50),
+                ],
+                attachment_bindings: vec![ProjectV2SlotBinding {
+                    slot: ProjectV2AttachmentSlot::Addon,
+                    asset_binding: "canary.appearance:outfit/129/addon-1".into(),
+                }],
+                visual_effect_bindings: vec![],
+                light_level: 0,
+                light_color_binding: None,
+                audio_bindings: vec![],
+                variant_label: None,
+                status_marker: None,
+            }),
+        },
+        ProjectV2AuthoringProfile {
+            target: reference(ProjectV2Family::Behavior, BEHAVIOR),
+            data: ProjectV2AuthoringProfileData::Behavior(ProjectV2BehaviorAuthoring {
+                movement: ProjectV2Movement {
+                    can_walk: true,
+                    pass_through: false,
+                    pushable: false,
+                    push_items: false,
+                    push_creatures: false,
+                    walks_on_energy: false,
+                    walks_on_fire: false,
+                    walks_on_poison: false,
+                    wander: Some(wander()),
+                },
+                targeting: ProjectV2Targeting {
+                    hostile: false,
+                    can_target: false,
+                    sense_invisible: false,
+                    target_distance_tiles: 0,
+                    static_attack_chance_ppm: 0,
+                    flee_health: 0,
+                    change_target: None,
+                    strategy_weights: None,
+                },
+                attacks: vec![],
+                defenses: vec![],
+                voices: None,
+                summons: None,
+                periodic_audio: None,
+                faction: None,
+                event_bindings: vec![],
+            }),
+        },
+    ]
+}
+
+fn behavior_mut(draft: &mut ProjectV2Draft) -> &mut ProjectV2BehaviorAuthoring {
+    draft
+        .state
+        .authoring_profiles
+        .iter_mut()
+        .find_map(|profile| match &mut profile.data {
+            ProjectV2AuthoringProfileData::Behavior(behavior) => Some(behavior),
+            _ => None,
+        })
+        .expect("behavior profile")
 }
 
 fn offer(
@@ -119,7 +216,13 @@ fn draft() -> ProjectV2Draft {
             licensing_metadata: "license:project-owned-v1".into(),
             world_id: "0123456789ab70cd8ef0123456789abc".into(),
             coordinate_frame: FRAME.into(),
-            records: vec![item(AXE), item(RUNE), item(TOKEN)],
+            records: vec![
+                generic("Presentation", PRESENTATION, ProjectionDocument::ClientSafe),
+                generic("Behavior", BEHAVIOR, ProjectionDocument::ServerOnly),
+                item(AXE),
+                item(RUNE),
+                item(TOKEN),
+            ],
             imports: vec![],
             metadata: vec![],
         },
@@ -127,8 +230,8 @@ fn draft() -> ProjectV2Draft {
             declarations: vec![
                 ProjectV2Declaration::Npc {
                     identity: identity(NPC),
-                    presentation: None,
-                    behavior: None,
+                    presentation: Some(reference(ProjectV2Family::Presentation, PRESENTATION)),
+                    behavior: Some(reference(ProjectV2Family::Behavior, BEHAVIOR)),
                     dialogue: None,
                     services: vec![
                         reference(ProjectV2Family::Service, TRADE),
@@ -154,6 +257,7 @@ fn draft() -> ProjectV2Draft {
                     fields: vec![],
                 },
             ],
+            authoring_profiles: profiles(),
             ..ProjectV2State::default()
         },
     }
@@ -232,7 +336,15 @@ fn npc_services_round_trip_and_stay_declarative() {
     let reference = parsed
         .lower_reference_source()
         .expect("reference projection stays executable-only");
-    assert_eq!(reference.definitions.len(), 3, "only the three Items lower");
+    assert_eq!(
+        reference.definitions.len(),
+        5,
+        "only the Presentation, the Behavior and the three Items lower"
+    );
+    let state = parsed.v2().expect("v2 state");
+    let mut expected = profiles();
+    expected.sort_by(|left, right| left.target.cmp(&right.target));
+    assert_eq!(state.authoring_profiles, expected);
 }
 
 #[test]
@@ -253,7 +365,23 @@ fn offers_and_routes_are_canonicalized() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 9] = [
+    let cases: [(&str, &str, Mutation); 11] = [
+        (
+            "wander without walking",
+            "v2 wander requires a walking creature and a positive interval",
+            |draft| {
+                behavior_mut(draft).movement.can_walk = false;
+            },
+        ),
+        (
+            "zero wander interval",
+            "v2 wander requires a walking creature and a positive interval",
+            |draft| {
+                if let Some(wander) = behavior_mut(draft).movement.wander.as_mut() {
+                    wander.interval_ms = 0;
+                }
+            },
+        ),
         (
             "duplicate route key",
             "v2 Service routes are not key sorted and unique",

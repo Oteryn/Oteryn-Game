@@ -174,6 +174,19 @@ pub struct ProjectV2Movement {
     pub walks_on_energy: bool,
     pub walks_on_fire: bool,
     pub walks_on_poison: bool,
+    /// Idle wandering around the spawn point, as NPCs do; requires `can_walk`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub wander: Option<ProjectV2Wander>,
+}
+
+/// NPC admission §4: the source walk interval and radius of an idle, non-hostile walker.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct ProjectV2Wander {
+    /// Milliseconds between steps; positive.
+    pub interval_ms: u64,
+    /// Maximum distance from the spawn point in tiles.
+    pub radius_tiles: u16,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -918,6 +931,15 @@ pub(super) fn validate_behavior(
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
+    let movement = behavior.movement;
+    if movement
+        .wander
+        .is_some_and(|wander| !movement.can_walk || wander.interval_ms == 0)
+    {
+        return Err(ProjectError::InvalidProject(
+            "v2 wander requires a walking creature and a positive interval",
+        ));
+    }
     let targeting = behavior.targeting;
     ppm(
         targeting.static_attack_chance_ppm,

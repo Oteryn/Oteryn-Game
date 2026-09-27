@@ -493,7 +493,7 @@ async fn insert_recovery_admission(
 }
 
 /// Compare the latest admission with `record`, holding it FOR SHARE.
-async fn assert_recovery_fence(
+pub(super) async fn assert_recovery_fence(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &CharacterRecoveryFenceV1,
 ) -> std::result::Result<(), DurabilityError> {
@@ -730,7 +730,7 @@ async fn verify_character_integrity(
            LEFT JOIN game_character_operation_receipts o USING (character_id) \
            LEFT JOIN game_character_audit_outbox a ON a.event_id = o.event_id \
           WHERE o.character_id IS NULL OR o.account_id <> r.account_id OR o.world_id <> r.world_id \
-             OR o.character_revision <> r.character_revision \
+             OR o.character_revision <> 1 \
              OR o.command_binding <> decode('01', 'hex') || uuid_send(o.issuer_decision_id) \
                 || int8send(o.intent_source_revision) || uuid_send(o.operation_id) \
                 || uuid_send(r.account_id) || uuid_send(r.world_id) \
@@ -765,6 +765,66 @@ async fn verify_character_integrity(
                              WHERE o.intent_source_revision = f.source_revision \
                                AND o.issuer_decision_id = f.issuer_decision_id \
                                AND o.command_binding = f.intent_binding) \
+         LIMIT 1",
+    )
+    .fetch_optional(&mut **tx)
+    .await?
+    .map_or(Ok(()), |_| Err(DurabilityError::Unavailable))?;
+    // P03 progression is optional at revision one because initialization is a
+    // separate owner.  Once a Character advances, typed state and a complete,
+    // gap-free immutable receipt chain must explain the global revision and the
+    // current state.  The bootstrap receipt remains bound to initial revision 1.
+    sqlx::query(
+        "SELECT 1 FROM game_character_roots r \
+           LEFT JOIN game_character_progression_state s USING (character_id) \
+          WHERE (r.character_revision <> 1 AND s.character_id IS NULL) \
+             OR (s.character_id IS NOT NULL AND s.character_revision <> r.character_revision) \
+         UNION ALL \
+         SELECT 1 FROM game_character_progression_state s \
+           LEFT JOIN game_character_roots r USING (character_id) \
+          WHERE r.character_id IS NULL \
+         UNION ALL \
+         SELECT 1 FROM game_character_roots r \
+           LEFT JOIN game_character_xp_receipts x USING (character_id) \
+          GROUP BY r.character_id, r.character_revision \
+         HAVING count(x.reward_occurrence_id)::numeric <> r.character_revision - 1 \
+         UNION ALL \
+         SELECT 1 FROM game_character_xp_receipts x \
+           LEFT JOIN game_character_xp_receipts p \
+             ON p.character_id = x.character_id \
+            AND p.committed_character_revision = x.original_character_revision \
+          WHERE (x.original_character_revision <> 1 AND p.reward_occurrence_id IS NULL) \
+             OR (p.reward_occurrence_id IS NOT NULL AND \
+                 (p.experience_after <> x.experience_before OR p.level_after <> x.level_before)) \
+         UNION ALL \
+         SELECT 1 FROM game_character_progression_state s \
+           JOIN game_character_roots r USING (character_id) \
+           LEFT JOIN game_character_xp_receipts x \
+             ON x.character_id = s.character_id \
+            AND x.committed_character_revision = s.character_revision \
+          WHERE s.character_revision > 1 AND (x.reward_occurrence_id IS NULL \
+             OR x.experience_after <> s.total_experience OR x.level_after <> s.level \
+             OR x.profile_revision <> s.profile_revision \
+             OR x.ruleset_revision <> s.ruleset_revision \
+             OR x.content_revision <> s.content_revision \
+             OR x.simulation_revision <> s.simulation_revision \
+             OR x.evidence_revision <> s.evidence_revision \
+             OR x.declaration_revision <> s.declaration_revision \
+             OR x.policy_revision <> s.policy_revision \
+             OR x.reward_revision <> s.reward_revision) \
+         UNION ALL \
+         SELECT 1 FROM game_character_xp_receipts x \
+           LEFT JOIN game_character_progression_state s USING (character_id) \
+          WHERE s.character_id IS NULL \
+             OR x.committed_character_revision > s.character_revision \
+             OR x.profile_revision <> s.profile_revision \
+             OR x.ruleset_revision <> s.ruleset_revision \
+             OR x.content_revision <> s.content_revision \
+             OR x.simulation_revision <> s.simulation_revision \
+             OR x.evidence_revision <> s.evidence_revision \
+             OR x.declaration_revision <> s.declaration_revision \
+             OR x.policy_revision <> s.policy_revision \
+             OR x.reward_revision <> s.reward_revision \
          LIMIT 1",
     )
     .fetch_optional(&mut **tx)
