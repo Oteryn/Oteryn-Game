@@ -912,7 +912,7 @@
       "slug": "demon-armor",
       "item": {
         "identity": {
-          "key": "oteryn:item.equipment.armor.demon",
+          "key": "oteryn:item.registry.i00003256",
           "revision": "real-source-example-r1"
         },
         "display_name": "Demon Armor",
@@ -1000,7 +1000,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.equipment.armor.demon",
+        "item_key": "oteryn:item.registry.i00003256",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "3388",
@@ -1417,8 +1417,7 @@
           "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
           "blockers": [
             "sprite_atlas_not_admitted",
-            "runtime_lowering_not_implemented",
-            "canonical_item_identity_not_bound"
+            "runtime_lowering_not_implemented"
           ],
           "non_claims": [
             "not_runtime_imported",
@@ -1432,7 +1431,7 @@
       "slug": "backpack",
       "item": {
         "identity": {
-          "key": "oteryn:item.container.backpack",
+          "key": "oteryn:item.registry.i00002752",
           "revision": "real-source-example-r1"
         },
         "display_name": "Backpack",
@@ -1514,7 +1513,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.container.backpack",
+        "item_key": "oteryn:item.registry.i00002752",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "2854",
@@ -1886,8 +1885,7 @@
           "state": "AUTHORING_EVIDENCE_COMPLETE_RUNTIME_BLOCKED",
           "blockers": [
             "sprite_atlas_not_admitted",
-            "runtime_lowering_not_implemented",
-            "canonical_item_identity_not_bound"
+            "runtime_lowering_not_implemented"
           ],
           "non_claims": [
             "not_runtime_imported",
@@ -1901,7 +1899,7 @@
       "slug": "red-apple",
       "item": {
         "identity": {
-          "key": "oteryn:item.food.red-apple",
+          "key": "oteryn:item.registry.i00003447",
           "revision": "real-source-example-r1"
         },
         "display_name": "Red Apple",
@@ -1991,7 +1989,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.food.red-apple",
+        "item_key": "oteryn:item.registry.i00003447",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "3585",
@@ -2366,8 +2364,7 @@
           "blockers": [
             "sprite_atlas_not_admitted",
             "runtime_lowering_not_implemented",
-            "yum_sound_asset_not_admitted",
-            "canonical_item_identity_not_bound"
+            "yum_sound_asset_not_admitted"
           ],
           "non_claims": [
             "not_runtime_imported",
@@ -2381,7 +2378,7 @@
       "slug": "sudden-death-rune",
       "item": {
         "identity": {
-          "key": "oteryn:item.rune.sudden-death",
+          "key": "oteryn:item.consumable.sudden_death_rune",
           "revision": "real-source-example-r1"
         },
         "display_name": "Sudden Death Rune",
@@ -2465,7 +2462,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.rune.sudden-death",
+        "item_key": "oteryn:item.consumable.sudden_death_rune",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "3155",
@@ -2880,8 +2877,7 @@
             "sprite_atlas_not_admitted",
             "runtime_lowering_not_implemented",
             "ability_binding_not_admitted",
-            "combat_formula_not_admitted",
-            "canonical_item_identity_not_bound"
+            "combat_formula_not_admitted"
           ],
           "non_claims": [
             "not_runtime_imported",
@@ -2895,7 +2891,7 @@
       "slug": "vial",
       "item": {
         "identity": {
-          "key": "oteryn:item.fluid-container.vial",
+          "key": "oteryn:item.registry.i00002771",
           "revision": "real-source-example-r1"
         },
         "display_name": "Vial",
@@ -2983,7 +2979,7 @@
       },
       "evidence": {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
-        "item_key": "oteryn:item.fluid-container.vial",
+        "item_key": "oteryn:item.registry.i00002771",
         "source_identity": {
           "identity_namespace": "client/appearance_id",
           "external_id": "2874",
@@ -3298,8 +3294,7 @@
           "blockers": [
             "sprite_atlas_not_admitted",
             "runtime_lowering_not_implemented",
-            "fluid_interaction_binding_not_admitted",
-            "canonical_item_identity_not_bound"
+            "fluid_interaction_binding_not_admitted"
           ],
           "non_claims": [
             "not_runtime_imported",

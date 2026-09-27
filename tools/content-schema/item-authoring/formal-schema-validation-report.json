@@ -2,8 +2,8 @@
   "scope": "portable Item authoring schemas and semantic validator; no runtime or corpus migration executed",
   "jsonschema_version": "4.26.0",
   "templates": 13,
-  "checks": 234,
-  "passed": 234,
+  "checks": 236,
+  "passed": 236,
   "failed": 0,
   "results": [
     {
@@ -1300,7 +1300,15 @@
       "passed": true
     },
     {
-      "name": "real-source example keeps the canonical Item key of its TibiaWiki page",
+      "name": "real-source example keeps the canonical Item key of its Crystal/TibiaWiki binding",
+      "passed": true
+    },
+    {
+      "name": "real-source example rejects TibiaWiki/Crystal identity disagreement",
+      "passed": true
+    },
+    {
+      "name": "real-source example with neither binding stays blocked",
       "passed": true
     },
     {
@@ -1308,7 +1316,7 @@
       "passed": true
     },
     {
-      "name": "real-source examples without a canonical Item binding stay blocked",
+      "name": "every real-source example resolves a canonical Item binding",
       "passed": true
     },
     {

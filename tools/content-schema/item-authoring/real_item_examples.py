@@ -13,6 +13,7 @@ from proficiency_profiles import (
 )
 from source_field_catalogs import (
     CANARY_PROFILE,
+    CRYSTAL_ITEM_BINDINGS,
     CRYSTAL_PROFILE,
     ENGINE_ARTIFACT_DIGESTS,
     TIBIAWIKI_ITEM_BINDINGS,
@@ -452,7 +453,14 @@ def source_evidence(title, item, appearance_id, source_values, blockers, default
     br_catalog = build_br_real_item_supplement()
     fandom_catalog = build_fandom_real_item_supplement()
     sprite_ids = APPEARANCES[appearance_id][2]
-    if str(_page(br_catalog, title)["page_id"]) not in TIBIAWIKI_ITEM_BINDINGS:
+    # Canonical identity proof: an exact Crystal item-id binding
+    # (`imports/crystalserver/bindings/items.json`), or an exact TibiaWiki BR page
+    # binding when no Crystal binding exists; `validate_item.py` additionally rejects
+    # the two disagreeing when both are present.
+    if (
+        str(appearance_id) not in CRYSTAL_ITEM_BINDINGS
+        and str(_page(br_catalog, title)["page_id"]) not in TIBIAWIKI_ITEM_BINDINGS
+    ):
         blockers = [*blockers, "canonical_item_identity_not_bound"]
     return {
         "schema": "OTERYN_ITEM_REAL_SOURCE_EVIDENCE/candidate-3",
@@ -687,7 +695,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.equipment.armor.demon",
+        "oteryn:item.registry.i00003256",
         "Demon Armor",
         "equipment_armor",
         "equipment",
@@ -769,7 +777,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.container.backpack",
+        "oteryn:item.registry.i00002752",
         "Backpack",
         "container",
         "container",
@@ -855,7 +863,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.food.red-apple",
+        "oteryn:item.registry.i00003447",
         "Red Apple",
         "food",
         "consumable",
@@ -943,7 +951,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.rune.sudden-death",
+        "oteryn:item.consumable.sudden_death_rune",
         "Sudden Death Rune",
         "rune",
         "rune",
@@ -1034,7 +1042,7 @@ def build_real_item_examples():
     )
 
     item = item_base(
-        "oteryn:item.fluid-container.vial",
+        "oteryn:item.registry.i00002771",
         "Vial",
         "fluid",
         "fluid_container",

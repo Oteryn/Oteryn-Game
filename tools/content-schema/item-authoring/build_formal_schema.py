@@ -769,7 +769,7 @@ def build_item_schema():
         ("slot_count",),
     )
     d["forge"] = obj(
-        {"classification": integer(), "max_tier": integer()},
+        {"classification": enum(1, 2, 3, 4), "max_tier": integer(1)},
         ("classification", "max_tier"),
     )
     d["augmentValue"] = {

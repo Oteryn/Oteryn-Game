@@ -7,6 +7,7 @@ on:
       - tools/content-schema/validate_item_master_schema.py
       - tools/content-schema/test_validate_item_master_schema.py
       - imports/tibiawiki/bindings/items.json
+      - imports/crystalserver/bindings/items.json
       - .github/workflows/item-authoring-schema.yml
   workflow_dispatch:
 

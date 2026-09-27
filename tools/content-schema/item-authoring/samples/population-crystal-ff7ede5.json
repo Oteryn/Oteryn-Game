@@ -23,28 +23,6 @@
       "items": 1827
     },
     {
-      "blocker": "converter_missing:flags.upgradeclassification",
-      "examples": [
-        "oteryn:item.registry.i00000562",
-        "oteryn:item.registry.i00000724",
-        "oteryn:item.equipment.terra_legs",
-        "oteryn:item.registry.i00000725",
-        "oteryn:item.registry.i00000730"
-      ],
-      "items": 989
-    },
-    {
-      "blocker": "converter_missing:upgradeclassification.upgrade_classification",
-      "examples": [
-        "oteryn:item.registry.i00000562",
-        "oteryn:item.registry.i00000724",
-        "oteryn:item.equipment.terra_legs",
-        "oteryn:item.registry.i00000725",
-        "oteryn:item.registry.i00000730"
-      ],
-      "items": 989
-    },
-    {
       "blocker": "converter_missing:proficiency.proficiency_id",
       "examples": [
         "oteryn:item.registry.i00000770",
@@ -53,7 +31,7 @@
         "oteryn:item.registry.i00002951",
         "oteryn:item.weapon.wand.snakebite_rod"
       ],
-      "items": 643
+      "items": 642
     },
     {
       "blocker": "converter_missing:augments",
@@ -65,28 +43,6 @@
         "oteryn:item.registry.i00036069"
       ],
       "items": 83
-    },
-    {
-      "blocker": "converter_missing:flags.write_once",
-      "examples": [
-        "oteryn:item.registry.i00002734",
-        "oteryn:item.registry.i00002735",
-        "oteryn:item.registry.i00002736",
-        "oteryn:item.registry.i00002743",
-        "oteryn:item.registry.i00003955"
-      ],
-      "items": 54
-    },
-    {
-      "blocker": "converter_missing:write_once.max_text_length_once",
-      "examples": [
-        "oteryn:item.registry.i00002734",
-        "oteryn:item.registry.i00002735",
-        "oteryn:item.registry.i00002736",
-        "oteryn:item.registry.i00002743",
-        "oteryn:item.registry.i00003955"
-      ],
-      "items": 54
     },
     {
       "blocker": "converter_missing:stopduration",
@@ -133,17 +89,6 @@
       "items": 39
     },
     {
-      "blocker": "converter_missing:mantra",
-      "examples": [
-        "oteryn:item.registry.i00037511",
-        "oteryn:item.registry.i00037513",
-        "oteryn:item.registry.i00037520",
-        "oteryn:item.registry.i00037521",
-        "oteryn:item.registry.i00037541"
-      ],
-      "items": 37
-    },
-    {
       "blocker": "converter_missing:runespellname",
       "examples": [
         "oteryn:item.registry.i00003032",
@@ -166,17 +111,6 @@
       "items": 34
     },
     {
-      "blocker": "unresolved:weapontype=ammunition",
-      "examples": [
-        "oteryn:item.registry.i00000674",
-        "oteryn:item.registry.i00000675",
-        "oteryn:item.registry.i00000676",
-        "oteryn:item.registry.i00000687",
-        "oteryn:item.registry.i00003311"
-      ],
-      "items": 29
-    },
-    {
       "blocker": "proficiency_crosswalk_not_admitted:219",
       "examples": [
         "oteryn:item.registry.i00003147",
@@ -197,17 +131,6 @@
         "oteryn:item.registry.i00003187"
       ],
       "items": 23
-    },
-    {
-      "blocker": "converter_missing:action",
-      "examples": [
-        "oteryn:item.registry.i00000674",
-        "oteryn:item.registry.i00000675",
-        "oteryn:item.registry.i00000676",
-        "oteryn:item.registry.i00000687",
-        "oteryn:item.registry.i00003311"
-      ],
-      "items": 21
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:223",
@@ -263,6 +186,17 @@
         "oteryn:item.registry.i00037536"
       ],
       "items": 9
+    },
+    {
+      "blocker": "converter_missing:writeable",
+      "examples": [
+        "oteryn:item.registry.i00000556",
+        "oteryn:item.registry.i00002721",
+        "oteryn:item.registry.i00002723",
+        "oteryn:item.registry.i00006221",
+        "oteryn:item.registry.i00007927"
+      ],
+      "items": 7
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:162",
@@ -625,6 +559,13 @@
         "oteryn:item.registry.i00037340"
       ],
       "items": 2
+    },
+    {
+      "blocker": "converter_missing:writeonceitemid",
+      "examples": [
+        "oteryn:item.registry.i00008555"
+      ],
+      "items": 1
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:10",
@@ -1288,13 +1229,6 @@
       "blocker": "proficiency_crosswalk_not_admitted:237",
       "examples": [
         "oteryn:item.registry.i00028405"
-      ],
-      "items": 1
-    },
-    {
-      "blocker": "proficiency_crosswalk_not_admitted:238",
-      "examples": [
-        "oteryn:item.registry.i00003167"
       ],
       "items": 1
     },
@@ -3182,7 +3116,7 @@
       "items": 1
     }
   ],
-  "bundle_digest": "ab250c069a8e7121aaeea28e108cb736d42d6408d415f2217472f2dcf0dea226",
+  "bundle_digest": "392fda62e2d74b2ad18b2ebaa78feb1932978fe973712febb6d803fd245d57f3",
   "by_profile": {
     "container": 269,
     "container_equipment": 8,
@@ -3910,7 +3844,7 @@
       "items": 2
     },
     "flags.upgradeclassification": {
-      "converter": "missing",
+      "converter": "implemented",
       "disposition": "mapped",
       "items": 989
     },
@@ -4135,7 +4069,7 @@
       "items": 9
     },
     "mantra": {
-      "converter": "missing",
+      "converter": "implemented",
       "disposition": "mapped",
       "items": 37
     },
@@ -4280,7 +4214,7 @@
       "items": 17154
     },
     "proficiency.proficiency_id": {
-      "converter": "missing",
+      "converter": "implemented",
       "disposition": "mapped",
       "items": 643
     },
@@ -4515,7 +4449,7 @@
       "items": 0
     },
     "upgradeclassification.upgrade_classification": {
-      "converter": "missing",
+      "converter": "implemented",
       "disposition": "mapped",
       "items": 989
     },
@@ -4560,13 +4494,13 @@
       "items": 0
     },
     "write.max_text_length": {
-      "converter": "implemented",
-      "disposition": "mapped",
+      "converter": "routed",
+      "disposition": "pinned_no_effect",
       "items": 12
     },
     "write_once.max_text_length_once": {
-      "converter": "implemented",
-      "disposition": "mapped",
+      "converter": "routed",
+      "disposition": "pinned_no_effect",
       "items": 83
     },
     "writeable": {
@@ -4581,12 +4515,12 @@
     }
   },
   "identity_basis": {
-    "cw2_b1_allocator_reproduced": 37992,
+    "crystal_exact_binding": 37992,
     "tibiawiki_exact_binding": 165
   },
   "outcome": {
-    "blocked": 1310,
-    "fully_resolved": 9364,
+    "blocked": 901,
+    "fully_resolved": 9773,
     "items": 38157,
     "not_converted": 1827,
     "routed_non_item": 25656

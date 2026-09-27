@@ -2269,12 +2269,16 @@ def main():
             "unwrapableto",
             "malesleeper",
             "femalesleeper",
+            "write.max_text_length",
+            "write_once.max_text_length_once",
         },
         "Crystal": {
             "absorbpercentallelements",
             "fieldabsorbpercentearth",
             "magicpointspercent",
             "unwrapableto",
+            "write.max_text_length",
+            "write_once.max_text_length_once",
         },
     }
     for name, expected in expected_no_effect.items():
@@ -2536,7 +2540,7 @@ def main():
         "requires an appearance binding",
     )
     real_probe(
-        "real-source example keeps the canonical Item key of its TibiaWiki page",
+        "real-source example keeps the canonical Item key of its Crystal/TibiaWiki binding",
         lambda example: (
             example["item"]["identity"].__setitem__(
                 "key", "oteryn:item.weapon.sword.magic"
@@ -2545,7 +2549,34 @@ def main():
                 "item_key", "oteryn:item.weapon.sword.magic"
             ),
         ),
-        "differs from the canonical Item bound to its TibiaWiki page",
+        "differs from the canonical Item bound to its Crystal item id or TibiaWiki page",
+    )
+    real_probe(
+        "real-source example rejects TibiaWiki/Crystal identity disagreement",
+        # Page 17317 is bound to a different canonical key than Magic Sword's own
+        # Crystal item id (3288 -> i00003167): the two admitted bindings must agree.
+        lambda example: next(
+            source
+            for source in example["evidence"]["wiki_sources"]
+            if source["source_id"] == "br"
+        ).__setitem__("page_id", 17317),
+        "TibiaWiki BR page and Crystal item-id bindings disagree",
+    )
+    real_probe(
+        "real-source example with neither binding stays blocked",
+        lambda example: (
+            next(
+                source
+                for source in example["evidence"]["engine_sources"]
+                if source["source_profile"] == "crystal_ff7ede5_item_definition_v1"
+            ).__setitem__("item_id", 99999999),
+            next(
+                source
+                for source in example["evidence"]["wiki_sources"]
+                if source["source_id"] == "br"
+            ).__setitem__("page_id", 1),
+        ),
+        "evidence/readiness/blockers: differs from unresolved source state",
     )
     real_probe(
         "real-source Crystal appearance observation is routed, not a crash",
@@ -2567,9 +2598,8 @@ def main():
     ]
     results.append(
         {
-            "name": "real-source examples without a canonical Item binding stay blocked",
-            "passed": unbound
-            == ["Demon Armor", "Backpack", "Red Apple", "Sudden Death Rune", "Vial"],
+            "name": "every real-source example resolves a canonical Item binding",
+            "passed": unbound == [],
         }
     )
 

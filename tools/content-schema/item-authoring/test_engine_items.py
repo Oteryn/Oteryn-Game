@@ -358,8 +358,7 @@ def test_value_dependent_weapontype_field():
     check(item["weapon"]["weapon_type"] == "shield", item)
     check(report["field_status"]["weapontype"] == "mapped", report)
 
-    # the raw synonym "ammunition" (as opposed to the catalog's own "ammo") has no
-    # authorized route and stays a value-labeled blocker; no weapon_type is fabricated.
+    # the engine-recognized value "ammunition" is mapped.
     item, _deps, report = convert(
         {
             211: {
@@ -368,8 +367,27 @@ def test_value_dependent_weapontype_field():
         },
         item_id=211,
     )
-    check(report["field_status"]["weapontype"] == "unresolved", report)
-    check("unresolved:weapontype=ammunition" in report["blockers"], report)
+    check(item["weapon"]["weapon_type"] == "ammunition", item)
+    check(report["field_status"]["weapontype"] == "mapped", report)
+
+    # "ammo" is not a key in the engine's own WeaponTypesMap (it logs "Unknown
+    # weaponType" and leaves weaponType at WEAPON_NONE), so it is routed as
+    # pinned-no-effect: never a blocker, and no weapon_type is fabricated.
+    item, _deps, report = convert(
+        {212: {"attrs": {"primarytype": "distance weapons", "weapontype": "ammo"}}},
+        item_id=212,
+    )
+    check(report["field_status"]["weapontype"] == "routed", report)
+    check(not report["blockers"], report)
+    check("weapon" not in item, item)
+
+    # "rod" is likewise not an engine-recognized WeaponTypesMap key.
+    item, _deps, report = convert(
+        {213: {"attrs": {"primarytype": "distance weapons", "weapontype": "rod"}}},
+        item_id=213,
+    )
+    check(report["field_status"]["weapontype"] == "routed", report)
+    check(not report["blockers"], report)
     check("weapon" not in item, item)
 
 
@@ -716,7 +734,10 @@ def test_flags_dual_wielding():
 
 
 def test_readable_write_and_write_once():
-    # flags.write: a plain rewrite policy, no target required.
+    # flags.write (appearance) proves readability only, never writability: both
+    # engines' items.cpp set canReadText from has_write()/has_write_once() presence
+    # alone and immediately discard the nested max_text_length(_once) value on the next
+    # line, so write.max_text_length has no engine effect either.
     item, _deps, report = convert(
         {
             340: {
@@ -726,17 +747,40 @@ def test_readable_write_and_write_once():
         },
         item_id=340,
     )
-    check(item["readable"]["writable"] is True, item)
-    check(item["readable"]["write_policy"] == "rewrite", item)
-    check(item["readable"]["max_characters"] == 200, item)
+    check(item["readable"]["readable"] is True, item)
+    check(item["readable"]["writable"] is False, item)
+    check(item["readable"]["write_policy"] == "none", item)
     check(report["field_status"]["flags.write"] == "mapped", report)
+    check(report["field_status"]["write.max_text_length"] == "routed", report)
 
-    # flags.write_once with a resolvable target: applied in full.
+    # writeable+maxtextlen items.xml attributes: a plain rewrite policy, no target
+    # required.
     item, _deps, report = convert(
         {
             341: {
                 "attrs": {
                     "primarytype": "documents and papers",
+                    "writeable": "1",
+                    "maxtextlen": "200",
+                }
+            }
+        },
+        item_id=341,
+    )
+    check(item["readable"]["writable"] is True, item)
+    check(item["readable"]["write_policy"] == "rewrite", item)
+    check(item["readable"]["max_characters"] == 200, item)
+    check(report["field_status"]["writeable"] == "mapped", report)
+
+    # writeable+maxtextlen+writeonceitemid items.xml attributes with a resolvable
+    # target: applied in full.
+    item, _deps, report = convert(
+        {
+            342: {
+                "attrs": {
+                    "primarytype": "documents and papers",
+                    "writeable": "1",
+                    "maxtextlen": "50",
                     "writeonceitemid": "104",
                 },
                 "flags": {
@@ -745,7 +789,7 @@ def test_readable_write_and_write_once():
                 },
             }
         },
-        item_id=341,
+        item_id=342,
     )
     check(item["readable"]["write_policy"] == "write_once", item)
     check(
@@ -753,14 +797,18 @@ def test_readable_write_and_write_once():
         == engine_items.item_ref(engine_items.build_identity_index(), 104)["key"],
         item,
     )
+    check(report["field_status"]["writeonceitemid"] == "mapped", report)
     check(report["field_status"]["flags.write_once"] == "mapped", report)
+    check(report["field_status"]["write_once.max_text_length_once"] == "routed", report)
 
-    # flags.write_once with no writeonceitemid target: write_policy write_once requires
-    # a target the engine data does not carry here, so this downgrades to non-writable
-    # rather than fabricating either a target or an unlimited-rewrite policy.
+    # flags.write_once (appearance) with no XML writeable/writeonceitemid attribute at
+    # all: this converter never treats the appearance flag as proof of writability or
+    # of write-once intent, so the item is readable but not writable, and neither field
+    # is blocked (the 54 real converter_missing:flags.write_once occurrences this
+    # replaces).
     item, _deps, report = convert(
         {
-            342: {
+            343: {
                 "attrs": {"primarytype": "documents and papers"},
                 "flags": {
                     "flags.write_once": True,
@@ -768,16 +816,46 @@ def test_readable_write_and_write_once():
                 },
             }
         },
-        item_id=342,
+        item_id=343,
+    )
+    check(item["readable"]["readable"] is True, item)
+    check(item["readable"]["writable"] is False, item)
+    check(item["readable"]["write_policy"] == "none", item)
+    check(report["field_status"]["flags.write_once"] == "mapped", report)
+    check(report["field_status"]["write_once.max_text_length_once"] == "routed", report)
+    check(not report["blockers"], report)
+
+    # writeable=true but no positive XML maxtextlen: the schema requires
+    # max_characters (>=1) whenever writable, and this converter has no value to put
+    # there, so this occurrence downgrades to non-writable rather than guessing one.
+    item, _deps, report = convert(
+        {344: {"attrs": {"primarytype": "documents and papers", "writeable": "1"}}},
+        item_id=344,
     )
     check(item["readable"]["writable"] is False, item)
     check(item["readable"]["write_policy"] == "none", item)
-    check(report["field_status"]["flags.write_once"] == "converter_missing", report)
-    check(
-        report["field_status"]["write_once.max_text_length_once"]
-        == "converter_missing",
-        report,
+    check(report["field_status"]["writeable"] == "converter_missing", report)
+
+    # writeable+maxtextlen+writeonceitemid pointing at a target with no identity
+    # binding: write_policy write_once requires a resolvable write_once_target, so this
+    # downgrades to non-writable rather than fabricating a target or an unlimited
+    # rewrite policy.
+    item, _deps, report = convert(
+        {
+            345: {
+                "attrs": {
+                    "primarytype": "documents and papers",
+                    "writeable": "1",
+                    "maxtextlen": "50",
+                    "writeonceitemid": "99999999",
+                }
+            }
+        },
+        item_id=345,
     )
+    check(item["readable"]["writable"] is False, item)
+    check(item["readable"]["write_policy"] == "none", item)
+    check(report["field_status"]["writeonceitemid"] == "converter_missing", report)
 
 
 def test_elementalbond_and_reflectdamage():
@@ -857,44 +935,114 @@ def test_chain_weapon_coefficient():
     check(report["field_status"]["chain"] == "converter_missing", report)
 
 
-def test_proficiency_id_stays_a_precise_blocker():
-    """Every proficiency_id, including the one id with an admitted canonical crosswalk
-    (238, Magic Sword), stays blocked from a single-engine converter run:
-    `validate_item.py` requires exact Canary AND Crystal source corroboration for a
-    profile_binding, which no single-engine bundle can ever offer alone."""
-    for proficiency_id in (238, 999):
+def test_proficiency_id_238_cites_both_admitted_crosswalk_entries():
+    """proficiency_profiles.py already holds the admitted dual-engine Magic Sword
+    crosswalk (238/version 3, both Canary and Crystal source identities), pinned and
+    vetted out of band, so a single-engine converter run can cite both entries for it
+    without needing the other engine's own evidence at conversion time."""
+    item, deps, report = convert(
+        {
+            360: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {"proficiency.proficiency_id": 238},
+            }
+        },
+        item_id=360,
+    )
+    check(item["proficiency"] == engine_items.magic_sword_proficiency(), item)
+    check(report["field_status"]["proficiency.proficiency_id"] == "mapped", report)
+    check(not report["blockers"], report)
+    crosswalk_sources = {
+        (
+            crosswalk["source_profile"],
+            crosswalk["external_id"],
+            crosswalk["source_version"],
+        )
+        for crosswalk in deps["proficiency_crosswalks"]
+    }
+    check(
+        crosswalk_sources == engine_items.MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES,
+        deps,
+    )
+    for crosswalk in deps["proficiency_crosswalks"]:
+        check(
+            crosswalk["target"] == engine_items.MAGIC_SWORD_PROFICIENCY_REF, crosswalk
+        )
+    defined_keys = {ref["key"] for ref in deps["definitions"]}
+    check(
+        {
+            engine_items.MAGIC_SWORD_PROFICIENCY_REF["key"],
+            engine_items.INTENSE_WOUND_CLEANSING_REF["key"],
+            engine_items.BERSERK_REF["key"],
+        }
+        <= defined_keys,
+        deps,
+    )
+
+
+def test_proficiency_id_stays_a_precise_blocker_for_other_ids():
+    """Every other proficiency id has no admitted canonical crosswalk at all."""
+    item, _deps, report = convert(
+        {
+            361: {
+                "attrs": {"primarytype": "valuables"},
+                "flags": {"proficiency.proficiency_id": 999},
+            }
+        },
+        item_id=361,
+    )
+    check("proficiency" not in item, item)
+    check(
+        report["field_status"]["proficiency.proficiency_id"] == "converter_missing",
+        report,
+    )
+    check("proficiency_crosswalk_not_admitted:999" in report["blockers"], report)
+
+
+def test_forge_max_tier_from_classification_table():
+    # flags.upgradeclassification + the nested classification level: max_tier is the
+    # highest tier key `item_tiers.lua` registers for that classification, never a
+    # source fact (classification 1->1, 2->2, 3->3, 4->10).
+    for classification, expected_max_tier in (1, 1), (2, 2), (3, 3), (4, 10):
+        item_id = 370 + classification
         item, _deps, report = convert(
             {
-                370: {
+                item_id: {
                     "attrs": {"primarytype": "valuables"},
-                    "flags": {"proficiency.proficiency_id": proficiency_id},
+                    "flags": {
+                        "flags.upgradeclassification": True,
+                        "upgradeclassification.upgrade_classification": classification,
+                    },
                 }
             },
-            item_id=370,
-        )
-        check("proficiency" not in item, item)
-        check(
-            report["field_status"]["proficiency.proficiency_id"] == "converter_missing",
-            report,
+            item_id=item_id,
         )
         check(
-            f"proficiency_crosswalk_not_admitted:{proficiency_id}"
-            in report["blockers"],
+            item["forge"]
+            == {
+                "classification": classification,
+                "max_tier": expected_max_tier,
+            },
+            item,
+        )
+        check(report["field_status"]["flags.upgradeclassification"] == "mapped", report)
+        check(
+            report["field_status"]["upgradeclassification.upgrade_classification"]
+            == "mapped",
             report,
         )
+        check(not report["blockers"], report)
 
-
-def test_fields_with_no_admitted_engine_data_stay_blocked():
-    """Rule 1 cases this converter deliberately does not implement: the schema needs
-    data (forge.max_tier, an Ability identity crosswalk, an augment target/value kind
-    crosswalk, or mantra damage_types) that neither pinned engine's evidence supplies."""
+    # a classification the pinned Lua table never registers (only 1-4 exist) has no
+    # admitted max_tier: this converter has no value to invent, so it stays blocked
+    # rather than guessing.
     item, _deps, report = convert(
         {
             380: {
                 "attrs": {"primarytype": "valuables"},
                 "flags": {
                     "flags.upgradeclassification": True,
-                    "upgradeclassification.upgrade_classification": 2,
+                    "upgradeclassification.upgrade_classification": 5,
                 },
             }
         },
@@ -905,19 +1053,39 @@ def test_fields_with_no_admitted_engine_data_stay_blocked():
         report["field_status"]["flags.upgradeclassification"] == "converter_missing",
         report,
     )
+    check(
+        report["field_status"]["upgradeclassification.upgrade_classification"]
+        == "converter_missing",
+        report,
+    )
 
+
+def test_mantra_damage_types_fixed_engine_constant():
+    # damage_types is not a source fact: Crystal's parseMantra adds the raw points
+    # value to mantraAbsorbValue[energy/fire/earth/ice] unconditionally, and Canary's
+    # Combat::applyMantraAbsorb applies mantra only to those same four combat types.
+    item, _deps, report = convert(
+        {382: {"attrs": {"primarytype": "valuables", "mantra": "10"}}}, item_id=382
+    )
+    check(
+        item["modifiers"]["mantra"]
+        == {"points": 10, "damage_types": ["energy", "fire", "earth", "ice"]},
+        item,
+    )
+    check(report["field_status"]["mantra"] == "mapped", report)
+    check(not report["blockers"], report)
+
+
+def test_fields_with_no_admitted_engine_data_stay_blocked():
+    """Rule 1 cases this converter deliberately does not implement: the schema needs
+    data (an Ability identity crosswalk, or an augment target/value kind crosswalk)
+    that neither pinned engine's evidence supplies."""
     item, _deps, report = convert(
         {381: {"attrs": {"primarytype": "food", "runespellname": "adito grav"}}},
         item_id=381,
     )
     check("use" not in item or "ability" not in item.get("use", {}), item)
     check(report["field_status"]["runespellname"] == "converter_missing", report)
-
-    item, _deps, report = convert(
-        {382: {"attrs": {"primarytype": "valuables", "mantra": "10"}}}, item_id=382
-    )
-    check("mantra" not in item.get("modifiers", {}), item)
-    check(report["field_status"]["mantra"] == "converter_missing", report)
 
     # flags.forceuse is UNRESOLVED with no source_value_routes at all: unchanged.
     item, _deps, report = convert(
@@ -1570,7 +1738,10 @@ def main():
         test_readable_write_and_write_once,
         test_elementalbond_and_reflectdamage,
         test_chain_weapon_coefficient,
-        test_proficiency_id_stays_a_precise_blocker,
+        test_proficiency_id_238_cites_both_admitted_crosswalk_entries,
+        test_proficiency_id_stays_a_precise_blocker_for_other_ids,
+        test_forge_max_tier_from_classification_table,
+        test_mantra_damage_types_fixed_engine_constant,
         test_fields_with_no_admitted_engine_data_stay_blocked,
         test_routed_non_item_corpse_and_placeholder_and_terrain,
         test_routed_non_item_unmove_map_geometry,

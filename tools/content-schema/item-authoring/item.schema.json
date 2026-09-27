@@ -1682,12 +1682,16 @@
       "additionalProperties": false,
       "properties": {
         "classification": {
-          "type": "integer",
-          "minimum": 0
+          "enum": [
+            1,
+            2,
+            3,
+            4
+          ]
         },
         "max_tier": {
           "type": "integer",
-          "minimum": 0
+          "minimum": 1
         }
       },
       "required": [

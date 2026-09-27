@@ -17,7 +17,11 @@ from proficiency_profiles import (
     MAGIC_SWORD_PROFICIENCY_SOURCE_IDENTITIES,
 )
 from referencing import Registry, Resource
-from source_field_catalogs import TIBIAWIKI_ITEM_BINDINGS
+from source_field_catalogs import (
+    CRYSTAL_ITEM_BINDINGS,
+    FORGE_CLASSIFICATION_MAX_TIER,
+    TIBIAWIKI_ITEM_BINDINGS,
+)
 
 ROOT = Path(__file__).resolve().parent
 if "date-time" not in FormatChecker().checkers:
@@ -117,11 +121,11 @@ DEFINITION_SOURCE_PINS = {
 }
 REAL_ITEM_SOURCE_OBSERVATION_DIGESTS = {
     "oteryn:item.registry.i00003167": "4424a710831a58d59637a76a85c2117cc0401c8b0312f4f10344eaa2da2dd5da",
-    "oteryn:item.equipment.armor.demon": "6b62dc0882b526d9b53313c0c50797bf65f60907c6c3ed57ec8e38a9d788fdf2",
-    "oteryn:item.container.backpack": "dc7be4977a7a67686c6ed806e2989c38b86326304232d7023e95b70703bd22a3",
-    "oteryn:item.food.red-apple": "ea390265b539184ec45ad15921b0fdd9e35cfa68b9d4aca1cf377a6f294c8a08",
-    "oteryn:item.rune.sudden-death": "d791f47099f8c8c585f56e2497f1816d45d4155f3c29f8f319c1df435e682aa4",
-    "oteryn:item.fluid-container.vial": "aaa6065a2b35b24d2121cae84a522ff6ec245c73c78f488c41f271da7854b850",
+    "oteryn:item.registry.i00003256": "6b62dc0882b526d9b53313c0c50797bf65f60907c6c3ed57ec8e38a9d788fdf2",
+    "oteryn:item.registry.i00002752": "dc7be4977a7a67686c6ed806e2989c38b86326304232d7023e95b70703bd22a3",
+    "oteryn:item.registry.i00003447": "ea390265b539184ec45ad15921b0fdd9e35cfa68b9d4aca1cf377a6f294c8a08",
+    "oteryn:item.consumable.sudden_death_rune": "d791f47099f8c8c585f56e2497f1816d45d4155f3c29f8f319c1df435e682aa4",
+    "oteryn:item.registry.i00002771": "aaa6065a2b35b24d2121cae84a522ff6ec245c73c78f488c41f271da7854b850",
 }
 MAGIC_SWORD_PROFICIENCY_IDENT = (
     MAGIC_SWORD_PROFICIENCY_REF["family"],
@@ -195,7 +199,14 @@ NON_SOURCE_DEFAULT_DESTINATIONS = {
     "NORMALIZATION_FROM_SINGLE_TARGET_CONSUMPTION": ("/item/use/use_with",),
     "AUTHOR_SELECTED_FROM_FLUID_CAPABILITY": ("/item/taxonomy/item_class",),
     "AUTHOR_SELECTED_CANONICAL_KIND": ("/item/taxonomy/primary",),
+    "ENGINE_CLASSIFICATION_TABLE_MAX_TIER": ("/item/forge/max_tier",),
+    "ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES": ("/item/modifiers/mantra/damage_types/*",),
 }
+# Crystal's parseMantra adds the raw points value to
+# mantraAbsorbValue[energy/fire/earth/ice] unconditionally, and Canary's
+# Combat::applyMantraAbsorb applies mantra only to those same four combat types; both
+# pinned engines agree on this exact, fixed, ordered set.
+ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES = ["energy", "fire", "earth", "ice"]
 
 
 def unique_object(pairs):
@@ -1127,6 +1138,26 @@ def validate_non_source_default(entry, resolved, item, errors):
         errors.append(
             "evidence/non_source_defaults: consume_count differs from the admitted default"
         )
+    if entry["state"] == "ENGINE_CLASSIFICATION_TABLE_MAX_TIER":
+        classification = item.get("forge", {}).get("classification")
+        expected_max_tier = FORGE_CLASSIFICATION_MAX_TIER.get(classification)
+        if expected_max_tier is None or resolved != expected_max_tier:
+            errors.append(
+                "evidence/non_source_defaults: max_tier differs from the pinned "
+                "engine classification table"
+            )
+    if entry["state"] == "ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES":
+        index_text = entry["destination"].rsplit("/", 1)[1]
+        index = int(index_text) if index_text.isdigit() else -1
+        if (
+            index < 0
+            or index >= len(ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES)
+            or resolved != ENGINE_CONSTANT_MANTRA_DAMAGE_TYPES[index]
+        ):
+            errors.append(
+                "evidence/non_source_defaults: mantra damage_types differs from the "
+                "fixed engine constant"
+            )
 
 
 def validate_real_example(example):
@@ -1431,12 +1462,34 @@ def validate_real_example(example):
         (source for source in evidence["wiki_sources"] if source["source_id"] == "br"),
         None,
     )
-    canonical_key = br_page and TIBIAWIKI_ITEM_BINDINGS.get(str(br_page["page_id"]))
+    tibiawiki_key = br_page and TIBIAWIKI_ITEM_BINDINGS.get(str(br_page["page_id"]))
+    crystal_engine_source = next(
+        (
+            source
+            for source in evidence["engine_sources"]
+            if source["source_profile"] == CRYSTAL_PROFILE
+        ),
+        None,
+    )
+    crystal_key = crystal_engine_source and CRYSTAL_ITEM_BINDINGS.get(
+        str(crystal_engine_source["item_id"])
+    )
+    if (
+        tibiawiki_key is not None
+        and crystal_key is not None
+        and tibiawiki_key != crystal_key
+    ):
+        errors.append(
+            "item/identity/key: TibiaWiki BR page and Crystal item-id bindings "
+            "disagree on the canonical Item"
+        )
+    canonical_key = crystal_key or tibiawiki_key
     if canonical_key is None:
         expected_blockers.add("canonical_item_identity_not_bound")
     elif item["identity"]["key"] != canonical_key:
         errors.append(
-            "item/identity/key: differs from the canonical Item bound to its TibiaWiki page"
+            "item/identity/key: differs from the canonical Item bound to its Crystal "
+            "item id or TibiaWiki page"
         )
     if set(evidence["readiness"]["blockers"]) != expected_blockers:
         errors.append(

@@ -2265,8 +2265,7 @@
       "kind": "definition",
       "status": "mapped",
       "allowed_destinations": [
-        "/item/readable/writable",
-        "/item/readable/write_policy"
+        "/item/readable/readable"
       ],
       "reason": "typed portable Item definition fact"
     },
@@ -2279,8 +2278,7 @@
       "kind": "definition",
       "status": "mapped",
       "allowed_destinations": [
-        "/item/readable/writable",
-        "/item/readable/write_policy"
+        "/item/readable/readable"
       ],
       "reason": "typed portable Item definition fact"
     },
@@ -4124,7 +4122,7 @@
           "destination_value_equals": "distance_launcher"
         },
         {
-          "source_value": "ammo",
+          "source_value": "ammunition",
           "disposition": "ITEM_TYPED",
           "kind": "definition",
           "status": "mapped",
@@ -4157,17 +4155,6 @@
           "destination_value_equals": "wand"
         },
         {
-          "source_value": "rod",
-          "disposition": "ITEM_TYPED",
-          "kind": "definition",
-          "status": "mapped",
-          "allowed_destinations": [
-            "/item/weapon/weapon_type"
-          ],
-          "reason": "typed portable Item definition fact",
-          "destination_value_equals": "rod"
-        },
-        {
           "source_value": "shield",
           "disposition": "ITEM_TYPED",
           "kind": "definition",
@@ -4188,10 +4175,26 @@
           ],
           "reason": "typed portable Item definition fact",
           "destination_value_equals": "spellbook"
+        },
+        {
+          "source_value": "ammo",
+          "disposition": "PINNED_NO_EFFECT",
+          "kind": "source_defect",
+          "status": "pinned_no_effect",
+          "allowed_destinations": [],
+          "reason": "not a key in the engine's WeaponTypesMap; the engine logs \"Unknown weaponType\" and leaves weaponType at WEAPON_NONE"
+        },
+        {
+          "source_value": "rod",
+          "disposition": "PINNED_NO_EFFECT",
+          "kind": "source_defect",
+          "status": "pinned_no_effect",
+          "allowed_destinations": [],
+          "reason": "not a key in the engine's WeaponTypesMap; the engine logs \"Unknown weaponType\" and leaves weaponType at WEAPON_NONE"
         }
       ],
       "parser_registration_count": 1,
-      "normalization_note": "distance, ammo and missile normalize to distinct canonical authoring kinds; spellbook remains distinct from shield"
+      "normalization_note": "distance and missile normalize to distinct canonical authoring kinds; spellbook remains distinct from shield; ammo and rod are not engine-recognized WeaponTypesMap keys and have no engine effect"
     },
     {
       "source_field": "weight",
@@ -4242,26 +4245,22 @@
       "origins": [
         "appearance"
       ],
-      "disposition": "ITEM_TYPED",
-      "kind": "definition",
-      "status": "mapped",
-      "allowed_destinations": [
-        "/item/readable/max_characters"
-      ],
-      "reason": "typed portable Item definition fact"
+      "disposition": "PINNED_NO_EFFECT",
+      "kind": "source_defect",
+      "status": "pinned_no_effect",
+      "allowed_destinations": [],
+      "reason": "computed by items.cpp but immediately discarded by an unconditional canReadText reassignment on the next line; maxTextLen is only ever set from the items.xml maxtextlen attribute"
     },
     {
       "source_field": "write_once.max_text_length_once",
       "origins": [
         "appearance"
       ],
-      "disposition": "ITEM_TYPED",
-      "kind": "definition",
-      "status": "mapped",
-      "allowed_destinations": [
-        "/item/readable/max_characters"
-      ],
-      "reason": "typed portable Item definition fact"
+      "disposition": "PINNED_NO_EFFECT",
+      "kind": "source_defect",
+      "status": "pinned_no_effect",
+      "allowed_destinations": [],
+      "reason": "computed by items.cpp but immediately discarded by an unconditional canReadText reassignment on the next line; maxTextLen is only ever set from the items.xml maxtextlen attribute"
     },
     {
       "source_field": "writeable",
