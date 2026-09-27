@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-encounter-authoring
 title: Encounter authoring format and first Canary encounter (D20, D26-D28)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 960
 jira: KAN-16
 base_sha: bfcbe853db95aa7f56c0354f7aa986912381164f
 head_sha: null
