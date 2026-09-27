@@ -5,7 +5,6 @@ use crate::domain::progression::{
     FiniteProgressionPolicy, LevelThreshold, ProgressionRevisionContext,
 };
 use crate::domain::{CharacterId, CharacterRevision};
-use crate::durability::DurabilityRoot;
 use crate::durability::admission_authority_guards::GuardPublicationDisposition;
 use crate::durability::character_progression::{
     CharacterProgressionError, CurrentCharacterGameplayFence, ExperienceAwardRequest,
@@ -15,6 +14,7 @@ use crate::durability::runtime_scope_assignment::{
     AssignmentCommand, AssignmentOutcome, AssignmentRequest, BootstrapSecret, ControlActor,
     LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
+use crate::durability::{DurabilityError, DurabilityRoot};
 use crate::foundation::admission_authority_publication::{
     AdmissionAuthorityGuardKeyV1, AdmissionAuthorityGuardStateV1,
     AdmissionAuthorityOwningPublisherV1, AdmissionAuthorityPublicationChangeV1,
@@ -798,26 +798,35 @@ fn rollback_concurrency_and_ended_node_preserve_single_revision() -> TestResult 
                 &authority,
                 &rollback.node,
                 fence(1)?,
-                duplicate,
+                duplicate.clone(),
             );
             let (first, second) = join_two(first, second).await;
-            let outcomes = [first, second];
-            assert_eq!(
-                outcomes
-                    .iter()
-                    .filter(|outcome| matches!(outcome, Ok(ExperienceCommitOutcome::Committed(_))))
-                    .count(),
-                1
-            );
-            assert_eq!(
-                outcomes
-                    .iter()
-                    .filter(|outcome| {
-                        matches!(outcome, Ok(ExperienceCommitOutcome::AlreadyCommitted(_)))
-                    })
-                    .count(),
-                1
-            );
+            assert!(matches!(
+                (first, second),
+                (
+                    Ok(ExperienceCommitOutcome::Committed(_)),
+                    Err(CharacterProgressionError::Unavailable(
+                        DurabilityError::RootUnavailable
+                    ))
+                ) | (
+                    Err(CharacterProgressionError::Unavailable(
+                        DurabilityError::RootUnavailable
+                    )),
+                    Ok(ExperienceCommitOutcome::Committed(_))
+                )
+            ));
+            assert!(matches!(
+                rollback
+                    .root
+                    .commit_character_experience(
+                        &authority,
+                        &rollback.node,
+                        fence(1)?,
+                        duplicate,
+                    )
+                    .await?,
+                ExperienceCommitOutcome::AlreadyCommitted(_)
+            ));
             drop(authority);
             drop(seal);
             rollback.cleanup().await?;
@@ -874,39 +883,46 @@ fn distinct_occurrences_with_one_predecessor_cannot_both_commit() -> TestResult 
                 .open_character_authority(&seal)
                 .await
                 .map_err(|error| format!("{error:?}"))?;
+            let first_request = request(70, 5)?;
+            let second_request = request(71, 5)?;
             let first = harness.root.commit_character_experience(
                 &authority,
                 &harness.node,
                 fence(1)?,
-                request(70, 5)?,
+                first_request.clone(),
             );
             let second = harness.root.commit_character_experience(
                 &authority,
                 &harness.node,
                 fence(1)?,
-                request(71, 5)?,
+                second_request.clone(),
             );
             let (first, second) = join_two(first, second).await;
-            let outcomes = [first, second];
-            assert_eq!(
-                outcomes
-                    .iter()
-                    .filter(|outcome| matches!(outcome, Ok(ExperienceCommitOutcome::Committed(_))))
-                    .count(),
-                1
-            );
-            assert_eq!(
-                outcomes
-                    .iter()
-                    .filter(|outcome| {
-                        matches!(
-                            outcome,
-                            Err(CharacterProgressionError::CharacterRevisionMismatch)
-                        )
-                    })
-                    .count(),
-                1
-            );
+            let losing_request = match (first, second) {
+                (
+                    Ok(ExperienceCommitOutcome::Committed(_)),
+                    Err(CharacterProgressionError::Unavailable(DurabilityError::RootUnavailable)),
+                ) => second_request,
+                (
+                    Err(CharacterProgressionError::Unavailable(DurabilityError::RootUnavailable)),
+                    Ok(ExperienceCommitOutcome::Committed(_)),
+                ) => first_request,
+                outcomes => {
+                    return Err(format!("unexpected concurrent outcomes: {outcomes:?}").into());
+                }
+            };
+            assert!(matches!(
+                harness
+                    .root
+                    .commit_character_experience(
+                        &authority,
+                        &harness.node,
+                        fence(1)?,
+                        losing_request,
+                    )
+                    .await,
+                Err(CharacterProgressionError::CharacterRevisionMismatch)
+            ));
             let root_revision: String =
                 sqlx::query_scalar("SELECT character_revision::text FROM game_character_roots")
                     .fetch_one(&harness.pool)

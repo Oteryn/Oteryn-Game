@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: /root
 created_at: 2026-09-27T14:25:00Z
-updated_at: 2026-09-27T16:29:46Z
+updated_at: 2026-09-27T16:44:30Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/durability/character_progression.rs
@@ -192,12 +192,12 @@ previously unseen occurrence.
   the installed Docker Desktop engine failed to initialize.
 - Hosted PostgreSQL 17.6: `36329970211` exposed the insecure `/tmp` parent;
   `36331164655` proved its `0700` repair, then rejected the direct scope insert.
-  On `18d50d1f`, run `36332161320` built, linted and ran the workspace, then all
-  four P03 cases reached the registered target and returned `Ambiguous`: the raw
-  guard was incompatible with the production assignment transition. The successor
-  removes that seed, assigns through `RuntimeScopeAssignmentWriter`, then publishes
-  holder readiness through `publish_runtime_readiness`. It also repairs the sole
-  rustfmt failure reported by policy job `108656176766`.
+  `36332161320` then exposed raw-guard assignment ambiguity. On `1ce4eefa`, run
+  `36333519659` passed build, Clippy and workspace tests; the real PG target passed
+  replay/restart and stale-fence cases. Both concurrent cases committed exactly
+  once, while their simultaneous loser correctly hit the root's max-one-holder
+  backpressure. The successor now retries after holder release and proves exact
+  replay or stale-predecessor rejection.
 
 ### E2E
 
@@ -225,7 +225,7 @@ previously unseen occurrence.
 - exact head: pending remote freeze
 - method/auditor: independent GPT-6 Luna subagent
 - material findings: terminal-session coverage and post-assignment readiness fixed;
-  review of `32294d77` found a stale task-packet head pointer, removed in AUTHORING
+  `32294d77` stale head pointer fixed; `1ce4eefa` re-review found no P0/P1/P2
 - verdict: pending
 
 ## PR and closeout
@@ -240,7 +240,7 @@ previously unseen occurrence.
 ## Context checkpoint
 
 ```yaml
-last_progress: removed stale candidate pointer; next exact SHA will be bound externally after this metadata commit
+last_progress: PostgreSQL proved 2/4 directly; concurrent losers now retry after root-holder release
 status: implementing
 branch: codex/r7-p03-character-xp-commit
 head_sha: null
@@ -257,10 +257,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 7
-ci_recovery_actions_for_current_head: 5
+repair_cycles_for_current_gate: 8
+ci_recovery_actions_for_current_head: 6
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: freeze repaired SHA, rerun exact-head review and PostgreSQL 17.6 CI
+next_action: freeze concurrency-assertion repair and rerun exact-head review plus PostgreSQL 17.6
 ```
