@@ -1,0 +1,232 @@
+{
+  "allocation_comment": "5859343636",
+  "candidate_event_id": "UNSELECTED",
+  "canonical_gate": "decode equality + canonical re-encode equality; unsupported revision, unknown/duplicate/noncanonical encodings reject",
+  "classification": "UNREGISTERED_OFFLINE_NATIVE_ONE_ITEM_CANDIDATE",
+  "contract": "DUR-03 §39.3",
+  "coordination": 162,
+  "execution_target": {
+    "architecture": "x86_64",
+    "os": "linux",
+    "toolchain_identity": "UNKNOWN",
+    "toolchain_identity_reason": "No build-time compiler attestation is embedded in this standalone example"
+  },
+  "fixtures_are_product_admission": false,
+  "issue": 513,
+  "limits": {
+    "accepted_ANL_ceilings": {
+      "conjunctive": "all inherited ceilings apply; lower private candidate wire cap also applies",
+      "each_envelope_string_utf8_bytes": 128,
+      "envelope_bytes": 262144,
+      "payload_bytes": 196608,
+      "protobuf_nesting_depth": 32,
+      "registry": "RESOURCE_LIMITS_REGISTRY.json"
+    },
+    "backpressure": "encoded_len and borrowed wire length checked before allocation/decode; try_reserve_exact failure and checked arithmetic fail closed",
+    "candidate_representation_limit_authority": "none; offline capacity probe only",
+    "candidate_schema_nesting_depth": 5,
+    "candidate_schema_nesting_depth_below_ANL_max": true,
+    "candidate_wire_max_bytes": 4096
+  },
+  "not_proven": [
+    "production event ID or registry row",
+    "privacy/resource profile acceptance",
+    "runtime, SQL, durability, or restart authority",
+    "Content legality, quantity/stack/capacity/loot policy",
+    "Character readiness",
+    "playability",
+    "Reference parity",
+    "Canary/Crystal parity"
+  ],
+  "operations": [
+    {
+      "actual_counters": {
+        "apply_effects": 1,
+        "counter_scope": "final serialized outputs are reported separately from cumulative protobuf encode and canonical re-encode bytes; exact raw clone bytes and transient construction/decode dynamic capacities are separate dimensions; hash/decode formulas count every concrete input pass. Excludes allocator metadata, codec instruction counts, CPU timing, RSS, DB, and runtime",
+        "decode_input_bytes": 2148,
+        "final_serialized_output_bytes": 745,
+        "hash_input_bytes": 1732,
+        "logical_work_units": 2,
+        "owned_raw_clone_bytes": 745,
+        "plan_participants": 1,
+        "protobuf_encode_output_bytes": 3222,
+        "retry_clone_bytes": 416,
+        "retry_work_units": 3,
+        "transient_construction_and_decode_dynamic_capacity_bytes": 4383
+      },
+      "envelope_bytes": 416,
+      "envelope_hex": "080112100000000000017000800000000000002920012a0450393044321000000000000170008000000000000033380140014ac902080112c4020a4c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f312001280112730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a100000000000017000800000000000000640011a7d0a0e63616e6469646174653a6d696e741210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d723120015220355c447ed81ccb1a67601ef9ffdad51ee51c84176447869aee99097bcfe96210",
+      "envelope_sha256": "f81957f4ca74958584be5d6f106daa66e298bd8f7e1b030f3b397e7df3cb9100",
+      "fixture": "definition_a",
+      "membership": {
+        "count": 1,
+        "ordinal": 1
+      },
+      "operation": "MINT",
+      "payload_bytes": 329,
+      "payload_hex": "080112c4020a4c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f312001280112730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a100000000000017000800000000000000640011a7d0a0e63616e6469646174653a6d696e741210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d72312001",
+      "payload_sha256": "355c447ed81ccb1a67601ef9ffdad51ee51c84176447869aee99097bcfe96210",
+      "retained": {
+        "actual_dynamic_capacity_bytes": 1838,
+        "decoded_envelope_and_nested_payload_capacities": 677,
+        "envelope_capacity": 416,
+        "inline_envelope_bytes": 144,
+        "inline_payload_bytes": 728,
+        "payload_capacity": 329,
+        "retry_capacity": 416
+      },
+      "retry": {
+        "conflicting_intent": "REJECTED_BY_EXACT_BYTE_IDENTITY",
+        "same_logical_intent_exact_bytes": true
+      },
+      "typed_definition": {
+        "family": "ItemType",
+        "production_key": "fixture:alpha",
+        "revision_ref": "rev-a/1"
+      }
+    },
+    {
+      "actual_counters": {
+        "apply_effects": 2,
+        "counter_scope": "final serialized outputs are reported separately from cumulative protobuf encode and canonical re-encode bytes; exact raw clone bytes and transient construction/decode dynamic capacities are separate dimensions; hash/decode formulas count every concrete input pass. Excludes allocator metadata, codec instruction counts, CPU timing, RSS, DB, and runtime",
+        "decode_input_bytes": 3036,
+        "final_serialized_output_bytes": 1041,
+        "hash_input_bytes": 2472,
+        "logical_work_units": 3,
+        "owned_raw_clone_bytes": 1041,
+        "plan_participants": 1,
+        "protobuf_encode_output_bytes": 4554,
+        "retry_clone_bytes": 564,
+        "retry_work_units": 3,
+        "transient_construction_and_decode_dynamic_capacity_bytes": 6199
+      },
+      "envelope_bytes": 564,
+      "envelope_hex": "080112100000000000017000800000000000002a20012a045039304432100000000000017000800000000000003d380140014add0308011ad8030a4c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f3120012801124c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f31200128011a730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a10000000000001700080000000000000064001222b0a1000000000000170008000000000000004120105180122100000000000017000800000000000000528032a97010a1263616e6469646174653a7472616e736665721210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d723142140a100000000000017000800000000000000510095220a54f63bf00f23b67ba2e92e7337a24f8ce018f75c4dad3173549d1f3bc8e5267",
+      "envelope_sha256": "e7fe8ec7987e4dcb0de6888f6a27c025bc13b4ad283cfd3df91fca5491053298",
+      "fixture": "definition_a",
+      "membership": {
+        "count": 1,
+        "ordinal": 1
+      },
+      "operation": "TRANSFER",
+      "payload_bytes": 477,
+      "payload_hex": "08011ad8030a4c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f3120012801124c0a100000000000017000800000000000000b1210000000000001700080000000000000011a220a084974656d54797065120d666978747572653a616c7068611a077265762d612f31200128011a730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a10000000000001700080000000000000064001222b0a1000000000000170008000000000000004120105180122100000000000017000800000000000000528032a97010a1263616e6469646174653a7472616e736665721210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d723142140a10000000000001700080000000000000051009",
+      "payload_sha256": "a54f63bf00f23b67ba2e92e7337a24f8ce018f75c4dad3173549d1f3bc8e5267",
+      "retained": {
+        "actual_dynamic_capacity_bytes": 2551,
+        "decoded_envelope_and_nested_payload_capacities": 946,
+        "envelope_capacity": 564,
+        "inline_envelope_bytes": 144,
+        "inline_payload_bytes": 728,
+        "payload_capacity": 477,
+        "retry_capacity": 564
+      },
+      "retry": {
+        "conflicting_intent": "REJECTED_BY_EXACT_BYTE_IDENTITY",
+        "same_logical_intent_exact_bytes": true
+      },
+      "typed_definition": {
+        "family": "ItemType",
+        "production_key": "fixture:alpha",
+        "revision_ref": "rev-a/1"
+      }
+    },
+    {
+      "actual_counters": {
+        "apply_effects": 1,
+        "counter_scope": "final serialized outputs are reported separately from cumulative protobuf encode and canonical re-encode bytes; exact raw clone bytes and transient construction/decode dynamic capacities are separate dimensions; hash/decode formulas count every concrete input pass. Excludes allocator metadata, codec instruction counts, CPU timing, RSS, DB, and runtime",
+        "decode_input_bytes": 2142,
+        "final_serialized_output_bytes": 743,
+        "hash_input_bytes": 1727,
+        "logical_work_units": 2,
+        "owned_raw_clone_bytes": 743,
+        "plan_participants": 1,
+        "protobuf_encode_output_bytes": 3213,
+        "retry_clone_bytes": 415,
+        "retry_work_units": 3,
+        "transient_construction_and_decode_dynamic_capacity_bytes": 4370
+      },
+      "envelope_bytes": 415,
+      "envelope_hex": "080112100000000000017000800000000000003420012a045039304432100000000000017000800000000000003e380140014ac802080112c3020a4b0a10000000000001700080000000000000161210000000000001700080000000000000011a210a084974656d54797065120c666978747572653a626574611a077265762d622f372001280112730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a100000000000017000800000000000000640011a7d0a0e63616e6469646174653a6d696e741210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d7231200152206429db7ec84e939a8f8e3a02a4953d95d7b64ecde00beded7af8889200de87c4",
+      "envelope_sha256": "66acffe2f98474871b9ef2c43ab8c56d10ef11243f0ce8a8d0ee24b7fa41e6ca",
+      "fixture": "definition_b",
+      "membership": {
+        "count": 1,
+        "ordinal": 1
+      },
+      "operation": "MINT",
+      "payload_bytes": 328,
+      "payload_hex": "080112c3020a4b0a10000000000001700080000000000000161210000000000001700080000000000000011a210a084974656d54797065120c666978747572653a626574611a077265762d622f372001280112730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a100000000000017000800000000000000640011a7d0a0e63616e6469646174653a6d696e741210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d72312001",
+      "payload_sha256": "6429db7ec84e939a8f8e3a02a4953d95d7b64ecde00beded7af8889200de87c4",
+      "retained": {
+        "actual_dynamic_capacity_bytes": 1833,
+        "decoded_envelope_and_nested_payload_capacities": 675,
+        "envelope_capacity": 415,
+        "inline_envelope_bytes": 144,
+        "inline_payload_bytes": 728,
+        "payload_capacity": 328,
+        "retry_capacity": 415
+      },
+      "retry": {
+        "conflicting_intent": "REJECTED_BY_EXACT_BYTE_IDENTITY",
+        "same_logical_intent_exact_bytes": true
+      },
+      "typed_definition": {
+        "family": "ItemType",
+        "production_key": "fixture:beta",
+        "revision_ref": "rev-b/7"
+      }
+    },
+    {
+      "actual_counters": {
+        "apply_effects": 2,
+        "counter_scope": "final serialized outputs are reported separately from cumulative protobuf encode and canonical re-encode bytes; exact raw clone bytes and transient construction/decode dynamic capacities are separate dimensions; hash/decode formulas count every concrete input pass. Excludes allocator metadata, codec instruction counts, CPU timing, RSS, DB, and runtime",
+        "decode_input_bytes": 3024,
+        "final_serialized_output_bytes": 1037,
+        "hash_input_bytes": 2462,
+        "logical_work_units": 3,
+        "owned_raw_clone_bytes": 1037,
+        "plan_participants": 1,
+        "protobuf_encode_output_bytes": 4536,
+        "retry_clone_bytes": 562,
+        "retry_work_units": 3,
+        "transient_construction_and_decode_dynamic_capacity_bytes": 6173
+      },
+      "envelope_bytes": 562,
+      "envelope_hex": "080112100000000000017000800000000000003520012a0450393044321000000000000170008000000000000048380140014adb0308011ad6030a4b0a10000000000001700080000000000000161210000000000001700080000000000000011a210a084974656d54797065120c666978747572653a626574611a077265762d622f3720012801124b0a10000000000001700080000000000000161210000000000001700080000000000000011a210a084974656d54797065120c666978747572653a626574611a077265762d622f37200128011a730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a10000000000001700080000000000000064001222b0a1000000000000170008000000000000004120105180122100000000000017000800000000000000528032a97010a1263616e6469646174653a7472616e736665721210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d723142140a100000000000017000800000000000000510095220e13b32de2d0779f44cf99ce6f455ea15d5286ff2ee40265c592f0773fe038419",
+      "envelope_sha256": "81b6f3a989d7688e375ed4c78ab6295143096d6c49937a53c9c0a532f9fad99a",
+      "fixture": "definition_b",
+      "membership": {
+        "count": 1,
+        "ordinal": 1
+      },
+      "operation": "TRANSFER",
+      "payload_bytes": 475,
+      "payload_hex": "08011ad6030a4b0a10000000000001700080000000000000161210000000000001700080000000000000011a210a084974656d54797065120c666978747572653a626574611a077265762d622f3720012801124b0a10000000000001700080000000000000161210000000000001700080000000000000011a210a084974656d54797065120c666978747572653a626574611a077265762d622f37200128011a730a10000000000001700080000000000000011210000000000001700080000000000000021a030102032210000000000001700080000000000000032a0e6d61702d666978747572652d72313212636f6e74656e742d666978747572652d72313a10000000000001700080000000000000064001222b0a1000000000000170008000000000000004120105180122100000000000017000800000000000000528032a97010a1263616e6469646174653a7472616e736665721210000000000001700080000000000000071a1000000000000170008000000000000003220f6c6f6f742d666978747572652d72312a12636f6e74656e742d666978747572652d7231321272756c657365742d666978747572652d72313a0e73696d2d666978747572652d723142140a10000000000001700080000000000000051009",
+      "payload_sha256": "e13b32de2d0779f44cf99ce6f455ea15d5286ff2ee40265c592f0773fe038419",
+      "retained": {
+        "actual_dynamic_capacity_bytes": 2541,
+        "decoded_envelope_and_nested_payload_capacities": 942,
+        "envelope_capacity": 562,
+        "inline_envelope_bytes": 144,
+        "inline_payload_bytes": 728,
+        "payload_capacity": 475,
+        "retry_capacity": 562
+      },
+      "retry": {
+        "conflicting_intent": "REJECTED_BY_EXACT_BYTE_IDENTITY",
+        "same_logical_intent_exact_bytes": true
+      },
+      "typed_definition": {
+        "family": "ItemType",
+        "production_key": "fixture:beta",
+        "revision_ref": "rev-b/7"
+      }
+    }
+  ],
+  "privacy_resource_profile": "UNACCEPTED",
+  "retention_input": "P90D_ACCEPTED_LOGICAL_INPUT_ONLY",
+  "schema_registry": "NONE",
+  "source_base_sha": "e422fc9d2962f63ccb6f0af9ee80ec5f449c2a31",
+  "transfer_admission": "CLOSED_CHARACTER_DESTINATION_GLOBAL_REVISION_OWNER_CONFLICT"
+}

@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package oteryn.events.candidate.native_one_item.v1;
+
+// UNREGISTERED OFFLINE representation candidate for DUR-03 §39.3.
+// This is an additive file; historical game-events/v1/item_transaction.proto
+// and game-events/v2/item_transaction.proto remain unchanged.
+// No event ID, registry entry, privacy/resource profile, runtime or SQL authority.
+// The envelope carries exactly one transaction member (ordinal=1,count=1).
+// P90D is an accepted logical input fixture only, not a registry binding.
+message OneItemTransactionCandidate {
+  uint32 interpretation_revision = 1; // exactly 1 for this private grammar
+  oneof operation {
+    OneItemMint mint = 2;
+    OneItemTransfer transfer = 3;
+  }
+}
+
+// Typed identity is carried in full: no numeric fixture key substitutes for it.
+message TypedDefinitionRevision {
+  string family = 1;
+  string production_key = 2;
+  string revision_ref = 3;
+}
+
+message CandidateItemState {
+  bytes item_instance_id = 1; // fixed-width private fixture, non-authoritative
+  bytes world_id = 2;
+  TypedDefinitionRevision definition = 3;
+  uint32 quantity = 4; // fixture input only; no gameplay limit implied
+  uint32 lifecycle = 5; // exactly 1 = LIVE in this grammar
+}
+
+message CandidateGround {
+  bytes world_id = 1;
+  bytes channel_id = 2;
+  bytes spatial_position_fixture = 3;
+  bytes corpse_occurrence_id_fixture = 4; // provenance, not location authority
+  string map_revision_fixture = 5;
+  string content_revision_fixture = 6;
+  bytes native_room_placement_context_fixture = 7;
+  uint64 runtime_scope_ownership_generation_fixture = 8;
+}
+
+message CandidateInventory {
+  bytes character_id = 1;
+  bytes typed_position_fixture = 2;
+  uint64 expected_session_generation = 3; // expected binding, not live authority
+  bytes expected_game_session_id_fixture = 4;
+  uint64 expected_character_lease_generation_fixture = 5; // expected binding only
+}
+
+message CandidateCommandRef {
+  bytes game_session_id_fixture = 1;
+  uint64 command_id_fixture = 2;
+}
+
+message CandidateProvenance {
+  string typed_cause = 1;
+  bytes output_occurrence_id_fixture = 2;
+  bytes committed_death_occurrence_id_fixture = 3;
+  string loot_definition_revision_fixture = 4;
+  string content_revision_fixture = 5;
+  string ruleset_revision_fixture = 6;
+  string sim_revision_fixture = 7;
+  CandidateCommandRef command_ref_fixture = 8; // TRANSFER only; expected binding
+}
+
+message OneItemMint {
+  CandidateItemState after = 1;
+  CandidateGround destination = 2;
+  CandidateProvenance source = 3;
+  // Explicit semantic absence of a prior item; not a nil or zero identifier.
+  bool before_semantically_absent = 4;
+}
+
+message OneItemTransfer {
+  CandidateItemState before = 1;
+  CandidateItemState after = 2;
+  CandidateGround source = 3;
+  CandidateInventory destination = 4;
+  CandidateProvenance cause = 5;
+}
+
+// Deliberately bounded evidence wrapper mirroring the common envelope's
+// transaction membership and payload digest. P90D remains a logical fixture.
+message OfflineCandidateEnvelope {
+  uint32 envelope_revision = 1; // fixture value 1
+  bytes event_id_fixture = 2;
+  uint32 event_type_id_fixture = 3; // zero means unselected
+  uint32 schema_revision_fixture = 4; // private candidate grammar revision
+  string retention_profile_input = 5; // P90D input, not registry acceptance
+  bytes transaction_id_fixture = 6;
+  uint32 ordinal = 7; // exactly 1
+  uint32 count = 8; // exactly 1
+  bytes payload = 9;
+  bytes payload_sha256 = 10;
+}

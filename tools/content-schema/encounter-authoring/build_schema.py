@@ -42,6 +42,10 @@ PERCENT = {'type': 'number', 'exclusiveMinimum': 0, 'exclusiveMaximum': 100}
 COMPONENT = enum('all', 'primary')  # D29: both parts of a hit (default) or only its primary damage
 
 
+# D34: a fixed percent, or the percent of a timer's duration still remaining when the action runs (never below `floor`).
+MULTIPLIER = {'oneOf': [integer(0), obj({'timer_remaining': NAME, 'floor': integer(0, 100)}, ('timer_remaining', 'floor'))]}
+
+
 def amount(minimum, range_minimum=None):
     """A fixed integer or a range {min, max} drawn uniformly by the encounter instance (D29); a heal range may start at 0 (D31)."""
     low = minimum if range_minimum is None else range_minimum
@@ -84,6 +88,7 @@ d['trigger'] = {'oneOf': [
 
 d['condition'] = {'oneOf': [
     kinded('chance_percent', {'value': {'type': 'number', 'exclusiveMinimum': 0, 'maximum': 100}}, ('value',)),
+    kinded('chance_from_amount', {'per': integer(1)}, ('per',)),
     kinded('counter_compare', {'counter': NAME, 'op': OP, 'value': {'type': 'integer'}}, ('counter', 'op', 'value')),
     kinded('flag', {'flag': NAME, 'value': BOOL}, ('flag', 'value')),
     kinded('creature_present', {'role': NAME, 'anchor': NAME, 'near': obj({'role': NAME, 'radius': integer(0), 'shape': enum('square', 'circle')}, ('role', 'radius')),
@@ -111,7 +116,7 @@ d['action'] = {'oneOf': [
     kinded('heal', {'subject': use('subject'), 'amount': {'oneOf': [const('full'), amount(1, 0)]}}, ('subject', 'amount')),
     kinded('damage', {'subject': use('subject'), 'amount': amount(1), 'damage_type': NAME}, ('subject', 'amount', 'damage_type')),
     kinded('prevent_death', {'role': NAME}, ('role',)),
-    kinded('damage_modifier', {'role': NAME, 'multiplier_percent': integer(0), 'damage_types': array(NAME, 0, True), 'component': COMPONENT,
+    kinded('damage_modifier', {'role': NAME, 'multiplier_percent': MULTIPLIER, 'damage_types': array(NAME, 0, True), 'component': COMPONENT,
                                'sources': enum('player', 'any'), 'until': enum('this_hit', 'reset', 'timer'), 'timer': NAME},
            ('role', 'multiplier_percent', 'sources', 'until')),
     kinded('reflect_damage', {'role': NAME, 'percent': integer(1, 100), 'damage_types': array(NAME, 0, True)}, ('role', 'percent')),
@@ -125,7 +130,9 @@ d['action'] = {'oneOf': [
     kinded('flag', {'flag': NAME, 'value': BOOL}, ('flag', 'value')),
     kinded('timer', {'timer': NAME, 'operation': enum('start', 'stop')}, ('timer', 'operation')),
     kinded('set_phase', {'phase': NAME}, ('phase',)),
-    kinded('cast', {'ability': use('AbilityRef'), 'at': use('position')}, ('ability', 'at')),
+    kinded('move_lock', {'role': NAME, 'locked': BOOL}, ('role', 'locked')),
+    kinded('shared_life', {'role': NAME}, ('role',)),
+    kinded('cast', {'ability': use('AbilityRef'), 'encounter_ability': NAME, 'at': use('position')}, ('at',)),
     kinded('say', {'subject': use('subject'), 'text': TEXT, 'mode': enum('say', 'yell')}, ('subject', 'text', 'mode')),
     kinded('drop_item', {'item': use('ItemRef'), 'at': use('position')}, ('item', 'at')),
     kinded('message', {'to': obj({'players_in': NAME}, ('players_in',)), 'text': TEXT}, ('to', 'text')),
@@ -150,10 +157,15 @@ schema = obj({
                  ('counters', 'flags', 'timers')),
     'rules': array(use('rule'), 1),
     'outcomes': array(NAME, 0, True),
+    # D34: an area effect authored by the encounter itself, such as a death explosion scripted in Lua rather than a monster spell.
+    'abilities': array(obj({'key': NAME, 'area': obj({'shape': enum('square', 'circle'), 'radius': integer(0)}, ('shape', 'radius')),
+                            'damage': obj({'damage_type': NAME, 'min': integer(1), 'max': integer(1)}, ('damage_type', 'min', 'max')),
+                            'affects': obj({'players': BOOL, 'creatures': array(use('CreatureRef'), 0, True)}, ('players', 'creatures')),
+                            'effect': TEXT}, ('key', 'area', 'damage', 'affects'))),
     'reset_after_ms': integer(1)},
     ('identity', 'display_name', 'scope', 'participants', 'anchors', 'phases', 'state', 'rules', 'outcomes'),
     **{'$schema': 'https://json-schema.org/draft/2020-12/schema', '$id': 'oteryn:encounter-authoring/v1', '$defs': d,
-       'description': 'Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31).'})
+       'description': 'Oteryn Encounter authoring format v1 (CANDIDATE, D20/D26-D31, D34).'})
 
 
 if __name__ == '__main__':
