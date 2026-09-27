@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-creature-admission-wave-a
 title: Admit Canary wave A monsters (1,315) into WorldProject/v2 and the content tree (admission slice 3)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 990
 jira: KAN-16
 base_sha: 017b69404070f5f4547e9102cbd98985e9aa1082
-head_sha: null
-final_head_sha: null
+head_sha: b9359874f07425c63a7435a48480330955c67be9
+final_head_sha: b9359874f07425c63a7435a48480330955c67be9
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -80,3 +80,10 @@ review under the standing authorization of `OWNER_FUNDED_AI_POLICY.md`.
   addons of an outfit), unique by slot and binding. Palette slots stay one per slot. This is tested.
 - `cargo fmt`, `clippy -D warnings`, the full `oteryn-game-server` suite and the governance, policy
   and semantic validators pass.
+
+## Completion
+
+Merged as PR #990 (`b0241e5c4a8a5e473a2592255a31ce4c047d220c`) from final head `b935987`; required checks passed on that head.
+The Codex exact-head review of `123a0ed` raised one P2 finding (the `imports/canary/` marker), which was fixed in `9e41c65`.
+The merge of `main` then applied the R7 P04 gold coin rekey, and CI passed on `b935987`.
+Owner released.
