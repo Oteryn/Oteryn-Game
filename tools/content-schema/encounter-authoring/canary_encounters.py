@@ -1286,6 +1286,107 @@ def forgotten_knowledge_fights(build):
 
 
 
+ASURAS = 'data-otservbr-global/scripts/quests/the_secret_library_quest/the_lament_asuras/creaturescripts_asuras_mechanic.lua'
+ASURA_RED_ARMORS = [3566, 3379, 3388, 8039, 8053, 8064, 22534, 3381, 7991, 3380, 10439, 3564]
+FACELESS = 'data-otservbr-global/scripts/quests/the_dream_courts_quest/creaturescripts_facelessBane.lua'
+
+
+def eleventh_slice(build):
+    """facelessHealth (Alptramun, Plagueroot), AsurasMechanic and GreedMonsterDeath."""
+    for boss, damage_type, lines in (('Alptramun', 'death', [48, 49, 50, 51, 52]), ('Plagueroot', 'earth', [55, 56, 57, 58, 59])):
+        role = slug(boss)
+        item = build.items[role]
+        build.participant(item, role, boss, 'facelessHealth')
+        rules = []
+        for source_kind in ('damage_taken', 'heal_received'):
+            rules.append(build.rule(item, {
+                'key': f'{role}_absorbs_{damage_type}_on_{source_kind}', 'trigger': {'kind': source_kind, 'role': role, 'source': 'any'},
+                'conditions': [], 'actions': [{'kind': 'convert_damage_to_heal', 'role': role, 'damage_types': [damage_type],
+                                               'component': 'primary'}]}))
+        build.entry(item, FACELESS, [36, 37, 38, 39, 40, 41, 42, 60, 61, 62, 63, 65] + lines, 'mapped', rules[0],
+                    f'onHealthChange of {boss}: primary {damage_type} damage heals it by that amount and deals none; the secondary '
+                    'part is unchanged.')
+        build.entry(item, FACELESS, [36, 37, 38], 'mapped', rules[1],
+                    'The same handler for heals; a heal is never typed as damage, so it passes unchanged.')
+
+    # The three Asura queens take damage only from a player carrying their counter.
+    names = {'The Diamond Blossom': 'the_diamond_blossom', 'The Blazing Rose': 'the_blazing_rose', 'The Lily of Night': 'the_lily_of_night'}
+    armors = [ref('Item', f'canary:item/{item_id}') for item_id in ASURA_RED_ARMORS]
+    chimes = ref('Item', 'canary:item/28494')
+    counters = {
+        'The Diamond Blossom': ([{'kind': 'attacker_wears', 'item': armor, 'wears': False, 'slot': 'armor'} for armor in armors],
+                                [24, 25, 26, 27, 28, 29, 30, 31, 32, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+                                'a player without one of the twelve red armours in the armour slot (red robe, doublet, demon armor, '
+                                'dragon robe, fireborn giant armor, ethno coat, firemind raiment, crown armor, magician\'s robe, '
+                                'noble armor, Zaoan robe, red tunic)'),
+        'The Blazing Rose': ([{'kind': 'attacker_wears', 'item': chimes, 'wears': False, 'slot': 'right_hand'}],
+                             [33, 34, 35, 36, 37], 'a player without silver chimes (28494) in the right hand'),
+        'The Lily of Night': ([{'kind': 'killer_progress', 'progress': 'canary:quest-progress/secret_library_asura_fragrance',
+                                'op': '==', 'value': True}], [38, 39, 40, 41, 42],
+                              'a player whose fragrance has run out')}
+    for boss, (conditions, lines, who) in counters.items():
+        role = names[boss]
+        item = build.get(role, f'The Secret Library: {boss}', 'instance_per_party')
+        build.participant(item, role, boss, 'AsurasMechanic')
+        if boss == 'The Diamond Blossom':
+            for armor in armors:
+                build.define(item, armor)
+        elif boss == 'The Blazing Rose':
+            build.define(item, chimes)
+        else:
+            # The fragrance is the only condition, so the rule acts when it is absent.
+            conditions = [{**conditions[0], 'value': False}]
+        immune = [{'kind': 'damage_modifier', 'role': role, 'multiplier_percent': 0, 'sources': 'any', 'until': 'this_hit'}]
+        first = None
+        for source_kind in ('damage_taken', 'heal_received'):
+            path = build.rule(item, {'key': f'{role}_ignores_{source_kind}_from_unprepared_players',
+                                     'trigger': {'kind': source_kind, 'role': role, 'source': 'player'},
+                                     'conditions': conditions, 'actions': immune})
+            build.entry(item, ASURAS, [16, 17, 18, 19, 20, 21, 22, 23, 43, 44, 45, 46, 47, 48, 50] + lines, 'mapped', path,
+                        f'onHealthChange of {boss}: a {"hit" if source_kind == "damage_taken" else "heal"} by {who} is zeroed, '
+                        'both parts' + ('; Canary runs the handler for heals too, with the healer as attacker.'
+                                        if source_kind == 'heal_received' else '.'))
+            first = first or path
+            path = build.rule(item, {'key': f'{role}_ignores_{source_kind}_from_creatures',
+                                     'trigger': {'kind': source_kind, 'role': role, 'source': 'non_player'},
+                                     'conditions': [], 'actions': immune})
+            build.entry(item, ASURAS, [18, 19, 20, 21, 23, 43, 45, 46, 47, 48], 'mapped', path,
+                        'A change by any other creature (a summon, a monster) is zeroed too; one without an attacker passes.')
+        if boss == 'The Lily of Night':
+            build.entry(item, ASURAS, [39], 'mapped', first + '/conditions/0',
+                        'Storage Asuras.Fragrance holds the end of the fragrance (actions_fragrance.lua: now + 10 minutes); the '
+                        'quest domain publishes whether it is still active, read-only (D27).')
+
+    # Goshnar's Greed: each greed creature returns 10 s after its death; greedbeast deaths feed the boss's immunity.
+    item = build.get('goshnars_greed', "Soul War: Goshnar's Greed", 'instance_per_party')
+    positions = {'Greedbeast': (33744, 31666), 'Soulsnatcher': (33747, 31668), 'Weak Soul': (33750, 31666),
+                 'Strong Soul': (33750, 31666), 'Powerful Soul': (33750, 31666)}
+    item['encounter']['state']['counters'].append({'name': 'greedbeast_kills', 'initial': 0})
+    build.entry(item, SOUL_WAR_LIB, [885], 'mapped', '/encounter/state/counters/0',
+                "GreedbeastKills starts at 0; goshnars_greed.lua reads and resets it (transcribed with Goshnar's Greed).")
+    for name, (x, y) in positions.items():
+        role = slug(name)
+        anchor = f'{role}_return'
+        item['encounter']['anchors'].append({'key': anchor, 'kind': 'point', 'description': f'Canary ({x}, {y}, 14).'})
+        build.participant(item, role, name, 'GreedMonsterDeath')
+        if name == 'Greedbeast':
+            path = build.rule(item, {'key': 'greedbeast_killed', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                     'actions': [{'kind': 'counter', 'counter': 'greedbeast_kills', 'operation': 'add', 'value': 1}]})
+            build.entry(item, SOUL_WAR_MECHANICS, [196, 198, 200, 201, 202, 205, 207], 'mapped', path,
+                        'onDeath of a greedbeast raises GreedbeastKills.')
+        path = build.rule(item, {'key': f'{role}_returns', 'trigger': {'kind': 'creature_died', 'role': role}, 'delay_ms': 10000,
+                                 'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature(name), 'role': role, 'count': 1,
+                                                                'at': {'anchor': anchor}, 'owner': 'none', 'health': 'full'}]})
+        build.entry(item, SOUL_WAR_MECHANICS, [196, 198, 199, 204, 205, 207], 'mapped', path,
+                    f'onDeath: CreateGoshnarsGreedMonster brings a new {name.lower()} to its fixed tile 10 s later.')
+        build.entry(item, SOUL_WAR_LIB, [905, 906, 907, 908, 909, 910, 911, 913, 918, 919, 920, 921, 927, 928], 'mapped', path + '/actions/0',
+                    f'GreedMonsters places the {name.lower()} on ({x}, {y}, 14); createMonster(name, position, true, false) '
+                    'is extended, not forced.')
+    build.entry(item, SOUL_WAR_LIB, [914, 915, 916, 923, 924, 925], 'approved_omission', None,
+                'The teleport effects at 7, 8 and 9 s are cosmetic.')
+
+
+
 def small_boss_events(build):
     """AstralGlyphDeath, DragonEssenceDeath, DisgustingOozeDeath and FeroxaTransform."""
     glyph_death = 'data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_astral_glyph_death.lua'
@@ -2101,7 +2202,7 @@ def main():
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice):
         transcribe(build)
     print(json.dumps(build.write()))
 

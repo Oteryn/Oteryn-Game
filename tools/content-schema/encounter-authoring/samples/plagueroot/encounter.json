@@ -84,6 +84,44 @@
           "health": "full"
         }
       ]
+    },
+    {
+      "key": "plagueroot_absorbs_earth_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "plagueroot",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "convert_damage_to_heal",
+          "role": "plagueroot",
+          "damage_types": [
+            "earth"
+          ],
+          "component": "primary"
+        }
+      ]
+    },
+    {
+      "key": "plagueroot_absorbs_earth_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "plagueroot",
+        "source": "any"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "convert_damage_to_heal",
+          "role": "plagueroot",
+          "damage_types": [
+            "earth"
+          ],
+          "component": "primary"
+        }
+      ]
     }
   ],
   "outcomes": [

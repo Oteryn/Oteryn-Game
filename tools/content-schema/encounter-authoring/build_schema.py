@@ -72,8 +72,8 @@ d['trigger'] = {'oneOf': [
     kinded('health_crossed', {'role': NAME, 'percent': PERCENT, 'health': integer(1)}, ('role',)),
     kinded('creature_spawned', {'role': NAME}, ('role',)),
     kinded('ability_cast', {'role': NAME, 'ability': use('AbilityRef')}, ('role', 'ability')),
-    kinded('damage_taken', {'role': NAME, 'source': enum('player', 'any')}, ('role', 'source')),
-    kinded('heal_received', {'role': NAME, 'source': enum('player', 'any')}, ('role', 'source')),
+    kinded('damage_taken', {'role': NAME, 'source': enum('player', 'non_player', 'any')}, ('role', 'source')),
+    kinded('heal_received', {'role': NAME, 'source': enum('player', 'non_player', 'any')}, ('role', 'source')),
     kinded('damage_accumulated', {'role': NAME, 'amount': integer(1)}, ('role', 'amount')),
     kinded('timer_elapsed', {'timer': NAME}, ('timer',)),
     kinded('counter_reached', {'counter': NAME, 'value': {'type': 'integer'}}, ('counter', 'value')),
@@ -94,7 +94,9 @@ d['condition'] = {'oneOf': [
     kinded('has_master', {'role': NAME, 'value': BOOL}, ('role', 'value')),
     kinded('health_percent', {'role': NAME, 'op': OP, 'value': {'type': 'number', 'minimum': 0, 'maximum': 100}},
            ('role', 'op', 'value')),
-    kinded('attacker_wears', {'item': use('ItemRef'), 'wears': BOOL}, ('item', 'wears')),
+    kinded('attacker_wears', {'item': use('ItemRef'), 'wears': BOOL,
+                               'slot': enum('head', 'necklace', 'armor', 'right_hand', 'left_hand', 'legs', 'feet', 'ring', 'ammo')},
+           ('item', 'wears')),
     kinded('killer_progress', {'progress': KEY, 'op': OP, 'value': {'type': ['integer', 'boolean']}},
            ('progress', 'op', 'value'))]}
 
