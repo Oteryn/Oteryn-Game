@@ -10,14 +10,19 @@ A quest needs a feature when any record joined to it uses that feature:
 - doors: gates by kind;
 - interactions: trigger edges and child owners. An interaction joins the quests
   whose progress tracks it reads or writes; an interaction touching no track joins
-  the one quest its script directory already joins, if exactly one.
+  the one quest its script directory already joins, if exactly one, or else the
+  one quest whose key equals the directory name (punctuation and a trailing
+  'quest' ignored).
 
 `data_gaps` counts what the transcription could not express yet, so a quest can
-be ready on the engine side and still wait for data.
+be ready on the engine side and still wait for data. An unresolved line that names
+a missing runtime owner (key-value writes, conditions, boss cooldowns, creature
+removal, delayed callbacks) counts as a needed feature, not as a data gap.
 """
 import collections
 import json
 import pathlib
+import re
 
 HERE = pathlib.Path(__file__).resolve().parent
 SAMPLES = HERE / 'samples'
@@ -40,7 +45,25 @@ FEATURES = {
     'item_hand_out': 'DUR-03 inventory mint',
     'item_consume': 'DUR-03 consumption',
     'achievement': 'Achievement owner',
+    'outfit': 'Outfit grant owner',
+    'mount': 'Mount grant owner',
+    'experience': 'Character XP award from an interaction',
+    'kv_state': 'owner for key-value writes (none yet)',
+    'condition': 'owner for player conditions (none yet)',
+    'boss_cooldown': 'boss cooldown owner (none yet)',
+    'creature_removal': 'owner for creature removal (none yet)',
+    'scheduler': 'owner for delayed callbacks (none yet)',
 }
+# Unresolved reasons that name a missing runtime owner rather than a transcription gap.
+REASON_FEATURE = {
+    'kv write without an accepted owner': 'kv_state',
+    'condition without an accepted owner': 'condition',
+    'boss cooldown without an accepted owner': 'boss_cooldown',
+    'creature removal without an accepted owner': 'creature_removal',
+    'delayed callback (addEvent) without a scheduler owner': 'scheduler',
+}
+OWNER_FEATURE = {'Movement': 'teleport', 'WorldObject': 'world_object', 'Ability': 'summon',
+                 'Achievement': 'achievement', 'Outfit': 'outfit', 'Mount': 'mount', 'Experience': 'experience'}
 EDGE_FEATURE = {'USE': 'trigger_use', 'ON_ENTER': 'trigger_step', 'ON_LEAVE': 'trigger_step',
                 'ON_CONTACT': 'trigger_step', 'ON_DEATH': 'trigger_kill', 'ON_KILL': 'trigger_kill'}
 # A feature that cannot work without another one: a chest is used, and progress
@@ -48,6 +71,11 @@ EDGE_FEATURE = {'USE': 'trigger_use', 'ON_ENTER': 'trigger_step', 'ON_LEAVE': 't
 IMPLIES = {'reward_claim': {'trigger_use'}, 'door_progress': {'quest_state'},
            'npc_dialogue': {'quest_state'}}
 DOOR_FEATURE = {'door_key': 'door_key', 'min_level': 'door_level', 'quest_progress': 'door_progress'}
+
+
+def normalized(name):
+    """A quest key or script directory without punctuation and a trailing 'quest(s)'."""
+    return re.sub(r'_?quests?$', '', re.sub(r'[^a-z0-9]+', '_', name)).strip('_')
 
 
 def load(rel, key):
@@ -89,17 +117,16 @@ def interaction_facts(inter):
             tracks.add(x['progress'])
         if owner == 'Quest':
             features.add('quest_state')
-        elif owner == 'Movement':
-            features.add('teleport')
-        elif owner == 'WorldObject':
-            features.add('world_object')
-        elif owner == 'Ability':
-            features.add('summon')
         elif owner == 'Item':
             features.add('item_hand_out' if x['request'] == 'hand_out' else 'item_consume')
-        elif owner == 'Achievement':
-            features.add('achievement')
-    gaps = len(inter['unresolved']) + unresolved_conditions
+        elif owner in OWNER_FEATURE:
+            features.add(OWNER_FEATURE[owner])
+    gaps = unresolved_conditions
+    for item in inter['unresolved']:
+        if item['reason'] in REASON_FEATURE:
+            features.add(REASON_FEATURE[item['reason']])
+        else:
+            gaps += 1
     return tracks, features, gaps
 
 
@@ -149,10 +176,17 @@ def main():
         joined = set().union(*(track_quests.get(t, set()) for t in tracks)) & info.keys()
         facts[key] = (joined, features, gaps)
         by_directory[key.split('/')[1]].update(joined)
+    by_name = collections.defaultdict(set)
+    for quest in info:
+        by_name[normalized(quest.split('/', 1)[1])].add(quest)
     unlinked = []
     for key, (joined, features, gaps) in sorted(facts.items()):
         if not joined:
-            candidates = by_directory[key.split('/')[1]]
+            directory = key.split('/')[1]
+            candidates = by_directory[directory]
+            joined = candidates if len(candidates) == 1 else set()
+        if not joined:
+            candidates = by_name[normalized(directory)]
             joined = candidates if len(candidates) == 1 else set()
         if not joined:
             unlinked.append(key)

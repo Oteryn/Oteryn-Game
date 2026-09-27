@@ -32,6 +32,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+import lua_tables
+
 HERE = Path(__file__).resolve().parent
 SAMPLES = HERE / "samples"
 REPORT_DIR = SAMPLES / "map-check"
@@ -40,6 +42,38 @@ REPORT_PATH = REPORT_DIR / "report.json"
 # Pinned per the task: Canary's release map, downloaded (never committed) from the URL
 # `config.lua.dist` names (`mapDownloadUrl`); recorded sha256 of the exact bytes checked here.
 CANARY_MAP_URL = "https://github.com/opentibiabr/canary/releases/download/v3.6.1/otservbr.otbm"
+# Canary's Map Attributes Loader stamps action/unique ids onto placed items at startup from these tables
+# (data-otservbr-global/startup/tables at the pinned revision); `*Action` tables key action ids, `*Unique` unique ids.
+CANARY_REVISION_PREFIX = "47dfd51f"
+STARTUP_TABLES = "data-otservbr-global/startup/tables"
+
+
+def startup_assignments(canary: Path) -> dict[tuple[str, int], list[dict[str, Any]]]:
+    """('aid'|'uid', n) -> [{position, item_id|None, table}] from the startup tables."""
+    head = (canary / ".git" / "HEAD").read_text().strip() if (canary / ".git" / "HEAD").is_file() else ""
+    assignments: dict[tuple[str, int], list[dict[str, Any]]] = {}
+    for path in sorted((canary / STARTUP_TABLES).glob("*.lua")):
+        text = path.read_text()
+        names = set(re.findall(r"^([A-Za-z]+(?:Action|Unique))\s*=\s*\{", text, re.M))
+        for name, table in sorted(lua_tables.assignments(text, names).items()):
+            kind = "aid" if name.endswith("Action") else "uid"
+            for field in table["fields"]:
+                if not isinstance(field["key"], int):
+                    continue
+                entry = lua_tables.as_python(field["value"])
+                if not isinstance(entry, dict):
+                    continue
+                item_id = entry.get("itemId") if type(entry.get("itemId")) is int else None
+                positions = entry.get("itemPos") or ([entry["itemPos"]] if isinstance(entry.get("itemPos"), dict) else [])
+                if isinstance(positions, dict):
+                    positions = [positions]
+                for pos in positions:
+                    if isinstance(pos, dict) and all(isinstance(pos.get(c), int) for c in "xyz"):
+                        assignments.setdefault((kind, field["key"]), []).append(
+                            {"position": (pos["x"], pos["y"], pos["z"]), "item_id": item_id, "table": name})
+    return assignments
+
+
 CANARY_MAP_SHA256 = "a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f31da2"
 
 # CrystalServer ships its own world map inside its repository (not downloaded): a gzip-compressed
@@ -296,9 +330,20 @@ def _parse_item_node(r: OtbmReader, item_id: int, depth: int) -> dict[str, Any]:
     return {"id": item_id, "aid": action_id, "uid": unique_id, "children": children}
 
 
-def walk_map(path: Path, wanted: set[tuple[int, int, int]]) -> dict[tuple[int, int, int], dict[str, Any]]:
+def _collect_ids(item: dict[str, Any], pos: tuple[int, int, int], id_index: dict[tuple[str, int], list]) -> None:
+    for kind in ("aid", "uid"):
+        key = (kind, item[kind])
+        if item[kind] and key in id_index:
+            id_index[key].append(list(pos))
+    for child in item["children"]:
+        _collect_ids(child, pos, id_index)
+
+
+def walk_map(path: Path, wanted: set[tuple[int, int, int]],
+             id_index: dict[tuple[str, int], list] | None = None) -> dict[tuple[int, int, int], dict[str, Any]]:
     """Single pass over the OTBM tile tree. Returns, for every wanted (x,y,z) whose tile is
-    actually present in the file, {'ground': item_id|None, 'items': [ {id,aid,uid,children}, ... ]}."""
+    actually present in the file, {'ground': item_id|None, 'items': [ {id,aid,uid,children}, ... ]}.
+    When `id_index` maps ('aid'|'uid', n) to a list, every map position carrying that id is appended."""
     data = path.read_bytes()
     results: dict[tuple[int, int, int], dict[str, Any]] = {}
 
@@ -365,6 +410,8 @@ def walk_map(path: Path, wanted: set[tuple[int, int, int]]) -> dict[tuple[int, i
                 if node_type == OTBM_ITEM:
                     item_id = r.read_u16()
                     parsed = _parse_item_node(r, item_id, 0)
+                    if id_index is not None:
+                        _collect_ids(parsed, (x, y, z), id_index)
                     if want:
                         items.append(parsed)
                 elif node_type == OTBM_TILE_ZONE:
@@ -607,82 +654,74 @@ _AID_RE = re.compile(r"^aid\((\d+)\)$")
 _UID_RE = re.compile(r"^uid\((\d+)\)$")
 
 
-def check_interactions(tiles: dict[tuple[int, int, int], dict[str, Any]]) -> dict[str, Any]:
+def interaction_registrations(interactions: list[dict[str, Any]]) -> dict[tuple[str, int], list[str]]:
+    """('aid'|'uid', n) -> interaction keys registering on that literal id."""
+    registrations: dict[tuple[str, int], list[str]] = {}
+    for interaction in interactions:
+        for reg in interaction["source"].get("target_registrations") or []:
+            for kind, regex in (("aid", _AID_RE), ("uid", _UID_RE)):
+                m = regex.match(reg)
+                if m:
+                    registrations.setdefault((kind, int(m.group(1))), []).append(interaction["identity"]["key"])
+    return registrations
+
+
+def check_interactions(tiles: dict[tuple[int, int, int], dict[str, Any]],
+                       id_index: dict[tuple[str, int], list],
+                       startup: dict[tuple[str, int], list[dict[str, Any]]]) -> dict[str, Any]:
     interactions = load_json(SAMPLES / "interactions" / "interactions.json")["interactions"]
     tile_present = 0
-    tile_missing = 0
-    use_aid_uid_matched = 0
-    use_aid_uid_mismatched: list[dict[str, Any]] = []
-    use_no_literal_registration = 0
     missing_tiles: list[dict[str, Any]] = []
     for interaction in interactions:
-        anchors = interaction.get("anchors") or []
-        if not anchors:
-            continue
-        key = interaction["identity"]["key"]
-        edge = interaction["source"]["edge"]
-        registrations = interaction.get("source", {}).get("target_registrations") or []
-        literal_aid = None
-        literal_uid = None
-        for reg in registrations:
-            m = _AID_RE.match(reg)
-            if m:
-                literal_aid = int(m.group(1))
-            m = _UID_RE.match(reg)
-            if m:
-                literal_uid = int(m.group(1))
-        for anchor in anchors:
+        for anchor in interaction.get("anchors") or []:
             pos = (anchor["source_position"]["x"], anchor["source_position"]["y"], anchor["source_position"]["z"])
-            items = tile_items(tiles, pos)
-            if items is None:
-                tile_missing += 1
-                missing_tiles.append({"key": key, "anchor": anchor["key"], "position": list(pos)})
-                continue
-            tile_present += 1
-            if edge != "USE":
-                continue
-            if literal_uid is not None:
-                if find_uid(items, literal_uid) is not None:
-                    use_aid_uid_matched += 1
-                else:
-                    use_aid_uid_mismatched.append(
-                        {
-                            "key": key,
-                            "anchor": anchor["key"],
-                            "position": list(pos),
-                            "expected_uid": literal_uid,
-                            "found_item_ids": item_id_list(items),
-                        }
-                    )
-            elif literal_aid is not None:
-                if find_aid(items, literal_aid) is not None:
-                    use_aid_uid_matched += 1
-                else:
-                    use_aid_uid_mismatched.append(
-                        {
-                            "key": key,
-                            "anchor": anchor["key"],
-                            "position": list(pos),
-                            "expected_aid": literal_aid,
-                            "found_item_ids": item_id_list(items),
-                        }
-                    )
+            if tile_items(tiles, pos) is None:
+                missing_tiles.append({"key": interaction["identity"]["key"], "anchor": anchor["key"], "position": list(pos)})
             else:
-                use_no_literal_registration += 1
+                tile_present += 1
+    registrations = interaction_registrations(interactions)
+    found, at_startup, not_found = {}, {}, []
+    for (kind, value), keys in sorted(registrations.items()):
+        positions = id_index.get((kind, value)) or []
+        if positions:
+            found[f"{kind}:{value}"] = {"placements": len(positions), "positions": sorted(positions)[:20]}
+            continue
+        placements = startup.get((kind, value)) or []
+        if placements:
+            checked = []
+            for placement in placements:
+                items = tile_items(tiles, placement["position"])
+                if items is None:
+                    state = "tile_missing"
+                elif placement["item_id"] is None:
+                    state = "tile_present"
+                else:
+                    state = "item_present" if find_item_id(items, placement["item_id"]) is not None else "item_missing"
+                checked.append(state)
+            at_startup[f"{kind}:{value}"] = {
+                "table": sorted({p["table"] for p in placements}),
+                "placements": len(placements),
+                "by_state": {state: checked.count(state) for state in sorted(set(checked))},
+            }
+            continue
+        not_found.append({"id": f"{kind}:{value}", "interactions": sorted(set(keys))})
     return {
-        "note": "aid()/uid() matched here against a literal number in the source registration. "
-        "Some of these belong to the same generic Chest/Door/Item/Lever/Teleport/Tile tables "
-        "check_chests/check_doors document as runtime-assigned by Canary's Map Attributes Loader "
-        "(not baked into the raw map, so an expected mismatch); others are one-off map-editor "
-        "unique/action ids the checked-out Lua does not route through that loader (a real, "
-        "meaningful mismatch). This report does not attempt to separate the two classes.",
+        "note": "Anchors are positions a script names (targets, spawn points), so only their tile is checked. "
+        "A trigger id (aid()/uid() registration) is searched on the whole raw map, then in Canary's startup "
+        "tables, which stamp ids onto placed items; there the listed item must be on the listed tile.",
         "anchors_with_tile_present": tile_present,
-        "anchors_with_tile_missing": tile_missing,
+        "anchors_with_tile_missing": len(missing_tiles),
         "missing_tiles": missing_tiles[:200],
-        "use_edges_with_literal_aid_or_uid_matched": use_aid_uid_matched,
-        "use_edges_with_literal_aid_or_uid_mismatched_count": len(use_aid_uid_mismatched),
-        "use_edges_with_literal_aid_or_uid_mismatches": use_aid_uid_mismatched[:200],
-        "use_edges_without_a_literal_aid_or_uid_registration": use_no_literal_registration,
+        "trigger_ids_registered": len(registrations),
+        "trigger_ids_found_on_map": len(found),
+        "trigger_ids_assigned_at_startup": len(at_startup),
+        "trigger_ids_not_found_on_map": len(not_found),
+        "startup_placements_by_state": {
+            state: sum(v["by_state"].get(state, 0) for v in at_startup.values())
+            for state in ("item_present", "item_missing", "tile_present", "tile_missing")},
+        "found": found,
+        "assigned_at_startup": at_startup,
+        "not_found": not_found,
     }
 
 
@@ -753,6 +792,8 @@ def main() -> int:
         default=None,
         help="path to CrystalServer's decompressed world.otbm, for the CrystalServer-only cross-check",
     )
+    parser.add_argument("--canary", type=Path, default=None,
+                        help="Canary checkout at the pinned revision, for the startup id tables")
     args = parser.parse_args()
 
     canary_path: Path = args.canary_map
@@ -811,7 +852,14 @@ def main() -> int:
     wanted.add(WOTE_CANARY_ONLY_POSITION)
     wanted.add(WOTE_CRYSTALSERVER_POSITION)  # also check canary's OWN map at crystalserver's spot
 
-    canary_tiles = walk_map(canary_path, wanted)
+    registrations = interaction_registrations(interactions)
+    id_index: dict[tuple[str, int], list] = {key: [] for key in registrations}
+    startup = {}
+    if args.canary is not None:
+        startup = {key: value for key, value in startup_assignments(args.canary).items() if key in registrations}
+        for placements in startup.values():
+            wanted.update(p["position"] for p in placements)
+    canary_tiles = walk_map(canary_path, wanted, id_index)
 
     crystalserver_tiles = None
     if crystalserver_path is not None:
@@ -842,7 +890,7 @@ def main() -> int:
         "extra_maps_canary_config_references": EXTRA_MAP_NOTES,
         "chests": check_chests(canary_tiles),
         "doors": check_doors(canary_tiles),
-        "interactions": check_interactions(canary_tiles),
+        "interactions": check_interactions(canary_tiles, id_index, startup),
         "map_decisions": check_map_decisions(canary_tiles, crystalserver_tiles),
     }
 
