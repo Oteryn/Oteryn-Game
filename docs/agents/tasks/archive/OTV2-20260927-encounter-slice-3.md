@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-encounter-slice-3
 title: Transcribe Cults of Tibia, Wrath of the Emperor, Rathleton and other Canary boss events into encounters
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 964
 jira: KAN-16
 base_sha: b5f4c9641d4fb1db08be36415cbfe4b0f31278dd
-head_sha: null
-final_head_sha: null
+head_sha: d07f7f89fb15597b7d0673db4883bee44f8916ad
+final_head_sha: d07f7f89fb15597b7d0673db4883bee44f8916ad
 final_head_frozen_at: null
-owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -54,3 +54,8 @@ fence, session, authority or persisted-recovery evidence is touched.
   events transcribed: 44 encounters valid, 40 manifests fully resolved.
 - `GlowingRubbishAmuletDeath` classified as quest progress (D6).
 - `population_census.py` 1,427 of 1,656 fully resolved (1,389 before).
+
+## Completion
+
+Merged as PR #964 (`1e00497b16f089b3d3b22b467b922ed3425da3f3`) from final head `d07f7f8`; required checks passed on that head.
+Owner released.

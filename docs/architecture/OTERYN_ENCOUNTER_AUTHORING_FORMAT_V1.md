@@ -83,7 +83,7 @@ Encounter
     counters[]                  name, initial integer
     flags[]                     name, initial boolean
     timers[]                    name, duration_ms, repeat
-  rules[]                       trigger, conditions[], actions[] (in order)
+  rules[]                       trigger, optional delay_ms, conditions[], actions[] (in order)
   lifecycle
     start                       first participant engaged | anchor entered
     reset                       no player in the arena anchor for reset_after_ms | explicit action
@@ -119,9 +119,9 @@ the encounter never writes it.
 
 | Action | Parameters |
 |---|---|
-| `spawn` | role or CreatureRef, count, at (`death_position`, anchor, `random_in(anchor)`, offset), owner (none/caster), health (`full`, `carry_over`, percent) |
+| `spawn` | role or CreatureRef, count, at (`death_position`, anchor, `random_in(anchor)`, offset), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent) |
 | `remove` | role, or `all_in(anchor)` (monsters only; players are never removed) |
-| `transform` | role -> next stage or CreatureRef; health `keep_percent`/`keep_absolute`/`full` |
+| `transform` | role -> next stage, CreatureRef or `random_of` several CreatureRefs (uniform); health `keep_percent`/`keep_absolute`/`full` |
 | `heal` | role, amount or `full` |
 | `prevent_death` | only after `lethal_damage` |
 | `damage_modifier` | role, multiplier (0 = immune), damage types, sources, duration or until reset |
@@ -170,7 +170,9 @@ the encounter never writes it.
 1. §4-6 is the closed v1 vocabulary. A mechanic outside it stays an unresolved import row with its
    evidence; it is brought to the owner instead of being approximated or scripted.
 2. Rules run in their listed order; a trigger fires its rules once per occurrence; actions of one
-   rule run in order. `prevent_death` is valid only in a `lethal_damage` rule.
+   rule run in order. `prevent_death` is valid only in a `lethal_damage` rule. A rule with
+   `delay_ms` is scheduled once per trigger occurrence (like Canary `addEvent`): its conditions are
+   evaluated and its actions run `delay_ms` later, and `death_position` is the position of that death.
 3. Randomness (`chance_percent`, random positions) is drawn by the encounter instance, so a fight
    can be audited and replayed from its seed.
 4. Health carried by `transform`/`spawn` is explicit (`keep_percent`, `keep_absolute`, `full`,
@@ -229,3 +231,18 @@ decides (D25):
 `GlowingRubbishAmuletDeath` only advances Misguided mission counters and swaps a quest item, so it is
 quest progress under D6, not an encounter. 44 encounters validate, 40 manifests resolve fully,
 `verify_encounter_schema.py` 39/39; the census rises from 1,389 to 1,427.
+
+A fourth slice:
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `gorzindelDeath`, `gorzindelHealth` | 1 | 6 | Gorzindel is immune until no stolen knowledge is left; each knowledge death checks one second later (`delay_ms`). The Stolen Tome of Portals stays unresolved: its portal sends each player to a different free room. |
+| `HeartMinionDeath` | 2 | 8 | Minion and boss deaths update the World Devourer counters and the Rupture resonance state. |
+| `ChargerSpawn` | 1 | 1 | Each dead charger returns after 6 s on one of ten tiles, once per death. |
+| `AstralGlyphDeath`, `DragonEssenceDeath`, `DisgustingOozeDeath` | 3 | 3 | The ooze splits in two with a 10% chance, and the new oozes keep the dying ooze's master. |
+| `FeroxaTransform` | 1 | 2 | Feroxa2 also carries the display name "Feroxa", so its branch runs; it becomes Feroxa3 or Feroxa4 at random. |
+
+`facelessHealth` stays unresolved. The script adds the still-negative damage value back as health, so the hit is applied anyway, and Alptramun absorbs death damage completely before the event. The intended behaviour needs a wiki check.
+
+50 encounters validate, 45 manifests resolve fully, `verify_encounter_schema.py` 45/45; the census rises
+from 1,427 to 1,442.
