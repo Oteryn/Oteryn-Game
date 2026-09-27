@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 1025
 base_sha: null
 head_sha: null
 final_head_sha: null
@@ -188,7 +188,7 @@ last_progress: manifest placed and reformatted canonically, README and owner-dec
 status: implementing
 branch: claude/compassionate-albattani-s29syw
 head_sha: null
-pr: null
+pr: 1025
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
