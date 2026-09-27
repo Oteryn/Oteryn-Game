@@ -1,0 +1,114 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_corruptor_of_souls",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Cults of Tibia: The Corruptor of Souls",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_source_of_corruption",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_source_of_corruption",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "the_corruptor_of_souls",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_corruptor_of_souls",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "zarcorix_of_yalahar",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/zarcorix_of_yalahar",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "source_of_corruption_spawn",
+      "kind": "point",
+      "description": "The Source of Corruption appears here; Canary (33039, 31922, 15)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_source_of_corruption_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_source_of_corruption"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "the_source_of_corruption",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_source_of_corruption_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    },
+    {
+      "key": "the_corruptor_of_souls_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_corruptor_of_souls"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "the_corruptor_of_souls",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/the_source_of_corruption",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "the_source_of_corruption",
+          "count": 1,
+          "at": {
+            "anchor": "source_of_corruption_spawn"
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "remove",
+          "role": "zarcorix_of_yalahar"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_source_of_corruption_defeated"
+  ]
+}

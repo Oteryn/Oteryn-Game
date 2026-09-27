@@ -1,0 +1,98 @@
+{
+  "encounter": "canary:encounter/deep_terror",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "RathletonBossDeath": [
+      "canary:creature/deep_terror"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/hero_of_rathleton/deep_terror.lua",
+      "blob_sha1": "f0385a859d2ae0735a0da14143172148921aa2c9"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/hero_of_rathleton/creaturescripts_bosses_kill.lua",
+      "blob_sha1": "4a0687ee05916c4f9607395212fbd00b2accdbf5"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Deep Terror is the deep_terror participant; its file registers RathletonBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        2,
+        3
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"deep terror\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        60,
+        61,
+        62,
+        63,
+        65,
+        66,
+        67,
+        68,
+        69,
+        71,
+        72,
+        3,
+        4
+      ],
+      "status": "mapped",
+      "resolution": "Teleporter 1949 on (33749, 31952, 14) becomes 22761 leading to (33740, 31940, 15); after 2 minutes revertTeleport turns it back into 1949 with the destination it had before (oldPos): the revert restores the original item and its attributes.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        70
+      ],
+      "status": "approved_omission",
+      "resolution": "The thunder effect on the boss position is cosmetic."
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        73,
+        5
+      ],
+      "status": "approved_omission",
+      "resolution": "Game.setStorageValue(<running flag>, 0) frees the shared arena that movements_deep_terror.lua locks; an instance per party (D26) replaces the lock."
+    }
+  ],
+  "outcome_evidence": []
+}

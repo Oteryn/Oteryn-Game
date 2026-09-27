@@ -1,0 +1,128 @@
+{
+  "encounter": "canary:encounter/azerus",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "AzerusDeath": [
+      "canary:creature/azerus",
+      "canary:creature/azerus2"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/in_service_of_yalahar/azerus.lua",
+      "blob_sha1": "19dc3668ab3d1f5f855b8183fd43539dba2e99ea"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/in_service_of_yalahar/azerus2.lua",
+      "blob_sha1": "e5c88468ca04f00a229bcb3ba9b716729eef13dd"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/in_service_of_yalahar/creaturescritps_azerus_kill.lua",
+      "blob_sha1": "0b288679c188eb4e3e675e6124e330b6cd824531"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "Azerus is the azerus participant; its file registers AzerusDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "Azerus2 is the azerus participant; its file registers AzerusDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        9,
+        10,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of Azerus (both registering monster types).",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        6,
+        7,
+        13,
+        14,
+        15,
+        16,
+        17,
+        19,
+        20
+      ],
+      "status": "mapped",
+      "resolution": "A teleporter 1949 leading to (32780, 31168, 14) is created on the death position and removed after 2 minutes.",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        5,
+        12
+      ],
+      "status": "approved_omission",
+      "resolution": "Teleport and poff effects on that tile are cosmetic."
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        18
+      ],
+      "status": "mapped",
+      "resolution": "creature:say(text, TALKTYPE_MONSTER_SAY) at the death position.",
+      "destination": "/encounter/rules/0/actions/1"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        28,
+        29,
+        30
+      ],
+      "status": "mapped",
+      "resolution": "Every monster within 10 tiles of (32783, 31166, 10) on that floor is removed (players stay).",
+      "destination": "/encounter/rules/0/actions/2"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        27
+      ],
+      "status": "approved_omission",
+      "resolution": "The poff effect on each removed monster is cosmetic."
+    }
+  ],
+  "outcome_evidence": []
+}

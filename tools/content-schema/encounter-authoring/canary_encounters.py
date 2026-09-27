@@ -349,12 +349,402 @@ def ascendant(build):
                 'outcome contract first.')
 
 
+CULTS = 'data-otservbr-global/scripts/quests/cults_of_tibia/'
+CULTS_BOSSES = CULTS + 'creaturescripts_bosses_mission_cults.lua'
+CULTS_PILLAR = CULTS + 'creaturescripts_destroyed_pillar.lua'
+CULTS_ESSENCE = CULTS + 'creaturescripts_essence_of_malice.lua'
+CULTS_LEVERS = CULTS + 'actions_bosses_levers.lua'
+CULTS_CHECK_TILE = CULTS + 'creaturescripts_check_tile.lua'
+# boss, encounter, config line, quest storage, value
+CULTS_MISSION_BOSSES = [
+    ('Ravenous Hunger', 'ravenous_hunger', 2, 'Barkless.Mission', 6),
+    ('The Souldespoiler', 'the_souldespoiler', 3, 'Misguided.Mission', 4),
+    ('Essence of Malice', 'essence_of_malice', 4, 'Humans.Mission', 2),
+    ('The Unarmored Voidborn', 'the_unarmored_voidborn', 5, 'Orcs.Mission', 2),
+    ('The False God', 'the_false_god', 6, 'Minotaurs.Mission', 4),
+    ('The Source of Corruption', 'the_corruptor_of_souls', 9, 'FinalBoss.Mission', 2)]
+# pillar, lever spawn line, guardian, stop creature, lever line of the stop creature, pillar script lines
+ESSENCE_PILLARS = [
+    ('Pillar of Summoning', 285, 'Eshtaba the Conjurer', 'Eshtaba The Conjurer Stop', 291, (23, 30)),
+    ('Pillar of Death', 286, 'Malkhar Deathbringer', 'Malkhar Deathbringer Stop', 294, (31, 38)),
+    ('Pillar of Protection', 287, 'Eliz the Unyielding', 'Eliz The Unyielding Stop', 292, (47, 54)),
+    ('Pillar of Healing', 288, 'Mezlon the Defiler', 'Mezlon The Defiler Stop', 293, (39, 46)),
+    ('Pillar of Draining', 289, 'Dorokoll the Mystic', 'Dorokoll The Mystic Stop', 290, (55, 62))]
+
+
+def cults_of_tibia(build):
+    """CultsOfTibiaBossDeath, DestroyedPillar and EssenceOfMaliceSpawnsDeath: mission outcomes of the Cults of Tibia
+    bosses, the Essence of Malice pillar room and the Corruptor of Souls hand-over. The Sandking stays unresolved."""
+    event = 'CultsOfTibiaBossDeath'
+    for boss, name, line, storage, value in CULTS_MISSION_BOSSES:
+        item = build.get(name, f'Cults of Tibia: {boss if name != "the_corruptor_of_souls" else "The Corruptor of Souls"}',
+                         'instance_per_party')
+        role = slug(boss)
+        build.participant(item, role, boss, event)
+        outcome = f'{role}_defeated'
+        item['encounter']['outcomes'].append(outcome)
+        path = build.rule(item, {'key': f'{role}_death_outcome', 'trigger': {'kind': 'creature_died', 'role': role},
+                                 'conditions': [{'kind': 'has_master', 'role': role, 'value': False}],
+                                 'actions': [{'kind': 'emit_outcome', 'outcome': outcome, 'credited': 'damage_contributors'}]})
+        build.entry(item, CULTS_BOSSES, [12, 13, 19, 20, 21, 22, 23, line], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss.lower()}".')
+        build.entry(item, CULTS_BOSSES, [14, 15, 16, 17], 'mapped', path + '/conditions/0',
+                    'Returns without effect for a creature with a master (a player never triggers a monster death event).')
+        build.entry(item, CULTS_BOSSES, [46, 47, 48, 49, 50, line], 'mapped', path + '/actions/0',
+                    f'onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage '
+                    f'CultsOfTibia.{storage} to {value} when it is lower.')
+        item['manifest']['outcome_evidence'].append({
+            'outcome': outcome, 'credited': 'damage_contributors',
+            'quest_domain': {'canary_storage': f'Storage.Quest.U11_40.CultsOfTibia.{storage}', 'raise_to_at_least': value}})
+
+    # The Corruptor of Souls hands over to The Source of Corruption.
+    item = build.items['the_corruptor_of_souls']
+    build.participant(item, 'the_corruptor_of_souls', 'The Corruptor of Souls', event)
+    build.participant(item, 'zarcorix_of_yalahar', 'Zarcorix Of Yalahar')
+    source = creature('The Source of Corruption')
+    item['encounter']['anchors'].append({'key': 'source_of_corruption_spawn', 'kind': 'point',
+                                         'description': 'The Source of Corruption appears here; Canary (33039, 31922, 15).'})
+    path = build.rule(item, {
+        'key': 'the_corruptor_of_souls_death', 'trigger': {'kind': 'creature_died', 'role': 'the_corruptor_of_souls'},
+        'conditions': [{'kind': 'has_master', 'role': 'the_corruptor_of_souls', 'value': False}],
+        'actions': [{'kind': 'spawn', 'creature': source, 'role': 'the_source_of_corruption', 'count': 1,
+                     'at': {'anchor': 'source_of_corruption_spawn'}, 'owner': 'none', 'health': 'full'},
+                    {'kind': 'remove', 'role': 'zarcorix_of_yalahar'}]})
+    build.entry(item, CULTS_BOSSES, [12, 13, 19, 20, 21, 22, 23, 8, 27], 'mapped', path + '/trigger',
+                'onDeath of "the corruptor of souls", configured with createNew.')
+    build.entry(item, CULTS_BOSSES, [14, 15, 16, 17], 'mapped', path + '/conditions/0',
+                'Returns without effect for a creature with a master.')
+    build.entry(item, CULTS_BOSSES, [8, 29], 'mapped', path + '/actions/0',
+                'Game.createMonster("The Source Of Corruption", Position(33039, 31922, 15)): a new unowned boss with full health.')
+    build.entry(item, CULTS_BOSSES, [8, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43], 'mapped', path + '/actions/1',
+                'Canary defect: `if removeMonster then` reads an undefined global instead of boss.removeMonster, so the '
+                'zarcorix of yalahar is never removed. The reference-date wiki (Cults of Tibia Quest/Spoiler: "Once you kill '
+                'The Corruptor of Souls, the Zarcorix of Yalahar will disappear and The Source of Corruption will spawn") '
+                'decides (D25): the zarcorix is removed.')
+    build.entry(item, CULTS_BOSSES, [28], 'approved_omission', None,
+                'Game.setStorageValue("CheckTile", -1) resets the vulnerability deadline that the CheckTile onThink '
+                f'({CULTS_CHECK_TILE} lines 1-11) reads for the now dead corruptor; encounter state ends with the instance.')
+    build.entry(item, CULTS_BOSSES, [44], 'mapped', path,
+                'The corruptor itself credits no mission; the credit comes with The Source of Corruption.')
+
+    sandking = build.get('the_sandking', 'Cults of Tibia: The Sandking', 'instance_per_party')
+    build.participant(sandking, 'the_sandking', 'The Sandking')
+    sandking['encounter']['state']['counters'].append({'name': 'stage', 'initial': 0})
+    sandking['encounter']['outcomes'].append('the_sandking_defeated')
+    path = build.rule(sandking, {
+        'key': 'the_sandking_death_outcome', 'trigger': {'kind': 'creature_died', 'role': 'the_sandking'},
+        'conditions': [{'kind': 'has_master', 'role': 'the_sandking', 'value': False},
+                       {'kind': 'counter_compare', 'counter': 'stage', 'op': '>=', 'value': 5}],
+        'actions': [{'kind': 'emit_outcome', 'outcome': 'the_sandking_defeated', 'credited': 'damage_contributors'}]})
+    build.entry(sandking, CULTS_BOSSES, [12, 13, 19, 20, 21, 22, 23, 7], 'mapped', path + '/trigger',
+                'onDeath of the configured boss "the sandking".')
+    build.entry(sandking, CULTS_BOSSES, [14, 15, 16, 17], 'mapped', path + '/conditions/0',
+                'Returns without effect for a creature with a master.')
+    build.entry(sandking, CULTS_BOSSES, [46, 47, 48, 49, 50, 7], 'mapped', path + '/actions/0',
+                'onDeathForDamagingPlayers credits every damaging player (D27): the quest domain raises Storage '
+                'CultsOfTibia.Life.Mission to 8 when it is lower.')
+    build.entry(sandking, CULTS_BOSSES, [7, 24, 25, 26], 'unresolved_semantics', path + '/conditions/1',
+                'The credit needs the global "sandking" storage at least 5: the fight stage, set to 1 by '
+                'actions_bosses_levers.lua line 481 and advanced by creaturescripts_sandking.lua. It is the stage counter of '
+                'this encounter, but the rules that advance it are not transcribed yet.')
+    sandking['manifest']['outcome_evidence'].append({
+        'outcome': 'the_sandking_defeated', 'credited': 'damage_contributors',
+        'quest_domain': {'canary_storage': 'Storage.Quest.U11_40.CultsOfTibia.Life.Mission', 'raise_to_at_least': 8}})
+
+    # Essence of Malice: five pillars guard five mini-bosses; the Essence appears after all five are killed.
+    essence = build.items['essence_of_malice']
+    malice = essence['encounter']
+    malice['anchors'].append({'key': 'essence_spawn', 'kind': 'point', 'description': 'Canary (33098, 31920, 15).'})
+    malice['state']['counters'].append({'name': 'guardians_killed', 'initial': 0})
+    destroyed = creature('Destroyed Pillar')
+    build.define(essence, destroyed)
+    for pillar, pillar_line, guardian, stop, stop_line, (first, last) in ESSENCE_PILLARS:
+        role, guardian_role, stop_role = slug(pillar), slug(guardian), slug(stop)
+        build.participant(essence, role, pillar, 'DestroyedPillar')
+        build.participant(essence, stop_role, stop)
+        build.participant(essence, guardian_role, guardian, 'EssenceOfMaliceSpawnsDeath')
+        anchor = f'{guardian_role}_spot'
+        malice['anchors'].append({'key': anchor, 'kind': 'point',
+                                  'description': f'The tile of {stop} next to {pillar}; see {CULTS_LEVERS} line {stop_line}.'})
+        path = build.rule(essence, {
+            'key': f'{role}_destroyed', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+            'actions': [{'kind': 'remove', 'role': stop_role},
+                        {'kind': 'spawn', 'creature': destroyed, 'role': 'destroyed_pillar', 'count': 1, 'at': 'death_position',
+                         'owner': 'none', 'health': 'full'},
+                        {'kind': 'spawn', 'creature': creature(guardian), 'role': guardian_role, 'count': 1,
+                         'at': {'anchor': anchor}, 'owner': 'none', 'health': 'full'}]})
+        build.entry(essence, CULTS_PILLAR, [1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 17, 18, 19, 20, 21, 22, first], 'mapped', path + '/trigger',
+                    f'onDeath of "{pillar.lower()}".')
+        build.entry(essence, CULTS_PILLAR, list(range(first + 1, first + 5)), 'mapped', path + '/actions/0',
+                    f'The top creature on the adjacent tile is removed: {stop}, placed there with the pillar '
+                    f'({CULTS_LEVERS} lines {pillar_line}, {stop_line}).')
+        build.entry(essence, CULTS_PILLAR, [last - 1], 'mapped', path + '/actions/1',
+                    'Game.createMonster("Destroyed Pillar", position, true, true) at the death position.')
+        build.entry(essence, CULTS_PILLAR, [last], 'mapped', path + '/actions/2',
+                    f'Game.createMonster("{guardian}", adjacent tile, true, true): the attackable mini-boss replaces {stop}.')
+        path = build.rule(essence, {
+            'key': f'{guardian_role}_killed', 'trigger': {'kind': 'creature_died', 'role': guardian_role}, 'conditions': [],
+            'actions': [{'kind': 'counter', 'counter': 'guardians_killed', 'operation': 'add', 'value': 1}]})
+        build.entry(essence, CULTS_ESSENCE, [1, 3, 4, 23], 'mapped', path + '/actions/0',
+                    f'onDeath of "{guardian.lower()}" counts towards the Essence of Malice (see the counter rule).')
+    path = build.rule(essence, {
+        'key': 'essence_of_malice_appears', 'trigger': {'kind': 'counter_reached', 'counter': 'guardians_killed', 'value': 5},
+        'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('Essence of Malice'), 'role': 'essence_of_malice',
+                                       'count': 1, 'at': {'anchor': 'essence_spawn'}, 'owner': 'none', 'health': 'full'}]})
+    build.entry(essence, CULTS_ESSENCE, [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24], 'mapped', path,
+                'Canary spawns the Essence at (33098, 31920, 15) when the dying mini-boss is the only one standing in the area '
+                '(33087, 31909)-(33112, 31932) (onDeath runs before the corpse creature leaves its tile, creature.cpp '
+                'dropCorpse). Mini-bosses killed one after another would each be alone, so the Essence would appear after '
+                'the first kill. The reference-date wiki (Cults of Tibia Quest/Spoiler: "After you are done with the 5 mini '
+                'bosses, Essence of Malice will spawn") decides (D25): the fifth kill spawns it.')
+
+
+WOTE = 'data-otservbr-global/scripts/quests/wrath_of_the_emperor/'
+WOTE_BOSSES = WOTE + 'creaturescripts_bosses_kill.lua'
+WOTE_ZALAMON = WOTE + 'creaturescripts_zalamon_kill.lua'
+# boss, config lines, statue position
+WOTE_BOSS_CONFIG = [
+    ('Fury of the Emperor', [2, 3, 4, 5], (33048, 31085, 15)),
+    ('Wrath of the Emperor', [6, 7, 8, 9], (33094, 31087, 15)),
+    ('Scorn of the Emperor', [10, 11, 12, 13], (33095, 31110, 15)),
+    ('Spite of the Emperor', [14, 15, 16, 17], (33048, 31111, 15))]
+# form, config lines, next form
+ZALAMON_FORMS = [
+    ('Snake God Essence', [2, 3, 4, 5], 'Snake Thing', "IT'S NOT THAT EASY MORTALS! FEEL THE POWER OF THE GOD!"),
+    ('Snake Thing', [6, 7, 8, 9], 'Lizard Abomination', 'NOOO! NOW YOU HERETICS WILL FACE MY GODLY WRATH!'),
+    ('Lizard Abomination', [10, 11, 12, 13], 'Mutated Zalamon', 'YOU ... WILL ... PAY WITH ETERNITY ... OF AGONY!')]
+
+
+def wrath_of_the_emperor(build):
+    """WrathOfTheEmperorBossDeath and ZalamonDeath: the four emperor bosses unseal their statue; Zalamon's forms follow
+    one another."""
+    event = 'WrathOfTheEmperorBossDeath'
+    sealed, unsealed = ref('Item', 'canary:item/10797'), ref('Item', 'canary:item/11427')
+    for boss, lines, statue in WOTE_BOSS_CONFIG:
+        role = slug(boss)
+        item = build.get(role, f'Wrath of the Emperor: {boss}', 'instance_per_party')
+        build.participant(item, role, boss, event)
+        item['encounter']['anchors'].append({'key': 'statue', 'kind': 'point', 'description': f'Boss statue; Canary {statue}.'})
+        build.define(item, sealed)
+        build.define(item, unsealed)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'map_item', 'operation': 'transform', 'item': sealed, 'into': unsealed,
+                                              'anchor': 'statue'}]})
+        build.entry(item, WOTE_BOSSES, [20, 21, 22, 23, 24, 25] + lines[:1], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss.lower()}".')
+        build.entry(item, WOTE_BOSSES, [28, 29, 30, 31, 32, 33, 34] + lines[1:2], 'mapped', path + '/actions/0',
+                    f'Item 10797 on {statue} becomes 11427 (the sceptre of mission 10 turns it back, '
+                    'actions_mission10_a_message_of_freedom_sceptre.lua lines 10-11: quest interaction, not this event).')
+        build.entry(item, WOTE_BOSSES, [27] + lines[2:3], 'approved_omission', None,
+                    'Game.setStorageValue(Bosses.<boss>, 0): nothing sets this global to 1, and movements_boss_teleport.lua '
+                    'lines 55-60 teleport in both branches, differing only by a teleport effect, so the write has no effect.')
+
+    event = 'ZalamonDeath'
+    item = build.get('zalamon', 'Wrath of the Emperor: Zalamon', 'instance_per_party')
+    for form, lines, next_form, text in ZALAMON_FORMS:
+        role, next_role = slug(form), slug(next_form)
+        build.participant(item, role, form, event)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'spawn', 'creature': creature(next_form), 'role': next_role, 'count': 1,
+                                              'at': 'death_position', 'owner': 'none', 'health': 'full'},
+                                             {'kind': 'say', 'subject': {'role': next_role}, 'text': text, 'mode': 'say'}]})
+        build.entry(item, WOTE_ZALAMON, [17, 18, 23, 24, 25, 26, 27] + lines[:1] + lines[2:3], 'mapped', path + '/trigger',
+                    f'onDeath of the form "{form.lower()}", whose next form is "{next_form.lower()}".')
+        build.entry(item, WOTE_ZALAMON, [38, 42] + lines[2:3], 'mapped', path + '/actions/0',
+                    f'Game.createMonster("{next_form.lower()}", death position, false, true): the next form with full health.')
+        build.entry(item, WOTE_ZALAMON, [39, 40] + lines[1:2], 'mapped', path + '/actions/1',
+                    'monster:say(text, TALKTYPE_MONSTER_SAY) by the new form.')
+        build.entry(item, WOTE_ZALAMON, [29, 30, 31, 32, 33, 34, 35, 37], 'approved_omission', None,
+                    'The next form is not created when a creature of that name is already in view. In one encounter instance '
+                    'the next form exists only through this rule, which runs once for the single previous form, so the guard '
+                    'never fails.')
+    build.participant(item, 'mutated_zalamon', 'Mutated Zalamon', event)
+    build.entry(item, WOTE_ZALAMON, [17, 18, 19, 20, 21], 'approved_omission', None,
+                'The death of "mutated zalamon" sets the global Mission11 storage to -1, releasing the arena lock that '
+                'actions_mission11_payback_time_lever.lua lines 18-24 hold for ten minutes; an instance per party (D26) '
+                'replaces the shared-arena lock.')
+
+
+GHULOSH = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_ghulosh.lua'
+
+
+def ghulosh(build):
+    """ghuloshDeath: the Book of Death and Concentrated Death alternate in the Ghulosh fight."""
+    event = 'ghuloshDeath'
+    item = build.get('ghulosh', 'The Secret Library: Ghulosh', 'instance_per_party')
+    build.participant(item, 'the_book_of_death', 'The Book of Death', event)
+    build.participant(item, 'concentrated_death', 'Concentrated Death', event)
+    item['encounter']['anchors'].append({'key': 'book_of_death_spawn', 'kind': 'point', 'description': 'Canary (32755, 32716, 10).'})
+    item['encounter']['state']['timers'].append({'name': 'book_of_death_return', 'duration_ms': 12000, 'repeat': False})
+    path = build.rule(item, {'key': 'the_book_of_death_death', 'trigger': {'kind': 'creature_died', 'role': 'the_book_of_death'},
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('Concentrated Death'),
+                                                            'role': 'concentrated_death', 'count': 1, 'at': 'death_position',
+                                                            'owner': 'none', 'health': 'full'}]})
+    build.entry(item, GHULOSH, [55, 56, 57, 58, 60], 'mapped', path + '/trigger', 'onDeath of "the book of death".')
+    build.entry(item, GHULOSH, [61], 'mapped', path + '/actions/0',
+                'Game.createMonster("Concentrated Death", death position): full health, no owner.')
+    path = build.rule(item, {'key': 'concentrated_death_death', 'trigger': {'kind': 'creature_died', 'role': 'concentrated_death'},
+                             'conditions': [], 'actions': [{'kind': 'timer', 'timer': 'book_of_death_return', 'operation': 'start'}]})
+    build.entry(item, GHULOSH, [62, 63], 'mapped', path + '/actions/0',
+                'onDeath of "concentrated death": addEvent(doSpawn, 4000, ..., k = 1). doSpawn reschedules itself every 2000 ms '
+                'while k <= 4 (k = 1..4) and creates the book at k = 5: 4000 + 4 * 2000 = 12000 ms.')
+    path = build.rule(item, {'key': 'book_of_death_returns', 'trigger': {'kind': 'timer_elapsed', 'timer': 'book_of_death_return'},
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': creature('The Book of Death'),
+                                                            'role': 'the_book_of_death', 'count': 1,
+                                                            'at': {'anchor': 'book_of_death_spawn'}, 'owner': 'none',
+                                                            'health': 'full'}]})
+    build.entry(item, GHULOSH, [45, 50, 51, 52, 53], 'mapped', path + '/actions/0',
+                'Game.createMonster("The Book of Death", Position(32755, 32716, 10)): full health, no owner.')
+    build.entry(item, GHULOSH, [46, 47, 48, 49], 'approved_omission', None,
+                'The teleport magic effect on the spawn tile every 2 s before the book returns is cosmetic.')
+
+
+DEPTHS = 'data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua'
+# boss, config line, teleport position, destination, destination after the revert
+DEPTH_BOSSES = [
+    ('The Count of the Core', 2, (33681, 32340, 15), (33682, 32315, 15), (33324, 32111, 15)),
+    ('The Duke of the Depths', 3, (33719, 32302, 15), (33691, 32301, 15), (33275, 32318, 15)),
+    ('The Baron from Below', 4, (33650, 32312, 15), (33668, 32301, 15), (33462, 32267, 15))]
+
+
+def dangerous_depth(build):
+    """DepthWarzoneBossDeath: a warzone boss opens its room teleporter for 20 minutes."""
+    event = 'DepthWarzoneBossDeath'
+    closed, opened = ref('Item', 'canary:item/1949'), ref('Item', 'canary:item/22761')
+    for boss, line, teleport, destination, back in DEPTH_BOSSES:
+        role = slug(boss)
+        item = build.get(role, f'Dangerous Depth: {boss}', 'instance_per_party')
+        build.participant(item, role, boss, event)
+        item['encounter']['anchors'] += [
+            {'key': 'exit_teleporter', 'kind': 'point', 'description': f'Boss-room teleporter; Canary {teleport}.'},
+            {'key': 'reward_destination', 'kind': 'point', 'description': f'Destination while open; Canary {destination}.'},
+            {'key': 'warzone_exit', 'kind': 'point', 'description': f'Destination after the revert; Canary {back}.'}]
+        build.define(item, closed)
+        build.define(item, opened)
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'map_item', 'operation': 'transform', 'item': closed, 'into': opened,
+                                              'anchor': 'exit_teleporter', 'destination': 'reward_destination',
+                                              'revert_after_ms': 20 * 60 * 1000, 'revert_destination': 'warzone_exit'}]})
+        build.entry(item, DEPTHS, [15, 16, 17, 18, 19, 20, line], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss.lower()}".')
+        build.entry(item, DEPTHS, [22, 23, 24, 25, 26, 7, 8, 9, 10, 11, 12, 13, line], 'mapped', path + '/actions/0',
+                    f'Teleporter 1949 on {teleport} becomes 22761 leading to {destination}; after 20 minutes revert turns it '
+                    f'back into 1949 leading to {back}.')
+        build.entry(item, DEPTHS, [line], 'mapped', '/encounter/anchors',
+                    'teleportPosition, toPosition and toPositionBack become the three point anchors.')
+
+
+RATHLETON = 'data-otservbr-global/scripts/quests/hero_of_rathleton/'
+RATHLETON_KILL = RATHLETON + 'creaturescripts_bosses_kill.lua'
+GLOOTH_HORROR = RATHLETON + 'creaturescripts_glooth_horror.lua'
+GLOOTH_STAGES = [('Feeble Glooth Horror', 2, 'Weakened Glooth Horror'), ('Weakened Glooth Horror', 3, 'Glooth Horror'),
+                 ('Glooth Horror', 4, 'Strong Glooth Horror'), ('Strong Glooth Horror', 5, 'Empowered Glooth Horror')]
+# boss, encounter, config lines, teleporter, destination while open, running flag script
+RATHLETON_BOSSES = [
+    ('Deep Terror', 'deep_terror', [2, 3, 4, 5, 6], (33749, 31952, 14), (33740, 31940, 15), 'movements_deep_terror.lua'),
+    ('Empowered Glooth Horror', 'glooth_horror', [7, 8, 9, 10, 11], (33545, 31955, 15), (33534, 31955, 15),
+     'movements_glooth_horror.lua'),
+    ('Professor Maxxen', 'professor_maxxen', [12, 13, 14, 15, 16], (33718, 32047, 15), (33707, 32107, 15),
+     'actions_machines_professor_maxxen.lua')]
+
+
+def hero_of_rathleton(build):
+    """GloothHorror and RathletonBossDeath: the glooth horror splits in two at each stage (the Canary script is broken,
+    the wiki decides), and each boss opens its room teleporter for two minutes."""
+    item = build.get('glooth_horror', 'Hero of Rathleton: Glooth Horror', 'instance_per_party')
+    for stage, line, next_stage in GLOOTH_STAGES:
+        role = slug(stage)
+        build.participant(item, role, stage, 'GloothHorror')
+        path = build.rule(item, {'key': f'{role}_splits', 'trigger': {'kind': 'creature_died', 'role': role}, 'conditions': [],
+                                 'actions': [{'kind': 'spawn', 'creature': creature(next_stage), 'role': slug(next_stage),
+                                              'count': 2, 'at': 'death_position', 'owner': 'none', 'health': 'full'}]})
+        build.entry(item, GLOOTH_HORROR, [8, 9, 10, 11, 12, 19, line], 'mapped', path + '/trigger', f'onDeath of "{stage}".')
+        build.entry(item, GLOOTH_HORROR, [13, 14, 15, 16, 17, 18, line], 'mapped', path + '/actions/0',
+                    f'Canary defect: Game.createMonster("{next_stage}", targetMonster:getPosition(), true, true) twice reads '
+                    'the undefined global targetMonster, so the script errors and nothing spawns. The reference-date wiki '
+                    f'("When slain, the {stage} will turn into 2 {next_stage}s"; 16 Empowered Glooth Horrors in total) decides '
+                    '(D25): two of the next stage appear where it died. The teleport effect on each is cosmetic.')
+    build.participant(item, 'empowered_glooth_horror', 'Empowered Glooth Horror', 'GloothHorror')
+    build.entry(item, GLOOTH_HORROR, [1, 2, 3, 4, 5, 6, 11, 12], 'approved_omission', None,
+                'The Empowered Glooth Horror is the last stage and has no config row: its death has no effect in this event.')
+    item['encounter']['anchors'].append({'key': 'horror_arena', 'kind': 'area',
+                                         'description': 'Tiles within 13 of Canary (33555, 31956, 15) on that floor.'})
+
+    event = 'RathletonBossDeath'
+    closed, opened = ref('Item', 'canary:item/1949'), ref('Item', 'canary:item/22761')
+    for boss, name, lines, teleport, destination, running in RATHLETON_BOSSES:
+        role = slug(boss)
+        item = build.get(name, f'Hero of Rathleton: {boss}', 'instance_per_party')
+        build.participant(item, role, boss, event)
+        item['encounter']['anchors'] += [
+            {'key': 'exit_teleporter', 'kind': 'point', 'description': f'Boss-room teleporter; Canary {teleport}.'},
+            {'key': 'next_destination', 'kind': 'point', 'description': f'Destination while open; Canary {destination}.'}]
+        build.define(item, closed)
+        build.define(item, opened)
+        conditions = []
+        if boss == 'Empowered Glooth Horror':
+            conditions = [{'kind': 'creature_present', 'role': slug(stage), 'anchor': 'horror_arena', 'present': False}
+                          for stage in [s for s, _, _ in GLOOTH_STAGES] + [boss]]
+        path = build.rule(item, {'key': f'{role}_death', 'trigger': {'kind': 'creature_died', 'role': role},
+                                 'conditions': conditions,
+                                 'actions': [{'kind': 'map_item', 'operation': 'transform', 'item': closed, 'into': opened,
+                                              'anchor': 'exit_teleporter', 'destination': 'next_destination',
+                                              'revert_after_ms': 2 * 60 * 1000}]})
+        build.entry(item, RATHLETON_KILL, [48, 49, 50, 51, 52, 53] + lines[:2], 'mapped', path + '/trigger',
+                    f'onDeath of the configured boss "{boss.lower()}".')
+        if conditions:
+            build.entry(item, RATHLETON_KILL, list(range(19, 39)) + [54, 55, 56, 57, 58], 'mapped', path + '/conditions',
+                        'checkHorror: nothing happens while a living glooth horror of any stage is within 13 tiles of '
+                        '(33555, 31956, 15) on that floor (the horror_arena anchor); the dying one has 0 health and does not '
+                        'count.')
+        build.entry(item, RATHLETON_KILL, [40, 41, 42, 43, 44, 45, 46, 60, 61, 62, 63, 65, 66, 67, 68, 69, 71, 72] + lines[1:3],
+                    'mapped', path + '/actions/0',
+                    f'Teleporter 1949 on {teleport} becomes 22761 leading to {destination}; after 2 minutes revertTeleport '
+                    'turns it back into 1949 with the destination it had before (oldPos): the revert restores the original '
+                    'item and its attributes.')
+        build.entry(item, RATHLETON_KILL, [70], 'approved_omission', None,
+                    'The thunder effect on the boss position is cosmetic.')
+        build.entry(item, RATHLETON_KILL, [73] + lines[3:4], 'approved_omission', None,
+                    f'Game.setStorageValue(<running flag>, 0) frees the shared arena that {running} locks; an instance per '
+                    'party (D26) replaces the lock.')
+
+
+AZERUS = 'data-otservbr-global/scripts/quests/in_service_of_yalahar/creaturescritps_azerus_kill.lua'
+
+
+def azerus(build):
+    """AzerusDeath: Azerus leaves a two-minute teleporter where he dies and the arena is cleared of monsters."""
+    event = 'AzerusDeath'
+    item = build.get('azerus', 'In Service of Yalahar: Azerus', 'instance_per_party')
+    for name in ('Azerus', 'Azerus2'):
+        build.participant(item, 'azerus', name, event)
+    teleporter = ref('Item', 'canary:item/1949')
+    build.define(item, teleporter)
+    item['encounter']['anchors'] += [
+        {'key': 'azerus_escape', 'kind': 'point', 'description': 'Teleporter destination; Canary (32780, 31168, 14).'},
+        {'key': 'arena', 'kind': 'area', 'description': 'Tiles within 10 of Canary (32783, 31166, 10) on that floor.'}]
+    text = 'Azerus ran into teleporter! It will disappear in 2 minutes. Enter it!'
+    path = build.rule(item, {'key': 'azerus_death', 'trigger': {'kind': 'creature_died', 'role': 'azerus'}, 'conditions': [],
+                             'actions': [{'kind': 'map_item', 'operation': 'create', 'item': teleporter, 'at': 'death_position',
+                                          'destination': 'azerus_escape', 'revert_after_ms': 2 * 60 * 1000},
+                                         {'kind': 'say', 'subject': {'role': 'azerus'}, 'text': text, 'mode': 'say'},
+                                         {'kind': 'remove', 'all_in': 'arena'}]})
+    build.entry(item, AZERUS, [9, 10, 11], 'mapped', path + '/trigger', 'onDeath of Azerus (both registering monster types).')
+    build.entry(item, AZERUS, [1, 2, 3, 4, 6, 7, 13, 14, 15, 16, 17, 19, 20], 'mapped', path + '/actions/0',
+                'A teleporter 1949 leading to (32780, 31168, 14) is created on the death position and removed after 2 minutes.')
+    build.entry(item, AZERUS, [5, 12], 'approved_omission', None, 'Teleport and poff effects on that tile are cosmetic.')
+    build.entry(item, AZERUS, [18], 'mapped', path + '/actions/1', 'creature:say(text, TALKTYPE_MONSTER_SAY) at the death position.')
+    build.entry(item, AZERUS, [22, 23, 24, 25, 26, 28, 29, 30], 'mapped', path + '/actions/2',
+                'Every monster within 10 tiles of (32783, 31166, 10) on that floor is removed (players stay).')
+    build.entry(item, AZERUS, [27], 'approved_omission', None, 'The poff effect on each removed monster is cosmetic.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus):
         transcribe(build)
     print(json.dumps(build.write()))
 

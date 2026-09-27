@@ -1,0 +1,61 @@
+{
+  "identity": {
+    "key": "canary:encounter/fury_of_the_emperor",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Wrath of the Emperor: Fury of the Emperor",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "fury_of_the_emperor",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/fury_of_the_emperor",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "statue",
+      "kind": "point",
+      "description": "Boss statue; Canary (33048, 31085, 15)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "fury_of_the_emperor_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "fury_of_the_emperor"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/10797",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/11427",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "statue"
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}

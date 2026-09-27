@@ -120,7 +120,7 @@ the encounter never writes it.
 | Action | Parameters |
 |---|---|
 | `spawn` | role or CreatureRef, count, at (`death_position`, anchor, `random_in(anchor)`, offset), owner (none/caster), health (`full`, `carry_over`, percent) |
-| `remove` | role, `all_in(anchor)`, self |
+| `remove` | role, or `all_in(anchor)` (monsters only; players are never removed) |
 | `transform` | role -> next stage or CreatureRef; health `keep_percent`/`keep_absolute`/`full` |
 | `heal` | role, amount or `full` |
 | `prevent_death` | only after `lethal_damage` |
@@ -128,7 +128,7 @@ the encounter never writes it.
 | `reflect_damage` | role, percent, damage types |
 | `convert_damage_to_heal` | role, damage types |
 | `teleport` | role or `players_in(anchor)`, to anchor |
-| `map_item` | create/transform/remove ItemRef at anchor, `revert_after_ms`; a teleporter carries `destination` and `revert_destination` anchors; optional `effect` |
+| `map_item` | create/transform/remove ItemRef at an anchor or `at: death_position` (death and lethal damage triggers), `revert_after_ms`; a teleporter carries `destination` and optionally `revert_destination` anchors; a revert restores the original item with its original attributes unless `revert_destination` overrides the destination; optional `effect` |
 | `counter` / `flag` / `timer` | set, add, start, stop |
 | `set_phase` | next or named phase (phase changes are triggers too: `phase_entered(name)`) |
 | `cast` | AbilityRef at a role or anchor (death explosions) |
@@ -212,3 +212,20 @@ The Ascension bosses open their room teleporter to the Godbreaker for 60 s (`map
 destinations). A dead `elseif` branch of the thorn knight is recorded as an approved omission.
 24 encounters validate, 21 manifests resolve fully, `verify_encounter_schema.py` 35/35; the census
 rises from 1,383 to 1,389.
+
+A third slice transcribed more boss events; where Canary's script is broken, the reference-date wiki
+decides (D25):
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `CultsOfTibiaBossDeath` | 7 | 7 | The corruptor's zarcorix removal is dead code in Canary (`removeMonster` is an undefined global); the wiki says the zarcorix disappears, so it is removed. The Sandking's credit waits for the fight stage, whose rules are not transcribed yet (unresolved). |
+| `DestroyedPillar`, `EssenceOfMaliceSpawnsDeath` | 1 | 10 | Canary spawns the Essence of Malice when the dying mini-boss stands alone, which happens after the first of five kills taken one at a time; the wiki says it spawns after all five, so a kill counter decides. |
+| `WrathOfTheEmperorBossDeath`, `ZalamonDeath` | 5 | 8 | Statues unseal; Zalamon's forms follow one another. The shared-arena lock is replaced by the instance (D26). |
+| `ghuloshDeath` | 1 | 2 | The Book of Death returns 12 s after Concentrated Death dies. |
+| `GloothHorror`, `RathletonBossDeath` | 3 | 8 | `GloothHorror` reads an undefined `targetMonster` and spawns nothing; the wiki says each stage splits into two of the next, 16 in total. Teleporters open for 2 minutes and revert to their original destination. |
+| `DepthWarzoneBossDeath` | 3 | 3 | Teleporters open for 20 minutes. |
+| `AzerusDeath` | 1 | 2 | A teleporter at the death position (`map_item at: death_position`) and the arena cleared of monsters. |
+
+`GlowingRubbishAmuletDeath` only advances Misguided mission counters and swaps a quest item, so it is
+quest progress under D6, not an encounter. 44 encounters validate, 40 manifests resolve fully,
+`verify_encounter_schema.py` 39/39; the census rises from 1,389 to 1,427.

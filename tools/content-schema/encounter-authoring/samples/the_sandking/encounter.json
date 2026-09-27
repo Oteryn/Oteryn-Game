@@ -1,0 +1,64 @@
+{
+  "identity": {
+    "key": "canary:encounter/the_sandking",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Cults of Tibia: The Sandking",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "the_sandking",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/the_sandking",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [
+      {
+        "name": "stage",
+        "initial": 0
+      }
+    ],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "the_sandking_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "the_sandking"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "the_sandking",
+          "value": false
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "stage",
+          "op": ">=",
+          "value": 5
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "the_sandking_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "the_sandking_defeated"
+  ]
+}

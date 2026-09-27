@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-encounter-boss-deaths
 title: Transcribe Canary boss death events into encounters (Dream Courts, Forgotten Knowledge, Ferumbras Ascension)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,10 +12,10 @@ issue: 162
 pr: 962
 jira: KAN-16
 base_sha: fcd965b30f96a98de3384ff845d7919dbb6f7a86
-head_sha: null
-final_head_sha: null
+head_sha: 00d00be1cc921a4b619ed7d06edca4d7d0c616d7
+final_head_sha: 00d00be1cc921a4b619ed7d06edca4d7d0c616d7
 final_head_frozen_at: null
-owner: claude-code-session-01UiMEDawVAZ3kxLCLepWZnG
+owner: released
 created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
@@ -56,3 +56,8 @@ fence, session, authority or persisted-recovery evidence is touched.
   encounters valid, 21 manifests fully resolved; unresolved: Alptramun dream escalation, Melting
   Frozen Horror fixed tiles, Ferumbras Mortal Shell crystal reset.
 - `population_census.py` 1,389 of 1,656 fully resolved (1,383 before).
+
+## Completion
+
+Merged as PR #962 (`b5f4c9641d4fb1db08be36415cbfe4b0f31278dd`) from final head `00d00be`; required checks passed on that head.
+Owner released.

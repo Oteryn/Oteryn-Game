@@ -1,0 +1,53 @@
+{
+  "identity": {
+    "key": "canary:encounter/ravenous_hunger",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Cults of Tibia: Ravenous Hunger",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "ravenous_hunger",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/ravenous_hunger",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "ravenous_hunger_death_outcome",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "ravenous_hunger"
+      },
+      "conditions": [
+        {
+          "kind": "has_master",
+          "role": "ravenous_hunger",
+          "value": false
+        }
+      ],
+      "actions": [
+        {
+          "kind": "emit_outcome",
+          "outcome": "ravenous_hunger_defeated",
+          "credited": "damage_contributors"
+        }
+      ]
+    }
+  ],
+  "outcomes": [
+    "ravenous_hunger_defeated"
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "encounter": "canary:encounter/the_count_of_the_core",
+  "classification": "OTS_HYPOTHESIS_ONLY",
+  "covers": {
+    "DepthWarzoneBossDeath": [
+      "canary:creature/the_count_of_the_core"
+    ]
+  },
+  "sources": [
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/monster/quests/dangerous_depth/bosses/the_count_of_the_core.lua",
+      "blob_sha1": "60769958a14e8100d7d3fd747d1f26637c8c38ae"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua",
+      "blob_sha1": "9880d96626e7bdba1fcbb7747c440339f5a756b5"
+    }
+  ],
+  "entries": [
+    {
+      "source_index": 0,
+      "source_lines": [
+        17
+      ],
+      "status": "mapped",
+      "resolution": "The Count of the Core is the the_count_of_the_core participant; its file registers DepthWarzoneBossDeath.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "onDeath of the configured boss \"the count of the core\".",
+      "destination": "/encounter/rules/0/trigger"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        22,
+        23,
+        24,
+        25,
+        26,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        2
+      ],
+      "status": "mapped",
+      "resolution": "Teleporter 1949 on (33681, 32340, 15) becomes 22761 leading to (33682, 32315, 15); after 20 minutes revert turns it back into 1949 leading to (33324, 32111, 15).",
+      "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 1,
+      "source_lines": [
+        2
+      ],
+      "status": "mapped",
+      "resolution": "teleportPosition, toPosition and toPositionBack become the three point anchors.",
+      "destination": "/encounter/anchors"
+    }
+  ],
+  "outcome_evidence": []
+}

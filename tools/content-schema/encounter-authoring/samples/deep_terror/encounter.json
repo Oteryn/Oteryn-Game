@@ -1,0 +1,68 @@
+{
+  "identity": {
+    "key": "canary:encounter/deep_terror",
+    "revision": "canary-47dfd51f"
+  },
+  "display_name": "Hero of Rathleton: Deep Terror",
+  "scope": "instance_per_party",
+  "participants": [
+    {
+      "role": "deep_terror",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/deep_terror",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    }
+  ],
+  "anchors": [
+    {
+      "key": "exit_teleporter",
+      "kind": "point",
+      "description": "Boss-room teleporter; Canary (33749, 31952, 14)."
+    },
+    {
+      "key": "next_destination",
+      "kind": "point",
+      "description": "Destination while open; Canary (33740, 31940, 15)."
+    }
+  ],
+  "phases": [],
+  "state": {
+    "counters": [],
+    "flags": [],
+    "timers": []
+  },
+  "rules": [
+    {
+      "key": "deep_terror_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "deep_terror"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "map_item",
+          "operation": "transform",
+          "item": {
+            "family": "Item",
+            "key": "canary:item/1949",
+            "revision": "canary-47dfd51f"
+          },
+          "into": {
+            "family": "Item",
+            "key": "canary:item/22761",
+            "revision": "canary-47dfd51f"
+          },
+          "anchor": "exit_teleporter",
+          "destination": "next_destination",
+          "revert_after_ms": 120000
+        }
+      ]
+    }
+  ],
+  "outcomes": []
+}
