@@ -31,6 +31,7 @@ from collections import Counter
 from pathlib import Path
 
 import lua_blocks
+import lua_tables
 from lua_writers import REGISTRATION, expand_aliases, storage_aliases, strip_code
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
@@ -64,7 +65,25 @@ MESSAGE = re.compile(r':(sendTextMessage|say|sendCancelMessage|sendChannelMessag
 CONTROL = re.compile(r'^(if|elseif|else|end|return|break|for|while|repeat|until)\b')
 # debug/telemetry logging: never a gameplay effect, so it is dropped rather than left unresolved.
 LOGGER = re.compile(r'^logger\.\w+\(.*\)$')
+# effects with no accepted owner yet: named precisely so the readiness map can count what is missing.
+BOSS_COOLDOWN = re.compile(r':setBossCooldown\(')
+CONDITION_CALL = re.compile(r':(addCondition|removeCondition)\(')
+KV_WRITE = re.compile(r':kv\(\)|(?:^|[^.\w])kv:(?:set|remove)\(')
+# a reward container built in this same callback (`local X = player:addItem(id, n)`), and a plain item created
+# for it (`local X = Game.createItem(id)`, never one later customized with its own text, which stays unresolved).
+CONTAINER_FILL = re.compile(r'^(\w+):addItem\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)$')
+CONTAINER_FILL_EX = re.compile(r'^(\w+):addItemEx\(\s*(\w+)\s*\)$')
+CREATE_ITEM = re.compile(r'^local\s+(\w+)\s*=\s*Game\.createItem\(\s*(\d+)\s*\)$')
+TEXTED_ITEM = re.compile(r'(\w+):setAttribute\(\s*ITEM_ATTRIBUTE_TEXT\b')
 BLOCKED_MOVEMENT, BLOCKED_WORLD_OBJECT = BLOCKED['Movement'], BLOCKED['WorldObject']
+# a `Name = {` anywhere in the file, used to discover which names are worth asking lua_tables to parse.
+NAME_TABLE = re.compile(r'(\w+)\s*=\s*\{')
+# a literal `Storage.…` path, an array step kept only when its index is a literal digit (never a variable).
+LITERAL_STORAGE = re.compile(r'Storage(?:\.\w+(?:\[\d+\])?)+$')
+# a dotted/bracket path rooted at a table name, split into its `.field`, `[digit]` or `[name]` steps; a `[name]`
+# step is a runtime-selected entry (a loop counter or another variable), never resolved statically.
+CHAIN = re.compile(r'([A-Za-z_]\w*)((?:\.[A-Za-z_]\w*|\[\d+\]|\[[A-Za-z_]\w*\])*)$')
+CHAIN_STEP = re.compile(r'\.([A-Za-z_]\w*)|\[(\d+)\]|\[([A-Za-z_]\w*)\]')
 
 
 class Script:
@@ -74,8 +93,14 @@ class Script:
         self.lines = (Path(repo) / path).read_text(errors='replace').split('\n')
         self.transitions = transitions
         self.anchors, self.unresolved = [], []
-        self.roles, self.players, self.declared = {}, set(), {}
+        self.roles, self.players, self.declared, self.containers = {}, set(), {}, {}
         self.aliases = storage_aliases(self.lines)
+        self.tables = self.discover_tables()
+        # a plain item created for a reward container, by the local that holds it; excluded once it is customized
+        # with its own text (LICENSE-ASSETS.md), so that text is never even indirectly implied by a content list.
+        texted = {m.group(1) for line in self.lines if (m := TEXTED_ITEM.search(line))}
+        self.created_items = {m.group(1): m.group(2) for line in self.lines
+                              if (m := CREATE_ITEM.match(strip_code(line).strip())) and m.group(1) not in texted}
 
     def bind(self, number, callback):
         """Name the callback parameters by their role and note the locals that hold the acting player."""
@@ -85,6 +110,7 @@ class Script:
         self.callback = callback
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
+        self.containers = {}
         for line in self.lines[number:]:
             if actor and (m := re.match(rf'\s*local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', line)):
                 self.players.add(m.group(1))
@@ -102,6 +128,58 @@ class Script:
         """The catalogue's progress track for a storage, whichever server declared it (D33), else this server's."""
         path = track_of(storage)
         return self.declared.get(norm(path), f'{self.namespace}:quest-progress/{path}')
+
+    def discover_tables(self):
+        """Every `Name = { … }` table literal in this file, read once with lua_tables so a storage key that is a
+        path into one of them (`config.storage`, `rewards[3148].storage`) can be resolved without evaluating Lua.
+        Any parse trouble (a table holding something lua_tables cannot read) just leaves this file's tables empty:
+        the keys stay unresolved rather than guessed."""
+        text = '\n'.join(self.lines)
+        names = {m.group(1) for m in NAME_TABLE.finditer(text)}
+        try:
+            parsed = lua_tables.assignments(text, names)
+            return {name: lua_tables.as_python(table) for name, table in parsed.items()}
+        except Exception:
+            return {}
+
+    def resolve_chain(self, expr):
+        """A dotted/bracket-indexed path rooted at one of this file's table literals, resolved to its leaf value
+        (never a runtime-selected entry: a `[name]` step, indexing by a variable or loop counter, stops it)."""
+        m = CHAIN.fullmatch(expr)
+        if not m or m.group(1) not in self.tables:
+            return None
+        value = self.tables[m.group(1)]
+        for field, index, runtime in CHAIN_STEP.findall(m.group(2)):
+            if runtime:
+                return None
+            if field:
+                if not isinstance(value, dict) or field not in value:
+                    return None
+                value = value[field]
+            else:
+                index = int(index)
+                if isinstance(value, list) and 1 <= index <= len(value):
+                    value = value[index - 1]
+                elif isinstance(value, dict) and index in value:
+                    value = value[index]
+                else:
+                    return None
+        return value
+
+    def resolve_storage(self, expr):
+        """A storage-key expression as a literal `Storage.…` path or integer: already literal, or a path into a
+        table literal declared in this same file (D33); anything else (a runtime-selected entry, an expression
+        lua_tables cannot read) stays unresolved rather than guessed."""
+        if LITERAL_STORAGE.fullmatch(expr):
+            return expr
+        if re.fullmatch(r'-?\d+', expr):
+            return int(expr)
+        value = self.resolve_chain(expr)
+        if isinstance(value, dict) and isinstance(value.get('expr'), str) and LITERAL_STORAGE.fullmatch(value['expr']):
+            return value['expr']
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            return int(value)
+        return None
 
     def raw(self, number):
         return expand_aliases(re.sub(r'--.*$', '', self.lines[number - 1]).strip(), self.aliases)
@@ -123,8 +201,9 @@ class Script:
         for term in terms:
             negate = term.startswith('not ')
             body = term[4:] if negate else term
-            if (m := re.fullmatch(r'\w+:getStorageValue\(\s*(Storage\.[\w.\[\]]+)\s*\)\s*(==|~=|<=|>=|<|>)\s*(-?\d+)', body)):
-                out.append({'quest_stage': {'progress': self.track(m.group(1)),
+            if (m := re.fullmatch(r'\w+:getStorageValue\(\s*([\w.\[\]]+)\s*\)\s*(==|~=|<=|>=|<|>)\s*(-?\d+)', body)) \
+                    and (target := self.resolve_storage(m.group(1))) is not None:
+                out.append({'quest_stage': {'progress': self.track(target),
                                             'op': m.group(2), 'value': int(m.group(3))}, 'negate': negate})
             elif (m := re.fullmatch(r'Game\.getStorageValue\(\s*"?([\w.]+)"?\s*\)\s*(==|~=|<=|>=|<|>)\s*(-?\d+)', body)):
                 out.append({'world_state': {'key': f'{self.namespace}:world-state/{slug(m.group(1))}',
@@ -156,8 +235,10 @@ class Script:
     def children(self, number, in_loop=False):
         code, raw = strip_code(self.lines[number - 1]).strip(), self.raw(number)
         found = []
-        for m in re.finditer(r'(\w+):setStorageValue\(\s*(Storage\.[\w.\[\]]+|\d+)\s*,', raw):
-            target = int(m.group(2)) if m.group(2).isdigit() else m.group(2)
+        for m in re.finditer(r'(\w+):setStorageValue\(\s*([\w.\[\]]+)\s*,', raw):
+            target = self.resolve_storage(m.group(2))
+            if target is None:
+                continue
             track = self.track(target)
             value = raw[m.end():].split(')')[0].strip()
             child = {'owner': 'Quest', 'request': 'set_progress', 'progress': track,
@@ -166,9 +247,12 @@ class Script:
             if key:
                 child['transition'] = key
             found.append(child)
-        for m in re.finditer(r'Game\.setStorageValue\(\s*"?([\w.]+)"?\s*,\s*([^)]*)\)', raw):
+        for m in re.finditer(r'Game\.setStorageValue\(\s*"?([\w.\[\]]+)"?\s*,\s*([^)]*)\)', raw):
+            key = m.group(1)
+            if re.search(r'\[[^\d\]]', key):
+                continue  # a runtime index (a loop counter, a role field): not a fixed world-state name
             value = m.group(2).strip()
-            found.append({'owner': 'Quest', 'request': 'set_world_state', 'key': f'{self.namespace}:world-state/{slug(m.group(1))}',
+            found.append({'owner': 'Quest', 'request': 'set_world_state', 'key': f'{self.namespace}:world-state/{slug(key)}',
                           **({'to': int(value)} if re.fullmatch(r'-?\d+', value) else {'value_source_line': number})})
         if (m := re.search(r'Game\.createMonster\(\s*"([^"]+)"\s*,\s*(.*)', raw)):
             pos = POSITION.search(m.group(2))
@@ -189,13 +273,52 @@ class Script:
             return found
         elif re.search(r'[:.](transform|transformItem|createItem|removeItem|revertItem|remove|setActionId|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(', raw):
             found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+        if (m := CONTAINER_FILL.match(raw)) and m.group(1) in self.containers:
+            # a plain item added to a reward container built earlier in this same callback (DUR-03): its contents
+            self.containers[m.group(1)].setdefault('contents', []).append(
+                {'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)})
+            return found
+        if (m := CONTAINER_FILL_EX.match(raw)) and m.group(1) in self.containers:
+            if m.group(2) in self.created_items:
+                self.containers[m.group(1)].setdefault('contents', []).append(
+                    {'item': ref('Item', f'{self.namespace}:item/{self.created_items[m.group(2)]}'), 'count': 1})
+            else:
+                self.unresolved.append({'line': number, 'reason': 'container reward item is not a plain literal item type'})
+            return found
         if (m := re.search(r'(\w+):addItem\(\s*(\d+)?\s*(?:,\s*(\d+)\s*)?', raw)) and m.group(1) in self.players | {'player'}:
-            found.append({'owner': 'Item', 'request': 'hand_out',
-                          **({'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)}
-                             if m.group(2) and raw[m.end():m.end() + 1] == ')' else {'value_source_line': number})})
-        if (m := re.search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
-            found.append({'owner': 'Achievement', 'request': 'grant',
-                          'achievement': ref('Achievement', f'{self.namespace}:achievement/{slug(m.group(1))}')})
+            child = {'owner': 'Item', 'request': 'hand_out',
+                     **({'item': ref('Item', f'{self.namespace}:item/{m.group(2)}'), 'count': int(m.group(3) or 1)}
+                        if m.group(2) and raw[m.end():m.end() + 1] == ')' else {'value_source_line': number})}
+            found.append(child)
+            if 'item' in child and (alias := re.match(r'local\s+(\w+)\s*=', raw)):
+                # this local now names the container, so a later plain `NAME:addItem(...)`/`:addItemEx(...)` in the
+                # same callback is that reward's contents, not a separate unowned effect
+                self.containers[alias.group(1)] = child
+        if re.search(r':addAchievement\(', raw):
+            if (m := re.search(r':addAchievement\(\s*"([^"]+)"\s*\)', raw)):
+                found.append({'owner': 'Achievement', 'request': 'grant',
+                              'achievement': ref('Achievement', f'{self.namespace}:achievement/{slug(m.group(1))}')})
+            else:
+                # a table-driven achievement id (e.g. `reward.achievement[1]`): the achievement itself is not literal
+                found.append({'owner': 'Achievement', 'request': 'grant', 'value_source_line': number})
+        if (m := re.search(r'(\w+):addOutfitAddon\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+            found.append({'owner': 'Outfit', 'request': 'grant',
+                          **({'looktype': int(m.group(2)), **({'addon': int(m.group(3))} if m.group(3) else {})}
+                             if m.group(2) else {'value_source_line': number})})
+        if (m := re.search(r'(\w+):addOutfit\(\s*"?(\d+)"?\s*(?:,\s*"?(\d+)"?\s*)?', raw)) and m.group(1) in self.players | {'player'}:
+            found.append({'owner': 'Outfit', 'request': 'grant',
+                          **({'looktype': int(m.group(2)), **({'addon': int(m.group(3))} if m.group(3) else {})}
+                             if m.group(2) else {'value_source_line': number})})
+        if (m := re.search(r'(\w+):addMount\(\s*"?(\d+)"?\s*\)?', raw)) and m.group(1) in self.players | {'player'}:
+            found.append({'owner': 'Mount', 'request': 'grant',
+                          **({'mount': int(m.group(2))} if m.group(2) else {'value_source_line': number})})
+        if (m := re.search(r'(\w+):addExperience\(\s*(\d+)?', raw)) and m.group(1) in self.players | {'player'}:
+            found.append({'owner': 'Experience', 'request': 'grant',
+                          **({'amount': int(m.group(2))} if m.group(2) else {'value_source_line': number})})
+        if re.search(r':addMapMark\(', code):
+            # the label is reserved (LICENSE-ASSETS.md); the mark's position and type are kept out too, since D36
+            # keeps this owner-neutral (no `Presentation` child otherwise carries map coordinates)
+            found.append({'owner': 'Presentation', 'effect': 'map_mark', 'authoritative': False, 'source_line': number})
         if re.search(r'(?i)sendmagiceffect\(', code):
             # both the method (`:sendMagicEffect(`) and the procedural (`doSendMagicEffect(`) forms
             found.append({'owner': 'Presentation', 'effect': 'magic_effect', 'authoritative': False})
@@ -206,6 +329,12 @@ class Script:
             self.unresolved.append({'line': number, 'reason': 'delayed callback (addEvent) without a scheduler owner'})
         elif not found and LOGGER.match(code):
             pass  # debug/telemetry logging, never a gameplay effect
+        elif not found and BOSS_COOLDOWN.search(code):
+            self.unresolved.append({'line': number, 'reason': 'boss cooldown without an accepted owner'})
+        elif not found and CONDITION_CALL.search(code):
+            self.unresolved.append({'line': number, 'reason': 'condition without an accepted owner'})
+        elif not found and KV_WRITE.search(code):
+            self.unresolved.append({'line': number, 'reason': 'kv write without an accepted owner'})
         elif not found and not NOOP.match(code) and not self.read_only(code):
             self.unresolved.append({'line': number, 'reason': 'statement outside the transcribed vocabulary'})
         for child in found:

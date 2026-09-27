@@ -316,6 +316,38 @@ interaction_case('a consumption names what it consumes', lambda i, c, m: c.appen
 interaction_case('a hand-out names an item', lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'count': 1}))
 interaction_case('a hand-out item is an Item',
                  lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Creature', 'creature/x'), 'count': 1}))
+interaction_case('a hand-out container may list its contents',
+                 lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Item', 'item/backpack'), 'count': 1,
+                                           'contents': [{'item': ref('Item', 'item/rope'), 'count': 1}]}),
+                 expected=True)
+interaction_case('contents name an item and a count',
+                 lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Item', 'item/backpack'), 'count': 1,
+                                           'contents': [{'count': 1}]}))
+interaction_case('an achievement grant names an achievement',
+                 lambda i, c, m: c.append({'owner': 'Achievement', 'request': 'grant', 'achievement': ref('Achievement', 'achievement/y')}),
+                 expected=True)
+interaction_case('a table-driven achievement id keeps its source line',
+                 lambda i, c, m: c.append({'owner': 'Achievement', 'request': 'grant', 'value_source_line': 9}), expected=True)
+interaction_case('an achievement grant is not empty', lambda i, c, m: c.append({'owner': 'Achievement', 'request': 'grant'}))
+interaction_case('an outfit grant names a looktype',
+                 lambda i, c, m: c.append({'owner': 'Outfit', 'request': 'grant', 'looktype': 128, 'addon': 3}), expected=True)
+interaction_case('an outfit grant may keep its source line instead',
+                 lambda i, c, m: c.append({'owner': 'Outfit', 'request': 'grant', 'value_source_line': 9}), expected=True)
+interaction_case('an outfit grant is not empty', lambda i, c, m: c.append({'owner': 'Outfit', 'request': 'grant'}))
+interaction_case('an outfit addon is in range', lambda i, c, m: c.append({'owner': 'Outfit', 'request': 'grant', 'looktype': 128, 'addon': 4}))
+interaction_case('a mount grant names a mount',
+                 lambda i, c, m: c.append({'owner': 'Mount', 'request': 'grant', 'mount': 42}), expected=True)
+interaction_case('a mount grant is not empty', lambda i, c, m: c.append({'owner': 'Mount', 'request': 'grant'}))
+interaction_case('an experience grant names an amount',
+                 lambda i, c, m: c.append({'owner': 'Experience', 'request': 'grant', 'amount': 100}), expected=True)
+interaction_case('an experience grant is not empty', lambda i, c, m: c.append({'owner': 'Experience', 'request': 'grant'}))
+interaction_case('a map mark keeps its source line',
+                 lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'map_mark', 'authoritative': False, 'source_line': 4}),
+                 expected=True)
+interaction_case('a map mark needs its source line',
+                 lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'map_mark', 'authoritative': False}))
+interaction_case('a map mark keeps no label', lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'map_mark',
+                                                                        'authoritative': False, 'source_line': 4, 'label': 'Shop'}))
 interaction_case('a message keeps no text',
                  lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': 4,
                                            'text': 'Hello.'}))
