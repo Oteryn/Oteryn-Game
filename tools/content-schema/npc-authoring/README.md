@@ -11,7 +11,7 @@ Game truth and nothing writes `content/`.
 | `npc.schema.json` | JSON Schema of a candidate bundle. |
 | `validate_npc.py` | Schema plus semantic checks (status, key namespace, no committed text, every gate/script has an unresolved row). |
 | `source_diff.py` | Canary vs Crystal fact-level diff (owner decision D2: equal sources, no automatic winner). |
-| `wiki_fandom.py` | TibiaWiki (Fandom) snapshot fetch and position/travel/trade comparison (pending). |
+| `wiki_fandom.py` | TibiaWiki (Fandom) snapshot fetch and position/travel/trade comparison (stdlib only, ≤2 requests/s, neutral User-Agent). |
 | `population_census.py` | Readiness census over converted bundles. |
 | `samples/` | Committed census, diff and wiki-compare evidence and a few text-free sample bundles. |
 
@@ -31,9 +31,11 @@ python source_diff.py --canary out/canary/bundles --crystal out/crystal/bundles 
 python wiki_fandom.py self-test
 python wiki_fandom.py fetch --cache out/fandom
 python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/canary/bundles --out samples/fandom-compare-canary-47dfd51f.json
+python wiki_fandom.py compare --snapshot out/fandom/fandom-npc-snapshot.json --bundles out/crystal/bundles --out samples/fandom-compare-crystal-ff7ede59.json
 ```
 
-A full conversion takes under a minute per source and is byte-for-byte repeatable; each census
+The Fandom snapshot (article fields only, not committed) takes about four minutes to fetch; the compare
+evidence records its SHA-256. A full conversion takes under a minute per source and is byte-for-byte repeatable; each census
 records `bundle_digest` over the converted bundles.
 
 ## Text

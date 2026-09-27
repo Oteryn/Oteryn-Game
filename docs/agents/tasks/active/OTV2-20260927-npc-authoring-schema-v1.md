@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-npc-authoring-schema-v1
 title: NPC authoring schema v1, Canary/Crystal converter, source diff, Fandom comparison and readiness census
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 975
 jira: KAN-16
 base_sha: a822326c9cf4607100e58bbc3673748f3fa299bb
 head_sha: null
@@ -61,11 +61,12 @@ fence, session, authority or persisted-recovery evidence is touched.
   65 unplaced, 7 not loadable; Crystal 215 / 745 / 39 / 116 / 4.
 - Source diff (`samples/source-diff-*.json`): 1,026 pairs, 67 conflicting, 953 complementary,
   1 identical; 10 Canary-only, 93 Crystal-only NPCs.
-- Fandom comparison (`samples/fandom-compare-*.json`): see schema doc §7.
+- Fandom comparison (`samples/fandom-compare-*.json`): Canary 955 NPCs joined; trade buy prices
+  5,089 match / 229 mismatch, travel 86 / 22, positions 807 within 3 sqm / 92 mismatch.
 - `python -m unittest test_npc_authoring.py` and `python wiki_fandom.py self-test` pass offline.
 - No committed bundle carries Tibia text (validator rule; LICENSE-ASSETS.md).
 
 ## Next action
 
-Owner review of the schema doc and open decisions O1–O6; a later task promotes the
+Owner review of the schema doc and open decisions O1–O7; a later task promotes the
 `STATIC_COMPLETE` / `STATIC_SERVICES` population into `content/` once O1, O2 and O5 are decided.

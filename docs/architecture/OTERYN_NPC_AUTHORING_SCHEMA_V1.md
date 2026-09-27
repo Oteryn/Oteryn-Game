@@ -128,7 +128,21 @@ Canary↔Crystal (D2): 1,026 NPCs pair; 1 identical, 953 complementary (one-side
 Canary's `profession`/`speech_bubble`), 67 conflicting; 10 Canary-only and 93 Crystal-only NPCs.
 Fact conflicts: keywords 120, trade 9, travel 21, spells 2, messages 10, definition 8.
 
-TibiaWiki (Fandom) comparison: pending in this task (`wiki_fandom.py`).
+TibiaWiki (Fandom) comparison (`wiki_fandom.py`, snapshot 2026-09-27: 1,246 NPC infoboxes,
+9,799 item infoboxes, 504 NPCs with trade prices; snapshot SHA-256 in the compare evidence):
+
+| Fact | Canary | Crystal |
+| --- | --- | --- |
+| NPCs joined by name (wiki-only / source-only) | 955 (292 / 81) | 1,017 (230 / 102) |
+| position exact / within 3 sqm / mismatch | 234 / 573 / 92 | 252 / 584 / 98 |
+| travel price match / mismatch / wiki-only / source-only | 86 / 22 / 48 / 121 | 85 / 23 / 49 / 119 |
+| trade buy price match / mismatch | 5,089 / 229 | 5,192 / 229 |
+| trade sell price match / mismatch | 3,905 / 93 | 3,952 / 90 |
+
+TibiaWiki `posx`/`posy` usually sit one tile from the spawn tile, so `NEAR` is the expected good
+outcome. Checked mismatches are real source differences, not parser artefacts (e.g. Captain
+Breezelda's Carlin and Thais fares are swapped in the Canary script). Wiki facts are comparison
+evidence only; they do not override either source.
 
 Open decisions before promotion:
 
@@ -140,6 +154,7 @@ Open decisions before promotion:
   i.e. Interaction/Quest vs. NPC service.
 - **O5 item join:** offers → native Items through the G4 crosswalk.
 - **O6 TibiaWiki BR:** access route (D3).
+- **O7 wiki disagreements:** whether Fandom price/route/position mismatches feed the conflict decisions of O3.
 
 ## 8. Validation
 
