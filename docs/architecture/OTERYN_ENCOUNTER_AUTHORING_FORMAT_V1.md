@@ -109,6 +109,7 @@ Encounter
 | `counter_reached(counter, value)` | global kill/stage counters |
 | `area_entered(anchor, role or player)` / `area_left` | zone crossing (`izcandarThink`) |
 | `phase_entered(phase)` | stage bosses |
+| `item_used(role, ItemRef)` | an `Action` whose `onUse` targets a creature of the role; the item is used up (D34) |
 | `encounter_started` / `encounter_reset` | lifecycle |
 
 ## 5. Conditions
@@ -141,13 +142,14 @@ rules.
 | `convert_damage_to_heal` | role, damage types, optional `component` |
 | `teleport` | role or `players_in(anchor)`, to anchor |
 | `map_item` | create/transform/remove ItemRef at an anchor or `at: death_position` (death and lethal damage triggers), `revert_after_ms`; a teleporter carries `destination` and optionally `revert_destination` anchors; a revert restores the original item with its original attributes unless `revert_destination` overrides the destination; optional `effect`; optional `interaction`: the key of interaction-domain content that defines what the item does when used or stepped on (D29) |
-| `counter` / `flag` / `timer` | set, add, start, stop |
+| `counter` / `flag` / `timer` | set, add, start, stop; a timer `add` of `ms` delays a running timer and does nothing to a stopped one (D34) |
 | `set_phase` | next or named phase (phase changes are triggers too: `phase_entered(name)`) |
 | `cast` | AbilityRef, or an `encounter_ability` of the encounter's own `abilities` (D34), at a position (death explosions) |
 | `say` | role, killer or `spawned` (the creature of the preceding one-creature `spawn` in the same action list, D31), text, mode |
 | `message` | text to every player in an anchor area (D31) |
 | `one_of` | two or more weighted branches, each a list of actions; the encounter instance draws one (D31) |
 | `drop_item` | ItemRef, chance, at role position |
+| `attribute` | role, `outgoing_damage_percent` (extra percent on the primary damage the role deals to players) or `defense`, `add` a value or a counter's value, or `reset` to the creature type's value (D34) |
 | `move_lock` | role, `locked`: a locked creature keeps fighting and casting but does not move (D34) |
 | `emit_outcome` | named outcome for quests, cooldowns and rewards (§2.5), `credited`: `damage_contributors`, `killer`, `players_in_anchor(anchor)` or `party`: the party of the top damage contributor, wherever its members are (D31) |
 
@@ -219,7 +221,7 @@ rules.
 | D29 | Vocabulary extensions: `creature_spawned` and `ability_cast` triggers; the `world_state` read-only condition; fractional or absolute health thresholds; `creature_present` near a role; `{min, max}` ranges; a `damage` action; `component: primary`; `map_item.interaction`. Acting on whatever stands on a fixed tile is not added: each case names its role from wiki or map evidence. Scripted movement is deferred. State shared by all parties belongs to the quest domain, which the encounter reads through `world_state`. | Owner accepted the proposal ("kontynuuj tak jak uważasz za optymalne", 2026-09-27). |
 | D30 | Crystal Server (`zimbadev/crystalserver`, a Canary fork) is consulted as a second donor wherever a Canary script is broken, ambiguous or unresolved. It is evidence only: Canary stays the transcription source and the reference-date wiki still decides (D25). | Owner request 2026-09-27 ("sprawdzać też crystal jako donor"). |
 | D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage; `remembered` spawn health (a boss that returns with the health it left with: Foreshock, Aftershock, Outburst); in a `heal_received` rule a `this_hit` `damage_modifier` scales that heal (`HealthForgotten` doubles heals as well as damage); a `non_player` source for `damage_taken` and `heal_received` (a change by another creature; one without an attacker is not included); an optional `slot` for `attacker_wears`, which with `killer_progress` also reads the healer in a `heal_received` rule (`AsurasMechanic`). Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
-| D34 | Seven more vocabulary additions, each added with the first event that needs it: a boss attribute change (the Hatred damage multiplier); damage scaled by elapsed time (King Zelos); shared life (the Magnor shards); a death explosion as an authored ability; a summon chosen by the vocation of the player; `move_lock`; and `chance_from_amount`. The fourteenth slice adds five of them: the time scaling, shared life, authored abilities, `move_lock` and `chance_from_amount`; it also fixes when `damage_accumulated` fires. The boss attribute change (Burning Hatred) and the per-vocation summon (Count Vlarkorth) follow with their events. | Owner answer 2026-09-27 ("Wszystkie 7"). |
+| D34 | Seven more vocabulary additions, each added with the first event that needs it: a boss attribute change (the Hatred damage multiplier); damage scaled by elapsed time (King Zelos); shared life (the Magnor shards); a death explosion as an authored ability; a summon chosen by the vocation of the player; `move_lock`; and `chance_from_amount`. The fourteenth slice adds five of them: the time scaling, shared life, authored abilities, `move_lock` and `chance_from_amount`; it also fixes when `damage_accumulated` fires. The fifteenth adds the boss attribute change with the `item_used` trigger and the timer `add` it needs (the Sorrow of Burning Hatred). The per-vocation summon (Count Vlarkorth) follows with its event. | Owner answer 2026-09-27 ("Wszystkie 7"). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
@@ -425,3 +427,12 @@ A fourteenth slice uses five of the D34 additions:
 | `zelos_damage`, `zelos_init`, `rewar_the_bloody`, `fetter_death`, `blood_death`, `magnor_death`, `shard_death`, `nargol_death` | 1 | 7 | King Zelos takes the percent of an 800 s ritual timer still left when the four knights are done, at least 1% (`timer_remaining`). Canary registers `zelos_init` only on King Zelos and never records the start, so its King Zelos takes normal damage; the wiki (D25) describes the ritual. Every 12,500 damage Rewar calls one to three fetters and turns immune until the last dies. The four shards of Magnor share one life (`shared_life`) and each explodes when it dies; the vampiric bloods explode with drown damage that hurts players and The Red Knight (authored `abilities`). Canary registers the blood explosion on Rewar; the wiki gives it to the vampiric bloods. Nargol's regenerating mass brings him back after 30 s unless it is killed. |
 
 81 encounters validate, 75 manifests resolve fully; the census rises from 1,523 to 1,533.
+
+A fifteenth slice adds the last D34 addition used by Soul War, the boss attribute:
+
+| Event | Encounters | Covered monsters | Notes |
+|---|---:|---:|---|
+| `BurningChangeForm`, `GoshnarsHatredBuff`, `mType.onSpawn`, `mType.onDisappear` (Goshnar's Hatred) | 1 | 5 | The campfire takes its next form every 45 s (the Blaze 46 s), one timer per form. Each new Ashes raises the hatred by 10: Goshnar's Hatred deals 10% more to players, and every player hit adds the hatred to its defense (`attribute`). A Sorrow used on the fire (`item_used`) delays the next form by 10 s (timer `add`). The fire is removed when the boss dies. |
+| `mType.onSpawn` (Mighty Splinter of Madness), `GoshnarsHatredBuff` (Goshnar's Megalomania) | 1 | 4 | A mighty splinter still in the room after 120 s is absorbed and raises the madness by 5; Canary's callback fails on an undefined global, and the wiki decides (D25). Every player hit adds the madness to Megalomania's defense. Canary's outgoing branch never applies to Megalomania. |
+
+82 encounters validate, 77 manifests resolve fully; the census rises from 1,533 to 1,539.
