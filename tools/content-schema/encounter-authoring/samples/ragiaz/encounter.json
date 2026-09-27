@@ -15,6 +15,16 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "death_dragon",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/death_dragon",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [
@@ -72,6 +82,58 @@
           "effect": "canary.appearance:effect/thunder",
           "revert_after_ms": 60000,
           "revert_destination": "ascendant_exit"
+        }
+      ]
+    },
+    {
+      "key": "death_dragon_revives",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "death_dragon"
+      },
+      "delay_ms": 1000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/death_dragon",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "death_dragon",
+          "count": 1,
+          "at": "death_position",
+          "owner": "none",
+          "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "ragiaz_revives_his_minion",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "death_dragon"
+      },
+      "conditions": [
+        {
+          "kind": "creature_present",
+          "role": "ragiaz",
+          "near": {
+            "role": "death_dragon",
+            "radius": 10
+          },
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "ragiaz"
+          },
+          "text": "Ragiaz power revives his minion!",
+          "mode": "say"
         }
       ]
     }
