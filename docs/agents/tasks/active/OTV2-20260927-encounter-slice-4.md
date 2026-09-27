@@ -4,12 +4,12 @@
 task_id: OTV2-20260927-encounter-slice-4
 title: Transcribe Gorzindel, Heart of Destruction minions, Feroxa and other Canary events into encounters
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 965
 jira: KAN-16
 base_sha: da934ab89206e80765a25c5620ba530485e4a582
 head_sha: null
