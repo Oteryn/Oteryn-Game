@@ -1390,13 +1390,60 @@ def quest_room_events(build):
     build.entry(item, path_, [13, 15], 'mapped', rise + '/actions/0', 'The Deep Terror, forced, on (33741, 31953, 14).')
     build.entry(item, path_, [14], 'mapped', rise + '/actions/1', 'DeepRunning = 2.')
 
+def secret_library_knowledges(build):
+    """lokathmorDeath, mazzinorDeath, mazzinorHealth: the knowledge drops check a name their registrant never has; the wiki
+    decides (D25)."""
+    path_ = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_lokathmor.lua'
+    item = build.get('lokathmor', 'The Secret Library: Lokathmor', 'instance_per_party')
+    build.participant(item, 'lokathmor', 'Lokathmor', 'lokathmorDeath')
+    build.participant(item, 'dark_knowledge', 'Dark Knowledge')
+    parchment = ref('Item', 'canary:item/28488')
+    build.define(item, parchment)
+    path = build.rule(item, {'key': 'dark_knowledge_leaves_parchment', 'trigger': {'kind': 'creature_died', 'role': 'dark_knowledge'},
+                             'conditions': [], 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': parchment,
+                                                            'at': 'death_position'}]})
+    build.entry(item, path_, [3, 5, 6, 7, 10], 'approved_omission', None,
+                'The event is registered only by Lokathmor, but its body acts only on a creature named "dark knowledge", so '
+                'Lokathmor\'s death has no effect; Dark Knowledge (corpse 0) registers no event, so in Canary no parchment ever '
+                'appears.')
+    build.entry(item, path_, [1, 8, 9], 'mapped', path,
+                'The reference-date wiki (Dark Knowledge: "When it dies, it becomes a Parchment of Dark Knowledge"; The Secret '
+                'Library Quest/Spoiler: its parchment is used on the writing desk to free Lokathmor) decides (D25): parchment '
+                '28488 (actions_parchment.lua) on the death position of a dark knowledge.')
+
+    path_ = 'data-otservbr-global/scripts/quests/the_secret_library_quest/library_area/creaturescripts_mazzinor.lua'
+    item = build.get('mazzinor', 'The Secret Library: Mazzinor', 'instance_per_party')
+    build.participant(item, 'mazzinor', 'Mazzinor', 'mazzinorDeath')
+    build.participant(item, 'mazzinor', 'Mazzinor', 'mazzinorHealth')
+    build.participant(item, 'wild_knowledge', 'Wild Knowledge')
+    vortex = ref('Item', 'canary:item/28673')
+    build.define(item, vortex)
+    path = build.rule(item, {'key': 'wild_knowledge_leaves_vortex', 'trigger': {'kind': 'creature_died', 'role': 'wild_knowledge'},
+                             'conditions': [], 'actions': [{'kind': 'map_item', 'operation': 'create', 'item': vortex,
+                                                            'at': 'death_position', 'revert_after_ms': 60000,
+                                                            'interaction': 'canary:interaction/4951'}]})
+    build.entry(item, path_, [4, 6, 7, 8, 19, 20, 22], 'approved_omission', None,
+                'mazzinorDeath is registered only by Mazzinor, but its body acts only on a creature named "wild knowledge", so '
+                'Mazzinor\'s death has no effect; Wild Knowledge (corpse 0) registers no event, so in Canary no vortex appears.')
+    build.entry(item, path_, [1, 2, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18], 'mapped', path,
+                'The reference-date wiki (The Secret Library Quest/Spoiler: "Once you kill them, they will become a blue vortex") '
+                'decides (D25): vortex 28673 with action id 4951 on the death position of a wild knowledge, removed after one '
+                'minute. Action id 4951 (movements_mazzinor.lua) gives the player stepping in a 30 s outfit condition and '
+                'removes the vortex (interaction domain).')
+    build.entry(item, path_, [24, 26, 27, 28, 29, 30, 31, 33], 'approved_omission', None,
+                'mazzinorHealth re-applies the primary part of every change to Mazzinor through creature:addHealth without an '
+                'attacker and zeroes the original (damage arrives negative, game.cpp combatChangeHealth): the secondary part of '
+                'each hit is lost and no player is credited with any damage, so the reward boss would leave no rewards. The '
+                'reference-date wiki describes an ordinary fight in which players attack Mazzinor directly and lists its loot, '
+                'so the change is not reproduced (D25); Crystal (D30) has the same script.')
+
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges):
         transcribe(build)
     print(json.dumps(build.write()))
 

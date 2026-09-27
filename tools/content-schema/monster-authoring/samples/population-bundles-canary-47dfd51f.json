@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1478,
+  "bundles": 1480,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -743,6 +743,7 @@
     {"monster":"lizard_snakecharmer","file":"reptiles/lizard_snakecharmer","sha256":"31905f3cdbf3a0e9a36ac4ec49abf7bf75ebc362e779c5448b4913eef51da084"},
     {"monster":"lizard_templar","file":"reptiles/lizard_templar","sha256":"93e77c8cb451c618efe28779af3d4acafede30f8077bcb9e8163cee23631338b"},
     {"monster":"lizard_zaogun","file":"reptiles/lizard_zaogun","sha256":"defcde03f1bb01e7fe548d04e6b4c7bbeb33a7fb8bc9970f3662dcd115eb53cb"},
+    {"monster":"lokathmor","file":"quests/the_secret_library/bosses/lokathmor","sha256":"9ad0f873801dcd42e32cf45cc955b4b1f8331933118c4d73b2e7e4306c1bcde1"},
     {"monster":"lokathmor_stuck","file":"quests/the_secret_library/lokathmor_stuck","sha256":"dc51f7e554482cc28c3a7389dcb1c433d670ba6f39e6207a63c2ab0649520439"},
     {"monster":"lord_of_the_elements","file":"quests/the_elemental_spheres/lord_of_the_elements","sha256":"bbf9070c043090fc2ac8bab0014080273b546d2a28d32408ecf212256048e825"},
     {"monster":"lost_basher","file":"humanoids/lost_basher","sha256":"4ff0136fdc545597b4b45c20fa5d505935e25ca4405994f9934aaa9df2aa3f7b"},
@@ -794,6 +795,7 @@
     {"monster":"massive_water_elemental","file":"elementals/massive_water_elemental","sha256":"9cbe23b3264d73935f3b6abbf97ac959c9737ba2f41519d16b9d8022a38df3a5"},
     {"monster":"mawhawk","file":"raids/mawhawk","sha256":"27c5583ee93614c4f796cb430333d3735e01b685279bc951b2b915fcd45194e2"},
     {"monster":"maxxenius","file":"quests/the_dream_courts/bosses/maxxenius","sha256":"969ffedc8b22cda73628932bcdae117be438dda638947b85efc0cc46b1c628ef"},
+    {"monster":"mazzinor","file":"quests/the_secret_library/bosses/mazzinor","sha256":"268756d51bc3ab7be18874f9d2dea675c57ab51f81ea38077aa6672d133d6b3b"},
     {"monster":"meadow_strider","file":"dawnport/meadow_strider","sha256":"80f5bb636f208fc92ce26f2735e5615c8029104b9b7ec9caef4f361f1bfad601"},
     {"monster":"mean_lost_soul","file":"undeads/mean_lost_soul","sha256":"74d5d1fa034efe0ff002c2e97dd6e0e9f30b66713d067ac0a13ad44819971af6"},
     {"monster":"mean_maw","file":"quests/soul_war/mean_maw","sha256":"a1bf9d7d0547e2a880e741708ab0932dbb727a773b893c19bd96794f29a3462a"},
