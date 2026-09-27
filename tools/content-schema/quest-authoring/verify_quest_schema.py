@@ -2,7 +2,7 @@
 import json
 import sys
 
-from validate_quest_content import validate, validate_gates, validate_storylines
+from validate_quest_content import BLOCKED, validate, validate_gates, validate_interactions, validate_storylines
 
 
 def ref(family, name):
@@ -161,9 +161,12 @@ gate_case('every gate is mapped from a source', lambda g, c, m: m['entries'].pop
 TEXT = {'sha256': '1' * 64, 'length': 25, 'placeholders': []}
 
 
+def progress(name):
+    return f'oteryn:quest-progress/{name}'
+
+
 def storyline_fixture():
     gates, claims, _ = gate_fixture()
-    progress = lambda name: f'oteryn:quest-progress/{name}'
     quest = {'identity': {'key': 'oteryn:quest/banshees', 'revision': 'r1'}, 'display_name': 'The Queen of the Banshees',
              'kind': 'storyline', 'shown_in_quest_log': True, 'source_name': 'The Queen of the Banshees',
              'start': {'progress': progress('first_seal'), 'at_least': 1}, 'claims': [],
@@ -219,6 +222,98 @@ storyline_case('increments are positive', lambda q, t: q['missions'][1]['transit
 storyline_case('transition keys are unique', lambda q, t: q['missions'][0]['transitions'].append(dict(q['missions'][0]['transitions'][0])))
 storyline_case('a transition has source evidence', lambda q, t: t[0]['transitions'].clear())
 storyline_case('progress names a quest-progress track', lambda q, t: q['missions'][0].update(progress='oteryn:storage/1'))
+
+
+def interaction_fixture():
+    seal = {'quest_stage': {'progress': progress('first_seal'), 'op': '<', 'value': 1}, 'negate': False}
+    lever = {'object': {'role': 'source', 'field': 'item_type', 'op': '==', 'item': ref('Item', 'item/lever')}, 'negate': False}
+    interaction = {
+        'identity': {'key': 'oteryn:interaction/first_seal_flame', 'revision': 'r1'},
+        'source': {'edge': 'ON_ENTER', 'callback': 'onStepIn', 'target_registrations': ['aid(25010)']},
+        'rules': [{'branch': [{'when': {'all': [{'actor_is_player': True, 'negate': False}, seal]}, 'then': [
+            {'owner': 'Quest', 'request': 'set_progress', 'progress': progress('first_seal'), 'to': 1,
+             'transition': 'oteryn:quest/banshees#the_hidden_seal:movement_1'},
+            {'owner': 'Ability', 'effect': 'summon', 'creature': ref('Creature', 'creature/banshee'), 'anchor': 'p1'},
+            {'owner': 'Presentation', 'effect': 'magic_effect', 'authoritative': False}]},
+            {'when': lever, 'then': [{'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED['WorldObject'],
+                                      'source_line': 12}]}],
+            'otherwise': [{'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED['Movement'], 'to_anchor': 'p2'}]}],
+        'anchors': [{'key': 'p1', 'source_position': {'x': 1, 'y': 2, 'z': 7}},
+                    {'key': 'p2', 'source_position': {'x': 3, 'y': 4, 'z': 7}}],
+        'unresolved': []}
+    manifest = {'undeclared_progress_tracks': [],
+                'entries': [{'destination': 'oteryn:interaction/first_seal_flame', 'status': 'mapped',
+                             'sources': [{'source': 'canary'}, {'source': 'crystalserver'}]}]}
+    return {'interactions': [interaction]}, manifest
+
+
+def interaction_case(name, mutate=None, expected=False):
+    quests, _, tracks, _ = storyline_fixture()
+    doc, manifest = interaction_fixture()
+    if mutate:
+        i = doc['interactions'][0]
+        mutate(i, i['rules'][0]['branch'][0]['then'], manifest)
+        if i.pop('twin', False):
+            doc['interactions'].append(json.loads(json.dumps(i)))
+    errors = validate_interactions(doc, manifest, quests, tracks)
+    results.append({'name': name, 'expected_valid': expected, 'passed': (not errors) == expected,
+                    'first_error': errors[0] if errors else None})
+
+
+def unresolved_line(i, children, m):
+    i['rules'][0]['branch'][1]['when'] = {'unresolved': {'line': 9}}
+
+
+interaction_case('interaction fixture accepted', expected=True)
+interaction_case('unresolved interaction accepted',
+                 lambda i, c, m: (unresolved_line(i, c, m), m['entries'][0].update(status='unresolved_semantics')) and None,
+                 expected=True)
+interaction_case('undeclared track listed in the manifest accepted',
+                 lambda i, c, m: (c[0].pop('transition'), c[0].update(progress=progress('door')),
+                                  m.update(undeclared_progress_tracks=[progress('door')])) and None, expected=True)
+interaction_case('item, achievement and message children accepted',
+                 lambda i, c, m: c.extend([{'owner': 'Item', 'request': 'hand_out', 'item': ref('Item', 'item/key'), 'count': 1},
+                                           {'owner': 'Achievement', 'request': 'grant', 'achievement': ref('Achievement', 'achievement/x')},
+                                           {'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': 4}]),
+                 expected=True)
+interaction_case('level condition accepted',
+                 lambda i, c, m: i['rules'][0]['branch'][1].update(when={'actor_level': {'op': '>=', 'value': 100}, 'negate': False}),
+                 expected=True)
+interaction_case('a hand-out names an item', lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'count': 1}))
+interaction_case('a hand-out item is an Item',
+                 lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Creature', 'creature/x'), 'count': 1}))
+interaction_case('a message keeps no text',
+                 lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': 4,
+                                           'text': 'Hello.'}))
+interaction_case('a message keeps its source line',
+                 lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False}))
+interaction_case('edge is closed', lambda i, c, m: i['source'].update(edge='ON_WHISPER'))
+interaction_case('child owner is closed', lambda i, c, m: c[2].update(owner='Script'))
+interaction_case('no committed text in presentation', lambda i, c, m: c[2].update(text='The seal breaks.'))
+interaction_case('movement is blocked', lambda i, c, m: i['rules'][0]['otherwise'][0].update(status='ready'))
+interaction_case('blocked for the known reason', lambda i, c, m: i['rules'][0]['otherwise'][0].update(reason='later'))
+interaction_case('world object needs its source line', lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].pop('source_line'))
+interaction_case('presentation is not authoritative', lambda i, c, m: c[2].update(authoritative=True))
+interaction_case('item condition names an item', lambda i, c, m: i['rules'][0]['branch'][1]['when']['object'].update(value=5))
+interaction_case('item condition item is an Item',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['when']['object'].update(item=ref('Creature', 'creature/x')))
+interaction_case('uid condition has a value', lambda i, c, m: i['rules'][0]['branch'][1]['when']['object'].update(field='unique_id'))
+interaction_case('summon names a creature', lambda i, c, m: c[1].pop('creature'))
+interaction_case('anchor exists', lambda i, c, m: c[1].update(anchor='p9'))
+interaction_case('anchor is used', lambda i, c, m: i['anchors'].append({'key': 'p3', 'source_position': {'x': 5, 'y': 5, 'z': 7}}))
+interaction_case('anchor positions are unique', lambda i, c, m: i['anchors'][1].update(source_position={'x': 1, 'y': 2, 'z': 7}))
+interaction_case('transition exists', lambda i, c, m: c[0].update(transition='oteryn:quest/banshees#the_hidden_seal:npc_9'))
+interaction_case('transition moves its own track', lambda i, c, m: c[0].update(transition='oteryn:quest/banshees#the_plague_seal:npc_1'))
+interaction_case('undeclared track is listed', lambda i, c, m: (c[0].pop('transition'), c[0].update(progress=progress('door'))) and None)
+interaction_case('listed tracks are undeclared', lambda i, c, m: m.update(undeclared_progress_tracks=[progress('first_seal')]))
+interaction_case('mapped means resolved', lambda i, c, m: unresolved_line(i, c, m))
+interaction_case('mapped means no unresolved line',
+                 lambda i, c, m: i['unresolved'].append({'line': 3, 'reason': 'statement outside the transcribed vocabulary'}))
+interaction_case('conflict needs two sources',
+                 lambda i, c, m: (m['entries'][0].update(status='conflict'), m['entries'][0]['sources'].pop()) and None)
+interaction_case('every interaction has a manifest entry', lambda i, c, m: m['entries'].clear())
+interaction_case('manifest lists an interaction once', lambda i, c, m: m['entries'].append(dict(m['entries'][0])))
+interaction_case('interaction keys are unique', lambda i, c, m: i.update(twin=True))
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:
