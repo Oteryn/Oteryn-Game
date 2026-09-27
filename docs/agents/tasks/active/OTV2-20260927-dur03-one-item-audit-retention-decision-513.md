@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 issue: 513
 base_branch: main
 branch: codex/dur03-one-item-audit-retention-decision-513
-pr: null
+pr: 982
 base_sha: ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c
 head_sha: null
 final_head_sha: null
@@ -38,9 +38,12 @@ revision terms and mandatory replay/non-reuse separation.
 Allocation: [#162 comment 5856061315](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856061315).
 Owner selection: [#513 comment 5856056298](https://github.com/Oteryn/Oteryn-Game/issues/513#issuecomment-5856056298).
 Common terms/options: [#513 comment 5855850428](https://github.com/Oteryn/Oteryn-Game/issues/513#issuecomment-5855850428).
-This packet captures AUTHORING metadata before final commit. Final freeze,
-validation and any canonical draft PR are bound externally to the returned exact
-remote head; no self-referential metadata commit is required.
+Clarification: [#513 comment 5856189816](https://github.com/Oteryn/Oteryn-Game/issues/513#issuecomment-5856189816).
+Repair authorization: [#162 comment 5856190661](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5856190661).
+This packet captures reopened AUTHORING metadata before the successor commit.
+PR #982 is the canonical open draft. Successor freeze and fresh validation bind
+externally to the returned exact remote head; no self-referential metadata commit
+is required.
 
 ## Architecture and source of truth
 
@@ -58,7 +61,8 @@ cleanup and successor conformance scenarios without choosing runtime mechanisms.
 numeric resource ceilings, replay horizon, physical cleanup, SQL/restart and
 playable integration.
 `CONFLICT`: inheriting Character bootstrap authority by duration similarity,
-resetting expiry on export/hold release, or deleting replay/non-reuse protection
+using a mutable/commit-time retention anchor, resetting expiry on export/hold
+release, rewriting historical bindings or deleting replay/non-reuse protection
 with audit expiry would violate this decision's scope.
 
 The [Character retention precedent](../../../architecture/reviews/OTERYN_CHARACTER_DURABLE_AUDIT_RETENTION_DECISION_2026-09-22.md)
@@ -74,9 +78,16 @@ evidence as live authority. The document explicitly preserves those boundaries.
 
 ## Acceptance criteria
 
-- [x] Record the owner-selected separate logical item profile and P90D rolling ceiling.
+- [x] Record the separate item profile; P90D is exactly 7,776,000 elapsed seconds
+  from the immutable ANL event trusted-server wall timestamp, with lifetime
+  `[start, expiry)` and expiry at `now >= expiry`, no recompute/refresh or
+  ordering/fencing authority.
 - [x] Purpose, privacy floor, roles, case export, deletion, audited hold/release
   and forward-only immutable revisions preserve the selected common terms.
+- [x] Only separately accepted reviewed stricter legal/privacy supersession may
+  affect named retained scope while preserving historical binding/EventId/payload;
+  no extension, broader purpose/access/export, weaker privacy, resurrection or
+  active-hold/durability bypass.
 - [x] Audit expiry remains independent of replay/source-cause/non-reuse protections.
 - [x] Mandatory decision test, realistic options, risks and later conformance
   scenarios distinguish owner selection from implementation evidence.
@@ -106,6 +117,11 @@ on the sole allocated branch, with fresh head read before each write.
 After the final write, require returned SHA equality, verify the two-path complete
 delta, freeze, then qualify. A material repair explicitly reopens AUTHORING and
 creates a newly frozen candidate; frozen-head evidence is not inherited.
+The authorized repair replaces ambiguous occurrence/commit anchoring with the sole
+immutable ANL trusted-server event timestamp and an exact half-open P90D boundary.
+It permits only the resolved stricter legal/privacy exception for named retained
+scope and aligns export, hold release and conformance scenarios. All successor
+qualification/review must be fresh.
 
 ## Validation
 
@@ -144,18 +160,19 @@ control plane. No owner-funded/provider invocation by this direct writer.
 
 ## PR and closeout
 
-Draft PR may be created after freeze/validation under the allocated lifecycle.
-Readiness, unresolved threads, queue eligibility, merge proof and lease release
+PR #982 remains open/draft; its body may record successor freeze/validation.
+Review-thread replies/resolution remain with the active control plane after
+independent verification. Readiness, queue eligibility, merge proof and lease release
 remain pending control plane. This task does not close aggregate #513 or KAN-12.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Prepared two-file owner-selected item-specific P90D decision for API authoring
+last_progress: Reopened AUTHORING for authorized retention-anchor and stricter-supersession repair
 status: implementing
 branch: codex/dur03-one-item-audit-retention-decision-513
 head_sha: null
-pr: null
+pr: 982
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
