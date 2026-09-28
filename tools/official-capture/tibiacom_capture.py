@@ -68,6 +68,10 @@ SPELL_COLUMNS_ATTR = 'LIST_COLUMNS'
 SPELL_FACT_ANCHOR = 'list'
 SPELL_FACT_KEY_PREFIX = 'spells.list'
 SPELL_SLUG_LIMIT = 60
+# The exact row `tibiacom_spells.list_facts` emits per spell (all string values): these five fields
+# always, `levelrequired` when the list states a level, `mana` when it states a mana cost.
+SPELL_ROW_REQUIRED_FIELDS = frozenset({'name', 'words', 'subclass', 'type', 'premium'})
+SPELL_ROW_OPTIONAL_FIELDS = frozenset({'levelrequired', 'mana'})
 
 USER_AGENT = 'OterynContentResearch/1.0 (+https://github.com/Oteryn/Oteryn-Game)'
 REQUEST_DELAY_SECONDS = 2
@@ -427,6 +431,36 @@ def load_spell_module():
     return module
 
 
+def spell_row_slug(name):
+    """The slug in a spells fact key (`spells.list.<slug>`), for the adapter and the verifier alike."""
+    return slugify(name)[:SPELL_SLUG_LIMIT].strip('-') or 'spell'
+
+
+def spell_row_value(fields):
+    """The one canonical serialization of a spell row, as written into a spells fact's value."""
+    return json.dumps(fields, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+
+
+def spell_row_problem(fields):
+    """Why `fields` is not exactly a row `tibiacom_spells.list_facts` emits, or None: a dict with
+    every required field, no field outside required + optional, every value a string, and a
+    non-blank name."""
+    if not isinstance(fields, dict):
+        return 'not an object'
+    unknown = sorted(set(fields) - SPELL_ROW_REQUIRED_FIELDS - SPELL_ROW_OPTIONAL_FIELDS, key=str)
+    if unknown:
+        return f'unexpected field(s) {unknown}'
+    missing = sorted(SPELL_ROW_REQUIRED_FIELDS - set(fields))
+    if missing:
+        return f'missing required field(s) {missing}'
+    wrong_type = sorted(k for k, v in fields.items() if not isinstance(v, str))
+    if wrong_type:
+        return f'non-string value for field(s) {wrong_type}'
+    if not fields['name'].strip():
+        return 'blank name'
+    return None
+
+
 class SpellAdapterError(Exception):
     """The spell-library page or the #1077 module does not satisfy the adapter's contract."""
 
@@ -537,15 +571,16 @@ def spell_facts_from_library_html(module, body, captured_date):
     seen_slugs = {}
     for page in result['pages']:
         fields = page['fields']
-        name = fields.get('name')
-        if not isinstance(name, str) or not name.strip() or not all(
-                isinstance(k, str) and isinstance(v, str) for k, v in fields.items()):
-            raise SpellAdapterError(f'{SPELL_PARSER_ENTRY} returned a row without a text name: {fields!r}')
-        slug = slugify(name)[:SPELL_SLUG_LIMIT].strip('-') or 'spell'
+        row_problem = spell_row_problem(fields)
+        if row_problem:
+            raise SpellAdapterError(f'{SPELL_PARSER_ENTRY} returned a row outside the exact row schema '
+                                    f'({row_problem}): {fields!r}')
+        name = fields['name']
+        slug = spell_row_slug(name)
         seen_slugs[slug] = seen_slugs.get(slug, 0) + 1
         if seen_slugs[slug] > 1:
             slug = f'{slug}-{seen_slugs[slug]}'
-        value = json.dumps(fields, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+        value = spell_row_value(fields)
         if len(value) > FACT_VALUE_LIMIT:
             raise SpellAdapterError(f'spell row {name!r} serializes to {len(value)} chars, '
                                     f'over the {FACT_VALUE_LIMIT}-char fact cap')
@@ -686,21 +721,29 @@ def ratio_limit_for_section(section):
 
 
 def spell_fact_shape_errors(directory, key, anchor, value):
-    """A `spells` fact is exactly what `spell_facts_from_library_html` writes: anchor `list`, key
-    `spells.list.<slug>` and a JSON object of non-empty-name string fields. That row shape is what
-    replaces the manual pages' prose ratio for this section, so free text cannot ride along."""
+    """A `spells` fact must be one the adapter could have written, since this shape is what stands
+    in for the manual pages' prose ratio on this section: anchor `list`; a value that is exactly the
+    canonical serialization of a row of `list_facts`' exact schema (required and optional fields
+    only, string values, a name); and a key equal to `spells.list.<slug of that name>`, with the
+    adapter's `-N` (N >= 2) suffix only for a repeated name."""
     errors = []
-    if anchor != SPELL_FACT_ANCHOR or not key.startswith(SPELL_FACT_KEY_PREFIX + '.'):
-        errors.append(f'{directory}: spells fact {key!r} must have anchor {SPELL_FACT_ANCHOR!r} and a '
-                      f'{SPELL_FACT_KEY_PREFIX}.<slug> key')
+    if anchor != SPELL_FACT_ANCHOR:
+        errors.append(f'{directory}: spells fact {key!r} anchor must be {SPELL_FACT_ANCHOR!r}, got {anchor!r}')
     try:
         row = load_json_no_duplicates(value)
     except ValueError:
         row = None
-    if (not isinstance(row, dict) or not isinstance(row.get('name'), str) or not row['name'].strip()
-            or not all(isinstance(k, str) and isinstance(v, str) for k, v in row.items())):
-        errors.append(f'{directory}: spells fact {key!r} value must be a JSON object of string fields '
-                      'with a non-empty "name"')
+    problem = 'not a JSON object' if row is None else spell_row_problem(row)
+    if problem:
+        errors.append(f'{directory}: spells fact {key!r} value is not a spell row ({problem})')
+        return errors
+    if value != spell_row_value(row):
+        errors.append(f'{directory}: spells fact {key!r} value is not the canonical serialization of its row')
+    expected_key = re.compile(
+        re.escape(f'{SPELL_FACT_KEY_PREFIX}.{spell_row_slug(row["name"])}') + r'(?:-(?:[2-9]|[1-9][0-9]+))?')
+    if not expected_key.fullmatch(key):
+        errors.append(f'{directory}: spells fact key {key!r} must be '
+                      f'{SPELL_FACT_KEY_PREFIX}.<slug of name {row["name"]!r}>')
     return errors
 
 
@@ -1760,21 +1803,43 @@ def self_test():
         short_row = header_only.replace('</table>', '<tr><td>Find Person (exiva "name")</td><td>Support</td></tr></table>')
         assert 'rejected the list table' in _adapter_error(real_spell_module, short_row)
 
+        _full_row = {'name': 'Find Person', 'words': 'exiva', 'subclass': 'Support', 'type': 'Instant',
+                     'premium': 'no'}
+
         class _HugeRow:
             LIST_COLUMNS = ['Name']
-            list_facts = staticmethod(lambda text, captured: {'pages': [{'fields': {'name': 'x' * 400}}]})
+            list_facts = staticmethod(lambda text, captured: {'pages': [{'fields': {**_full_row, 'name': 'x' * 400}}]})
 
         assert 'fact cap' in _adapter_error(_HugeRow, '<table><tr><th>Name</th></tr><tr><td>x</td></tr></table>')
 
         class _ManyRows:
             LIST_COLUMNS = ['Name']
             list_facts = staticmethod(lambda text, captured: {'pages': [
-                {'fields': {'name': f'n{i}'}} for i in range(SPELL_RECORDS_CAP + 1)]})
+                {'fields': {**_full_row, 'name': f'n{i}'}} for i in range(SPELL_RECORDS_CAP + 1)]})
 
         assert 'row cap' in _adapter_error(_ManyRows, '<table><tr><th>Name</th></tr><tr><td>x</td></tr></table>')
 
-        # The verifier holds a spells fact to the adapter's row shape (free text cannot ride along
-        # under the spell list's wider ratio).
+        # The adapter itself refuses a module row outside the exact row schema (extra field, missing
+        # field, non-string value), so it can never write a fact the verifier would reject.
+        for bad_fields in ({**_full_row, 'payload': 'x'}, {k: v for k, v in _full_row.items() if k != 'words'},
+                           {**_full_row, 'mana': 5}):
+            class _BadRow:
+                LIST_COLUMNS = ['Name']
+                list_facts = staticmethod(lambda text, captured, _f=bad_fields: {'pages': [{'fields': _f}]})
+
+            assert 'exact row schema' in _adapter_error(
+                _BadRow, '<table><tr><th>Name</th></tr><tr><td>x</td></tr></table>')
+
+        # The exact-schema constants match what the real #1077 module emits on the fixture: every
+        # required field on every row, and only required/optional fields overall.
+        emitted = [json.loads(f['value']) for f in SPELL_LIST_EXPECTED_FACTS]
+        assert all(SPELL_ROW_REQUIRED_FIELDS <= set(row) for row in emitted), emitted
+        assert set().union(*emitted) == SPELL_ROW_REQUIRED_FIELDS | SPELL_ROW_OPTIONAL_FIELDS, emitted
+        assert all(spell_row_problem(row) is None for row in emitted)
+
+        # The verifier holds a spells fact to exactly what the adapter could have written (this is
+        # what replaces the manual pages' prose ratio on the spell list): the exact row schema, the
+        # canonical serialization, and the key `spells.list.<slug of name>`.
         spell_manifest = copy.deepcopy(base_manifest)
         spell_manifest['spells'] = 'captured'
         spell_manifest['pages'].append({'section': 'spells', 'url': SPELL_LIBRARY_URL,
@@ -1784,12 +1849,48 @@ def self_test():
         spell_doc['facts'] += SPELL_LIST_EXPECTED_FACTS
         _write_snapshot(directory, spell_manifest, spell_doc)
         assert verify_snapshot(directory) == [], verify_snapshot(directory)
+
+        def _row_of_last(fact):
+            return json.loads(fact['value'])
+
+        def _with_row(fact, row):
+            fact['value'] = spell_row_value(row)
+
+        def _add(name, value):
+            return lambda fact: _with_row(fact, {**_row_of_last(fact), name: value})
+
+        def _drop(name):
+            return lambda fact: _with_row(fact, {k: v for k, v in _row_of_last(fact).items() if k != name})
+
+        # Accepted variants: an optional field absent, a repeated name's `-2` suffix.
+        for mutate in (_drop('levelrequired'), _drop('mana'), lambda f: f.update(key=f['key'] + '-2'),
+                       lambda f: f.update(key=f['key'] + '-13')):
+            variant = copy.deepcopy(spell_doc)
+            mutate(variant['facts'][-1])
+            _write_snapshot(directory, spell_manifest, variant)
+            assert verify_snapshot(directory) == [], (variant['facts'][-1], verify_snapshot(directory))
+
         for mutate, expected in (
-                (lambda f: f.update(value='Just a sentence with 5 numbers.'), 'JSON object of string fields'),
-                (lambda f: f.update(value='{"name":""}'), 'JSON object of string fields'),
-                (lambda f: f.update(value='{"name":"x","mana":5}'), 'JSON object of string fields'),
-                (lambda f: f.update(anchor='root'), 'must have anchor'),
-                (lambda f: f.update(key='spells.other.x'), 'must have anchor')):
+                # an extra field such as `payload` is rejected
+                (_add('payload', 'anything'), 'unexpected field(s) [\'payload\']'),
+                # a missing required field
+                (_drop('words'), 'missing required field(s) [\'words\']'),
+                (_drop('name'), 'missing required field(s) [\'name\']'),
+                # a key that is not spells.list.<slug of the row's name>
+                (lambda f: f.update(key='spells.list.someone-else'), 'must be spells.list.<slug of name'),
+                (lambda f: f.update(key='spells.list.apprentice-s-strike-1'), 'must be spells.list.<slug of name'),
+                (lambda f: f.update(key='spells.list.apprentice-s-strike-02'), 'must be spells.list.<slug of name'),
+                (lambda f: f.update(key='spells.other.apprentice-s-strike'), 'must be spells.list.<slug of name'),
+                # a wrong value type
+                (_add('mana', 6), 'non-string value for field(s) [\'mana\']'),
+                (_add('levelrequired', None), 'non-string value for field(s) [\'levelrequired\']'),
+                (_add('words', ['exori']), 'non-string value for field(s) [\'words\']'),
+                # not a row at all, a blank name, a non-canonical serialization, a wrong anchor
+                (lambda f: f.update(value='Just a sentence with 5 numbers.'), 'not a JSON object'),
+                (lambda f: f.update(value='[]'), 'not an object'),
+                (_add('name', '  '), 'blank name'),
+                (lambda f: f.update(value=json.dumps(_row_of_last(f))), 'canonical serialization'),
+                (lambda f: f.update(anchor='root'), 'anchor must be')):
             broken = copy.deepcopy(spell_doc)
             mutate(broken['facts'][-1])
             _write_snapshot(directory, spell_manifest, broken)

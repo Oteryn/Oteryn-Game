@@ -48,7 +48,7 @@ external_repositories: []
 2. **Bounds that fit a table of facts.** The manual pages' 25% prose ratio cannot hold for a page that
    is itself a table of facts (the committed 193-row sample gives fact chars 3.25 x visible chars).
    `verify` now holds the `spells` section to `SPELL_FACT_TO_VISIBLE_TEXT_RATIO_LIMIT` (6.0), to the
-   adapter's exact row shape (anchor, key prefix, JSON object of string fields with a name) and to the
+   exact row schema `list_facts` emits (five required and two optional string fields, no extras; canonical JSON value; key equal to `spells.list.<slug of name>`, so each fact could have come from the adapter) and to the
    unchanged count, value and absolute-byte caps. Manual sections keep 25%. `fetch` now verifies what it
    wrote and removes the new directory if verification fails, so a run cannot leave a snapshot CI rejects.
 3. **#1083 hardening.** Every date shape is literal ASCII `[0-9]` with `fullmatch` and a calendar check
@@ -98,7 +98,8 @@ reason: >
   `SPELL_LIST_EXPECTED_FACTS`; the self-test runs it through the real #1077 module, through a stubbed
   `cmd_fetch` (manifest `captured`, facts equal, snapshot verifies), at 200-row scale, and with the
   negatives: no list table, header-only, short row, missing/legacy entry points, over-long row, over-cap
-  rows, spells facts of the wrong shape.
+  rows, and spells facts with an extra field (`payload`), a missing required field, a key/name slug
+  mismatch, a wrong value type, a non-canonical value or a wrong anchor.
 - negatives for the date check: non-padded, no-dash, ISO week/ordinal, fullwidth and Arabic-Indic digits,
   surrounding whitespace/newline, impossible date; in `parse_iso_date`, `parse_snapshot_directory_name`,
   `parse_utc_timestamp`, `verify`, `verify-root` and `fetch` (no network touched, nothing written).
