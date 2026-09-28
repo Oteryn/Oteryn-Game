@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw2-item-promotion-lowering-wire
 title: Wire the #1018 v1 Item semantic-promotion lowering candidate into cw2_b1_import
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cw2-item-promotion-lowering-wire
 issue: 162
 pr: 1048
 base_sha: dd209a1264e98f3d1f0f167ec3320124a071db53
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
+final_head_sha: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
+final_head_frozen_at: 2026-09-28T00:40Z
 owner: Oteryn: content world import (Claude Code worker)
 created_at: 2026-09-27T22:00:00Z
-updated_at: 2026-09-27T23:20:00Z
+updated_at: 2026-09-28T00:40Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -156,62 +156,62 @@ with the existing 69-field wired packet.
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947 (see Terminal integration)
+- trigger source: Merge Queue (`merge_group`)
+- workflow/run/job: Merge gate / `game-gate` aggregate
+- runner assignment: complete
+- classification: terminal
+- result: PASS (Merge Queue admitted and merged the candidate)
 
 ## Self-review
 
-- exact head: pending (recorded at freeze)
+- exact head: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
 - method/reviewer: implementing session
 - material findings: the source-3031 identity mismatch (see Implementation/findings)
   was found by this session's own diagnostic probe before external review, and
   repaired test-first
-- verdict: PASS on the local candidate; exact remote head review remains
+- verdict: PASS
 
 ## Independent review
 
 - required: YES; new decode/apply path and a new population-scale evidence file
   feeding the compiled Reference artifact.
 - exact head: 7a0012d364364f3dfa9668d6949084e3044a7315 (PR #1048)
-- method/auditor: Codex review found no issues on this exact head; repository CI
-  (`Agent governance / validate`, `Merge gate / governance`) flagged this task
-  record's bounded size and unbound `pr` field — repaired here, no code/test/
-  evidence change.
+- method/auditor: Codex review (`@codex review`) found no major issues on this exact
+  head; repository CI (`Agent governance / validate`, `Merge gate / governance`)
+  flagged this task record's bounded size and unbound `pr` field — repaired here,
+  no code/test/evidence change (see Terminal integration for the frozen final head).
 - material findings: none on the implementation; the two record-hygiene findings
   above are process-only
-- verdict: pending exact-head CI on the repaired record
+- verdict: PASS (no major issues); Merge Queue admitted the frozen final head
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: complete (see Terminal integration)
+- unresolved review threads: none
 - related/superseded PRs: none known
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: pending
+- protected auto-merge: Merge Queue
+- merge commit/result: `3426839` on protected `main`
+- ownership release: complete; owned paths released at archive
 
 ## Context checkpoint
 
 ```yaml
-last_progress: repair round 1 - bound task-record size and set pr:1048; no code/test/evidence change
-status: validating
+last_progress: terminal integration recorded; PR #1048 merged via Merge Queue as 3426839; record archived
+status: completed
 branch: claude/cw2-item-promotion-lowering-wire
-head_sha: null
+head_sha: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
 pr: 1048
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+final_head_sha: 4d892c57f9aa755ca2360d3f5a5bb4c65f63f947
+final_head_frozen_at: 2026-09-28T00:40Z
+ci_trigger_source: merge_group
+ci_check_generation: final
+ci_checks_for_current_head: 1
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 1
@@ -219,5 +219,26 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit, push, freeze the exact remote head, re-run governance/policy validators
+next_action: none; task closed
 ```
+
+## Terminal integration
+
+This section supersedes the historical `validating`/pending metadata and checkpoint
+above with the frozen terminal outcome; the complete implementation record above
+remains verbatim as historical evidence. This closeout performs no code, schema or
+content mutation of its own; it only moves this record from
+`docs/agents/tasks/active/` to `docs/agents/tasks/archive/` and binds terminal
+lifecycle fields. Coordination: issue #162 comment "terminal integration" (control
+plane).
+
+PR #1048 merged via Merge Queue as commit `3426839` on protected `main` at
+2026-09-28T00:40Z. Independent review (`@codex review`) found no major issues on
+exact head `7a0012d364364f3dfa9668d6949084e3044a7315`; the only later change before
+the frozen final head was this task record's own metadata (bounding size, binding
+`pr:`) — no code/test/evidence change. Protected-main readback: `cw2_b1_import.rs`,
+the pinned promotion-lowering evidence packet, and this task record's blobs on
+`main` are byte-identical to the frozen head `4d892c57f9aa755ca2360d3f5a5bb4c65f63f947`.
+
+Task status: `completed`. Aggregate issue #162 and Jira `KAN-16` remain open for
+later Item authoring work.
