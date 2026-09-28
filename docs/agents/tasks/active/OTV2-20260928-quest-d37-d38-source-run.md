@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-quest-d37-d38-source-run
 title: Quest format - merge #1053 with main and run its D37/D38 converter on the pinned sources
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
-pr: null
+pr: 1071
 base_sha: 00691b5bdc4b96fe41954e0b62b99353e0b03bf0
 head_sha: null
 final_head_sha: null
