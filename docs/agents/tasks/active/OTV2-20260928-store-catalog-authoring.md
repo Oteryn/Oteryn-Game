@@ -4,13 +4,13 @@
 task_id: OTV2-20260928-store-catalog-authoring
 title: Add the Store offer content-schema authoring package (categories, offers, product refs)
 mode: MIGRATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
-base_sha: 452c3e2c
+pr: 1080
+base_sha: 57a0fc76
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -143,18 +143,18 @@ in `samples/store-census-canary-47dfd51f.json` / `samples/store-census-crystal-f
 - changed-file review: pending
 - unresolved review threads: pending
 - related/superseded PRs: none
-- protected auto-merge: pending
+- protected auto-merge: SQUASH via Merge Queue, enabled on PR #1080
 - merge commit/result: pending
 - ownership release: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: store-authoring package implemented and locally validated (schema, converter, validator, census, docs); committed locally only, not pushed
-status: implementing
+last_progress: published as PR #1080; owner-decision doc scoped to catalog authorship on review
+status: validating
 branch: claude/compassionate-albattani-s29syw
 head_sha: null
-pr: null
+pr: 1080
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -172,5 +172,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: "not pushed / no PR opened from this session, per instructions"
-next_action: "publish the branch and open a PR when the owner/control-plane authorizes it"
+next_action: required checks, Merge Queue, archive record
 ```
