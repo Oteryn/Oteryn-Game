@@ -4,10 +4,10 @@
 task_id: OTV2-20260928-wo2-world-object-population
 title: "WO-2 slice 1 - Terrain population by the D93 key rule"
 mode: MIGRATE
-status: ready
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1189
 base_branch: main
 branch: claude/wo2-world-object-population
 base_sha: ff498b5
@@ -90,16 +90,16 @@ Bound to the frozen final head of the PR.
 - `python3 tools/content-schema/world-object-authoring/world_objects.py --source <ff7ede5> --check`: PASS, 21,370.
 - `python3 tools/content-schema/world-object-authoring/populate_content.py --source <ff7ede5> --family Terrain --check`: PASS.
 - `python3 tools/content-schema/validate_materialized_game_tree.py`: PASS.
-- `cargo test -p oteryn-game-server --test content_world_project_repository full_game_tree_contract_nodes_are_materialized`: see the PR.
+- `CARGO_TARGET_DIR=/home/user/.cargo-target-cw4 cargo test -p oteryn-game-server --test content_world_project_repository full_game_tree_contract_nodes_are_materialized`: PASS (1 passed).
 - `python3 tools/agents/validate_governance.py`, `python3 tools/repository/validate_repository_policy.py`, `git diff --check`: see the PR.
 
 ## Context checkpoint
 
 ```yaml
 last_progress: Terrain slice generated, deterministic, validated
-status: ready
+status: validating
 branch: claude/wo2-world-object-population
-pr: null
+pr: 1189
 owner_action_required: "decide the 460 Terrain holds; allocate WO-2 slice 2 (WorldObject) and the shared lease for marker state and Item routed_to"
 blocker: null
 next_action: exact-head freeze, independent identity review, Merge Queue
