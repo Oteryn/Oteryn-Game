@@ -7,7 +7,7 @@ mode: IMPLEMENT
 status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: wip/char-progression-init (local; the control plane publishes)
+branch: claude/oteryn-work-coordinator-jv59l0
 issue: 162
 pr: null
 allocation: "#162 comment 5875188437 (Character progression readiness, owner decision D84)"
