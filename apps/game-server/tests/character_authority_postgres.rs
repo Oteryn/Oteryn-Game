@@ -1847,3 +1847,8 @@ mod character_progression_postgres_cases;
 // standalone target through the same protected PostgreSQL lane.
 #[path = "support/item_mint_postgres_cases.rs"]
 mod item_mint_postgres_cases;
+
+// B3-1 TRANSFER (Ground -> container slot / main backpack entries) shares its
+// cases with the focused standalone target through the same protected lane.
+#[path = "support/item_transfer_postgres_cases.rs"]
+mod item_transfer_postgres_cases;
