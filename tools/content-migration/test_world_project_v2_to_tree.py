@@ -30,6 +30,7 @@ assert any(path.startswith("content/npcs/definitions/npcs-") for path in paths)
 assert any(path.startswith("content/services/trade/trade-") for path in paths)
 assert any(path.startswith("content/services/travel/travel-") for path in paths)
 assert "imports/canary/bindings/creatures.json" in paths
+assert "imports/tibiawiki/bindings/creatures.json" in paths
 assert all(not path.startswith("content/world/") for path in paths)
 
 assert manifest["families"]["NPC"] == {"records": 1093, "index": "content/npcs/definitions/index.json"}

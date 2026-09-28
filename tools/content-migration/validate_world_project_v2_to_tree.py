@@ -163,7 +163,11 @@ def validate_creature_families(reference: Any, declarations: Any, sources: Any) 
     legacy_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] in CREATURE_FAMILY_NODES]
     require(canonical_sorted(migrated_bindings) == canonical_sorted(legacy_bindings), "CREATURE_BINDING_ROUNDTRIP")
     require(len(legacy_bindings) == CREATURE_FAMILY_COUNTS["Creature"], "CREATURE_BINDING_COUNT")
-    require(load(ROOT / "imports/canary/bindings/creatures.json")["bindings"] == legacy_bindings, "IMPORT_CREATURE_BINDINGS")
+    canary_creatures = load(ROOT / "imports/canary/bindings/creatures.json")["bindings"]
+    wiki_creatures = load(ROOT / "imports/tibiawiki/bindings/creatures.json")["bindings"]
+    require(all(row["source_key"] == "oteryn:source.canary" for row in canary_creatures)
+            and all(row["source_key"] == "oteryn:source.tibiawiki" for row in wiki_creatures)
+            and canonical_sorted(canary_creatures + wiki_creatures) == canonical_sorted(legacy_bindings), "IMPORT_CREATURE_BINDINGS")
     require(load(ROOT / "imports/canary/index.json")["population_state"] == "POPULATED", "IMPORT_CANARY_MARKER_STATE")
     return sum(CREATURE_FAMILY_COUNTS.values()), len(migrated_profiles), len(migrated_bindings)
 
