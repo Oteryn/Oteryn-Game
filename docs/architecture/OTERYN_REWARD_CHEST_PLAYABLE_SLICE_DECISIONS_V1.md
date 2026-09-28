@@ -96,7 +96,9 @@ Resolved on #162 (comment 5876398790) after the B3 decision
   delivery gap closed together with B3-3. The rest of D41 is unchanged: nothing is written when
   room is missing, the player is told why, and nothing goes to the ground.
 - **Placement (architect).** A small child after B3-1, `CHEST-1`, admits a MINT whose destination
-  is a new entry of the equipped main backpack. It reuses B3-1's container-entry location tables,
+  is a new entry of the equipped main backpack. Its source cause is the D40 `USE` child occurrence,
+  not a creature death, and it establishes no Ground custody; DUR-03 §39.3 records this bounded
+  shape and its audit evidence. It reuses B3-1's container-entry location tables,
   placement ordinal and pre-insert rule; there is no second placement implementation. Each minted
   top-level item takes its own new entry: mint into an existing stack stays excluded (DUR-03
   §39.1), and the D83 merge shapes apply to pickup only.
@@ -104,7 +106,9 @@ Resolved on #162 (comment 5876398790) after the B3 decision
   slice admits non-container rewards only; container rewards follow the nested-bags decision.
 - **`RewardClaim` schema (architect).** One row per `(character_id, claim_key)`, unique, updated in
   place and never duplicated; `next_allowed_at` is NULL for a `once` claim. It commits in the same
-  DUR-03 transaction as the MINT and does not advance `CharacterRevision` (§5).
+  DUR-03 transaction as the MINT and does not advance `CharacterRevision`: the composition decision
+  (§5) now covers the character's container slot and direct entries of its equipped main backpack,
+  with the same fence and `character_root` row lock (its 2026-09-28 amendment).
 - **Once-only first.** The first slice covers `once` claims (330 of 336). A second claim of a
   `once` row is refused with nothing written; a retry returns the first outcome.
 - **Cooldown identity (later child).** The MINT cause is `(claim, character, cycle ordinal)`; the

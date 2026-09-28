@@ -22,7 +22,8 @@ owned_paths:
   - docs/architecture/OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
   - docs/architecture/OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md
-  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md   # §39.3 pointer only
+  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md   # §39.1/§39.3 amendment pointers
+  - docs/architecture/reviews/OTERYN_GAME_CHARACTER_REVISION_ITEM_TRANSACTION_COMPOSITION_DECISION_2026-09-27.md   # §3.1 amendment
   - docs/agents/tasks/active/OTV2-20260928-spell-d7-cw1-chest-amendments.md
   - docs/agents/tasks/active/OTV2-20260928-death0-character-death-receipt-decision.md   # archive move after #1148
   - docs/agents/tasks/archive/OTV2-20260928-death0-character-death-receipt-decision.md
@@ -67,6 +68,21 @@ child (P3b step 1, #1144, `CHEST-1`) carries its own qualification.
 ## Excluded scope
 
 - Proto files, registries, migrations, runtime code.
+
+## Finding dispositions
+
+Codex review of `40cef29`: five P1, all ACCEPTED in repair generation 1 of 1 (#162 convergence rule
+5869165340). No owner decision changed.
+
+- 4125982620 ("at target" for position spells): `ATTACK_TARGET` resolves the attack target's
+  position and applies the `POSITION` checks (spell contract §8.1).
+- 4125982659 (Ground-only MINT shape): DUR-03 §39.3 supersedes the creature-death source and
+  Ground-custody clauses for the bounded `CHEST-1` shape and defines its audit evidence.
+- 4125982633 (re-arm after a post-revert variant): lowering synthesizes a C→B forward edge (§9 D90).
+- 4125982641 (event ownership not enforceable): a typed binding origin `PLAYER_USE` / `EVENT`
+  excluded from USE selection and session `apply` (§9 D91).
+- 4125982667 (composition scoped to `CharacterInventory`): composition decision §3.1 extends rule
+  1 to the container slot and direct backpack entries with the same fences.
 
 ## Validation
 

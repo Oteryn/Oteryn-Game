@@ -236,6 +236,10 @@ comment 5875913331. Source: Tibia 15.25 targeting modes (TibiaWiki BR `aimattarg
   `SPELL_CAST_DISPOSITION_TARGET_ILLEGAL`. `target_position` present with another intent, or
   absent with `POSITION`, fails closed. The client maps crosshair and cursor modes to `POSITION`
   and "at target" to `ATTACK_TARGET`; `NONE` casts at the caster's own position.
+- **"At target" for a position spell.** For a `cast_at_position` spell, `ATTACK_TARGET` resolves to
+  the current position of the actor's attack target, as the server holds it at the cast, and then
+  applies exactly the `POSITION` checks (range, walls, floor, protection zone). No attack target is
+  `TARGET_REQUIRED`. It does not use the `needs_target` path, which S20 forbids for these spells.
 - **Aim at target.** `aim_at_target` is a per-cast flag, **stateless**: no persisted character
   setting and no equivalent of Canary's client opcode `0xC8`. The server honours it only for a
   spell with `targeting.aim_at_target` and only when the actor holds an attack target; it then

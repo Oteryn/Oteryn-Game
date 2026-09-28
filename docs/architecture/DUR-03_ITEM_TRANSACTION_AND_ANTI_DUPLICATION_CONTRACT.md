@@ -934,9 +934,18 @@ touched items, quantity redistribution and nested containers, and resolve the "N
 decision test below for destination, capacity and placement. Every other obligation of this
 section is unchanged.
 
-**Reward chest amendment.** `OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md` §5.1 (D92) admits,
-in the `CHEST-1` child after B3-1, a MINT whose destination is a new entry of the equipped main
-backpack under the same placement rule. Mint into an existing stack stays excluded (§39.1).
+**Reward chest amendment.** `OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md` §5.1 (D40, D92)
+admits, in the `CHEST-1` child after B3-1, one bounded MINT shape and for it supersedes these
+statements of §39.1-§39.3: that every MINT descends from a committed creature-death output, and
+that a MINT establishes typed Ground custody before a separate TRANSFER. For this shape:
+- the source cause is the D40 GAME-INTERACTION child occurrence of a `USE` on a reward-claim
+  placement, keyed by `(claim, character)` (and the cycle ordinal for a cooldown claim);
+- the first and only location is a new entry of the equipped main backpack under the B3 placement
+  rule; no Ground custody and no TRANSFER;
+- the audit evidence is: before, explicit nonexistence of the item and the claim state; after, the
+  live item in its `Container` entry, its type and quantity, and the committed `RewardClaim` row;
+- mint into an existing stack stays excluded (§39.1).
+Every other §39 obligation is unchanged.
 
 **Expected bindings versus current authority.** The immutable MINT/TRANSFER
 candidate binds expected item definition/state, source occurrence, WorldId,
