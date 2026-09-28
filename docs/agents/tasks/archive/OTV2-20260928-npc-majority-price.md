@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-npc-majority-price
 title: NPC D13 - Tibiopedia as the third wiki; offer prices two of three wikis agree on
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
@@ -12,15 +12,15 @@ issue: 162
 pr: 1159
 jira: KAN-16
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
-head_sha: null
-final_head_sha: null
+head_sha: f308c376a2cfc8605e8059ab1bba84799a6ed2c7
+final_head_sha: f308c376a2cfc8605e8059ab1bba84799a6ed2c7
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260928-npc-majority-price.md
+  - docs/agents/tasks/archive/OTV2-20260928-npc-majority-price.md
   - tools/content-schema/npc-authoring/tibiopedia.py
   - tools/content-schema/npc-authoring/promotion_candidates.py
   - tools/content-schema/npc-authoring/validate_promotion.py
@@ -105,3 +105,9 @@ Tibiopedia as the third wiki; its facts committed without prose).
 - Wiki-confirmed offers that Canary and Crystal lack (about 735 in existing shops) and the BR-only shops,
   under the same two-of-three rule (second D13 PR).
 - The Crystal `summer-update` supplement, 65 NPCs with no dialogue match.
+
+## PR and closeout
+
+- Merged through Merge Queue as PR #1159, squash commit `0b5c92c21fe8992666234b0cdf3210dc1e733786`;
+  final head `f308c376a2cfc8605e8059ab1bba84799a6ed2c7`. Codex findings (registered-name lookup for D12 and D13, no Fandom page for a
+  BR+Tibiopedia majority, bounds on an incomplete capture) fixed before merge; ownership released.

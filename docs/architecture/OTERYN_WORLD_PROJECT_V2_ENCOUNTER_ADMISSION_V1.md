@@ -63,7 +63,7 @@ The estimate below is a closure over the current census. The staging tool's coun
 | Group | Count |
 |---|---:|
 | Encounter samples | 83 |
-| with `unresolved_semantics` rows (Alptramun, Ferumbras Mortal Shell, Gorzindel, Melting Frozen Horror, The Sandking) | 5 |
+| with `unresolved_semantics` rows (Alptramun, Ferumbras Mortal Shell, Gorzindel, Melting Frozen Horror, The Sandking; §12 of the format proposes CANDIDATE resolutions for all but Ferumbras Mortal Shell, pending owner acceptance) | 5 |
 | admitted after closure | about 58 |
 | Encounter-covered monsters admitted | about 128 of 164 |
 | Other monsters freed by the new references | about 3 |
@@ -112,7 +112,8 @@ creatures, in the same slices.
    - **Encounters:** 58 of the 83 encounters are admitted. Each is an Encounter declaration, a typed profile and a
      `canary/encounter` source binding.
    - **Deferred encounters (25):** 19 wait for an unadmitted creature, item or ability, 5 keep an
-     `unresolved_semantics` row, and 1 has an unlocated anchor (the Soul War taint zones).
+     `unresolved_semantics` row, and 1 has an unlocated anchor (the Soul War taint zones). For four of the five rows
+     the format's §12 proposes CANDIDATE resolutions, pending owner acceptance.
    - **Creatures:** 1,450 are admitted, up from 1,319. Monsters that wait only on an encounter drop from 164 to 35.
    - **Content tree:** the admitted encounters are in `content/encounters/definitions/`. The tree contract has no
      node for Generic encounters, so all types share that node.
