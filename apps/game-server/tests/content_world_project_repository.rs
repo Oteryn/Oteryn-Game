@@ -456,7 +456,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[5].evidence, ProjectV2EvidenceClass::Derived);
     // D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki.
     let wiki_creature_import = &project.imports()[6];
-    assert_eq!(wiki_creature_import.batch_id, "g4-wiki-authored-creature-d44-r1");
+    assert_eq!(
+        wiki_creature_import.batch_id,
+        "g4-wiki-authored-creature-d44-r1"
+    );
     assert_eq!(wiki_creature_import.source_repository, "tibia.fandom.com");
     assert!(wiki_creature_import.candidates.is_empty());
     assert_eq!(v2.sources[6].key, "oteryn:source.tibiawiki");
@@ -467,7 +470,10 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         v2.source_identity_bindings
             .iter()
             .filter(|binding| binding.source_revision == wiki_creature_import.source_revision)
-            .map(|binding| (binding.identity_namespace.as_str(), binding.external_id.as_str()))
+            .map(|binding| (
+                binding.identity_namespace.as_str(),
+                binding.external_id.as_str()
+            ))
             .collect::<Vec<_>>(),
         [("mediawiki/page_id", "108320")]
     );

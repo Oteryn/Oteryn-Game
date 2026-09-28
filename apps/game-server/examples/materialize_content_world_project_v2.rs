@@ -68,7 +68,8 @@ const CREATURE_STAGE_TOOL_SHA256: &str =
     "f784abf15353a22372fa293bb96b47195e0cc7b1efbed882a4f2186818be9605";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 /// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
-const CREATURE_WIKI_SAMPLE_SHA256: &str = "88d21c748283df4cf059dbf1bd04cbcf7b9d00ca6cd14dc1e913e947f0242c8c";
+const CREATURE_WIKI_SAMPLE_SHA256: &str =
+    "88d21c748283df4cf059dbf1bd04cbcf7b9d00ca6cd14dc1e913e947f0242c8c";
 const CREATURE_WIKI_REVISION: &str = "tibiawiki-wiki-authored-creature-88d21c748283df4c";
 const CREATURE_WIKI_COUNT: usize = 1;
 const CANARY_BUNDLE_INDEX_SHA256: &str =
@@ -1185,12 +1186,15 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
                         binding.source_revision.as_str(),
                         binding.identity_namespace.as_str()
                     ),
-                    ("oteryn:source.canary", CANARY_REVISION, "canary/monster-file")
-                        | (
-                            "oteryn:source.tibiawiki",
-                            CREATURE_WIKI_REVISION,
-                            "mediawiki/page_id"
-                        )
+                    (
+                        "oteryn:source.canary",
+                        CANARY_REVISION,
+                        "canary/monster-file"
+                    ) | (
+                        "oteryn:source.tibiawiki",
+                        CREATURE_WIKI_REVISION,
+                        "mediawiki/page_id"
+                    )
                 )
         })
     {
