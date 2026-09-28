@@ -13,6 +13,20 @@ mod ability;
     reason = "nonshipping fixed-one-creature Combat proof awaits production composition"
 )]
 mod combat;
+// A top-level module, not a submodule of `combat`: `combat.rs` is also recompiled standalone by
+// `foundation/mod.rs`'s `#[cfg(test)] #[path = "../combat.rs"] mod exact_actor_test_combat;` and
+// by several PG test binaries that need `combat::death_reward`/`combat::loot_plan` but not
+// Content, so a `crate::content` dependency inside `combat.rs`'s own module tree would force
+// every one of those to also carry a local `content` module. `combat_pickup` needs
+// `crate::content` (B3-2: definition facts bound to the current Content generation) and reaches
+// `combat::death_reward::DurabilitySession` through `combat`'s own `pub(crate)` re-export
+// instead.
+#[allow(
+    dead_code,
+    reason = "B3-2 has no production caller yet; a later admission stage wires one"
+)]
+#[path = "combat/pickup.rs"]
+mod combat_pickup;
 
 pub mod character_bootstrap_intent;
 pub mod character_recovery_fence;
