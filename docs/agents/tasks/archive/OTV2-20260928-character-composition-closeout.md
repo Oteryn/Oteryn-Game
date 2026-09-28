@@ -4,16 +4,17 @@
 task_id: OTV2-20260928-character-composition-closeout
 title: Close out the character revision composition decision and cite it in DUR-03
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1072
 base_sha: 00691b5bdc4b96fe41954e0b62b99353e0b03bf0
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: a50dcfa5cd2a3d9dbe9b1ebd8ba63057271ae97f
+final_head_sha: a50dcfa5cd2a3d9dbe9b1ebd8ba63057271ae97f
+final_head_frozen_at: 2026-09-28T08:44:07Z
+merge_commit: 9fa52e31f29b1d67df45b5c424b0263b0de9c37d
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -65,10 +66,10 @@ authority, fence or recovery semantics.
 
 ## Acceptance criteria
 
-- [ ] DUR-03 §39.3 and reward-chest §5 cite the decision; TRANSFER stays closed.
-- [ ] Governance and repository-policy validators pass.
-- [ ] Independent exact-head review, since DUR-03 contract text changes.
-- [ ] Protected Merge Queue integration.
+- [x] DUR-02 rule 2, DUR-03 §39.3 and reward-chest §5 cite the decision; TRANSFER stays closed.
+- [x] Governance and repository-policy validators pass.
+- [x] Independent exact-head review: Codex on `a50dcfa` found no issues.
+- [x] Protected Merge Queue integration: `9fa52e3`.
 
 ## Excluded scope
 
@@ -89,16 +90,23 @@ authority, fence or recovery semantics.
 - `e6bf603`: Codex P2 4120156332 (the Character contract did not cite the decision, so the
   `implementation_may_resume: true` flag was premature). Accepted: DUR-02 rule 2 now cites the
   decision.
-- The successor head needs a fresh exact-head review.
+- `a50dcfa`: Codex exact-head review clean; all review threads resolved.
+
+## Terminal integration
+
+- PR #1072 merged through the Merge Queue on 2026-09-28 as `9fa52e3`.
+- Protected-main readback: all six changed files matched the frozen head `a50dcfa` blobs.
+- Archived under `OTV2-20260928-dur03-maxima-death-identity-decision`.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1072 open
-status: validating
+last_progress: protected-integrated as 9fa52e3; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: a50dcfa5cd2a3d9dbe9b1ebd8ba63057271ae97f
 pr: 1072
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1072
+next_action: null
 ```
