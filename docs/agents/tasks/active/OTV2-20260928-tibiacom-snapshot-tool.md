@@ -122,28 +122,27 @@ reason: >
   or a slug of the text) and the text of `p`/`li`/`td`/`th`/`dd` blocks under each, with no
   CSS-class guess at tibia.com's real structure (unreachable here — same Cloudflare block).
 
-## Repair: Codex review findings (PR #1083, return to AUTHORING; three rounds, 12 findings)
+## Repair: Codex review findings (PR #1083, return to AUTHORING; four rounds, 15 findings)
 
 Every finding below was accepted and repaired, with a self-test case added and its review thread
-replied to before that round's push.
+replied to before that round's push. Full text is in the PR review threads; this is an index.
 
-- Round 1, head `1a82643`: P1 r4120578784 no-page-copy (bounded factual-signal extraction,
-  `FACTS_PER_SECTION_CAP`=40, `visible_text_chars` + 25% ratio in `verify`); P2 r4120578795 bad
-  status (HTTP 200 only); P2 r4120578800 completeness (exact six sections/URLs, ≥1 fact,
-  `spells` enum); P2 r4120578808 immutability (workflow diffs PR base→head, rejects `M`/`D`/`R`
-  of an existing dated dir).
-- Round 2, head `a90b128`: r4120758016 spell cap (`SPELL_RECORDS_CAP`=600 via
-  `facts_cap_for_section`, enforced by `fetch` too); r4120758045 `visible_text_chars` must be
-  positive when a page has facts; r4120758054 hash raw response bytes, decode a separate copy;
-  r4120758029 `check-immutability` subcommand also rejects `A` into an existing dated dir;
-  r4120758056 `verify` rejects duplicate manifest sections/URLs.
-- Round 3, head `557730b`: r4120883657 block facts use the normalized `anchor` (id/slug), never
-  raw heading text; r4120883667 `key`/`anchor` are also bounded (`FIELD_ID_LIMIT`=120 chars), and
-  the 25%-ratio/total-byte caps count key+anchor+value together, enforced by `fetch` on delegated
-  spell output too; r4120883679 `fetched_at`/`captured_at` must be strict ISO-8601 UTC `Z`
-  timestamps, manifest/facts `captured_at` must be equal, and every `fetched_at` must be
-  `>= captured_at` and within `MAX_FETCH_RUN_SECONDS` (1h) of it — `fetch` now stamps
-  `captured_at` once, before any request.
+- R1 `1a82643`: r4120578784 no-page-copy (bounded extraction, `FACTS_PER_SECTION_CAP`, ratio
+  check); r4120578795 HTTP 200 only; r4120578800 exact six-section completeness; r4120578808
+  workflow immutability diff (base→head, rejects `M`/`D`/`R` of an existing dated dir).
+- R2 `a90b128`: r4120758016 `SPELL_RECORDS_CAP` (spell cap); r4120758045 positive
+  `visible_text_chars`; r4120758054 hash raw bytes; r4120758029 `check-immutability` also rejects
+  `A` into an existing dir; r4120758056 reject duplicate sections/URLs.
+- R3 `557730b`: r4120883657 facts use normalized `anchor`; r4120883667 `key`/`anchor` bounded too
+  (`FIELD_ID_LIMIT`=120, ratio/total-byte caps count all three fields); r4120883679 strict
+  ISO-8601 `captured_at`/`fetched_at`, equal across files, `fetched_at` in
+  `[captured_at, captured_at+1h]` (`fetch` stamps `captured_at` once, before any request).
+- R4 `018b479` (material, page-copy class per #162): r4121003204 a snapshot dir holds exactly
+  `manifest.json`+`facts.json` (`SNAPSHOT_FILENAMES`), enforced by both `verify` and
+  `check-immutability` (new dirs too); r4121003212 `bound_key()` reserves suffix room and splices
+  in a hash on truncation so a long heading id can't collide two facts' keys; r4121003195 closed
+  schema — `verify` rejects any unrecognized key in the manifest/facts documents, a page, or a
+  fact.
 
 ## Validation
 
@@ -190,10 +189,10 @@ replied to before that round's push.
 - required: it happened regardless of the `NO` self-assessment above (evidence/tooling-only, no
   public contract/protocol/persistence/authority surface): automated PR review is unconditional in
   this repository.
-- exact head: `1a82643` (r1), `a90b128` (r2), `557730b` (r3)
+- exact head: `1a82643`/`a90b128`/`557730b`/`018b479` (r1-r4)
 - method/auditor: Codex, automated PR review (not triggered by this worker)
-- material findings: 12 total across three rounds (see Repair section above) — all accepted and
-  repaired
+- material findings: 15 total across four rounds (see Repair section above) — all accepted and
+  repaired; R4 explicitly MATERIAL under the #162 page-copy closure rule
 - verdict: findings addressed; a fresh review of the repaired head is for the control plane to
   request, not this worker (no `@codex` trigger from this task)
 

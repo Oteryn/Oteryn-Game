@@ -55,8 +55,13 @@ REQUEST_TIMEOUT_SECONDS = 30
 
 MANIFEST_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_MANIFEST/v1'
 FACTS_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_FACTS/v1'
+MANIFEST_KEYS = {'schema', 'captured_at', 'pages', 'spells'}
 MANIFEST_PAGE_KEYS = {'section', 'url', 'fetched_at', 'http_status', 'sha256', 'visible_text_chars'}
+FACTS_DOC_KEYS = {'schema', 'captured_at', 'facts'}
 FACT_KEYS = {'section', 'anchor', 'key', 'value'}
+# A snapshot directory holds exactly these two files -- no raw pages, scratch files or
+# subdirectories (P2 r4121003204, page-copy class).
+SNAPSHOT_FILENAMES = {'manifest.json', 'facts.json'}
 FACT_VALUE_LIMIT = 300
 # Every serialized text field is bounded, not only `value` (P2 r4120883667): a `key`/`anchor` this
 # long is not an identifier any more, so both fetch and verify cap them the same way.
@@ -101,6 +106,24 @@ def utc_now():
 def bound_field(text, limit=FIELD_ID_LIMIT):
     """Cap an identifier-like field (a fact `key` or `anchor`) at `limit` chars (P2 r4120883667)."""
     return str(text)[:limit]
+
+
+def bound_key(base, suffix, limit=FIELD_ID_LIMIT):
+    """A bounded fact `key` that stays unique even when `base` (section+anchor) is long enough to
+    force truncation (P2 r4121003212): a long anchor must not make the `.heading`/`.N` suffix that
+    disambiguates facts under it collide away. `base` is truncated first, reserving room for the
+    suffix; when that truncation actually happens, an 8-hex-char hash of the full, untruncated key
+    is spliced in ahead of the suffix so two different long bases (or two different suffixes on the
+    same long base) cannot produce the same bounded key.
+    """
+    full = f'{base}{suffix}'
+    if len(full) <= limit:
+        return full
+    digest = hashlib.sha256(full.encode('utf-8')).hexdigest()[:8]
+    tail = f'-{digest}{suffix}'
+    if len(tail) >= limit:
+        return tail[:limit]
+    return f'{base[:limit - len(tail)]}{tail}'
 
 
 def parse_utc_timestamp(value):
@@ -254,7 +277,7 @@ def extract_facts(section, body):
         if heading and anchor not in seen_headings:
             seen_headings.add(anchor)
             facts.append({'section': section, 'anchor': anchor,
-                          'key': bound_field(f'{section}.{anchor}.heading'),
+                          'key': bound_key(f'{section}.{anchor}', '.heading'),
                           'value': heading[:FACT_VALUE_LIMIT]})
             if len(facts) >= FACTS_PER_SECTION_CAP:
                 break
@@ -266,9 +289,11 @@ def extract_facts(section, body):
                 continue
             counters[anchor] = counters.get(anchor, 0) + 1
             # Always the parser's normalized anchor (id/slug), never the raw heading text
-            # (P2 r4120883657), so `anchor` stays a consistent HTML-id/slug reference.
+            # (P2 r4120883657), so `anchor` stays a consistent HTML-id/slug reference. The key is
+            # built with bound_key, not a plain truncation, so a long anchor can't make the
+            # `.heading`/`.N` suffix collide away (P2 r4121003212).
             facts.append({'section': section, 'anchor': anchor,
-                          'key': bound_field(f'{section}.{anchor}.{counters[anchor]}'),
+                          'key': bound_key(f'{section}.{anchor}', f'.{counters[anchor]}'),
                           'value': fragment[:FACT_VALUE_LIMIT]})
     return facts
 
@@ -386,14 +411,35 @@ def verify_snapshot(directory):
     if not facts_path.is_file():
         return [f'{directory}: missing facts.json']
 
+    # Exactly manifest.json and facts.json -- no raw pages, scratch files or subdirectories
+    # (P2 r4121003204, page-copy class): both required files exist, so directory is safe to list.
+    extra_files = sorted(p.name for p in directory.iterdir() if p.name not in SNAPSHOT_FILENAMES)
+    if extra_files:
+        errors.append(f'{directory}: snapshot directory must contain exactly {sorted(SNAPSHOT_FILENAMES)}, '
+                      f'found extra: {extra_files}')
+
     try:
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
     except json.JSONDecodeError as error:
-        return [f'{directory}: manifest.json is not valid JSON ({error})']
+        return errors + [f'{directory}: manifest.json is not valid JSON ({error})']
     try:
         facts_doc = json.loads(facts_path.read_text(encoding='utf-8'))
     except json.JSONDecodeError as error:
-        return [f'{directory}: facts.json is not valid JSON ({error})']
+        return errors + [f'{directory}: facts.json is not valid JSON ({error})']
+
+    # Closed schema (P2 r4121003195): both documents are objects with exactly their allowed
+    # top-level keys -- an unrecognized field (e.g. a raw_html dump) must not slip past every
+    # size/ratio check just because nothing reads it by name.
+    if not isinstance(manifest, dict):
+        return errors + [f'{directory}: manifest.json must be a JSON object']
+    if not isinstance(facts_doc, dict):
+        return errors + [f'{directory}: facts.json must be a JSON object']
+    extra_manifest_keys = manifest.keys() - MANIFEST_KEYS
+    if extra_manifest_keys:
+        errors.append(f'{directory}: manifest.json has unexpected top-level key(s) {sorted(extra_manifest_keys)}')
+    extra_facts_doc_keys = facts_doc.keys() - FACTS_DOC_KEYS
+    if extra_facts_doc_keys:
+        errors.append(f'{directory}: facts.json has unexpected top-level key(s) {sorted(extra_facts_doc_keys)}')
 
     if manifest.get('schema') != MANIFEST_SCHEMA:
         errors.append(f'{directory}: manifest.json schema must be {MANIFEST_SCHEMA!r}')
@@ -429,6 +475,11 @@ def verify_snapshot(directory):
         missing = MANIFEST_PAGE_KEYS - page.keys()
         if missing:
             errors.append(f'{directory}: manifest page {page.get("section", "?")} missing keys {sorted(missing)}')
+            continue
+        extra_page_keys = page.keys() - MANIFEST_PAGE_KEYS
+        if extra_page_keys:
+            errors.append(f'{directory}: manifest page {page.get("section", "?")} has unexpected '
+                          f'key(s) {sorted(extra_page_keys)}')
             continue
         if not isinstance(page['sha256'], str) or not SHA256_RE.match(page['sha256']):
             errors.append(f'{directory}: manifest page {page["section"]} sha256 is not a 64-hex-digit string')
@@ -497,6 +548,10 @@ def verify_snapshot(directory):
         missing = FACT_KEYS - fact.keys()
         if missing:
             errors.append(f'{directory}: fact missing keys {sorted(missing)}: {fact}')
+            continue
+        extra_fact_keys = fact.keys() - FACT_KEYS
+        if extra_fact_keys:
+            errors.append(f'{directory}: fact has unexpected key(s) {sorted(extra_fact_keys)}: {fact}')
             continue
         value = fact['value']
         key = fact['key']
@@ -597,14 +652,17 @@ def dated_dir_for_path(path):
 
 
 def find_immutability_violations(diff_lines, exists_at_base):
-    """Dated snapshot directories are immutable once committed (P2 r4120578808/r4120758029).
+    """Dated snapshot directories are immutable once committed and hold exactly two files
+    (P2 r4120578808/r4120758029/r4121003204).
 
     `diff_lines` are `git diff --name-status -M <base> <head> -- <SNAPSHOT_PREFIX>` lines (any
     iterable of strings); `exists_at_base(dated_dir)` reports whether that dated directory already
     existed at the base commit. Returns one violation string per offending line: any `A`, `M`, `D`,
     `R` or `C` whose affected path's dated directory already existed at base -- including an `A`
-    that only adds a new file inside an already-committed directory. Only a path inside a brand-new
-    dated directory is allowed.
+    that only adds a new file inside an already-committed directory -- or whose filename is not in
+    `SNAPSHOT_FILENAMES`, even inside a brand-new dated directory (a raw page dump would otherwise
+    slip past this check, which only `verify` would later catch). Only `manifest.json`/`facts.json`
+    inside a brand-new dated directory are allowed.
     """
     violations = []
     for line in diff_lines:
@@ -618,9 +676,15 @@ def find_immutability_violations(diff_lines, exists_at_base):
         paths = fields[1:] if status[0] in ('R', 'C') else fields[1:2]
         for path in paths:
             dated_dir = dated_dir_for_path(path)
-            if dated_dir and exists_at_base(dated_dir):
+            if not dated_dir:
+                continue
+            if exists_at_base(dated_dir):
                 violations.append(f'{status}\t{path} (dated directory {dated_dir}/ exists at the PR base)')
                 break  # one violation per offending diff line, even if several of its paths match
+            if Path(path).name not in SNAPSHOT_FILENAMES:
+                violations.append(f'{status}\t{path} (a dated directory may contain only '
+                                  f'{sorted(SNAPSHOT_FILENAMES)})')
+                break
     return violations
 
 
@@ -747,10 +811,26 @@ def self_test():
     # Every serialized text field is bounded (P2 r4120883667): key/anchor as well as value.
     assert bound_field('x' * 300) == 'x' * FIELD_ID_LIMIT
     assert bound_field('short') == 'short'
-    long_id_html = '<h2 id="' + ('x' * 200) + '">Heading</h2><p>Value is 5 here.</p>'
+    long_id_html = ('<h2 id="' + ('x' * 200) + '">Heading</h2>'
+                    '<p>Value is 5 here.</p><p>Another value 6 here.</p>')
     long_id_facts = extract_facts('world', long_id_html)
     assert all(len(f['anchor']) == FIELD_ID_LIMIT for f in long_id_facts), long_id_facts
     assert all(len(f['key']) <= FIELD_ID_LIMIT for f in long_id_facts), long_id_facts
+    # A 200-char heading id forces key truncation on every fact under it; bound_key must still
+    # keep them unique -- the heading fact and both content facts share the same long base
+    # (P2 r4121003212).
+    long_id_keys = [f['key'] for f in long_id_facts]
+    assert len(long_id_keys) == 3, long_id_facts  # heading + 2 content facts
+    assert len(long_id_keys) == len(set(long_id_keys)), long_id_keys
+
+    assert bound_key('short', '.heading') == 'short.heading'
+    long_base = 'y' * 200
+    bounded_heading_key = bound_key(long_base, '.heading')
+    bounded_content_key = bound_key(long_base, '.1')
+    assert len(bounded_heading_key) <= FIELD_ID_LIMIT
+    assert bounded_heading_key.endswith('.heading')
+    assert bounded_content_key.endswith('.1')
+    assert bounded_heading_key != bounded_content_key  # same long base, different suffix
 
     # Timestamps must be strict ISO-8601 UTC 'Z' (P2 r4120883679).
     assert parse_utc_timestamp('2026-09-28T12:00:00Z') is not None
@@ -791,9 +871,13 @@ def self_test():
         [f'R100\t{SNAPSHOT_PREFIX}2026-09-28/facts.json\t{SNAPSHOT_PREFIX}2026-09-28/renamed.json'],
         exists_at_base)) == 1
     assert find_immutability_violations(
-        [f'R100\t{SNAPSHOT_PREFIX}2026-10-05/a.json\t{SNAPSHOT_PREFIX}2026-10-05/b.json'],
+        [f'R100\t{SNAPSHOT_PREFIX}2026-10-05/manifest.json\t{SNAPSHOT_PREFIX}2026-10-05/facts.json'],
         exists_at_base) == []
     assert find_immutability_violations(['M\tREADME.md'], exists_at_base) == []
+    # A brand-new dated directory may still hold only manifest.json/facts.json (P2 r4121003204):
+    # a raw page dump added alongside them is rejected even though the directory itself is new.
+    assert len(find_immutability_violations(
+        [f'A\t{SNAPSHOT_PREFIX}2026-10-05/raw.html'], exists_at_base)) == 1
 
     import copy
     import tempfile
@@ -998,10 +1082,14 @@ def self_test():
         _original_sleep = time.sleep
         time.sleep = lambda seconds: None
         try:
-            fetch_out = directory / 'fetch-out'
-            assert cmd_fetch(fetch_out) == 0
-            fetched_manifest = json.loads((fetch_out / 'manifest.json').read_text(encoding='utf-8'))
-            fetched_facts = json.loads((fetch_out / 'facts.json').read_text(encoding='utf-8'))
+            # A separate temp dir, not nested under `directory` -- `directory` is reused below as
+            # the exactly-two-files fixture, and a subdirectory would pollute that check.
+            with tempfile.TemporaryDirectory() as fetch_tmp:
+                fetch_out = Path(fetch_tmp) / 'fetch-out'
+                assert cmd_fetch(fetch_out) == 0
+                fetched_manifest = json.loads((fetch_out / 'manifest.json').read_text(encoding='utf-8'))
+                fetched_facts = json.loads((fetch_out / 'facts.json').read_text(encoding='utf-8'))
+                fetched_verify_errors = verify_snapshot(fetch_out)
         finally:
             fetch_url, load_spell_module = _original_fetch_url, _original_load_spell_module
             time.sleep = _original_sleep
@@ -1011,7 +1099,42 @@ def self_test():
         assert all(len(f['key']) <= FIELD_ID_LIMIT for f in spell_facts), spell_facts
         assert all(len(f['value']) <= FACT_VALUE_LIMIT for f in spell_facts), spell_facts
         assert fetched_manifest['captured_at'] == fetched_facts['captured_at']
-        assert verify_snapshot(fetch_out) == [], verify_snapshot(fetch_out)
+        assert fetched_verify_errors == [], fetched_verify_errors
+
+        # A snapshot directory holds exactly manifest.json and facts.json (P2 r4121003204):
+        # a raw page dump alongside them must fail even though both required files are valid.
+        _write_snapshot(directory, base_manifest, base_facts)
+        (directory / 'raw.html').write_text('<html>full page text</html>', encoding='utf-8')
+        errors = verify_snapshot(directory)
+        (directory / 'raw.html').unlink()
+        assert any('found extra' in e and 'raw.html' in e for e in errors), errors
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)  # clean again
+
+        # Closed schema (P2 r4121003195): unrecognized top-level/page/fact keys are rejected, not
+        # silently ignored by every size/ratio check that only reads fields it knows by name.
+        manifest = copy.deepcopy(base_manifest)
+        manifest['raw_pages'] = {'controls': 'z' * 100_000}
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('manifest.json has unexpected top-level key' in e for e in errors), errors
+
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['raw_pages'] = {'controls': 'z' * 100_000}
+        _write_snapshot(directory, base_manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any('facts.json has unexpected top-level key' in e for e in errors), errors
+
+        manifest = copy.deepcopy(base_manifest)
+        manifest['pages'][0]['raw_html'] = 'z' * 100_000
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('has unexpected key' in e for e in errors), errors
+
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['facts'][0]['raw_html'] = 'z' * 100_000
+        _write_snapshot(directory, base_manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any('fact has unexpected key' in e for e in errors), errors
 
         missing = Path(tmp) / 'missing'
         assert verify_snapshot(missing) == [f'{missing}: missing manifest.json']
