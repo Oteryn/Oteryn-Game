@@ -644,12 +644,11 @@ pub mod accepted {
     /// depend on `world_runtime`.
     pub const DOOR_OWNER_CAPABILITY: &str = "oteryn:runtime.capability.local-object-transition";
     /// Origin (x, y, floor), World bounds (min_x, min_y, max_x_exclusive, max_y_exclusive), floors.
-    /// The envelope is one column wider than the four placed cells (#162 A4-a): every placed cell
-    /// still fills exactly this bijective set, and the one unplaced free cell lets qualification
-    /// prove "the door cell must be adjacent" as a distinct in-bounds refusal from "outside the
-    /// World".
+    /// This is the accepted envelope for exactly the four placed cells (#162 A4-a): three room
+    /// cells plus the one door cell. It is not grown to make refusal tests distinct; a door
+    /// placed off this frame is refused by the same envelope check as any other placement.
     pub const ORIGIN: (i32, i32, i16) = (0, 0, 0);
-    pub const BOUNDS: (i64, i64, i64, i64) = (0, -1, 3, 1);
+    pub const BOUNDS: (i64, i64, i64, i64) = (0, -1, 2, 1);
     pub const FLOORS: [i16; 1] = [0];
     pub const RELOCATION: (&str, &str, &str) = (
         "oteryn:relocation/entry-east-return",

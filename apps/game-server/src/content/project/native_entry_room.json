@@ -152,7 +152,7 @@
     "bounds": {
       "min_x": 0,
       "min_y": -1,
-      "max_x_exclusive": 3,
+      "max_x_exclusive": 2,
       "max_y_exclusive": 1
     },
     "floors": [

@@ -104,24 +104,6 @@ impl ScopeContentGenerationFence {
         }
     }
 
-    /// Native-entry source (#162 comment 5865792400, owner decision A4-a, task
-    /// OTV2-20260928-native-entry-door-m2a): the fence for binding the qualified native
-    /// entry-room's own door is always derived directly from that same door content — there is
-    /// exactly one native entry-room door, so no separately supplied scope-generation owner is
-    /// needed to prove this is the active generation; `validate_candidate` still runs unchanged.
-    #[must_use]
-    fn for_native_entry_door(
-        scope: RuntimeScopeRefV1,
-        scope_generation: ScopeOwnershipGeneration,
-        content_generation: ReferenceContentGeneration,
-    ) -> Self {
-        Self {
-            scope,
-            scope_generation,
-            content_generation,
-        }
-    }
-
     fn validate_candidate(
         &self,
         scope: RuntimeScopeRefV1,
@@ -604,9 +586,6 @@ pub(crate) struct LocalObjectRuntime {
 }
 
 impl LocalObjectRuntime {
-    /// Reference source (unchanged behavior): binds against an externally supplied, externally
-    /// fenced `CanonicalReferencePlayableContent` — the caller (this scope's current owner) proves
-    /// which generation is active.
     #[allow(clippy::too_many_arguments)]
     pub(crate) fn bind(
         content: &CanonicalReferencePlayableContent,
@@ -637,88 +616,7 @@ impl LocalObjectRuntime {
         }
         let content_generation = ReferenceContentGeneration::from_content(content)?;
         active_content.validate_candidate(scope, scope_generation, &content_generation)?;
-        let (placement, states) = Self::resolve_local_object_placement(content, placement_key)?;
-        Self::construct(
-            content,
-            content_generation,
-            scope,
-            scope_generation,
-            placement,
-            states,
-            incarnation,
-            transition_keys,
-        )
-    }
 
-    /// Native-entry source (#162 comment 5865792400, owner decision A4-a, task
-    /// OTV2-20260928-native-entry-door-m2a): binds against the qualified native entry-room's own
-    /// door content (`NativeEntryProject::door`). There is exactly one native entry-room door, so
-    /// the content generation and its fence are always derived directly from that same door
-    /// content passed in here — never a caller-supplied, potentially foreign fence. Every other
-    /// check (profile identity, world/scope match, real semantic re-linking, placement/state/
-    /// transition/capability/policy-guard validation) is the same shared logic `bind` uses for the
-    /// Reference source; neither path fakes `REFERENCE_PLAYABLE_CONTENT_PROFILE_ID` or skips
-    /// semantic validation.
-    #[allow(clippy::too_many_arguments)]
-    pub(crate) fn bind_native_entry_door(
-        door: &CanonicalReferencePlayableContent,
-        scope: RuntimeScopeRefV1,
-        scope_generation: ScopeOwnershipGeneration,
-        placement_key: &PlacementKey,
-        incarnation: u64,
-        transition_keys: &[TransitionKey],
-    ) -> Result<Self, WorldRuntimeError> {
-        validate_reference_semantic_core(door)?;
-        if incarnation == 0 {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "runtime incarnation must be non-zero",
-            ));
-        }
-        if door.profile_revision.as_str() != REFERENCE_PLAYABLE_CONTENT_PROFILE_ID
-            || door.capability_profile.as_str() != REFERENCE_PLAYABLE_CAPABILITY_PROFILE
-        {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "Content profile is not the protected Reference playable successor",
-            ));
-        }
-        if scope.world_id() != door.world_id {
-            return Err(WorldRuntimeError::InvalidBinding(
-                "runtime scope world differs from Content world",
-            ));
-        }
-        let content_generation = ReferenceContentGeneration::from_content(door)?;
-        let active_content = ScopeContentGenerationFence::for_native_entry_door(
-            scope,
-            scope_generation,
-            content_generation.clone(),
-        );
-        active_content.validate_candidate(scope, scope_generation, &content_generation)?;
-        let (placement, states) = Self::resolve_local_object_placement(door, placement_key)?;
-        Self::construct(
-            door,
-            content_generation,
-            scope,
-            scope_generation,
-            placement,
-            states,
-            incarnation,
-            transition_keys,
-        )
-    }
-
-    /// Per-source validation shared by both `bind` and `bind_native_entry_door`: resolves the
-    /// exactly-one placement named by `placement_key`, its LocalObject definition and declared
-    /// state vocabulary from `content`.
-    fn resolve_local_object_placement<'a>(
-        content: &'a CanonicalReferencePlayableContent,
-        placement_key: &PlacementKey,
-    ) -> Result<
-        (
-            &'a crate::content::PlacementRef,
-            Vec<LocalObjectStateDefinition>,
-        ),
-        WorldRuntimeError,
-    > {
         let mut placements = content
             .placements
             .iter()
@@ -762,23 +660,7 @@ impl LocalObjectRuntime {
                 ));
             }
         };
-        Ok((placement, states))
-    }
 
-    /// Shared private constructor: every source resolves its own placement/definition/states
-    /// (`resolve_local_object_placement`) and its own content-generation fence, then converges
-    /// here for the rest of `bind`'s original behavior, unchanged.
-    #[allow(clippy::too_many_arguments)]
-    fn construct(
-        content: &CanonicalReferencePlayableContent,
-        content_generation: ReferenceContentGeneration,
-        scope: RuntimeScopeRefV1,
-        scope_generation: ScopeOwnershipGeneration,
-        placement: &crate::content::PlacementRef,
-        states: Vec<LocalObjectStateDefinition>,
-        incarnation: u64,
-        transition_keys: &[TransitionKey],
-    ) -> Result<Self, WorldRuntimeError> {
         // D38 W1/W2: generalized beyond the fixed Open/Close pair to an arbitrary, non-empty set
         // of pre-authored transitions (TRANSFORM/CREATE/REMOVE/RETAG are all just "a transition
         // this runtime may invoke" — see `LocalObjectOperation`). Each bound transition still gets
@@ -2011,90 +1893,6 @@ mod tests {
         assert_eq!(closed.state(), "oteryn:reference.state.closed");
         assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
         assert!(!runtime.blocking_cells().is_empty());
-        Ok(())
-    }
-
-    // #162 comment 5865792400, owner decision A4-a, task OTV2-20260928-native-entry-door-m2a:
-    // the native entry-room's one usable door, bound through the native-entry source function.
-    const NATIVE_ENTRY_DOOR_PLACEMENT: &str = "oteryn:cell/entry-door";
-    const NATIVE_ENTRY_DOOR_OPEN: &str = "oteryn:transition/entry-door-open";
-    const NATIVE_ENTRY_DOOR_CLOSE: &str = "oteryn:transition/entry-door-close";
-
-    fn native_entry_door_content(
-        world_id: crate::foundation::WorldId,
-    ) -> Result<CanonicalReferencePlayableContent, WorldRuntimeError> {
-        let documents = crate::content::native_entry_room_documents(world_id)
-            .map_err(|_error| fixture_error("native entry room documents"))?;
-        let snapshot = crate::content::ProjectSnapshot::new(
-            documents.documents().clone(),
-            crate::content::native_entry_first_slice_limits().project,
-        )
-        .map_err(|_error| fixture_error("native entry snapshot"))?;
-        let project = snapshot
-            .parse_native_entry()
-            .map_err(|_error| fixture_error("native entry qualify"))?;
-        Ok(project.door().clone())
-    }
-
-    #[test]
-    fn native_entry_door_binds_opens_closes_and_is_blocking_only_when_closed()
-    -> Result<(), WorldRuntimeError> {
-        // `authority()` fixes its scope to `decode_world(1)`, so the door must be qualified for
-        // that same WorldId to bind into it.
-        let door = native_entry_door_content(decode_world(1)?)?;
-        let (authority, session, scope) = authority(60, 8, 1, 1)?;
-        let scope_generation = ScopeOwnershipGeneration::new(1)
-            .map_err(|_error: GenerationError| fixture_error("scope generation"))?;
-
-        let mut runtime = LocalObjectRuntime::bind_native_entry_door(
-            &door,
-            scope,
-            scope_generation,
-            &PlacementKey::new(NATIVE_ENTRY_DOOR_PLACEMENT)?,
-            1,
-            &[
-                TransitionKey::new(NATIVE_ENTRY_DOOR_OPEN)?,
-                TransitionKey::new(NATIVE_ENTRY_DOOR_CLOSE)?,
-            ],
-        )?;
-        // Closed is the authored initial state, and closed is the door's blocking collision.
-        assert_eq!(
-            runtime.state_key().as_str(),
-            "oteryn:reference.state.closed"
-        );
-        assert!(!runtime.blocking_cells().is_empty());
-        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
-
-        let mut ingress = CommandIngress::new();
-        let empty = BTreeSet::new();
-        let open = command(
-            &runtime,
-            session,
-            1,
-            1,
-            LocalObjectOperation::new(TransitionKey::new(NATIVE_ENTRY_DOOR_OPEN)?),
-            0,
-        )?;
-        let opened = runtime.apply(&authority, &open, &mut ingress, &empty)?;
-        assert_eq!(opened.disposition(), DISPOSITION_COMMITTED);
-        assert_eq!(opened.state(), "oteryn:reference.state.open");
-        // Open is not blocking.
-        assert!(runtime.blocking_cells().is_empty());
-
-        let close = command(
-            &runtime,
-            session,
-            2,
-            1,
-            LocalObjectOperation::new(TransitionKey::new(NATIVE_ENTRY_DOOR_CLOSE)?),
-            1,
-        )?;
-        let closed = runtime.apply(&authority, &close, &mut ingress, &empty)?;
-        assert_eq!(closed.disposition(), DISPOSITION_COMMITTED);
-        assert_eq!(closed.state(), "oteryn:reference.state.closed");
-        // Closed again is blocking again.
-        assert!(!runtime.blocking_cells().is_empty());
-        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
         Ok(())
     }
 

@@ -97,7 +97,7 @@ fn state() -> Value {
         "declarations": [{"kind": "Area",
             "identity": {"key": "oteryn:area/entry-room", "revision": REV}, "fields": []}],
         "worlds": [{"key": "oteryn:entry.world", "world_id": WORLD_ID, "coordinate_frame": FRAME,
-            "bounds": {"min_x": 0, "min_y": -1, "max_x_exclusive": 3, "max_y_exclusive": 1},
+            "bounds": {"min_x": 0, "min_y": -1, "max_x_exclusive": 2, "max_y_exclusive": 1},
             "floors": [0]}],
         "placements": [
             placement("oteryn:cell/entry-start", 0, 0),
@@ -711,19 +711,14 @@ fn door_admission_refuses_every_invariant_mutation() {
         }),
         "exactly one door",
     );
-    // Placements are written key-sorted, so "oteryn:cell/entry-door" (index 0) sorts before
-    // east/north/start.
+    // Not adjacent / off the room frame: the accepted World envelope exactly fits the four placed
+    // cells (`accepted::BOUNDS`, not grown to make refusal tests distinct — #162 A4-a cleanup), so
+    // every other in-bounds coordinate is already occupied by a room cell. A door moved off that
+    // frame is refused by the generic v2 placement/World bounds check before native-entry's own
+    // door-adjacency check would even run; that adjacency check itself remains structurally
+    // exercised by every passing admission (the accepted door cell must satisfy it). Placements
+    // are written key-sorted, so "oteryn:cell/entry-door" (index 0) sorts before east/north/start.
     const DOOR_PLACEMENT_INDEX: usize = 0;
-    // Not adjacent: (2, -1) is inside the World envelope (which is one column wider than the
-    // four placed cells, see `accepted::BOUNDS`) but is not a unit step from any room cell.
-    refuses(
-        &edit("worlds/world.json", |w| {
-            w["placements"][DOOR_PLACEMENT_INDEX]["x"] = json!(2);
-        }),
-        "must be adjacent",
-    );
-    // Off the room frame: outside the World envelope entirely (refused by the generic v2
-    // placement/World bounds check before native-entry's own door-specific checks even run).
     refuses(
         &edit("worlds/world.json", |w| {
             w["placements"][DOOR_PLACEMENT_INDEX]["x"] = json!(5);
