@@ -6,7 +6,9 @@ its provenance, and a remaining conflict goes to the owner. TibiaWiki (Fandom) `
 vocation the gain per level and the total from level 8 for hitpoints, mana and capacity; below level 8
 every character has the Rookie values. `Soul Point` states the soul maximum per account type and the soul
 regeneration rate of regular and promoted characters. Canary and Crystal add hitpoint and mana
-regeneration. Only these facts are recorded, with each Fandom revision id and content SHA-256.
+regeneration. Owner decisions of 2026-09-28: the soul maximum follows the account type as the wiki states
+(D5a; the account type is Platform-owned), and where Canary and Crystal differ on regeneration the Canary
+15.30 branch decides (D5b). Only these facts are recorded, with each Fandom revision id and content SHA-256.
 
 Usage:
     python vocation_vitals.py fetch --cache <dir>        # network: current Fandom Formulae and Soul Point
@@ -145,9 +147,8 @@ def build(formulae, soul_page, sources):
                     conflicts.append({'vocation': vocation, 'field': stat + '.per_level', 'wiki': per_level,
                                       name: int(gain), 'resolution': 'S3: the wiki decides.'})
         regen_ms = soul['regen_ms']['promoted' if vocation in PROMOTED else 'regular']
-        entry['soul'] = {'regen_ms': regen_ms, 'provenance': 'wiki:Soul Point',
-                         'max': {name: int(attrs[vocation]['soulmax']) for name, attrs in sources.items()
-                                 if 'soulmax' in attrs.get(vocation, {})}}
+        # Owner D5a (2026-09-28): the wiki decides; the maximum follows the account type, not promotion.
+        entry['soul'] = {'regen_ms': regen_ms, 'max': soul['max'], 'provenance': 'wiki:Soul Point (owner D5a)'}
         for name, attrs in sources.items():
             ticks = attrs.get(vocation, {}).get('gainsoulticks')
             if ticks is not None and int(ticks) != regen_ms:
@@ -160,19 +161,19 @@ def build(formulae, soul_page, sources):
             if len(set(present.values())) == 1:
                 regen[field] = next(iter(present.values()))
             elif present:
-                regen[field] = None
+                # Owner D5b (2026-09-28): where the sources differ, the Canary 15.30 branch decides (S14 tie rule).
+                regen[field] = present['canary']
                 conflicts.append({'vocation': vocation, 'field': field, **present,
-                                  'resolution': 'Open: Canary and Crystal differ and no wiki page states it '
-                                                '(S4); owner decision (SPELL-D5).'})
-        entry['regeneration'] = {**regen, 'provenance': 'sources (Canary and Crystal agree)'}
+                                  'resolution': 'Owner D5b: Canary 15.30 decides.'})
+        entry['regeneration'] = {**regen, 'provenance': 'sources: equal values, else Canary 15.30 (owner D5b)'}
         vocations[vocation] = entry
-    source_max = sorted({(v, e['soul']['max'].get('canary'), e['soul']['max'].get('crystal'))
-                         for v, e in vocations.items()})
     conflicts.append({'vocation': '*', 'field': 'soul.max', 'wiki': soul['max'],
-                      'sources': {v: {'canary': c, 'crystal': k} for v, c, k in source_max},
-                      'resolution': 'Open: the wiki keys the soul maximum on the account type, the sources on '
-                                    'promotion, and they disagree for the monk; owner decision (SPELL-D5).'})
-    return {'schema': 'OTERYN_VOCATION_VITALS_CANDIDATE/v1', 'decision': 'SPELL-D5 (#162 comment 5867161696)',
+                      'sources': {v: {name: int(attrs[v]['soulmax']) for name, attrs in sources.items()
+                                      if 'soulmax' in attrs.get(v, {})} for v in sorted(vocations)},
+                      'resolution': 'Owner D5a: the wiki decides; the maximum follows the account type, which '
+                                    'Platform owns.'})
+    return {'schema': 'OTERYN_VOCATION_VITALS_CANDIDATE/v1',
+            'decision': 'SPELL-D5 (#162 comment 5867161696); owner D5a and D5b of 2026-09-28',
             'rule': 'total(level) = rookie_total below rookie_until_level, else level_factor * level + offset',
             'wiki_sources': [wiki_source(formulae), wiki_source(soul_page)],
             'source_revisions': {name: f'{repo}@{rev} data/XML/vocations.xml'
