@@ -7,7 +7,7 @@ on:
     paths:
       - tools/reference-world-corridor-census/item_field_verification.py
       - tools/reference-world-corridor-census/item_field_verification_self_test.py
-      - docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json
+      - docs/agents/evidence/OTV2-20260927-content-world-item-field-verification.json
       - docs/agents/tasks/active/OTV2-20260922-content-world-item-field-verification-504.md
       - .github/workflows/item-content-verification.yml
   workflow_dispatch:

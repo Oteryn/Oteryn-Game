@@ -116,7 +116,7 @@ jobs:
             --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
             --output "$ROOT/field-verification.json" \
             --manifest-output "$ROOT/field-verification-manifest.json"
-          python - "$ROOT/field-verification-manifest.json" docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json <<'PY'
+          python - "$ROOT/field-verification-manifest.json" docs/agents/evidence/OTV2-20260927-content-world-item-field-verification.json <<'PY'
           import json
           import pathlib
           import sys

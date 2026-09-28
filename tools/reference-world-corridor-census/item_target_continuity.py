@@ -33,7 +33,7 @@ CURRENT_SOURCE_ID = "TIBIAWIKI_STRUCTURED"
 
 # Protected lineage after #770/#771.
 FIELD_VERIFICATION_MANIFEST_PATH = (
-    "docs/agents/evidence/OTV2-20260922-content-world-item-field-verification.json"
+    "docs/agents/evidence/OTV2-20260927-content-world-item-field-verification.json"
 )
 CURRENT_SOURCE_COLLECTOR_PATH = (
     "tools/reference-world-corridor-census/item_current_source_tibiawiki.py"
