@@ -2646,3 +2646,97 @@ fn transfer_cannot_exceed_the_stack_ceiling() -> TestResult {
         harness.cleanup().await
     })
 }
+
+/// A new TRANSFER's same-transaction audit outbox row must start pending and
+/// unpublished (`publication_state = 1`, `published_at IS NULL`); only the
+/// publisher's later acknowledgement may advance it. A forged commit whose
+/// outbox row is inserted already published -- `publication_state = 2` with
+/// a non-NULL `published_at` at or after `occurred_at` -- every other field
+/// genuine, captured by the real triggers, must be rejected.
+#[test]
+fn transfer_audit_event_must_start_pending() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "auditpending").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let source = harness.mint(&authority, STONE, 1).await?;
+        assert!(harness.on_ground(source).await?);
+
+        let uuid = uuid_text;
+        let character = uuid(id(CHARACTER));
+        let world = uuid(id(WORLD));
+        let channel = uuid(id(CHANNEL));
+        let source_text = uuid(source);
+        let tx_id = uuid(id(232));
+        let event_id = uuid(id(233));
+        let statements = [
+            format!(
+                "INSERT INTO game_item_transfer_reservations VALUES \
+                 ('{character}', 1, '{character}', '{world}', '{channel}', \
+                   '{source_text}', 1, decode(repeat('ab',33),'hex'), '{tx_id}', '{event_id}', \
+                   1000, 1, 900)"
+            ),
+            // Every other field genuine, but the outbox row is inserted
+            // already published: publication_state = 2 and published_at
+            // (1000, at occurred_at) rather than the required pending
+            // publication_state = 1 with published_at IS NULL.
+            format!(
+                "INSERT INTO game_item_audit_outbox VALUES \
+                 ('{event_id}', '{tx_id}', 1, 1, 2, 1, \
+                   'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', '{source_text}', 1000, \
+                   7776001000, decode(repeat('ab',16),'hex'), \
+                   sha256(decode(repeat('ab',16),'hex')), 2, 1000)"
+            ),
+            format!(
+                "UPDATE game_item_instances SET last_transaction_id = '{tx_id}' \
+                   WHERE item_instance_id = '{source_text}' AND lifecycle = 1 AND quantity = 1"
+            ),
+            format!(
+                "DELETE FROM game_item_ground_locations WHERE item_instance_id = '{source_text}'"
+            ),
+            format!(
+                "INSERT INTO game_item_container_slots VALUES \
+                 ('{character}', '{source_text}', '{world}', '{tx_id}')"
+            ),
+            format!(
+                "INSERT INTO game_item_transfer_receipts \
+                   (game_session_id, command_id, character_id, intent_binding, transaction_id, \
+                    event_id, shape, source_item_instance_id, source_quantity_before, \
+                    source_quantity_after, occurred_at, envelope_sha256, committed_at) \
+                 VALUES \
+                 ('{character}', 1, '{character}', decode(repeat('ab',33),'hex'), '{tx_id}', \
+                   '{event_id}', 1, '{source_text}', 1, 1, 1000, \
+                   sha256(decode(repeat('ab',16),'hex')), 1000)"
+            ),
+        ];
+        let mut tx = harness.pool.begin().await?;
+        let applied: TestResult = async {
+            for statement in &statements {
+                sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            tx.commit().await?;
+            Ok(())
+        }
+        .await;
+        assert!(
+            applied.is_err(),
+            "a TRANSFER's audit outbox row inserted already published was accepted"
+        );
+        assert_eq!(harness.item_state(source).await?, (1, 1));
+        assert!(harness.on_ground(source).await?);
+        assert_eq!(harness.count("game_item_container_slots").await?, 0);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
