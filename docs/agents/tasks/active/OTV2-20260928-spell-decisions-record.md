@@ -85,6 +85,8 @@ complete this qualification itself.
   recovery) and P2 4120953421 (no shared index mapping). Both accepted. These are architect
   clarifications within the accepted verdicts: maximum only for a new actor, and a canonical
   `ProductionKey`-ordered index per content generation.
+- `bff9457`: Codex P2 4121150598 (vitals were still called session-local while a new session must
+  keep them). Accepted: vitals and cooldowns are runtime-actor-local and non-durable.
 - The successor head needs a fresh exact-head review.
 
 ## Context checkpoint
