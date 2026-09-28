@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-spell-decisions-record
 title: Record the accepted spell decisions SPELL-D1 to D6 and S6 to S10
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1089
 base_sha: 0f80b8c1ca70d50551141d627e5223e28c3233ff
 head_sha: null
 final_head_sha: null
@@ -80,11 +80,11 @@ complete this qualification itself.
 ## Context checkpoint
 
 ```yaml
-last_progress: edits prepared
-status: implementing
+last_progress: authored; PR #1089 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1089
 owner_action_required: null
 blocker: null
-next_action: apply after #1079 merges, validate, open PR, request exact-head review
+next_action: exact-head review and Merge Queue integration of #1089
 ```
