@@ -1,6 +1,6 @@
 """Transcribe the quest logs of Canary and CrystalServer into storyline quests with staged missions (D34).
 
-Usage: python ots_questlog.py --canary <opentibiabr/canary at 47dfd51f> --crystal <zimbadev/crystalserver at ff7ede59>
+Usage: python ots_questlog.py --canary <opentibiabr/canary at 04b83b51> --crystal <zimbadev/crystalserver at 9f5a72c6>
                               [--chests samples/chests] [--doors samples/doors]
                               [--coverage samples/quest-coverage-2026-09-27.json] [--out samples/questlog]
 

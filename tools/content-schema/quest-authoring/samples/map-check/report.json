@@ -8,7 +8,7 @@
       "path_basename": "otservbr.otbm"
     },
     "crystalserver": {
-      "source": "zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a :: data-global/world/world.otbm (gzip-compressed in the repository; decompressed before use)",
+      "source": "zimbadev/crystalserver@9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d :: data-global/world/world.otbm (gzip-compressed in the repository; decompressed before use)",
       "sha256": "f1080fbefdea904f1b7465b7479beb98080e74f5d27dfdfd8e38e69be2399726",
       "path_basename": "crystalserver_world.otbm"
     }
@@ -64,7 +64,7 @@
   },
   "interactions": {
     "note": "Anchors are positions a script names (targets, spawn points), so only their tile is checked. A trigger id (aid()/uid() registration) is searched on the whole raw map, then in Canary's startup tables, which stamp ids onto placed items; there the listed item must be on the listed tile.",
-    "anchors_with_tile_present": 313,
+    "anchors_with_tile_present": 332,
     "anchors_with_tile_missing": 0,
     "missing_tiles": [],
     "trigger_ids_registered": 349,
@@ -4535,7 +4535,7 @@
     ],
     "overlay_maps": {
       "note": "Overlay .otbm maps Canary's own Lua loads over the live world (at startup for world/custom, at runtime for quest/world-change overlays); scanned for whichever trigger ids check_interactions could not find on the raw map or in the startup tables. Pinned by the Canary checkout revision plus each file's own sha256 (not downloaded separately: they are part of the same git-tracked checkout the startup tables come from).",
-      "canary_checkout_revision": "47dfd51f",
+      "canary_checkout_revision": "04b83b51",
       "maps": [
         {
           "path": "data-otservbr-global/world/custom/otservbr-custom.otbm",
@@ -4759,7 +4759,7 @@
     },
     "runtime_script_resolution": {
       "note": "For ids the overlay maps did not resolve: grepped both servers' Lua for the literal runtime id-assignment calls (setActionId/setUniqueId/setAttribute with ITEM_ATTRIBUTE_ACTIONID|UNIQUEID). assigned_by_script cites the assigning file:line; crystalserver_only_script means the id is never registered anywhere in Canary at all (CrystalServer-only content, not a Canary gap); not_found_anywhere means neither server's Lua assigns it anywhere this check can see, so the registration is likely a dead script.",
-      "crystalserver_source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "crystalserver_source_revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
       "assigned_by_script": {
         "aid:5580": {
           "canary": [
