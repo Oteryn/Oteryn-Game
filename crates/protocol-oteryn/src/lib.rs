@@ -948,6 +948,9 @@ pub fn decode_snapshot_body(
             skip_field(body, &mut body_cursor, wire)?;
             continue;
         }
+        if wire != 2 {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
         let entry = bounded_length_delimited(
             body,
             &mut body_cursor,
@@ -2255,6 +2258,22 @@ mod tests {
     }
 
     /// FND02-STATE-DOMAINS-PER-SYNC: duplicate domain IDs rejected.
+    /// `SnapshotBody.domain` (field 1) must be length-delimited: a varint-typed field 1 followed by
+    /// bytes that happen to form a valid `StateDomainSnapshot` is refused, not decoded as a domain.
+    #[test]
+    fn snapshot_body_rejects_a_domain_field_with_a_non_length_delimited_wire_type() {
+        let payload = [0_u8];
+        let mut entry = Vec::new();
+        entry.extend_from_slice(&[0x08, 0x01, 0x10, 0x01, 0x18, 0x01, 0x22, 0x01]);
+        entry.extend_from_slice(&payload);
+        let mut body = vec![0x08, u8::try_from(entry.len()).unwrap_or(u8::MAX)];
+        body.extend_from_slice(&entry);
+        assert_eq!(
+            decode_snapshot_body(&body),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+    }
+
     #[test]
     fn snapshot_chunk_rejects_a_duplicate_domain_id() {
         assert_eq!(
