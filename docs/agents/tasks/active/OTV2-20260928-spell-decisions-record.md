@@ -97,6 +97,9 @@ complete this qualification itself.
 - Dequeued for a second conflict: #1093 (S17 and the SPELL-D5 owner sub-decisions D5a and D5b)
   changed the status line again. Main was merged in; the status line reads S13–S17 plus S6–S10,
   and the SPELL-D5 row records D5a and D5b with a pointer to the vitals sample.
+- `8a0f459`: Codex P2 4121543165 (D5a had no soul-maximum transition when premium changes).
+  Accepted: V1 has no active premium until the PROD-ENTITLEMENTS-01 consumer contract, so the soul
+  maximum is 100; that contract owns the re-evaluation point and the clamping rule.
 
 ## Context checkpoint
 
