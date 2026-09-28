@@ -4,10 +4,10 @@
 task_id: OTV2-20260928-dev-client-step-use-c2
 title: dev client C2 - step and USE commands, decoded results and deltas, stage=dev_client door scenario
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1166
 allocation_comment: control-plane allocation on #162 (alias "impl interaction")
 base_branch: main
 branch: claude/dev-client-step-use-c2
@@ -165,12 +165,12 @@ other than `qualification.rs`, registries and proto files, `wp5_s3b/run.sh`: unc
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation and local validation complete; PR to be opened
-status: implementing
+last_progress: implementation and local validation complete; PR #1166 opened
+status: ready
 branch: claude/dev-client-step-use-c2
-pr: null
+pr: 1166
 final_head_sha: the frozen final head of the PR
 owner_action_required: null
 blocker: null
-next_action: open the PR, bind its number, freeze, hand off to the control plane
+next_action: await required checks and independent review on PR #1166
 ```
