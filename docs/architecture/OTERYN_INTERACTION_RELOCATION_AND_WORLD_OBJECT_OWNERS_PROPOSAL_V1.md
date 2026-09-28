@@ -1482,3 +1482,267 @@ not this architecture decision.
    decision: accept or supersede the recommended `revert_after` progression option and supply the
    exact delta §7 names — including, if no existing scope cadence is proven, the scope's own step
    driver itself. CW4 then adds `revert_after` on top of the already-shipped operations.
+
+## 9. Attribute-bearing object state: teleporter destination/interaction bindings — CANDIDATE
+
+- DecisionStatus: CANDIDATE. The owner decided §7's open decision 3 `YES` (issue #162, 2026-09-28):
+  supporting attribute-bearing object state is needed for the playable path. This section is the
+  minimal design that makes it admissible; it is not itself owner-accepted, and the owning lane
+  (CW3 Content-model linker for the authoring-side shape, CW4/scope-runtime for `bind`/`prepare`)
+  still implements and may refine the exact mechanics against real code.
+
+### Problem
+
+Under §7 as it stands (Round 16/17/19), `revert_after_ms` is admissible only on a transition whose
+full effect is modeled by `LocalObjectStateDefinition`'s `key`+`collision` pair
+(`apps/game-server/src/content/reference_playable.rs` ~805-813) — exactly what
+`PreparedMutation::Publish` restores (`next_state`/`next_revision`/`next_blocking`,
+`apps/game-server/src/world_runtime.rs` ~1150-1159, re-verified this task, unchanged). A `map_item`
+action that also carries `destination`, `revert_destination` or `interaction` is rejected fail-closed
+at authoring/lowering, because nothing in the runtime model can apply or revert those values. Five
+authored samples are rejected under this rule today (re-verified this task, exact lines):
+
+- `tools/content-schema/encounter-authoring/samples/the_lord_of_the_lice/encounter.json` lines 58-75:
+  `map_item transform` (item `canary:item/1949` → `canary:item/22761`), `anchor: exit_teleporter`,
+  `destination: godbreaker` (line 71), `revert_after_ms: 60000` (line 73),
+  `revert_destination: ascendant_exit` (line 74).
+- `.../samples/the_duke_of_the_depths/encounter.json` lines 53-68: same shape, `destination:
+  reward_destination` (line 66), `revert_after_ms: 1200000` (line 67), `revert_destination:
+  warzone_exit` (line 68).
+- `.../samples/the_baron_from_below/encounter.json` lines 63-78 and
+  `.../samples/the_count_of_the_core/encounter.json` lines 63-78: identical shape to
+  `the_duke_of_the_depths`.
+- `.../samples/mazzinor/encounter.json` lines 47-57: `map_item create` (item `canary:item/28673`),
+  `at: death_position` (line 54), `revert_after_ms: 60000` (line 55),
+  `interaction: canary:interaction/4951` (line 56) — no `destination`.
+- `.../samples/gaz_haragoth/encounter.json` lines 123-132: same shape,
+  `interaction: canary:interaction/33542` (line 132).
+- `.../samples/cult_soul_remains/encounter.json` lines 53-62 and 70-79 (two occurrences): same shape,
+  `interaction: canary:interaction/5580` (lines 62, 79).
+
+`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144 (re-verified this task): "`map_item` | create/
+transform/remove ItemRef at an anchor or `at: death_position` ..., `revert_after_ms`; a teleporter
+carries `destination` and optionally `revert_destination` anchors; a revert restores the original
+item with its original attributes unless `revert_destination` overrides the destination; optional
+`effect`; optional `interaction`: the key of interaction-domain content that defines what the item
+does when used or stepped on (D29)."
+
+### Evidence
+
+- PROVEN (`apps/game-server/src/content/reference_playable.rs` `PlacementRef` ~1293-1306): a
+  `LocalObject` placement already carries one authored, per-placement, fail-closed-validated field —
+  `local_object_initial_state: Option<ProductionKey>` — distinct from the shared, content-level
+  `LocalObjectStateDefinition` vocabulary (`ReferenceDefinitionKind::LocalObjectStates`, shared by
+  every placement of the same definition). This is the existing precedent for "a fact that varies
+  per placement, not per shared content definition."
+- PROVEN (`validate_local_object_placement_state` ~2093-2124, called from `validate_placement`
+  ~2126-2132): `local_object_initial_state` is validated fail-closed both directions — a
+  `LocalObject` placement must have one from the definition's declared vocabulary; a non-`LocalObject`
+  placement must not have one. This is the existing precedent for validating a new per-placement
+  field's keys against the definition's own state vocabulary.
+- PROVEN (`LocalObjectRuntime::bind` ~590-750, re-verified this task): loads `local_object_initial_state`
+  and computes `collision_cells`/`initial_blocking` once, from the placement, before constructing
+  `Self` (~716-749); `LocalObjectRuntime` (~574-586) has no attribute field of any kind.
+  `transitions: BTreeMap<TransitionKey, TransitionBinding>` (~679-714) is already built per-placement,
+  scoped to exactly the `transition_keys` this one placement binds — not a content-level search.
+- PROVEN (`prepare` ~973-1050, `PreparedMutation`/`commit` ~1148-1183, re-verified this task):
+  `next_blocking` is derived fresh from `target_collision` (the target state's own authored collision
+  presence) inside `prepare`, never stored as separate mutable state — collision presence is a pure
+  function of `(states, target_state)`. `commit` (~1162-1183) sets `runtime.state`/`runtime.revision`/
+  `runtime.blocking_cells` and asserts the pre-commit values matched what `prepare` validated; it
+  touches nothing else.
+- PROVEN (`TransitionBinding` ~1334-1342): shared, content-level; `source_state`/`target_state`/
+  `normalized_intent_family` name the edge, `owner_capability`/`policy_guard_refs` gate it — no
+  per-invocation payload of any kind, and (§7 open decision 4, Codex 4120487841) cannot represent a
+  per-invocation `revert_after_ms` since different placements bind the same shared transition.
+- PROVEN (`ProductionKey::new` `apps/game-server/src/content/production.rs` ~148-166): a bounded,
+  namespaced (`namespace:local`) string key — `canary:interaction/4951` fits this shape directly.
+  `PlacementKey` (`reference_playable.rs` ~1167-1181) is itself a `ProductionKey` newtype — the
+  existing "a place in the world" reference type, matching §8 item 2 ("Anchors bind to world
+  placements").
+- PROVEN (`tools/content-schema/encounter-authoring/validate_encounter.py` ~188-201, evidence
+  unchanged from §7): `destination`/`revert_destination` are validated as anchor references
+  (`need('anchor', action[field], anchors, at)`), not free-form strings; `effect` is a sibling field
+  on the same action with no validation tying it to state, collision or the destination/interaction
+  vocabulary — nothing in the encounter format or the runtime model ties `effect` to object state.
+
+### Design
+
+1. **Where the attributes live: per-placement, keyed by state — not shared content, not
+   `TransitionBinding`.** A shared `LocalObjectStateDefinition` (one per content definition, reused
+   by every placement of that definition) cannot hold a single `destination`: the Depth trio and
+   `the_lord_of_the_lice` plausibly share the same content-level teleporter transform, each with its
+   *own* `destination`/`revert_destination`. `TransitionBinding` has the identical problem for
+   `interaction` and cannot represent a per-invocation duration either (open decision 4). The
+   precedent already in this content model — `local_object_initial_state`, evidence above — is
+   exactly "a per-placement fact, validated against the shared definition's vocabulary." Two new
+   fields on `PlacementRef` (`reference_playable.rs` ~1293-1306), mirroring it:
+   - `local_object_state_attributes: BTreeMap<ProductionKey, LocalObjectStateAttributes>` — this
+     placement's own attribute values, keyed by state; empty for the overwhelming majority of
+     `LocalObject` placements (doors, walls, anything state-only), which keep today's behavior
+     unchanged.
+   - a new struct, `LocalObjectStateAttributes { destination: Option<PlacementKey>, interaction:
+     Option<ProductionKey> }` — two optional fields, reusing `PlacementKey` (a place in the world,
+     evidence above) and `ProductionKey` (the same generic content-key type `TransitionKey`/
+     `OwnerCapabilityRequirement` already reuse rather than inventing a dedicated `InteractionKey`
+     type for one section of one document).
+   - `local_object_revert_after_ms: BTreeMap<TransitionKey, u64>` — this placement's own authored
+     revert duration, keyed by which of *this placement's own bound* transitions it applies to;
+     resolves open decision 4 directly (below).
+
+   Validated fail-closed at CW3 link time, mirroring `validate_local_object_placement_state` exactly
+   (~2093-2124): every key in `local_object_state_attributes` must be a state in the definition's
+   declared vocabulary; every key in `local_object_revert_after_ms` must be one of this placement's
+   own bound `TransitionKey`s; a non-`LocalObject` placement must carry neither (same "must not
+   carry" half of the existing check). `destination`'s `PlacementKey`, if present, must resolve to a
+   real placement in the same content — the same existence check `unique_transition`
+   (`world_runtime.rs` ~1058-1075) already performs for a bound `TransitionKey`, applied to a
+   placement reference instead.
+
+2. **How `prepare`/`Publish` carry and apply them: they don't need to — attributes are a pure
+   read of `(state_attributes, current state)`, exactly like collision presence already is.**
+   `LocalObjectRuntime::bind` (~590-750) loads both new maps once from the placement, in the same
+   pass as `local_object_initial_state`/`collision_cells` (~716-749), as two new immutable fields on
+   `LocalObjectRuntime` (~574-586): `state_attributes: BTreeMap<ProductionKey,
+   LocalObjectStateAttributes>`, `transition_revert_after_ms: BTreeMap<TransitionKey, u64>`. Neither
+   is ever mutated after `bind` — attributes are a pure function of *which state the object is in*,
+   never separately tracked mutable state, the same relationship `target_collision` already has to
+   `self.states`/`transition.target_state` inside `prepare`. Concretely: **`PreparedMutation::Publish`
+   needs no new field, and `commit` (~1162-1183) needs no new line.** `commit` already sets
+   `runtime.state = next_state`; a caller reads the object's current attributes through a new
+   accessor, `fn attributes(&self) -> Option<&LocalObjectStateAttributes>` (mirroring `state_key()`/
+   `collision_cells()`, ~767-785), which does `self.state_attributes.get(&self.state)`. Attributes
+   ride the existing state-transition commit path for free; this is the smallest possible extension,
+   not a second, parallel payload-application mechanism next to `PreparedMutation`.
+
+3. **How the inverse restores them, including `revert_destination` semantics (encounter-format line
+   144).** The revert is the bound inverse `TransitionKey` firing through the *same* `prepare`/
+   `commit` path as any other operation (§7 already establishes the revert as "the scope runtime's
+   own later operation," never a distinct mechanism). Once it commits, `runtime.state` becomes the
+   original `source_state`, and `attributes()` returns `state_attributes[source_state]` — whatever
+   *this placement* authored for that state, unchanged since `bind`. This is exactly line 144's
+   default case ("a revert restores the original item with its original attributes"): no
+   runtime-level "restore" step exists or is needed, because the source state's own attributes are
+   already sitting in the placement's static table. `revert_destination` is resolved entirely at CW3
+   lowering time, *before* `bind` ever runs: lowering sets
+   `local_object_state_attributes[source_state].destination = Some(revert_destination)` — overriding
+   whatever the "natural" original destination would otherwise have been (including `None`, as for
+   `the_lord_of_the_lice`'s sealed item `1949`, which has no destination of its own before this
+   transform) — as part of building the placement's one flat attribute table. By the time the
+   runtime loads it, "restore the original" and "apply the override" are already the same fact; no
+   lifecycle-record field, override-application step or per-firing branch is needed to represent the
+   distinction line 144 draws.
+
+4. **How the Round 17/19 lowering rejection is lifted for exactly these shapes.** The
+   authoring/lowering rejection (§7, evidence above: `validate_encounter.py`'s `map_item` block,
+   offline; no production lowering step exists yet either) now admits a `map_item` action carrying
+   `revert_after_ms` together *only* with `destination` (optionally with `revert_destination`) or
+   *only* with `interaction`, lowering it into exactly the fields above:
+   - `transform`/`create` with `destination` (+ optional `revert_destination`):
+     `local_object_state_attributes[target_state].destination = Some(destination)`; if
+     `revert_destination` is present, also
+     `local_object_state_attributes[source_state].destination = Some(revert_destination)`; and
+     `local_object_revert_after_ms` gets an entry for the invoked `TransitionKey` = `revert_after_ms`.
+   - `create` with `interaction`: `local_object_state_attributes[target_state].interaction =
+     Some(interaction)`; and `local_object_revert_after_ms` gets the same entry for the invoked
+     `TransitionKey`.
+
+   `effect` (evidence above: a sibling field with no state/collision/destination/interaction tie in
+   either the encounter format or the runtime model) is presentational and stays entirely outside the
+   world-object overlay model — its presence on `the_lord_of_the_lice`'s action does not affect this
+   design and is not lowered into `LocalObjectStateAttributes`. Any authored `map_item` action
+   carrying `revert_after_ms` together with a non-state attribute *other than* `destination`,
+   `revert_destination` or `interaction` stays rejected fail-closed exactly as §7 already specifies —
+   PLAYABLE_FIRST: this section names exactly the two attribute shapes the playable path needs, not a
+   generic attribute system.
+
+5. **Open decision 4, resolved: `revert_after_ms` and the inverse-selection metadata live on the
+   placement, not the shared `TransitionBinding`.** `local_object_revert_after_ms`
+   (design point 1) is keyed by `TransitionKey` *per placement*, directly answering Codex's
+   4120487841 concern that a single shared `TransitionBinding` field cannot represent different
+   invocations carrying different or no duration — different placements sharing the same
+   content-level transition each author their own entry, or none. The inverse-uniqueness check §7
+   already specifies (exactly one bound inverse transition, matching `source_state`/`target_state`/
+   `normalized_intent_family`) now runs scoped to *this placement's own* `transitions` map
+   (`bind` ~679-714, already built per-placement) for every key present in
+   `local_object_revert_after_ms`, instead of a content-level search across every `TransitionBinding`
+   — a placement only needs an inverse among the specific transitions *it* binds, which simplifies,
+   not complicates, the search §7 originally envisioned.
+
+6. **The lifecycle-record fields added: none.** The round-14 lifecycle record's existing field list
+   (§7 "Exact delta," "Lifecycle record: complete field list") already stores exactly what firing
+   needs to reach `prepare` again — `PlacementKey`/`incarnation`/`content_generation`/inverse
+   `TransitionKey`/expected state and revision. Attributes are re-derived fresh, at firing time, from
+   the *same* bind-time-loaded `state_attributes` table the original operation used, keyed by
+   whichever state `prepare` lands on (design point 2); nothing about an attribute value is
+   scheduling-time-dynamic, so nothing needs to be captured on the record at scheduling time and
+   carried forward — it is placement-static, fixed since `bind`, for both the forward direction and
+   (via the lowering-time bake-in, design point 3) the revert direction. The field list's `Deadline`
+   row ("Source at scheduling time") is *clarified*, not extended: `Deadline::after(clock,
+   revert_after_ms)` now names its concrete source as
+   `self.transition_revert_after_ms.get(&transition_key)` (design point 5) in place of the
+   previously-unresolved "`TransitionBinding` or
+   the lowered operation occurrence."
+
+### PLAYABLE_FIRST scoping
+
+This design adds exactly: two optional fields on `PlacementRef` (`local_object_state_attributes`,
+`local_object_revert_after_ms`); one new two-field struct (`LocalObjectStateAttributes`); two new
+immutable fields on `LocalObjectRuntime` loaded once at `bind`; and one new read accessor
+(`attributes()`). It adds no new field to `PreparedMutation::Publish`, no change to `commit`'s
+mutation logic, no change to `TransitionBinding` or `LocalObjectStateDefinition`'s existing shared
+shape, and no new lifecycle-record field. It does not implement teleportation, interaction
+invocation, or anything that *consumes* a `destination`/`interaction` value once an object commits
+into a state that carries one — reading `attributes()` and acting on it (moving a player, invoking
+interaction-domain content) is the existing, separate interaction/movement system's job, unaffected
+and unblocked by this design either way, exactly as it already was before this section. It does not
+generalize beyond `destination`/`revert_destination`/`interaction` — a third authored attribute kind,
+if one is ever needed, is a new decision, not something this shape auto-supports.
+
+### Exact test obligations
+
+- **A placement with no `local_object_state_attributes`/`local_object_revert_after_ms` entries
+  behaves identically to today (regression).** `attributes()` returns `None` for every state; `bind`,
+  `prepare`, `commit` and the existing revert design (§7) are unchanged for every currently-shipped
+  door/wall/toggle placement.
+- **`the_lord_of_the_lice`'s transform lowers and both directions reach `bind`.** The forward
+  transition's target state (`canary:item/22761`) carries `destination: Some(godbreaker)`; the
+  source state (`canary:item/1949`) carries `destination: Some(ascendant_exit)` (the
+  `revert_destination` override, not `None`) after lowering — a test asserting the source state's
+  post-lowering attribute is `None` (the "natural default," ignoring the override) must fail.
+- **`mazzinor`'s create lowers with `interaction` and no `destination`.** The target state carries
+  `interaction: Some(canary:interaction/4951)`, `destination: None`; the source (pre-create/removed)
+  state carries neither. A test asserting either attribute is required together must fail — the two
+  are independent optional fields.
+- **A non-covered attribute stays rejected.** A synthetic `map_item` action carrying `revert_after_ms`
+  together with any authored field other than `destination`/`revert_destination`/`interaction` must
+  still be rejected fail-closed at authoring/lowering (§7's existing obligation, unchanged by this
+  design).
+- **Different placements of the same shared transition carry independent durations.** Bind two
+  `LocalObjectRuntime`s at two different `PlacementKey`s that both invoke the same content-level
+  `TransitionKey`, one with `local_object_revert_after_ms` set and one without. Firing the first must
+  register a revert; the second, invoked identically, must register none — the duration is
+  placement-scoped, never read from `TransitionBinding` itself.
+- **Inverse-uniqueness validation is scoped to the placement's own bound transitions.** `bind` must
+  reject (`InvalidBinding`) a placement whose `local_object_revert_after_ms` names a `TransitionKey`
+  for which *this placement's own* bound `transitions` map contains zero or more than one matching
+  inverse (by `source_state`/`target_state`/`normalized_intent_family`), even if a matching inverse
+  exists elsewhere in the content's full transition set but is not bound at this placement.
+
+### Open items for the owning lane
+
+- The exact CW3 linker/validator code that performs the fail-closed key-subset checks above (this
+  document specifies the shape and the existing precedent it mirrors, not the linker's own
+  implementation).
+- The exact production lowering step that turns an authored `map_item` action into
+  `local_object_state_attributes`/`local_object_revert_after_ms` entries — no such step exists in
+  production yet (§7 evidence, unchanged); `validate_encounter.py` remains offline evidence of the
+  shape, not a wired boundary.
+- Whatever downstream system eventually reads `attributes()` to actually move a player to
+  `destination` or invoke `interaction`-domain content is a separate, already-existing
+  interaction/movement concern (GAME-INTERACTION-01, D29) — explicitly out of scope here, exactly as
+  it was before this section existed.
+- §7's other open decisions (retention/compaction, `IN_FLIGHT` reconciliation, ordinal-issuance
+  exhaustion, and any later addition to that list) are unaffected by this section — only open
+  decision 3 (this section) and open decision 4 (design point 5 above) are resolved here — and remain
+  the owning lane's, as written in §7 at whatever revision the owning lane implements against.
