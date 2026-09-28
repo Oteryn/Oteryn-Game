@@ -4,6 +4,9 @@
   "covers": {
     "SoulcatcherSummon": [
       "canary:creature/soulcatcher"
+    ],
+    "spell.soulcatcher summon": [
+      "canary:creature/soulcatcher"
     ]
   },
   "sources": [
@@ -20,6 +23,13 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_soulcatcher_summon.lua",
       "blob_sha1": "f3b5a4918d7588ccc4f5779eb64d9ea085483bb5"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/soulcatcher_summon.lua",
+      "blob_sha1": "a59ff17ae132ab4cb3c1b31f06bd92476fa839fc"
     }
   ],
   "entries": [
@@ -86,6 +96,45 @@
       "status": "mapped",
       "resolution": "A corrupted soul, forced, on (33358, 31187, 10).",
       "destination": "/encounter/rules/0/actions/0"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Soulcatcher is the soulcatcher participant.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        70
+      ],
+      "status": "mapped",
+      "resolution": "Soulcatcher casts the registered spell \"soulcatcher summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: while the Soulcatcher is poisoned or bleeding, a Corrupted Soul is created (forced) on the tile north of it; the teleport effect is cosmetic. The reference-date wiki (Fandom Soulcatcher rev 1116439) gives no abilities: this rule is Canary evidence. NEEDS VERIFICATION.",
+      "destination": "/encounter/rules/2"
     }
   ],
   "outcome_evidence": []

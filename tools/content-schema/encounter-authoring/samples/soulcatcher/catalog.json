@@ -9,6 +9,11 @@
       "family": "Creature",
       "key": "canary:creature/corrupted_soul",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/soulcatcher_summon",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

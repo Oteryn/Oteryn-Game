@@ -110,6 +110,7 @@ Encounter
 | `area_entered(anchor, role or player)` / `area_left` | zone crossing (`izcandarThink`) |
 | `phase_entered(phase)` | stage bosses |
 | `item_used(role, ItemRef)` | an `Action` whose `onUse` targets a creature of the role; the item is used up (D34); an optional `base_vocation` lets only a player of that base vocation use it (a promoted vocation counts as its base) |
+| `stepped_on(role, ItemRef)` | a `MoveEvent` stepin registered on the item: a creature of the role steps onto a tile holding it (D46) |
 | `encounter_started` / `encounter_reset` | lifecycle |
 
 ## 5. Conditions
@@ -117,6 +118,8 @@ Encounter
 `chance_percent`, `counter_compare(counter, op, value)`, `flag(name, value)`,
 `creature_present(role, anchor or near(role, radius, square or circle), present/absent)`, `in_anchor(role or killer, anchor)`,
 `killer_is_player`, `has_master(role, value)` (Canary skips summoned copies of a boss),
+`has_condition(role, conditions, present)` (D46: whether the role's creature has any of the listed conditions on itself:
+poison, fire, energy, bleeding, drown, freezing, dazzled or cursed),
 `summon_count(role, op, value)` (D45: how many live summons a creature of the role has; Shulgrax calls
 more only while it has fewer than 8),
 `health_percent(role, op, value)` (fractional allowed),
@@ -132,7 +135,7 @@ rules.
 
 | Action | Parameters |
 |---|---|
-| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, `offset_tiles(n)`: a random free tile within n tiles of the subject, `closest_free_tile`: the free tile nearest the subject (D34), or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent, or `remembered`: the health the spawned role had when it last left the fight, full the first time (D31)) |
+| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, `offset_tiles(n)`: a random free tile within n tiles of the subject, `closest_free_tile`: the free tile nearest the subject (D34), `relative(x, y)`: the tile at that offset from the subject on its floor, used even when occupied (D46; like `subject_position`, `offset_tiles` and `closest_free_tile` it needs a trigger fired by one creature), or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent, or `remembered`: the health the spawned role had when it last left the fight, full the first time (D31)) |
 | `spawn_per_player` | `players_in(anchor)`, `by_base_vocation` (a CreatureRef for each base vocation that gets one: knight, paladin, sorcerer, druid, monk), at, owner, health; each player in the area gets one creature of its base vocation, players of a vocation without an entry get none, and an optional `counter` is raised by the number spawned (D34) |
 | `remove` | role, `all_in(anchor)` (monsters only; players are never removed; `keep_summons` spares monsters with a master), or `triggering`: only the creature that fired the rule (D31) |
 | `transform` | role -> next stage, CreatureRef or `random_of` several CreatureRefs (uniform); health `keep_percent`/`keep_absolute`/`full` |
@@ -226,6 +229,7 @@ rules.
 | D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage; `remembered` spawn health (a boss that returns with the health it left with: Foreshock, Aftershock, Outburst); in a `heal_received` rule a `this_hit` `damage_modifier` scales that heal (`HealthForgotten` doubles heals as well as damage); a `non_player` source for `damage_taken` and `heal_received` (a change by another creature; one without an attacker is not included); an optional `slot` for `attacker_wears`, which with `killer_progress` also reads the healer in a `heal_received` rule (`AsurasMechanic`). Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
 | D34 | Seven more vocabulary additions, each added with the first event that needs it: a boss attribute change (the Hatred damage multiplier); damage scaled by elapsed time (King Zelos); shared life (the Magnor shards); a death explosion as an authored ability; a summon chosen by the vocation of the player; `move_lock`; and `chance_from_amount`. The fourteenth slice adds five of them: the time scaling, shared life, authored abilities, `move_lock` and `chance_from_amount`; it also fixes when `damage_accumulated` fires. The fifteenth adds the boss attribute change with the `item_used` trigger and the timer `add` it needs (the Sorrow of Burning Hatred). The seventeenth adds the per-vocation summon (`spawn_per_player` and the `item_used` `base_vocation`) with Count Vlarkorth. | Owner answer 2026-09-27 ("Wszystkie 7"). |
 | D45 | A monster spell whose Canary script summons creatures stays an ability of the monster, but the ability points to an encounter (`encounter`) instead of listing effects. The encounter's `ability_cast` rule does the summon, with the counters, flags and timers the script keeps. The `summon_count` condition is added for it. | Owner answer 2026-09-28 ("Tak, przez encountery"). |
+| D46 | Two vocabulary additions for the events that need them: a `stepped_on` trigger (a creature of a role steps onto a tile holding an item; the Heart of Destruction vortex) and a `has_condition` condition on a role's own conditions (the Soulcatcher's summon while poisoned or bleeding), with the `relative` position that event places its summon at. | Owner answer 2026-09-28 ("tak"). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
@@ -477,3 +481,13 @@ An eighteenth slice moves the remaining summon spells that the vocabulary alread
 83 encounters validate, 78 manifests resolve fully; the census rises from 1,553 to 1,555 (World Devourer and Mounted Thorn
 Knight). Plagirath and Lady Tenebris stay blocked by `plagirath bog` and `tenebris ultimate`; The Hunger waits for the
 vortex that lowers its summon counter, and Soulcatcher for a condition on the caster's own poison or bleeding.
+
+A nineteenth slice adds D46:
+
+| Event | Encounter | Notes |
+|---|---|---|
+| `hunger summon`, `movements_vortex_hunger` | `world_devourer` | While fewer than three Greeds are out and 15 s after the last, The Hunger calls a Greed next to itself. The Hunger or the World Devourer stepping on a closed vortex opens its vortex tile (it stays open: the vortex has no decay); a Greed stepping on an open vortex disappears and lowers both summon counters. The wiki describes walking the boss over the teleport and then the Greed. |
+| `soulcatcher summon` | `soulcatcher` | While the Soulcatcher is poisoned or bleeding, a Corrupted Soul on the tile north of it. The wiki gives no abilities for the Soulcatcher: Canary evidence, to be verified. |
+
+83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 139/139; the census rises from 1,555 to
+1,557 (The Hunger and Soulcatcher).

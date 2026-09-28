@@ -102,6 +102,48 @@
           "health": "full"
         }
       ]
+    },
+    {
+      "key": "soulcatcher_summons_a_corrupted_soul",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "soulcatcher",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/soulcatcher_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "has_condition",
+          "role": "soulcatcher",
+          "conditions": [
+            "poison",
+            "bleeding"
+          ],
+          "present": true
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/corrupted_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "relative": {
+              "x": 0,
+              "y": -1
+            }
+          },
+          "owner": "none",
+          "health": "full"
+        }
+      ]
     }
   ],
   "outcomes": []
