@@ -494,6 +494,96 @@
           "value": false
         }
       ]
+    },
+    {
+      "key": "world_devourer_summons_a_minion",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "world_devourer",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/devourer_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "devourer_summons",
+          "op": "<",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "one_of",
+          "branches": [
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/greed",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": {
+                    "offset_tiles": 1
+                  },
+                  "owner": "none",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/frenzy",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": {
+                    "offset_tiles": 1
+                  },
+                  "owner": "none",
+                  "health": "full"
+                }
+              ]
+            },
+            {
+              "weight": 1,
+              "actions": [
+                {
+                  "kind": "spawn",
+                  "creature": {
+                    "family": "Creature",
+                    "key": "canary:creature/disruption",
+                    "revision": "canary-47dfd51f"
+                  },
+                  "count": 1,
+                  "at": {
+                    "offset_tiles": 1
+                  },
+                  "owner": "none",
+                  "health": "full"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "kind": "counter",
+          "counter": "devourer_summons",
+          "operation": "add",
+          "value": 1
+        }
+      ]
     }
   ],
   "outcomes": [

@@ -16,7 +16,7 @@
     "catalog.json",
     "manifest.json"
   ],
-  "bundles": 1554,
+  "bundles": 1556,
   "monsters": [
     {"monster":"a_carved_stone_tile","file":"quests/the_inquisition/a_carved_stone_tile","sha256":"af2646bc6ed08ae80a5f008c447fa906b41e3b7ee41013aa8f9b481a3a688b13"},
     {"monster":"a_shielded_astral_glyph","file":"quests/kilmaresh/a_shielded_astral_glyph","sha256":"bedabb8604745b298eb6dbeb2303541e859a2c1d01b2fde064d31218a942124e"},
@@ -927,6 +927,7 @@
     {"monster":"morshabaal","file":"bosses/morshabaal","sha256":"73ff2dac9a07b20bbe7188ba541005167c657a41fa8135a2651c36c7b72d7a98"},
     {"monster":"mould_phantom","file":"quests/soul_war/normal_monsters/mould_phantom","sha256":"5931703e5025b3d57e5f3511a3c57e1b4746f06b63f68778c90d5b8c2945537b"},
     {"monster":"mountain_troll","file":"dawnport/mountain_troll","sha256":"1be502adfa3ed7325dd2eda9353a1df1cd66408311e16374eff3fd5b0eaa30a5"},
+    {"monster":"mounted_thorn_knight","file":"quests/forgotten_knowledge/bosses/mounted_thorn_knight","sha256":"83a38eccf018478d3f811bb5097ea08aa540139b5677c1e519022c2cac0be877"},
     {"monster":"mozradek","file":"quests/kilmaresh/mozradek","sha256":"922b457eb54bba2b1dbc0e1605069efa12dcee2b6dc166da59fc64026dc93dad"},
     {"monster":"mr_punish","file":"quests/pits_of_inferno/mr._punish","sha256":"f7dcd33e714333ea31c73d9daf102e8824b3989b57555f6fa7498cca9b29bff6"},
     {"monster":"muddy_earth_elemental","file":"quests/the_elemental_spheres/muddy_earth_elemental","sha256":"d98a402bb85176e8bec04bf7f11346747d829672c38acd8db2ea7e9537ff5f2b"},
@@ -1542,6 +1543,7 @@
     {"monster":"wolf","file":"mammals/wolf","sha256":"ffaa8731eea595f845365c5c918e73532c0dfb637c849ece65c25c8f31f1a3e4"},
     {"monster":"woodling","file":"dawnport/woodling","sha256":"3f171332d6c4c274eed11142e3a4f8dabf3cf8bd9eab1108370f523f7c64f9b2"},
     {"monster":"worker_golem","file":"constructs/worker_golem","sha256":"e72e84727e3d7e5ece8c476b9a0a4c997e8d8f824918449ce0531ad1f08888b0"},
+    {"monster":"world_devourer","file":"quests/heart_of_destruction/world_devourer","sha256":"01151456bff148daf2de7ba2909155b3a0f86a9485fd425a0b3d34c6476dbf13"},
     {"monster":"worm_priestess","file":"humanoids/worm_priestess","sha256":"e6110156bcf1eb714de07fd48fc0af95a1870744fdc0ef33bd903665acedc8d6"},
     {"monster":"wrath_of_the_emperor","file":"quests/wrath_of_the_emperor/wrath_of_the_emperor","sha256":"706398e2b588cd0f33b7f600f992355e266f78201c9a57264a0eadb09b362a51"},
     {"monster":"wyrm","file":"dragons/wyrm","sha256":"14f8286c42ebf5951ce3c2c59226f6a7e60e65982dbbec5e4bbcb5494974411f"},

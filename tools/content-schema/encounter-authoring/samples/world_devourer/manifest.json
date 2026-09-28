@@ -25,6 +25,9 @@
     ],
     "spell.destruction summon": [
       "canary:creature/the_destruction"
+    ],
+    "spell.devourer summon": [
+      "canary:creature/world_devourer"
     ]
   },
   "sources": [
@@ -132,6 +135,13 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/spells/monster/destruction_summon.lua",
       "blob_sha1": "67433c26331cb5791bbf1f49e88d1395c457b088"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/devourer_summon.lua",
+      "blob_sha1": "823dd5cb247832086cb73300bb465b62ca8ae452"
     }
   ],
   "entries": [
@@ -629,6 +639,41 @@
       "status": "mapped",
       "resolution": "removeDelay clears the flag after 15 s.",
       "destination": "/encounter/rules/12"
+    },
+    {
+      "source_index": 9,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "World Devourer is the world_devourer participant.",
+      "destination": "/encounter/participants/7/creatures"
+    },
+    {
+      "source_index": 9,
+      "source_lines": [
+        109
+      ],
+      "status": "mapped",
+      "resolution": "World Devourer casts the registered spell \"devourer summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 15,
+      "source_lines": [
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell: while the devourerSummon counter is below three, one of Greed, Frenzy or Disruption (uniform) appears on a random tile next to the World Devourer (x and y each -1..1) and the counter rises; the deaths of Frenzies and Disruptions already lower it. The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki (Fandom World Devourer rev 1086448) names all three minions in the fight.",
+      "destination": "/encounter/rules/13"
     }
   ],
   "outcome_evidence": [

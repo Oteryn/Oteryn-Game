@@ -44,6 +44,16 @@
       "family": "Creature",
       "key": "canary:creature/thorn_steed",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/thorn_summon",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Creature",
+      "key": "canary:creature/thorn_minion",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

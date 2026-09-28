@@ -7,6 +7,9 @@
     ],
     "HealthForgotten": [
       "canary:creature/lady_tenebris"
+    ],
+    "spell.tenebris summon": [
+      "canary:creature/lady_tenebris"
     ]
   },
   "sources": [
@@ -37,6 +40,13 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_healthchange_forgotten.lua",
       "blob_sha1": "909e4000d83c9d81a21087b8fb9d28ad9cc24618"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/tenebris_summon.lua",
+      "blob_sha1": "cb921639372a882ade7f128ccda5259b2fc44868"
     }
   ],
   "entries": [
@@ -154,6 +164,47 @@
       "status": "mapped",
       "resolution": "The same guard for heals.",
       "destination": "/encounter/rules/2/conditions/0"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Lady Tenebris is the lady_tenebris participant.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        120
+      ],
+      "status": "mapped",
+      "resolution": "Lady Tenebris casts the registered spell \"tenebris summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 4,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell creates a Shadow Fiend at a random tile of x 32906-32918, y 31594-31604 on floor 14, which says \"The shadow fiend revives!\"; the red magic effect of the spell's own combat is cosmetic. The reference-date wiki (Fandom Shadow Fiend rev 1116447) says it appears with Lady Tenebris.",
+      "destination": "/encounter/rules/3"
     }
   ],
   "outcome_evidence": [

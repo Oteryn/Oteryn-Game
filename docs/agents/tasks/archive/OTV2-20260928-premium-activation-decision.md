@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-premium-activation-decision
 title: "Premium activation decision (D69-D75)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1118
 base_sha: 117a89985c4f4d8af61fc018b542c745fc334d33
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 0dc516fa039a0224d6281eeb0e5caa99457a44a9
+final_head_sha: 0dc516fa039a0224d6281eeb0e5caa99457a44a9
+final_head_frozen_at: 2026-09-28T15:08Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -120,9 +120,9 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review, one repair generation with owner decision D76; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`943e17b0`).
 
 ## Excluded scope
 
@@ -133,14 +133,27 @@ finding_dispositions:
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1118 merged through the Merge Queue on 2026-09-28 as `943e17b0`.
+- Review: one Codex review of `2e43bf1` (one P1, promotion benefits after expiry), repaired in the
+  single repair generation `0dc516f` with owner decision D76; the owner decided to merge after green
+  CI (#162 comment 5872809392). Auto-merge was disabled once without a recorded reason and
+  re-enabled on the owner's instruction.
+- Protected-main readback: the decision, this record and the archived #1115 record on `943e17b0` are
+  byte-identical to the frozen head `0dc516f`.
+- Next allocations: PREM-1 (Game consumer fence); PREM-P needs a Platform lane.
+- Archived under `OTV2-20260928-vsl-combat-resource-rows-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1118 open
-status: validating
+last_progress: protected-integrated as 943e17b0; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 0dc516fa039a0224d6281eeb0e5caa99457a44a9
 pr: 1118
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1118
+next_action: null
 ```

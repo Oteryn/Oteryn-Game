@@ -138,7 +138,7 @@ impl ComposedFreshAdmission<'_, '_, '_> {
 
         let store = FreshAdmissionStore::from_root(self.root.clone());
         let session_id = lost.game_session_id;
-        let (session, now) = store
+        let (session, _) = store
             .current_session_at(session_id)
             .await
             .map_err(|_| Unavailable)?;
@@ -195,6 +195,14 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                 .map_err(|_| Rejected)
         };
         let verified: VerifiedRecoveryDurabilityFactsV2 = verify().await?;
+        // PREPARE is decided at a durable time sampled after verification, as COMMIT does with
+        // `final_now`: the verifier stamps `verified_at` from its own later clock sample and
+        // revalidation refuses any earlier `now`, so a sample taken before `verify()` loses the
+        // resume whenever a second boundary falls between the two.
+        let (_, now) = store
+            .current_session_at(session_id)
+            .await
+            .map_err(|_| Unavailable)?;
         let budget = store
             .recovery_budget(session_id, epoch)
             .await
