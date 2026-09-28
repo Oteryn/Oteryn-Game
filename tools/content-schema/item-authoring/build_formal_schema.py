@@ -1157,7 +1157,7 @@ def build_item_schema():
             "candidates": array(use("wikiEvidenceCandidate"), 2, unique=True),
             "wrap_target_id": integer(1),
             "wrap_target_primarytype": text(),
-            "rule": enum("take_able_dead_creature"),
+            "rule": enum("take_able_dead_creature", "owner_leftover_review_2026_09_28"),
             "name": text(),
         },
         (),
@@ -1181,7 +1181,10 @@ def build_item_schema():
             "engine primarytype resolved the family (one hop only, never chained, never "
             "through that id's own wiki fallback). 'owner_name_rule' "
             "(rule/name): the item's exact lower-cased engine name matched an explicit, "
-            "reviewed owner table keyed by 'rule'."
+            "reviewed owner table keyed by 'rule' -- 'take_able_dead_creature' (the "
+            "small dead-item carcass table) or 'owner_leftover_review_2026_09_28' (the "
+            "per-item leftover-family review of the ids that still stayed unresolved "
+            "after every other classifier, lowest priority of all)."
         ),
         allOf=[
             {

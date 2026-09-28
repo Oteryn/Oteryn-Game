@@ -1416,8 +1416,10 @@ def test_fluid_type_without_appearance_routes_non_item():
 def test_fluid_type_with_appearance_is_not_routed():
     # The exact same name WITH an appearance object is a real, physical Item candidate
     # (e.g. a "small flask of wine"-style entry): the fluid-type rule must never apply.
+    # A non-empty flag keeps this id out of the unrelated empty-client-object route
+    # (task #15) too, so this test stays focused on the fluid rule alone.
     sources = synthetic_sources(
-        "crystal", {472: {"name": "wine", "attrs": {}, "flags": {}}}
+        "crystal", {472: {"name": "wine", "attrs": {}, "flags": {"flags.take": True}}}
     )
     check(472 in sources["appearances"], "fixture must carry an appearance")
     _item, _deps, report = engine_items.convert_item(sources, 472)
@@ -1431,7 +1433,7 @@ def test_fluid_type_route_requires_items_xml_record():
     sources = synthetic_sources("crystal", {})
     sources["appearances"][473] = {
         "id": 473,
-        "flags": {},
+        "flags": {"flags.take": True},
         "frame_groups": [],
         "name": "water",
         "description": None,
@@ -1461,9 +1463,17 @@ def test_appearance_less_non_fluid_name_routes_no_client_appearance():
 def test_item_with_appearance_never_routed_no_client_appearance():
     # An item that genuinely HAS an appearances.dat object, and resolves nothing else,
     # stays plain `family_profile_unresolved` editorial backlog; task h only ever fires
-    # for an id with no appearance object at all.
+    # for an id with no appearance object at all. A non-empty flag also keeps this id
+    # out of the unrelated empty-client-object route (task #15).
     sources = synthetic_sources(
-        "crystal", {475: {"name": "some unresolved name", "attrs": {}, "flags": {}}}
+        "crystal",
+        {
+            475: {
+                "name": "some unresolved name",
+                "attrs": {},
+                "flags": {"flags.take": True},
+            }
+        },
     )
     check(475 in sources["appearances"], "fixture must carry an appearance")
     item, _deps, report = engine_items.convert_item(sources, 475)
@@ -1732,9 +1742,13 @@ def synthetic_wiki_fallback_entry(
 
 
 def convert_with_fallback(item_records, wiki_fallback, item_id=200, engine="crystal"):
-    # The wiki fallback only applies to entries with an appearances.dat object.
+    # The wiki fallback only applies to entries with an appearances.dat object. The
+    # default flag is non-empty so a record that stays unresolved in one of these tests
+    # is never coincidentally caught by the unrelated empty-client-object route (task
+    # #15); a test that cares about flags overrides this default explicitly.
     item_records = {
-        record_id: {"flags": {}, **record} for record_id, record in item_records.items()
+        record_id: {"flags": {"flags.take": True}, **record}
+        for record_id, record in item_records.items()
     }
     sources = synthetic_sources(engine, item_records)
     sources["wiki_family_fallback"] = wiki_fallback
@@ -3412,6 +3426,332 @@ def test_crystal_item_bindings_reject_duplicate_target_key():
         )
 
 
+def write_owner_decisions_file(path, decisions):
+    path.write_text(
+        json.dumps(
+            {
+                "schema": engine_items.OWNER_FAMILY_DECISIONS_SCHEMA,
+                "decisions": decisions,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+
+def owner_decision_entry(name, profile, reason="test reason", wiki_url=None, facts="f"):
+    return {
+        "name": name,
+        "profile": profile,
+        "reason": reason,
+        "source": {"wiki_url": wiki_url, "facts": facts},
+    }
+
+
+def convert_with_owner_decisions(
+    item_records, decisions, item_id=200, engine="crystal"
+):
+    # Mirrors `convert_with_fallback`'s non-empty default flag, for the same reason.
+    item_records = {
+        record_id: {"flags": {"flags.take": True}, **record}
+        for record_id, record in item_records.items()
+    }
+    sources = synthetic_sources(engine, item_records)
+    sources["owner_family_decisions"] = decisions
+    return engine_items.convert_item(sources, item_id)
+
+
+def test_owner_family_decisions_resolves_real_examples():
+    """A few real ids from the committed owner leftover-family table (task #15) map to
+    their approved profile through the real `convert_item` pipeline."""
+    valid_keys = {key for key, _basis in engine_items.build_identity_index().values()}
+    decisions = engine_items.load_owner_family_decisions(
+        engine_items.OWNER_FAMILY_DECISIONS_PATH, valid_keys
+    )
+    reverse_index = {
+        key: item_id
+        for item_id, (key, _basis) in engine_items.build_identity_index().items()
+    }
+    cases = [
+        ("oteryn:item.registry.i00003909", "red chair", "decoration"),
+        ("oteryn:item.registry.i00004151", "slain ghoul", "trash"),
+        ("oteryn:item.registry.i00037988", "bottle of raubritter lager", "fluid"),
+    ]
+    for key, name, expected_profile in cases:
+        check(key in decisions, f"{key} missing from the committed owner table")
+        item_id = reverse_index[key]
+        sources = synthetic_sources(
+            "crystal", {item_id: {"name": name, "attrs": {}, "flags": {}}}
+        )
+        sources["owner_family_decisions"] = decisions
+        item, _deps, report = engine_items.convert_item(sources, item_id)
+        check(item is not None, (key, report))
+        check(item["family_profile"] == expected_profile, (key, item))
+        check(item["family_profile_basis"] == "owner_name_rule", (key, item))
+        check(
+            item["family_profile_evidence"]
+            == {"rule": "owner_leftover_review_2026_09_28", "name": name},
+            (key, item),
+        )
+
+
+def test_owner_family_decisions_only_applies_to_unresolved_items():
+    # An item an engine attribute already resolves is never overridden by a matching
+    # owner-table entry for the same key/name.
+    key = engine_items.build_identity_index()[508][0]
+    decisions = {key: owner_decision_entry("red chair", "decoration")}
+    item, _deps, report = convert_with_owner_decisions(
+        {508: {"name": "red chair", "attrs": {"primarytype": "valuables"}}},
+        decisions,
+        item_id=508,
+    )
+    check(item["family_profile"] == "material_valuable", (item, report))
+    check("family_profile_basis" not in item, item)
+
+
+def test_owner_family_decisions_name_mismatch_is_ignored():
+    # The decision's own `name` guard must equal this exact item's own lower-cased
+    # engine name; a same-key decision for a different name never applies.
+    key = engine_items.build_identity_index()[509][0]
+    decisions = {key: owner_decision_entry("red chair", "decoration")}
+    item, _deps, report = convert_with_owner_decisions(
+        {509: {"name": "some other name", "attrs": {}}}, decisions, item_id=509
+    )
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_owner_family_decisions_never_outranks_wrap_target_or_dead_item():
+    # Both wrap-target inheritance and the dead-item rules rank above the owner table
+    # (see `convert_item`); a matching owner-table entry never overrides either.
+    key = engine_items.build_identity_index()[510][0]
+    decisions = {key: owner_decision_entry("wrapped chair", "trash")}
+    item, _deps, report = convert_with_owner_decisions(
+        {
+            510: {"name": "wrapped chair", "attrs": {"wrapableto": "90001"}},
+            90001: {"attrs": {"primarytype": "furniture"}},
+        },
+        decisions,
+        item_id=510,
+    )
+    check(item["family_profile"] == "decoration", (item, report))
+    check(item["family_profile_basis"] == "engine_wrap_target", item)
+
+    key = engine_items.build_identity_index()[467][0]
+    decisions = {key: owner_decision_entry("dead rat", "trash")}
+    item, _deps, report = convert_with_owner_decisions(
+        {467: {"name": "dead rat", "attrs": {}, "flags": {"flags.take": True}}},
+        decisions,
+        item_id=467,
+    )
+    check(item["family_profile"] == "material_valuable", (item, report))
+    check(item["family_profile_evidence"]["rule"] == "take_able_dead_creature", item)
+
+
+def test_owner_family_decisions_loader_fails_closed():
+    key = engine_items.build_identity_index()[100][0]
+    base_valid = {
+        "schema": engine_items.OWNER_FAMILY_DECISIONS_SCHEMA,
+        "decisions": {},
+    }
+    valid_entry = owner_decision_entry("some name", "trash")
+
+    def with_entry(entry):
+        return json.dumps({**base_valid, "decisions": {key: entry}})
+
+    cases = [
+        ("not a JSON object", "[]", "must be a JSON object"),
+        (
+            "unknown top-level key",
+            json.dumps({**base_valid, "extra": 1}),
+            "unknown top-level key",
+        ),
+        (
+            "missing 'decisions'",
+            json.dumps({"schema": base_valid["schema"]}),
+            "missing required key",
+        ),
+        (
+            "wrong schema",
+            json.dumps({**base_valid, "schema": "SOME_OTHER_SCHEMA/v1"}),
+            "unexpected 'schema'",
+        ),
+        (
+            "decisions is not an object",
+            json.dumps({**base_valid, "decisions": []}),
+            "'decisions' in",
+        ),
+        ("entry not an object", with_entry(True), "must be a JSON object"),
+        (
+            "entry unknown key",
+            with_entry({**valid_entry, "extra": 1}),
+            "unknown key(s)",
+        ),
+        (
+            "entry missing profile",
+            with_entry({k: v for k, v in valid_entry.items() if k != "profile"}),
+            "missing key(s)",
+        ),
+        (
+            "entry bad profile",
+            with_entry({**valid_entry, "profile": "not_a_real_profile"}),
+            "is not an admitted family_profile",
+        ),
+        (
+            "entry empty reason",
+            with_entry({**valid_entry, "reason": "   "}),
+            "'reason' must be a non-empty string",
+        ),
+        (
+            "entry non-lower-cased name",
+            with_entry({**valid_entry, "name": "Some Name"}),
+            "'name' must be a non-empty lower-cased string",
+        ),
+        (
+            "entry source unknown key",
+            with_entry(
+                {**valid_entry, "source": {**valid_entry["source"], "extra": 1}}
+            ),
+            "unknown 'source' key(s)",
+        ),
+        (
+            "entry source empty facts",
+            with_entry({**valid_entry, "source": {"wiki_url": None, "facts": "  "}}),
+            "'source.facts' must be a non-empty string",
+        ),
+        (
+            "duplicate decision key",
+            # Built by hand: json.dumps can never emit a duplicate key.
+            json.dumps(base_valid)[:-3]
+            + "{"
+            + ", ".join(
+                f"{json.dumps(key)}: {json.dumps(valid_entry)}" for _ in range(2)
+            )
+            + "}}",
+            "duplicate JSON key",
+        ),
+        ("invalid JSON", "{not json", "invalid JSON"),
+    ]
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "owner-decisions.json"
+        for label, payload, expected in cases:
+            path.write_text(payload, encoding="utf-8")
+            try:
+                engine_items.load_owner_family_decisions(path, {key})
+            except SystemExit as exc:
+                check(
+                    expected in str(exc),
+                    f"invalid owner decisions file {label!r} failed for another "
+                    f"reason: {exc}",
+                )
+            else:
+                raise AssertionError(f"invalid owner decisions file must fail: {label}")
+
+
+def test_owner_family_decisions_loader_rejects_unknown_registry_key():
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "owner-decisions.json"
+        write_owner_decisions_file(
+            path,
+            {
+                "oteryn:item.registry.i99999999": owner_decision_entry(
+                    "some name", "trash"
+                )
+            },
+        )
+        try:
+            engine_items.load_owner_family_decisions(
+                path, {engine_items.build_identity_index()[100][0]}
+            )
+        except SystemExit as exc:
+            check("unknown Item key" in str(exc), exc)
+        else:
+            raise AssertionError("decision for an unknown Item key must fail")
+
+
+def test_owner_family_decisions_loader_missing_file_is_hard_error():
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "does-not-exist.json"
+        try:
+            engine_items.load_owner_family_decisions(path, set())
+        except SystemExit as exc:
+            check("missing owner family decisions file" in str(exc), exc)
+        else:
+            raise AssertionError("a missing owner decisions file must be a hard error")
+
+
+def test_committed_owner_family_decisions_loads_fail_closed():
+    """The committed table must pass the same fail-closed loader the converter uses."""
+    valid_keys = {key for key, _basis in engine_items.build_identity_index().values()}
+    decisions = engine_items.load_owner_family_decisions(
+        engine_items.OWNER_FAMILY_DECISIONS_PATH, valid_keys
+    )
+    check(len(decisions) == 121, len(decisions))
+    check(
+        all(
+            entry["profile"] in engine_items.PROFILE_ITEM_CLASS
+            for entry in decisions.values()
+        ),
+        "every committed decision resolves to a known profile",
+    )
+    check(
+        all(entry["name"] == entry["name"].lower() for entry in decisions.values()),
+        "every committed decision's name guard is lower-cased",
+    )
+
+
+def test_empty_client_object_routes_appearance_placeholder_slot():
+    # An item with an appearances.dat object but zero true flags at all -- nothing the
+    # converter, the wiki fallback or the owner table could ever anchor a family to --
+    # routes the same way the placeholder-name checks do.
+    sources = synthetic_sources(
+        "crystal", {511: {"name": "some unnamed thing", "attrs": {}, "flags": {}}}
+    )
+    check(511 in sources["appearances"], "fixture must carry an appearance")
+    check(sources["appearances"][511]["flags"] == {}, "fixture flags must be empty")
+    item, _deps, report = engine_items.convert_item(sources, 511)
+    check(item is None, report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "appearance_placeholder_slot"},
+        report,
+    )
+    check(report["blockers"] == [], report)
+
+
+def test_empty_client_object_route_requires_zero_flags():
+    # A single true flag (of any kind) is enough to keep this route from firing; the
+    # item stays plain `family_profile_unresolved` editorial backlog instead.
+    sources = synthetic_sources(
+        "crystal",
+        {
+            512: {
+                "name": "some unnamed thing",
+                "attrs": {},
+                "flags": {"flags.take": True},
+            }
+        },
+    )
+    item, _deps, report = engine_items.convert_item(sources, 512)
+    check(item is None, report)
+    check(report.get("routed_non_item") is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_empty_client_object_route_never_outranks_owner_table():
+    # An item with zero flags that ALSO has a matching owner-table entry resolves
+    # through the owner table; the empty-object route never gets a chance to fire.
+    key = engine_items.build_identity_index()[513][0]
+    decisions = {key: owner_decision_entry("some unnamed thing", "trash")}
+    sources = synthetic_sources(
+        "crystal", {513: {"name": "some unnamed thing", "attrs": {}, "flags": {}}}
+    )
+    sources["owner_family_decisions"] = decisions
+    item, _deps, report = engine_items.convert_item(sources, 513)
+    check(item is not None, report)
+    check(item["family_profile"] == "trash", item)
+    check(item["family_profile_basis"] == "owner_name_rule", item)
+
+
 def main():
     tests = [
         test_lf_and_crlf_text_fixtures_byte_identical,
@@ -3509,6 +3849,17 @@ def main():
         test_wiki_fallback_snapshot_is_registered,
         test_family_profile_evidence_shapes_are_mutually_exclusive,
         test_crystal_item_bindings_reject_duplicate_target_key,
+        test_owner_family_decisions_resolves_real_examples,
+        test_owner_family_decisions_only_applies_to_unresolved_items,
+        test_owner_family_decisions_name_mismatch_is_ignored,
+        test_owner_family_decisions_never_outranks_wrap_target_or_dead_item,
+        test_owner_family_decisions_loader_fails_closed,
+        test_owner_family_decisions_loader_rejects_unknown_registry_key,
+        test_owner_family_decisions_loader_missing_file_is_hard_error,
+        test_committed_owner_family_decisions_loads_fail_closed,
+        test_empty_client_object_routes_appearance_placeholder_slot,
+        test_empty_client_object_route_requires_zero_flags,
+        test_empty_client_object_route_never_outranks_owner_table,
     ]
     for test in tests:
         test()

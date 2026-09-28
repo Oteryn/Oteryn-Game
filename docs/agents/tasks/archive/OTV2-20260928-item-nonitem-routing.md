@@ -4,15 +4,15 @@
 task_id: OTV2-20260928-item-nonitem-routing
 title: Fluid/placeholder/appearance-title/actualname non-Item routing; availability
 mode: MIGRATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 1105
 base_sha: 800e3eb6
-head_sha: null
-final_head_sha: null
+head_sha: bddc06168c7ff27a8ffe79562c12f02380921717
+final_head_sha: bddc06168c7ff27a8ffe79562c12f02380921717
 final_head_frozen_at: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T00:00:00Z
@@ -31,7 +31,7 @@ owned_paths:
   - imports/tibiawiki/sources.json
   - docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md
   - docs/agents/tasks/archive/OTV2-20260928-item-wrap-target-corpses.md
-  - docs/agents/tasks/active/OTV2-20260928-item-nonitem-routing.md
+  - docs/agents/tasks/archive/OTV2-20260928-item-nonitem-routing.md
 public_contracts: []
 depends_on:
   - "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md"
@@ -42,6 +42,8 @@ jira: KAN-16
 ```
 
 ## Outcome
+
+**Merged as PR #1105** (`a7ced850`) from final head `bddc06168c7ff27a8ffe79562c12f02380921717`.
 
 Ported onto `main` after PR #1086 (wrap-target/dead-item, archived separately). Six
 lowest-priority non-Item/name-join rules, applied in this order, each only once every
@@ -133,6 +135,7 @@ as ordinary Items with their real weapon family -- recorded truthfully via
 - [x] Wiki `world_object` routing found to route zero items, removed.
 - [x] Owner decision recorded: Carving/Mayhem/Remedy weapons keep `status =
   unavailable`, never excluded/rerouted.
+- [x] Merged as PR #1105.
 
 ## Excluded scope
 
@@ -205,7 +208,7 @@ diffs. This directly caught and let us fix the "dead rat"/"dead goblin" collisio
 
 ## Self-review
 
-- exact head: `8deb61f0` (local, not pushed/frozen)
+- exact head: `bddc06168c7ff27a8ffe79562c12f02380921717`
 - method/reviewer: implementing session
 - material findings: wiki `world_object` routing removed (zero items routed); capture
   probe bug found and fixed; a real "dead rat"/"dead goblin" false-positive collision in
@@ -223,23 +226,26 @@ diffs. This directly caught and let us fix the "dead rat"/"dead goblin" collisio
 
 ## PR and closeout
 
-- changed-file review: pending; unresolved review threads: `NOT_APPLICABLE` (no PR)
+- changed-file review: completed; unresolved review threads: none blocking
 - related/superseded PRs: supersedes the extension work on `item-nonitem-routing`
-  (rebuilt on merged PR #1086)
-- protected auto-merge: `NOT_APPLICABLE`; merge commit/result: pending; ownership
-  release: pending
+  (rebuilt on merged PR #1086); superseded/followed by PR for
+  `OTV2-20260928-item-owner-leftover-table` (task #15)
+- protected auto-merge: via Merge Queue, PR #1105
+- merge commit/result: merged as PR #1105 (`a7ced850`)
+- ownership release: released; downstream task `item-owner-leftover-table` picked up
+  the leftover ids on top of this merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: b/c/e/f/g/h implemented; fixed a name-join priority collision found via the invariant proof (dead rat/goblin); recapture, censuses, packet regenerated; full check list green; committed locally to item-nonitem-routing-v2 at 8deb61f0
-status: validating
+last_progress: b/c/e/f/g/h implemented; fixed a name-join priority collision found via the invariant proof (dead rat/goblin); recapture, censuses, packet regenerated; full check list green; merged as PR #1105; archived
+status: completed
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
+head_sha: bddc06168c7ff27a8ffe79562c12f02380921717
 pr: 1105
-final_head_sha: null
+final_head_sha: bddc06168c7ff27a8ffe79562c12f02380921717
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: pull_request
 ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
@@ -254,5 +260,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: required checks, Merge Queue, archive record
+next_action: null
 ```

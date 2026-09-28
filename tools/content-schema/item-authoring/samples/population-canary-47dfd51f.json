@@ -9,7 +9,7 @@
         "oteryn:item.registry.i00000033",
         "oteryn:item.registry.i00000034"
       ],
-      "items": 11617
+      "items": 11697
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -31,17 +31,6 @@
       "blocker": "identity_not_in_b1_catalog",
       "examples": [],
       "items": 236
-    },
-    {
-      "blocker": "family_profile_unresolved",
-      "examples": [
-        "oteryn:item.registry.i00003909",
-        "oteryn:item.registry.i00003914",
-        "oteryn:item.registry.i00004151",
-        "oteryn:item.registry.i00004152",
-        "oteryn:item.registry.i00008938"
-      ],
-      "items": 103
     },
     {
       "blocker": "converter_missing:augments",
@@ -174,6 +163,17 @@
         "oteryn:item.registry.i00007229"
       ],
       "items": 11
+    },
+    {
+      "blocker": "family_profile_unresolved",
+      "examples": [
+        "oteryn:item.registry.i00008938",
+        "oteryn:item.registry.i00018670",
+        "oteryn:item.registry.i00019369",
+        "oteryn:item.registry.i00019371",
+        "oteryn:item.registry.i00020437"
+      ],
+      "items": 10
     },
     {
       "blocker": "proficiency_crosswalk_not_admitted:225",
@@ -3069,28 +3069,28 @@
       "items": 1
     }
   ],
-  "bundle_digest": "1b14c13226e4bc869f8c4d9b4cc8fa3a4e2c4554a696f15be3838a9d93c79ae0",
+  "bundle_digest": "d7163922f82baea8db586f0036d13009347a2de31407191714f258d62eab5ca4",
   "by_profile": {
     "container": 280,
     "container_equipment": 8,
-    "decoration": 3046,
-    "document": 431,
+    "decoration": 3064,
+    "document": 434,
     "equipment_armor": 459,
     "equipment_offhand": 439,
-    "event_collectible": 195,
+    "event_collectible": 198,
     "fluid": 91,
     "food": 196,
     "key": 13,
-    "light_source": 174,
+    "light_source": 178,
     "material_valuable": 2966,
-    "plant": 901,
-    "progression_material": 7,
-    "quest_item": 1116,
+    "plant": 904,
+    "progression_material": 10,
+    "quest_item": 1149,
     "rune": 41,
-    "tool": 326,
-    "transformation_item": 23,
-    "trash": 212,
-    "unresolved": 25709,
+    "tool": 332,
+    "transformation_item": 25,
+    "trash": 217,
+    "unresolved": 25629,
     "weapon_distance": 183,
     "weapon_magic": 86,
     "weapon_melee": 625
@@ -3098,7 +3098,7 @@
   "delivery_task": {
     "crystal_list": {
       "entries": 436,
-      "in_items_xml_not_converted": 3,
+      "in_items_xml_not_converted": 1,
       "not_in_items_xml": [
         49894,
         49908,
@@ -3136,21 +3136,21 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 11417,
-      "eligible_true": 401,
+      "eligible_false": 11495,
+      "eligible_true": 403,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 9,
-      "not_member": 11809,
+      "not_member": 11889,
       "source": "canary_task_board_weekly_items"
     }
   },
   "family_profile_basis": {
     "engine_attribute": 10357,
     "engine_wrap_target": 85,
-    "owner_name_rule": 12,
+    "owner_name_rule": 92,
     "wiki_evidence_fallback": 1364
   },
   "field_coverage": {
@@ -4446,10 +4446,10 @@
   },
   "outcome": {
     "blocked": 877,
-    "fully_resolved": 10941,
+    "fully_resolved": 11021,
     "items": 37527,
-    "not_converted": 339,
-    "routed_non_item": 25370
+    "not_converted": 246,
+    "routed_non_item": 25383
   },
   "routed_non_item": [
     {
@@ -4482,7 +4482,7 @@
         "oteryn:item.registry.i00000343",
         "oteryn:item.registry.i00000344"
       ],
-      "items": 4339,
+      "items": 4352,
       "owner_reason": "WorldObject:appearance_placeholder_slot"
     },
     {

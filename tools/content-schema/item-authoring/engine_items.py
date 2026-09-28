@@ -123,6 +123,14 @@ RULE_ID = "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
 DELIVERY_OVERRIDES_SCHEMA = "OTERYN_ITEM_DELIVERY_TASK_OVERRIDES/v1"
 DELIVERY_OVERRIDES_PATH = ROOT / "delivery-task-overrides.json"
 
+# Owner-reviewed leftover-family decision table (task #15, 2026-09-28): a manual,
+# per-item review of the ids that stayed `family_profile_unresolved` after PR #1105,
+# committed as `owner-item-family-decisions.json` and applied as the LAST classifier,
+# below even the name-joined wiki evidence -- see `load_owner_family_decisions` and its
+# use in `convert_item`.
+OWNER_FAMILY_DECISIONS_SCHEMA = "OTERYN_ITEM_OWNER_FAMILY_DECISIONS/v1"
+OWNER_FAMILY_DECISIONS_PATH = ROOT / "owner-item-family-decisions.json"
+
 # Text artifacts are digested/parsed after CRLF->LF normalization (Git's canonical text
 # blob bytes), so an autocrlf=true checkout digests identically to an LF one. Every other
 # pinned artifact (appearances.dat) is digested/parsed as exact raw bytes and must never
@@ -647,6 +655,111 @@ def load_delivery_overrides(path, valid_keys):
             )
         overrides[key] = {"eligible": eligible, "reason": reason}
     return overrides
+
+
+def load_owner_family_decisions(path, valid_keys):
+    """Strictly parse and validate the owner-reviewed leftover-family decision table
+    (task #15, 2026-09-28), modelled on `load_delivery_overrides`'s fail-closed style.
+
+    Returns `{item_key: {"name": lower-cased engine name, "profile": family_profile,
+    "reason": str, "source": {"wiki_url": str|None, "facts": str}}}`. Any unknown
+    top-level or entry key, duplicate JSON key, wrong type, empty `reason`/`facts`,
+    non-lower-cased `name`, a decision key that is not a known registry key, or a
+    `profile` absent from `PROFILE_ITEM_CLASS` is a hard error: the table is never
+    partially trusted. A missing file is a hard error too -- this is a committed,
+    required owner decision table, not an optional manually-captured artifact.
+    """
+    if not path.is_file():
+        raise SystemExit(f"missing owner family decisions file: {path}")
+
+    def unique_object(pairs):
+        keys = [pair_key for pair_key, _value in pairs]
+        duplicates = sorted({k for k in keys if keys.count(k) > 1})
+        if duplicates:
+            raise SystemExit(f"duplicate JSON key(s) in {path}: {duplicates}")
+        return dict(pairs)
+
+    try:
+        payload = json.loads(
+            path.read_text(encoding="utf-8"), object_pairs_hook=unique_object
+        )
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"invalid JSON in owner family decisions file {path}: {exc}")
+
+    if not isinstance(payload, dict):
+        raise SystemExit(f"owner family decisions file {path} must be a JSON object")
+    allowed_top_keys = {"schema", "decisions"}
+    unknown_top = sorted(set(payload) - allowed_top_keys)
+    if unknown_top:
+        raise SystemExit(f"unknown top-level key(s) in {path}: {unknown_top}")
+    missing_top = sorted(allowed_top_keys - set(payload))
+    if missing_top:
+        raise SystemExit(f"missing required key(s) in {path}: {missing_top}")
+    if payload["schema"] != OWNER_FAMILY_DECISIONS_SCHEMA:
+        raise SystemExit(
+            f"unexpected 'schema' in {path}: {payload['schema']!r} "
+            f"(expected {OWNER_FAMILY_DECISIONS_SCHEMA!r})"
+        )
+
+    decisions_raw = payload["decisions"]
+    if not isinstance(decisions_raw, dict):
+        raise SystemExit(f"'decisions' in {path} must be a JSON object")
+
+    allowed_entry_keys = {"name", "profile", "reason", "source"}
+    allowed_source_keys = {"wiki_url", "facts"}
+    decisions = {}
+    for key, entry in decisions_raw.items():
+        where = f"{path}:{key}"
+        if not isinstance(key, str) or not key:
+            raise SystemExit(f"invalid decision key in {path}: {key!r}")
+        if key not in valid_keys:
+            raise SystemExit(f"{where}: decision targets unknown Item key")
+        if not isinstance(entry, dict):
+            raise SystemExit(f"{where}: decision must be a JSON object")
+        unknown_entry = sorted(set(entry) - allowed_entry_keys)
+        if unknown_entry:
+            raise SystemExit(f"{where}: unknown key(s): {unknown_entry}")
+        missing_entry = sorted(allowed_entry_keys - set(entry))
+        if missing_entry:
+            raise SystemExit(f"{where}: missing key(s): {missing_entry}")
+
+        name = entry["name"]
+        if not isinstance(name, str) or not name or name != name.lower():
+            raise SystemExit(f"{where}: 'name' must be a non-empty lower-cased string")
+        profile = entry["profile"]
+        if not isinstance(profile, str) or profile not in PROFILE_ITEM_CLASS:
+            raise SystemExit(
+                f"{where}: 'profile' {profile!r} is not an admitted family_profile"
+            )
+        reason = entry["reason"]
+        if not isinstance(reason, str) or not reason.strip():
+            raise SystemExit(f"{where}: 'reason' must be a non-empty string")
+
+        source = entry["source"]
+        if not isinstance(source, dict):
+            raise SystemExit(f"{where}: 'source' must be a JSON object")
+        unknown_source = sorted(set(source) - allowed_source_keys)
+        if unknown_source:
+            raise SystemExit(f"{where}: unknown 'source' key(s): {unknown_source}")
+        missing_source = sorted(allowed_source_keys - set(source))
+        if missing_source:
+            raise SystemExit(f"{where}: missing 'source' key(s): {missing_source}")
+        wiki_url = source["wiki_url"]
+        if wiki_url is not None and (not isinstance(wiki_url, str) or not wiki_url):
+            raise SystemExit(
+                f"{where}: 'source.wiki_url' must be null or a non-empty string"
+            )
+        facts = source["facts"]
+        if not isinstance(facts, str) or not facts.strip():
+            raise SystemExit(f"{where}: 'source.facts' must be a non-empty string")
+
+        decisions[key] = {
+            "name": name,
+            "profile": profile,
+            "reason": reason,
+            "source": {"wiki_url": wiki_url, "facts": facts},
+        }
+    return decisions
 
 
 # --- field dispositions (crystal-field-dispositions.json / canary-...) -------------
@@ -1491,6 +1604,31 @@ def resolve_no_client_appearance_route(appearance):
     return "WorldObject", "no_client_appearance"
 
 
+# --- empty client object last resort (owner decision 2026-09-28, task #15) ---------
+#
+# An item that DOES have an `appearances.dat` object, but whose `flags` dict is
+# completely empty (not even `take`/`usable` -- `decode_flags`'s own "presence == key
+# in dict" means an empty dict is a proven absence of every flag, never a decode gap),
+# carries literally nothing the converter, the wiki-evidence fallback or the owner
+# table above could ever anchor a family to. This shares its owner/reason with the
+# early `PLACEHOLDER_APPEARANCE_NAMES` and late `LATE_PLACEHOLDER_APPEARANCE_NAMES`
+# checks: a flag-less client object is the same kind of unauthored placeholder slot
+# they already route, just not identifiable by name. Verified against the pinned
+# Crystal appearances: energy barrier (25799), skull stone (10134-10139), tentugly
+# (39003), towel (20889) and wilds monsters outfit (19125-19128) all decode to `flags:
+# {}` exactly.
+def resolve_empty_client_object_route(appearance):
+    """Return `("WorldObject", "appearance_placeholder_slot")` when this item has an
+    `appearances.dat` object but that object carries no true flags at all; else `None`.
+    Only ever consulted once every other classifier and last-resort rule -- including
+    the owner leftover-family table -- has already failed for this exact item."""
+    if appearance is None:
+        return None
+    if appearance.get("flags"):
+        return None
+    return "WorldObject", "appearance_placeholder_slot"
+
+
 AMBIGUOUS_HAND_PATTERNS = {
     "patterns": [
         {"pattern_id": 1, "slot": "right_hand", "hands": 1},
@@ -2027,6 +2165,7 @@ def load_engine_sources(
     rule_source_digest=None,
     overrides_path=None,
     wiki_fallback_path=None,
+    owner_decisions_path=None,
 ):
     """digests overrides the pinned production SHA-256 map; used only by fixture tests.
 
@@ -2038,7 +2177,8 @@ def load_engine_sources(
     overrides the pinned production SHA-256 for that list; used only by fixture tests.
     `overrides_path` overrides the committed `delivery-task-overrides.json`; used only by
     fixture tests. `wiki_fallback_path` overrides the committed `items-family-fallback.json`
-    wiki-evidence snapshot; used only by fixture tests.
+    wiki-evidence snapshot; used only by fixture tests. `owner_decisions_path` overrides
+    the committed `owner-item-family-decisions.json`; used only by fixture tests.
     """
     config = ENGINES[engine]
     profile = config["profile"]
@@ -2097,6 +2237,14 @@ def load_engine_sources(
     wiki_family_fallback = load_wiki_family_fallback(
         resolved_wiki_fallback_path, identity_index
     )
+    resolved_owner_decisions_path = (
+        owner_decisions_path
+        if owner_decisions_path is not None
+        else OWNER_FAMILY_DECISIONS_PATH
+    )
+    owner_family_decisions = load_owner_family_decisions(
+        resolved_owner_decisions_path, valid_keys
+    )
 
     return {
         "engine": engine,
@@ -2112,6 +2260,7 @@ def load_engine_sources(
         "crystal_list_entries": crystal_list_entries,
         "delivery_overrides": delivery_overrides,
         "wiki_family_fallback": wiki_family_fallback,
+        "owner_family_decisions": owner_family_decisions,
         "disposition": load_disposition_catalog(profile),
         "artifact_digests": {
             "data/items/items.xml": {
@@ -2423,13 +2572,37 @@ def convert_item(sources, item_id):
                 family_profile_basis = "wiki_evidence_fallback"
                 family_profile_evidence = fallback_entry["evidence"]
                 availability = fallback_entry.get("availability")
+            # Owner-reviewed leftover-family decision table (task #15, 2026-09-28): the
+            # LAST classifier, consulted only once every rule above -- engine
+            # attributes, both wiki-evidence tiers, wrap-target inheritance and the
+            # dead-item rules -- has already failed to resolve this exact item. Gated by
+            # `skip_post_wiki` the same way as every other post-wiki-fallback rule (a
+            # per-item owner decision still ranks below the wiki fallback for the
+            # capture tool's probe). The item's own lower-cased name must equal the
+            # decision's own `name` guard, exactly like the dead-item owner table above.
+            if (
+                family_profile is None
+                and not skip_post_wiki
+                and (
+                    owner_decision := sources.get("owner_family_decisions", {}).get(key)
+                )
+                is not None
+                and name.strip().lower() == owner_decision["name"]
+            ):
+                family_profile = owner_decision["profile"]
+                family_profile_basis = "owner_name_rule"
+                family_profile_evidence = {
+                    "rule": "owner_leftover_review_2026_09_28",
+                    "name": owner_decision["name"],
+                }
             if family_profile is None:
                 # Last-resort non-Item routing rules (owner decision 2026-09-28). Each
                 # only ever runs once every classifier above -- engine attributes, the
-                # wiki-evidence fallback (both priority tiers), wrap-target inheritance
-                # and the dead-item rules -- has already failed to resolve this exact
-                # item, so none can ever reroute an already-resolved or already-routed
-                # id. See `skip_post_wiki_fallback_routes` above: gated the same way.
+                # wiki-evidence fallback (both priority tiers), wrap-target inheritance,
+                # the dead-item rules and the owner leftover-family table -- has already
+                # failed to resolve this exact item, so none can ever reroute an
+                # already-resolved or already-routed id. See
+                # `skip_post_wiki_fallback_routes` above: gated the same way.
                 if not skip_post_wiki:
                     fluid_route = resolve_fluid_type_route(name, xml_record, appearance)
                     if fluid_route is not None:
@@ -2466,6 +2639,22 @@ def convert_item(sources, item_id):
                     no_appearance_route = resolve_no_client_appearance_route(appearance)
                     if no_appearance_route is not None:
                         owner, reason = no_appearance_route
+                        return (
+                            None,
+                            None,
+                            {
+                                "item_id": item_id,
+                                "key": key,
+                                "identity_basis": identity_basis,
+                                "converted": False,
+                                "routed_non_item": {"owner": owner, "reason": reason},
+                                "blockers": blockers,
+                                "field_status": field_status,
+                            },
+                        )
+                    empty_object_route = resolve_empty_client_object_route(appearance)
+                    if empty_object_route is not None:
+                        owner, reason = empty_object_route
                         return (
                             None,
                             None,
