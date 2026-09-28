@@ -720,12 +720,13 @@ def ratio_limit_for_section(section):
     return SPELL_FACT_TO_VISIBLE_TEXT_RATIO_LIMIT if section == 'spells' else FACT_TO_VISIBLE_TEXT_RATIO_LIMIT
 
 
-def spell_fact_shape_errors(directory, key, anchor, value):
+def spell_fact_shape_errors(directory, key, anchor, value, slug_counts):
     """A `spells` fact must be one the adapter could have written, since this shape is what stands
     in for the manual pages' prose ratio on this section: anchor `list`; a value that is exactly the
     canonical serialization of a row of `list_facts`' exact schema (required and optional fields
-    only, string values, a name); and a key equal to `spells.list.<slug of that name>`, with the
-    adapter's `-N` (N >= 2) suffix only for a repeated name."""
+    only, string values, a name); and a key equal to `spells.list.<slug of that name>`, unsuffixed
+    for the first row of a slug and exactly `-N` for its Nth (N >= 2), counted in fact order
+    through `slug_counts` (the caller's per-snapshot dict)."""
     errors = []
     if anchor != SPELL_FACT_ANCHOR:
         errors.append(f'{directory}: spells fact {key!r} anchor must be {SPELL_FACT_ANCHOR!r}, got {anchor!r}')
@@ -739,11 +740,14 @@ def spell_fact_shape_errors(directory, key, anchor, value):
         return errors
     if value != spell_row_value(row):
         errors.append(f'{directory}: spells fact {key!r} value is not the canonical serialization of its row')
-    expected_key = re.compile(
-        re.escape(f'{SPELL_FACT_KEY_PREFIX}.{spell_row_slug(row["name"])}') + r'(?:-(?:[2-9]|[1-9][0-9]+))?')
-    if not expected_key.fullmatch(key):
-        errors.append(f'{directory}: spells fact key {key!r} must be '
-                      f'{SPELL_FACT_KEY_PREFIX}.<slug of name {row["name"]!r}>')
+    # Occurrence counts follow fact order, as the adapter numbers them: the first row of a slug is
+    # unsuffixed and the Nth (N >= 2) is exactly `-N`, so a suffix needs its preceding collisions.
+    slug = spell_row_slug(row['name'])
+    slug_counts[slug] = slug_counts.get(slug, 0) + 1
+    expected_key = f'{SPELL_FACT_KEY_PREFIX}.{slug}' + (f'-{slug_counts[slug]}' if slug_counts[slug] > 1 else '')
+    if key != expected_key:
+        errors.append(f'{directory}: spells fact key {key!r} must be {expected_key!r} '
+                      f'(occurrence {slug_counts[slug]} of slug {slug!r} in fact order)')
     return errors
 
 
@@ -920,6 +924,7 @@ def verify_snapshot(directory):
         facts = []
 
     total_value_bytes = 0
+    spell_slug_counts = {}
     seen_keys = set()
     value_chars_by_section = {}
     fact_count_by_section = {}
@@ -973,7 +978,7 @@ def verify_snapshot(directory):
         seen_keys.add(key)
         section = fact['section']
         if section == 'spells':
-            errors.extend(spell_fact_shape_errors(directory, key, anchor, value))
+            errors.extend(spell_fact_shape_errors(directory, key, anchor, value, spell_slug_counts))
         if section not in pages_by_section:
             errors.append(f'{directory}: fact {key!r} references section {section!r}, '
                           f'which is not a manifest.json page')
@@ -1862,13 +1867,41 @@ def self_test():
         def _drop(name):
             return lambda fact: _with_row(fact, {k: v for k, v in _row_of_last(fact).items() if k != name})
 
-        # Accepted variants: an optional field absent, a repeated name's `-2` suffix.
-        for mutate in (_drop('levelrequired'), _drop('mana'), lambda f: f.update(key=f['key'] + '-2'),
-                       lambda f: f.update(key=f['key'] + '-13')):
+        # Accepted variants: an optional field absent.
+        for mutate in (_drop('levelrequired'), _drop('mana')):
             variant = copy.deepcopy(spell_doc)
             mutate(variant['facts'][-1])
             _write_snapshot(directory, spell_manifest, variant)
             assert verify_snapshot(directory) == [], (variant['facts'][-1], verify_snapshot(directory))
+
+        # Slug occurrences are counted in fact order: `name`, `name-2`, `name-3` in order is accepted;
+        # a suffix without its preceding collisions (a lone `-2`/`-13`, a skipped `-2`, a repeated
+        # unsuffixed slug, an out-of-order suffix) is rejected.
+        def _repeat_last(keys):
+            variant = copy.deepcopy(spell_doc)
+            last = variant['facts'].pop()
+            base_key = last['key']
+            variant['facts'] += [{**last, 'key': base_key + suffix} for suffix in keys]
+            return variant
+
+        _write_snapshot(directory, spell_manifest, _repeat_last(['', '-2', '-3']))
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)
+        for keys in (['-2'], ['-13'], ['-1'], ['-02'], ['', '-3'], ['', '-2', '-4'], ['-2', ''], ['-3', '-2', ''],
+                     ['', '-2', '-2']):
+            _write_snapshot(directory, spell_manifest, _repeat_last(keys))
+            errors = verify_snapshot(directory)
+            assert any('in fact order)' in e for e in errors), (keys, errors)
+        # The adapter numbers repeated names the same way, so what it writes verifies.
+        repeated_row = ('<tr><td>Find Person (exiva "name")</td><td>Support</td><td>Instant</td>'
+                        '<td>8</td><td>20</td><td>no</td></tr>')
+        repeated = spell_facts_from_library_html(
+            real_spell_module, header_only.replace('</table>', repeated_row * 3 + '</table>'), '2026-09-28')
+        assert [f['key'] for f in repeated] == [
+            'spells.list.find-person', 'spells.list.find-person-2', 'spells.list.find-person-3'], repeated
+        repeated_doc = copy.deepcopy(base_facts)
+        repeated_doc['facts'] += repeated
+        _write_snapshot(directory, spell_manifest, repeated_doc)
+        assert verify_snapshot(directory) == [], verify_snapshot(directory)
 
         for mutate, expected in (
                 # an extra field such as `payload` is rejected
@@ -1877,10 +1910,10 @@ def self_test():
                 (_drop('words'), 'missing required field(s) [\'words\']'),
                 (_drop('name'), 'missing required field(s) [\'name\']'),
                 # a key that is not spells.list.<slug of the row's name>
-                (lambda f: f.update(key='spells.list.someone-else'), 'must be spells.list.<slug of name'),
-                (lambda f: f.update(key='spells.list.apprentice-s-strike-1'), 'must be spells.list.<slug of name'),
-                (lambda f: f.update(key='spells.list.apprentice-s-strike-02'), 'must be spells.list.<slug of name'),
-                (lambda f: f.update(key='spells.other.apprentice-s-strike'), 'must be spells.list.<slug of name'),
+                (lambda f: f.update(key='spells.list.someone-else'), 'in fact order)'),
+                (lambda f: f.update(key='spells.list.apprentice-s-strike-1'), 'in fact order)'),
+                (lambda f: f.update(key='spells.list.apprentice-s-strike-02'), 'in fact order)'),
+                (lambda f: f.update(key='spells.other.apprentice-s-strike'), 'in fact order)'),
                 # a wrong value type
                 (_add('mana', 6), 'non-string value for field(s) [\'mana\']'),
                 (_add('levelrequired', None), 'non-string value for field(s) [\'levelrequired\']'),

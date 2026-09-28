@@ -48,7 +48,7 @@ external_repositories: []
 2. **Bounds that fit a table of facts.** The manual pages' 25% prose ratio cannot hold for a page that
    is itself a table of facts (the committed 193-row sample gives fact chars 3.25 x visible chars).
    `verify` now holds the `spells` section to `SPELL_FACT_TO_VISIBLE_TEXT_RATIO_LIMIT` (6.0), to the
-   exact row schema `list_facts` emits (five required and two optional string fields, no extras; canonical JSON value; key equal to `spells.list.<slug of name>`, so each fact could have come from the adapter) and to the
+   exact row schema `list_facts` emits (five required and two optional string fields, no extras; canonical JSON value; key equal to `spells.list.<slug of name>` (repeats numbered `-2`, `-3` in fact order), so each fact could have come from the adapter) and to the
    unchanged count, value and absolute-byte caps. Manual sections keep 25%. `fetch` now verifies what it
    wrote and removes the new directory if verification fails, so a run cannot leave a snapshot CI rejects.
 3. **#1083 hardening.** Every date shape is literal ASCII `[0-9]` with `fullmatch` and a calendar check
