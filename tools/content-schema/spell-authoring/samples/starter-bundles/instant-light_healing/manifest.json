@@ -1,6 +1,13 @@
 {
   "sources": [
     {
+      "kind": "official_capture",
+      "url": "https://www.tibia.com/library/?subtopic=spells",
+      "title": "Light Healing",
+      "captured": "2026-09-28",
+      "content_sha256": "c4800d7d0fac37238a9101afbc2060a3afcf8ddc76b9e71286fd5feb628b70f2"
+    },
+    {
       "repository": "opentibiabr/canary",
       "revision": "99902524e052f37574194466c2949c576e4ab269"
     },
@@ -28,33 +35,13 @@
   "entries": [
     {
       "source_index": 0,
-      "source_file": "data/scripts/spells/healing/light_healing.lua",
-      "source_line": 22,
+      "source_file": "Light Healing",
+      "source_line": 1,
       "source_field": "words",
       "kind": "field",
       "status": "mapped",
       "destination": "/spell/spell/words",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 1,
-      "source_file": "data/scripts/spells/healing/light_healing.lua",
-      "source_line": 22,
-      "source_field": "words",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/words",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 0,
-      "source_file": "data/scripts/spells/healing/light_healing.lua",
-      "source_line": 26,
-      "source_field": "id",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/reference_spell_id",
-      "resolution": "S4: source value (both sources agree)."
+      "resolution": "S15: the official tibia.com spell library states this value."
     },
     {
       "source_index": 1,
@@ -68,13 +55,13 @@
     },
     {
       "source_index": 2,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "voc",
+      "source_file": "data/scripts/spells/healing/light_healing.lua",
+      "source_line": 26,
+      "source_field": "id",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/requirements/vocations",
-      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
+      "destination": "/spell/spell/reference_spell_id",
+      "resolution": "S4: source value (both sources agree)."
     },
     {
       "source_index": 3,
@@ -87,74 +74,44 @@
       "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "Light Healing",
       "source_line": 1,
-      "source_field": "levelrequired",
+      "source_field": "voc",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/requirements/level",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 3,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "levelrequired",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/requirements/level",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 2,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "premium",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/requirements/premium",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 3,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "premium",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/requirements/premium",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 2,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "mana",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/costs/mana",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 3,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "mana",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/costs/mana",
-      "resolution": "S3: the wiki states this value."
+      "destination": "/spell/spell/requirements/vocations",
+      "resolution": "S3: the wiki states the base vocations; S8 adds each promoted vocation."
     },
     {
       "source_index": 0,
-      "source_file": "data/scripts/spells/healing/light_healing.lua",
+      "source_file": "Light Healing",
       "source_line": 1,
-      "source_field": "soul",
+      "source_field": "levelrequired",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/costs/soul",
-      "resolution": "S4: source value (both sources agree)."
+      "destination": "/spell/spell/requirements/level",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Light Healing",
+      "source_line": 1,
+      "source_field": "premium",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/requirements/premium",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 0,
+      "source_file": "Light Healing",
+      "source_line": 1,
+      "source_field": "mana",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/costs/mana",
+      "resolution": "S15: the official tibia.com spell library states this value."
     },
     {
       "source_index": 1,
@@ -168,13 +125,13 @@
     },
     {
       "source_index": 2,
-      "source_file": "Light Healing",
+      "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
-      "source_field": "cooldown",
+      "source_field": "soul",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/cooldown_ms",
-      "resolution": "S3: the wiki states this value."
+      "destination": "/spell/spell/costs/soul",
+      "resolution": "S4: source value (both sources agree)."
     },
     {
       "source_index": 3,
@@ -187,47 +144,47 @@
       "resolution": "S3: the wiki states this value."
     },
     {
-      "source_index": 2,
+      "source_index": 4,
       "source_file": "Light Healing",
       "source_line": 1,
-      "source_field": "subclass",
+      "source_field": "cooldown",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/groups/0/group",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 3,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "subclass",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/groups/0/group",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 2,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "cooldowngroup",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/groups/0/cooldown_ms",
-      "resolution": "S3: the wiki states this value."
-    },
-    {
-      "source_index": 3,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "cooldowngroup",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "destination": "/spell/spell/cooldown_ms",
       "resolution": "S3: the wiki states this value."
     },
     {
       "source_index": 0,
+      "source_file": "Light Healing",
+      "source_line": 1,
+      "source_field": "subclass",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/group",
+      "resolution": "S15: the official tibia.com spell library states this value."
+    },
+    {
+      "source_index": 3,
+      "source_file": "Light Healing",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 4,
+      "source_file": "Light Healing",
+      "source_line": 1,
+      "source_field": "cooldowngroup",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/groups/0/cooldown_ms",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 1,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 32,
       "source_field": "isAggressive",
@@ -237,7 +194,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 33,
       "source_field": "isAggressive",
@@ -247,7 +204,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 1,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 31,
       "source_field": "isSelfTarget",
@@ -257,7 +214,7 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 1,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 32,
       "source_field": "isSelfTarget",
@@ -267,16 +224,6 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
-      "source_file": "data/scripts/spells/healing/light_healing.lua",
-      "source_line": 1,
-      "source_field": "needTarget",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/targeting/needs_target",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
       "source_index": 1,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
@@ -287,13 +234,13 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
-      "source_field": "needDirection",
+      "source_field": "needTarget",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/targeting/needs_direction",
+      "destination": "/spell/spell/targeting/needs_target",
       "resolution": "S4: source value (both sources agree)."
     },
     {
@@ -307,13 +254,13 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
-      "source_field": "needCasterTargetOrDirection",
+      "source_field": "needDirection",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/targeting/target_or_direction",
+      "destination": "/spell/spell/targeting/needs_direction",
       "resolution": "S4: source value (both sources agree)."
     },
     {
@@ -327,13 +274,13 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
-      "source_field": "blockWalls",
+      "source_field": "needCasterTargetOrDirection",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/targeting/block_walls",
+      "destination": "/spell/spell/targeting/target_or_direction",
       "resolution": "S4: source value (both sources agree)."
     },
     {
@@ -347,13 +294,13 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
-      "source_field": "allowOnSelf",
+      "source_field": "blockWalls",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/targeting/allow_on_self",
+      "destination": "/spell/spell/targeting/block_walls",
       "resolution": "S4: source value (both sources agree)."
     },
     {
@@ -367,13 +314,13 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
-      "source_field": "checkFloor",
+      "source_field": "allowOnSelf",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/targeting/check_floor",
+      "destination": "/spell/spell/targeting/allow_on_self",
       "resolution": "S4: source value (both sources agree)."
     },
     {
@@ -387,13 +334,13 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
-      "source_field": "setPzLocked",
+      "source_field": "checkFloor",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/pz_locks_caster",
+      "destination": "/spell/spell/targeting/check_floor",
       "resolution": "S4: source value (both sources agree)."
     },
     {
@@ -407,13 +354,13 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
-      "source_field": "needWeapon",
+      "source_field": "setPzLocked",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/needs_weapon",
+      "destination": "/spell/spell/pz_locks_caster",
       "resolution": "S4: source value (both sources agree)."
     },
     {
@@ -427,14 +374,14 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
-      "source_index": 0,
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
-      "source_line": 25,
-      "source_field": "castSound",
+      "source_line": 1,
+      "source_field": "needWeapon",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/presentation/cast_cue",
-      "resolution": "S18: sound cue named by its SoundEffect_t member."
+      "destination": "/spell/spell/needs_weapon",
+      "resolution": "S4: source value (both sources agree)."
     },
     {
       "source_index": 1,
@@ -448,13 +395,13 @@
     },
     {
       "source_index": 2,
-      "source_file": "Light Healing",
-      "source_line": 1,
-      "source_field": "basepower",
+      "source_file": "data/scripts/spells/healing/light_healing.lua",
+      "source_line": 25,
+      "source_field": "castSound",
       "kind": "field",
       "status": "mapped",
-      "destination": "/spell/spell/base_power",
-      "resolution": "S3: the wiki states this value."
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
     },
     {
       "source_index": 3,
@@ -467,7 +414,17 @@
       "resolution": "S3: the wiki states this value."
     },
     {
-      "source_index": 1,
+      "source_index": 4,
+      "source_file": "Light Healing",
+      "source_line": 1,
+      "source_field": "basepower",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/base_power",
+      "resolution": "S3: the wiki states this value."
+    },
+    {
+      "source_index": 2,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 13,
       "source_field": "onCastSpell",
@@ -477,7 +434,7 @@
       "resolution": "Plain combat converted with the monster combat_ability rules (crystal)."
     },
     {
-      "source_index": 0,
+      "source_index": 1,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
       "source_field": "note",
@@ -486,7 +443,7 @@
       "resolution": "COMBAT_PARAM_AGGRESSIVE=0: a non-aggressive cast (no PvP/protection-zone checks)."
     },
     {
-      "source_index": 0,
+      "source_index": 1,
       "source_file": "data/scripts/spells/healing/light_healing.lua",
       "source_line": 1,
       "source_field": "note",
