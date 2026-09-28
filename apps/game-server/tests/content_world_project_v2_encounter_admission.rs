@@ -335,7 +335,25 @@ fn admitted_encounter_round_trips_and_stays_declarative() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 19] = [
+    let cases: [(&str, &str, Mutation); 20] = [
+        (
+            "a per-player spawn owned by the death master",
+            "v2 spawn_per_player owner is none or subject",
+            |draft| {
+                encounter_mut(draft).rules[0].actions[0] =
+                    ProjectV2EncounterAction::SpawnPerPlayer {
+                        players_in: "arena".into(),
+                        by_base_vocation: ProjectV2SpawnByVocation {
+                            knight: Some(reference(ProjectV2Family::Creature, ADD)),
+                            ..ProjectV2SpawnByVocation::default()
+                        },
+                        at: ProjectV2EncounterPosition::ClosestFreeTile,
+                        owner: ProjectV2SpawnOwner::DeathMaster,
+                        health: ProjectV2EncounterHealth::Full,
+                        counter: None,
+                    };
+            },
+        ),
         (
             "a covered creature without its encounter binding",
             "v2 Creature encounters differ from the creatures their encounters cover",

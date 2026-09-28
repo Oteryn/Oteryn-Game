@@ -1344,11 +1344,14 @@ fn actions(
                 players_in,
                 by_base_vocation,
                 at,
+                owner,
                 health: kept,
                 counter,
-                ..
             } => {
                 names.area(players_in)?;
+                if *owner == ProjectV2SpawnOwner::DeathMaster {
+                    return invalid("v2 spawn_per_player owner is none or subject");
+                }
                 if by_base_vocation.entries().next().is_none() {
                     return invalid("v2 spawn_per_player needs a vocation entry");
                 }
