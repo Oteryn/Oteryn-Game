@@ -242,8 +242,17 @@ def lua_text(sources):
     return DARK_MERUDRI.format(**values)
 
 
+# Values the converter leaves implicit (it emits no row for them), so no converted row carries their provenance.
+IMPLICIT = {
+    'outfit.lookAddons': {'kind': 'field', 'status': 'mapped', 'destination': '/monster/presentation/appearance/attachment_bindings',
+                          'resolution': 'lookAddons 0: the outfit is shown with no addon attachment.'},
+}
+
+
 def manifest_for(sources, rows, template_lines):
     """Rows of the converted file re-pointed at the wiki sources (and the template for the NEEDS VERIFICATION part)."""
+    emitted = {row['source_field'] for row in rows}
+    rows = rows + [{'source_field': field, **row} for field, row in IMPLICIT.items() if field not in emitted]
     order = ['fandom.monster', 'br.monster', 'fandom.corpse', 'fandom.outfit']
     manifest_sources = [{'kind': 'mediawiki', 'api': sources[n]['api'], 'title': sources[n]['title'], 'page_id': sources[n]['page_id'],
                          'revision_id': sources[n]['revision_id'], 'content_sha256': sources[n]['content_sha256']} for n in order]
@@ -299,9 +308,16 @@ def bundles(converter):
         _, _, _, _, template_manifest, _ = converter.convert(TEMPLATE)
     for row in template_manifest['entries']:
         template_rows.setdefault(row['source_field'], row['source_line'])
+    template_text = (converter.canary / cb.MONSTER_DIR / f'{TEMPLATE}.lua').read_text(encoding='utf-8').splitlines()
+    for field in IMPLICIT:
+        key = field.split('.')[-1]
+        template_rows.setdefault(field, next((n for n, line in enumerate(template_text, 1) if key in line), 1))
     if slug != 'dark_merudri':
         raise ValueError(slug)
     result = manifest_for(sources, [dict(r) for r in manifest['entries']], template_rows)
+    missing = set(FIELDS) - {row['source_field'] for row in manifest['entries']} - set(IMPLICIT)
+    if missing:
+        raise ValueError(f'mapped fields with no converted row: {sorted(missing)}')
     binding = {'source_key': 'oteryn:source.tibiawiki', 'identity_namespace': 'mediawiki/page_id',
                'external_id': str(sources['fandom.monster']['page_id'])}
     return [(slug, monster, deps, catalog, result, binding)]
@@ -317,10 +333,13 @@ def self_test():
     assert 'minDamage = -430, maxDamage = -550' in text and 'minDamage = -290, maxDamage = -460' in text
     assert text.startswith('local mType = Game.createMonsterType("Dark Merudri")'), text[:60]
     rows = [{'source_field': field, 'kind': 'field', 'status': 'approved_omission' if field == 'voices' else 'mapped',
-             'destination': '/x', 'resolution': 'r'} for field in FIELDS]
+             'destination': '/x', 'resolution': 'r'} for field in FIELDS if field not in IMPLICIT]
     manifest = manifest_for(sample['sources'], rows, {})
     template = len(manifest['sources']) - 1
     assert all(e['resolution'].startswith('NEEDS VERIFICATION') for e in manifest['entries'] if e['source_index'] == template)
+    for field in IMPLICIT:
+        assert [e for e in manifest['entries'] if e['source_field'] == field
+                and e['resolution'].startswith(VERIFY)], f'{field} has no verification entry'
     assert any(e['source_field'] == 'infobox.name' and e['destination'] == '/monster/creature/display_name'
                for e in manifest['entries'])
     cited = {(manifest['sources'][e['source_index']]['title'], e['source_line']) for e in manifest['entries']
