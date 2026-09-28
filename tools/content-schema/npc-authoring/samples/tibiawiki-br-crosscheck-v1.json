@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "7750398f4e3008c677bd8173ec93e56c0741293670a6bcc59ea33e69445ee916",
+  "facts_sha256": "492a1e924fd08cb97b6962d68602f2bbbf84956cafa34a8526503ba532ba505d",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -1200,7 +1200,9 @@
      }
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -1566,7 +1568,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -2407,17 +2411,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 6,
-    "only_br": [
-     "SellToPlayer:beer;mug of beer",
-     "SellToPlayer:rum; mug of rum",
-     "SellToPlayer:wine;mug of wine"
-    ],
-    "only_ours": [
-     "SellToPlayer:mug",
-     "SellToPlayer:mug",
-     "SellToPlayer:mug"
-    ],
+    "matched": 9,
     "price_mismatch": [
      {
       "br": [
@@ -2569,7 +2563,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -2640,7 +2634,9 @@
      "BuyFromPlayer:inkwell"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -3238,7 +3234,9 @@
      "SellToPlayer:waterskin"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -3343,7 +3341,9 @@
      "SellToPlayer:net"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -3511,7 +3511,9 @@
      "BuyFromPlayer:book"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -3596,7 +3598,9 @@
      }
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -3688,7 +3692,9 @@
      "BuyFromPlayer:dead rat"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "BuyFromPlayer:oteryn:item.registry.i00003853"
+    ]
    }
   },
   {
@@ -3765,7 +3771,10 @@
      "SellToPlayer:witches' grimoire"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 2
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00035132",
+     "SellToPlayer:oteryn:item.registry.i00035490"
+    ]
    }
   },
   {
@@ -3912,13 +3921,7 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 4,
-    "only_br": [
-     "SellToPlayer:beer;mug of beer"
-    ],
-    "only_ours": [
-     "SellToPlayer:mug"
-    ],
+    "matched": 5,
     "price_mismatch": [
      {
       "br": [
@@ -3974,18 +3977,12 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 6,
+    "matched": 9,
     "only_br": [
-     "SellToPlayer:beer;mug of beer",
-     "SellToPlayer:ice cream cone (venorean dream);ice cream cone",
-     "SellToPlayer:lemonade;mug of lemonade",
      "SellToPlayer:water (líquido)",
      "SellToPlayer:wine"
     ],
     "only_ours": [
-     "SellToPlayer:ice cream cone",
-     "SellToPlayer:mug",
-     "SellToPlayer:mug",
      "SellToPlayer:mug",
      "SellToPlayer:mug"
     ],
@@ -4016,7 +4013,7 @@
    "trade": {
     "matched": 11,
     "only_br": [
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:treasure chest (ornamented)",
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
@@ -4029,7 +4026,9 @@
      "SellToPlayer:wardrobe"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -6212,7 +6211,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -7183,14 +7182,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 4,
-    "only_br": [
-     "SellToPlayer:mead;mug of mead",
-     "SellToPlayer:tea;mug of tea"
-    ],
+    "matched": 6,
     "only_ours": [
-     "SellToPlayer:mug",
-     "SellToPlayer:mug",
      "SellToPlayer:vial"
     ],
     "status": "DIFFER"
@@ -7489,7 +7482,9 @@
      "BuyFromPlayer:dead spider"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "BuyFromPlayer:oteryn:item.registry.i00003847"
+    ]
    }
   },
   {
@@ -7508,7 +7503,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -7550,7 +7545,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -8064,7 +8061,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -8102,7 +8099,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -8303,7 +8302,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
      "SellToPlayer:large used amphora kit",
@@ -8349,7 +8348,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -9482,7 +9483,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -9523,7 +9524,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -9568,7 +9571,7 @@
    "trade": {
     "matched": 45,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -10049,7 +10052,7 @@
    "trade": {
     "matched": 37,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -10070,7 +10073,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -10407,7 +10410,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -10447,7 +10450,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -10789,7 +10794,9 @@
      "BuyFromPlayer:werewolf fangs"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -11030,7 +11037,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -11522,7 +11529,11 @@
      "BuyFromPlayer:silver fafnar trophy"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 3
+    "uncomparable": [
+     "BuyFromPlayer:oteryn:item.registry.i00013436",
+     "BuyFromPlayer:oteryn:item.registry.i00013438",
+     "BuyFromPlayer:oteryn:item.registry.i00013440"
+    ]
    }
   },
   {
@@ -11737,7 +11748,9 @@
      "BuyFromPlayer:book"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -11802,10 +11815,9 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 33,
+    "matched": 34,
     "only_br": [
      "SellToPlayer:candelabrum",
-     "SellToPlayer:oil;vial of oil",
      "SellToPlayer:parchment (yellow)",
      "SellToPlayer:water (líquido)"
     ],
@@ -11815,7 +11827,6 @@
      "SellToPlayer:hand auger",
      "SellToPlayer:lit candelabrum",
      "SellToPlayer:net",
-     "SellToPlayer:vial",
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
@@ -11840,7 +11851,9 @@
      }
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -12509,7 +12522,7 @@
      "SellToPlayer:blue bed",
      "SellToPlayer:candle",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:coal basin",
      "SellToPlayer:cot",
      "SellToPlayer:globe",
@@ -12558,7 +12571,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -12725,7 +12740,9 @@
      }
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -13299,7 +13316,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -13342,7 +13359,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -13678,7 +13697,7 @@
      "SellToPlayer:blue pillow",
      "SellToPlayer:blue tapestry",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:coal basin",
      "SellToPlayer:green bed",
      "SellToPlayer:green cushioned chair",
@@ -13702,7 +13721,9 @@
      "SellToPlayer:wardrobe"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -14176,7 +14197,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -14217,7 +14238,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -14528,7 +14551,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -14571,7 +14594,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -15901,14 +15926,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 14,
-    "only_br": [
-     "SellToPlayer:vial of milk"
-    ],
-    "only_ours": [
-     "SellToPlayer:vial"
-    ],
-    "status": "DIFFER"
+    "matched": 15,
+    "status": "AGREE"
    }
   },
   {
@@ -16654,7 +16673,9 @@
      "SellToPlayer:waterskin"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -16901,14 +16922,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 4,
-    "only_br": [
-     "SellToPlayer:rum flask;rum flask of rum"
-    ],
-    "only_ours": [
-     "SellToPlayer:rum flask"
-    ],
-    "status": "DIFFER"
+    "matched": 5,
+    "status": "AGREE"
    }
   },
   {
@@ -17324,7 +17339,9 @@
      "SellToPlayer:wooden spoon"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -17448,7 +17465,9 @@
      "SellToPlayer:spectral bolt"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -17891,20 +17910,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 4,
-    "only_br": [
-     "SellToPlayer:beer;mug of beer",
-     "SellToPlayer:lemonade;mug of lemonade",
-     "SellToPlayer:water (líquido);mug of water",
-     "SellToPlayer:wine;mug of wine"
-    ],
-    "only_ours": [
-     "SellToPlayer:mug",
-     "SellToPlayer:mug",
-     "SellToPlayer:mug",
-     "SellToPlayer:mug"
-    ],
-    "status": "DIFFER"
+    "matched": 8,
+    "status": "AGREE"
    }
   },
   {
@@ -18648,7 +18655,7 @@
    "trade": {
     "matched": 63,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -18737,7 +18744,9 @@
      }
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -18788,7 +18797,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -18839,7 +18848,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -19307,7 +19318,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -19349,7 +19360,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -20431,7 +20444,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -20472,7 +20485,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -20704,7 +20719,9 @@
      }
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -21019,18 +21036,21 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 4,
-    "only_br": [
-     "SellToPlayer:beer;mug of beer",
-     "SellToPlayer:lemonade;mug of lemonade",
-     "SellToPlayer:water (líquido);mug of water",
-     "SellToPlayer:wine;mug of wine"
-    ],
-    "only_ours": [
-     "SellToPlayer:mug",
-     "SellToPlayer:mug",
-     "SellToPlayer:mug",
-     "SellToPlayer:mug"
+    "matched": 8,
+    "price_mismatch": [
+     {
+      "br": [
+       3,
+       4
+      ],
+      "offer": "SellToPlayer:mug",
+      "ours": [
+       2,
+       2,
+       3,
+       3
+      ]
+     }
     ],
     "status": "DIFFER"
    }
@@ -21307,7 +21327,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -21338,7 +21358,7 @@
    "trade": {
     "matched": 50,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -21829,7 +21849,9 @@
      "SellToPlayer:waterskin"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -22778,22 +22800,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 15,
-    "only_br": [
-     "SellToPlayer:blood;vial of blood",
-     "SellToPlayer:oil;vial of oil",
-     "SellToPlayer:slime (líquido);vial of slime",
-     "SellToPlayer:urine;vial of urine",
-     "SellToPlayer:water (líquido);vial of water"
-    ],
-    "only_ours": [
-     "SellToPlayer:vial",
-     "SellToPlayer:vial",
-     "SellToPlayer:vial",
-     "SellToPlayer:vial",
-     "SellToPlayer:vial"
-    ],
-    "status": "DIFFER"
+    "matched": 20,
+    "status": "AGREE"
    }
   },
   {
@@ -22977,7 +22985,9 @@
      "SellToPlayer:vial"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -23667,7 +23677,9 @@
      }
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -23706,7 +23718,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -23923,7 +23935,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -24595,15 +24607,9 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 7,
+    "matched": 9,
     "only_br": [
-     "SellToPlayer:beer;mug of beer",
-     "SellToPlayer:rice ball",
-     "SellToPlayer:water (líquido);mug of water"
-    ],
-    "only_ours": [
-     "SellToPlayer:mug",
-     "SellToPlayer:mug"
+     "SellToPlayer:rice ball"
     ],
     "status": "DIFFER"
    }
@@ -24893,16 +24899,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 12,
-    "only_br": [
-     "SellToPlayer:water (líquido); bottle of water",
-     "SellToPlayer:wine;green flask of wine"
-    ],
-    "only_ours": [
-     "SellToPlayer:bottle",
-     "SellToPlayer:green flask"
-    ],
-    "status": "DIFFER"
+    "matched": 14,
+    "status": "AGREE"
    }
   },
   {
@@ -24929,7 +24927,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -25718,7 +25716,7 @@
      "SellToPlayer:brown book",
      "SellToPlayer:grey small book",
      "SellToPlayer:parchment",
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "BuyFromPlayer:blue book",
      "BuyFromPlayer:gemmed book",
      "BuyFromPlayer:green book",
@@ -25922,7 +25920,9 @@
      "SellToPlayer:net"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -26040,7 +26040,11 @@
      "BuyFromPlayer:dead wolf"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 3
+    "uncomparable": [
+     "BuyFromPlayer:oteryn:item.registry.i00003853",
+     "BuyFromPlayer:oteryn:item.registry.i00003866",
+     "BuyFromPlayer:oteryn:item.registry.i00004028"
+    ]
    }
   },
   {
@@ -26194,7 +26198,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -26526,7 +26530,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -26567,7 +26571,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -27130,7 +27136,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -27173,7 +27179,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -28176,7 +28184,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook of the novice",
+     "SellToPlayer:spellbook",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -28477,7 +28485,10 @@
      "BuyFromPlayer:werewolf fangs"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 2
+    "uncomparable": [
+     "BuyFromPlayer:oteryn:item.registry.i00005369",
+     "BuyFromPlayer:oteryn:item.registry.i00024848"
+    ]
    }
   },
   {
@@ -28552,7 +28563,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest of drawers",
+     "SellToPlayer:chest",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -28593,7 +28604,9 @@
      "SellToPlayer:yellow headboard"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00002380"
+    ]
    }
   },
   {
@@ -29092,7 +29105,9 @@
      "SellToPlayer:net"
     ],
     "status": "DIFFER",
-    "unnamed_offers": 1
+    "uncomparable": [
+     "SellToPlayer:oteryn:item.registry.i00036234"
+    ]
    }
   },
   {
@@ -29207,9 +29222,9 @@
   "position:NO_PLACEMENT": 2,
   "position:OTHER_FLOOR": 26,
   "removed_on_br": 5,
-  "trade:AGREE": 88,
+  "trade:AGREE": 93,
   "trade:BR_ONLY": 64,
-  "trade:DIFFER": 209,
+  "trade:DIFFER": 204,
   "trade:NO_BR_TRADE": 6
  }
 }

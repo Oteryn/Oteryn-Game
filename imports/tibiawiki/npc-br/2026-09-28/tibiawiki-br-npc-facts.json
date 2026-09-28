@@ -14886,15 +14886,15 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "Beer;Mug of Beer": null,
      "Bread": 4,
      "Cask of Brown Ale (Item)": 3000,
      "Cheese": 6,
      "Cookie": 5,
      "Ham": 8,
-     "Ice Cream Cone (Venorean Dream);Ice Cream Cone": null,
-     "Lemonade;Mug of Lemonade": null,
+     "Ice Cream Cone": null,
      "Meat": 5,
+     "Mug of Beer": null,
+     "Mug of Lemonade": null,
      "Water (Líquido)": null,
      "Wine": null
     }
@@ -19902,13 +19902,13 @@
      "Terramite Eggs": null
     },
     "SellToPlayer": {
-     "Beer;Mug of Beer": null,
      "Bread": 4,
      "Cheese": 6,
      "Ham": 8,
      "Meat": 5,
-     "Rice Ball": null,
-     "Water (Líquido);Mug of Water": null
+     "Mug of Beer": null,
+     "Mug of Water": null,
+     "Rice Ball": null
     }
    }
   },
@@ -22061,11 +22061,11 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "Beer;Mug of Beer": null,
      "Bread": 4,
      "Cheese": 6,
      "Ham": 8,
-     "Meat": 5
+     "Meat": 5,
+     "Mug of Beer": null
     }
    }
   },
@@ -23234,14 +23234,14 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "Beer;Mug of Beer": null,
      "Bread": 4,
      "Cheese": 6,
      "Ham": 8,
-     "Lemonade;Mug of Lemonade": null,
      "Meat": 5,
-     "Water (Líquido);Mug of Water": null,
-     "Wine;Mug of Wine": null
+     "Mug of Beer": null,
+     "Mug of Lemonade": null,
+     "Mug of Water": null,
+     "Mug of Wine": null
     }
    }
   },
@@ -23516,22 +23516,22 @@
      "Vial": null
     },
     "SellToPlayer": {
-     "Blood;Vial of Blood": null,
      "Great Health Potion": null,
      "Great Mana Potion": null,
      "Great Spirit Potion": null,
      "Health Potion": null,
      "Mana Potion": null,
-     "Oil;Vial of Oil": null,
-     "Slime (Líquido);Vial of Slime": null,
      "Strong Health Potion": null,
      "Strong Mana Potion": null,
      "Supreme Health Potion": null,
      "Ultimate Health Potion": null,
      "Ultimate Mana Potion": null,
      "Ultimate Spirit Potion": null,
-     "Urine;Vial of Urine": null,
-     "Water (Líquido);Vial of Water": 8
+     "Vial of Blood": null,
+     "Vial of Oil": null,
+     "Vial of Slime": null,
+     "Vial of Urine": null,
+     "Vial of Water": 8
     }
    }
   },
@@ -26428,7 +26428,7 @@
      "Cheese": 6,
      "Ham": 8,
      "Meat": 5,
-     "Rum Flask;Rum Flask of Rum": null
+     "Rum Flask of Rum": null
     }
    }
   },
@@ -28167,9 +28167,9 @@
      "Bread": 4,
      "Cheese": 6,
      "Ham": 8,
-     "Mead;Mug of Mead": null,
      "Meat": 5,
-     "Tea;Mug of Tea": null
+     "Mug of Mead": null,
+     "Mug of Tea": null
     }
    }
   },
@@ -28245,15 +28245,15 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "Beer;Mug of Beer": 3,
      "Bread": 4,
      "Cheese": 6,
      "Egg": 2,
      "Ham": 8,
      "Meat": 5,
-     "Rum; Mug of Rum": null,
-     "Tomato": null,
-     "Wine;Mug of Wine": 4
+     "Mug of Beer": 3,
+     "Mug of Rum": null,
+     "Mug of Wine": 4,
+     "Tomato": null
     }
    }
   },
@@ -28820,7 +28820,6 @@
      "Document": null,
      "Fishing Rod": 150,
      "Machete": null,
-     "Oil;Vial of Oil": null,
      "Parchment (Yellow)": null,
      "Pick": null,
      "Plate": null,
@@ -28830,6 +28829,7 @@
      "Scythe": 50,
      "Shovel": 50,
      "Torch": null,
+     "Vial of Oil": null,
      "Watch": null,
      "Water (Líquido)": 10,
      "Worm": null
@@ -30124,14 +30124,14 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
-     "Beer;Mug of Beer": 3,
      "Bread": 4,
      "Cheese": 6,
      "Ham": 8,
-     "Lemonade;Mug of Lemonade": null,
      "Meat": 5,
-     "Water (Líquido);Mug of Water": null,
-     "Wine;Mug of Wine": 4
+     "Mug of Beer": 3,
+     "Mug of Lemonade": null,
+     "Mug of Water": null,
+     "Mug of Wine": 4
     }
    }
   },
@@ -31217,20 +31217,20 @@
    "trades": {
     "BuyFromPlayer": {},
     "SellToPlayer": {
+     "Bottle of Water": 2,
      "Bread": null,
      "Cake": null,
      "Cheese": null,
      "Cookie": null,
      "Egg": 2,
      "Fish": null,
+     "Green Flask of Wine": null,
      "Ham": 6,
      "Meat": null,
      "Roll": null,
      "Salmon": 6,
      "Valentine's Cake": 100,
-     "Water (Líquido); Bottle of Water": 2,
-     "White Mushroom": null,
-     "Wine;Green Flask of Wine": null
+     "White Mushroom": null
     }
    }
   },

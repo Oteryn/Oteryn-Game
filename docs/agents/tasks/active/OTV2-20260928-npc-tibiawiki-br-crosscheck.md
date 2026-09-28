@@ -66,7 +66,7 @@ forbids bulk-copying TibiaWiki prose).
 | BR page found | 1,072 of 1,093 admitted NPCs |
 | Removed on BR (13.12) | 5 |
 | Positions | 226 same tile, 678 within 3 tiles, 96 within 10, 26 on another floor, 43 far |
-| Trade | 88 agree, 209 differ (27 explicit price differences), 64 with BR offers but none admitted |
+| Trade | 93 agree, 204 differ (28 explicit price differences, 50 offers without a comparable item name), 64 with BR offers but none admitted |
 | Dialogue | 360 NPCs checked: of 5,404 texts, 2,685 match a transcript line exactly and 329 nearly; 68 NPCs match none |
 
 #1103 committed the raw capture itself before a review finding about this could be applied. This task

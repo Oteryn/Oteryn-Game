@@ -217,6 +217,8 @@ def page_facts(page):
         direction = 'SellToPlayer' if kind == 'Sell' else 'BuyFromPlayer'
         for part in LINK.sub(r'\1', body).split('|')[1:]:  # links first, so a piped link is not a separator
             fields = [field.strip() for field in part.split(',')]
+            # `Blood;Vial of Blood` names the content page, then the offer's in-game name
+            fields[0] = fields[0].rsplit(';', 1)[-1].strip()
             if fields[0]:
                 trades[direction].setdefault(fields[0], price_of(fields[1]) if len(fields) > 1 else None)
     speakers = {fold(page['title']), fold(name)}
@@ -288,7 +290,7 @@ def cmd_self_test(_args):
     assert again == snapshot
     text = ("{{Infobox_NPC\n| name = Goldro\n| implemented = 15.30\n| removed = \n"
             "| location = [[Salgadora]] ({{Mapa|34055,32503,7:2|aqui}}).\n| notes = Long wiki prose.\n"
-            "| sells = {{Trades/Sell\n| Bread,4\n| [[Cheese]]\n| Cot, 200 [[Gold Coins|gp]]\n| Fire Sword, '''1 000'''}}\n"
+            "| sells = {{Trades/Sell\n| Bread,4\n| [[Cheese]]\n| Cot, 200 [[Gold Coins|gp]]\n| Fire Sword, '''1 000'''\n| Blood;Vial of Blood\n| Beer; Mug of Beer, 3}}\n"
             "| falas = \n''Jogador:'' '''Hi'''</br>\n"
             "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n"
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
@@ -299,7 +301,7 @@ def cmd_self_test(_args):
         {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
     assert facts['positions'] == [(34055, 32503, 7)], facts
     assert facts['trades'] == {'BuyFromPlayer': {}, 'SellToPlayer': {
-        'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000}}, facts
+        'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000, 'Vial of Blood': None, 'Mug of Beer': 3}}, facts
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.', 'One.', 'Two. still two.',
                                   'Bye.'], facts

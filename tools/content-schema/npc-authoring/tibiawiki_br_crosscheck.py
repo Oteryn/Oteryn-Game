@@ -12,7 +12,8 @@ name carries a qualifier, such as `Name (NPC)`, when exactly one does):
   same floor within NEAR_TILES tiles, CLOSE the same floor within CLOSE_TILES, OTHER_FLOOR within
   CLOSE_TILES on another floor, otherwise MISMATCH (BR map markers are approximate);
 - trade: admitted offers against the BR sell/buy lists by item name (a BR name with a parenthesised
-  qualifier also matches the plain name), with the explicit BR price when BR gives one (BR omits the
+  qualifier also matches the plain name, and a filled container such as `vial of blood` matches the
+  container), with the explicit BR price when BR gives one (BR omits the
   price when it is the item's usual price). BR_ONLY is an NPC whose BR trade list has no admitted
   offers at all;
 - dialogue: how many admitted Dialogue texts appear, as a full line, among the lines the NPC speaks in
@@ -44,6 +45,7 @@ CLOSE_TILES = 10
 NEAR_RATIO = 0.9
 VARIANT = re.compile(r'^(.*?)(?: \([^()]*\)| Init| Vampires Lair| Back)$')
 QUALIFIER = re.compile(r'^(.*?) \([^()]*\)$')
+CONTAINER = re.compile(r'^(.*?) of .+$')  # `vial of blood`: the admitted offer is the container, its fluid a sub type
 
 
 def normalize(text):
@@ -152,20 +154,21 @@ def check_trade(offers, trades, names):
         return {'status': 'BR_ONLY', 'br_offers': sum(len(names) for names in trades.values())}
     # several offers can share one item name (four music sheets); both sides keep every offer
     ours = {'SellToPlayer': {}, 'BuyFromPlayer': {}}
-    unnamed = 0
+    uncomparable = []
     for offer in offers:
         name = names.get(offer['item']['key'])
-        if name is None:
-            unnamed += 1
+        if name is None:  # an Item without a known name cannot be compared by name; it is reported, not dropped
+            uncomparable.append(f'{offer["direction"]}:{offer["item"]["key"]}')
             continue
         ours[offer['direction']].setdefault(name, []).append(offer['unit_price'])
     row = {'matched': 0, 'only_ours': [], 'only_br': [], 'price_mismatch': []}
     for direction in ('SellToPlayer', 'BuyFromPlayer'):
         mine, theirs = ours[direction], {}
         for name, price in trades[direction].items():
-            qualified = QUALIFIER.match(name)
-            if name not in mine and qualified and qualified.group(1) in mine:
-                name = qualified.group(1)
+            for form in (QUALIFIER, CONTAINER):
+                base = form.match(name)
+                if name not in mine and base and base.group(1) in mine:
+                    name = base.group(1)
             theirs.setdefault(name, []).append(price)
         for name in sorted(set(mine) | set(theirs)):
             label = f'{direction}:{name}'
@@ -184,9 +187,11 @@ def check_trade(offers, trades, names):
                         missing.append(price)
                 if missing:
                     row['price_mismatch'].append({'offer': label, 'ours': mine_prices, 'br': explicit})
-    if unnamed:
-        row['unnamed_offers'] = unnamed
-    row['status'] = 'AGREE' if not (row['only_ours'] or row['only_br'] or row['price_mismatch']) else 'DIFFER'
+    row['uncomparable'] = sorted(uncomparable)
+    if row['only_ours'] or row['only_br'] or row['price_mismatch']:
+        row['status'] = 'DIFFER'
+    else:
+        row['status'] = 'INCOMPLETE' if uncomparable else 'AGREE'
     return {key: value for key, value in row.items() if value not in ([], 0) or key in ('status', 'matched')}
 
 
