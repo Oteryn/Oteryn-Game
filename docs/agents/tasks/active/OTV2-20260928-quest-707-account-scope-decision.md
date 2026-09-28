@@ -47,7 +47,7 @@ The scope matrix gains four account-scope rows. The quest progress row stays Cha
 
 - `PROVEN`: scope matrix quest row; D34, D35 and D42; account guard keyed by `account_id`
   (`0002_fresh_admission_authority.sql:70`); ADR-0010 §6; product profile scope baseline §3.2;
-  DUR-03 §5.2; `PROD-ENTITLEMENTS-01`; TibiaWiki "Achievements" (secondary evidence).
+  DUR-03 §5.2; `PROD-ENTITLEMENTS-01`; Store catalog owner decision §1 and §3; TibiaWiki "Achievements" (secondary evidence).
 - `DERIVED`: append-only account facts need no cross-character ordering.
 - `UNKNOWN`: gameplay effects of Reference-target cosmetics; the Achievement domain owner.
 
@@ -104,7 +104,8 @@ finding_family_sweep:
   evidence:
     - apps/game-server/migrations/0002_fresh_admission_authority.sql
 finding_dispositions:
-  p0_p1_accepted_and_repaired: []
+  p0_p1_accepted_and_repaired:
+    - "Codex P1 4121971783 (4b67b20): §4.5 and the scope matrix made the Store inbox Game-owned, contradicting the Store catalog owner decision §1/§3. Repaired: delivery ownership stays open under gap register §32; D47/D49 fix scope and portability only; the item still enters the world only through a DUR-03 MINT"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex P2 4121915460 (d7f8834): an opt-out did not stop old facts from satisfying conditions. Fixed: readers apply the current world and quest policy (§4.2); K6 added."

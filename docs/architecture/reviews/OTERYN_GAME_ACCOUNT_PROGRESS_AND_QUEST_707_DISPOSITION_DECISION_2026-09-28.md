@@ -66,6 +66,9 @@ Two questions follow:
   lifecycle; Game owns gameplay delivery and enforcement. Its acceptance does not authorize
   entitlement runtime implementation, Premium/VIP activation or product benefits (architecture
   README).
+- Store catalog owner decision (2026-09-28) §1 and §3: the catalogue is Game content, and coins and
+  the purchase ledger are Platform's. Ownership of purchase delivery across the Game/Platform
+  boundary, entitlement lifecycle and cross-boundary idempotency stay open under gap register §32.
 - Reference evidence (TibiaWiki "Achievements", read 2026-09-28): 572 achievements, 204 secret,
   grades 1-4 worth 1-10 points. Achievements are character-based, but any character's page can
   display achievements unlocked by any character of the same account; points count per character.
@@ -178,14 +181,20 @@ implementation it applies to.
 
 ### 4.5 Store purchases (D47, D49)
 
-- Store unlocks follow §4.3.
-- A Store item or consumable enters an account Store inbox as a Game-owned delivery line for a
-  Platform entitlement line, bound to the profile family it was bought for. The inbox holds no
-  `ItemInstance`, so no new DUR-03 location family is introduced.
-- A character of the account claims a line on any world of that profile family. The claim is a
-  DUR-03 MINT into that character's `CharacterInventory`, with the delivery line as source cause:
-  idempotent per line and unit, fenced like the reward claim (#1033). After the claim the item is an
-  ordinary world-scoped item.
+This section fixes scope and portability only (D47, D49). It does **not** decide who owns purchase
+delivery across the Game/Platform boundary. That ownership, entitlement identity and lifecycle, and
+idempotent delivery across a boundary failure stay open under gap register §32, as
+`OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md` §1 and §3 record.
+
+- A Store unlock is an account-scoped, portable unlock (§4.3) once delivered.
+- A purchased Store item or consumable waits in one account inbox, bound to the profile family it
+  was bought for. The inbox holds no `ItemInstance`, so no new DUR-03 location family is
+  introduced. Whether the inbox line is a Game record or a Platform entitlement line that Game
+  reads is for the §32 delivery decision.
+- A character of the account claims a line on any world of that profile family. Whoever owns the
+  line, the item enters the world only as a DUR-03 MINT into that character's
+  `CharacterInventory`, with the line as source cause: idempotent per line and unit, fenced like
+  the reward claim (#1033). After the claim the item is an ordinary world-scoped item.
 - Activation waits for an explicit product decision that authorizes entitlement delivery under
   `PROD-ENTITLEMENTS-01`; accepting that contract alone does not.
 
@@ -250,7 +259,7 @@ follow_up_owners:
   - "Quest authoring format: account_completion declaration, D46 default and validator rule"
   - "Achievement owner contract: AccountAchievement catalogue and grant path"
   - "Character appearance owner: AccountUnlock for outfits, addons, mounts"
-  - "Entitlement delivery under PROD-ENTITLEMENTS-01, after an explicit product activation decision: Store inbox and claim"
+  - "Gap register §32 delivery decision: Game/Platform ownership of the Store inbox line and cross-boundary idempotency, then an explicit product activation decision under PROD-ENTITLEMENTS-01"
   - "Reference parity manifest: record the D45, D47, D48 declared differences"
 required_revalidation:
   - "the first account-fact migration proves: fact inserted only inside a fenced character event; duplicate insert leaves one row and keeps the first earner; a stale character fence writes no fact; a condition reads character-or-account completion; level and item requirements are still checked per character; an exclusive-choice quest cannot grant account completion; an existing fact does not satisfy a condition when the quest now declares none or the world disables the policy"
