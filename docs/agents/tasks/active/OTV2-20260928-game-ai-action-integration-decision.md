@@ -77,6 +77,7 @@ authority_invariants:
   - A4 one think occurrence applies at most one action, and a retry never applies it again or redraws RNG
   - A5 live plus pending creatures of a spawn never exceed its population; a respawn always uses a new actor-local generation
   - A6 creature damage never takes a player's HP below 1
+  - A7 a player inside the PvE re-entry protection window receives no creature bite, and none is buffered
 consumer_boundaries:
   - Channel owner timer input
   - Movement owner step for a creature
@@ -98,6 +99,7 @@ negative_cases_required_of_implementation:
   - A4 the same think occurrence resubmitted -> the first result, no second bite, no RNG redraw
   - A5 a respawn due while the population is already full, or a second timer for the same cell -> rejected, no second actor
   - A6 a bite larger than the remaining HP -> HP ends at 1; the committed effect records the clamped amount
+  - A7 an adjacent protected target -> no bite proposed; a bite reaching Ability is rejected at commit; nothing fires when protection ends
 positive_cases_required_of_implementation:
   - activation spawns the rat; it wanders, perceives the player, chases one revalidated step per think, and bites when adjacent
   - after the rat dies, it respawns on its cell with a new actor-local generation after the delay
@@ -119,9 +121,13 @@ finding_family_sweep:
     - apps/game-server/src/movement.rs
     - apps/game-server/src/ability/intent.rs
 finding_dispositions:
-  p0_p1_accepted_and_repaired: []
+  p0_p1_accepted_and_repaired:
+    - "Codex P1 4122718886 (4cd49cf): bites ignored PvE re-entry protection. Repaired: a protected player is not an attack target; Ability revalidates at commit; no buffering; A7 added"
+    - "Codex P1 4122718873 (4cd49cf): respawn retries lacked a terminal disposition. Repaired: stable occurrence and attempt identities, terminal SKIPPED after 3 retries, one bounded successor occurrence a full delay later, CANCELLED on revision change or retirement"
+    - "Codex P1 4122718859 (4cd49cf): the timer key could collide across resolutions. Repaired: the key adds the timer family, occurrence identity and scheduling RuntimeExecutionOrdinal; think and respawn occurrence identities are defined"
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - "Codex P2 4122718899 (4cd49cf): the bite chance had no defined effect. Fixed: the draw gates the bite; a failed draw ends the think idle"
 ```
 
 ## Acceptance criteria

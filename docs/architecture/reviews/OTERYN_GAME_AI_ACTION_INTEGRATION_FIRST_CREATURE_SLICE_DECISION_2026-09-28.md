@@ -97,8 +97,14 @@ This is the first implementation of the FND-03 timer contract in `ChannelRuntime
 now and spell cooldowns and regeneration later.
 
 - A timer is an owner-scoped input. Its key is (scope, ownership generation, target actor and
-  actor-local generation, due deadline, deterministic within-resolution sequence). When due, the
-  owner accepts it as a normalized input with a new execution ordinal.
+  actor-local generation, timer family, timer occurrence identity, due deadline, the scheduling
+  resolution's `RuntimeExecutionOrdinal`, deterministic within-resolution sequence). Equal
+  deadlines order by the scheduling ordinal, then the sequence (FND-03 §10.1). When due, the owner
+  accepts it as a normalized input with a new execution ordinal.
+- Occurrence identities: a think occurrence is (creature `ExactActorRef`, per-actor think
+  sequence number); a respawn occurrence is (spawn source, cell, the dead actor's
+  `ExactActorRef`), and each retry adds its attempt index 1 to 3. The same identity is never
+  scheduled twice.
 - A timer whose ownership generation or target generation no longer matches is dropped without
   mutation (FND-03 §10.3).
 - Time comes from an injectable owner clock (`SemanticTimeMicros`), with a deterministic virtual
@@ -126,8 +132,17 @@ now and spell cooldowns and regeneration later.
   cell. When it is due, the owner admits a new actor there with a new actor-local generation. The
   dead actor's generation is never reused, so its death key cannot recur.
 - If the cell is occupied when the timer is due, the attempt is postponed by the spawn's retry
-  interval, at most `AI01-SPAWN-OCCUPANCY-RETRIES` times; after the last retry that creature waits
-  for the next respawn window. It never displaces an actor and never picks another cell.
+  interval, at most `AI01-SPAWN-OCCUPANCY-RETRIES` (3) times, under the same respawn occurrence
+  with attempt indices 1 to 3 (GAME-AI-01 §13.2). It never displaces an actor and never picks
+  another cell.
+- **Terminal disposition.** When the third retry fails, that respawn occurrence ends as `SKIPPED`,
+  with nothing admitted. The spawn then schedules one new respawn occurrence for the same cell,
+  due one full respawn delay later, with a new identity (spawn source, cell, the skipped
+  occurrence's identity, successor index). It is bounded like the first: one pending occurrence
+  per cell, at most 3 retries, and a terminal `SKIPPED`. A content revision change or scope
+  retirement cancels pending occurrences (`CANCELLED`). There is never more than one pending
+  occurrence per cell, so the chain is bounded in concurrency and runs at most once per respawn
+  delay.
 - A despawn or scope retirement creates no death and schedules no loot (VSL-COMBAT-01 §7).
 - The respawn delay and retry interval are content inputs of the spawn definition (§4.8).
 
@@ -136,8 +151,9 @@ now and spell cooldowns and regeneration later.
 Each think timer runs one bounded, deterministic resolution over an immutable snapshot of the
 owner state:
 
-1. **Attack.** If a legal target player is adjacent and the bite is not cooling down, propose one
-   bite intent (§4.6).
+1. **Attack.** If a legal target player is adjacent and the bite is not cooling down, draw the
+   bite chance. On success, propose one bite intent (§4.6). On a failed draw the resolution ends
+   idle for this think: it neither chases nor wanders.
 2. **Chase.** Otherwise, if a target player is perceived, propose one cardinal step along a path
    proposal toward that player (§4.5).
 3. **Wander.** Otherwise, with the definition's wander chance, propose one random cardinal step;
@@ -145,6 +161,10 @@ owner state:
 
 - Perception: players within the definition's perception range in the same Channel scope,
   canonicalized by stable identity; the nearest wins, ties by stable identity (GAME-AI-01 §8).
+- **Re-entry protection.** A player inside the active four-second PvE re-entry protection window
+  (`DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`; GAME-AI-01 §9) is not a legal attack
+  target. The creature may still perceive and chase that player, but it proposes no bite, and no
+  bite is buffered for when protection ends. The creature keeps its current target.
 - Randomness (wander direction, wander chance, bite chance) draws from a SIM RNG stream bound to
   the think occurrence. A retry of the same occurrence never redraws.
 - A resolution proposes at most one action. The next think timer is scheduled from the
@@ -174,7 +194,8 @@ This supersedes the bootstrap's `movement_adoption: FORBIDDEN_IN_BOOTSTRAP` for 
   issuer is the creature's `ExactActorRef` (owner, generation, actor-local id and generation),
   not a string atom. Ability resolves issuer and target exactly and rejects either if stale.
 - Ability checks legality exactly as for a player intent: the issuer is alive, the target is a
-  live player in range 1, and the bite's interval has elapsed. The effect commits through the
+  live player in range 1, the target is not inside the PvE re-entry protection window (revalidated
+  at commit from the owning protection fact), and the bite's interval has elapsed. The effect commits through the
   current owner in the same mutation as the cooldown.
 - The intent's occurrence identity is (creature `ExactActorRef`, think occurrence). A retry of
   the same occurrence returns the first result and never applies damage twice.
@@ -274,10 +295,10 @@ required_fresh_allocation: true
 required_independent_review: "exact-head independent review (AI authority, timers, Movement and Ability boundaries)"
 implementation_lanes: [AI-1, AI-2, AI-3, AI-4]
 required_revalidation:
-  - "AI-1: stale timers (ownership or actor generation changed) mutate nothing; equal deadlines order deterministically; SKIP_TO_LATEST collapses missed think timers; a virtual clock drives the tests"
-  - "AI-2: activation realizes each spawn once; live plus pending never exceed the population (4 accepted, 5 rejected); 16 spawns accepted and 17 rejected; respawn uses a new actor-local generation; an occupied cell postpones at most 3 times; the start/east Movement proof stays green"
+  - "AI-1: stale timers (ownership or actor generation changed) mutate nothing; equal deadlines from different resolutions order by scheduling ordinal then sequence; an occurrence identity is never scheduled twice; SKIP_TO_LATEST collapses missed think timers; a virtual clock drives the tests"
+  - "AI-2: activation realizes each spawn once; live plus pending never exceed the population (4 accepted, 5 rejected); 16 spawns accepted and 17 rejected; respawn uses a new actor-local generation; an occupied cell postpones at most 3 times, then the occurrence ends SKIPPED and one successor occurrence is scheduled a full delay later; the start/east Movement proof stays green"
   - "AI-3: identical snapshots give identical decisions under shuffled order; chase moves one revalidated step; wander draws from the occurrence RNG and a retry never redraws"
-  - "AI-4: a stale creature issuer is rejected; one think occurrence applies at most one bite; player HP never drops below 1; AI never mutates Movement, Ability or vitals directly"
+  - "AI-4: a stale creature issuer is rejected; one think occurrence applies at most one bite; a protected (re-entry window) target gets no bite and none is buffered; a failed bite-chance draw ends the think idle; player HP never drops below 1; AI never mutates Movement, Ability or vitals directly"
 remaining_unknowns:
   - Reference rat values (routed to content, §4.8)
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates AI-1."
