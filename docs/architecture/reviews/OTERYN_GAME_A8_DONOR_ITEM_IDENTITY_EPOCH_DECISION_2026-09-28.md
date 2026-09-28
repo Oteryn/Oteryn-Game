@@ -28,6 +28,9 @@ Oteryn Item keys without moving any existing key?
 | D96 | Additive donor-identity epoch (option B). The donor ids continue the opaque sequence after its highest allocated number. The frozen CW2-B1 import stays byte-identical. A later donor generation adds a further epoch by the same rule. | "Tak, dopisać na końcu" |
 | D97 | All 412 donor ids get an Item key, including the 138 routed to WorldObject or Terrain. Those are non-materializable Item pointers, and their family key follows the WO-0 D93 rule. | "Wszystkie 412, jak WO-0" |
 
+Both decisions apply after the alias gate (§4.1): a donor id that is an alias of an existing Item
+binds to it and gets no new key. D97 means that routed ids are not excluded from minting.
+
 ## 3. Facts
 
 **PROVEN** (main `e19b19d6`)
@@ -62,27 +65,45 @@ Oteryn Item keys without moving any existing key?
 
 ### 4.1 Epoch rule (D96)
 
-- **Sequence.** Epoch 2 assigns the 412 donor ids, in ascending donor source id, the sequence
-  numbers 38,094 to 38,505: the highest sequence allocated by any earlier epoch (38,093) plus the
-  rank. The key is `oteryn:item.registry.iNNNNNNNN`, revision `definition-r1`, and the authorship is
+- **Alias gate first.** Before any key is minted, B1b resolves every donor id against the existing
+  Items by the G4 promotion discipline (collect, resolve with multi-signal evidence, emit a
+  crosswalk state). Names alone never decide (G4 rule 9).
+  - `EXACT` or an accepted alias of an existing Item: no new key. The donor id gets an
+    `ACCEPTED_ALIAS` binding to that existing key.
+  - `NO_MATCH`: the id is minted in epoch 2.
+  - `PROBABLE_MATCH`, `AMBIGUOUS` or `CONFLICT`: no key and no binding. The id stays crosswalk
+    evidence until it is resolved, and then enters a later epoch or becomes an alias.
+- **Sequence.** Epoch 2 assigns the `NO_MATCH` donor ids, in ascending donor source id, the
+  sequence numbers from 38,094 upward: the highest sequence allocated by any earlier epoch (38,093)
+  plus the rank among the minted ids. With all 412 minted the range is 38,094 to 38,505. The key
+  is an Oteryn-allocated opaque number; the source id only orders allocation, as in epoch 1, and
+  never becomes the key. The key is `oteryn:item.registry.iNNNNNNNN`, revision `definition-r1`, and the authorship is
   `OTERYN_OPAQUE_REGISTRY_ALLOCATION_EPOCH_2`.
-- **Frozen input.** The epoch is frozen by the donor census bytes (digest recorded by B1b), the
-  donor commit `00ce02a57ca5a12e48f32a3476e37471167e4c3f` and the `items.xml` digest in the
+- **Frozen input.** The epoch is frozen by the donor census bytes and the crosswalk evidence of
+  the alias gate (digests recorded by B1b), the donor commit `00ce02a57ca5a12e48f32a3476e37471167e4c3f` and the `items.xml` digest in the
   census. Its allocation digest is recorded the same way as CW2-B1's.
 - **Epoch 1 untouched.** `protected_cw2_b1_full_item_family_import`, its constants, its 38,157
   keys and its evidence digest do not change. Epoch 2 is a separate function and constants next to
   it. Its closure checks are:
-  - exactly 412 rows;
+  - exactly the `NO_MATCH` rows of the crosswalk evidence, each once;
   - no source id shared with epoch 1;
   - no key shared with any bound key.
 - **Never reused.** A sequence number is allocated once. Numbers of retired keys (such as 2,921)
   are never reassigned.
 - **Later epochs.** Each further donor generation is epoch N, starting after the highest sequence
-  of all earlier epochs. Its input is only the ids absent from every earlier epoch's corpus.
+  of all earlier epochs. Its input is only the ids absent from every earlier epoch's corpus, after
+  the same alias gate.
+- **An alias found after minting.** If a minted epoch-2 key later proves to be an alias of an
+  existing Item, the following holds:
+  - The donor binding becomes `ACCEPTED_ALIAS` to the existing key at a new binding revision.
+  - The duplicate key is retired: it stays non-materializable, its number is never reused, and
+    references move to the existing key under the retirement precedent of R7-P04 (the gold coin,
+    2,921).
+  - No other key changes.
 
 ### 4.2 Bindings and records
 
-- **Bindings.** Each donor id gets one G4 binding with these fields:
+- **Bindings.** Each minted donor id gets one G4 binding with these fields:
   - `source_key` `oteryn:source.crystalserver`;
   - `source_revision` `00ce02a5…`;
   - `identity_namespace` `ots/item_server_id`;
@@ -91,11 +112,12 @@ Oteryn Item keys without moving any existing key?
   - `target` the epoch-2 key.
 
   Base bindings are unchanged.
-- **Item records.** Each donor id gets one Item record: `materializable: false` and stack class
+- **Item records.** Each minted donor id gets one Item record: `materializable: false` and stack class
   `Unknown`, as for epoch-1 opaque keys. Promotion, facts and Presentation belong to B2 and B3.
-  The 13 unresolved ids get keys too, because identity does not depend on classification.
+  The 13 ids with an unresolved family profile are minted too when they are `NO_MATCH`, because
+  identity does not depend on classification.
 - **Routed ids (D97).**
-  - The 138 routed ids are Item pointers with `routed_to`, once the WO-1 Item schema amendment
+  - Routed ids are handled like the others (D97): a minted routed id is an Item pointer with `routed_to`, once the WO-1 Item schema amendment
     exists.
   - WO-2 gives them `oteryn:world-object.registry.iNNNNNNNN` or
     `oteryn:terrain.registry.iNNNNNNNN` with the same number, by the D93 rule.
@@ -114,7 +136,7 @@ following holds:
 
 | Child | Scope | Depends on |
 |---|---|---|
-| B1b | Epoch-2 function, constants and tests beside the frozen import; the 412 bindings and Item records; independent identity review. The Rust change needs the shared lease. | this decision |
+| B1b | The alias gate and its crosswalk evidence; the epoch-2 function, constants and tests beside the frozen import; the bindings and Item records; independent identity review. The Rust change needs the shared lease. | this decision |
 | B2, B3 | Wiki evidence and facts for the donor ids | B1b |
 | WO-2 | Family keys for the 138 routed donor ids | WO-1, B1b |
 
@@ -130,10 +152,10 @@ following holds:
 ## 7. Decision test
 
 - **Must decide now:** YES. B1b is parked, and B2, B3 and the WO-2 donor part wait on it.
-- **Minimum sufficient:** one additive function with constants, 412 bindings, and no change to the
-  frozen import.
-- **Superseding evidence:** a source that renumbers existing ids (G4 rule 8 covers it); a donor id
-  that later proves to be an alias of an existing item (`ACCEPTED_ALIAS`, no remint).
+- **Minimum sufficient:** one alias gate, one additive function with constants, the bindings, and
+  no change to the frozen import.
+- **Superseding evidence:** a source that renumbers existing ids (G4 rule 8 covers it). A donor id
+  that later proves to be an alias follows the §4.1 retirement rule.
 - **Deliberately not decided:** facts, promotion, Presentation binding, runtime or wire ids.
 
 ## 8. Handback
@@ -151,9 +173,10 @@ required_fresh_allocation: true
 required_independent_review: "exact-head independent review (epoch rule, frozen import untouched)"
 implementation_lanes: [B1b]
 required_revalidation:
-  - "B1b: the 412 donor ids get 38,094..38,505 in ascending source id; the epoch-1 import, its 38,157 keys and digest are byte-identical; no source id or key collides; the allocation is reproducible from the frozen census; 2,921 stays retired"
-  - "B1b: every donor id has exactly one EXACT binding at 00ce02a5; base bindings unchanged"
+  - "B1b: every one of the 412 donor ids has a crosswalk state; EXACT or alias ids mint nothing and bind ACCEPTED_ALIAS; PROBABLE_MATCH, AMBIGUOUS and CONFLICT ids mint and bind nothing"
+  - "B1b: the NO_MATCH ids get 38,094 upward in ascending source id; the epoch-1 import, its 38,157 keys and digest are byte-identical; no source id or key collides; the allocation is reproducible from the frozen census; 2,921 stays retired"
+  - "B1b: every minted donor id has exactly one EXACT binding at 00ce02a5; base bindings unchanged"
 remaining_unknowns:
-  - which donor ids later prove to be aliases of existing items
+  - the crosswalk state of each donor id (B1b)
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then re-allocates B1b."
 ```

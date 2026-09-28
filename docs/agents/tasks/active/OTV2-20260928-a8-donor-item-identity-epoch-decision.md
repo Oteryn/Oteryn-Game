@@ -64,6 +64,16 @@ identity, requires independent identity review when allocated.
 
 - Identity minting, bindings, Item records, allocator code and facts (B1b, B2, B3).
 
+## Finding dispositions
+
+Codex review of `c97bd25`: one P1, ACCEPTED in repair generation 1 of 1 (#162 convergence rule
+5869165340). No owner decision changed.
+
+- 4126589960 (aliases minted before resolution, against the G4 promotion discipline): B1b first
+  resolves every donor id to a crosswalk state; only `NO_MATCH` ids are minted, aliases bind
+  `ACCEPTED_ALIAS` to the existing key, and unresolved states mint nothing. An alias found after
+  minting retires the duplicate key under the R7-P04 precedent (§2, §4.1, §4.2, §8).
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
