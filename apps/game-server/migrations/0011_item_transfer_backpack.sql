@@ -26,6 +26,14 @@ ALTER TABLE game_item_instances
         (lifecycle = 1 AND quantity BETWEEN 1 AND 4294967295)
         OR (lifecycle = 2 AND quantity = 0 AND last_transaction_id IS NOT NULL));
 
+-- Repair generation 2 (Codex review 5343738115, findings 1-2): the physical
+-- transaction that created a receipt, so a downstream INSERT/UPDATE/DELETE
+-- can never borrow a historical receipt's logical TransactionId from an
+-- already-committed physical transaction. `xid8` compares by plain value
+-- (no wraparound) and is stable for the lifetime of one transaction.
+ALTER TABLE game_item_mint_receipts
+    ADD COLUMN created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id();
+
 -- CharacterEquipment slot `container` (Global's Container Slot): at most one
 -- item per character, and that item is the character's main backpack.
 CREATE TABLE game_item_container_slots (
@@ -110,6 +118,11 @@ CREATE TABLE game_item_transfer_receipts (
     occurred_at BIGINT NOT NULL CHECK (occurred_at > 0),
     envelope_sha256 BYTEA NOT NULL CHECK (octet_length(envelope_sha256) = 32),
     committed_at BIGINT NOT NULL CHECK (committed_at >= 0),
+    -- The physical transaction that inserted this receipt (repair generation
+    -- 2, finding 2): a downstream placement or item/location change must be
+    -- proven against a receipt created in that SAME physical transaction,
+    -- never a historical one reused by TransactionId value alone.
+    created_xact_id xid8 NOT NULL DEFAULT pg_current_xact_id(),
     PRIMARY KEY (game_session_id, command_id),
     CHECK (receiver_item_instance_id IS DISTINCT FROM source_item_instance_id),
     CHECK ((destination_parent_item_instance_id IS NULL) = (destination_ordinal IS NULL)),
@@ -143,6 +156,19 @@ CREATE TABLE game_item_transfer_quantity_evidence (
     transaction_id UUID NOT NULL CHECK (game_character_is_uuid_v7(transaction_id)),
     quantity_before BIGINT NOT NULL CHECK (quantity_before BETWEEN 1 AND 4294967295),
     PRIMARY KEY (item_instance_id, transaction_id)
+);
+
+-- Guarded evidence of the real pre-DELETE World and Channel of a Ground row,
+-- captured by the Ground DELETE trigger below from the actual OLD row, never
+-- from a client-supplied value (repair generation 2, finding 3). The Ground
+-- row is gone by the time the deferred receipt guard runs, and TRANSFER never
+-- returns an item to Ground (the insertion guard below only ever admits a
+-- fresh MINT), so at most one removal, hence one evidence row, ever exists
+-- per item. Only the SECURITY DEFINER capture trigger writes it.
+CREATE TABLE game_item_ground_removal_evidence (
+    item_instance_id UUID PRIMARY KEY REFERENCES game_item_instances (item_instance_id),
+    world_id UUID NOT NULL,
+    channel_id UUID NOT NULL
 );
 
 CREATE FUNCTION game_item_transfer_reservation_guard() RETURNS trigger
@@ -190,7 +216,12 @@ BEGIN
         SELECT 1 FROM game_item_transfer_receipts r
          WHERE r.transaction_id = NEW.last_transaction_id
            AND (r.source_item_instance_id = NEW.item_instance_id
-                OR r.receiver_item_instance_id = NEW.item_instance_id)) THEN
+                OR r.receiver_item_instance_id = NEW.item_instance_id)
+           -- Repair generation 2 (finding 2's root cause, applied here too):
+           -- the matched receipt must be this SAME physical transaction's
+           -- own receipt, never a historical one whose logical TransactionId
+           -- is replayed from a different, already-committed transaction.
+           AND r.created_xact_id = pg_current_xact_id()) THEN
         RAISE EXCEPTION 'item change must commit with its TRANSFER receipt'
             USING ERRCODE = '23514';
     END IF;
@@ -207,7 +238,8 @@ BEGIN
         SELECT 1 FROM game_item_transfer_receipts r
           JOIN game_item_instances i ON i.item_instance_id = r.source_item_instance_id
          WHERE r.source_item_instance_id = OLD.item_instance_id
-           AND i.last_transaction_id = r.transaction_id) THEN
+           AND i.last_transaction_id = r.transaction_id
+           AND r.created_xact_id = pg_current_xact_id()) THEN
         RAISE EXCEPTION 'Ground removal must commit with its TRANSFER receipt'
             USING ERRCODE = '23514';
     END IF;
@@ -215,20 +247,89 @@ BEGIN
 END;
 $$;
 
--- A slot or entry placement exists only as the destination of its TRANSFER.
--- GAMEITEM01-CONTAINER-ENTRIES-MAX: at most 20 entries per parent.
-CREATE FUNCTION game_item_placement_proven() RETURNS trigger
+-- Ground gains a location only as a fresh MINT's own receipt, in the same
+-- physical transaction, for a live item that was never placed or transferred
+-- before (repair generation 2, finding 1): this closes reinsertion of a
+-- Ground row after a TRANSFER (a live item both in a container and on
+-- Ground) or for a retired item regaining a location. SECURITY DEFINER is
+-- not needed: the runtime already holds SELECT on both relations read here.
+CREATE FUNCTION game_item_ground_insertion_guard() RETURNS trigger
 LANGUAGE plpgsql AS $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM game_item_transfer_receipts r
-         WHERE r.transaction_id = NEW.placed_transaction_id
-           AND r.source_item_instance_id = NEW.item_instance_id
-           AND r.character_id = NEW.character_id) THEN
-        RAISE EXCEPTION 'item placement must commit with its TRANSFER receipt'
+        SELECT 1 FROM game_item_instances i
+         WHERE i.item_instance_id = NEW.item_instance_id
+           AND i.world_id = NEW.world_id
+           AND i.lifecycle = 1
+           AND i.last_transaction_id IS NULL)
+       OR NOT EXISTS (
+        SELECT 1 FROM game_item_mint_receipts r
+         WHERE r.item_instance_id = NEW.item_instance_id
+           AND r.created_xact_id = pg_current_xact_id()) THEN
+        RAISE EXCEPTION 'Ground placement must be the item MINT of the current transaction'
             USING ERRCODE = '23514';
     END IF;
-    IF TG_TABLE_NAME = 'game_item_container_entries' THEN
+    RETURN NULL;
+END;
+$$;
+
+-- Guarded per-transaction evidence of the real pre-DELETE World and Channel
+-- of a Ground row, captured from the actual OLD row (never a client-supplied
+-- value). SECURITY DEFINER so the evidence table needs no write grant to the
+-- runtime role.
+CREATE FUNCTION game_item_ground_removal_evidence_capture() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+BEGIN
+    INSERT INTO game_item_ground_removal_evidence (item_instance_id, world_id, channel_id)
+    VALUES (OLD.item_instance_id, OLD.world_id, OLD.channel_id);
+    RETURN OLD;
+END;
+$$;
+
+-- A slot or entry placement exists only as the destination of its TRANSFER,
+-- in the receipt's own physical transaction, with the receipt's shape
+-- permitting a placement, the parent/ordinal matching (entries) and the item
+-- live (repair generation 2, finding 2: the prior check let a placement
+-- insert reuse a historical, non-placement (e.g. full-merge) receipt's
+-- TransactionId for an arbitrary parent/ordinal). GAMEITEM01-CONTAINER-
+-- ENTRIES-MAX: at most 20 entries per parent, made concurrency-safe (finding
+-- 4) by locking the parent's container-slot row before counting, so two
+-- concurrent inserts for the same parent serialize instead of racing the
+-- count. SECURITY DEFINER: the row lock needs UPDATE privilege on
+-- game_item_container_slots, which the runtime role is not granted.
+CREATE FUNCTION game_item_placement_proven() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
+BEGIN
+    IF TG_TABLE_NAME = 'game_item_container_slots' THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM game_item_transfer_receipts r
+             WHERE r.transaction_id = NEW.placed_transaction_id
+               AND r.character_id = NEW.character_id
+               AND r.source_item_instance_id = NEW.item_instance_id
+               AND r.shape = 1
+               AND r.created_xact_id = pg_current_xact_id()
+               AND EXISTS (SELECT 1 FROM game_item_instances i
+                            WHERE i.item_instance_id = NEW.item_instance_id AND i.lifecycle = 1)) THEN
+            RAISE EXCEPTION 'item placement must commit with its TRANSFER receipt'
+                USING ERRCODE = '23514';
+        END IF;
+    ELSIF TG_TABLE_NAME = 'game_item_container_entries' THEN
+        IF NOT EXISTS (
+            SELECT 1 FROM game_item_transfer_receipts r
+             WHERE r.transaction_id = NEW.placed_transaction_id
+               AND r.character_id = NEW.character_id
+               AND r.source_item_instance_id = NEW.item_instance_id
+               AND r.shape IN (2,4)
+               AND r.destination_parent_item_instance_id = NEW.parent_item_instance_id
+               AND r.destination_ordinal = NEW.placement_ordinal
+               AND r.created_xact_id = pg_current_xact_id()
+               AND EXISTS (SELECT 1 FROM game_item_instances i
+                            WHERE i.item_instance_id = NEW.item_instance_id AND i.lifecycle = 1)) THEN
+            RAISE EXCEPTION 'item placement must commit with its TRANSFER receipt'
+                USING ERRCODE = '23514';
+        END IF;
+        PERFORM 1 FROM game_item_container_slots
+         WHERE item_instance_id = NEW.parent_item_instance_id FOR UPDATE;
         IF (SELECT count(*) FROM game_item_container_entries e
              WHERE e.parent_item_instance_id = NEW.parent_item_instance_id) > 20 THEN
             RAISE EXCEPTION 'container entry ceiling exceeded' USING ERRCODE = '23514';
@@ -279,6 +380,17 @@ BEGIN
             WHERE ev.item_instance_id = NEW.source_item_instance_id
               AND ev.transaction_id = NEW.transaction_id
               AND ev.quantity_before = NEW.source_quantity_before)
+       -- Repair generation 2, finding 3: the reservation's World and Channel
+       -- must equal the Ground row this TRANSFER actually removed, proven
+       -- from the guarded pre-DELETE evidence (the Ground row itself is gone
+       -- by now).
+       OR NOT EXISTS (
+           SELECT 1 FROM game_item_transfer_reservations v
+             JOIN game_item_ground_removal_evidence gre
+               ON gre.item_instance_id = NEW.source_item_instance_id
+              AND gre.world_id = v.world_id
+              AND gre.channel_id = v.channel_id
+            WHERE v.game_session_id = NEW.game_session_id AND v.command_id = NEW.command_id)
        OR src.last_transaction_id IS DISTINCT FROM NEW.transaction_id
        OR src.quantity <> NEW.source_quantity_after
        OR src.lifecycle <> (CASE WHEN NEW.source_quantity_after = 0 THEN 2 ELSE 1 END)
@@ -339,6 +451,13 @@ CREATE CONSTRAINT TRIGGER game_item_ground_removal_proven
     AFTER DELETE ON game_item_ground_locations
     DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
     EXECUTE FUNCTION game_item_ground_removal_proven();
+CREATE TRIGGER game_item_ground_removal_evidence_capture BEFORE DELETE
+    ON game_item_ground_locations FOR EACH ROW
+    EXECUTE FUNCTION game_item_ground_removal_evidence_capture();
+CREATE CONSTRAINT TRIGGER game_item_ground_location_insert_proven
+    AFTER INSERT ON game_item_ground_locations
+    DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+    EXECUTE FUNCTION game_item_ground_insertion_guard();
 CREATE CONSTRAINT TRIGGER game_item_container_slot_proven
     AFTER INSERT ON game_item_container_slots
     DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
@@ -367,6 +486,8 @@ CREATE TRIGGER game_item_transfer_reservation_guard BEFORE UPDATE OR DELETE
     EXECUTE FUNCTION game_item_transfer_reservation_guard();
 CREATE TRIGGER game_item_transfer_quantity_evidence_immutable BEFORE UPDATE OR DELETE
     ON game_item_transfer_quantity_evidence FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
+CREATE TRIGGER game_item_ground_removal_evidence_immutable BEFORE UPDATE OR DELETE
+    ON game_item_ground_removal_evidence FOR EACH ROW EXECUTE FUNCTION game_item_immutable();
 
 CREATE TRIGGER game_item_container_slots_no_truncate BEFORE TRUNCATE
     ON game_item_container_slots
@@ -383,12 +504,17 @@ CREATE TRIGGER game_item_transfer_reservations_no_truncate BEFORE TRUNCATE
 CREATE TRIGGER game_item_transfer_quantity_evidence_no_truncate BEFORE TRUNCATE
     ON game_item_transfer_quantity_evidence
     FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
+CREATE TRIGGER game_item_ground_removal_evidence_no_truncate BEFORE TRUNCATE
+    ON game_item_ground_removal_evidence
+    FOR EACH STATEMENT EXECUTE FUNCTION game_item_reject_truncate();
 
 DO $$ BEGIN
     EXECUTE format('ALTER FUNCTION game_item_transfer_reservation_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_instance_guard() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_instance_change_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_ground_removal_proven() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_item_ground_insertion_guard() SET search_path = %I, pg_temp', current_schema());
+    EXECUTE format('ALTER FUNCTION game_item_ground_removal_evidence_capture() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_placement_proven() SET search_path = %I, pg_temp', current_schema());
     EXECUTE format('ALTER FUNCTION game_item_transfer_consistency_guard() SET search_path = %I, pg_temp', current_schema());
 END $$;
@@ -398,13 +524,16 @@ REVOKE ALL ON
     game_item_container_entries,
     game_item_transfer_reservations,
     game_item_transfer_receipts,
-    game_item_transfer_quantity_evidence
+    game_item_transfer_quantity_evidence,
+    game_item_ground_removal_evidence
 FROM PUBLIC;
 REVOKE ALL ON FUNCTION
     game_item_transfer_reservation_guard(),
     game_item_instance_guard(),
     game_item_instance_change_proven(),
     game_item_ground_removal_proven(),
+    game_item_ground_insertion_guard(),
+    game_item_ground_removal_evidence_capture(),
     game_item_placement_proven(),
     game_item_transfer_consistency_guard()
 FROM PUBLIC;
@@ -422,10 +551,14 @@ GRANT UPDATE (work_units_used) ON game_item_transfer_reservations TO oteryn_game
 -- game_item_instance_guard() trigger, reading the real OLD row, ever
 -- populates this evidence, regardless of who performs the item UPDATE.
 GRANT SELECT ON game_item_transfer_quantity_evidence TO oteryn_game_runtime;
+-- Same pattern: only the SECURITY DEFINER game_item_ground_removal_evidence_
+-- capture() trigger, reading the real OLD row, ever populates this evidence.
+GRANT SELECT ON game_item_ground_removal_evidence TO oteryn_game_runtime;
 GRANT SELECT ON
     game_item_container_slots,
     game_item_container_entries,
     game_item_transfer_reservations,
     game_item_transfer_receipts,
-    game_item_transfer_quantity_evidence
+    game_item_transfer_quantity_evidence,
+    game_item_ground_removal_evidence
 TO oteryn_game_control;

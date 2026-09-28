@@ -148,8 +148,8 @@ client, content data.
 
 - `cargo fmt --all --check`: pass.
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: pass.
-- `--test item_transfer_postgres`: 455 passed, including the 7 TRANSFER PostgreSQL cases (the new P1
-  tamper case), on local PostgreSQL 17.11.
+- `--test item_transfer_postgres`: 458 passed, including the 10 TRANSFER PostgreSQL cases, on local
+  PostgreSQL 17.11.
 - `item_mint_postgres`: 460 passed. `character_progression_postgres`: 452 passed.
   `character_authority_postgres`: 479 passed. These ran with the 17.6 assertion relaxed locally and
   restored before commit.
@@ -160,20 +160,32 @@ client, content data.
 
 ### Repair generation 1 (Codex findings on 0acdf06)
 
-- P1 (comment 4126035286): the deferred conservation checks compared only the receipt's self-reported
-  `source_quantity_before`/`receiver_quantity_before`, never binding them to the real `OLD.quantity`.
-  Fixed with `game_item_transfer_quantity_evidence` (migration 0011): the `SECURITY DEFINER`
-  `game_item_instance_guard()` item UPDATE trigger captures the genuine `OLD.quantity` per (item,
-  transaction), and `game_item_transfer_consistency_guard()` now requires the receipt's `*_before`
-  values to match that evidence. Runtime has `SELECT` only on the evidence table; no role has
-  `INSERT`/`UPDATE`/`DELETE`. New PG case
-  `full_merge_cannot_claim_a_fictitious_source_quantity_before` proves a forged runtime transaction
-  claiming a fictitious 99-unit source (real: 2) is rejected at COMMIT, with nothing moved.
-- P2 (comment 4126035318): `ContainerSlot` accepted any registered capacity, including 0 and above the
-  GAMEITEM01-CONTAINER-ENTRIES-MAX of 20, since `plan_transfer` only checked `is_some()`. Fixed by
-  applying the same `1..=20` bound already used for `MainBackpack`, refusing with the existing
-  `UnsupportedContainerCapacity`. New unit assertions in `container_slot_and_backpack_refusals` cover
-  capacity 0 and 21 refused, 1 and 20 accepted.
+- P1 (4126035286): conservation checks were unbound from the real `OLD.quantity`; fixed via
+  `SECURITY DEFINER`-captured `game_item_transfer_quantity_evidence`, bound by
+  `game_item_transfer_consistency_guard()`.
+- P2 (4126035318): `ContainerSlot` accepted capacity 0/>20; fixed with the same `1..=20` bound as
+  `MainBackpack`.
+
+### Repair generation 2 (Codex review 5343738115 on 40df444, compromised-runtime-SQL threat; 0011
+edited in place, 0010 untouched)
+
+- P1 (~357): Ground INSERT ungated. Fixed: deferred `ground_insertion_guard` needs the item live,
+  `last_transaction_id IS NULL`, and its own `mint_receipts` row from the CURRENT physical transaction
+  (new `created_xact_id`, via `pg_current_xact_id()`).
+- P1 (~227): placement matched any receipt by transaction_id/source/character, so a full-merge
+  receipt's TransactionId could place its retired source anywhere. Fixed: `placement_proven` (now
+  `SECURITY DEFINER`) also needs shape to permit a placement, parent/ordinal match (entries), item
+  live, current-xact id; same bind added to `change_proven`/`ground_removal_proven`.
+- P1 (~270): no Channel check on the deleted Ground row. Fixed: SELECT-only `ground_removal_evidence`
+  (written only by a `SECURITY DEFINER` capture trigger), matched to the reservation's Channel.
+- P2 (~234): entries `count(*) > 20` raced. Fixed: locks the parent `container_slots` row `FOR UPDATE`
+  first.
+
+Grant matrix (`oteryn_game_runtime`): instances INSERT/UPDATE, ground_locations INSERT/DELETE,
+mint_receipts/audit_outbox/mint_reservations (0010, unchanged), container_slots/_entries INSERT,
+transfer_reservations INSERT/UPDATE, transfer_receipts INSERT, both evidence tables SELECT-only --
+each gated by the trigger above; no other gap found. New PG cases: full-merge-receipt reuse, Channel
+mismatch, capacity race, Ground reinsertion (validation below).
 
 ## Open follow-ups
 

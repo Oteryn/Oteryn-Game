@@ -1512,6 +1512,16 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
                 uuid(entry),
                 uuid(id(98))
             ),
+            // Repair generation 2, finding 1: Ground custody regained after a
+            // TRANSFER already moved the item into the backpack.
+            format!(
+                "INSERT INTO game_item_ground_locations VALUES ('{}', '{}', '{}', 1, \
+                   decode('01','hex'), decode('01','hex'), 'map-1', 'content-1', \
+                   decode('01','hex'))",
+                uuid(entry),
+                uuid(id(WORLD)),
+                uuid(id(CHANNEL))
+            ),
             // Committed locations and receipts are immutable.
             "DELETE FROM game_item_container_entries".into(),
             "UPDATE game_item_transfer_receipts SET committed_at = 0".into(),
@@ -1565,11 +1575,17 @@ fn database_rejects_unproven_item_and_location_changes() -> TestResult {
                NOT has_table_privilege('oteryn_game_runtime',\
                  'game_item_transfer_quantity_evidence','DELETE'),\
                has_table_privilege('oteryn_game_control','game_item_transfer_quantity_evidence',\
+                 'SELECT'),\
+               has_table_privilege('oteryn_game_runtime','game_item_ground_removal_evidence',\
+                 'SELECT'),\
+               NOT has_table_privilege('oteryn_game_runtime','game_item_ground_removal_evidence',\
+                 'INSERT'),\
+               has_table_privilege('oteryn_game_control','game_item_ground_removal_evidence',\
                  'SELECT')])",
         )
         .fetch_all(&harness.pool)
         .await?;
-        assert_eq!(grants.len(), 21);
+        assert_eq!(grants.len(), 24);
         assert!(grants.iter().all(|granted| *granted), "{grants:?}");
 
         drop(authority);
@@ -1651,7 +1667,13 @@ fn full_merge_cannot_claim_a_fictitious_source_quantity_before() -> TestResult {
                    WHERE item_instance_id = '{receiver_text}'"
             ),
             format!(
-                "INSERT INTO game_item_transfer_receipts VALUES \
+                "INSERT INTO game_item_transfer_receipts \
+                   (game_session_id, command_id, character_id, intent_binding, transaction_id, \
+                    event_id, shape, source_item_instance_id, source_quantity_before, \
+                    source_quantity_after, receiver_item_instance_id, receiver_quantity_before, \
+                    receiver_quantity_after, destination_parent_item_instance_id, \
+                    destination_ordinal, occurred_at, envelope_sha256, committed_at) \
+                 VALUES \
                  ('{session}', 99, '{character}', decode(repeat('ab',33),'hex'), '{tx_id}', \
                    '{event_id}', 3, '{source_text}', 99, 0, '{receiver_text}', 1, 100, NULL, \
                    NULL, 1000, sha256(decode(repeat('ab',16),'hex')), 1000)"
@@ -1676,6 +1698,329 @@ fn full_merge_cannot_claim_a_fictitious_source_quantity_before() -> TestResult {
         assert_eq!(harness.item_state(source).await?, (2, 1));
         assert!(harness.on_ground(source).await?);
         assert_eq!(harness.item_state(receiver).await?, (1, 1));
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// Repair generation 2 (Codex review 5343738115), finding 2: a placement
+/// insert into `game_item_container_entries` reused a historical receipt's
+/// TransactionId, checked only against `source_item_instance_id` and
+/// `character_id`, never against the receipt's own shape. A full merge
+/// (shape 3) retires its source with no entry of its own; reusing that
+/// receipt's TransactionId to forge an entry for the now-retired source must
+/// be rejected.
+#[test]
+fn container_entry_cannot_reuse_a_full_merge_receipts_transaction_id() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "mergereuse").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let coin = || facts(COIN, STACKABLE);
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        let receiver = harness.mint(&authority, COIN, 3).await?;
+        harness
+            .committed(&authority, to_backpack(command(2)?, receiver, coin()))
+            .await?;
+        let source = harness.mint(&authority, COIN, 2).await?;
+        let merged = harness
+            .committed(&authority, to_backpack(command(3)?, source, coin()))
+            .await?;
+        assert_eq!(merged.shape, TransferShape::FullMerge);
+        assert_eq!(harness.item_state(source).await?, (0, 2));
+
+        let uuid = uuid_text;
+        let statement = format!(
+            "INSERT INTO game_item_container_entries VALUES ('{}', '{}', '{}', '{}', 5, '{}')",
+            uuid(source),
+            uuid(id(WORLD)),
+            uuid(id(CHARACTER)),
+            uuid(backpack),
+            uuid(merged.transaction_id)
+        );
+        let mut tx = harness.pool.begin().await?;
+        let applied: TestResult = async {
+            sqlx::query(sqlx::AssertSqlSafe(statement))
+                .execute(&mut *tx)
+                .await?;
+            tx.commit().await?;
+            Ok(())
+        }
+        .await;
+        assert!(
+            applied.is_err(),
+            "a full-merge receipt's TransactionId placed its retired source"
+        );
+        assert_eq!(harness.item_state(source).await?, (0, 2));
+        assert_eq!(harness.count("game_item_container_entries").await?, 1);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// Repair generation 2, finding 3: the receipt guard checked the
+/// reservation's World against the source item but never its Channel
+/// against the Ground row the TRANSFER actually removed (already deleted by
+/// the time the deferred guard runs). A forged commit whose reservation
+/// claims a different Channel than the item's real Ground row -- every other
+/// field genuine, captured by the real triggers -- must be rejected.
+#[test]
+fn transfer_channel_must_match_the_removed_ground_location() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "channelcheck").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let source = harness.mint(&authority, STONE, 1).await?;
+        assert!(harness.on_ground(source).await?);
+
+        let uuid = uuid_text;
+        let character = uuid(id(CHARACTER));
+        let world = uuid(id(WORLD));
+        let source_text = uuid(source);
+        let tx_id = uuid(id(230));
+        let event_id = uuid(id(231));
+        // The real Ground row is Channel 43; the reservation lies about it.
+        let wrong_channel = uuid(id(199));
+        let statements = [
+            format!(
+                "INSERT INTO game_item_transfer_reservations VALUES \
+                 ('{character}', 1, '{character}', '{world}', '{wrong_channel}', \
+                   '{source_text}', 1, decode(repeat('ab',33),'hex'), '{tx_id}', '{event_id}', \
+                   1000, 1, 900)"
+            ),
+            format!(
+                "INSERT INTO game_item_audit_outbox VALUES \
+                 ('{event_id}', '{tx_id}', 1, 1, 2, 1, \
+                   'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', '{source_text}', 1000, \
+                   7776001000, decode(repeat('ab',16),'hex'), \
+                   sha256(decode(repeat('ab',16),'hex')), 1, NULL)"
+            ),
+            format!(
+                "UPDATE game_item_instances SET last_transaction_id = '{tx_id}' \
+                   WHERE item_instance_id = '{source_text}' AND lifecycle = 1 AND quantity = 1"
+            ),
+            format!(
+                "DELETE FROM game_item_ground_locations WHERE item_instance_id = '{source_text}'"
+            ),
+            format!(
+                "INSERT INTO game_item_container_slots VALUES \
+                 ('{character}', '{source_text}', '{world}', '{tx_id}')"
+            ),
+            format!(
+                "INSERT INTO game_item_transfer_receipts \
+                   (game_session_id, command_id, character_id, intent_binding, transaction_id, \
+                    event_id, shape, source_item_instance_id, source_quantity_before, \
+                    source_quantity_after, occurred_at, envelope_sha256, committed_at) \
+                 VALUES \
+                 ('{character}', 1, '{character}', decode(repeat('ab',33),'hex'), '{tx_id}', \
+                   '{event_id}', 1, '{source_text}', 1, 1, 1000, \
+                   sha256(decode(repeat('ab',16),'hex')), 1000)"
+            ),
+        ];
+        // The reservation's own `game_session_id` reuses `character` above
+        // only as a distinct, valid-format UUID; FND-02 CommandRef identity
+        // plays no part in this SQL-level guard.
+        let mut tx = harness.pool.begin().await?;
+        let applied: TestResult = async {
+            for statement in &statements {
+                sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                    .execute(&mut *tx)
+                    .await?;
+            }
+            tx.commit().await?;
+            Ok(())
+        }
+        .await;
+        assert!(
+            applied.is_err(),
+            "a reservation Channel that did not match the real Ground row was accepted"
+        );
+        assert_eq!(harness.item_state(source).await?, (1, 1));
+        assert!(harness.on_ground(source).await?);
+        assert_eq!(harness.count("game_item_container_slots").await?, 0);
+
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+/// Raw-SQL statements of one forged shape-2 (NewEntry) TRANSFER commit, the
+/// exact sequence `apply_transfer` issues, for the two-connection capacity
+/// race below (repair generation 2, finding 4).
+#[allow(clippy::too_many_arguments)]
+fn forge_new_entry_statements(
+    character: &str,
+    world: &str,
+    source: [u8; 16],
+    parent: [u8; 16],
+    ordinal: u64,
+    command_id: u64,
+    tx_id: [u8; 16],
+    event_id: [u8; 16],
+) -> Vec<String> {
+    let uuid = uuid_text;
+    let source_text = uuid(source);
+    let tx = uuid(tx_id);
+    let ev = uuid(event_id);
+    let channel = uuid(id(CHANNEL));
+    let parent_text = uuid(parent);
+    vec![
+        format!(
+            "INSERT INTO game_item_transfer_reservations VALUES \
+             ('{character}', {command_id}, '{character}', '{world}', '{channel}', \
+               '{source_text}', 2, decode(repeat('ab',33),'hex'), '{tx}', '{ev}', 1000, 1, 900)"
+        ),
+        format!(
+            "INSERT INTO game_item_audit_outbox VALUES \
+             ('{ev}', '{tx}', 1, 1, 2, 1, 'DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1', \
+               '{source_text}', 1000, 7776001000, decode(repeat('ab',16),'hex'), \
+               sha256(decode(repeat('ab',16),'hex')), 1, NULL)"
+        ),
+        format!(
+            "UPDATE game_item_instances SET last_transaction_id = '{tx}' \
+               WHERE item_instance_id = '{source_text}' AND lifecycle = 1 AND quantity = 1"
+        ),
+        format!("DELETE FROM game_item_ground_locations WHERE item_instance_id = '{source_text}'"),
+        format!(
+            "INSERT INTO game_item_container_entries VALUES \
+             ('{source_text}', '{world}', '{character}', '{parent_text}', {ordinal}, '{tx}')"
+        ),
+        format!(
+            "INSERT INTO game_item_transfer_receipts \
+               (game_session_id, command_id, character_id, intent_binding, transaction_id, \
+                event_id, shape, source_item_instance_id, source_quantity_before, \
+                source_quantity_after, destination_parent_item_instance_id, \
+                destination_ordinal, occurred_at, envelope_sha256, committed_at) \
+             VALUES \
+             ('{character}', {command_id}, '{character}', decode(repeat('ab',33),'hex'), '{tx}', \
+               '{ev}', 2, '{source_text}', 1, 1, '{parent_text}', {ordinal}, 1000, \
+               sha256(decode(repeat('ab',16),'hex')), 1000)"
+        ),
+    ]
+}
+
+/// Repair generation 2, finding 4: the GAMEITEM01-CONTAINER-ENTRIES-MAX
+/// `count(*) > 20` check raced under concurrent inserts into the same
+/// parent, each seeing a snapshot that excluded the other's uncommitted row.
+/// Two raw-SQL connections, bypassing the `character_root` lock the normal
+/// commit path takes, each forge a complete, otherwise-valid 20th/21st entry
+/// for the SAME backpack and commit concurrently: with 19 entries already
+/// present, one of the two must be rejected at COMMIT with nothing changed,
+/// leaving exactly 20.
+#[test]
+fn concurrent_container_entry_inserts_enforce_the_capacity_ceiling() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "capacityrace").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let uuid = uuid_text;
+        let character = uuid(id(CHARACTER));
+        let world = uuid(id(WORLD));
+        let backpack = harness.mint(&authority, BACKPACK, 1).await?;
+        harness
+            .committed(&authority, to_slot(command(1)?, backpack, backpack_facts()))
+            .await?;
+        // 19 pre-existing entries, seeded directly (bypassing the placement
+        // guard, which is not under test here) so the race sits exactly at
+        // the ceiling: one more admitted entry is the legal 20th.
+        for ordinal in 1..=19_u64 {
+            let item = harness.mint(&authority, STONE, 1).await?;
+            harness
+                .tamper(&format!(
+                    "INSERT INTO game_item_container_entries VALUES ('{}', '{world}', \
+                       '{character}', '{}', {ordinal}, '{}')",
+                    uuid(item),
+                    uuid(backpack),
+                    uuid(id(100 + ordinal as u8))
+                ))
+                .await?;
+        }
+        assert_eq!(harness.count("game_item_container_entries").await?, 19);
+
+        let item_a = harness.mint(&authority, STONE, 1).await?;
+        let item_b = harness.mint(&authority, STONE, 1).await?;
+        let statements_a = forge_new_entry_statements(
+            &character,
+            &world,
+            item_a,
+            backpack,
+            20,
+            201,
+            id(240),
+            id(241),
+        );
+        let statements_b = forge_new_entry_statements(
+            &character,
+            &world,
+            item_b,
+            backpack,
+            21,
+            202,
+            id(250),
+            id(251),
+        );
+        let run = |statements: Vec<String>| {
+            let pool = harness.pool.clone();
+            async move {
+                let mut tx = pool.begin().await?;
+                for statement in &statements {
+                    sqlx::query(sqlx::AssertSqlSafe(statement.clone()))
+                        .execute(&mut *tx)
+                        .await?;
+                }
+                tx.commit().await
+            }
+        };
+        let (left, right): (TestResult<_>, TestResult<_>) = join_two(
+            async { run(statements_a).await.map_err(|e| debug(e).into()) },
+            async { run(statements_b).await.map_err(|e| debug(e).into()) },
+        )
+        .await;
+        assert_ne!(
+            left.is_ok(),
+            right.is_ok(),
+            "the concurrent 20th and 21st entries must not both succeed or both fail: \
+             left={left:?} right={right:?}"
+        );
+        assert_eq!(harness.count("game_item_container_entries").await?, 20);
+        let (winner, loser) = if left.is_ok() {
+            (item_a, item_b)
+        } else {
+            (item_b, item_a)
+        };
+        assert_eq!(harness.item_state(winner).await?, (1, 1));
+        assert!(!harness.on_ground(winner).await?);
+        assert_eq!(harness.item_state(loser).await?, (1, 1));
+        assert!(harness.on_ground(loser).await?);
 
         drop(authority);
         drop(seal);
