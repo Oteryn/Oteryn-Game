@@ -1,0 +1,159 @@
+{
+ "schema": "OTERYN_TIBIACOM_CAPTURE_MANIFEST/v1",
+ "captured_at": "2026-09-28T16:02:07Z",
+ "pages": [
+  {
+   "section": "introduction",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=introduction",
+   "fetched_at": "2026-09-28T16:02:07Z",
+   "http_status": 200,
+   "sha256": "3b16f27e6afbf5d8cddac62d25e420a276c459d63da563ce7e61869b0933b484",
+   "visible_text_chars": 9971
+  },
+  {
+   "section": "starting",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=starting",
+   "fetched_at": "2026-09-28T16:02:09Z",
+   "http_status": 200,
+   "sha256": "5c14c619514514363535dede700f4ce8bd6bcfedb0fcf3d46ef5462c8f9a7e57",
+   "visible_text_chars": 24250
+  },
+  {
+   "section": "interface",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=interface",
+   "fetched_at": "2026-09-28T16:02:12Z",
+   "http_status": 200,
+   "sha256": "b564b742e86c53d2c13a705f882b442c5319074bfe6ea3c5d7c9509c1a02028f",
+   "visible_text_chars": 53241
+  },
+  {
+   "section": "controls",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls",
+   "fetched_at": "2026-09-28T16:02:14Z",
+   "http_status": 200,
+   "sha256": "99a780f448d3b0ca64a7d6774dc37add2ce4aaa979b12bc9c6607ee6cbd82c82",
+   "visible_text_chars": 28227
+  },
+  {
+   "section": "controls_communication",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls_communication",
+   "fetched_at": "2026-09-28T16:02:16Z",
+   "http_status": 200,
+   "sha256": "6c13acf6c0017e287772daa7ac7b7bb52b279935204087121a3b8a67eb815da7",
+   "visible_text_chars": 26689
+  },
+  {
+   "section": "controls_trading",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=controls_trading",
+   "fetched_at": "2026-09-28T16:02:18Z",
+   "http_status": 200,
+   "sha256": "23b5888f4d0e503511d4e17b5f1c8e1c6f3f1d3c407d054232cd24bbfb1d39e4",
+   "visible_text_chars": 18164
+  },
+  {
+   "section": "characters",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=characters",
+   "fetched_at": "2026-09-28T16:02:20Z",
+   "http_status": 200,
+   "sha256": "32f25885de64661457ef5e6c0f16d92f2355f347af99a23695a4fce24a1e45bc",
+   "visible_text_chars": 52791
+  },
+  {
+   "section": "world",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=world",
+   "fetched_at": "2026-09-28T16:02:22Z",
+   "http_status": 200,
+   "sha256": "004a6848ec931b22e25b1a3a4c5b1a9e8c3257702f49f8f74193ca640e3031ac",
+   "visible_text_chars": 38397
+  },
+  {
+   "section": "combat",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=combat",
+   "fetched_at": "2026-09-28T16:02:24Z",
+   "http_status": 200,
+   "sha256": "aafa32ae69e6e5aab4e8e7ed42386ba30d59843a015a7ea435d9933ede4ccaeb",
+   "visible_text_chars": 56817
+  },
+  {
+   "section": "magic",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=magic",
+   "fetched_at": "2026-09-28T16:02:27Z",
+   "http_status": 200,
+   "sha256": "c399166c3bd3cf16fac1c22a0bcc79ca1e5237f629fd6d69b1e261cb1cb17ded",
+   "visible_text_chars": 16667
+  },
+  {
+   "section": "quests",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=quests",
+   "fetched_at": "2026-09-28T16:02:29Z",
+   "http_status": 200,
+   "sha256": "af584e94653234cded0ae67c1fc002a83143988096924da15a81329bddf51765",
+   "visible_text_chars": 8113
+  },
+  {
+   "section": "achievements",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=achievements",
+   "fetched_at": "2026-09-28T16:02:31Z",
+   "http_status": 200,
+   "sha256": "3a92e041e9d9b4848f586cc4d87098551f289ae551ff956e19a67e1dd7b4152e",
+   "visible_text_chars": 5733
+  },
+  {
+   "section": "houses",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=houses",
+   "fetched_at": "2026-09-28T16:02:33Z",
+   "http_status": 200,
+   "sha256": "ec1684ebffdbd83ff7c609fffb91ba253dfcd350269d53db3f2992094cd65084",
+   "visible_text_chars": 18693
+  },
+  {
+   "section": "guilds",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=guilds",
+   "fetched_at": "2026-09-28T16:02:35Z",
+   "http_status": 200,
+   "sha256": "7de12ecddabda351f4dced9174d94480b71881463b0972f438da0af1bc1868cc",
+   "visible_text_chars": 24662
+  },
+  {
+   "section": "store",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=store",
+   "fetched_at": "2026-09-28T16:02:37Z",
+   "http_status": 200,
+   "sha256": "34e284122b1df9490e837ef4194c357a44dd294293bdfa7112267fe21690d4f9",
+   "visible_text_chars": 10901
+  },
+  {
+   "section": "products",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=products",
+   "fetched_at": "2026-09-28T16:02:39Z",
+   "http_status": 200,
+   "sha256": "f75f056a5e2269f7af4862cffebbd20a6b24237c0836d366ce3d3051a8d53ead",
+   "visible_text_chars": 25864
+  },
+  {
+   "section": "accounts",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=accounts",
+   "fetched_at": "2026-09-28T16:02:41Z",
+   "http_status": 200,
+   "sha256": "b91edab48c4209f27f0801cce20941db42e65c6f490d1239242be40a9e2b3c3e",
+   "visible_text_chars": 55114
+  },
+  {
+   "section": "support",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=support",
+   "fetched_at": "2026-09-28T16:02:44Z",
+   "http_status": 200,
+   "sha256": "e51133924e1b3a950737d3d266e03b708986b4802cbb1c705f7c56e6532d6fcf",
+   "visible_text_chars": 22751
+  },
+  {
+   "section": "forum",
+   "url": "https://www.tibia.com/gameguides/?subtopic=manual&section=forum",
+   "fetched_at": "2026-09-28T16:02:46Z",
+   "http_status": 200,
+   "sha256": "6c18d70e0eb10ad353ef93f372bdc5d24b93ef58a25088da4b1d75611753c706",
+   "visible_text_chars": 18281
+  }
+ ],
+ "spells": "PENDING_1077"
+}

@@ -17,8 +17,8 @@ key -- and capped per section).
     python3 tibiacom_capture.py check-immutability --base <sha> --head <sha>
     python3 tibiacom_capture.py self-test
 
-Manual sections captured (docs.tibia.com/gameguides/?subtopic=manual&section=<name>):
-controls, characters, combat, world, controls_trading, starting. Only an HTTP 200 response is
+Manual sections captured (www.tibia.com/gameguides/?subtopic=manual&section=<name>):
+all sections linked from the manual's Contents page, in its displayed order. Only an HTTP 200 response is
 accepted for any page; anything else aborts the whole `fetch` run before writing output.
 
 Spell library (S15, #1077): if `tools/content-schema/spell-authoring/tibiacom_spells.py` exists on
@@ -46,7 +46,12 @@ from pathlib import Path
 SNAPSHOT_PREFIX = 'imports/official/tibia-com/'
 
 MANUAL_URL = 'https://www.tibia.com/gameguides/?subtopic=manual&section={section}'
-MANUAL_SECTIONS = ('controls', 'characters', 'combat', 'world', 'controls_trading', 'starting')
+MANUAL_SECTIONS = (
+    'introduction', 'starting', 'interface', 'controls', 'controls_communication',
+    'controls_trading', 'characters', 'world', 'combat', 'magic', 'quests',
+    'achievements', 'houses', 'guilds', 'store', 'products', 'accounts', 'support',
+    'forum',
+)
 SPELL_LIBRARY_URL = 'https://www.tibia.com/library/?subtopic=spells'
 SPELL_MODULE_PATH = Path(__file__).resolve().parents[2] / 'tools/content-schema/spell-authoring/tibiacom_spells.py'
 SPELL_PENDING = 'PENDING_1077'
@@ -85,7 +90,7 @@ PER_FACT_JSON_OVERHEAD_BYTES = 64
 # Absolute bounds that do not depend on the snapshot's own self-reported visible_text_chars
 # (P2 r4121271445): inflating that claim must not be able to widen the ratio-based allowance
 # without limit. A per-page cap, plus a fixed budget sized off the real fact caps (not off
-# anything the snapshot itself asserts): 6 manual sections * 40 facts/section * ~400 B/fact, and a
+# anything the snapshot itself asserts): all manual sections * 40 facts/section * ~400 B/fact, and a
 # separate spell-library allowance of 600 facts * ~400 B/fact, only counted when spells=="captured".
 MAX_VISIBLE_TEXT_CHARS_PER_PAGE = 200_000
 ABSOLUTE_FACT_SIZE_ESTIMATE_BYTES = 400
@@ -335,6 +340,17 @@ def extract_facts(section, body):
     return facts
 
 
+def fit_facts_to_page(facts, visible_chars):
+    """Keep the ordered extraction inside verify's per-page 25% text bound."""
+    kept = list(facts)
+    budget = visible_chars * FACT_TO_VISIBLE_TEXT_RATIO_LIMIT
+    field_chars = lambda fact: len(fact['value']) + len(fact['key']) + len(fact['anchor'])
+    total = sum(field_chars(fact) for fact in kept)
+    while kept and total > budget:
+        total -= field_chars(kept.pop())
+    return kept
+
+
 def fetch_url(url):
     """Return (status, raw_bytes, final_url) -- the exact response body, undecoded
     (P2 r4120758054), and the URL the response actually came from. `urlopen` follows redirects
@@ -401,10 +417,16 @@ def cmd_fetch(out_dir):
         if result is None:
             return 2
         status, raw, body = result
+        visible_chars = visible_text_length(body)
         pages.append({'section': section, 'url': url, 'fetched_at': utc_now(), 'http_status': status,
                       'sha256': hashlib.sha256(raw).hexdigest(),
-                      'visible_text_chars': visible_text_length(body)})
-        facts.extend(extract_facts(section, body))
+                      'visible_text_chars': visible_chars})
+        page_facts = fit_facts_to_page(extract_facts(section, body), visible_chars)
+        if not page_facts:
+            print(f'tibiacom_capture: manual section {section!r} has no facts within the '
+                  'per-page text bound; aborting without writing output.', file=sys.stderr)
+            return 2
+        facts.extend(page_facts)
 
     spell_module = load_spell_module()
     if spell_module is None:
@@ -920,7 +942,7 @@ or key names in it at all, and must not be copied into a fact.</p>
 
 
 def _valid_snapshot_documents():
-    """A manifest/facts pair with all six manual sections, each with one qualifying fact."""
+    """A manifest/facts pair with all manual sections, each with one qualifying fact."""
     pages = []
     facts = []
     # One shared timestamp for captured_at and every page's fetched_at (P2 r4120883679): fetched_at
@@ -970,6 +992,8 @@ def self_test():
     truncated = extract_facts('world', long_html)
     assert len(truncated) == 2, truncated  # heading + the one over-long fragment
     assert len(truncated[-1]['value']) == FACT_VALUE_LIMIT
+    assert fit_facts_to_page(truncated, 100) == truncated[:1]
+    assert fit_facts_to_page(truncated, 1) == []
 
     assert extract_facts('world', '<p>orphan block mentions Ctrl to confirm.</p>')[0]['anchor'] == 'root'
     assert extract_facts('world', '<p>ordinary sentence with no signal at all</p>') == []
@@ -1155,7 +1179,7 @@ def self_test():
         errors = verify_snapshot(directory)
         assert any('http_status' in e and '200' in e for e in errors), errors
 
-        # Completeness: all six sections required, at their exact URL (P2 r4120578800).
+        # Completeness: all manual sections required, at their exact URL (P2 r4120578800).
         manifest = copy.deepcopy(base_manifest)
         manifest['pages'].pop()
         _write_snapshot(directory, manifest, base_facts)
