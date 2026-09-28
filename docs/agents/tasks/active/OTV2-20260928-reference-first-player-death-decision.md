@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-reference-first-player-death-decision
 title: "Reference first player death decision (D58-D68)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1132
 base_sha: 0a3d795992a68f57c595baf3f5ced87d1224a60c
 head_sha: null
 final_head_sha: null
@@ -76,11 +76,11 @@ never duplicates or doubly loses an item.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1132 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1132
 owner_action_required: null
 blocker: null
-next_action: open the PR, bind this record to it, freeze and route one external review
+next_action: exact-head review and Merge Queue integration of #1132
 ```
