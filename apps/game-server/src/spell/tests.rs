@@ -489,6 +489,10 @@ fn a_wheel_spell_is_not_admitted() {
     let dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
     spell["spell"]["requirements"]["wheel_unlock"] = Value::Bool(true);
     assert!(spell_from_bundle(&spell, &dependencies).is_err());
+    spell["spell"]["requirements"]["wheel_unlock"] = Value::from("yes");
+    assert!(spell_from_bundle(&spell, &dependencies).is_err());
+    spell["spell"]["requirements"]["wheel_unlock"] = Value::Null;
+    assert!(spell_from_bundle(&spell, &dependencies).is_err());
     spell["spell"]["requirements"]["wheel_unlock"] = Value::Bool(false);
     assert!(spell_from_bundle(&spell, &dependencies).is_ok());
 }

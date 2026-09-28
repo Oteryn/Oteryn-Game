@@ -202,6 +202,15 @@ NEGATIVE = {
                                                     'is a dependency of'),
     'regeneration type without block': expecting(condition_effect({'type': 'regeneration', 'lifetime': 'fixed_duration'}),
                                                  "'regeneration' is a required property"),
+    'buff_spell on a damage schedule': expecting(condition_effect({
+        'type': 'poison', 'lifetime': 'damage_schedule', 'buff_spell': True, 'damage_over_time': {
+            'tick_profile': 'fixed', 'first_tick': 'immediate', 'fixed_ticks': [{'count': 1, 'interval_ms': 1000, 'amount': 5}]}},
+        duration_ms=None), 'should not be valid'),
+    'regeneration mana gain without interval': expecting(condition_effect(
+        {**REGENERATION, 'regeneration': {'mana_gain': 20}}), 'is a dependency of'),
+    'primary-only group as secondary': case('light_healing', 'spell', ('groups', 1), {'group': 'attack', 'cooldown_ms': 1000},
+                                            'not a declared secondary cooldown group'),
+    'learning required': case('light_healing', 'spell', ('requirements', 'learning_required'), True, 'no spell is taught (S16)'),
     'wheel_unlock not boolean': case('light_healing', 'spell', ('requirements', 'wheel_unlock'), 'yes', 'is not of type'),
 }
 

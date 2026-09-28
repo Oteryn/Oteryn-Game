@@ -41,6 +41,7 @@ SOURCE_GAIN = {'hitpoints': 'gainhp', 'mana': 'gainmana', 'capacity': 'gaincap'}
 REGEN_FIELDS = ('gainhpticks', 'gainhpamount', 'gainmanaticks', 'gainmanaamount')
 PROMOTED = {'elite_knight', 'royal_paladin', 'master_sorcerer', 'elder_druid', 'exalted_monk'}
 ROOKIE_UNTIL_LEVEL = 8
+SUM_INVARIANT = (45, 385)  # Formulae: HP + MP + Cap = 5(9lvl + 77) for every vocation (not Rookie)
 # The same pins as the spell census (S14); `build` refuses a checkout at another commit.
 SOURCE_REVISIONS = {'canary': ('opentibiabr/canary', '99902524e052f37574194466c2949c576e4ab269'),
                     'crystal': ('zimbadev/crystalserver', 'ff7ede593c69d4c658b382c97443e8155926924a')}
@@ -127,6 +128,11 @@ def source_vocations(root, name):
     return out
 
 
+def continued_offset(per_level, rookie_factor, rookie_offset):
+    """Offset of the total that continues the Rookie total at ROOKIE_UNTIL_LEVEL by per_level a level."""
+    return (rookie_factor - per_level) * ROOKIE_UNTIL_LEVEL + rookie_offset
+
+
 def build(formulae, soul_page, sources):
     table = fandom_table(formulae['content'])
     soul = soul_facts(soul_page['content'])
@@ -138,14 +144,29 @@ def build(formulae, soul_page, sources):
         entry = {'rookie_until_level': ROOKIE_UNTIL_LEVEL}
         for stat in STATS:
             per_level, a, b = stats[stat]
+            provenance = 'wiki:Formulae'
+            # From ROOKIE_UNTIL_LEVEL on, a vocation continues the Rookie total by its per-level gain.
+            _, rookie_a, rookie_b = rookie[stat]
+            offset = continued_offset(per_level, rookie_a, rookie_b)
+            if (a, b) != (per_level, offset):
+                conflicts.append({'vocation': vocation, 'field': stat + '.total',
+                                  'wiki_total_cell': {'level_factor': a, 'offset': b},
+                                  'recorded': {'level_factor': per_level, 'offset': offset},
+                                  'resolution': 'The Formulae total cell contradicts the same page: its per-level '
+                                                'gain, the Rookie total at level 8 and HP + MP + Cap = 5(9lvl + 77). '
+                                                'The consistent value is recorded; the owner may override it.'})
+                a, b, provenance = per_level, offset, 'wiki:Formulae (per-level gain from the Rookie total at level 8)'
             entry[stat] = {'per_level': per_level, 'total': {'level_factor': a, 'offset': b},
-                           'rookie_total': {'level_factor': rookie[stat][1], 'offset': rookie[stat][2]},
-                           'provenance': 'wiki:Formulae'}
+                           'rookie_total': {'level_factor': rookie_a, 'offset': rookie_b}, 'provenance': provenance}
             for name, attrs in sources.items():
                 gain = attrs.get(vocation, {}).get(SOURCE_GAIN[stat])
                 if gain is not None and int(gain) != per_level:
                     conflicts.append({'vocation': vocation, 'field': stat + '.per_level', 'wiki': per_level,
                                       name: int(gain), 'resolution': 'S3: the wiki decides.'})
+        totals = [entry[stat]['total'] for stat in STATS]
+        if vocation != 'none' and (sum(t['level_factor'] for t in totals),
+                                   sum(t['offset'] for t in totals)) != SUM_INVARIANT:
+            raise ValueError(f'{vocation}: HP + MP + Cap does not equal 5(9lvl + 77)')
         regen_ms = soul['regen_ms']['promoted' if vocation in PROMOTED else 'regular']
         # Owner D5a (2026-09-28): the wiki decides; the maximum follows the account type, not promotion.
         entry['soul'] = {'regen_ms': regen_ms, 'max': soul['max'], 'provenance': 'wiki:Soul Point (owner D5a)'}
@@ -223,6 +244,7 @@ def self_test():
                       "rate of 1 Soul Point every 16 seconds")
     assert soul == {'max': {'free_account': 100, 'premium_account': 200},
                     'regen_ms': {'regular': 120000, 'promoted': 16000}}, soul
+    assert continued_offset(15, 5, 145) == 65 and continued_offset(10, 5, 50) == 10, 'Knight HP 5(3lvl+13), monk mana'
     assert total(entry, 8, 8) == 185 and total(entry, 7, 8) == 180 and total(entry, 100, 8) == 1565
     print('vocation_vitals self-test: ok')
     return 0
