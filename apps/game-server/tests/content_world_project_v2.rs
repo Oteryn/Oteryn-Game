@@ -94,6 +94,7 @@ fn candidate() -> ProjectV2Draft {
                     greet: None,
                     farewell: None,
                     walkaway: None,
+                    send_trade: None,
                     keywords: vec![],
                     voices: vec![],
                     fields: vec![ProjectV2CandidateField {

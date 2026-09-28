@@ -47,7 +47,7 @@ Keyword `kind` is closed: `say`, `travel`, `learn_spell`, `bless`, `kick`, `prom
 
 Committed bundles store no text: every description, message, keyword answer and voice line is a text
 reference `{sha256, length, placeholders, links}` (§6). Admitted dialogue text (greet, farewell,
-walk-away, keyword replies and voices) is stored in full in WorldProject/v2 as reference data (D9).
+walk-away, send-trade, `say` keyword replies and voices) is stored in full in WorldProject/v2 as reference data (D9).
 
 ## 3. Owner decisions
 
@@ -62,7 +62,7 @@ walk-away, keyword replies and voices) is stored in full in WorldProject/v2 as r
 | D6 | TibiaWiki (Fandom) is the tie-breaker between Canary and Crystal (resolves O3 and O7): the source the wiki agrees with wins; without wiki agreement the fact stays open. The wiki never supplies a value itself. |
 | D7 | WorldProject/v2 is extended with typed travel routes and offer quantities before NPCs are admitted, as for monsters ("druga droga"); see `OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md`. |
 | D8 | The wiki completes held NPCs (owner request 2026-09-27). An NPC that neither source places is promoted when its TibiaWiki page has a position; that position becomes its candidate placement (`origin: wiki`, direction and spawn interval unknown). A single-source NPC whose name is a Day/Night or stage variant (` (Day)`, ` (Night)`, ` Init`, ` Vampires Lair`, ` Back`) is confirmed by its base name's page. Names match the page title, its `name` or its `actualname` (the in-game name). A name that still has no page is matched only by a single edit (insertion, deletion, substitution or adjacent transposition), only when it is at least 10 characters and exactly one wiki NPC is that close (`WIKI_SPELLING`). An unplaced NPC whose wiki page has no position (a seasonal NPC such as Santa Claus) is promoted without a placement (`WIKI_CONFIRMED`). When the two sources place an NPC differently and the wiki position matches neither, the wiki position wins (D6); without a wiki position the NPC is promoted without a placement. The server-only NPCs Canary and Loot Buyer are rejected (`OWNER_REJECTED`). |
-| D9 | Supersedes D5 (`LICENSE-ASSETS.md` after #1050; owner request 2026-09-28). Tibia Global NPC text is admitted 1:1 as reference data, with Canary/Crystal provenance. A dialogue is admitted when both sources agree, or when only one source has the NPC. Conditional or scripted nodes and conflicting dialogues stay held. |
+| D9 | Supersedes D5 (`LICENSE-ASSETS.md` after #1050; owner request 2026-09-28). Tibia Global NPC text is admitted 1:1 as reference data, with Canary/Crystal provenance. A dialogue is admitted when both sources agree, or when only one source has the NPC. Only static `say` keyword nodes become Dialogue keywords; action keywords (`travel`, `learn_spell`, `bless`, `promote`, `kick`, `rookgaard_hints`) belong to their Service or ability owners. Conditional or scripted nodes and conflicting dialogues stay held. |
 
 Decisions were taken in the owning session on 2026-09-27.
 

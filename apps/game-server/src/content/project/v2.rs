@@ -222,6 +222,8 @@ pub enum ProjectV2Declaration {
         farewell: Option<String>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         walkaway: Option<String>,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        send_trade: Option<String>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         keywords: Vec<ProjectV2DialogueKeyword>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -2054,6 +2056,7 @@ fn validate_v2_declaration(
             greet,
             farewell,
             walkaway,
+            send_trade,
             keywords,
             voices,
             ..
@@ -2066,6 +2069,9 @@ fn validate_v2_declaration(
             }
             if let Some(value) = walkaway {
                 validate_v2_dialogue_text("v2 Dialogue walkaway", value, limits)?;
+            }
+            if let Some(value) = send_trade {
+                validate_v2_dialogue_text("v2 Dialogue send_trade", value, limits)?;
             }
             limits.check(
                 "v2 Dialogue voices",

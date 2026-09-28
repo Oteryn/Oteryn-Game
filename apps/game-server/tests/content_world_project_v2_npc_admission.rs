@@ -273,6 +273,7 @@ fn dialogue_declaration() -> ProjectV2Declaration {
         greet: Some("Welcome aboard, sailor!".into()),
         farewell: Some("Fair winds until we meet again.".into()),
         walkaway: Some("Suit yourself, then.".into()),
+        send_trade: Some("Have a look at my wares.".into()),
         keywords: dialogue_keywords(),
         voices: dialogue_voices(),
         fields: vec![],
@@ -555,7 +556,7 @@ fn dialogue_keywords_admit_the_maximum_depth() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 21] = [
+    let cases: [(&str, &str, Mutation); 22] = [
         (
             "wander without walking",
             "v2 wander requires a walking creature and a positive interval",
@@ -714,6 +715,15 @@ fn each_broken_invariant_is_rejected() {
             |draft| {
                 if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
                     keywords[0].reply.clear();
+                }
+            },
+        ),
+        (
+            "blank dialogue send_trade message",
+            "invalid v2 dialogue text",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { send_trade, .. } = dialogue_mut(draft) {
+                    *send_trade = Some("  ".into());
                 }
             },
         ),
