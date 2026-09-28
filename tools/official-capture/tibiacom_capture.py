@@ -13,6 +13,7 @@ key -- and capped per section).
 
     python3 tibiacom_capture.py fetch --out imports/official/tibia-com/2026-09-28
     python3 tibiacom_capture.py verify imports/official/tibia-com/2026-09-28
+    python3 tibiacom_capture.py check-immutability --base <sha> --head <sha>
     python3 tibiacom_capture.py self-test
 
 Manual sections captured (docs.tibia.com/gameguides/?subtopic=manual&section=<name>):
@@ -31,12 +32,16 @@ import html.parser
 import importlib.util
 import json
 import re
+import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+
+SNAPSHOT_PREFIX = 'imports/official/tibia-com/'
+DATED_DIR_RE = re.compile(re.escape(SNAPSHOT_PREFIX) + r'([^/]+)/')
 
 MANUAL_URL = 'https://www.tibia.com/gameguides/?subtopic=manual&section={section}'
 MANUAL_SECTIONS = ('controls', 'characters', 'combat', 'world', 'controls_trading', 'starting')
@@ -54,6 +59,10 @@ MANIFEST_PAGE_KEYS = {'section', 'url', 'fetched_at', 'http_status', 'sha256', '
 FACT_KEYS = {'section', 'anchor', 'key', 'value'}
 FACT_VALUE_LIMIT = 300
 FACTS_PER_SECTION_CAP = 40
+# The spell library is structured spell rows delegated to #1077's own parser, not manual-page
+# prose, so it gets its own compatible bound instead of the 40-fact manual-page cap
+# (P2 r4120758016). Each row's field values still obey FACT_VALUE_LIMIT.
+SPELL_RECORDS_CAP = 600
 FACT_TO_VISIBLE_TEXT_RATIO_LIMIT = 0.25
 TOTAL_FACT_VALUE_BYTES_LIMIT = 200_000
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
@@ -94,6 +103,12 @@ def slugify(text):
 
 def is_cloudflare_challenge(body):
     return any(marker in body for marker in CLOUDFLARE_MARKERS)
+
+
+def facts_cap_for_section(section):
+    """The spell library (structured rows) gets SPELL_RECORDS_CAP; every manual section gets
+    FACTS_PER_SECTION_CAP (P2 r4120758016)."""
+    return SPELL_RECORDS_CAP if section == 'spells' else FACTS_PER_SECTION_CAP
 
 
 def has_factual_signal(text):
@@ -234,12 +249,13 @@ def extract_facts(section, body):
 
 
 def fetch_url(url):
+    """Return (status, raw_bytes) -- the exact response body, undecoded (P2 r4120758054)."""
     request = urllib.request.Request(url, headers={'User-Agent': USER_AGENT})
     try:
         with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:
-            return response.status, response.read().decode('utf-8', errors='replace')
+            return response.status, response.read()
     except urllib.error.HTTPError as error:
-        return error.code, error.read().decode('utf-8', errors='replace')
+        return error.code, error.read()
 
 
 def load_spell_module():
@@ -252,22 +268,25 @@ def load_spell_module():
 
 
 def fetch_page_or_abort(url, what):
-    """Fetch `url`; return (status, body) only on an accepted HTTP 200, non-challenge response.
+    """Fetch `url`; return (status, raw_bytes, body) only on an accepted HTTP 200, non-challenge
+    response. `raw_bytes` is the exact, undecoded response body (hash that); `body` is a separate
+    decoded copy for parsing only (P2 r4120758054).
 
     On anything else -- a non-200 status (P2 r4120578795) or a Cloudflare challenge served with a
     200 -- prints a clear message and returns None so the caller aborts without writing output.
     """
-    status, body = fetch_url(url)
+    status, raw = fetch_url(url)
     if status != ACCEPTED_HTTP_STATUS:
         print(f'tibiacom_capture: fetching {what} ({url}) returned HTTP {status}; only HTTP '
               f'{ACCEPTED_HTTP_STATUS} is accepted. Aborting without writing output.', file=sys.stderr)
         return None
+    body = raw.decode('utf-8', errors='replace')
     if is_cloudflare_challenge(body):
         print(f'tibiacom_capture: blocked by a Cloudflare challenge fetching {what} ({url}). Run '
               f'`fetch` from an ordinary machine tibia.com serves directly; this tool never solves '
               f'or bypasses the challenge. Aborting without writing output.', file=sys.stderr)
         return None
-    return status, body
+    return status, raw, body
 
 
 def cmd_fetch(out_dir):
@@ -280,9 +299,9 @@ def cmd_fetch(out_dir):
         result = fetch_page_or_abort(url, f'manual section {section!r}')
         if result is None:
             return 2
-        status, body = result
+        status, raw, body = result
         pages.append({'section': section, 'url': url, 'fetched_at': utc_now(), 'http_status': status,
-                      'sha256': hashlib.sha256(body.encode('utf-8')).hexdigest(),
+                      'sha256': hashlib.sha256(raw).hexdigest(),
                       'visible_text_chars': visible_text_length(body)})
         facts.extend(extract_facts(section, body))
 
@@ -301,14 +320,18 @@ def cmd_fetch(out_dir):
             result = fetch_page_or_abort(SPELL_LIBRARY_URL, 'the spell library')
             if result is None:
                 return 2
-            status, body = result
+            status, raw, body = result
             pages.append({'section': 'spells', 'url': SPELL_LIBRARY_URL, 'fetched_at': utc_now(),
-                          'http_status': status, 'sha256': hashlib.sha256(body.encode('utf-8')).hexdigest(),
+                          'http_status': status, 'sha256': hashlib.sha256(raw).hexdigest(),
                           'visible_text_chars': visible_text_length(body)})
+            spell_facts = 0
             for item in parse(body):
+                if spell_facts >= SPELL_RECORDS_CAP:
+                    break
                 value = str(item.get('value', ''))[:FACT_VALUE_LIMIT]
                 facts.append({'section': 'spells', 'anchor': str(item.get('anchor', 'root')),
                               'key': str(item.get('key', f'spells.{len(facts)}')), 'value': value})
+                spell_facts += 1
             spells = 'captured'
 
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -349,6 +372,7 @@ def verify_snapshot(directory):
 
     pages = manifest.get('pages')
     pages_by_section = {}
+    seen_urls = set()
     if not isinstance(pages, list) or not pages:
         errors.append(f'{directory}: manifest.json "pages" must be a non-empty list')
         pages = []
@@ -367,7 +391,15 @@ def verify_snapshot(directory):
                           f'must be {ACCEPTED_HTTP_STATUS} (a failed/error fetch cannot become committed evidence)')
         if not isinstance(page['visible_text_chars'], int) or page['visible_text_chars'] < 0:
             errors.append(f'{directory}: manifest page {page["section"]} visible_text_chars must be a non-negative int')
-        pages_by_section[page['section']] = page
+        # Duplicate sections/URLs (P2 r4120758056): a later duplicate must not silently overwrite
+        # an earlier page entry in pages_by_section.
+        if page['section'] in pages_by_section:
+            errors.append(f'{directory}: duplicate manifest page section {page["section"]!r}')
+        else:
+            pages_by_section[page['section']] = page
+        if page.get('url') in seen_urls:
+            errors.append(f'{directory}: duplicate manifest page url {page.get("url")!r}')
+        seen_urls.add(page.get('url'))
 
     # Completeness (P2 r4120578800): every required manual section, at its exact URL, HTTP 200.
     for section in MANUAL_SECTIONS:
@@ -436,18 +468,27 @@ def verify_snapshot(directory):
     if spells == 'captured' and fact_count_by_section.get('spells', 0) < 1:
         errors.append(f'{directory}: "spells" is "captured" but has zero facts')
 
-    # Per-section bounds (P1 r4120578784): a fixed fact-count cap, and total fact chars for a page
-    # must stay at or below a fraction of that page's own visible-text length -- a page copied in
+    # Per-section bounds (P1 r4120578784): a fact-count cap (the spell library gets its own,
+    # compatible bound for structured rows -- P2 r4120758016), and total fact chars for a page must
+    # stay at or below a fraction of that page's own visible-text length -- a page copied in
     # bounded-size chunks still fails this even though each chunk individually passes the per-value
     # cap.
     for section, count in fact_count_by_section.items():
-        if count > FACTS_PER_SECTION_CAP:
+        cap = facts_cap_for_section(section)
+        if count > cap:
             errors.append(f'{directory}: section {section!r} has {count} facts, over the '
-                          f'{FACTS_PER_SECTION_CAP}-fact-per-section cap')
+                          f'{cap}-fact-per-section cap')
         page = pages_by_section.get(section)
         if page is None or not isinstance(page.get('visible_text_chars'), int):
             continue
         visible_chars = page['visible_text_chars']
+        # A page that has facts must report a positive visible-text length: a zero would silently
+        # skip the ratio check below while still carrying arbitrary capped facts (P2 r4120758045).
+        if count >= 1 and visible_chars <= 0:
+            errors.append(f'{directory}: manifest page {section!r} has {count} fact(s) but '
+                          f'visible_text_chars is {visible_chars!r}; it must be a positive int for '
+                          f'any page that has facts')
+            continue
         value_chars = value_chars_by_section.get(section, 0)
         if visible_chars > 0 and value_chars > visible_chars * FACT_TO_VISIBLE_TEXT_RATIO_LIMIT + 1e-9:
             ratio = value_chars / visible_chars
@@ -472,6 +513,60 @@ def cmd_verify(directories):
             print(f'FAIL: {error}', file=sys.stderr)
         return 1
     print(f'verify: {len(directories)} snapshot dir(s), OK')
+    return 0
+
+
+def dated_dir_for_path(path):
+    match = DATED_DIR_RE.match(path)
+    return f'{SNAPSHOT_PREFIX}{match.group(1)}' if match else None
+
+
+def find_immutability_violations(diff_lines, exists_at_base):
+    """Dated snapshot directories are immutable once committed (P2 r4120578808/r4120758029).
+
+    `diff_lines` are `git diff --name-status -M <base> <head> -- <SNAPSHOT_PREFIX>` lines (any
+    iterable of strings); `exists_at_base(dated_dir)` reports whether that dated directory already
+    existed at the base commit. Returns one violation string per offending line: any `A`, `M`, `D`,
+    `R` or `C` whose affected path's dated directory already existed at base -- including an `A`
+    that only adds a new file inside an already-committed directory. Only a path inside a brand-new
+    dated directory is allowed.
+    """
+    violations = []
+    for line in diff_lines:
+        line = line.rstrip('\n')
+        if not line:
+            continue
+        fields = line.split('\t')
+        status = fields[0]
+        if not status or status[0] not in ('A', 'M', 'D', 'R', 'C'):
+            continue
+        paths = fields[1:] if status[0] in ('R', 'C') else fields[1:2]
+        for path in paths:
+            dated_dir = dated_dir_for_path(path)
+            if dated_dir and exists_at_base(dated_dir):
+                violations.append(f'{status}\t{path} (dated directory {dated_dir}/ exists at the PR base)')
+                break  # one violation per offending diff line, even if several of its paths match
+    return violations
+
+
+def cmd_check_immutability(base, head):
+    root = subprocess.run(['git', 'rev-parse', '--show-toplevel'], capture_output=True, text=True,
+                          check=True).stdout.strip()
+    diff = subprocess.run(['git', 'diff', '--name-status', '-M', base, head, '--', SNAPSHOT_PREFIX],
+                          capture_output=True, text=True, check=True, cwd=root).stdout
+
+    def exists_at_base(dated_dir):
+        return subprocess.run(['git', 'cat-file', '-e', f'{base}:{dated_dir}'],
+                              capture_output=True, cwd=root).returncode == 0
+
+    violations = find_immutability_violations(diff.splitlines(), exists_at_base)
+    if violations:
+        print('tibiacom_capture: dated snapshot directories are immutable once committed -- only '
+              'new dated directories may be added.', file=sys.stderr)
+        for violation in violations:
+            print(f'  - {violation}', file=sys.stderr)
+        return 1
+    print('check-immutability: OK (no edits to already-committed dated directories)')
     return 0
 
 
@@ -561,6 +656,46 @@ def self_test():
         '<html><body><script>var x=1;</script><p>Hello world</p>'
         '<style>.a{color:red}</style></body></html>') == len('Hello world')
 
+    # Spell library gets its own compatible cap, not the manual 40-fact one (P2 r4120758016).
+    assert facts_cap_for_section('spells') == SPELL_RECORDS_CAP
+    assert facts_cap_for_section('controls') == FACTS_PER_SECTION_CAP
+
+    # Hash the raw response bytes, decode a separate copy for parsing (P2 r4120758054): a response
+    # with bytes that are not valid UTF-8 must still be hashed exactly as received.
+    global fetch_url
+    _original_fetch_url = fetch_url
+    raw_sample = b'<html><body><p>Deals 42 damage.</p>broken utf8: \xff\xfe end</body></html>'
+    fetch_url = lambda url: (200, raw_sample)
+    try:
+        result = fetch_page_or_abort('http://example.test/raw-bytes', 'a raw-bytes test page')
+    finally:
+        fetch_url = _original_fetch_url
+    assert result is not None
+    _, raw, body = result
+    assert raw == raw_sample, raw
+    assert hashlib.sha256(raw).hexdigest() == hashlib.sha256(raw_sample).hexdigest()
+    assert hashlib.sha256(raw).hexdigest() != hashlib.sha256(body.encode('utf-8')).hexdigest()
+
+    # Immutability (P2 r4120758029): only paths inside a brand-new dated directory are allowed --
+    # including an `A` that lands inside an already-committed one.
+    existing_at_base = {SNAPSHOT_PREFIX + '2026-09-28'}
+    exists_at_base = lambda dated_dir: dated_dir in existing_at_base
+    assert find_immutability_violations(
+        [f'A\t{SNAPSHOT_PREFIX}2026-10-05/manifest.json'], exists_at_base) == []
+    assert len(find_immutability_violations(
+        [f'A\t{SNAPSHOT_PREFIX}2026-09-28/extra.json'], exists_at_base)) == 1
+    assert len(find_immutability_violations(
+        [f'M\t{SNAPSHOT_PREFIX}2026-09-28/manifest.json'], exists_at_base)) == 1
+    assert len(find_immutability_violations(
+        [f'D\t{SNAPSHOT_PREFIX}2026-09-28/facts.json'], exists_at_base)) == 1
+    assert len(find_immutability_violations(
+        [f'R100\t{SNAPSHOT_PREFIX}2026-09-28/facts.json\t{SNAPSHOT_PREFIX}2026-09-28/renamed.json'],
+        exists_at_base)) == 1
+    assert find_immutability_violations(
+        [f'R100\t{SNAPSHOT_PREFIX}2026-10-05/a.json\t{SNAPSHOT_PREFIX}2026-10-05/b.json'],
+        exists_at_base) == []
+    assert find_immutability_violations(['M\tREADME.md'], exists_at_base) == []
+
     import copy
     import tempfile
     with tempfile.TemporaryDirectory() as tmp:
@@ -613,11 +748,46 @@ def self_test():
         errors = verify_snapshot(directory)
         assert any('visible-text chars, over the' in e for e in errors), errors
 
+        # A page with facts must report a positive visible_text_chars -- zero would silently skip
+        # the ratio check above (P2 r4120758045).
+        manifest = copy.deepcopy(base_manifest)
+        manifest['pages'][0]['visible_text_chars'] = 0
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('positive int for any page that has facts' in e for e in errors), errors
+
         manifest = copy.deepcopy(base_manifest)
         manifest['spells'] = 'weird'
         _write_snapshot(directory, manifest, base_facts)
         errors = verify_snapshot(directory)
         assert any('"spells" must be' in e for e in errors), errors
+
+        # The spell library is capped at SPELL_RECORDS_CAP, not the 40-fact manual-page cap
+        # (P2 r4120758016): 41 spell facts must pass; over SPELL_RECORDS_CAP must fail.
+        manifest = copy.deepcopy(base_manifest)
+        manifest['spells'] = 'captured'
+        manifest['pages'].append({'section': 'spells', 'url': SPELL_LIBRARY_URL, 'fetched_at': utc_now(),
+                                  'http_status': 200, 'sha256': 'b' * 64, 'visible_text_chars': 1_000_000})
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['facts'] += [{'section': 'spells', 'anchor': 'root', 'key': f'spells.root.{i}',
+                                'value': f'Spell {i} costs {i} mana.'} for i in range(41)]
+        _write_snapshot(directory, manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert not any('fact-per-section cap' in e for e in errors), errors
+
+        facts_doc['facts'] += [{'section': 'spells', 'anchor': 'root', 'key': f'spells.root.extra{i}',
+                                'value': f'Spell extra {i} costs {i} mana.'} for i in range(41, SPELL_RECORDS_CAP + 1)]
+        _write_snapshot(directory, manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any(f'{SPELL_RECORDS_CAP}-fact-per-section cap' in e for e in errors), errors
+
+        # Duplicate manifest sections/URLs must not silently overwrite (P2 r4120758056).
+        manifest = copy.deepcopy(base_manifest)
+        manifest['pages'].append(dict(manifest['pages'][0]))
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('duplicate manifest page section' in e for e in errors), errors
+        assert any('duplicate manifest page url' in e for e in errors), errors
 
         facts_doc = copy.deepcopy(base_facts)
         facts_doc['facts'][0]['value'] = 'z' * (FACT_VALUE_LIMIT + 1)
@@ -657,6 +827,12 @@ def main(argv=None):
     verify_parser = subparsers.add_parser('verify', help='offline: check one or more snapshot directories')
     verify_parser.add_argument('directories', nargs='+', type=Path)
 
+    immutability_parser = subparsers.add_parser(
+        'check-immutability', help='offline (needs a local git checkout): reject edits to already-committed '
+                                    'dated snapshot directories between two commits')
+    immutability_parser.add_argument('--base', required=True)
+    immutability_parser.add_argument('--head', required=True)
+
     subparsers.add_parser('self-test', help='offline: run the embedded-fixture self-test')
 
     args = parser.parse_args(argv)
@@ -664,6 +840,8 @@ def main(argv=None):
         return cmd_fetch(args.out)
     if args.command == 'verify':
         return cmd_verify(args.directories)
+    if args.command == 'check-immutability':
+        return cmd_check_immutability(args.base, args.head)
     if args.command == 'self-test':
         self_test()
         return 0

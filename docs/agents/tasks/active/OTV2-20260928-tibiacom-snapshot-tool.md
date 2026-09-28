@@ -122,27 +122,33 @@ reason: >
   or a slug of the text) and the text of `p`/`li`/`td`/`th`/`dd` blocks under each, with no
   CSS-class guess at tibia.com's real structure (unreachable here — same Cloudflare block).
 
-## Repair: Codex review findings (PR #1083, return to AUTHORING)
+## Repair: Codex review findings (PR #1083, return to AUTHORING; two rounds)
 
-Four findings on head `1a82643`, all accepted and repaired in this commit (all four threads
-replied to before push):
+Round 1, head `1a82643`, 4 findings, all repaired:
 
-- **P1** r4120578784 (no page copy): `extract_facts` now keeps only headings plus fragments with a
-  factual signal (digit, `key: value`/`key = value`, or a named control key), capped at
-  `FACTS_PER_SECTION_CAP` (40) per section. `manifest.json` pages record `visible_text_chars`
-  (new `VisibleTextParser`); `verify` rejects a page whose fact chars exceed 25% of that page's
-  `visible_text_chars`, or whose section exceeds the cap. New self-test: an ordinary paragraph
-  isn't copied; a 50-item page is capped at 40; a shrunk `visible_text_chars` fails the ratio.
-- **P2** r4120578795 (bad HTTP status): `fetch_page_or_abort` accepts only HTTP 200; anything else
-  aborts the whole run before writing output; `verify` requires `http_status == 200`.
-- **P2** r4120578800 (completeness): `verify` requires exactly the six manual sections at their
-  exact URL with ≥1 fact each, plus `spells` = `PENDING_1077` or `captured` (with a matching page
-  and ≥1 fact).
-- **P2** r4120578808 (immutability): the workflow now fetches the PR base commit
-  (`git fetch --depth=1`) and diffs base→head under `imports/official/tibia-com/`
-  (`git diff --name-status -M`), failing on any `M`/`D`/`R` whose dated directory already existed
-  at the base; only new dated directories are allowed. `permissions: contents: read` unchanged;
-  verified locally against add/edit/delete/rename scenarios before pushing.
+- P1 r4120578784 (no page copy): bounded factual-signal extraction (digit/`key: value`/named
+  control key), `FACTS_PER_SECTION_CAP`=40; `manifest.json` records `visible_text_chars`; `verify`
+  rejects a page over the 25% fact-to-visible-text ratio or the per-section cap.
+- P2 r4120578795 (bad status): `fetch`/`verify` require HTTP 200 exactly.
+- P2 r4120578800 (completeness): `verify` requires exactly the six sections at their exact URL,
+  ≥1 fact each, and `spells` enum consistency.
+- P2 r4120578808 (immutability): the workflow diffs PR base→head under
+  `imports/official/tibia-com/`, rejecting `M`/`D`/`R` of an already-committed dated dir.
+
+Round 2, head `a90b128`, 5 more P2s, all repaired:
+
+- r4120758016: the spell library gets its own `SPELL_RECORDS_CAP`=600 (`facts_cap_for_section`),
+  not the 40-fact manual cap; `fetch` caps delegated spell facts at write time too.
+- r4120758045: `verify` rejects `visible_text_chars` ≤0 for any page with ≥1 fact.
+- r4120758054: `fetch_url` now returns raw response bytes; `sha256` hashes those raw bytes, with a
+  separate decode used only for parsing.
+- r4120758029: the immutability logic moved into a tested `check-immutability` tool subcommand
+  (`find_immutability_violations`) and now also rejects an `A` landing inside an already-committed
+  dated directory, not just `M`/`D`/`R`.
+- r4120758056: `verify` rejects a duplicate manifest page section or url instead of silently
+  overwriting `pages_by_section`.
+
+All nine review threads replied to before their respective pushes; self-test covers all nine.
 
 ## Validation
 
@@ -189,19 +195,18 @@ replied to before push):
 - required: it happened regardless of the `NO` self-assessment above (evidence/tooling-only, no
   public contract/protocol/persistence/authority surface): automated PR review is unconditional in
   this repository.
-- exact head: `1a82643a36a99d6d3b6e56f3bf05946a37a0de52`
+- exact head: `1a82643` (round 1), `a90b128` (round 2)
 - method/auditor: Codex, automated PR review (not triggered by this worker)
-- material findings: P1 r4120578784, P2 r4120578795, P2 r4120578800, P2 r4120578808 — all four
-  accepted and repaired (see Repair section above)
+- material findings: 9 total across two rounds (see Repair section above) — all accepted and
+  repaired
 - verdict: findings addressed; a fresh review of the repaired head is for the control plane to
   request, not this worker (no `@codex` trigger from this task)
 
 ## PR and closeout
 
-- changed-file review: all changed files fall within `owned_paths` above; `tools/content-schema/spell-authoring/**`
-  and `.github/workflows/spell-wiki-capture.yml` untouched.
-- unresolved review threads: none — see Repair and Independent review sections above; a fresh
-  review of the repaired head is for the control plane to request.
+- changed-file review: all changed files fall within `owned_paths`; `tools/content-schema/spell-authoring/**`
+  and `spell-wiki-capture.yml` untouched.
+- unresolved review threads: none — see Repair/Independent review above.
 - related/superseded PRs: none superseded; this task's PR is #1083, which references #1077 (the
   tibia.com block report and the S15 spell library, which this task's `PENDING_1077` fallback
   defers to).
