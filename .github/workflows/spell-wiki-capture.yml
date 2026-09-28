@@ -1,0 +1,108 @@
+name: Spell Authoring Schema and Wiki Capture
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/spell-authoring/**
+      - tools/content-schema/monster-authoring/monster.schema.json
+      - tools/content-schema/monster-authoring/monster-import-readiness.schema.json
+      - .github/workflows/spell-wiki-capture.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  schema:
+    name: Spell authoring / schema and validator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/spell-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt
+
+      - name: Regenerate schemas and template byte-identically
+        run: |
+          set -euo pipefail
+          python build_formal_schema.py
+          git diff --exit-code -- .
+
+      - name: Focused schema, validator and tool checks
+        run: |
+          set -euo pipefail
+          python verify_formal_schema.py
+          git diff --exit-code -- .
+          python validate_spell.py synthetic-valid-light-healing.json synthetic-valid-light-healing-dependencies.json \
+            --catalog synthetic-catalog.json
+          python spell_census.py self-test
+          python wiki_spells.py self-test
+          for bundle in samples/starter-bundles/*/; do
+            python validate_spell.py "$bundle/spell.json" "$bundle/dependencies.json" \
+              --catalog "$bundle/catalog.json" --manifest "$bundle/manifest.json" > /dev/null
+          done
+
+  wiki-br:
+    # TibiaWiki BR answers 403 (Cloudflare) from the build container; this job reads it from a hosted
+    # runner. The artifact keeps infobox fields cut to 200 characters and revision ids, never raw pages.
+    name: Spell authoring / TibiaWiki BR capture
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/spell-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Capture current TibiaWiki BR spell and rune pages
+        run: |
+          set -euo pipefail
+          python wiki_spells.py fetch --wiki br --cache "$RUNNER_TEMP/br"
+          mkdir -p "$RUNNER_TEMP/out"
+          python wiki_spells.py facts --wiki br --all-fields --cache "$RUNNER_TEMP/br" \
+            --out "$RUNNER_TEMP/out/wiki-spell-infoboxes-br.json"
+          python - "$RUNNER_TEMP/out/wiki-spell-infoboxes-br.json" <<'PY'
+          import json, sys
+          doc = json.load(open(sys.argv[1], encoding='utf-8'))
+          pages = doc['pages']
+          assert doc['wiki'] == 'br' and pages, 'empty BR capture'
+          assert all('content' not in p for p in pages), 'raw wikitext must not leave the runner'
+          spells = sum(1 for p in pages if 'Infobox Spell' in p.get('infoboxes', {}))
+          print(f"BR pages: {len(pages)}, with Infobox Spell: {spells}")
+          PY
+
+      - name: Upload BR infobox facts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: spell-wiki-br-${{ github.event.pull_request.head.sha || github.sha }}
+          path: ${{ runner.temp }}/out/wiki-spell-infoboxes-br.json
+          if-no-files-found: error
+          retention-days: 14

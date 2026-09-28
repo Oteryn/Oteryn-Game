@@ -1,0 +1,725 @@
+"""Convert the Canary and Crystal Server player spells into Spell authoring bundles (plan phase P2).
+
+Evidence tooling only: every bundle is a candidate built from OtsHypothesisOnly sources and wiki
+observations, never Game truth. Keys use the provisional `candidate:` namespace (no native key minting).
+
+Field rules (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md section 5):
+- S3/S11: a value TibiaWiki BR or Fandom states decides; on a BR/Fandom conflict the official change in
+  official-changes.json decides, otherwise the wiki page with the newer revision.
+- S4: Canary and Crystal are equal sources; a value only one of them has is taken from it, a value they
+  disagree on (with the engine default for an absent call) and that no wiki states stays unresolved.
+- S5: player damage/heal formulas are the source expression trees; `level / 5` and Canary's
+  calculateFlatDamageHealing become the world curve `level_base_damage_healing`. When the sources'
+  executions differ only in the formula, the formula that consumes the wiki base power wins.
+- S1/S2: execution is an Ability (monster Ability/Effect definitions, converted with the monster
+  converter's `combat_ability`), a conjure, or an unresolved native behaviour for custom scripts.
+
+Usage:
+    python convert_spells.py --canary <canary@47dfd51f> --crystal <crystalserver@ff7ede5> \
+        [--out DIR] [--only NAME ...] [--readiness samples/spell-readiness.json]
+"""
+import argparse
+import copy
+import hashlib
+import json
+import re
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+MONSTER = ROOT.parent / 'monster-authoring'
+sys.path.insert(0, str(MONSTER))
+sys.path.insert(0, str(ROOT))
+
+import canary_batch  # noqa: E402  monster converter: combat_ability, engine parameter binding
+import spell_scripts  # noqa: E402
+import wiki_spells as ws  # noqa: E402
+from spell_census import negate  # noqa: E402
+from validate_spell import evaluate, validate  # noqa: E402
+
+SAMPLES = ROOT / 'samples'
+CENSUS = SAMPLES / 'spell-census-canary-47dfd51f-crystal-ff7ede5.json'
+FANDOM_FACTS = SAMPLES / 'wiki-spell-facts-fandom-2026-09-27.json'
+BR_FACTS = SAMPLES / 'wiki-spell-facts-br-2026-09-27.json'
+OFFICIAL = ROOT / 'official-changes.json'
+REVISION = 'spell-p2-r1'
+SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'revision': '47dfd51f45280a59a1d3e50ba7edd573d7234446',
+                      'tag': 'canary-47dfd51f'},
+           'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
+                       'tag': 'crystal-ff7ede5'}}
+VOCATIONS = {'druid': 'elder_druid', 'sorcerer': 'master_sorcerer', 'knight': 'elite_knight', 'paladin': 'royal_paladin',
+             'monk': 'exalted_monk'}
+SOURCE_VOCATION = {'druid': 'druid', 'elder druid': 'elder_druid', 'sorcerer': 'sorcerer', 'master sorcerer': 'master_sorcerer',
+                   'knight': 'knight', 'elite knight': 'elite_knight', 'paladin': 'paladin', 'royal paladin': 'royal_paladin',
+                   'monk': 'monk', 'exalted monk': 'exalted_monk'}
+PRIMARY_GROUPS = {'attack', 'healing', 'support', 'special'}
+# Canary/Crystal engine defaults for an absent registrar call (src/creatures/combat/spells.hpp, actions.hpp).
+DEFAULTS = {'isAggressive': True, 'isSelfTarget': False, 'needTarget': False, 'needDirection': False,
+            'needCasterTargetOrDirection': False, 'blockWalls': True, 'allowOnSelf': True, 'checkFloor': True,
+            'setPzLocked': False, 'needWeapon': False, 'needLearn': False, 'isPremium': False, 'soul': 0,
+            'cooldown': 1000, 'allowFarUse': False, 'hasParams': False, 'hasPlayerNameParam': False, 'range': None,
+            'manaPercent': 0, 'charges': None, 'magicLevel': 0}
+FORMULA_VARS = {'level': 'level', 'magic_level': 'magic_level', 'base_power': 'base_power', 'attack_skill': 'attack_skill',
+                'attack_value': 'attack_value', 'attack_factor': 'attack_factor', 'skill:SKILL_SHIELD': 'shielding_skill'}
+FORMULA_OPS = {'add', 'sub', 'mul', 'div', 'neg', 'floor', 'ceil', 'sqrt', 'abs', 'min', 'max'}
+SIGN_PROBE = {'level': 100, 'magic_level': 50, 'base_power': 100, 'attack_skill': 80, 'attack_value': 50,
+              'attack_factor': 1, 'shielding_skill': 80}
+
+
+class Unresolved(Exception):
+    pass
+
+
+def slug(name):
+    return re.sub(r'[^a-z0-9]+', '_', str(name).lower()).strip('_')
+
+
+def ref(family, key):
+    return {'family': family, 'key': key, 'revision': REVISION}
+
+
+def ident(key):
+    return {'key': key, 'revision': REVISION}
+
+
+def git_blob(data):
+    return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+
+
+# ------------------------------------------------------------------------------------------------
+# Wiki resolution (S3, S11)
+# ------------------------------------------------------------------------------------------------
+
+class Wikis:
+    def __init__(self, fandom, br, official):
+        self.docs = {'fandom': fandom, 'br': br}
+        self.spells, self.spell_names, self.runes = {}, {}, {}
+        for wiki, doc in self.docs.items():
+            by_words, by_name, runes = {}, {}, {}
+            for page in doc['pages']:
+                if page.get('template') == 'Infobox Spell':
+                    words = ws.words_key(page['fields'].get('words', ''))
+                    if words:
+                        by_words.setdefault(words, []).append(page)
+                    by_name[ws.plain(page['fields'].get('name', page['title'])).lower()] = page
+                elif page.get('template') == 'Infobox Object':
+                    key = ws.rune_key(page['fields'])
+                    if key not in ('', None):
+                        runes.setdefault(key, page)
+                        name = ws.plain(page['fields'].get('name', page['title'])).lower()
+                        runes.setdefault(name, page)
+            self.spells[wiki], self.spell_names[wiki], self.runes[wiki] = by_words, by_name, runes
+        self.official = {(c['spell'], c['field']): c for c in official['changes']}
+
+    def spell_page(self, wiki, record):
+        reg = record['registrar']
+        words = ws.words_key(reg.get('words', ''))
+        pages = self.spells[wiki].get(words, [])
+        if len(pages) != 1:
+            pages = [p for key, group in self.spells[wiki].items() if key.startswith(words + ' ') and words
+                     for p in group if reg.get('hasParams') or reg.get('hasPlayerNameParam')]
+        if len(pages) == 1:
+            return pages[0]
+        return self.spell_names[wiki].get(str(record['name']).lower())
+
+    def rune_page(self, wiki, record):
+        reg = record['registrar']
+        return self.runes[wiki].get(reg.get('runeId')) or self.runes[wiki].get(str(record['name']).lower())
+
+    def resolve(self, pages, field, spell_name):
+        """(value, wiki provenance, note) for one wiki field; value None when no wiki states it."""
+        values = {}
+        for wiki, page in pages.items():
+            if page is not None and page['fields'].get(field) not in (None, ''):
+                value = ws.crosswalk_value(field, page['fields'][field])
+                if value is not None:
+                    values[wiki] = (value, page)
+        if not values:
+            return None, [], None
+        distinct = {json.dumps(v[0], sort_keys=True) for v in values.values()}
+        if len(distinct) == 1:
+            return next(iter(values.values()))[0], [(w, p) for w, (_, p) in values.items()], None
+        official = self.official.get((str(spell_name).lower(), field))
+        if official:
+            value = ws.crosswalk_value(field, official['value'])
+            note = (f'S11: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree; the official change of '
+                    f'{official["date"]} decides ({official["fact"]}; {official["source"]}).')
+            chosen = [(w, p) for w, (v, p) in values.items() if v == value]
+            return value, chosen or list((w, p) for w, (_, p) in values.items()), note
+        newer = max(values, key=lambda w: values[w][1].get('timestamp', ''))
+        other = 'fandom' if newer == 'br' else 'br'
+        note = (f'S11: BR {values["br"][0]!r} and Fandom {values["fandom"][0]!r} disagree and no official change is '
+                f'recorded; the newer revision ({newer}, {values[newer][1].get("timestamp")}) decides over {other} '
+                f'({values[other][1].get("timestamp")}).')
+        return values[newer][0], [(newer, values[newer][1])], note
+
+
+# ------------------------------------------------------------------------------------------------
+# Formulas (S5)
+# ------------------------------------------------------------------------------------------------
+
+def is_level_div_5(expr):
+    if expr.get('op') == 'div' and expr['args'] == [{'var': 'level'}, {'const': '5'}]:
+        return True
+    return expr.get('op') == 'mul' and sorted(json.dumps(a, sort_keys=True) for a in expr['args']) == sorted(
+        [json.dumps({'var': 'level'}), json.dumps({'const': '0.2'})])
+
+
+def convert_expr(expr, notes):
+    if 'const' in expr:
+        return {'const': expr['const']}
+    if 'var' in expr:
+        if expr['var'] not in FORMULA_VARS:
+            raise Unresolved(f'formula input {expr["var"]} has no authoring variable')
+        return {'var': FORMULA_VARS[expr['var']]}
+    if 'fn' in expr:
+        if expr['fn'] == 'flat_damage_healing':
+            notes.add('S5: Canary Player::calculateFlatDamageHealing (defective above level 1100) is replaced by the '
+                      'world curve level_base_damage_healing.')
+        elif expr['fn'] != 'base_damage_healing':
+            raise Unresolved(f'formula function {expr["fn"]}')
+        return {'fn': 'level_base_damage_healing', 'args': [convert_expr(a, notes) for a in expr['args']]}
+    if is_level_div_5(expr):
+        notes.add('S5: the pre-2022 level contribution level / 5 is replaced by the world curve '
+                  'level_base_damage_healing (official scaling since 13.05.12657).')
+        return {'fn': 'level_base_damage_healing', 'args': [{'var': 'level'}]}
+    if expr.get('op') not in FORMULA_OPS:
+        raise Unresolved(f'formula operation {expr.get("op")}')
+    return {'op': expr['op'], 'args': [convert_expr(a, notes) for a in expr['args']]}
+
+
+def player_formula(callback, base_power, notes):
+    formula = callback.get('formula') or {}
+    if formula.get('status') != 'resolved':
+        raise Unresolved('player formula: ' + formula.get('error', 'not resolved'))
+    minimum, maximum = convert_expr(formula['minimum'], notes), convert_expr(formula['maximum'], notes)
+    env = dict(SIGN_PROBE, base_power=base_power or SIGN_PROBE['base_power'])
+    low, high = evaluate(minimum, env), evaluate(maximum, env)
+    if low <= 0 and high <= 0:
+        minimum, maximum = negate(minimum), negate(maximum)
+        low, high = -low, -high
+    elif low < 0 or high < 0:
+        raise Unresolved('player formula bounds have mixed signs')
+    if low > high:
+        minimum, maximum = maximum, minimum
+    inputs = 'skill' if callback['kind'] == 'CALLBACK_PARAM_SKILLVALUE' else 'level_magic'
+    return {'kind': 'player_expression', 'inputs': inputs, 'minimum': minimum, 'maximum': maximum}
+
+
+def uses_base_power(formula):
+    return 'base_power' in json.dumps(formula)
+
+
+# ------------------------------------------------------------------------------------------------
+# Execution (S1/S2) through the monster converter
+# ------------------------------------------------------------------------------------------------
+
+class Execution:
+    def __init__(self, source, root):
+        self.source, self.root = source, root
+        self.converter = canary_batch.Converter(root, {}, {}, {}, {})
+        self.converter.spell_scripts = spell_scripts.SpellScripts(root)
+        self.converter.pending_definitions = set()
+        self.tag = SOURCES[source]['tag']
+
+    def ability(self, record, base_power, notes):
+        """(ability key, dependencies, created item ids) for a plain/random combat spell of this source."""
+        try:
+            info = self.converter.spell_scripts.evaluate(str(record['name']).lower())
+        except Exception as exc:  # e.g. a chain-value callback that reads the player caster
+            raise Unresolved(f'{self.source}: the script cannot be evaluated without a player caster '
+                             f'({str(exc).splitlines()[0][:120]})')
+        if info is None or 'error' in info or info.get('tier') in ('P4', 'NOOP'):
+            raise Unresolved(f'{self.source}: the registered script does not evaluate to plain combats '
+                             f'({(info or {}).get("error") or (info or {}).get("tier")})')
+        reg = record['registrar']
+        geometry = {'needs_target': bool(reg.get('needTarget') or reg.get('needCasterTargetOrDirection')),
+                    'needs_direction': bool(reg.get('needDirection'))}
+        range_tiles = int(reg.get('range') or 0) if (reg.get('range') or 0) > 0 else 0
+        deps = {'abilities': [], 'effects': [], 'formulas': []}
+        key = f'candidate:ability/spell/{"rune/" if record["spell_type"] == "rune" else ""}{slug(record["name"])}'
+        self.converter.pending_definitions = set()
+        order = list(dict.fromkeys(info['variants']))
+        keys = [key] if len(order) == 1 else [f'{key}/variant-{n}' for n in range(1, len(order) + 1)]
+        for ability_key, combat_index in zip(keys, order):
+            local = []
+            try:
+                self.converter.combat_ability(ability_key, info['combats'][combat_index], geometry, range_tiles, deps,
+                                              lambda a: a, local)
+            except canary_batch.SpellUnresolved as exc:
+                raise Unresolved(f'{self.source}: {exc}')
+            notes.update(n.strip() for n in local if n.strip() and 'monster caster' not in n and 'player formula' not in n)
+            census_combat = record['combats'][combat_index]
+            callbacks = [c for c in census_combat.get('callbacks', []) if 'formula' in c]
+            for effect in list(deps['effects']):
+                if not effect['identity']['key'].startswith(ability_key + '/'):
+                    continue
+                if effect.get('formula', {}).get('key') == canary_batch.CASTER_MAGNITUDE:
+                    if not callbacks and not census_combat.get('set_formula'):
+                        # Combat::getCombatDamage leaves the value 0 without a formula: the combat deals no direct
+                        # damage; its conditions or created field items do.
+                        notes.add('A combat type without a player formula deals no direct damage (combat.cpp '
+                                  'Combat::getCombatDamage keeps 0); its conditions or created items apply.')
+                        for field in ('operation', 'damage_type', 'formula', 'mitigated_by', 'affects'):
+                            effect.pop(field, None)
+                        if effect.get('presentation'):
+                            effect['operation'] = 'presentation_only'
+                        else:
+                            deps['effects'].remove(effect)
+                            for ability in deps['abilities']:
+                                ability['effects'] = [e for e in ability.get('effects', [])
+                                                      if e['key'] != effect['identity']['key']]
+                        continue
+                    if len(callbacks) != 1:
+                        raise Unresolved(f'{self.source}: damage/heal combat without exactly one player formula callback')
+                    formula_key = (f'candidate:formula/spell/{"rune/" if record["spell_type"] == "rune" else ""}'
+                                   f'{slug(record["name"])}/combat-{combat_index + 1}')
+                    body = player_formula(callbacks[0], base_power, notes)
+                    if not any(f['identity']['key'] == formula_key for f in deps['formulas']):
+                        deps['formulas'].append({'identity': ident(formula_key), **body})
+                    effect['formula'] = ref('Formula', formula_key)
+        if len(keys) > 1:
+            deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': range_tiles, **geometry,
+                                      'variants': [ref('Ability', k) for k in keys]})
+        deps['formulas'] = [f for f in deps['formulas'] if f['identity']['key'] != canary_batch.CASTER_MAGNITUDE]
+        text = json.dumps(deps).replace(canary_batch.REV, REVISION).replace('"canary.appearance:', f'"{self.source}.appearance:')
+        items = sorted(int(k.rsplit('/', 1)[1]) for f, k in self.converter.pending_definitions if f == 'Item')
+        return key, json.loads(text.replace('canary:item/', 'candidate:item/')), items
+
+
+def execution_signature(deps):
+    """Execution payload without formula bodies (for the S4 comparison of the two sources)."""
+    stripped = copy.deepcopy(deps)
+    stripped['formulas'] = [{'identity': f['identity']} for f in stripped['formulas']]
+    text = json.dumps(stripped, sort_keys=True)
+    return re.sub(r'"(canary|crystal)\.appearance:', '"appearance:', text)
+
+
+# ------------------------------------------------------------------------------------------------
+# One spell
+# ------------------------------------------------------------------------------------------------
+
+class Bundle:
+    def __init__(self, name, records, wikis, executions, sources_text):
+        self.name, self.records, self.wikis, self.executions, self.text = name, records, wikis, executions, sources_text
+        self.rows, self.sources, self.source_index, self.notes = [], [], {}, set()
+        self.catalog = set()
+
+    # --- provenance -----------------------------------------------------------------------------
+    def git_source(self, source):
+        if source not in self.source_index:
+            self.source_index[source] = len(self.sources)
+            self.sources.append({'repository': SOURCES[source]['repository'], 'revision': SOURCES[source]['revision']})
+        return self.source_index[source]
+
+    def wiki_source(self, wiki, page):
+        key = (wiki, page['page_id'])
+        if key not in self.source_index:
+            self.source_index[key] = len(self.sources)
+            self.sources.append({'kind': 'mediawiki', 'api': self.wikis.docs[wiki]['api'], 'title': page['title'],
+                                 'page_id': page['page_id'], 'revision_id': page['revision_id'],
+                                 'content_sha256': page['content_sha256']})
+        return self.source_index[key]
+
+    def line(self, source, method):
+        record = self.records[source]
+        text = self.text[(source, record['file'])]
+        for number, content in enumerate(text.splitlines(), 1):
+            if re.search(r':' + re.escape(method) + r'\(', content):
+                return number
+        return 1
+
+    def row(self, status, field, destination=None, resolution=None, source=None, wiki=None, method=None, kind='field'):
+        if wiki:
+            index, file, line = self.wiki_source(*wiki), wiki[1]['title'], 1
+        else:
+            index = self.git_source(source)
+            file, line = self.records[source]['file'], self.line(source, method) if method else 1
+        entry = {'source_index': index, 'source_file': file, 'source_line': line, 'source_field': field, 'kind': kind,
+                 'status': status}
+        if destination is not None:
+            entry['destination'] = destination
+        if resolution is not None:
+            entry['resolution'] = resolution
+        self.rows.append(entry)
+
+    # --- field resolution -----------------------------------------------------------------------
+    def source_value(self, method, transform=lambda v: v):
+        """{source: effective value} with engine defaults for an absent call."""
+        out = {}
+        for source, record in self.records.items():
+            value = record['registrar'].get(method, DEFAULTS.get(method))
+            out[source] = transform(value) if value is not None else None
+        return out
+
+    def field(self, destination, wiki_field, method, pages, transform=lambda v: v, wiki_transform=lambda v: v,
+              required=True):
+        """Resolve one Spell field under S3/S4/S11; returns the value (None when nothing states it)."""
+        value, provenance, note = (None, [], None)
+        if wiki_field:
+            value, provenance, note = self.wikis.resolve(pages, wiki_field, self.name)
+        sources = self.source_value(method, transform) if method else {}
+        if value is not None:
+            value = wiki_transform(value)
+            for wiki, page in provenance:
+                self.row('mapped', wiki_field, destination, note or 'S3: the wiki states this value.', wiki=(wiki, page))
+            for source, source_value in sources.items():
+                if source_value is not None and source_value != value:
+                    self.row('approved_omission', method, resolution=f'S3: superseded by the wiki value {value!r} '
+                             f'(source {source_value!r}).', source=source, method=method)
+            return value
+        present = {s: v for s, v in sources.items() if v is not None}
+        if not present:
+            if required:
+                self.row('unresolved_semantics', method or wiki_field, resolution='no source or wiki states this value.',
+                         source=next(iter(self.records)))
+            return None
+        distinct = {json.dumps(v, sort_keys=True) for v in present.values()}
+        if len(distinct) > 1:
+            self.row('unresolved_semantics', method, resolution='S4 conflict: ' + ', '.join(
+                f'{s} {v!r}' for s, v in present.items()) + '; no wiki states this value.', source=next(iter(present)),
+                method=method)
+            return None
+        value = next(iter(present.values()))
+        for source in present:
+            self.row('mapped', method, destination, 'S4: source value' + (' (both sources agree).' if len(present) > 1 else '.'),
+                     source=source, method=method)
+        return value
+
+    # --- assembly -------------------------------------------------------------------------------
+    def convert(self):
+        primary = self.records.get('crystal') or self.records['canary']
+        carrier = primary['spell_type']
+        pages = {w: (self.wikis.rune_page(w, primary) if carrier == 'rune' else self.wikis.spell_page(w, primary))
+                 for w in ('fandom', 'br')}
+        spell_pages = pages
+        if carrier == 'rune':
+            spell_pages = {w: self.wikis.spell_page(w, primary) for w in ('fandom', 'br')}
+        # A rune and its conjuring spell share a name ("sudden death rune"), so the carrier is part of the key.
+        key = f'candidate:spell/{"rune/" if carrier == "rune" else ""}{slug(self.name)}'
+        spell = {'identity': ident(key), 'name': primary['name'], 'carrier': carrier}
+        base = '/spell/spell'
+        if carrier == 'instant':
+            words = self.field(base + '/words', None, 'words', pages, transform=lambda v: re.sub(r'\s+', ' ', v.strip().lower()))
+            if words is not None:
+                spell['words'] = words
+        spell_id = self.field(base + '/reference_spell_id', None, 'id', pages, required=False)
+        if isinstance(spell_id, int) and spell_id > 0:
+            spell['reference_spell_id'] = spell_id
+        requirements = {}
+        vocations = self.vocations(pages, carrier)
+        if vocations:
+            requirements['vocations'] = vocations
+        level = self.field(base + '/requirements/level', 'levelrequired', 'level', pages)
+        requirements['level'] = level if level is not None else 0
+        premium = self.field(base + '/requirements/premium', 'premium', 'isPremium', pages,
+                             wiki_transform=lambda v: v == 'yes')
+        requirements['premium'] = bool(premium)
+        learn = self.field(base + '/requirements/learning_required', None, 'needLearn', pages)
+        requirements['learning_required'] = bool(learn)
+        spell['requirements'] = requirements
+        costs = {}
+        mana = self.field(base + '/costs/mana', 'mana', 'mana', pages if carrier == 'instant' else {}, required=False)
+        if isinstance(mana, int):
+            costs['mana'] = mana
+        elif mana == 'varies':
+            self.row('unresolved_semantics', 'mana', resolution='the wiki mana varies (party spells); a native '
+                     'behaviour must define it.', source=next(iter(self.records)), method='mana')
+            costs['mana'] = 0
+        percent = self.source_value('manaPercent')
+        if any(percent.values()) and 'mana' not in costs:
+            costs['mana_percent'] = max(v for v in percent.values() if v)
+        if carrier == 'rune' and 'mana' not in costs and 'mana_percent' not in costs:
+            costs['mana'] = 0
+        if 'mana' not in costs and 'mana_percent' not in costs and mana is None:
+            costs['mana'] = 0
+        soul = self.field(base + '/costs/soul', 'soul' if carrier == 'instant' else None, 'soul', pages)
+        costs['soul'] = soul or 0
+        spell['costs'] = costs
+        cooldown = self.field(base + '/cooldown_ms', 'cooldown', 'cooldown', spell_pages)
+        spell['cooldown_ms'] = cooldown or 1000
+        spell['groups'] = self.groups(spell_pages)
+        spell['targeting'] = self.targeting(spell_pages)
+        spell['pz_locks_caster'] = bool(self.field(base + '/pz_locks_caster', None, 'setPzLocked', pages))
+        spell['needs_weapon'] = bool(self.field(base + '/needs_weapon', None, 'needWeapon', pages))
+        base_power = self.field(base + '/base_power', 'basepower', 'basePower', pages, required=False)
+        if base_power:
+            spell['base_power'] = base_power
+        if carrier == 'rune':
+            spell['rune'] = self.rune(pages)
+        deps = {'abilities': [], 'effects': [], 'formulas': []}
+        spell['execution'] = self.execution(deps, base_power, spell_pages)
+        bundle = {'spell': spell}
+        catalog = {'definitions': [ref('Item', f'candidate:item/{i}') for i in sorted(self.catalog)]}
+        for note in sorted(self.notes):
+            self.row('metadata_only', 'note', resolution=note, source=next(iter(self.records)))
+        manifest = {'sources': self.sources, 'entries': self.rows}
+        return bundle, deps, catalog, manifest
+
+    def vocations(self, pages, carrier):
+        wiki_field = 'voc' if carrier == 'instant' else 'vocrequired'
+        wiki_value, provenance, note = self.wikis.resolve(pages, wiki_field, self.name)
+        source_bases = {}
+        for source, record in self.records.items():
+            names = [str(v).split(';')[0].strip().lower() for v in record['registrar'].get('vocation', [])]
+            keys = {SOURCE_VOCATION[n] for n in names if n in SOURCE_VOCATION}
+            source_bases[source] = sorted({k for k in keys if k in VOCATIONS} |
+                                          {b for b, p in VOCATIONS.items() if p in keys})
+        if wiki_value:
+            for wiki, page in provenance:
+                self.row('mapped', wiki_field, '/spell/spell/requirements/vocations',
+                         (note or 'S3: the wiki states the base vocations') + '; S8 adds each promoted vocation.',
+                         wiki=(wiki, page))
+            bases = wiki_value
+        else:
+            present = {s: v for s, v in source_bases.items() if v}
+            if not present:
+                if carrier == 'rune':
+                    self.row('mapped', 'vocation', '/spell/spell/requirements/vocations', 'No vocation restriction is '
+                             'registered, so every vocation may use the rune (engine default).',
+                             source=next(iter(self.records)))
+                    bases = sorted(VOCATIONS)
+                else:
+                    self.row('unresolved_semantics', 'vocation', resolution='no vocation is stated.',
+                             source=next(iter(self.records)))
+                    return None
+            else:
+                if len({json.dumps(v) for v in present.values()}) > 1:
+                    self.row('unresolved_semantics', 'vocation', resolution='S4 conflict: ' + ', '.join(
+                        f'{s} {v}' for s, v in present.items()) + '; no wiki states the vocations.',
+                        source=next(iter(present)), method='vocation')
+                    return None
+                bases = next(iter(present.values()))
+                for source in present:
+                    self.row('mapped', 'vocation', '/spell/spell/requirements/vocations', 'S4: source vocations.',
+                             source=source, method='vocation')
+        return sorted({b for b in bases} | {VOCATIONS[b] for b in bases})
+
+    def groups(self, pages):
+        groups = []
+        primary = self.field('/spell/spell/groups/0/group', 'subclass', 'group', pages,
+                             transform=lambda v: (v[0] if isinstance(v, list) else v).lower())
+        if isinstance(primary, str) and primary not in PRIMARY_GROUPS:
+            sources = {s: (r['registrar'].get('group') if not isinstance(r['registrar'].get('group'), list)
+                           else r['registrar']['group'][0]) for s, r in self.records.items()}
+            fallback = {str(v).lower() for v in sources.values() if v}
+            self.row('metadata_only', 'subclass', resolution=f'The wiki category {primary!r} is not a cooldown group; '
+                     f'the source group {sorted(fallback)} is used.', source=next(iter(self.records)))
+            primary = sorted(fallback)[0] if len(fallback) == 1 else None
+        cooldown = self.field('/spell/spell/groups/0/cooldown_ms', 'cooldowngroup', 'groupCooldown', pages,
+                              transform=lambda v: v[0] if isinstance(v, list) else v)
+        if primary:
+            groups.append({'group': primary, 'cooldown_ms': cooldown or 1000})
+        secondary = self.field('/spell/spell/groups/1/group', 'secondarygroup', 'group', pages,
+                               transform=lambda v: v[1].lower() if isinstance(v, list) and len(v) > 1 else None,
+                               wiki_transform=lambda v: re.sub(r'[^a-z]', '', str(v).lower()), required=False)
+        if secondary:
+            cd2 = self.wikis.resolve(pages, 'cooldowngroup2', self.name)[0]
+            if cd2 is None:
+                values = {json.dumps(r['registrar']['groupCooldown'][1]) for r in self.records.values()
+                          if isinstance(r['registrar'].get('groupCooldown'), list) and len(r['registrar']['groupCooldown']) > 1}
+                cd2 = json.loads(next(iter(values))) if len(values) == 1 else None
+            if cd2:
+                groups.append({'group': secondary, 'cooldown_ms': cd2})
+            else:
+                self.row('unresolved_semantics', 'groupCooldown', resolution=f'secondary group {secondary} has no '
+                         'stated cooldown.', source=next(iter(self.records)), method='groupCooldown')
+        return groups
+
+    def targeting(self, pages):
+        t, base = {}, '/spell/spell/targeting/'
+        for name, method in (('aggressive', 'isAggressive'), ('self_target', 'isSelfTarget'), ('needs_target', 'needTarget'),
+                             ('needs_direction', 'needDirection'), ('target_or_direction', 'needCasterTargetOrDirection'),
+                             ('block_walls', 'blockWalls'), ('allow_on_self', 'allowOnSelf'), ('check_floor', 'checkFloor')):
+            value = self.field(base + name, None, method, pages, transform=bool)
+            t[name] = bool(value) if value is not None else DEFAULTS[method]
+        spell_range = self.field(base + 'range_tiles', 'spellrange', 'range', pages, required=False)
+        if isinstance(spell_range, int) and spell_range >= 0:
+            t['range_tiles'] = spell_range
+        name_param = any(r['registrar'].get('hasPlayerNameParam') for r in self.records.values())
+        text_param = any(r['registrar'].get('hasParams') for r in self.records.values())
+        t['parameter'] = 'player_name' if name_param else 'text' if text_param else 'none'
+        return t
+
+    def rune(self, pages):
+        base = '/spell/spell/rune/'
+        item = self.field(base + 'item', None, 'runeId', pages)
+        if item:
+            self.catalog.add(int(item))
+        charges = self.field(base + 'charges', None, 'charges', pages)
+        magic_level = self.field(base + 'magic_level', 'mlrequired', 'magicLevel', pages)
+        far = self.field(base + 'allow_far_use', None, 'allowFarUse', pages)
+        blocking = self.source_value('isBlocking', lambda v: v if isinstance(v, list) else [v])
+        flags = {json.dumps([bool(x) for x in (v or [False, False])] + [False] * (2 - len(v or []))) for v in blocking.values()}
+        solid, creature = (json.loads(next(iter(flags)))[:2] if len(flags) == 1 else (False, False))
+        if len(flags) > 1:
+            self.row('unresolved_semantics', 'isBlocking', resolution='S4 conflict on rune:isBlocking.',
+                     source=next(iter(self.records)), method='isBlocking')
+        return {'item': ref('Item', f'candidate:item/{int(item or 0)}'), 'charges': int(charges or 1),
+                'magic_level': int(magic_level or 0), 'allow_far_use': bool(far), 'blocking': {'solid': solid, 'creature': creature}}
+
+    def execution(self, deps, base_power, pages):
+        tiers = {s: r['cast']['tier'] for s, r in self.records.items()}
+        if all(t == 'conjure' for t in tiers.values()):
+            conjures = {s: r['cast'].get('conjure') or {} for s, r in self.records.items()}
+            distinct = {json.dumps({k: v for k, v in c.items() if k != 'count'}, sort_keys=True) for c in conjures.values()}
+            if len(distinct) > 1:
+                self.row('unresolved_semantics', 'conjureItem', resolution='S4 conflict on the conjured items: ' +
+                         json.dumps(conjures), source=next(iter(self.records)), kind='script')
+            conjure = next(iter(conjures.values()))
+            count = self.wikis.resolve(pages, 'amount', self.name)[0]
+            source_count = conjure.get('count')
+            if count is None:
+                count = source_count
+            elif source_count not in (None, count):
+                self.row('approved_omission', 'conjureItem', resolution=f'S3: the wiki amount {count} supersedes '
+                         f'{source_count}.', source=next(iter(self.records)), kind='script')
+            result = conjure.get('result_item_id')
+            if not isinstance(result, int) or not isinstance(count, int) or count < 1:
+                self.row('unresolved_semantics', 'conjureItem', resolution='conjure arguments are not literal item ids.',
+                         source=next(iter(self.records)), kind='script')
+                return {'conjure': {'result': ref('Item', 'candidate:item/0'), 'count': 1}}
+            self.catalog.add(result)
+            body = {'result': ref('Item', f'candidate:item/{result}'), 'count': count}
+            reagent = conjure.get('reagent_item_id')
+            if isinstance(reagent, int) and reagent > 0:
+                self.catalog.add(reagent)
+                body['reagent'] = ref('Item', f'candidate:item/{reagent}')
+            for source in self.records:
+                self.row('resolved_native_behavior', 'onCastSpell', '/spell/spell/execution/conjure',
+                         'Player:conjureItem(reagent, result, count) is the S2 conjure execution.', source=source,
+                         kind='script')
+            return {'conjure': body}
+        plain = {s for s, t in tiers.items() if t in ('plain_combat', 'random_combat')}
+        if not plain:
+            patterns = sorted({p for r in self.records.values() for p in r['cast'].get('patterns', [])})
+            self.row('unresolved_semantics', 'onCastSpell', resolution='custom script; needs a native behaviour (S7): '
+                     + ', '.join(patterns), source=next(iter(self.records)), kind='script')
+            return {'native_behavior': {'key': 'unresolved', 'parameters': {'patterns': patterns}}}
+        converted, failures = {}, {}
+        for source in sorted(plain):
+            notes = set()
+            try:
+                converted[source] = (*self.executions[source].ability(self.records[source], base_power, notes), notes)
+            except Unresolved as exc:
+                failures[source] = str(exc)
+        for source, reason in failures.items():
+            self.row('unresolved_semantics' if not converted else 'approved_omission', 'onCastSpell',
+                     resolution=reason + ('' if not converted else ' (the other source converts).'), source=source,
+                     kind='script')
+        for source in set(tiers) - plain:
+            self.row('approved_omission', 'onCastSpell', resolution=f'{source} runs custom logic here ({tiers[source]}); '
+                     'the plain combat of the other source is used (S4).', source=source, kind='script')
+        if not converted:
+            return {'native_behavior': {'key': 'unresolved', 'parameters': {}}}
+        chosen = next(iter(converted))
+        if len(converted) == 2:
+            signatures = {s: execution_signature(c[1]) for s, c in converted.items()}
+            if signatures['canary'] != signatures['crystal']:
+                self.row('unresolved_semantics', 'onCastSpell', resolution='S4 conflict: Canary and Crystal combats '
+                         'differ (area, effects, conditions or parameters) and no wiki states the execution.',
+                         source='canary', kind='script')
+            formulas = {s: [f for f in c[1]['formulas'] if f['kind'] == 'player_expression'] for s, c in converted.items()}
+            if json.dumps(formulas['canary'], sort_keys=True) == json.dumps(formulas['crystal'], sort_keys=True):
+                chosen = 'crystal'
+            else:
+                with_power = [s for s in ('crystal', 'canary') if formulas[s] and all(uses_base_power(f) for f in formulas[s])]
+                chosen = with_power[0] if with_power and base_power else 'crystal'
+                other = 'canary' if chosen == 'crystal' else 'crystal'
+                self.row('approved_omission', 'onGetFormulaValues', resolution=f'S5: the {chosen} formula '
+                         + ('consumes the wiki base power' if with_power and base_power else 'is used')
+                         + f'; the {other} formula is superseded.', source=other, method='setCallback')
+        key, dep, items, notes = converted[chosen]
+        self.notes.update(notes)
+        deps.update(dep)
+        self.catalog.update(items)
+        self.row('resolved_native_behavior', 'onCastSpell', '/spell/spell/execution/ability',
+                 f'Plain combat converted with the monster combat_ability rules ({chosen}).', source=chosen,
+                 method='setCallback' if deps['formulas'] else None, kind='script')
+        return {'ability': ref('Ability', key)}
+
+
+# ------------------------------------------------------------------------------------------------
+
+def run(args):
+    census = json.loads(CENSUS.read_text(encoding='utf-8'))
+    wikis = Wikis(json.loads(FANDOM_FACTS.read_text(encoding='utf-8')), json.loads(BR_FACTS.read_text(encoding='utf-8')),
+                  json.loads(OFFICIAL.read_text(encoding='utf-8')))
+    roots = {'canary': args.canary, 'crystal': args.crystal}
+    executions = {s: Execution(s, r) for s, r in roots.items()}
+    groups = {}
+    for source in ('canary', 'crystal'):
+        for record in census[source]:
+            if str(record['registrar'].get('words', '')).startswith('#'):
+                continue
+            groups.setdefault((record['spell_type'], str(record['name']).lower()), {})[source] = record
+    texts = {}
+    for (spell_type, name), records in groups.items():
+        for source, record in records.items():
+            texts[(source, record['file'])] = (roots[source] / record['file']).read_text(encoding='utf-8', errors='replace')
+    only = {n.lower() for n in args.only or []}
+    results = []
+    for (spell_type, name), records in sorted(groups.items()):
+        if only and name not in only:
+            continue
+        bundle = Bundle(name, records, wikis, executions, texts)
+        try:
+            spell, deps, catalog, manifest = bundle.convert()
+        except Exception as exc:  # a tool defect must not hide behind a readiness status
+            raise RuntimeError(f'{spell_type} {name}: {exc}') from exc
+        errors = validate(spell, deps, catalog, manifest)
+        blockers = [f"{e['source_field']}: {e.get('resolution', e['status'])}" for e in manifest['entries']
+                    if e['status'] in ('unsupported_source_field', 'unresolved_semantics', 'unresolved_dependency', 'partial_text')]
+        invalid = [e for e in errors if not e.startswith('manifest: unresolved') and not e.startswith('manifest: custom script')]
+        # A blocked bundle may carry placeholders for the unresolved values, so its schema errors follow the blockers.
+        status = 'blocked' if blockers else 'invalid' if invalid else 'ready'
+        files = {'spell.json': spell, 'dependencies.json': deps, 'catalog.json': catalog, 'manifest.json': manifest}
+        data = b''.join(json.dumps(files[f], ensure_ascii=False, sort_keys=True).encode() for f in sorted(files))
+        results.append({'spell_type': spell_type, 'name': name, 'sources': sorted(records), 'status': status,
+                        'blockers': blockers, 'errors': invalid,
+                        'bundle_sha256': hashlib.sha256(data).hexdigest()})
+        if args.out:
+            target = args.out / f'{spell_type}-{slug(name)}'
+            target.mkdir(parents=True, exist_ok=True)
+            for filename, value in files.items():
+                (target / filename).write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf-8',
+                                               newline='\n')
+    return results
+
+
+def summarize(results):
+    from collections import Counter
+    status = Counter(r['status'] for r in results)
+    reasons = Counter()
+    for r in results:
+        for b in r['blockers']:
+            text = re.sub(r'\(.*', '', b)
+            text = re.sub(r'custom script; needs a native behaviour \(S7\): .*', 'custom script (S7)', text)
+            text = re.sub(r'(S4 conflict)[: ].*', r'\1', text)
+            reasons[text[:90].strip()] += 1
+    return {'spells': len(results), 'status': dict(sorted(status.items())),
+            'top_blockers': dict(reasons.most_common(25))}
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument('--canary', type=Path, required=True)
+    parser.add_argument('--crystal', type=Path, required=True)
+    parser.add_argument('--out', type=Path, help='write every bundle under this directory')
+    parser.add_argument('--only', nargs='*', help='spell names (lower case) to convert')
+    parser.add_argument('--readiness', type=Path, help='write the readiness census here')
+    args = parser.parse_args(argv)
+    results = run(args)
+    summary = summarize(results)
+    if args.readiness:
+        document = {'schema': 'OTERYN_SPELL_READINESS/v1', 'revision': REVISION,
+                    'sources': {s: {k: v for k, v in c.items() if k != 'tag'} for s, c in SOURCES.items()},
+                    'wiki_facts': [FANDOM_FACTS.name, BR_FACTS.name], 'official_changes': OFFICIAL.name,
+                    'summary': summary, 'spells': results}
+        ws.write_lines(args.readiness, document, None)
+    print(json.dumps(summary, indent=1, ensure_ascii=False))
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main())

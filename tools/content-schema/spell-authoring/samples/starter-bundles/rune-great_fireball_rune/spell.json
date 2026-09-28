@@ -1,0 +1,74 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/rune/great_fireball_rune",
+      "revision": "spell-p2-r1"
+    },
+    "name": "great fireball rune",
+    "carrier": "rune",
+    "reference_spell_id": 16,
+    "requirements": {
+      "vocations": [
+        "druid",
+        "elder_druid",
+        "elite_knight",
+        "exalted_monk",
+        "knight",
+        "master_sorcerer",
+        "monk",
+        "paladin",
+        "royal_paladin",
+        "sorcerer"
+      ],
+      "level": 30,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 0,
+      "soul": 0
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "attack",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": true,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "base_power": 50,
+    "rune": {
+      "item": {
+        "family": "Item",
+        "key": "candidate:item/3191",
+        "revision": "spell-p2-r1"
+      },
+      "charges": 4,
+      "magic_level": 4,
+      "allow_far_use": true,
+      "blocking": {
+        "solid": false,
+        "creature": false
+      }
+    },
+    "execution": {
+      "ability": {
+        "family": "Ability",
+        "key": "candidate:ability/spell/rune/great_fireball_rune",
+        "revision": "spell-p2-r1"
+      }
+    }
+  }
+}

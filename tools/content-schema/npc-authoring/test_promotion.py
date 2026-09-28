@@ -21,6 +21,26 @@ def find_candidate(report, name):
     return next(c for c in report['candidates'] if c['name'] == name)
 
 
+def find_held(report, name):
+    return next(h for h in report['held'] if h['name'] == name)
+
+
+def make_builder(npcs):
+    return promotion_candidates.Builder({'npcs': npcs, 'trade': {}}, {'records': []})
+
+
+def make_bundle(name, source='crystal', sha='0' * 64, placements=()):
+    return {'key': f'{source}:npc/{promotion_candidates.slug(name)}', 'status': 'RESOLVED',
+            'source': {'sha256': sha}, 'placements': list(placements), 'services': {'travel': [], 'trade': None},
+            'definition': {'name': name, 'profession': 'None',
+                            'presentation': {'outfit': {}, 'speech_bubble': None}, 'movement': None}}
+
+
+def make_placement(x, y, z, direction='NORTH', interval=60, radius=0):
+    return {'position': {'x': x, 'y': y, 'z': z}, 'direction': direction,
+            'spawn_interval_s': interval, 'spawn_radius': radius}
+
+
 class PromotionValidatorTests(unittest.TestCase):
     def test_committed_sample_is_valid(self):
         report = load_sample()
@@ -133,6 +153,252 @@ class PromotionValidatorTests(unittest.TestCase):
         report['totals']['with_trade'] += 1
         errs = validate_promotion.errors(report)
         self.assertTrue(any('totals.with_trade' in e for e in errs))
+
+    # -- D8: complete held NPCs from the wiki --------------------------------------------------
+
+    def test_base_name_variant_promoted_via_wiki(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Uzon Back')
+        self.assertEqual(len(candidate['provenance']), 1)
+        self.assertIsNotNone(candidate['wiki'])
+        self.assertIn({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'}, candidate['arbitration'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_unplaced_with_wiki_position_promoted(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        self.assertEqual(len(candidate['placements']), 1)
+        placement = candidate['placements'][0]
+        self.assertEqual(placement['origin'], 'wiki')
+        self.assertIsNone(placement['direction'])
+        self.assertIsNone(placement['spawn_interval_s'])
+        self.assertIn({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'}, candidate['arbitration'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_wiki_origin_placement_with_direction_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        candidate['placements'][0]['direction'] = 'NORTH'
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('wiki-origin placement direction must be null' in e for e in errs))
+
+    def test_wiki_position_without_wiki_page_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if len(c['provenance']) == 2
+                          and any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        candidate['wiki'] = None
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any("rule 'WIKI_POSITION' requires a wiki page" in e for e in errs))
+
+    def test_wiki_origin_placement_with_radius_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        candidate['placements'][0]['spawn_radius'] = 999
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('wiki-origin placement spawn_radius must be null' in e for e in errs))
+
+    def test_bad_arbitration_rule_fails(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Uzon Back')
+        candidate['arbitration'][0]['rule'] = 'WIKI_GUESS'
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any("rule 'WIKI_GUESS' not in" in e for e in errs))
+
+    def test_unplaced_npc_without_wiki_position_stays_held(self):
+        report = load_sample()
+        held_unplaced = {h['name'] for h in report['held'] if h['reason'] == 'UNPLACED'}
+        self.assertTrue(held_unplaced)  # NPCs that are neither placed nor on the wiki with a position remain held
+        self.assertNotIn('Uzon Back', held_unplaced)
+        self.assertFalse(held_unplaced & {c['name'] for c in report['candidates']})
+
+    # -- D8: actualname aliasing and the strict spelling rule ----------------------------------
+
+    def test_within_one_edit_examples(self):
+        within = promotion_candidates.within_one_edit
+        self.assertTrue(within('awarness of the emperor', 'awareness of the emperor'))  # deletion
+        self.assertTrue(within('dahr-enpa rahng', 'dhar-enpa rahng'))  # adjacent transposition
+        self.assertTrue(within('cat', 'cats'))  # insertion
+        self.assertTrue(within('kitten', 'sitten'))  # substitution
+        self.assertFalse(within('abc', 'abc'))  # equal is not "one edit"
+        self.assertFalse(within('abcdefghij', 'abzdefyhij'))  # two substitutions
+
+    def test_wiki_spelling_promotes_typo_named_npc(self):
+        report = load_sample()
+        for name in ('Awarness Of The Emperor', 'Dahr-Enpa Rahng'):
+            candidate = find_candidate(report, name)
+            self.assertEqual(len(candidate['provenance']), 1)
+            self.assertIn({'fact': 'identity', 'rule': 'WIKI_SPELLING', 'chosen': 'wiki'}, candidate['arbitration'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_actualname_confirms_omniphant(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Omniphant')
+        self.assertEqual(len(candidate['provenance']), 1)
+        self.assertIsNotNone(candidate['wiki'])
+        # matched directly by actualname alias, not the fuzzy spelling rule
+        self.assertFalse(any(a['fact'] == 'identity' for a in candidate['arbitration']))
+
+    def test_fuzzy_match_ambiguous_between_two_wiki_names_is_not_unique(self):
+        builder = make_builder([
+            {'pageid': 1, 'title': 'Page A', 'name': 'aaaaaaaaab', 'actualname': None, 'position': None},
+            {'pageid': 2, 'title': 'Page B', 'name': 'baaaaaaaaa', 'actualname': None, 'position': None},
+        ])
+        matches = builder.fuzzy_wiki_matches('aaaaaaaaaa')
+        self.assertEqual(len(matches), 2)
+        result = builder.candidate({'crystal': make_bundle('Aaaaaaaaaa')})
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'SINGLE_SOURCE_NOT_ON_WIKI')
+
+    def test_short_name_is_not_tried_for_spelling(self):
+        builder = make_builder([
+            {'pageid': 1, 'title': 'Shortnyme', 'name': 'Shortnyme', 'actualname': None, 'position': None},
+        ])
+        # 'Shortnym' (8 chars, < SPELLING_MIN_LENGTH) is one deletion away from 'Shortnyme' but too short to try
+        self.assertEqual(len(promotion_candidates.normalize_name('Shortnym')), 8)
+        result = builder.candidate({'crystal': make_bundle('Shortnym')})
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'SINGLE_SOURCE_NOT_ON_WIKI')
+
+    # -- Codex review: alias collisions and per-rule arbitration checks ------------------------
+
+    def test_ambiguous_alias_without_exact_title_leaves_npc_held(self):
+        # two different pages both expose actualname 'Twinname'; neither's title is 'Twinname'
+        builder = make_builder([
+            {'pageid': 1, 'title': 'Page One', 'name': 'Page One', 'actualname': 'Twinname',
+             'position': {'x': 1, 'y': 1, 'z': 1}},
+            {'pageid': 2, 'title': 'Page Two', 'name': 'Page Two', 'actualname': 'Twinname',
+             'position': {'x': 2, 'y': 2, 'z': 2}},
+        ])
+        self.assertNotIn('twinname', builder.wiki)  # ambiguous alias: dropped, not bound to whichever came first
+        result = builder.candidate({'crystal': make_bundle('Twinname')})
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'SINGLE_SOURCE_NOT_ON_WIKI')
+
+    def test_exact_title_wins_over_colliding_alias(self):
+        # 'Real Page' is an exact title match; another page's alias collides with it but must not win
+        builder = make_builder([
+            {'pageid': 1, 'title': 'Real Page', 'name': 'Real Page', 'actualname': None, 'position': None},
+            {'pageid': 2, 'title': 'Other Page', 'name': 'Other Page', 'actualname': 'Real Page', 'position': None},
+        ])
+        self.assertEqual(builder.wiki['real page']['pageid'], 1)
+
+    def test_identity_rule_on_two_source_candidate_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates'] if len(c['provenance']) == 2)
+        candidate['arbitration'].append({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'})
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('requires a single-source candidate' in e for e in errs))
+
+    def test_wiki_position_with_identity_fact_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        row = next(a for a in candidate['arbitration'] if a['rule'] == 'WIKI_POSITION')
+        row['fact'] = 'identity'
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any("fact 'identity' != 'placements'" in e for e in errs))
+
+    def test_wiki_placement_without_wiki_position_row_fails(self):
+        report = load_sample()
+        candidate = next(c for c in report['candidates']
+                          if any(a['rule'] == 'WIKI_POSITION' for a in c['arbitration']))
+        candidate['arbitration'] = [a for a in candidate['arbitration'] if a['rule'] != 'WIKI_POSITION']
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('wiki-origin placement present without a WIKI_POSITION arbitration row' in e
+                             for e in errs))
+
+    # -- D8 WIKI_CONFIRMED: wiki-page-but-no-position NPCs, and conflict resolution ------------
+
+    def test_wiki_confirmed_promotes_unplaced_npc_with_no_wiki_position(self):
+        report = load_sample()
+        for name in ('Santa Claus', 'Messenger of Santa'):
+            candidate = find_candidate(report, name)
+            self.assertEqual(candidate['placements'], [])
+            self.assertIn({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'}, candidate['arbitration'])
+            self.assertIsNotNone(candidate['wiki'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_wiki_confirmed_with_a_placement_fails(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Santa Claus')
+        candidate['placements'] = [make_placement(1, 1, 1)]
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any("rule 'WIKI_CONFIRMED' requires an empty placements list" in e for e in errs))
+
+    def test_empty_placements_without_wiki_confirmed_fails(self):
+        report = load_sample()
+        candidate = find_candidate(report, 'Santa Claus')
+        candidate['arbitration'] = [a for a in candidate['arbitration'] if a['rule'] != 'WIKI_CONFIRMED']
+        errs = validate_promotion.errors(report)
+        self.assertTrue(any('no placements' in e for e in errs))
+
+    def test_placement_conflict_wiki_undecided_resolved_by_wiki_position(self):
+        report = load_sample()
+        for name in ('A Sleeping Dragon', 'Captain Haba', 'John', 'Uzon', 'Zirella'):
+            candidate = find_candidate(report, name)
+            self.assertEqual(len(candidate['provenance']), 2)
+            self.assertEqual(len(candidate['placements']), 1)
+            self.assertEqual(candidate['placements'][0]['origin'], 'wiki')
+            self.assertIn({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'}, candidate['arbitration'])
+        self.assertEqual(validate_promotion.errors(report), [])
+
+    def test_two_source_placement_conflict_wiki_undecided_synthetic(self):
+        # both sources disagree with each other and with the wiki (MISMATCH); the wiki wins outright
+        builder = make_builder([
+            {'pageid': 1, 'revid': 1, 'title': 'Foobar', 'name': 'Foobar', 'actualname': None,
+             'position': {'x': 100, 'y': 100, 'z': 7}},
+        ])
+        bundles = {'canary': make_bundle('Foobar', 'canary', placements=[make_placement(500, 500, 7)]),
+                   'crystal': make_bundle('Foobar', 'crystal', placements=[make_placement(600, 600, 7)])}
+        record = builder.candidate(bundles)
+        self.assertIsNotNone(record)
+        self.assertEqual(record['placements'], [{'position': {'x': 100, 'y': 100, 'z': 7}, 'direction': None,
+                                                   'spawn_interval_s': None, 'spawn_radius': None, 'origin': 'wiki'}])
+        self.assertIn({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'}, record['arbitration'])
+
+    def test_two_source_placement_conflict_no_wiki_position_synthetic(self):
+        # both sources disagree; the wiki page exists but has no position either -> WIKI_CONFIRMED
+        builder = make_builder([
+            {'pageid': 1, 'revid': 1, 'title': 'Bazqux', 'name': 'Bazqux', 'actualname': None, 'position': None},
+        ])
+        bundles = {'canary': make_bundle('Bazqux', 'canary', placements=[make_placement(500, 500, 7)]),
+                   'crystal': make_bundle('Bazqux', 'crystal', placements=[make_placement(600, 600, 7)])}
+        record = builder.candidate(bundles)
+        self.assertIsNotNone(record)
+        self.assertEqual(record['placements'], [])
+        self.assertIn({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'}, record['arbitration'])
+
+    def test_placement_conflict_with_no_wiki_page_still_held(self):
+        builder = make_builder([])
+        bundles = {'canary': make_bundle('Nowhereman', 'canary', placements=[make_placement(500, 500, 7)]),
+                   'crystal': make_bundle('Nowhereman', 'crystal', placements=[make_placement(600, 600, 7)])}
+        result = builder.candidate(bundles)
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'PLACEMENT_CONFLICT_NO_WIKI_POSITION')
+
+    # -- Owner decision 2026-09-27: reject server-only NPCs ------------------------------------
+
+    def test_owner_rejected_npcs_stay_held(self):
+        report = load_sample()
+        for name in ('Canary', 'Loot Buyer'):
+            held = find_held(report, name)
+            self.assertEqual(held['reason'], 'OWNER_REJECTED')
+            self.assertEqual(held['detail'], 'server-only NPC, owner decision 2026-09-27')
+        self.assertFalse({'Canary', 'Loot Buyer'} & {c['name'] for c in report['candidates']})
+
+    def test_owner_rejected_bypasses_wiki_matching(self):
+        # even with a matching wiki page available, the owner-rejected table wins outright
+        builder = make_builder([{'pageid': 1, 'title': 'Canary', 'name': 'Canary', 'actualname': None,
+                                  'position': {'x': 1, 'y': 1, 'z': 1}}])
+        result = builder.candidate({'canary': make_bundle('Canary', 'canary')})
+        self.assertIsNone(result)
+        held = builder.held[-1]
+        self.assertEqual(held['reason'], 'OWNER_REJECTED')
+        self.assertEqual(held['detail'], 'server-only NPC, owner decision 2026-09-27')
 
 
 if __name__ == '__main__':

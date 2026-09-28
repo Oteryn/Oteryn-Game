@@ -3,12 +3,12 @@
  "crystal_bundles": 1119,
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "npc_outcomes": {
-  "CANARY_ONLY_NPC": 10,
-  "COMPLEMENTARY": 953,
-  "CONFLICTING": 67,
-  "CRYSTAL_ONLY_NPC": 93,
+  "CANARY_ONLY_NPC": 9,
+  "COMPLEMENTARY": 955,
+  "CONFLICTING": 69,
+  "CRYSTAL_ONLY_NPC": 92,
   "IDENTICAL": 1,
-  "NOT_COMPARABLE": 5
+  "NOT_COMPARABLE": 2
  },
  "policy": "D2_EQUAL_SOURCES_NO_AUTOMATIC_WINNER",
  "rows": [
@@ -2348,7 +2348,14 @@
   {
    "canary": "canary:npc/captain_dreadnought",
    "crystal": "crystal:npc/captain_dreadnought",
-   "outcome": "NOT_COMPARABLE"
+   "outcome": "COMPLEMENTARY",
+   "sections": {
+    "definition": {
+     "CANARY_ONLY": 2,
+     "SAME": 5,
+     "conflict_keys": []
+    }
+   }
   },
   {
    "canary": "canary:npc/captain_fearless",
@@ -4229,13 +4236,64 @@
   },
   {
    "canary": "canary:npc/enpa-deia_pema",
-   "crystal": null,
-   "outcome": "CANARY_ONLY_NPC"
+   "crystal": "crystal:npc/enpa_deia_pema",
+   "outcome": "CONFLICTING",
+   "sections": {
+    "definition": {
+     "CANARY_ONLY": 2,
+     "CONFLICT": 1,
+     "SAME": 5,
+     "conflict_keys": [
+      "outfit"
+     ]
+    },
+    "messages": {
+     "CANARY_ONLY": 1,
+     "CONFLICT": 1,
+     "CRYSTAL_ONLY": 2
+    },
+    "placements": {
+     "CRYSTAL_ONLY": 1,
+     "conflict_keys": []
+    },
+    "trade": {
+     "CANARY_ONLY": 2,
+     "CRYSTAL_ONLY": 2,
+     "SAME": 9,
+     "conflict_keys": []
+    },
+    "voices": {
+     "CANARY_ONLY": 1,
+     "CONFLICT": 1,
+     "CRYSTAL_ONLY": 1
+    }
+   }
   },
   {
    "canary": "canary:npc/enpa_rudra",
    "crystal": "crystal:npc/enpa_rudra",
-   "outcome": "NOT_COMPARABLE"
+   "outcome": "CONFLICTING",
+   "sections": {
+    "definition": {
+     "CANARY_ONLY": 2,
+     "CONFLICT": 1,
+     "SAME": 4,
+     "conflict_keys": [
+      "outfit"
+     ]
+    },
+    "keywords": {
+     "CANARY_ONLY": 12,
+     "SAME": 92
+    },
+    "messages": {
+     "CANARY_ONLY": 2
+    },
+    "placements": {
+     "CRYSTAL_ONLY": 1,
+     "conflict_keys": []
+    }
+   }
   },
   {
    "canary": "canary:npc/eranth",
@@ -12757,7 +12815,14 @@
   {
    "canary": "canary:npc/towncryer",
    "crystal": "crystal:npc/towncryer",
-   "outcome": "NOT_COMPARABLE"
+   "outcome": "COMPLEMENTARY",
+   "sections": {
+    "definition": {
+     "CANARY_ONLY": 2,
+     "SAME": 5,
+     "conflict_keys": []
+    }
+   }
   },
   {
    "canary": "canary:npc/trimegis",
@@ -14168,11 +14233,6 @@
   },
   {
    "canary": null,
-   "crystal": "crystal:npc/enpa_deia_pema",
-   "outcome": "CRYSTAL_ONLY_NPC"
-  },
-  {
-   "canary": null,
    "crystal": "crystal:npc/evrard",
    "outcome": "CRYSTAL_ONLY_NPC"
   },
@@ -14488,45 +14548,45 @@
    "SAME": 32
   },
   "definition": {
-   "CANARY_ONLY": 2040,
-   "CONFLICT": 8,
+   "CANARY_ONLY": 2048,
+   "CONFLICT": 10,
    "CRYSTAL_ONLY": 1,
-   "SAME": 5397
+   "SAME": 5416
   },
   "keywords": {
-   "CANARY_ONLY": 1576,
+   "CANARY_ONLY": 1588,
    "CONFLICT": 120,
    "CRYSTAL_ONLY": 231,
-   "SAME": 9983
+   "SAME": 10280
   },
   "kick": {
    "SAME": 24
   },
   "messages": {
-   "CANARY_ONLY": 3,
-   "CONFLICT": 10,
-   "CRYSTAL_ONLY": 28,
-   "SAME": 1386
+   "CANARY_ONLY": 6,
+   "CONFLICT": 11,
+   "CRYSTAL_ONLY": 30,
+   "SAME": 1387
   },
   "placements": {
    "CANARY_ONLY": 8,
-   "CRYSTAL_ONLY": 15,
-   "SAME": 1015
+   "CRYSTAL_ONLY": 17,
+   "SAME": 1017
   },
   "promotion": {
-   "SAME": 5
+   "SAME": 6
   },
   "spells": {
    "CANARY_ONLY": 73,
    "CONFLICT": 2,
    "CRYSTAL_ONLY": 87,
-   "SAME": 1734
+   "SAME": 1766
   },
   "trade": {
-   "CANARY_ONLY": 57,
+   "CANARY_ONLY": 59,
    "CONFLICT": 9,
-   "CRYSTAL_ONLY": 376,
-   "SAME": 9980
+   "CRYSTAL_ONLY": 378,
+   "SAME": 9989
   },
   "travel": {
    "CANARY_ONLY": 4,
@@ -14535,9 +14595,10 @@
    "SAME": 256
   },
   "voices": {
-   "CANARY_ONLY": 3,
-   "CRYSTAL_ONLY": 20,
-   "SAME": 813
+   "CANARY_ONLY": 4,
+   "CONFLICT": 1,
+   "CRYSTAL_ONLY": 21,
+   "SAME": 823
   }
  }
 }
