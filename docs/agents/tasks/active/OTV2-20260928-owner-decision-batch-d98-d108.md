@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-owner-decision-batch-d98-d108
 title: "Owner decision batch D98-D108"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1180
 base_sha: 3dcf3c82abc5d424542388a9f65ca1507e8746a4
 head_sha: null
 final_head_sha: null
@@ -70,11 +70,11 @@ Not applicable. Owner decisions and routing only.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1180 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1180
 owner_action_required: null
 blocker: null
-next_action: open the PR, freeze the head, exact-head review and Merge Queue integration
+next_action: exact-head review and Merge Queue integration of #1180
 ```
