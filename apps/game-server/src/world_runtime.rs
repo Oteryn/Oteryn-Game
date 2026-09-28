@@ -1074,10 +1074,14 @@ impl LocalObjectRuntime {
     /// both fail closed; this method reads only, it never mutates and never picks a plausible
     /// candidate over an exact one.
     fn select_use_transition(&self) -> Result<TransitionKey, UseSelectionError> {
+        // #162 §7 (#1144 review): a transition carrying `revert_after_ms` at this placement is
+        // never USE-selectable; only the scope's revert-scheduling path may commit it.
         let mut candidates = self
             .transitions
             .values()
-            .filter(|transition| transition.source_state == self.state)
+            .filter(|transition| {
+                transition.source_state == self.state && !self.carries_revert(&transition.key)
+            })
             .map(|transition| transition.key.clone());
         let first = candidates.next().ok_or(UseSelectionError::NoCandidate)?;
         if candidates.next().is_some() {
@@ -1158,10 +1162,26 @@ impl LocalObjectRuntime {
             ))
     }
 
+    /// #162 §7: whether this placement authors a `revert_after_ms` for `transition` under any
+    /// action. Such a transition commits only through `apply_scope_operation`, whose caller
+    /// schedules its revert; the session and USE paths never schedule, so they refuse it.
+    fn carries_revert(&self, transition: &TransitionKey) -> bool {
+        self.transition_revert_after_ms
+            .keys()
+            .any(|(timed, _action)| timed == transition)
+    }
+
     fn command_semantic_identity(
         &self,
         command: &LocalObjectCommand,
     ) -> Result<CommandSemanticIdentity, WorldRuntimeError> {
+        // #1144 review: a timed transition is not session-invocable; it is refused exactly like
+        // a transition this runtime does not bind, before ingress or mutation.
+        if self.carries_revert(command.operation.transition_key()) {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind",
+            ));
+        }
         let transition = self.transition_for(&command.operation)?;
         Ok(CommandSemanticIdentity::new(
             NormalizedSemanticIntentIdentity::new(

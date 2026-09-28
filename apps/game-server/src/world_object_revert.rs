@@ -2,7 +2,8 @@
 //! them (docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
 //! §7, direction owner-accepted 2026-09-28; §9 for the attribute-bearing teleporter shape).
 //!
-//! One record per revert `InteractionChildOccurrenceRef`, `PENDING` -> `IN_FLIGHT` ->
+//! One record per revert child occurrence (the canonical GAME-INTERACTION
+//! `interaction::ChildOccurrenceRef`), `PENDING` -> `IN_FLIGHT` ->
 //! `TERMINAL`. A record is created only in the same staged commit as a non-timer-origin forward
 //! operation whose `prepare` returned `Publish`, and capacity for it is checked only then. The
 //! driver fires due records through `LocalObjectRuntime::apply_scope_operation` with the bound
@@ -20,13 +21,12 @@
 //!
 //! Scope-ephemeral (§7 C2): nothing here is persisted; a scope restart builds a new driver.
 
-use crate::content::{
-    ContentError, LogicalCell, LoweredActionId, PlacementKey, ProductionKey, TransitionKey,
-};
+use crate::content::{LogicalCell, LoweredActionId, PlacementKey, ProductionKey, TransitionKey};
 use crate::foundation::{
     GenerationError, RuntimeExecutionOrdinal, RuntimeScopeRefV1, ScopeOwnershipGeneration,
     ScopeRuntimeFence, TerminalSemanticOutcome,
 };
+use crate::interaction::{ChildOccurrenceRef, InteractionError, SemanticRevisionContext};
 use crate::world_runtime::{
     LocalObjectOperation, LocalObjectRuntime, ReferenceContentGeneration,
     ScopeLocalObjectOperation, WorldRuntimeError,
@@ -45,33 +45,26 @@ pub(crate) const MAX_DUE_REVERTS_PER_WAKE: usize = 32;
 
 const DISPOSITION_COMMITTED: &str = "COMMITTED";
 
-/// The forward operation's own GAME-INTERACTION occurrence identity, supplied by its caller (for
-/// an encounter, its trigger occurrence). Bounded as a first-production key (512 bytes).
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct ForwardOccurrenceRef(ProductionKey);
-
-impl ForwardOccurrenceRef {
-    pub(crate) fn new(value: &str) -> Result<Self, ContentError> {
-        ProductionKey::new(value).map(Self)
-    }
-}
-
-/// The revert's own identity: a nested child of the forward occurrence, distinguished by the
-/// authored action that scheduled it. Computed once at scheduling, never from an ordinal.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct InteractionChildOccurrenceRef {
-    parent: ForwardOccurrenceRef,
-    action: LoweredActionId,
-}
-
-impl InteractionChildOccurrenceRef {
-    #[must_use]
-    pub(crate) fn revert_of(parent: &ForwardOccurrenceRef, action: &LoweredActionId) -> Self {
-        Self {
-            parent: parent.clone(),
-            action: action.clone(),
-        }
-    }
+/// The revert's own GAME-INTERACTION identity (§7 Round 11), derived once at scheduling through
+/// the canonical nested-cascade constructor from the caller-supplied forward occurrence, never
+/// from a `RuntimeExecutionOrdinal`. §7 names no discriminator values, so this lane uses: the
+/// authored action as the interaction definition, the placement as the target, the bound
+/// inverse as the edge, and no ordinal (one revert per forward child, action and placement).
+pub(crate) fn revert_child_occurrence(
+    forward: &ChildOccurrenceRef,
+    action: &LoweredActionId,
+    placement: &PlacementKey,
+    inverse: &TransitionKey,
+    revisions: &SemanticRevisionContext,
+) -> Result<ChildOccurrenceRef, InteractionError> {
+    ChildOccurrenceRef::for_child(
+        forward,
+        action.as_str(),
+        placement.as_str(),
+        inverse.as_str(),
+        None,
+        revisions,
+    )
 }
 
 /// §7's complete `PENDING` field list, captured once from the forward operation's own commit.
@@ -107,7 +100,7 @@ impl PendingRevert {
         self.expected_revision
     }
 
-    fn due_key(&self, id: &InteractionChildOccurrenceRef) -> DueKey {
+    fn due_key(&self, id: &ChildOccurrenceRef) -> DueKey {
         (
             self.deadline,
             self.scheduling_ordinal,
@@ -171,6 +164,7 @@ pub(crate) enum RevertError {
     ScopeTerminal,
     Ordinal(GenerationError),
     Time(TimeError),
+    Interaction(InteractionError),
     Runtime(WorldRuntimeError),
 }
 
@@ -184,6 +178,7 @@ impl Display for RevertError {
             Self::ScopeTerminal => formatter.write_str("revert driver is scope-terminal"),
             Self::Ordinal(error) => write!(formatter, "{error}"),
             Self::Time(error) => write!(formatter, "{error}"),
+            Self::Interaction(error) => write!(formatter, "{error}"),
             Self::Runtime(error) => write!(formatter, "{error}"),
         }
     }
@@ -249,23 +244,18 @@ impl RevertDriverLimits {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct ForwardOutcome {
     pub(crate) outcome: TerminalSemanticOutcome,
-    pub(crate) scheduled: Option<InteractionChildOccurrenceRef>,
+    pub(crate) scheduled: Option<ChildOccurrenceRef>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct WakeReport {
     /// Admitted records in (deadline, scheduling ordinal, sequence) order, with their outcome.
-    pub(crate) fired: Vec<(InteractionChildOccurrenceRef, RevertOutcome)>,
+    pub(crate) fired: Vec<(ChildOccurrenceRef, RevertOutcome)>,
     /// More records are already due; they wait for a later wake (bounded batch).
     pub(crate) more_due: bool,
 }
 
-type DueKey = (
-    Deadline,
-    RuntimeExecutionOrdinal,
-    u32,
-    InteractionChildOccurrenceRef,
-);
+type DueKey = (Deadline, RuntimeExecutionOrdinal, u32, ChildOccurrenceRef);
 
 /// One per scope owner (`ChannelRuntimeV1`/`InstanceRuntime`), never per object: owns the scope's
 /// ordinal issuer, its single clock and its lifecycle-record store.
@@ -274,7 +264,7 @@ pub(crate) struct ScopeRevertDriver<I> {
     issuer: I,
     clock: Arc<dyn MonotonicClock>,
     limits: RevertDriverLimits,
-    records: BTreeMap<InteractionChildOccurrenceRef, RevertLifecycle>,
+    records: BTreeMap<ChildOccurrenceRef, RevertLifecycle>,
     due: BTreeSet<DueKey>,
     scope_terminal: bool,
 }
@@ -304,7 +294,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     }
 
     #[must_use]
-    pub(crate) fn lifecycle(&self, id: &InteractionChildOccurrenceRef) -> Option<&RevertLifecycle> {
+    pub(crate) fn lifecycle(&self, id: &ChildOccurrenceRef) -> Option<&RevertLifecycle> {
         self.records.get(id)
     }
 
@@ -338,7 +328,8 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     pub(crate) fn apply_forward(
         &mut self,
         runtime: &mut LocalObjectRuntime,
-        occurrence: &ForwardOccurrenceRef,
+        occurrence: &ChildOccurrenceRef,
+        revisions: &SemanticRevisionContext,
         action: &LoweredActionId,
         operation: &ScopeLocalObjectOperation,
         occupied_cells: &BTreeSet<LogicalCell>,
@@ -349,20 +340,23 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
         let generation = self.issuer.generation();
         let scheduling_ordinal = self.accept(generation)?;
         let transition = operation.transition_key();
+        let placement = runtime.placement_key().clone();
         let timed = match runtime.revert_after_ms(transition, action) {
             None => None,
-            Some(ms) => Some((
-                ms,
-                runtime
-                    .revert_inverse(transition)
-                    .cloned()
-                    .ok_or(RevertError::Runtime(WorldRuntimeError::InvalidBinding(
-                        "timed transition has no bound inverse",
-                    )))?,
-            )),
+            Some(ms) => {
+                let inverse =
+                    runtime
+                        .revert_inverse(transition)
+                        .cloned()
+                        .ok_or(RevertError::Runtime(WorldRuntimeError::InvalidBinding(
+                            "timed transition has no bound inverse",
+                        )))?;
+                let id =
+                    revert_child_occurrence(occurrence, action, &placement, &inverse, revisions)
+                        .map_err(RevertError::Interaction)?;
+                Some((ms, inverse, id))
+            }
         };
-        let id = InteractionChildOccurrenceRef::revert_of(occurrence, action);
-        let placement = runtime.placement_key().clone();
         let incarnation = runtime.incarnation();
         let content_generation = runtime.content_generation().clone();
         let scope = self.scope;
@@ -379,7 +373,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
             operation,
             occupied_cells,
             |publish| {
-                let Some((ms, inverse)) = timed else {
+                let Some((ms, inverse, id)) = timed else {
                     return Ok(());
                 };
                 // Reached only after `prepare` returned `Publish` (§7 Round 21).
@@ -456,7 +450,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     /// `prepare`/commit, all in this one synchronous step.
     pub(crate) fn present(
         &mut self,
-        id: &InteractionChildOccurrenceRef,
+        id: &ChildOccurrenceRef,
         runtimes: &mut BTreeMap<PlacementKey, LocalObjectRuntime>,
         occupied_cells: &BTreeSet<LogicalCell>,
     ) -> Result<RevertPresentation, RevertError> {
@@ -529,7 +523,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
 
     fn terminalize(
         &mut self,
-        id: &InteractionChildOccurrenceRef,
+        id: &ChildOccurrenceRef,
         pending: &PendingRevert,
         outcome: RevertOutcome,
     ) -> RevertPresentation {
@@ -540,7 +534,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     }
 
     #[cfg(test)]
-    fn force_in_flight_for_test(&mut self, id: &InteractionChildOccurrenceRef) -> Option<()> {
+    fn force_in_flight_for_test(&mut self, id: &ChildOccurrenceRef) -> Option<()> {
         let Some(RevertLifecycle::Pending(pending)) = self.records.get(id).cloned() else {
             return None;
         };
@@ -564,7 +558,7 @@ mod tests {
         anchor_placement_key, lower_map_item_transforms, marker_placement,
     };
     use crate::content::{
-        CanonicalReferencePlayableContent, ClientProjectionClass, ContentLockBinding,
+        CanonicalReferencePlayableContent, ClientProjectionClass, ContentError, ContentLockBinding,
         ContentLockEntry, CoordinateFrameRef, DefinitionFamily, DefinitionRevisionRef,
         EvidenceBindingRef, EvidenceDisposition, LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY,
         LocalObjectCollisionPresence, LocalObjectStateDefinition, MapRevisionRef,
@@ -574,8 +568,15 @@ mod tests {
         Sha256HexDigest, SpatialAddress, TransitionBinding, TypedDefinitionRef,
         link_reference_playable,
     };
-    use crate::foundation::WorldId;
-    use crate::world_runtime::{LocalObjectUseOutcome, ScopeContentGenerationFence};
+    use crate::foundation::{
+        ChannelId, CharacterId, CharacterLease, CommandId, CommandIngress, CommandRef,
+        ConnectionGeneration, FreshAdmissionCommit, FreshAdmissionFacts,
+        GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, WorldId,
+    };
+    use crate::interaction::RootSourceOccurrenceRef;
+    use crate::world_runtime::{
+        LocalObjectCommand, LocalObjectUseOutcome, ScopeContentGenerationFence,
+    };
     use oteryn_foundation::{ManualClock, Moment};
     use serde_json::Value;
     use std::error::Error;
@@ -619,7 +620,53 @@ mod tests {
     }
 
     fn scope() -> Result<RuntimeScopeRefV1, WorldRuntimeError> {
-        RuntimeScopeRefV1::instance(world(1)?, uuid_v7(4)).map_err(fixture)
+        Ok(RuntimeScopeRefV1::channel(
+            world(1)?,
+            ChannelId::decode(&uuid_v7(3)).map_err(fixture)?,
+        ))
+    }
+
+    /// An active session in `scope()` at scope generation 1, for the session command path.
+    fn session() -> TestResult<(GameSessionAuthoritySnapshot<u64>, GameSessionId)> {
+        let character = CharacterId::decode(&uuid_v7(90)).map_err(fixture)?;
+        let session = GameSessionId::decode(&uuid_v7(10)).map_err(fixture)?;
+        let mut nonce = [0_u8; 32];
+        nonce[31] = 10;
+        let channel = ChannelId::decode(&uuid_v7(3)).map_err(fixture)?;
+        let facts = FreshAdmissionFacts::new(nonce, character, world(1)?, channel, 1, 1)
+            .map_err(fixture)?;
+        let commit = FreshAdmissionCommit::from_facts(session, facts, 99_u64).map_err(fixture)?;
+        let snapshot = GameSessionAuthoritySnapshot::new(
+            commit,
+            GameSessionState::Active,
+            ConnectionGeneration::new(1).map_err(fixture)?,
+            Some(99_u64),
+            CharacterLease::new(character, 1).map_err(fixture)?,
+            generation(1)?,
+        );
+        Ok((snapshot, session))
+    }
+
+    /// The durable session command path (`LocalObjectRuntime::apply`) for one transition.
+    fn apply_session(
+        runtime: &mut LocalObjectRuntime,
+        ingress: &mut CommandIngress,
+        command_id: u64,
+        transition: &str,
+    ) -> TestResult<Result<String, WorldRuntimeError>> {
+        let (authority, session) = session()?;
+        let command = LocalObjectCommand::new(
+            CommandRef::new(session, CommandId::new(command_id).map_err(fixture)?),
+            ConnectionGeneration::new(1).map_err(fixture)?,
+            runtime.placement_key().clone(),
+            runtime.incarnation(),
+            runtime.content_generation().clone(),
+            LocalObjectOperation::new(TransitionKey::new(transition)?),
+            runtime.revision(),
+        );
+        Ok(runtime
+            .apply(&authority, &command, ingress, &BTreeSet::new())
+            .map(|result| result.disposition().to_owned()))
     }
 
     fn generation(value: u64) -> Result<ScopeOwnershipGeneration, WorldRuntimeError> {
@@ -958,16 +1005,35 @@ mod tests {
         let operation = operation(runtime, transition, runtime.revision())?;
         Ok(driver.apply_forward(
             runtime,
-            &ForwardOccurrenceRef::new(occurrence)?,
+            &forward_child(occurrence, None)?,
+            &revisions()?,
             &LoweredActionId::new(action)?,
             &operation,
             &BTreeSet::new(),
         )?)
     }
 
-    fn scheduled(
-        outcome: ForwardOutcome,
-    ) -> Result<InteractionChildOccurrenceRef, WorldRuntimeError> {
+    fn revisions() -> Result<SemanticRevisionContext, InteractionError> {
+        SemanticRevisionContext::new("content:timed-revert-r1", "ruleset:r1", "sim:v1")
+    }
+
+    /// The forward operation's own GAME-INTERACTION child (an encounter action under its trigger
+    /// root), as the encounter owner would supply it.
+    fn forward_child(
+        root: &str,
+        ordinal: Option<u16>,
+    ) -> Result<ChildOccurrenceRef, InteractionError> {
+        ChildOccurrenceRef::for_root(
+            &RootSourceOccurrenceRef::new(root)?,
+            "encounter:map_item",
+            "encounter:anchor",
+            "transform",
+            ordinal,
+            &revisions()?,
+        )
+    }
+
+    fn scheduled(outcome: ForwardOutcome) -> Result<ChildOccurrenceRef, WorldRuntimeError> {
         outcome.scheduled.ok_or(fixture("no revert scheduled"))
     }
 
@@ -1315,6 +1381,133 @@ mod tests {
     }
 
     #[test]
+    fn distinct_forward_children_derive_distinct_canonical_revert_children() -> TestResult {
+        // #1144 P1 4125535254: the record key is the canonical nested `ChildOccurrenceRef`, so
+        // forward children differing in any discriminator (here only the ordinal) never share a
+        // record.
+        let content = wall_content(
+            &[(CRACK, WALL_ACTION, 1_000)],
+            &[(WALL_A, 100), (WALL_B, 300)],
+            "lock:r1",
+        )?;
+        let mut runtimes = walls(&content, &[WALL_A, WALL_B])?;
+        let clock = ManualClock::new(Moment::ZERO);
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        let action = LoweredActionId::new(WALL_ACTION)?;
+        let mut ids = Vec::new();
+        for (wall, ordinal) in [(WALL_A, Some(0)), (WALL_B, Some(1))] {
+            let key = PlacementKey::new(wall)?;
+            let runtime = runtimes.get_mut(&key).ok_or(fixture("runtime"))?;
+            let crack = operation(runtime, CRACK, 0)?;
+            let forward = forward_child("oteryn:occurrence/boss-death", ordinal)?;
+            let outcome = driver.apply_forward(
+                runtime,
+                &forward,
+                &revisions()?,
+                &action,
+                &crack,
+                &BTreeSet::new(),
+            )?;
+            let id = scheduled(outcome)?;
+            // Derived through the canonical constructor: nested one level below the forward
+            // child, deterministic, with the bound inverse as its edge.
+            assert_eq!(id.ancestry_depth(), 2);
+            assert_eq!(
+                id,
+                revert_child_occurrence(
+                    &forward,
+                    &action,
+                    &key,
+                    &TransitionKey::new(MEND)?,
+                    &revisions()?
+                )?
+            );
+            ids.push(id);
+        }
+        assert_ne!(ids.first(), ids.get(1));
+        assert_eq!(driver.record_count(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn use_and_session_commands_cannot_commit_a_timed_transition() -> TestResult {
+        // #1144 P1 4125535249: USE and `apply` never schedule, so a transition carrying
+        // `revert_after_ms` at the placement is refused there, exactly like an unbound one.
+        let timed = wall_content(&[(CRACK, WALL_ACTION, 1_000)], &[(WALL_A, 100)], "lock:r1")?;
+        let mut runtimes = walls(&timed, &[WALL_A])?;
+        let wall = PlacementKey::new(WALL_A)?;
+        let runtime = runtimes.get_mut(&wall).ok_or(fixture("runtime"))?;
+        assert_eq!(
+            runtime.attempt_use(0, &BTreeSet::new())?,
+            LocalObjectUseOutcome::NothingToUse
+        );
+        let mut ingress = CommandIngress::new();
+        assert!(matches!(
+            apply_session(runtime, &mut ingress, 1, CRACK)?,
+            Err(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 0));
+
+        // The untimed inverse stays USE-selectable and session-invocable (carry-over (b)).
+        let clock = ManualClock::new(Moment::ZERO);
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        scheduled(forward(
+            &mut driver,
+            &mut runtimes,
+            WALL_A,
+            "oteryn:occurrence/wall/1",
+            WALL_ACTION,
+            CRACK,
+        )?)?;
+        let runtime = runtimes.get_mut(&wall).ok_or(fixture("runtime"))?;
+        assert_eq!(apply_session(runtime, &mut ingress, 1, MEND)??, "COMMITTED");
+        assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 2));
+
+        // The duke teleporter cannot be opened by USE from its natural state.
+        let (content, revert) = duke_content(DUKE)?;
+        let anchor = duke_anchor()?;
+        let mut duke = bind_at(&content, &anchor, &[OPEN_TELEPORTER, revert.as_str()], 1)?;
+        assert_eq!(
+            duke.attempt_use(0, &BTreeSet::new())?,
+            LocalObjectUseOutcome::NothingToUse
+        );
+        assert_eq!(
+            (duke.state_key().as_str(), duke.revision()),
+            (SEALED_ITEM, 0)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn untimed_use_and_session_commands_are_unchanged() -> TestResult {
+        let untimed = wall_content(&[], &[(WALL_A, 100), (WALL_B, 300)], "lock:r1")?;
+        let mut runtimes = walls(&untimed, &[WALL_A, WALL_B])?;
+        let runtime = runtimes
+            .get_mut(&PlacementKey::new(WALL_A)?)
+            .ok_or(fixture("runtime"))?;
+        assert_eq!(
+            runtime.attempt_use(0, &BTreeSet::new())?,
+            LocalObjectUseOutcome::Committed {
+                state: ProductionKey::new(WALL_CRACKED)?,
+                revision: 1,
+            }
+        );
+        let runtime = runtimes
+            .get_mut(&PlacementKey::new(WALL_B)?)
+            .ok_or(fixture("runtime"))?;
+        let mut ingress = CommandIngress::new();
+        assert_eq!(
+            apply_session(runtime, &mut ingress, 1, CRACK)??,
+            "COMMITTED"
+        );
+        assert_eq!(state_of(&runtimes, WALL_B)?, at(WALL_CRACKED, 1));
+        Ok(())
+    }
+
+    #[test]
     fn a_user_driven_revert_resolves_the_timer_terminal_without_a_double_revert() -> TestResult {
         // #1133 carry-over (b): USE selects the bound inverse from the forward target state.
         // §7's one path for an intervening change applies: the timer reaches `prepare` and
@@ -1380,11 +1573,18 @@ mod tests {
         assert_eq!(apply_plain(runtime, MEND)?, "COMMITTED");
 
         // Full store: the whole forward fails before commit.
-        let occurrence = ForwardOccurrenceRef::new("oteryn:occurrence/wall/2")?;
+        let occurrence = forward_child("oteryn:occurrence/wall/2", None)?;
         let action = LoweredActionId::new(WALL_ACTION)?;
         let runtime = runtimes.get_mut(&wall).ok_or(fixture("runtime"))?;
         let crack = operation(runtime, CRACK, runtime.revision())?;
-        let full = driver.apply_forward(runtime, &occurrence, &action, &crack, &BTreeSet::new());
+        let full = driver.apply_forward(
+            runtime,
+            &occurrence,
+            &revisions()?,
+            &action,
+            &crack,
+            &BTreeSet::new(),
+        );
         assert!(matches!(full, Err(RevertError::CapacityExceeded)));
         assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 2));
         assert_eq!(driver.record_count(), 1);
@@ -1394,7 +1594,8 @@ mod tests {
         let stale = operation(runtime, CRACK, 0)?;
         let result = driver.apply_forward(
             runtime,
-            &ForwardOccurrenceRef::new("oteryn:occurrence/wall/3")?,
+            &forward_child("oteryn:occurrence/wall/3", None)?,
+            &revisions()?,
             &action,
             &stale,
             &BTreeSet::new(),

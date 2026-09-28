@@ -48,8 +48,13 @@ smallest runtime slice, and closes out task A:
   `bind` now keeps the unique inverse it validates (`revert_inverse`) and runs the destination check.
 - `content/reference_playable.rs`: a `destination` must resolve to exactly one placement in the
   bound world and coordinate frame (link time with the source world, bind time with the scope world).
-- `world_object_revert.rs` (new): a local `InteractionChildOccurrenceRef` (the forward occurrence
-  supplied by the caller, plus the `LoweredActionId`). It also adds a lifecycle-record store
+- `world_object_revert.rs` (new): records are keyed by the canonical GAME-INTERACTION
+  `interaction::ChildOccurrenceRef` (round 2, P1 4125535254), derived by `revert_child_occurrence`
+  through `ChildOccurrenceRef::for_child` from the caller-supplied forward child. §7 names no
+  discriminator values, so the lane uses: definition = the authored `LoweredActionId`, target = the
+  `PlacementKey`, edge = the bound inverse `TransitionKey`, no ordinal, and the caller's
+  `SemanticRevisionContext`. `interaction` is now registered in `lib.rs`; nothing inside
+  `interaction/` changed. It also adds a lifecycle-record store
   (`PENDING` / `IN_FLIGHT` / `TERMINAL`, with §7's field list) and `ScopeRevertDriver`, which owns
   one ordinal issuer (`ScopeRuntimeFence` in production), one `MonotonicClock` and the store.
   `apply_forward` creates a record only once `prepare` returned `Publish`, with capacity checked only
@@ -129,20 +134,26 @@ Deferred, with reasons:
 - Docs gap: after a revert lands on the §9 post-revert variant, the forward transition (whose source
   is the natural state) cannot fire again from it. A timed teleporter therefore opens once per scope
   generation. §9 does not cover re-arming.
-- Docs gap: USE selection can also reach the encounter forward transition from the natural state, so
-  a player could open the teleporter by using it. Whether encounter-owned transitions are
-  USE-selectable belongs to the live-wiring decision.
+- Owner gap 2 (USE could open the teleporter from its natural state) is resolved by the fix for
+  P1 4125535249: a transition carrying `revert_after_ms` at the placement is neither USE-selectable
+  nor session-invocable (`apply`/`resume_pending` refuse it exactly like an unbound transition), so
+  a timed forward commits only through the scheduling path. The untimed bound inverse stays
+  selectable, so carry-over (b) is unchanged.
+- Round-2 blocker: task A's test
+  `content::encounter_map_item::tests::duke_lowered_content_binds_under_the_widened_rule_and_exposes_attributes_by_state`
+  commits the timed forward through session `apply`, which P1 4125535249 now refuses by design. That
+  file is outside this task's owned paths; the repair awaits coordinator authorization.
 
 ## Validation
 
 - `cargo +1.94.0 fmt --all --check`: pass.
 - `cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings`: pass.
-- `cargo +1.94.0 test --locked -p oteryn-game-server --lib` (727 passed, 2 ignored) and
-  `--test content_reference_playable`, `--test content_native_entry`,
-  `--test content_world_project_repository`: pass.
+- Round 1 (`dbbe9e38`): full `oteryn-game-server` package tests pass.
+- Round 2 (local, not pushed): full package tests pass except the one task A test named above
+  (730 lib tests pass, 1 fails); fmt and clippy pass.
 - `git diff origin/main -- content/`: empty.
 
 ## Context checkpoint
 
-last_progress: implementation and validation complete on dbbe9e38; PR #1144 opened, awaiting CI and review
+last_progress: round 2 (Codex P1 4125535254, 4125535249) repaired locally; blocked on an unowned task A test before push
 jira: pending (no mapped Story resolved in this worker session)
