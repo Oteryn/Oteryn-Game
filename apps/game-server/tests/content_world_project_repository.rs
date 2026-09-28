@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "da8cc344c55d05c216cca2a4a6ae57a1a7b17d98e161256e81bc33aa36fd967a",
+        "8addd1dfc7d6b348650f27ac4c5b8aaee9cbe06b6121c265f0b5d111633522b6",
     ),
     (
         "definitions/declarations.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "991dbb358e7302bf5922eb77d6b35443f722cadce018d4c6c488ad78604a3a0a",
+        "bbfc00da13835dcd64477b9d1eb24b7bfafd0cbfb9fedca771cbb2792b9ebda1",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "5fdcc5e643251f410a952fe143262fd7db34e229a480b694efcd242d65a052ec",
+        "3421bcb9ec76675cafeb82fce8126c92071fa5715707c0beba6827fec1cbd14a",
     ),
     (
         "provenance/imports.json",
         4442,
-        "fc7ceef3347d9758a0891dc8fa402bfd42406e4a1977139281a32da5d528eda1",
+        "e8baa725bd5187335c8371b277dfe66d943728db8ca94ab7e0f193fe98eee2e0",
     ),
     (
         "provenance/sources.json",
         1_213_904,
-        "185645864f8afc3a7f747ec1d57b290e0529ce5cfb7f9f599bdf332b8390d33c",
+        "8473fc30c76fecd9023ddbed3b98736c0839d9d2f19e5b9f76839b9e1206701e",
     ),
     (
         "worlds/world.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "5fa56b13c3c3136b44a9ead229c86353cab8a23542e3b9aaa78d0ecf4e6db43c";
+const TREE_SHA256: &str = "7f409813c631c0f895267ded4c055c111ff218c8752981416b226076308925b9";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -472,10 +472,17 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             .filter(|binding| binding.source_revision == wiki_creature_import.source_revision)
             .map(|binding| (
                 binding.identity_namespace.as_str(),
-                binding.external_id.as_str()
+                binding.external_id.as_str(),
+                binding.target.key.as_str(),
+                binding.disposition
             ))
             .collect::<Vec<_>>(),
-        [("mediawiki/page_id", "108320")]
+        [(
+            "mediawiki/page_id",
+            "108320",
+            "oteryn:creature.dark_merudri",
+            ProjectV2SourceIdentityDisposition::Exact
+        )]
     );
     assert_eq!(
         v2.source_identity_bindings.len(),

@@ -290,7 +290,7 @@
     {"monster":"dark_knight","file":"quests/grave_danger/dark_knight","sha256":"1bdaa3299b21c707e5f4ff92c311fd69945368d52293bbcf22a7d4757bdbe91c"},
     {"monster":"dark_knowledge","file":"quests/the_secret_library/dark_knowledge","sha256":"157625f5deeeb3938edb60f37f54e7700a0623fcf7ef4c0fd0fc20cca6cd2d7c"},
     {"monster":"dark_magician","file":"humans/dark_magician","sha256":"77dc9b6f7fa00d1477e4179017a6e662475b55edbd7621065aa7ace04277e87f"},
-    {"monster":"dark_merudri","file":"wiki-authored/dark_merudri","sha256":"874ba748100e67d351134529c1e19eed1aa5685994c26c79bd30141777908c52","binding":{"source_key":"oteryn:source.tibiawiki","identity_namespace":"mediawiki/page_id","external_id":"108320"}},
+    {"monster":"dark_merudri","file":"wiki-authored/dark_merudri","sha256":"c282caa295d6b5d6e25673b3207f4c0d58c75cd04b0afed648200a97c223f2df","binding":{"source_key":"oteryn:source.tibiawiki","identity_namespace":"mediawiki/page_id","external_id":"108320"}},
     {"monster":"dark_monk","file":"humans/dark_monk","sha256":"4163bd581cca66b66e01114ad3ecd8ad5d8b8e6532dea40355043fd7f59c5668"},
     {"monster":"dark_paladin","file":"quests/grave_danger/dark_paladin","sha256":"b6bdb48e140ce89f0a552a6af1f0323b928b5950d0b7c78c18a108f3b6f62fa4"},
     {"monster":"dark_percht_sleigh","file":"quests/the_percht_queens_island/dark_percht_sleigh","sha256":"ea03947c2a0d68564b9e2271c9d3fd1d3e98f172f103c93e4e3537382274e8a6"},

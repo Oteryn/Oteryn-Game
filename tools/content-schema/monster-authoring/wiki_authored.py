@@ -31,7 +31,7 @@ TEMPLATE = 'quests/grave_danger/dark_knight'
 
 # The Dark Merudri file. Each value is a wiki fact or a line of the Dark Knight template (the four Grave Danger darks of
 # Canary share it); `{name}` fields are filled from the pinned facts so a fact change fails the digest, not silently.
-DARK_MERUDRI = '''local mType = Game.createMonsterType("Dark Merudri")
+DARK_MERUDRI = '''local mType = Game.createMonsterType("{name}")
 local monster = {{}}
 
 monster.description = "{article} {actualname}"
@@ -159,7 +159,7 @@ FIELDS = {
                                                   'chance and energy-area effect'),
     'attacks[3]': ([('br.monster', 'hab_energy')], 'the 3x3 ball is modelled as radius 1 on the target at range 7; the '
                                                   'interval, chance and energy effects'),
-    'voices': ([], None),
+    'voices': ([], 'a voice interval and chance without any voice text'),
 }
 OMITTED = [('br.monster', 'hab_earth', 'TibiaWiki BR lists an earth wave with unknown damage (0-???); it is left out until a '
                                       'source gives its damage (NEEDS VERIFICATION, D44).'),
@@ -224,9 +224,11 @@ def lua_text(sources):
     fandom, br = sources['fandom.monster']['facts'], sources['br.monster']['facts']
     if fandom['hp']['value'] != br['hp']['value']:
         raise ValueError('Fandom and TibiaWiki BR disagree on hp')
+    if fandom['name']['value'] != br['name']['value']:
+        raise ValueError('Fandom and TibiaWiki BR disagree on the name')
     energy = br['hab_energy']['value']
     exori, ball = energy.split('),')[0] + ')', energy.split('),')[1]
-    values = {'article': fandom['article']['value'], 'actualname': fandom['actualname']['value'], 'exp': int(fandom['exp']['value']),
+    values = {'name': fandom['name']['value'], 'article': fandom['article']['value'], 'actualname': fandom['actualname']['value'], 'exp': int(fandom['exp']['value']),
               'hp': int(fandom['hp']['value']), 'male_id': int(sources['fandom.outfit']['facts']['male_id']['value']),
               'itemid': int(sources['fandom.corpse']['facts']['itemid']['value']),
               'melee_max': number_range(br['hab_physical']['value'])[1]}
@@ -259,9 +261,15 @@ def manifest_for(sources, rows, template_lines):
         if verify or not cites:
             entry = {'source_index': template_index, 'source_file': f'{cb.MONSTER_DIR}/{TEMPLATE}.lua',
                      'source_line': template_lines.get(field, 1), 'source_field': field, **base}
-            if entry['status'] == 'mapped':
-                entry['resolution'] = (f'{VERIFY} Dark Knight: {verify or field}. ' + (row.get('resolution') or '')).strip()
+            entry['resolution'] = (f'{VERIFY} Dark Knight: {verify or field}. ' + (row.get('resolution') or '')).strip()
             entries.append(entry)
+    for source_name in ('fandom.monster', 'br.monster'):
+        meta = sources[source_name]
+        entries.append({'source_index': order.index(source_name), 'source_file': meta['title'],
+                        'source_line': meta['facts']['name']['line'], 'source_field': 'infobox.name', 'kind': 'field',
+                        'status': 'mapped', 'destination': '/monster/creature/display_name',
+                        'resolution': f'{meta["title"]} revision {meta["revision_id"]} name = "{meta["facts"]["name"]["value"]}" '
+                                      f'({DECISION}). Original source text, unchanged.'})
     for source_name, fact, text in OMITTED:
         meta = sources[source_name]
         entries.append({'source_index': order.index(source_name), 'source_file': meta['title'],
@@ -302,6 +310,14 @@ def self_test():
     text = lua_text(sample['sources'])
     assert 'monster.maxHealth = 6500' in text and 'lookType = 1824' in text and 'monster.corpse = 50311' in text, text
     assert 'minDamage = -430, maxDamage = -550' in text and 'minDamage = -290, maxDamage = -460' in text
+    assert text.startswith('local mType = Game.createMonsterType("Dark Merudri")'), text[:60]
+    rows = [{'source_field': field, 'kind': 'field', 'status': 'approved_omission' if field == 'voices' else 'mapped',
+             'destination': '/x', 'resolution': 'r'} for field in FIELDS]
+    manifest = manifest_for(sample['sources'], rows, {})
+    template = len(manifest['sources']) - 1
+    assert all(e['resolution'].startswith('NEEDS VERIFICATION') for e in manifest['entries'] if e['source_index'] == template)
+    assert any(e['source_field'] == 'infobox.name' and e['destination'] == '/monster/creature/display_name'
+               for e in manifest['entries'])
     for name, source in sample['sources'].items():
         assert source['revision_timestamp'] <= wc.CUT_TIMESTAMP, name
     print('wiki_authored self-test: PASS')
