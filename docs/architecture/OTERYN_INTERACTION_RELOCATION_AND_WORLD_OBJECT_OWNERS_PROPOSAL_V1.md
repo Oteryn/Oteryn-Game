@@ -227,6 +227,18 @@ by having the staged commit store that inverse key with the exact expected post-
 revision `prepare` already computes — so firing never guesses a delta, it replays a specific,
 pre-validated one.
 
+Round 6 correction (owner-authorized): two consistency fixes inside round 5's own design. First, the
+inverse-transition check must pick a *unique* inverse — requiring only "a bound transition with
+swapped states" without also requiring exactly one match, and a matching inverse intent family, left
+two candidate inverses unresolved; `bind` now rejects unless exactly one qualifies. Second, an
+earlier draft of this section discarded a due timer on an overlay-revision mismatch *before* calling
+`prepare`, which meant the `DISPOSITION_STALE_STATE` outcome the test obligations promised for that
+same case could never actually occur — two paths claiming to handle one case. Fixed by making it one
+path: pre-`prepare` discard is now reserved for fences that invalidate the timer itself
+(`scope_generation`/`content_generation` changing), and every due revert reaches `prepare` with its
+stored inverse key and expected revision, so a changed anchor is rejected there, by the same
+mechanism any other command already uses.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -328,7 +340,12 @@ today.
   `TransitionBinding` (`apps/game-server/src/content/reference_playable.rs` ~1334-1342) has `key`,
   `source_state`, `target_state`, `normalized_intent_family` and no `revert_after_ms` field today —
   nothing currently associates a transition with an inverse, and CW4 shipped without `revert_after`
-  (§4), so this is unimplemented, not merely unbound.
+  (§4), so this is unimplemented, not merely unbound. PROVEN (grep of
+  `apps/game-server/src/world_runtime.rs`): only `LOCAL_OBJECT_RETAG_INTENT_FAMILY` (~1195, ~1646)
+  is a named intent-family constant today; no `..._TRANSFORM_...`/`..._CREATE_...`/`..._REMOVE_...`/
+  `..._OPEN_...`/`..._CLOSE_...` family constant exists in the merged runtime — the
+  TRANSFORM/CREATE/REMOVE/OPEN/CLOSE side of the inverse-family pairing below is a naming scheme the
+  owning lane still has to establish, not a check already enforced anywhere.
 
 ### Options (minimum real set)
 
@@ -338,11 +355,14 @@ today.
    `excluded_scope` (Foundation/runtime/protocol/registry) and disproportionate to one `revert_after`
    field.
 2. **An FND-03 §10 authoritative timer bound to a monotonic `Deadline` computed from the authored
-   duration (RECOMMENDED).** `revert_after_ms` is admissible only on a bound transition whose
-   *inverse* — a transition bound on the same runtime instance whose `source_state`/`target_state`
-   are this transition's swapped — is itself authored and bound for the same placement definition;
-   `bind` rejects (`InvalidBinding`) a `revert_after_ms`-carrying transition with no such inverse, so
-   firing never has to guess which delta restores the object (evidence above). At commit time — as
+   duration (RECOMMENDED).** `revert_after_ms` is admissible only on a bound transition with exactly
+   one *inverse* — a transition bound on the same runtime instance, for the same placement
+   definition, whose `source_state`/`target_state` are this transition's swapped *and* whose
+   `normalized_intent_family` is this transition's matching inverse family (TRANSFORM↔TRANSFORM,
+   CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE); `bind` rejects (`InvalidBinding`) a `revert_after_ms`-
+   carrying transition with zero such matches or more than one — an ambiguous inverse is exactly as
+   invalid as a missing one — so firing never has to guess which delta restores the object (evidence
+   above). At commit time — as
    part of the *same* staged commit as the original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03
    §15.4, below) — compute `Deadline::after(clock,
    Duration::from_millis(revert_after_ms))` from the one clock instance the scope owns (evidence
@@ -363,8 +383,11 @@ today.
    above), so this ordering is what makes a re-presented, already-fired entry a no-op instead of a
    second ordinal. The revert's state/footprint delta reuses `prepare`'s pure transition logic;
    committing it does **not** go through `apply`/`resume_pending`/`CommandIngress`, because there is
-   no live client command or session to replay (P1, evidence above). Cancellation follows §10.3
-   exactly: the same fences §4 already requires. The driver and the ordinal-issuer promotion are
+   no live client command or session to replay (P1, evidence above). Pre-`prepare` discard is
+   reserved for fences that invalidate the timer itself — `scope_generation`/`content_generation`
+   changing — never for a changed object: a due revert always reaches `prepare` with its stored
+   inverse key and expected revision, one path, and `prepare`'s own stale-state check is what accepts
+   or rejects a changed anchor (below). The driver and the ordinal-issuer promotion are
    still one real new mechanism each, but the unit it stores, the tie-break it uses and the
    ordinal/cancellation contract it follows are not invented: they are the authored `revert_after_ms`
    field, the already-implemented `Deadline` primitive, and the already-accepted FND-03 §7/§10/§14
@@ -404,10 +427,12 @@ today.
    capacity contract, never a client `LocalObjectCommand` — vs. the record of why 1, 3 and 4 are
    rejected/superseded), including its equal-deadline tie-break (§10.1's own ordinal-plus-sequence,
    not the revert's derived child identity), its atomic pending-removal-before-`accept_input`
-   de-duplication, bounded per-cycle due-work admission (§7/§14), and the fail-closed bound-inverse
-   precondition on `revert_after_ms` itself (missing inverse ⇒ `InvalidBinding`, never a guessed
-   delta) — all four are bound to existing FND-03 sections or the merged CW4 bind-time model, not
-   open design questions. `NO` for the driver's exact wake mechanism, whether `ScopeRuntimeFence` is
+   de-duplication, bounded per-cycle due-work admission (§7/§14), the fail-closed unique-bound-inverse
+   precondition on `revert_after_ms` itself (zero or ambiguous inverse ⇒ `InvalidBinding`, never a
+   guessed delta), and the single firing path (a changed object is rejected only inside `prepare`,
+   never by a separate pre-`prepare` cancellation) — all five are bound to existing FND-03 sections
+   or the merged CW4 bind-time model, not open design questions. `NO` for the driver's exact wake
+   mechanism, whether `ScopeRuntimeFence` is
    promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
    pending-set storage representation, the exact field/encoding of `revert_after_ms` on
    `TransitionBinding` or its content source, and the concrete timer-capacity/due-batch numeric
@@ -444,14 +469,17 @@ not implement it; it is CANDIDATE and not owner-accepted.
 - Add `revert_after_ms` as an optional field on the authored transition (`TransitionBinding` or its
   content-authoring source, evidence above), and validate it fail-closed inside `bind`
   (`apps/game-server/src/world_runtime.rs` ~590-750): for every bound transition that carries
-  `revert_after_ms`, require that `self.transitions` also contains another bound transition for the
-  same `definition` whose `source_state` equals this one's `target_state` and whose `target_state`
-  equals this one's `source_state` (the general "inverse" — this covers TRANSFORM a→b needing bound
-  b→a, CREATE needing the bound REMOVE of the same anchor/def, REMOVE needing the bound CREATE, and
-  RETAG needing the reverse RETAG, without a new per-operation-kind check, since RETAG's own
-  same-collision-class constraint is already enforced elsewhere in CW3's linker). If no such inverse
-  is bound, reject the whole binding with `WorldRuntimeError::InvalidBinding` — never fall back to a
-  guessed or absent revert.
+  `revert_after_ms`, find every OTHER bound transition for the same `definition` whose
+  `source_state` equals this one's `target_state`, whose `target_state` equals this one's
+  `source_state`, AND whose `normalized_intent_family` is this one's matching inverse family —
+  TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE (this covers TRANSFORM a→b needing
+  bound b→a, CREATE needing the bound REMOVE of the same anchor/def, REMOVE needing the bound
+  CREATE, and RETAG needing the reverse RETAG; RETAG's own same-collision-class constraint is
+  already enforced elsewhere in CW3's linker, so this check adds only the family-pairing rule, not a
+  second collision-class check). Reject the whole binding with `WorldRuntimeError::InvalidBinding`
+  unless *exactly one* transition matches — zero matches is a missing inverse, more than one is an
+  ambiguous inverse, and both are equally invalid. The timer retains that one unique
+  `TransitionKey` as its inverse; never a guessed or ambiguous one.
 - Introduce the scope owner's own step driver: one per scope owner (`ChannelRuntimeV1`/
   `InstanceRuntime`), never a per-object or per-revert timer, that wakes at the earliest pending
   `Deadline` and drives that scope's own due reverts forward. Whether it piggybacks on a cadence the
@@ -508,9 +536,14 @@ not implement it; it is CANDIDATE and not owner-accepted.
   same scope-authority path (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, ~1040-1054) —
   never `apply`/`resume_pending`/`CommandIngress`, which require a live `GameSessionAuthoritySnapshot`
   this timer does not have (P1, evidence above).
-- Cancellation follows FND-03 §10.3 exactly: `scope_generation` changed, the anchor's overlay
-  revision no longer matches what was captured at scheduling, or explicit invalidation each discard
-  the pending entry without mutating.
+- Pre-`prepare` discard (§10.3's "scope ownership generation changed"/"invalidated" triggers) is
+  reserved for fences that invalidate the *timer itself*, never for a changed object: `scope_generation`
+  or `content_generation` changing clears the pending entry with the rest of the scope-ephemeral
+  overlay (same reset as §4's "Lifetime"), before it is ever presented to `prepare`. A mismatched
+  overlay revision on the anchor is deliberately *not* one of these pre-`prepare` checks — that case
+  is the previous bullet's job: the entry still reaches `prepare` with its stored inverse key and
+  expected revision, and `prepare`'s own stale-precondition check rejects it there. One path, not
+  two, for "the object changed."
 - On an occupancy conflict, terminalize `DISPOSITION_OCCUPIED` for that revert's one derived
   identity and stop; do not retry it on a later wake (decided below, not left open).
 
@@ -528,10 +561,14 @@ not implement it; it is CANDIDATE and not owner-accepted.
 - **Replay-safe.** Re-evaluating "is this due" for an entry already committed and removed must be
   side-effect free: with the entry gone from the pending set, there is nothing left to admit,
   transition or mint an ordinal for.
-- **Fenced (FND-03 §10.1/§10.3).** The revert commits only under the same World/Channel/InstanceId,
-  `scope_generation`, `content_generation` and overlay-revision-of-anchor fences as any other §4
-  operation; per §10.3, a `scope_generation` change, a target overlay-revision mismatch, or explicit
-  invalidation each cancel the pending entry rather than letting it mutate.
+- **Fenced, one path (P1, FND-03 §10.1/§10.3).** The revert commits only under the same
+  World/Channel/InstanceId, `scope_generation`, `content_generation` and overlay-revision-of-anchor
+  fences as any other §4 operation, but only two of them are checked *before* `prepare`:
+  `scope_generation`/`content_generation` changing discards the pending entry without ever calling
+  `prepare` (the timer itself is invalid — §10.3's "scope ownership generation changed"). A mismatched
+  overlay revision is deliberately *not* checked there; a test asserting it is (a separate pre-
+  `prepare` cancellation path for a changed object) must fail — the only path for a changed object is
+  `prepare`'s own `DISPOSITION_STALE_STATE` (below).
 - **Cleared on scope restart.** The pending-timer set (keyed by `Deadline`) is
   `scope_generation`-scoped state owned by the same `ChannelRuntimeV1`/`InstanceRuntime` instance as
   the rest of the overlay; a scope restart is a new instance (corrected evidence above), so it is
@@ -544,18 +581,23 @@ not implement it; it is CANDIDATE and not owner-accepted.
   fixed-footprint boundary in §4 — only the anchor's pre-authored, bind-time-reserved footprint is
   ever touched, never a partially materialized one.
 - **Missing inverse is rejected at bind (P1, fail-closed).** Binding a `revert_after_ms`-carrying
-  transition whose target/source states have no matching bound inverse transition
-  (Exact delta above) must fail the whole `bind` call with `InvalidBinding` — there is no partial
-  binding that accepts the forward operation and silently drops its revert.
+  transition with zero matching bound inverse transitions (Exact delta above) must fail the whole
+  `bind` call with `InvalidBinding` — there is no partial binding that accepts the forward operation
+  and silently drops its revert.
+- **Two candidate inverses are rejected at bind (P2, fail-closed).** Binding a `revert_after_ms`-
+  carrying transition with *two or more* bound transitions matching the swapped-states-plus-
+  matching-family inverse rule (Exact delta above) must also fail the whole `bind` call with
+  `InvalidBinding` — an ambiguous inverse is not resolved by picking one arbitrarily.
 - **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
   and expected revision still hold must land the object back in precisely the state it was in
-  immediately before the original operation committed — the same `source_state`/`target_state` pair
-  the bind-time inverse check validated, not an approximation.
-- **Intervening change yields STALE_STATE, no mutation (P1).** If the object was changed again after
-  the revert was scheduled (a later operation on the same anchor moved it away from the state the
-  revert's stored expected revision names), firing must hit `prepare`'s existing
-  `DISPOSITION_STALE_STATE` path (evidence above) and commit nothing — the revert never overwrites
-  whatever the object has become in the meantime.
+  immediately before the original operation committed — the one unique `source_state`/`target_state`
+  pair the bind-time inverse check validated, not an approximation.
+- **Intervening change yields STALE_STATE, no mutation, via the one path (P1).** If the object was
+  changed again after the revert was scheduled (a later operation on the same anchor moved it away
+  from the state the revert's stored expected revision names), firing must reach `prepare` — never a
+  pre-`prepare` cancellation — and hit `prepare`'s existing `DISPOSITION_STALE_STATE` path (evidence
+  above), committing nothing; the revert never overwrites whatever the object has become in the
+  meantime, and there is no second, separate check that could instead silently discard the entry.
 - **Occupied target cells refuse deterministically (decided, not deferred).**
   `apps/game-server/src/world_runtime.rs` `terminalize_current` (~875-888) commits and terminalizes
   every prepared outcome in the same call, and `resume_pending`'s

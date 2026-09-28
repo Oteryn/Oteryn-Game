@@ -63,30 +63,27 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
 
 - `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md` — PROVEN, read in full.
 - `world_runtime.rs` `bind`/`prepare` (~590-1055), `apply`/`resume_pending`/`terminalize_current`
-  (~817-888) — PROVEN, post-#1055-merge line numbers: no tick/time parameter; every prepared outcome
-  terminalizes immediately and replays on retry; collision no longer hard-wired to Open/Close.
+  (~817-888), `LocalObjectCommand`/`transition_for` (~397-419/~787-796) — PROVEN, post-#1055-merge
+  line numbers: no tick/time parameter; every mutation needs a bound `TransitionKey`; every prepared
+  outcome terminalizes immediately and replays on retry; collision no longer hard-wired to Open/Close.
 - `foundation/runtime_actor_carrier.rs` `from_committed_assignment` (~702-750) — PROVEN,
   production-only: pins `scope_generation` once; `advance_owner` (~2169-2176) is test-only.
-- `gameplay_transport/connection.rs` `Liveness::tick` (~296-320), `content/project/v2/creature.rs`
-  `tick_profile` (~571-604), SIM-DETERMINISM-01 lines 224/419 — PROVEN: no scope/global clock.
-  Bounded grep (`tokio::time::interval|sleep|select!\{|loop \{`) — PROVEN: every `ChannelRuntimeV1`
-  call is reactive.
+- `gameplay_transport/connection.rs` `Liveness::tick`, `content/project/v2/creature.rs`
+  `tick_profile`, SIM-DETERMINISM-01 lines 224/419 — PROVEN: no scope/global clock. Bounded grep
+  (`tokio::time::interval|sleep|select!\{|loop \{`) — PROVEN: every `ChannelRuntimeV1` call reactive.
 - `crates/foundation/src/time.rs` `Deadline`/`MonotonicClock`/`ManualClock`/`SystemClock::new()`
   (~50-166) — PROVEN: tested, unused in `apps/game-server/src`, fresh incomparable origin per call.
   `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144 (was 143) — PROVEN: authors `revert_after_ms`.
-- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — PROVEN: the ordering/scheduling/
-  firing/cancellation/capacity/error-mapping contract §7 binds `revert_after` to. `foundation/mod.rs`
-  `ScopeRuntimeFence::accept_input` (~1040-1050) — PROVEN: mints an ordinal per generation only,
-  tracks no timer identity. `movement.rs` `MovementOwnerTurn` (~201-249) — PROVEN: existing bounded
-  `max_inputs` precedent for due-timer admission bounding.
+- `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — PROVEN: binds `revert_after`.
+  `foundation/mod.rs` `ScopeRuntimeFence::accept_input` (~1040-1050) — PROVEN: mints an ordinal per
+  generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` (~201-249) — PROVEN:
+  existing bounded `max_inputs` precedent.
+- `TransitionBinding` (`content/reference_playable.rs` ~1334-1342) — PROVEN: has `key`/
+  `source_state`/`target_state`/`normalized_intent_family`, no `revert_after_ms` field yet; only
+  `LOCAL_OBJECT_RETAG_INTENT_FAMILY` (~1195/~1646) is a named intent family today.
 - PR #1055 (merged, `070d119`) generalized `LocalObjectRuntime` off Open/Close per D38; PR #1046
-  (merged) shipped 1a/1b/1c. `git diff ac8395b8 origin/main` — PROVEN: neither touches
-  `foundation/{mod,admission,runtime_actor_carrier}.rs`, `connection.rs`, `movement.rs` or
-  `crates/foundation/src/time.rs`; only `world_runtime.rs` and the encounter doc's line numbers
-  shifted.
-- `world_runtime.rs` `LocalObjectCommand`/`transition_for` (~397-419, ~787-796),
-  `TransitionBinding` (`content/reference_playable.rs` ~1334-1342) — PROVEN: every mutation needs a
-  bound `TransitionKey`; `TransitionBinding` has no `revert_after_ms` field yet.
+  (merged) shipped 1a/1b/1c. `git diff ac8395b8 origin/main` — PROVEN: only `world_runtime.rs` and
+  the encounter doc's line numbers shifted; all other cited files are untouched.
 
 ## High-risk authority/recovery qualification
 
@@ -119,30 +116,32 @@ reason: >
 ## Implementation / findings
 
 Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3 in §4/§5/§8 without designing them.
+Round 1: fixed §-numbering; CW3 attribution; §7 option 2 made honest (no proven scope cadence).
+Round 2 (Codex, bbb3b4cd): added `Deadline` option as recommendation; corrected `advance_owner` to
+production-only evidence; occupied-revert refuses permanently. Round 3 (Codex, 350dca59): rebound §7
+to an FND-03 §10 authoritative timer (own `RuntimeExecutionOrdinal`, not `apply`/`resume_pending`/
+`CommandIngress`); staged capacity atomicity; equal-deadline tie-break; one clock per scope. Round 4
+(owner-authorized, c76bf9b9): merged `origin/main` (PR #1055 CW4, #1046 CW3), §4/§8 cite the merged
+state; re-verified line citations; resolved 3 Codex P2s on FND-03 timer internals. Round 5
+(owner-authorized, cf3dd8e6): fixed a P1 — firing needs a concrete bound `TransitionKey`, nothing
+said which restores an arbitrary `TRANSFORM`/`RETAG`. Fixed: `revert_after_ms` admissible only on a
+transition with a bound inverse (swapped source/target states, same definition); `bind` rejects
+(`InvalidBinding`) otherwise; the staged commit stores that inverse key plus expected post-op
+state/revision so firing replays instead of guessing.
 
-Round 1 (coordinator): fixed §-numbering; CW3 attribution; §7 option 2 made honest (no proven
-scope cadence). Round 2 (Codex, bbb3b4cd): added `Deadline` option as the recommendation; corrected
-`advance_owner` to production-only evidence; decided occupied-revert refuses permanently. Round 3
-(Codex, 350dca59): rebound §7 to an FND-03 §10 authoritative timer (own `RuntimeExecutionOrdinal`,
-not `apply`/`resume_pending`/`CommandIngress`); staged timer-capacity atomicity; equal-deadline
-tie-break; one shared clock instance per scope. Round 4 (owner-authorized, c76bf9b9): merged
-`origin/main` (clean) picking up PR #1055 (CW4 runtime) and PR #1046 (CW3 1a/1b/1c), so §4/§8 cite
-the merged state; re-verified every `world_runtime.rs` line citation; resolved 3 Codex P2s on FND-03
-timer internals (ordinal-based equal-deadline tie-break in the timer key, not derived identity;
-atomic pending-removal *before* `accept_input` since it tracks no timer identity; bounded due-work
-admission per FND-03 §7/§14, mirroring `movement.rs`'s `MovementOwnerTurn`).
-
-Round 5 (owner-authorized, cf3dd8e6, merged `origin/main` again — clean, no relevant file changed):
-verified a new P1 — firing a revert calls `prepare`, which needs a concrete *bound* `TransitionKey`
-(`LocalObjectCommand` ~412-419, `transition_for` ~787-796); nothing said which key restores an
-arbitrary `TRANSFORM`/`RETAG`. Fixed, fail-closed, reusing the merged CW4 model: `revert_after_ms`
-is admissible only on a transition whose *inverse* (a bound transition with swapped source/target
-states for the same definition — covers TRANSFORM/CREATE/REMOVE/RETAG uniformly) is itself bound;
-`bind` rejects (`InvalidBinding`) otherwise. The staged commit stores that inverse `TransitionKey`
-plus the expected post-operation state/revision `prepare` already computes; firing calls `prepare`
-with that key and expected revision, so an intervening change hits the existing `STALE_STATE` path
-instead of a guess. Added 3 test obligations: missing inverse rejected at bind; revert restores
-exactly the pre-operation state; intervening change ⇒ STALE_STATE, no mutation.
+Round 6 (owner-authorized, f3d05f1f, merged `origin/main` — no new commits): fixed two consistency
+findings in round 5's own design.
+- P2 (ambiguous inverse): round 5 only required "a bound transition with swapped states," not
+  *exactly one*. Fixed: `bind` also requires the matching inverse intent family (TRANSFORM↔TRANSFORM,
+  CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE — verified only `LOCAL_OBJECT_RETAG_INTENT_FAMILY` exists
+  today) and rejects unless exactly one transition matches; zero or 2+ ⇒ `InvalidBinding`. Added
+  "two candidate inverses ⇒ InvalidBinding".
+- P1 (two paths, one case): an earlier draft discarded a due timer on overlay-revision mismatch
+  *before* `prepare`, so the promised `DISPOSITION_STALE_STATE` outcome could never fire. Fixed:
+  pre-`prepare` discard is now only for `scope_generation`/`content_generation` changing (timer
+  itself invalid); every due revert always reaches `prepare` with its stored inverse key/expected
+  revision. Re-checked §7 for other contradictions; fixed the "Fenced" obligation and Option 2's
+  summary sentence to match.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -152,14 +151,14 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-5; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-6; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 5, after merging origin/main again; workflow
-  count rose from 46 with the merge, unrelated to this task's own doc-only changes)
+  validation passed (23 files, 47 workflows)." (round 6, unchanged from round 5 — no new upstream
+  commits merged this round)
 
 ### E2E
 
@@ -204,10 +203,11 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 5 (owner-authorized): merged origin/main again (clean); fixed a P1 —
-  revert_after_ms now requires a bound inverse transition (fail-closed InvalidBinding at bind time),
-  with the staged commit storing that inverse key plus the expected post-op state/revision so
-  firing replays a validated delta instead of guessing; both validators re-run and still pass.
+  PR #1045 pre-freeze round 6 (owner-authorized): fixed two consistency findings inside round 5's
+  design — the inverse-transition check now requires exactly one match (family-paired, not just
+  swapped states); a due revert's changed-object case is now handled by a single path through
+  prepare's STALE_STATE, with pre-prepare discard reserved only for scope/content-generation
+  changes; both validators re-run and still pass.
 status: implementing
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
