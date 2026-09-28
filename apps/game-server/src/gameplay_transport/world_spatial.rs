@@ -363,19 +363,22 @@ mod tests {
     fn registries_bind_the_accepted_first_control_ids_and_limits() {
         let protocol: Value = serde_json::from_str(PROTOCOL_REGISTRY).expect("protocol registry");
         let commands = protocol["command_types"].as_array().expect("command_types");
-        assert_eq!(commands.len(), 1);
-        assert_eq!(commands[0]["id"], COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
-        assert_eq!(commands[0]["name"], "WORLD_ACTOR_STEP_INTENT");
+        // Looked up by id, not array position: the registry is shared and other command
+        // types may be registered alongside this one (e.g. USE-WIRE-V1's USE_INTENT).
+        let command = commands
+            .iter()
+            .find(|command| command["id"] == COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT)
+            .expect("WORLD_ACTOR_STEP_INTENT registered");
+        assert_eq!(command["name"], "WORLD_ACTOR_STEP_INTENT");
         let domains = protocol["state_domains"].as_array().expect("state_domains");
-        assert_eq!(domains.len(), 1);
-        assert_eq!(domains[0]["id"], STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY);
-        assert_eq!(domains[0]["name"], "WORLD_SPATIAL_VISIBILITY");
+        let domain = domains
+            .iter()
+            .find(|domain| domain["id"] == STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY)
+            .expect("WORLD_SPATIAL_VISIBILITY registered");
+        assert_eq!(domain["name"], "WORLD_SPATIAL_VISIBILITY");
+        assert_eq!(domain["delta_types"][0]["id"], DELTA_TYPE_WORLD_SPATIAL_V1);
         assert_eq!(
-            domains[0]["delta_types"][0]["id"],
-            DELTA_TYPE_WORLD_SPATIAL_V1
-        );
-        assert_eq!(
-            domains[0]["snapshot_types"][0]["id"],
+            domain["snapshot_types"][0]["id"],
             SNAPSHOT_TYPE_WORLD_SPATIAL_V1
         );
 
