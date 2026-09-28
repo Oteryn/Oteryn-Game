@@ -1252,6 +1252,25 @@
       ]
     },
     {
+      "id": "AI01-PENDING-TIMERS-PER-ACTOR",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_AI_ACTION_INTEGRATION_FIRST_CREATURE_SLICE_DECISION_2026-09-28.md",
+      "resource": "pending AI think timers per live creature actor in the Channel owner timer lane (AI-RL-06)",
+      "unit": "pending timers per actor",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "check before retaining or allocating resource-shaped state and before publishing partial mutation",
+      "client_visible": false,
+      "boundary_tests": [
+        "hard maximum accepted",
+        "hard maximum + 1 rejected as CAPACITY_EXCEEDED before allocation or partial mutation",
+        "checked arithmetic overflow rejected before allocation or partial mutation"
+      ]
+    },
+    {
       "id": "NET03-PREADMISSION-CONNECTIONS",
       "owner_contract": "FND-03_RUNTIME_EXECUTION_CONTRACT.md",
       "resource": "concurrent pre-admission TCP/TLS connections",
