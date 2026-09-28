@@ -87,12 +87,15 @@ complete this qualification itself.
   `ProductionKey`-ordered index per content generation.
 - `bff9457`: Codex P2 4121150598 (vitals were still called session-local while a new session must
   keep them). Accepted: vitals and cooldowns are runtime-actor-local and non-durable.
-- The successor head needs a fresh exact-head review.
+- `78d046c`: Codex exact-head review found no issues (5868272609); all review threads resolved.
+- The `pull_request` workflows did not start for `78d046c` (only `pull_request_target` ran), so
+  this task-record update is the successor head that carries CI. Its only delta from `78d046c` is
+  this record.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1089 open
+last_progress: Codex clean on 78d046c; CI rerouted to the successor head
 status: validating
 branch: claude/gifted-rubin-a0axzx
 pr: 1089
