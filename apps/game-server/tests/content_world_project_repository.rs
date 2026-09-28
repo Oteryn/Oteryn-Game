@@ -17,7 +17,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "6f642626e6120d27b9a48c72584edebd4dbed3f69e11790a88de122e49497953",
+        "45b8fcd393ea7fd99ba90e293a7324f057cc7d86b53fdd8103c489beb02a3188",
     ),
     (
         "definitions/declarations.json",
@@ -36,8 +36,8 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     ),
     (
         "manifest.json",
-        1936,
-        "8579f9ed3102f9ec2b5330d54e3a439269321bdb5f2b3b5b48b32fcd31d981cb",
+        1937,
+        "0bae36fc4e3131b8d475220a924aa1f07d731d71043cef5c1d2cadce378bf983",
     ),
     (
         "presentations/bindings.json",
@@ -47,12 +47,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "69933950bcf6ba34241ae8bcfb80323829d7ab6476889fdb2ab08e1feae097e3",
+        "0b02be3ab7460a060b33259c042b8449f62565e3c7658eb7c588763feab8a375",
     ),
     (
         "provenance/imports.json",
-        5012,
-        "0db806a06149b878c322af2a9482250bd071ea4c49e6d107d117974afaa749b3",
+        29_445,
+        "db5549269c7e6e787b4799bfb340a4730498d82fbd36f797e3d1575ac54bd7cd",
     ),
     (
         "provenance/sources.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "8f1ea7572c3736376bdbebd4cbcc989f4070eec5d3a19a8fdd7ccb607381c494";
+const TREE_SHA256: &str = "5ee67a720c8f67d81fe42009031759375db447123bd3741cb9a278ea0ed0d9b0";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -120,7 +120,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
         max_import_records: 8,
-        max_reimport_states: 1,
+        max_reimport_states: ENCOUNTERS,
     }
 }
 
@@ -299,7 +299,16 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
         "47dfd51f45280a59a1d3e50ba7edd573d7234446"
     );
     assert!(creature_import.candidates.is_empty());
-    assert!(creature_import.reimport_states.is_empty());
+    // E5: each admitted encounter keeps its manifest digest as an unchanged reimport baseline.
+    assert_eq!(creature_import.reimport_states.len(), ENCOUNTERS);
+    assert!(creature_import.reimport_states.iter().all(|state| {
+        state.stable_identity.starts_with("oteryn:encounter.")
+            && state.field_path == "encounter_manifest_sha256"
+            && matches!(&state.baseline, Some(CandidateValue::Text(digest)) if digest.len() == 64)
+            && state.upstream == state.baseline
+            && state.local == state.baseline
+            && state.decision == ReimportDecision::Unchanged
+    }));
     let wiki = &project.imports()[2];
     assert_eq!(wiki.batch_id, "g4-item-exact-165-tibiawiki-r1");
     assert_eq!(

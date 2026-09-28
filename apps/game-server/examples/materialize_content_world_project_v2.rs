@@ -5,16 +5,17 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
-    CW2_B1_FULL_ITEM_FAMILY_COUNT, CanonicalProjectDocuments, ImportBatch, ProjectDraft,
-    ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2Declaration,
-    ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass,
-    ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile,
-    ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
-    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
-    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
-    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
-    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
-    ReferenceSignedPoints, ReferenceWeaponType, protected_r7_p04_gold_coin_item_family_import,
+    CW2_B1_FULL_ITEM_FAMILY_COUNT, CandidateValue, CanonicalProjectDocuments, ImportBatch,
+    ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2AuthoringProfile,
+    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
+    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
+    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
+    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition, ProjectV2State, R7_P04_GOLD_COIN_EVIDENCE_PACKET,
+    ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
+    ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
+    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
+    ReimportDecision, ReimportFieldState, protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -123,7 +124,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
         max_import_records: 8,
-        max_reimport_states: 1,
+        max_reimport_states: ENCOUNTER_COUNT,
     }
 }
 
@@ -1244,6 +1245,39 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     {
         return Err("wiki-authored creature page binding drifted".into());
     }
+    // E5: each admitted encounter keeps the digest of the manifest it was mapped from as its reimport baseline.
+    let manifests = packet["encounter_manifests"]
+        .as_object()
+        .ok_or("staged encounter manifests are missing")?;
+    let mut reimport_states = Vec::with_capacity(ENCOUNTER_COUNT);
+    for binding in bindings
+        .iter()
+        .filter(|binding| binding.target.family == ProjectV2Family::Encounter)
+    {
+        let digest = manifests
+            .get(&binding.external_id)
+            .and_then(Value::as_str)
+            .filter(|digest| {
+                digest.len() == 64
+                    && digest
+                        .bytes()
+                        .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+            })
+            .ok_or("staged encounter manifest digest is missing")?;
+        let value = Some(CandidateValue::Text(digest.to_owned()));
+        reimport_states.push(ReimportFieldState {
+            stable_identity: binding.target.key.clone(),
+            field_path: "encounter_manifest_sha256".to_owned(),
+            baseline: value.clone(),
+            upstream: value.clone(),
+            local: value,
+            decision: ReimportDecision::Unchanged,
+        });
+    }
+    if manifests.len() != ENCOUNTER_COUNT || reimport_states.len() != ENCOUNTER_COUNT {
+        return Err("staged encounter manifests drifted".into());
+    }
+    reimport_states.sort_by(|left, right| left.stable_identity.cmp(&right.stable_identity));
     let import = ImportBatch {
         batch_id: "g4-creature-canary-wave-a-r1".to_owned(),
         source_repository: "opentibiabr/canary".to_owned(),
@@ -1256,7 +1290,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         mapper_revision: "creature-admission-r1".to_owned(),
         mapper_sha256: CREATURE_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
-        reimport_states: Vec::new(),
+        reimport_states,
     };
     let source = ProjectV2Source {
         key: "oteryn:source.canary".to_owned(),

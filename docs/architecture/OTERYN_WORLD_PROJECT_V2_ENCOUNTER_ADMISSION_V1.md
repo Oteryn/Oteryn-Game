@@ -116,8 +116,10 @@ creatures, in the same slices.
    - **Creatures:** 1,450 are admitted, up from 1,319. Monsters that wait only on an encounter drop from 164 to 35.
    - **Content tree:** the admitted encounters are in `content/encounters/definitions/`. The tree contract has no
      node for Generic encounters, so all types share that node.
-   - **Manifest digests (E5):** each manifest's digest stays in the pinned staged evidence
-     `docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json`, next to its profile.
+   - **Manifest digests (E5):** the Canary import batch `g4-creature-canary-wave-a-r1` carries one reimport baseline
+     per admitted encounter. Its identity is the encounter key, its field is `encounter_manifest_sha256`, and its value
+     is the digest of the manifest the profile was mapped from. The pinned staged evidence
+     `docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json` holds the same digests.
 5. Later: the remaining encounters as their creatures, items or vocabulary resolve; map binding and the Encounter
    runtime are separate owned slices.
 
