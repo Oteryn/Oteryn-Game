@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-item-donor-identity-b1b
 title: "B1b donor Item identity epoch 2 (alias gate, function, bindings)"
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/item-donor-identity-b1b
 issue: 162
-pr: null
+pr: 1179
 base_sha: be242b8
 head_sha: null
 final_head_sha: null
@@ -116,9 +116,9 @@ SHA recorded here.
 
 ```yaml
 last_progress: implementation and local validation
-status: implementing
+status: validating
 branch: claude/item-donor-identity-b1b
-pr: null
+pr: 1179
 owner_action_required: null
 blocker: null
 next_action: freeze the PR head, route the independent identity review, integrate through Merge Queue
