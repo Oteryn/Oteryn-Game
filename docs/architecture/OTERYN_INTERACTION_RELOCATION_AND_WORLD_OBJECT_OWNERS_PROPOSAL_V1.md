@@ -407,6 +407,19 @@ retention window/count, with one fixed requirement carried forward from GAME-INT
 whatever policy the owning lane picks MUST preserve no-reexecution — for example, a compact tombstone
 of identity → outcome code survives even where a full `TerminalSemanticOutcome` does not.
 
+Round 16 correction (owner-authorized; Codex finding 4120154570 on frozen head `24141ed7`): a timed
+`map_item` transform can change a teleporter's `destination` attribute, restored via an authored
+`revert_destination` override (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144; a concrete
+authored instance in `the_lord_of_the_lice/encounter.json` lines 70-74, evidence below) — but nothing
+this section's `revert_after_ms` design restores can represent that: `LocalObjectStateDefinition` is
+state key plus collision only, and `PreparedMutation::Publish` is state/revision/blocking only
+(evidence below). An inverse `TransitionKey` cannot revert an attribute it never touches. Scoped, not
+designed: `revert_after_ms` under this proposal covers only what those two types already model; an
+attribute-changing transition is fail-closed rejected at `bind`, the same treatment as a missing or
+ambiguous inverse ("Exact delta" below) — never silently `COMMITTED` with stale attributes. Retaining
+and restoring attributes is a new capability this document does not design; it is recorded as an open
+decision for the owning lane, with two candidate directions named and neither chosen.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -578,6 +591,23 @@ today.
   supervision, panic or abort handling exists anywhere in the read code for scope-owner work, movement
   included. The revert-timer driver itself is proposed, not built (evidence above: no scope-wide
   cadence/scheduler exists yet).
+- PROVEN, round 16 (`apps/game-server/src/content/reference_playable.rs`
+  `LocalObjectStateDefinition` ~810-813): exactly two fields, `key: ProductionKey` and
+  `collision: LocalObjectCollisionPresence` — no attribute/payload field of any kind. PROVEN
+  (`apps/game-server/src/world_runtime.rs` `PreparedMutation::Publish` ~1152-1158, evidence above):
+  exactly `expected_state`/`expected_revision`/`next_state`/`next_revision`/`next_blocking` — the same
+  state-key-plus-collision-footprint shape, nothing else a revert could restore. PROVEN
+  (`docs/architecture/OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144): `map_item`'s own field
+  description — "a teleporter carries `destination` and optionally `revert_destination` anchors; a
+  revert restores the original item with its original attributes unless `revert_destination`
+  overrides the destination" — names an attribute-level revert (destination, not state) that nothing
+  in `LocalObjectStateDefinition`/`PreparedMutation` can represent today. PROVEN
+  (`tools/content-schema/encounter-authoring/samples/the_lord_of_the_lice/encounter.json` lines
+  70/71/73/74): a concrete authored instance — `anchor: exit_teleporter`, `destination: godbreaker`,
+  `revert_after_ms: 60000`, `revert_destination: ascendant_exit` — of exactly this case. Contrast
+  (evidence above): the `DepthWarzoneBossDeath` example this section already cites as a test
+  obligation (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` lines 171-172) authors no `destination`/
+  `revert_destination` at all — a state-only transform, unaffected by this finding.
 
 ### Options (minimum real set)
 
@@ -791,6 +821,18 @@ thing, not two — its lifecycle-record store).
   unless *exactly one* transition matches — zero matches is a missing inverse, more than one is an
   ambiguous inverse, and both are equally invalid — producing the one unique inverse `TransitionKey`
   the lifecycle record stores (complete field list above).
+- Scope of what `revert_after_ms` covers (Round 16, fail-closed): `revert_after_ms` is admissible only
+  on a transition whose full effect is modeled today by `LocalObjectStateDefinition` — the state
+  `key` plus `LocalObjectCollisionPresence` (evidence above) — because that is exactly what
+  `PreparedMutation::Publish` restores: `next_state`/`next_revision`/`next_blocking`, nothing else
+  (evidence above). A transition that also changes non-state object attributes — for example a
+  `map_item` teleporter's `destination`, or an authored `revert_destination` override
+  (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144; sample `the_lord_of_the_lice/encounter.json`
+  lines 70-74, evidence above) — is **not** admissible for `revert_after_ms` under this proposal:
+  `bind` rejects it with `WorldRuntimeError::InvalidBinding`, the same fail-closed treatment as a
+  missing or ambiguous inverse, never silently `COMMITTED` with the wrong attributes restored. This is
+  a new-capability gap (attribute-bearing object state has no bound-inverse mechanism today), not a
+  defect in the revert design above; see "Open decisions for the owning lane" below.
 - Introduce the scope owner's own step driver: one per scope owner (`ChannelRuntimeV1`/
   `InstanceRuntime`), never a per-object or per-revert timer, that wakes at the earliest pending
   `Deadline` and drives that scope's own due reverts forward. Whether it piggybacks on a cadence the
@@ -911,7 +953,7 @@ thing, not two — its lifecycle-record store).
   and stops; do not retry it on a later wake (decided below, not left open) — a later duplicate
   presentation is answered by step 2 of the presentation order above, never a fresh occupancy check.
 
-### Open decisions for the owning lane (Round 15)
+### Open decisions for the owning lane (Rounds 15/16)
 
 These are genuinely open — this document deliberately does not resolve them, per PLAYABLE_FIRST and
 this section's own `CANDIDATE` status. The owning lane resolves them alongside the exact delta above,
@@ -941,6 +983,20 @@ not this architecture decision.
    generation live with a record stranded `IN_FLIGHT` — if chosen, the owning lane must design explicit
    `IN_FLIGHT` reconciliation (how a stranded record eventually reaches `TERMINAL`, or is recognized as
    needing owner intervention), which this document does not design and does not choose between.
+3. **Attribute-bearing object state and its timed revert (e.g. teleporter `destination`/
+   `revert_destination`).** `revert_after_ms` under this proposal covers only the state-key-plus-
+   collision footprint `LocalObjectStateDefinition`/`PreparedMutation::Publish` already model (Round
+   16, evidence above; "Exact delta" above rejects anything wider at bind) — it does not cover a
+   transition that also changes non-state object attributes, such as `map_item`'s authored
+   `destination`/`revert_destination` (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144; sample
+   `the_lord_of_the_lice/encounter.json` lines 70-74, evidence above). This is a new capability
+   (attribute-bearing object state), not a gap in the revert design above, and this document does not
+   design it. Two candidate directions, named without choosing between them: retain the resolved
+   inverse *attribute payload* (e.g. the pre-transform `destination`) alongside the lifecycle record's
+   existing fields, applied outside the state-key/collision model; or fold attributes into
+   `LocalObjectStateDefinition`/`PreparedMutation` themselves so a state carries payload and a revert
+   is again a pure state transition. Either belongs to the owning lane (and likely CW3/CW4's
+   content-model lane) as its own decision, not this one.
 
 ### Exact test obligations
 
@@ -1045,6 +1101,15 @@ not this architecture decision.
   carrying transition with *two or more* bound transitions matching the swapped-states-plus-
   matching-family inverse rule (Exact delta above) must also fail the whole `bind` call with
   `InvalidBinding` — an ambiguous inverse is not resolved by picking one arbitrarily.
+- **An attribute-changing transition is rejected at bind (P1, Round 16, fail-closed).** Binding a
+  `revert_after_ms`-carrying transition whose authored effect changes a non-state object attribute —
+  for example a `map_item` teleporter's `destination`, with or without an authored
+  `revert_destination` (evidence above) — must fail the whole `bind` call with `InvalidBinding`, even
+  when a same-collision-class inverse transition would otherwise satisfy the state-swap rule above. A
+  test asserting such a binding succeeds and later fires `DISPOSITION_COMMITTED` with the object's
+  attributes left unrestored (stale `destination`) must fail — `revert_after_ms` covers only what
+  `LocalObjectStateDefinition`/`PreparedMutation::Publish` model today (evidence above), never a
+  silent partial revert.
 - **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
   and expected revision still hold must land the object back in precisely the state it was in
   immediately before the original operation committed — the one unique `source_state`/`target_state`
@@ -1076,13 +1141,16 @@ not this architecture decision.
   firing — no `PENDING` record exists afterward for either direction. Re-arming only happens if some
   later non-timer-origin execution (a player/command, an encounter/server-event, or any other
   authoritative input) invokes `b→a` (or `a→b`) itself.
-- **An encounter-originated timed transform registers and fires (P1, Round 8).** Bind
-  `DepthWarzoneBossDeath`'s `map_item(transform teleporter at anchor, revert_after_ms 1200000)`
-  (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` lines 171-172) with its bound inverse. The
-  `creature_died(boss)`-triggered transform — an encounter/server-event-originated operation, never
-  `apply`/`resume_pending` — must register exactly one revert timer at commit, and that timer must
-  later fire and restore the teleporter; a test asserting it stays transformed forever (round 7's
-  bug) must fail.
+- **An encounter-originated timed transform registers and fires (P1, Round 8; scope note Round 16).**
+  Bind `DepthWarzoneBossDeath`'s `map_item(transform teleporter at anchor, revert_after_ms 1200000)`
+  (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` lines 171-172) with its bound inverse — as authored, this
+  example carries no `destination`/`revert_destination`, so it is a state-only transform admissible
+  under the Round 16 scope restriction above (evidence above); it is not a stand-in for
+  `the_lord_of_the_lice`'s attribute-changing teleporter, which the previous obligation covers
+  separately. The `creature_died(boss)`-triggered transform — an encounter/server-event-originated
+  operation, never `apply`/`resume_pending` — must register exactly one revert timer at commit, and
+  that timer must later fire and restore the teleporter; a test asserting it stays transformed
+  forever (round 7's bug) must fail.
 - **Occupied target cells refuse deterministically (decided, not deferred).** `prepare`
   (`apps/game-server/src/world_runtime.rs` ~973-1050) computes and returns its terminal disposition in
   one shot from current state; it never re-evaluates against occupancy that changes later, and (Round

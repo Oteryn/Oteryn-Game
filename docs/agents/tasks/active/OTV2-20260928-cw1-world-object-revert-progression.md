@@ -85,6 +85,10 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
   `Publish` — the complete, exhaustive set. `gameplay_transport/mod.rs` `ComposedFreshAdmission::step`
   (~546-585) — one lock `.await`, then synchronous; no panic/abort/task-supervision code found for
   scope-owner work.
+- `content/reference_playable.rs` `LocalObjectStateDefinition` (~810-813) — round 16: `key` +
+  `collision` only, no attribute field; `PreparedMutation::Publish` likewise has no attribute field.
+  Encounter doc line 144 + sample `the_lord_of_the_lice/encounter.json` lines 70/71/73/74 — a
+  teleporter's `destination`/`revert_destination` is an attribute neither type can restore.
 - PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c.
 
 ## High-risk authority/recovery qualification
@@ -118,28 +122,26 @@ reason: >
 ## Implementation / findings
 
 Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-6: numbering; `Deadline`
-option recommended; rebound to FND-03 §10 authoritative timer with staged capacity atomicity,
-equal-deadline tie-break, one clock per scope; merged origin/main; `revert_after_ms` admissible only
-with exactly one bound inverse; pre-`prepare` discard restricted to `scope_generation`/
-`content_generation`. Round 7: never re-arms. Round 8: origin test. Round 9: exact target identity.
-Round 10: fixed stale summary. Round 11: pending entry gained derived `InteractionChildOccurrenceRef`.
-Round 12: redelivery as no-op, nothing retained. Round 13: round 12 superseded (violated
-GAME-INTERACTION-01 §7); terminal outcome retained. Round 14 (`a0519257`): round 13 superseded — two
-P1 seam bugs from two separate structures; replaced with one scope-owned lifecycle record per
-identity, `PENDING(entry fields) | IN_FLIGHT | TERMINAL(outcome)`, matching GAME-INTERACTION-01 §7's
-lifecycle, fixed presentation order (lookup → `TERMINAL` returns first outcome → `IN_FLIGHT`
-converges → only `PENDING` reaches fences).
+option; rebound to FND-03 §10 timer; staged capacity atomicity; equal-deadline tie-break; one clock
+per scope; `revert_after_ms` needs exactly one bound inverse; pre-`prepare` discard restricted to
+`scope_generation`/`content_generation`. Round 7: never re-arms. Round 8: origin test. Round 9: exact
+target identity. Round 10: fixed stale summary. Round 11: derived `InteractionChildOccurrenceRef`.
+Round 12: no-op, nothing retained. Round 13: superseded (violated GAME-INTERACTION-01 §7); outcome
+retained. Round 14 (`a0519257`): superseded — two P1 seam bugs; replaced with one lifecycle record,
+`PENDING|IN_FLIGHT|TERMINAL`. Round 15 (`a2aab063`): convergence — exhaustive `TERMINAL` mapping;
+removed two unproven "never..." claims, added "Open decisions for the owning lane."
 
-Round 15 (Codex 4120028037/4120028027/4120028033, head `a2aab063`): **convergence round.** (1)
-`prepare`'s `TERMINAL` mapping was missing `NO_CHANGE`/`REVISION_EXHAUSTED`; fixed by deriving the
-mapping from `prepare`'s own structure (`unchanged`→`REJECTED`, `Publish`→`COMMITTED`) — genuinely
-exhaustive. (2) Round 14's "interruption never leaves the scope live with `IN_FLIGHT`" was unproven —
-checked `ComposedFreshAdmission::step` (synchronous once locked) but found no panic/abort handling
-anywhere; removed the claim, added it as an open decision (two resolutions named). (3) Removed "never
-evicted/only on scope restart" as a hard rule; added retention/compaction policy as an open decision,
-MUST preserve no-reexecution (e.g. tombstone). Added "Open decisions for the owning lane" subsection;
-Must-decide-now references it. Rewrote affected test obligations; grepped whole doc. Merged
-`origin/main` (`00691b5b`, unrelated); `git diff a2aab063 HEAD` confirms no cited file drifted.
+Round 16 (Codex 4120154570, head `24141ed7`): a timed `map_item` transform can change a teleporter's
+`destination` attribute via authored `revert_destination` (encounter doc line 144; sample
+`the_lord_of_the_lice/encounter.json` lines 70-74) — but `LocalObjectStateDefinition` is
+state-key-plus-collision only and `PreparedMutation::Publish` is state/revision/blocking only
+(verified directly); neither can restore an attribute an inverse `TransitionKey` never touches.
+Scoped, not designed, per coordinator decision: `revert_after_ms` now covers only what those two
+types model; `bind` fail-closed rejects an attribute-changing transition with `InvalidBinding`, same
+as a missing/ambiguous inverse. Added open decision 3 (two candidate directions, neither chosen).
+Added a bind-rejection test obligation; qualified `DepthWarzoneBossDeath` (state-only, unaffected).
+Grepped for "every map_item" overclaims — none found elsewhere. Merged `origin/main` (`13576c44`,
+unrelated); `git diff 24141ed7 HEAD` confirms no cited file drifted.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -149,13 +151,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-15; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-16; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 15; unchanged)
+  validation passed (23 files, 47 workflows)." (round 16; unchanged)
 
 ### E2E
 
@@ -199,16 +201,14 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 15 (Codex 4120028037/4120028027/4120028033 on frozen head a2aab063,
-  convergence round): (1) prepare's TERMINAL mapping was missing NO_CHANGE/REVISION_EXHAUSTED; fixed
-  by deriving the mapping from prepare's own code structure (unchanged-> REJECTED, Publish->
-  COMMITTED), genuinely exhaustive. (2) Round 14's "interruption never leaves the scope live with a
-  stranded IN_FLIGHT record" was unproven -- checked ComposedFreshAdmission::step (synchronous once
-  locked) but found no panic/abort handling anywhere; removed the claim, added it as an open decision
-  for the owning lane (two resolutions named). (3) Removed "never evicted / only dropped on scope
-  restart" as a hard rule; added retention/compaction policy as an open decision, MUST preserve
-  no-reexecution (e.g. tombstone). Added "Open decisions for the owning lane" subsection; Must-
-  decide-now references it. Rewrote affected test obligations; grepped whole doc; validators pass.
+  PR #1045 pre-freeze round 16 (Codex 4120154570 on frozen head 24141ed7): a timed map_item transform
+  can change a teleporter's destination attribute (revert_destination), but LocalObjectStateDefinition
+  is state-key+collision only and PreparedMutation::Publish is state/revision/blocking only -- neither
+  can restore an attribute. Verified encounter doc line 144 and sample lines 70-74 directly. Scoped
+  per coordinator decision: revert_after_ms now covers only the state+collision footprint; bind
+  fail-closed rejects an attribute-changing transition with InvalidBinding. Added open decision 3
+  (two directions, neither chosen). Added bind-rejection test obligation; qualified
+  DepthWarzoneBossDeath as state-only. Grepped for overclaims; validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
