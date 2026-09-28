@@ -2459,20 +2459,53 @@ position) stay excluded by C3, unchanged. That would be a new decision.
     `aid(4951)`). The resolved key is what the template stores.
   - **Compatibility.** Exactly one definition must resolve, and it must meet three conditions:
     - its `source.edge` is `ON_ENTER`, since each covered object is used by stepping onto it;
-    - every `WorldObject` child it carries is a `REMOVE` of the triggering object itself, which
-      lowers onto this template's own untimed remove edge;
+    - every `WorldObject` child it carries is a `REMOVE` whose **typed** target is the
+      triggering object itself, which lowers onto this template's own untimed remove edge;
     - it names no other world-object target.
+
+  - **No inferred targets (Round 3, Codex P1 4127486973).** The linker never infers a mutation
+    target from `value_source_line`, a source-line reference, an item id or any other untyped
+    evidence. A world-object mutation target is security-relevant, and an inferred one could
+    remove an object the interaction does not own.
+    - This follows `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md` lines 54-58: explicit
+      contracts, strong typing and schema validation over inference.
+    - Today's `REMOVE` shape in `tools/content-schema/quest-authoring/interaction.schema.json`
+      (~128-134) is `anchor`, `def` or `value_source_line`, and it has no representation for "the
+      object that triggered this interaction".
+    - The transcribed `aid(4951)` and `aid(5580)` definitions carry only `value_source_line` on
+      their `REMOVE` child.
+    - Such a child, and any `WorldObject` child without a typed target this rule accepts, fails
+      compilation with the named error `InteractionWorldObjectTargetUntyped`.
+    - An `anchor` or `def` target is also rejected here (`InteractionWorldObjectTargetForeign`),
+      because it names an object other than the triggering one.
+  - **Prerequisite owned by the interaction lane.** The interaction contract must gain a typed
+    self/trigger target for `REMOVE`:
+    - **Contract:** `tools/content-schema/quest-authoring/interaction.schema.json`, with its prose
+      in `docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md` §6.3.
+    - **Minimal shape:** one more alternative on the existing `WorldObject` `REMOVE` variant,
+      `"target": {"kind": "triggering_object"}`. It mirrors the `kind`-tagged
+      `relocation_target`, and it is admissible only on a definition whose `source.edge` is
+      `ON_ENTER` or `USE` with an `aid(...)` registration.
+    - **Transcription:** the transcriber sets it only where the source provably removes the
+      callback's own `item` argument (for example `movements_mazzinor.lua:15` `item:remove(1)`).
+    - **Ownership:** this section does not edit that contract; the interaction lane adds it.
 
     Resolution also fails when no definition, or more than one, carries the registration, and
     when the definition is unresolved or incompatible. Each such failure is named, and the
     content does not compile or activate. No runtime fallback exists and no key is left
     unresolved.
-  - **Current state.** `content/interactions/` is `READY_UNPOPULATED`, so today every
-    `interaction`-carrying template fails resolution. `mazzinor`, `gaz_haragoth` and
-    `cult_soul_remains` stay rejected until their interaction definitions are part of the
-    compiled content. The corpus has definitions for `aid(4951)` and `aid(5580)`. It has none for
-    `aid(33542)`, whose Canary handler is `movements/roshamuul/strange_vortex_tp.lua`, outside
-    the quest transcription. `azerus` (`destination`) is unaffected.
+  - **Current state.** `mazzinor`, `gaz_haragoth` and `cult_soul_remains` stay rejected
+    fail-closed, each with a named error, until the prerequisites below are met. `azerus`
+    (`destination`) is unaffected.
+    - `content/interactions/` is `READY_UNPOPULATED`, so today every `interaction`-carrying
+      template fails resolution (`InteractionUnresolved`).
+    - `mazzinor` (`aid(4951)`) and `cult_soul_remains` (`aid(5580)`) also need the typed
+      triggering-object `REMOVE` target above. Until it exists, their transcribed definitions
+      fail with `InteractionWorldObjectTargetUntyped`.
+    - `gaz_haragoth` (`aid(33542)`) has no transcribed definition, because its Canary handler,
+      `movements/roshamuul/strange_vortex_tp.lua`, is outside the quest transcription. It fails
+      with `InteractionUnresolved`. It becomes admissible only when a definition exists, and
+      only if that definition either carries no `WorldObject` child or carries a typed one.
   - Executing the resolved interaction on step-in (outfit, teleport, quest storage, consumption)
     is the interaction lane's consumer, which reads it through the existing `attributes()`
     accessor. That consumer is out of scope here, as the §9 teleport consumer is.
@@ -2600,7 +2633,8 @@ OD8:
   over-long key) fails with a named error.
 - **Interaction resolution (Round 2, Codex P1 4127432502).**
   - With interaction-domain content that registers `aid(4951)` on an `ON_ENTER` definition whose
-    only `WorldObject` child is a `REMOVE` of the triggering object, `mazzinor` lowers, and its
+    only `WorldObject` child is a `REMOVE` with the typed target `{"kind": "triggering_object"}`
+    (the Round 3 prerequisite), `mazzinor` lowers, and its
     template stores that definition's resolved key.
   - Each of the following fails compilation with a named error, and no content activates:
     - no definition for the aid (today's `READY_UNPOPULATED` state, and `aid(33542)` for
@@ -2609,6 +2643,15 @@ OD8:
     - a `USE`-edge definition;
     - a definition whose `WorldObject` child targets another object or is not a `REMOVE`;
     - an unresolved definition.
+  - **Untyped `REMOVE` children are rejected (Round 3, Codex P1 4127486973).**
+    - A `REMOVE` child carrying only `value_source_line` fails with
+      `InteractionWorldObjectTargetUntyped`. This is the transcribed `aid(4951)` and `aid(5580)`
+      shape, used verbatim as the fixture.
+    - A `REMOVE` child carrying `anchor` or `def` fails with
+      `InteractionWorldObjectTargetForeign`.
+    - Only `"target": {"kind": "triggering_object"}` passes.
+    - A test asserting that the linker derives the target from `value_source_line`, an item id or
+      a source line must fail.
   - A test asserting that an `interaction` key passes on syntax alone must fail.
 - **Bind parity.** A runtime placement binds through exactly `bind`'s validations. A synthesized
   `PlacementRef` that fails any of them (foreign definition, undeclared initial state, an
@@ -2705,6 +2748,11 @@ OD9:
 - The compile-time resolution of `interaction` keys against the interaction-domain content (D5).
   It needs that content to be part of the compiled set; until then, `interaction` templates stay
   rejected.
+- **The interaction lane's prerequisite (D5, Round 3).** A typed
+  `"target": {"kind": "triggering_object"}` on the `REMOVE` variant of
+  `tools/content-schema/quest-authoring/interaction.schema.json`, with prose in
+  `OTERYN_QUEST_AUTHORING_FORMAT_V1.md` §6.3, and its transcription for `aid(4951)` and
+  `aid(5580)`. Until it lands, those samples stay rejected.
 - Whether `bind` is factored to take a `PlacementRef` (D2 step 4). The validations stay identical.
 - The scope owner's creation step and retire-on-absent hook, and the `PendingRevert` release flag
   (D3), in the live Channel/Instance owner. This is not yet wired, as for §7.

@@ -72,6 +72,13 @@ This task adds a docs-only design as §10 of
   - A combined `WOBJ-RL-03` check (pre-authored plus live runtime < 486) applies at
     materialization, with a boundary test for a nearly full pre-authored scope.
   - Q3 is recorded as an owner question.
+- **Round 3** (Codex P1 4127486973 on `dc239ea9`, accepted):
+  - The linker never infers a `WorldObject` target from untyped evidence.
+  - A typed `REMOVE` target, `"target": {"kind": "triggering_object"}`, is named as a
+    prerequisite owned by the interaction lane (`interaction.schema.json` and quest format §6.3).
+    It is not edited here.
+  - Until it exists, `mazzinor`, `gaz_haragoth` and `cult_soul_remains` stay rejected with named
+    errors, and a test obligation covers rejecting untyped `REMOVE` children.
 - **Closeout** of `OTV2-20260928-cw1-teleporter-rearm`: archived as completed, merged `195ef53a`.
 
 ## Excluded scope
@@ -88,5 +95,5 @@ This task adds a docs-only design as §10 of
 
 ## Context checkpoint
 
-last_progress: Round 2 repairs (Codex P1 4127432502, P1 4127432516, P2 4127432535) on PR #1182; new candidate head pending freeze
+last_progress: Round 3 repair (Codex P1 4127486973) on PR #1182; new candidate head pending freeze
 jira: pending (no mapped Story resolved in this worker session)
