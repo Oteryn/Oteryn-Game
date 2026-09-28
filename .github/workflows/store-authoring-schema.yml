@@ -1,0 +1,73 @@
+name: Store Authoring Schema
+
+on:
+  pull_request:
+    paths:
+      - tools/content-schema/store-authoring/**
+      - imports/crystalserver/bindings/items.json
+      - .github/workflows/store-authoring-schema.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  store-authoring:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/store-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt
+
+      - name: Regenerate the schema byte-identically
+        run: |
+          set -euo pipefail
+          python build_formal_schema.py
+          git diff --exit-code -- .
+
+      - name: Focused schema and validator checks
+        run: |
+          set -euo pipefail
+          python verify_formal_schema.py
+          git diff --exit-code -- .
+          python validate_store.py synthetic-valid-store-offer.json
+
+      - name: Converter fixture tests
+        run: python test_convert_store.py
+
+      - name: Ruff check and format
+        working-directory: .
+        run: |
+          set -euo pipefail
+          ruff check tools/content-schema/store-authoring
+          ruff format --check tools/content-schema/store-authoring
+
+      - name: Verify the checkout stayed clean
+        if: ${{ always() }}
+        working-directory: .
+        run: test -z "$(git status --short --untracked-files=all)"
+
+  # `store_census.py --check`/`--self-check` and `convert_store.py` itself need a pinned
+  # Canary/Crystal engine checkout that is not available to this repository's CI
+  # (no network fetch of third-party engine sources here); like the Item package's
+  # population census, they are run locally by whoever touches the converter/census
+  # and their results are the committed `samples/store-census-*.json` files.
