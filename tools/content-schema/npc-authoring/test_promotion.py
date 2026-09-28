@@ -549,6 +549,12 @@ class PromotionValidatorTests(unittest.TestCase):
         # Fandom and BR agree (D12) although Tibiopedia states another price: D12 decides
         offers, arbitration = self.price_builder(150, [150], [100])
         self.assertEqual((offers[0]['unit_price'], arbitration[0]['rule']), (150, 'WIKI_PRICE'))
+        # with the Tibiopedia facts, Fandom and BR agreeing under the registered name (the source uses an alias)
+        # is D12, so a majority never consists of Fandom and BR alone
+        offers, arbitration = self.price_builder(150, [150], [], source_name='old fishing rod')
+        self.assertEqual((offers[0]['unit_price'], arbitration), (150, [
+            {'fact': 'trade.3483.SellToPlayer', 'rule': 'WIKI_PRICE', 'chosen': 'wiki', 'item_name': 'fishing rod',
+             'price': 150}]))
         # an offer with a sub type is more than its registered Item; D13 never prices it
         offers, arbitration = self.price_builder(150, [], [150], sub_type=2)
         self.assertEqual((offers[0]['unit_price'], arbitration), (40, []))
@@ -572,6 +578,15 @@ class PromotionValidatorTests(unittest.TestCase):
                       ['fandom', 'wiki'], 'fandom'):
             self.assertTrue(any('are not 2-3 sorted wikis' in e
                                 for e in validate_promotion.errors(self.majority_report(150, wikis))), wikis)
+        # BR and Tibiopedia need no Fandom page; a majority Fandom is part of does
+        report = self.majority_report(150, ('br', 'tibiopedia'))
+        ahmet = find_candidate(report, 'Ahmet')
+        ahmet['wiki'], ahmet['arbitration'] = None, ahmet['arbitration'][-1:]  # only the row under test
+        self.assertEqual([e for e in validate_promotion.errors(report) if 'requires a wiki page' in e], [])
+        report = self.majority_report(150)
+        ahmet = find_candidate(report, 'Ahmet')
+        ahmet['wiki'], ahmet['arbitration'] = None, ahmet['arbitration'][-1:]
+        self.assertTrue(any("'WIKI_MAJORITY_PRICE' requires a wiki page" in e for e in validate_promotion.errors(report)))
         report = self.majority_report(150)
         del report['tibiopedia_facts_sha256']
         report['decisions'] = validate_promotion.DECISIONS + ['D12']

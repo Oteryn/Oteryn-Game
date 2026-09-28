@@ -42,8 +42,9 @@ Semantic rules:
   name of that offer's Item (committed `content/items/definitions`), a
   `trade.<item>.<direction>` fact and a non-null `wiki`; or rule 'WIKI_MAJORITY_PRICE' (D13), checked
   the same way, whose `wikis` are two or three distinct names from fandom/br/tibiopedia, sorted and
-  including tibiopedia (with `--tibiopedia-facts` as well, its price is the price those wikis state, and
-  every admitted offer two wikis price the same carries that price); or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
+  including tibiopedia, and a non-null `wiki` only when fandom is among them (with `--tibiopedia-facts` as
+  well, its price is the price those wikis state, and every admitted offer two wikis price the same carries
+  that price); or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
   `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
   GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
@@ -328,7 +329,8 @@ def candidate_errors(candidate, index):
                 elif any(offer.get('unit_price') != price for offer in named):
                     errs.append(f"{alabel}: offer unit_price {[o.get('unit_price') for o in named]!r} != "
                                 f"{rule} price {price!r}")
-            if candidate.get('wiki') is None:
+            # a Fandom page backs every WIKI_PRICE row and a majority Fandom is part of; BR and Tibiopedia alone need none
+            if candidate.get('wiki') is None and (rule == 'WIKI_PRICE' or 'fandom' in (wikis or [])):
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
         else:
             errs.append(f"{alabel}: rule {rule!r} not in "

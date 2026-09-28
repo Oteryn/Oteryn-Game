@@ -54,9 +54,10 @@ Merge rules:
   When D12 does not apply and two of the three wikis state the same price, that price replaces a differing
   source price; the row records `{"fact": "trade.<item>.<direction>", "rule": "WIKI_MAJORITY_PRICE",
   "chosen": "wiki", "item_name": <the offer's item name>, "price": <the price>, "wikis": <the agreeing
-  wikis, sorted, from fandom/br/tibiopedia>}`. The offer is looked up under its registered Item name, and an
-  offer with a count or sub type (a fluid, charges) is never changed by D13. The source price stays whenever no
-  two wikis agree;
+  wikis, sorted, from fandom/br/tibiopedia>}`. With the Tibiopedia facts, D12 and D13 look a plain offer up
+  under its registered Item name, so Fandom and BR agreeing is always D12 and a majority always includes
+  Tibiopedia; an offer with a count or sub type (a fluid, charges) keeps the D12 lookup and is never changed by
+  D13. The source price stays whenever no two wikis agree;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -376,12 +377,14 @@ class Builder:
                 continue
             # Canary `buy` is what the player pays the NPC; `sell` is what the NPC pays the player
             for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
-                wiki_price, rule, wikis = self.wiki_price(name, direction, offer['item_name'], wiki), 'WIKI_PRICE', None
-                item_name = offer['item_name']
-                if wiki_price is None and self.tibiopedia_trade and offer['count'] is None and offer['sub_type'] is None:
-                    # D13 names the offer by its registered Item, never the source's own item name; an offer with a
-                    # count or sub type (a fluid, charges) is more than its Item, so no wiki name settles it
-                    item_name = self.registry_names.get(item['key'])
+                # D13: with the Tibiopedia facts, a plain offer is looked up under its registered Item name, for D12
+                # and D13 alike, never under the source's own item name; an offer with a count or sub type (a fluid,
+                # charges) is more than its Item, so it keeps the D12 lookup and no majority settles it
+                plain = offer['count'] is None and offer['sub_type'] is None
+                item_name = (self.registry_names.get(item['key']) if self.tibiopedia_trade and plain
+                             else offer['item_name'])
+                wiki_price, rule, wikis = self.wiki_price(name, direction, item_name, wiki), 'WIKI_PRICE', None
+                if wiki_price is None and self.tibiopedia_trade and plain:
                     wiki_price, wikis = self.majority_price(name, direction, item_name, wiki)
                     rule = 'WIKI_MAJORITY_PRICE'
                 if price is not None and wiki_price is not None and wiki_price != price:
