@@ -38,7 +38,8 @@ Architecture and boundaries:
 | `samples/promotion-crystal-ff7ede5.json` | Committed candidate lowering packet for the pinned Crystal revision. |
 | `donor_census.py` | Censuses the ids a Crystal donor revision (an upstream checkout past the pinned `ff7ede5`) adds over the pinned engine: family-profile classification only, no Oteryn identity minted; since B1b/B2 each minted id's committed epoch-2 key is read (`registry_key`) so the wiki-evidence join applies, a held id keeps the provisional `donor:` key. Reuses `engine_items`'s classification helpers directly, in `convert_item`'s own priority order; never forks or modifies `engine_items.py`. See "Donor census" below. |
 | `test_donor_census.py` | No-network fixture tests for `donor_census.py`: `donor_key`'s provisional format, its classification priority order, and the donor/base id set-difference. Run with `python test_donor_census.py`. |
-| `samples/donor-census-crystal-summer-update-00ce02a5.json` | Committed census of the 412 ids the `summer-update` donor revision adds over pinned Crystal. |
+| `samples/donor-census-crystal-summer-update-00ce02a5.json` | The B1a census of the 412 ids the `summer-update` donor revision adds over pinned Crystal. Frozen: it is the B1b epoch-2 input, pinned by exact bytes in `cw2_b1_import.rs` and the binding generator, and is never regenerated. |
+| `samples/donor-census-crystal-summer-update-00ce02a5-keyed.json` | The live donor census (`donor_census.py` default output since B2): rows carry each id's committed key, and wiki evidence joins under it. |
 
 The profiles are guidance inside one schema. Missing a common capability produces a
 warning; optional capabilities preserve the wider census union without warning noise.

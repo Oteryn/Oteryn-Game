@@ -23,7 +23,7 @@ owned_paths:
   - tools/content-schema/item-authoring/test_donor_census.py
   - tools/content-schema/item-authoring/test_engine_items.py
   - tools/content-schema/item-authoring/README.md
-  - tools/content-schema/item-authoring/samples/donor-census-crystal-summer-update-00ce02a5.json
+  - tools/content-schema/item-authoring/samples/donor-census-crystal-summer-update-00ce02a5-keyed.json
   - tools/content-schema/item-authoring/samples/population-canary-47dfd51f.json
   - tools/content-census/item_wiki_family_capture.py
   - imports/tibiawiki/facts/items-family-fallback.json
@@ -69,6 +69,17 @@ direction is to announce and proceed.
 - **Canary sample.** `population-canary-47dfd51f.json` was regenerated. It was already stale on main since B1b gave 9
   of Canary's own ids a key. Its wiki count is unchanged.
 - **Formal doc §5l** records the status.
+
+## Repair
+
+On `7becbcf`/`60460dc` the Rust Linux lane failed: 6 `donor_identity_epoch_2_tests` returned
+`EvidenceMismatch("donor census bytes")`. B1b pins the B1a census file by exact bytes as its epoch-2 input
+(`cw2_b1_import.rs:2883`, and the binding generator as well).
+
+The fix restores that file byte-identically (sha256 `60808a67…`, 66,770 B). The live keyed census moves to
+`samples/donor-census-crystal-summer-update-00ce02a5-keyed.json`, which is `donor_census.py`'s new default output.
+
+Locally, `cargo test -p oteryn-game-server --lib` passes 785 tests, and the binding generator self-test passes.
 
 ## Architecture and source of truth
 

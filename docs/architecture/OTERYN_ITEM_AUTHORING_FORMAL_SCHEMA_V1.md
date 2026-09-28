@@ -941,6 +941,7 @@ in the committed Crystal bindings. It held 8 ids without a key: `PROBABLE_MATCH`
 
 B2 changes the donor census and the wiki capture:
 
+- **Frozen input, live census.** The B1a census file stays byte-identical, because B1b pins it by exact bytes as its epoch-2 input. `donor_census.py` now writes the live census to `samples/donor-census-crystal-summer-update-00ce02a5-keyed.json`.
 - **Keys in the donor census.** `donor_census.py` now reads each id's committed key (`registry_key`). Every row carries
   `key`: the epoch-2 key for a minted id, and the provisional `donor:` key for a held one. The wiki-evidence and owner
   table joins run under that key.
