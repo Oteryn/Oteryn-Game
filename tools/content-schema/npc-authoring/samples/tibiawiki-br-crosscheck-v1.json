@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "492a1e924fd08cb97b6962d68602f2bbbf84956cafa34a8526503ba532ba505d",
+  "facts_sha256": "d9533f4444c5b5c3074587ee99ec2d887a1a889014e5ae44561e66f6cdc9b2d6",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -1006,9 +1006,33 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 39572,
+    "revid": 354458,
+    "title": "Weakened Forest Fury"
+   },
+   "dialogue": {
+    "br_lines": 22,
+    "matched": 5,
+    "near": 0,
+    "texts": 6
+   },
+   "match": "POSITION_ALIAS",
    "name": "A Weakened Forest Fury",
-   "npc": "oteryn:npc.a_weakened_forest_fury"
+   "npc": "oteryn:npc.a_weakened_forest_fury",
+   "position": {
+    "br": [
+     32613,
+     32270,
+     7
+    ],
+    "ours": [
+     32614,
+     32266,
+     7
+    ],
+    "status": "CLOSE"
+   }
   },
   {
    "br": {
@@ -2563,7 +2587,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -2922,9 +2946,27 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 12244,
+    "revid": 420238,
+    "title": "Awareness of the Emperor"
+   },
+   "match": "POSITION_ALIAS",
    "name": "Awarness Of The Emperor",
-   "npc": "oteryn:npc.awarness_of_the_emperor"
+   "npc": "oteryn:npc.awarness_of_the_emperor",
+   "position": {
+    "br": [
+     33063,
+     31153,
+     15
+    ],
+    "ours": [
+     33062,
+     31153,
+     15
+    ],
+    "status": "NEAR"
+   }
   },
   {
    "br": {
@@ -3804,14 +3846,46 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 59873,
+    "revid": 420139,
+    "title": "A Bloodshade"
+   },
+   "match": "POSITION_ALIAS",
    "name": "Bloodshade Rotten",
-   "npc": "oteryn:npc.bloodshade_rotten"
+   "npc": "oteryn:npc.bloodshade_rotten",
+   "position": {
+    "br": [
+     34070,
+     31977,
+     14
+    ],
+    "ours": [
+     34069,
+     31982,
+     14
+    ],
+    "status": "CLOSE"
+   }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 59873,
+    "revid": 420139,
+    "title": "A Bloodshade"
+   },
+   "dialogue": {
+    "br_lines": 44,
+    "matched": 1,
+    "near": 0,
+    "texts": 3
+   },
+   "match": "POSITION_ALIAS",
    "name": "Bloodshade Sacrifice",
-   "npc": "oteryn:npc.bloodshade_sacrifice"
+   "npc": "oteryn:npc.bloodshade_sacrifice",
+   "position": {
+    "status": "MATCH"
+   }
   },
   {
    "br": {
@@ -4013,7 +4087,7 @@
    "trade": {
     "matched": 11,
     "only_br": [
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:treasure chest (ornamented)",
      "SellToPlayer:venorean cabinet",
      "SellToPlayer:venorean drawer",
@@ -5108,7 +5182,7 @@
    },
    "dialogue": {
     "br_lines": 4,
-    "matched": 3,
+    "matched": 5,
     "near": 0,
     "texts": 9
    },
@@ -6211,7 +6285,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -7503,7 +7577,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -8061,7 +8135,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -8302,7 +8376,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
      "SellToPlayer:large used amphora kit",
@@ -9194,9 +9268,23 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 49229,
+    "revid": 385224,
+    "title": "Evrard The Miller"
+   },
+   "dialogue": {
+    "br_lines": 21,
+    "matched": 1,
+    "near": 0,
+    "texts": 1
+   },
+   "match": "POSITION_ALIAS",
    "name": "Evrard",
-   "npc": "oteryn:npc.evrard"
+   "npc": "oteryn:npc.evrard",
+   "position": {
+    "status": "MATCH"
+   }
   },
   {
    "br": {
@@ -9483,7 +9571,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -9571,7 +9659,7 @@
    "trade": {
     "matched": 45,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -10052,7 +10140,7 @@
    "trade": {
     "matched": 37,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -10073,7 +10161,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -10410,7 +10498,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -11037,7 +11125,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -12522,7 +12610,7 @@
      "SellToPlayer:blue bed",
      "SellToPlayer:candle",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:coal basin",
      "SellToPlayer:cot",
      "SellToPlayer:globe",
@@ -13066,9 +13154,17 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 58215,
+    "revid": 378945,
+    "title": "Hawkhurst"
+   },
+   "match": "POSITION_ALIAS",
    "name": "Hawkhurst Ingol",
-   "npc": "oteryn:npc.hawkhurst_ingol"
+   "npc": "oteryn:npc.hawkhurst_ingol",
+   "position": {
+    "status": "MATCH"
+   }
   },
   {
    "br": {
@@ -13316,7 +13412,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -13697,7 +13793,7 @@
      "SellToPlayer:blue pillow",
      "SellToPlayer:blue tapestry",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:coal basin",
      "SellToPlayer:green bed",
      "SellToPlayer:green cushioned chair",
@@ -14197,7 +14293,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -14551,7 +14647,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -18655,7 +18751,7 @@
    "trade": {
     "matched": 63,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -18797,7 +18893,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -19318,7 +19414,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -20444,7 +20540,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -21327,7 +21423,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -21358,7 +21454,7 @@
    "trade": {
     "matched": 50,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -23718,7 +23814,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -23935,7 +24031,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -24927,7 +25023,7 @@
    "trade": {
     "matched": 60,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -25716,7 +25812,7 @@
      "SellToPlayer:brown book",
      "SellToPlayer:grey small book",
      "SellToPlayer:parchment",
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "BuyFromPlayer:blue book",
      "BuyFromPlayer:gemmed book",
      "BuyFromPlayer:green book",
@@ -26104,9 +26200,33 @@
    }
   },
   {
-   "br": null,
+   "br": {
+    "pageid": 59871,
+    "revid": 401908,
+    "title": "Tonar"
+   },
+   "dialogue": {
+    "br_lines": 15,
+    "matched": 0,
+    "near": 0,
+    "texts": 3
+   },
+   "match": "POSITION_ALIAS",
    "name": "Tonar Oskayaat",
-   "npc": "oteryn:npc.tonar_oskayaat"
+   "npc": "oteryn:npc.tonar_oskayaat",
+   "position": {
+    "br": [
+     33068,
+     32918,
+     7
+    ],
+    "ours": [
+     33068,
+     32917,
+     7
+    ],
+    "status": "NEAR"
+   }
   },
   {
    "br": {
@@ -26198,7 +26318,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -26530,7 +26650,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -27136,7 +27256,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -28184,7 +28304,7 @@
    "trade": {
     "matched": 49,
     "only_br": [
-     "SellToPlayer:spellbook",
+     "SellToPlayer:spellbook of the novice",
      "SellToPlayer:the chiller",
      "SellToPlayer:the scorcher"
     ],
@@ -28563,7 +28683,7 @@
     "only_br": [
      "SellToPlayer:blue bed",
      "SellToPlayer:canopy bed",
-     "SellToPlayer:chest",
+     "SellToPlayer:chest of drawers",
      "SellToPlayer:globe",
      "SellToPlayer:green bed",
      "SellToPlayer:knight statue",
@@ -29206,18 +29326,19 @@
  ],
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
-  "dialogue:br_only": 174,
-  "dialogue:checked": 360,
-  "dialogue:matched": 2685,
+  "dialogue:br_only": 176,
+  "dialogue:checked": 364,
+  "dialogue:matched": 2694,
   "dialogue:near": 329,
-  "dialogue:no_text_matched": 68,
-  "dialogue:texts": 5404,
-  "no_br_page": 21,
+  "dialogue:no_text_matched": 69,
+  "dialogue:texts": 5417,
+  "matched_by_position_alias": 7,
+  "no_br_page": 14,
   "npcs": 1093,
-  "position:CLOSE": 96,
-  "position:MATCH": 226,
+  "position:CLOSE": 98,
+  "position:MATCH": 229,
   "position:MISMATCH": 43,
-  "position:NEAR": 678,
+  "position:NEAR": 680,
   "position:NO_BR_POSITION": 1,
   "position:NO_PLACEMENT": 2,
   "position:OTHER_FLOOR": 26,

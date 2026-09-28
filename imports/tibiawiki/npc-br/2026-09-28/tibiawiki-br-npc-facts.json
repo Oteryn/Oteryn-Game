@@ -9106,7 +9106,7 @@
    "implemented": "8.5",
    "name": "Amarie",
    "npc_lines": [
-    "Amarie: Please leave me alone... I have to study.",
+    "Please leave me alone... I have to study.",
     "I really have to study, I’m sorry. Please leave me alone with my books.",
     "Oh, those coarse barbarians!",
     "I’m a scholar. I believe that the ultimate aim in life is the pursuit of perfect knowledge through study.",
@@ -10795,7 +10795,7 @@
    "name": "Oswald",
    "npc_lines": [
     "Oh, hello Jogador. What is it?",
-    "Oswald: You know a rumour? TELL ME! TELL ME! TELL ME!",
+    "You know a rumour? TELL ME! TELL ME! TELL ME!",
     "She's a little witch, trust me. She used to be the girlfriend of this evil Partos some time ago.",
     "Oh, hello Jogador. What is it?",
     "I think the gods are too busy to care about us mortals, hmm... that makes me feel godlike, too.",
@@ -17133,7 +17133,7 @@
    "implemented": "7.1",
    "name": "Wyda",
    "npc_lines": [
-    "Wyda: What? Talking to me, Jogador?",
+    "What? Talking to me, Jogador?",
     "What? A mundane talking to me? Amusing.",
     "Good day, Jogador.",
     "I am a witch. Didn't you notice?",
@@ -43727,7 +43727,7 @@
     "Your current drome level is nível.",
     "It's quite easy. I give you arena badges for each arena battle you completed in the past. Surviving 10 waves against monsters in the arena granted you a fixed amount of badges depending on the difficulty level. ...",
     "You can keep the arena badges or exchange them for each kind of health, mana and spirit potions. I'll charge 1 arena badge for the amount of 100 mana or health potions. ...",
-    "Emilio: 100 strong potions of either mana or health will be charged with 2, 100 great health potions with 4 and 100 great mana potions with 3, 100 ultimate potions of either type with 7 and 100 supreme potions with 10 arena badges. ....",
+    "100 strong potions of either mana or health will be charged with 2, 100 great health potions with 4 and 100 great mana potions with 3, 100 ultimate potions of either type with 7 and 100 supreme potions with 10 arena badges. ....",
     "You can also select 100 great spirit potions for 4 and 100 ultimate spirit potions for 8 arena badges. ...",
     "Would you like to exchange for health, mana or spirit potions now?",
     "There were 5 difficulty levels when fighting against waves of monsters in the old arena. Each difficulty level granted you a certain amount of arena badges. ...",
@@ -54334,7 +54334,7 @@
     "Yet this tinkering had unforeseen effects.",
     "In ancient times, before the dawn of humanity, many races waged a war in the name of the so called gods of good. At this place was the last stand of one of those ancient races. ...",
     "The dead demon ancestors, bereft of their magic created a disharmony in their undecaying dead bodies and they have risen to a strange form of unlife.",
-    "Lai: They are filled with a hunger that drives them, a hunger that can't be satiated, a hunger that turns them into mindless tools of destruction, controlled only by their eternal hunger.",
+    "They are filled with a hunger that drives them, a hunger that can't be satiated, a hunger that turns them into mindless tools of destruction, controlled only by their eternal hunger.",
     "They hunger for something they lost. There is a great disharmony in their essence.",
     "<sighs> There are things and concepts, I am not allowed to talk about. Those are topics for another day and another place.",
     "They were the ancestors of the 'modern' demons. Corrupt creatures through and through, driven by blasphemic magic energy fused into their twisted forms.",
@@ -56197,7 +56197,7 @@
    "npc_lines": [
     "My name is Captain Indigo from the Royal Tibia Line.",
     "If you want I can sail you to Thais. It is our capital and the oldest city in Tibia.",
-    "Captain Indigo: I'm the captain of this ship.",
+    "I'm the captain of this ship.",
     "The Royal Tibia Line connects all seaside towns of Tibia."
    ],
    "pageid": 66774,

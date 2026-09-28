@@ -63,11 +63,11 @@ forbids bulk-copying TibiaWiki prose).
 
 | Check | Result |
 | --- | --- |
-| BR page found | 1,072 of 1,093 admitted NPCs |
+| BR page found | 1,079 of 1,093 admitted NPCs (7 through a position-corroborated alias) |
 | Removed on BR (13.12) | 5 |
-| Positions | 226 same tile, 678 within 3 tiles, 96 within 10, 26 on another floor, 43 far |
+| Positions | 229 same tile, 680 within 3 tiles, 98 within 10, 26 on another floor, 43 far |
 | Trade | 93 agree, 204 differ (28 explicit price differences, 50 offers without a comparable item name), 64 with BR offers but none admitted |
-| Dialogue | 360 NPCs checked: of 5,404 texts, 2,685 match a transcript line exactly and 329 nearly; 68 NPCs match none |
+| Dialogue | 364 NPCs checked: of 5,417 texts, 2,694 match a transcript line exactly and 329 nearly; 69 NPCs match none |
 
 #1103 committed the raw capture itself before a review finding about this could be applied. This task
 removes it from the tree (it remains in the history of `d17a3826`) and archives the #1103 task record.

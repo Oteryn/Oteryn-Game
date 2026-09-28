@@ -6,14 +6,17 @@ changed, admitted or held by this report.
 Per admitted NPC (the NPC declarations of the pinned admission evidence), matched to a BR page by name
 (case-insensitive page title, then the infobox `name`; a name variant such as `Name (1)`, `Name (Day)` or
 `Name Init` falls back to its base name's page, and a plain name also matches a BR page whose title or
-name carries a qualifier, such as `Name (NPC)`, when exactly one does):
+name carries a qualifier, such as `Name (NPC)`, when exactly one does). A name that still has no page
+matches an alias only when exactly one BR page is both a close name (an article dropped, at most
+ALIAS_EDITS character edits, or one name a whole-word prefix of the other) and placed within CLOSE_TILES
+of an admitted placement on the same floor; the row then records `match: POSITION_ALIAS`:
 - removed: the BR infobox `removed` version, when BR says the NPC left the game;
 - position: the nearest admitted placement to any BR map position. MATCH is the same tile, NEAR the
   same floor within NEAR_TILES tiles, CLOSE the same floor within CLOSE_TILES, OTHER_FLOOR within
   CLOSE_TILES on another floor, otherwise MISMATCH (BR map markers are approximate);
 - trade: admitted offers against the BR sell/buy lists by item name (a BR name with a parenthesised
-  qualifier also matches the plain name, and a filled container such as `vial of blood` matches the
-  container), with the explicit BR price when BR gives one (BR omits the
+  qualifier also matches the plain name, and a filled fluid container such as `vial of blood` matches
+  the container), with the explicit BR price when BR gives one (BR omits the
   price when it is the item's usual price). BR_ONLY is an NPC whose BR trade list has no admitted
   offers at all;
 - dialogue: how many admitted Dialogue texts appear, as a full line, among the lines the NPC speaks in
@@ -46,6 +49,9 @@ NEAR_RATIO = 0.9
 VARIANT = re.compile(r'^(.*?)(?: \([^()]*\)| Init| Vampires Lair| Back)$')
 QUALIFIER = re.compile(r'^(.*?) \([^()]*\)$')
 CONTAINER = re.compile(r'^(.*?) of .+$')  # `vial of blood`: the admitted offer is the container, its fluid a sub type
+FLUID_CONTAINERS = {'vial', 'mug', 'cup', 'bottle', 'flask', 'green flask', 'rum flask', 'bucket', 'jug', 'bowl',
+                    'waterskin', 'amphora', 'large amphora', 'pitcher', 'goblet', 'elven vase'}
+ALIAS_EDITS = 2  # at most this many single-character edits between an unmatched name and a BR name
 
 
 def normalize(text):
@@ -64,6 +70,37 @@ def br_index(facts):
     pages = {page['pageid']: page for page in facts['pages']}
     by_base = {key: pages[next(iter(ids))] for key, ids in by_base.items() if len(ids) == 1}
     return by_title, by_name, by_base
+
+
+def edit_distance(a, b):
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        current = [i]
+        for j, cb in enumerate(b, 1):
+            current.append(min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (ca != cb)))
+        previous = current
+    return previous[-1]
+
+
+def close_names(a, b):
+    a, b = (re.sub(r'^(?:a|an|the) ', '', x) for x in (a, b))
+    if a == b or a.startswith(b + ' ') or b.startswith(a + ' '):
+        return True
+    return min(len(a), len(b)) >= 8 and edit_distance(a, b) <= ALIAS_EDITS
+
+
+def alias_page(name, placements, facts):
+    key = normalize(name)
+    matches = []
+    for page in facts['pages']:
+        if not any(close_names(key, normalize(label)) for label in {page['title'], page['name']}):
+            continue
+        near = any(placement['position']['z'] == z
+                   and max(abs(placement['position']['x'] - x), abs(placement['position']['y'] - y)) <= CLOSE_TILES
+                   for placement in placements for x, y, z in page['positions'])
+        if near:
+            matches.append(page)
+    return matches[0] if len(matches) == 1 else None
 
 
 def find_page(name, index):
@@ -167,7 +204,8 @@ def check_trade(offers, trades, names):
         for name, price in trades[direction].items():
             for form in (QUALIFIER, CONTAINER):
                 base = form.match(name)
-                if name not in mine and base and base.group(1) in mine:
+                if (name not in mine and base and base.group(1) in mine
+                        and (form is QUALIFIER or base.group(1) in FLUID_CONTAINERS)):
                     name = base.group(1)
             theirs.setdefault(name, []).append(price)
         for name in sorted(set(mine) | set(theirs)):
@@ -206,6 +244,11 @@ def crosscheck(facts, candidates, dialogues, admission, names):
             continue
         page = find_page(name, index)
         row = {'npc': key, 'name': name}
+        if page is None:
+            page = alias_page(name, candidate['placements'], facts)
+            if page is not None:
+                row['match'] = 'POSITION_ALIAS'
+                totals['matched_by_position_alias'] += 1
         if page is None:
             row['br'] = None
             totals['no_br_page'] += 1

@@ -232,6 +232,10 @@ def page_facts(page):
             match = SPEAKER.match(segment)
             if match:
                 speaker, text = fold(match.group(1)), match.group(2).strip()
+                repeated = SPEAKER.match(text)
+                while repeated and fold(repeated.group(1)) == speaker:  # `Name: Name: text` repeats the label
+                    text = repeated.group(2).strip()
+                    repeated = SPEAKER.match(text)
                 if speaker in speakers and text:
                     lines.append(text)
             elif segment and speaker in speakers and lines:
@@ -296,7 +300,7 @@ def cmd_self_test(_args):
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
             "[[Goldro]]: Link form.</br>\nGoldro: Plain form.</br>\n''Goldro:'' Italic form.</br>\n"
             "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
-            "Goldro: Bye.</spoiler></p></noinclude>}}")
+            "'''Goldro:''' Goldro: Repeated label.\nGoldro: Bye.</spoiler></p></noinclude>}}")
     facts = page_facts({**page_record({'pageid': 7, 'title': 'Goldro', 'revisions': [
         {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
     assert facts['positions'] == [(34055, 32503, 7)], facts
@@ -304,7 +308,7 @@ def cmd_self_test(_args):
         'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000, 'Vial of Blood': None, 'Mug of Beer': 3}}, facts
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.', 'One.', 'Two. still two.',
-                                  'Bye.'], facts
+                                  'Repeated label.', 'Bye.'], facts
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
         {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "'''Lee'Delle:''' Welcome."}}}]}), 'role': 'npc'})
     assert apostrophe['npc_lines'] == ['Welcome.'], apostrophe
