@@ -83,9 +83,11 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
   `TransitionBinding` (~1334-1342) — no `revert_after_ms`, no attribute payload.
   `tools/content-schema/encounter-authoring/validate_encounter.py` (~188-201) + README ("the server
   does not read these files") — only boundary seeing the full action, offline, not wired.
-- Round 18: `encounter-authoring/samples/*/encounter.json` exhaustive check — Depth trio (lines
-  65-68/75-78/75-78) carry `destination`+`revert_destination`, as does every `transform`; only
-  `create` actions (`mazzinor`/`gaz_haragoth`/`cult_soul_remains`) omit both, but carry `interaction`.
+- Rounds 18/19: `encounter-authoring/samples/*/encounter.json` exhaustive check — Depth trio (lines
+  65-68/75-78/75-78) carry `destination`+`revert_destination`, as does every `transform`; the only
+  `create` actions without them (`mazzinor`/`gaz_haragoth`/`cult_soul_remains`) carry `interaction`,
+  now classified non-state (encounter-format doc line 144) — no authored sample admits
+  `revert_after_ms` today.
 - PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c.
 
 ## High-risk authority/recovery qualification
@@ -118,33 +120,35 @@ reason: >
 
 ## Implementation / findings
 
-Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-6: numbering; `Deadline`
+Initial delta: added §7; recorded CW3's 1a/1b/1c delta and C3. Rounds 1-16: numbering; `Deadline`
 option; FND-03 §10 timer; capacity atomicity; equal-deadline tie-break; one clock/scope; exactly one
-bound inverse; pre-`prepare` discard. Round 7: never re-arms. Round 8: origin test. Round 9: exact
-target identity. Round 10: fixed stale summary. Round 11: derived `InteractionChildOccurrenceRef`.
-Round 12: no-op, nothing retained. Round 13: superseded (violated GAME-INTERACTION-01 §7); outcome
-retained. Round 14: superseded — two P1 seam bugs; one lifecycle record, `PENDING|IN_FLIGHT|
-TERMINAL`. Round 15: convergence — exhaustive `TERMINAL` mapping; removed two unproven "never..."
-claims, added "Open decisions." Round 16: a `map_item` transform can change a teleporter
-`destination`, unrestorable by state+collision only; scoped `revert_after_ms`, said `bind` rejects
-an attribute-changing transition.
+bound inverse; pre-`prepare` discard; never re-arms; origin test; exact target identity; fixed stale
+summary; derived `InteractionChildOccurrenceRef`; no-op/nothing retained (12); superseded — violated
+GAME-INTERACTION-01 §7, outcome retained (13); superseded — two P1 seam bugs, one lifecycle record
+`PENDING|IN_FLIGHT|TERMINAL` (14); convergence — exhaustive `TERMINAL` mapping, removed unproven
+"never..." claims, added "Open decisions" (15); scoped `revert_after_ms` to state+collision only,
+wrongly said `bind` rejects an attribute-changing transition (16).
 
-Round 17 (`a1cad472`): round 16's "`bind` rejects it" was wrong — `TransitionBinding` (7 fields, no
-attribute payload) never sees `destination`. Moved rejection to authoring/lowering, naming
-`validate_encounter.py`'s `map_item` block as host (offline tooling, not wired — an obligation, not
-already enforced). Fixed a stale §5 "no receipt store" summary.
+Round 17 (`a1cad472`): fixed round 16 — `TransitionBinding` (7 fields, no attribute payload) never
+sees `destination`. Moved rejection to authoring/lowering (`validate_encounter.py`'s `map_item`
+block, offline, not wired — an obligation). Fixed a stale §5 "no receipt store" summary.
 
-Round 18 (Codex 4120357243, head `95f7db70`, owner's stop rule applies): every prior round called
-`DepthWarzoneBossDeath` "state-only" from its narrative encounter-format line — wrong: all three
-generated Depth encounters (`the_duke_of_the_depths`/`the_baron_from_below`/`the_count_of_the_core`,
-verified lines 65-68/75-78/75-78) carry `destination`+`revert_destination`, rejected at
-authoring/lowering like `the_lord_of_the_lice`. Checked the whole sample corpus: no authored
-`transform` omits `destination`/`revert_destination`; the only creates without it
-(`mazzinor`/`gaz_haragoth`/`cult_soul_remains`) carry `interaction` instead, not claimed state-only.
-No authored sample is a proven state-only fixture. Fixed every `DepthWarzoneBossDeath`/Depth-encounter
-state-only claim; replaced the encounter-origin test obligation's fixture with a clearly-labeled
-synthetic transform; stated no authored encounter exercises a state-only revert today. Merged
-`origin/main` (`8d320703`, unrelated); confirmed no cited file drifted since round 17's head.
+Round 18 (Codex 4120357243, head `95f7db70`): `DepthWarzoneBossDeath` wrongly called state-only —
+all three Depth encounters carry `destination`+`revert_destination` (lines 65-68/75-78/75-78); whole
+sample corpus checked: only `mazzinor`/`gaz_haragoth`/`cult_soul_remains` creates omit both but carry
+`interaction`. Fixed every state-only claim; replaced test-obligation fixture with labeled synthetic
+transform. Merged `origin/main` (`8d320703`, unrelated); no cited file drifted.
+
+Round 19 (Codex 4120487852/4120487841/4120487862, head `4e450a08`): **P1** — classified `interaction`
+a non-state attribute (encounter-format line 144: content-domain binding, not state), the same class
+as `destination`/`revert_destination`; consequence: no currently authored `map_item` action is
+admissible for `revert_after_ms` at all (Depth trio + `mazzinor`/`gaz_haragoth`/`cult_soul_remains`);
+synthetic fixture remains the only runnable case. Added an interaction-bearing-create-rejected test
+obligation. **P2s (Open decisions only, no redesign):** item 4 — removed the claim that
+`revert_after_ms` lives on `TransitionBinding` (home is the owning lane's choice, plausibly the
+lowered operation occurrence). Item 5 — qualified compaction/tombstone text: a tombstone still costs
+one entry per occurrence; a bounded duplicate-delivery horizon is needed before compaction reclaims
+capacity.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -154,13 +158,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-18; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-19; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 18; unchanged)
+  validation passed (23 files, 47 workflows)." (round 19; unchanged)
 
 ### E2E
 
@@ -204,13 +208,11 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 18 (Codex 4120357243 on frozen head 95f7db70, owner's stop rule applies):
-  every prior round called DepthWarzoneBossDeath "state-only" -- wrong. All three generated Depth
-  encounters carry destination+revert_destination, verified directly, rejected at authoring/lowering
-  like the_lord_of_the_lice. Checked whole sample corpus: no authored transform omits destination;
-  the only revert_after_ms creates without it carry interaction instead, not claimed state-only. No
-  authored sample is a proven state-only fixture. Fixed every state-only claim; replaced the
-  encounter-origin test obligation's fixture with a labeled synthetic transform. Validators pass.
+  PR #1045 pre-freeze round 19 (Codex 4120487852/4120487841/4120487862 on frozen head 4e450a08):
+  P1 -- classified interaction a non-state attribute, same class as destination/revert_destination;
+  no authored map_item action is admissible for revert_after_ms today; added a test obligation.
+  P2s (no redesign): Open decision 4 (TransitionBinding is not the confirmed home) and Open
+  decision 5 (tombstone compaction needs a bounded duplicate-delivery horizon too). Validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null

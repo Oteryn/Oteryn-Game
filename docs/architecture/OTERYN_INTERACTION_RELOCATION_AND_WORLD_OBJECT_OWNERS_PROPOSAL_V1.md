@@ -454,6 +454,25 @@ section called `DepthWarzoneBossDeath` or a Depth encounter state-only; replaced
 obligation's fixture with a clearly-labeled synthetic transform, and stated plainly that no authored
 encounter currently exercises a state-only timed revert.
 
+Round 19 correction (owner-authorized, under the owner's stop rule — fix the one P1, record the P2s
+as open decisions, no new design; Codex findings 4120487852/4120487841/4120487862 on frozen head
+`4e450a08`): (1) P1 — round 18 left `mazzinor`/`gaz_haragoth`/`cult_soul_remains`'s `interaction`
+binding undecided as disqualifying or not. Fixed: `interaction` is classified a non-state attribute,
+the same as `destination`/`revert_destination` (evidence below — it is a binding to
+interaction-domain content, not something the state-key-plus-collision model can apply or revert).
+Consequence stated plainly: with this rule, no currently authored encounter `map_item` action is
+admissible for `revert_after_ms` at all — every `transform` carries `destination`/
+`revert_destination`, every `create` that lacks those carries `interaction`. Timed revert for
+authored content awaits "Open decisions" item 3 (now naming `interaction` too); the synthetic fixture
+is the only runnable case until then. Added a test obligation for interaction-bearing timed creates.
+(2) P2 (Codex 4120487841): "Exact delta" claimed `revert_after_ms` as a field on `TransitionBinding`;
+corrected — different invocations of the same bound transition can carry different or no duration, so
+a single shared field cannot be the whole answer. Added as open decision 4, without redesigning where
+the duration actually lives. (3) P2 (Codex 4120487862): a compact tombstone still consumes one entry
+per occurrence, so compaction alone does not reclaim capacity without a bounded duplicate-delivery
+horizon too. Added as open decision 5 and qualified open decision 1's compaction text and the
+"no re-execution after compaction" test obligation accordingly.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -671,10 +690,16 @@ today.
   `revert_destination` — no exception found. The only `revert_after_ms`-carrying actions that omit
   both are `create` actions — `mazzinor/encounter.json` lines 47-56, `gaz_haragoth/encounter.json`
   lines 123-132, `cult_soul_remains/encounter.json` lines 53-62 and 70-79 — each of which carries an
-  `interaction` binding instead; this document does not decide here whether `interaction` is also a
-  disqualifying non-state attribute, so none of these is claimed as a proven state-only fixture
-  either. No authored sample under `encounter-authoring/samples/**` is a proven state-only
-  `revert_after_ms` usage.
+  `interaction` binding instead (Round 19: also disqualifying, evidence and rule below). No authored
+  sample under `encounter-authoring/samples/**` is a proven state-only `revert_after_ms` usage.
+- PROVEN, round 19 (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144, evidence above): `map_item`'s
+  own field list names `interaction` as "the key of interaction-domain content that defines what the
+  item does when used or stepped on" — a binding to interaction-domain content, not a value
+  `LocalObjectStateDefinition`'s `key`/`collision` pair or `PreparedMutation::Publish`'s
+  `next_state`/`next_revision`/`next_blocking` (evidence above) can apply or revert; nothing in the
+  runtime model represents "which interaction this state is bound to" as part of the state itself.
+  `interaction` is therefore classified a non-state attribute, exactly like `destination`/
+  `revert_destination`.
 
 ### Options (minimum real set)
 
@@ -796,8 +821,9 @@ today.
    model, not open design questions. `NO` for the driver's exact wake
    mechanism, whether `ScopeRuntimeFence` is
    promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
-   lifecycle-record storage representation, the exact field/encoding of `revert_after_ms` on
-   `TransitionBinding` or its content source, and the concrete timer-capacity/due-batch numeric
+   lifecycle-record storage representation, where `revert_after_ms` and inverse-selection metadata
+   are actually carried (Round 19, "Open decisions" below — not necessarily `TransitionBinding`),
+   and the concrete timer-capacity/due-batch numeric
    bounds (FND-03 §14.1: "Concrete numeric limits gate implementation, not this architecture
    decision" — they belong in `RESOURCE_LIMITS_REGISTRY.json`). Those belong to the owning lane's
    implementation.
@@ -816,11 +842,12 @@ today.
    which §4 already excludes).
 5. **What is deliberately not decided?** The exact wake mechanism inside the scope's step driver, the
    exact way `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` is made scope-wide, the exact storage
-   representation of the lifecycle-record store, the exact field/encoding of `revert_after_ms` on
-   `TransitionBinding` or its content-authoring source, the concrete timer-capacity and per-cycle
-   due-batch numeric bounds in `RESOURCE_LIMITS_REGISTRY.json`, and — see "Open decisions for the
-   owning lane" (Round 15, "Exact delta" below) — the `TERMINAL`-record retention window/count and
-   eviction/compaction policy, and whether the `PENDING`→`IN_FLIGHT`→`TERMINAL` transition is one
+   representation of the lifecycle-record store, the concrete timer-capacity and per-cycle due-batch
+   numeric bounds in `RESOURCE_LIMITS_REGISTRY.json`, and — see "Open decisions for the owning lane"
+   (Round 15/19, "Exact delta" below) — the `TERMINAL`-record retention window/count and
+   eviction/compaction policy, where `revert_after_ms`/inverse-selection metadata are actually
+   carried (Round 19 — not `TransitionBinding` alone), and whether the `PENDING`→`IN_FLIGHT`→
+   `TERMINAL` transition is one
    atomic owner-turn step or needs explicit reconciliation for an interrupted `IN_FLIGHT` record. Those
    belong to the owning lane's implementation, not this architecture delta.
 
@@ -874,9 +901,13 @@ policy must satisfy. Nothing the firing path consumes is missing from this list 
 something outside it plus the scope's own live state (its clock, its ordinal issuer, and — as one
 thing, not two — its lifecycle-record store).
 
-- Add `revert_after_ms` as an optional field on the authored transition (`TransitionBinding` or its
-  content-authoring source, evidence above), and validate it fail-closed inside `bind`
-  (`apps/game-server/src/world_runtime.rs` ~590-750): for every bound transition that carries
+- Provide `revert_after_ms` as authored metadata reaching `bind` for the transitions that use it —
+  its exact home (a `TransitionBinding` field, or metadata carried by the lowered operation
+  occurrence that invokes the transition) is an open decision, not this one (Round 19, "Open
+  decisions" below: different invocations of the same bound transition can carry different or no
+  `revert_after_ms`, so a single shared field on `TransitionBinding` cannot be the whole answer).
+  Whichever home is chosen, validate it fail-closed inside `bind`
+  (`apps/game-server/src/world_runtime.rs` ~590-750): for every transition invoked with
   `revert_after_ms`, find every OTHER bound transition for the same `definition` whose
   `source_state` equals this one's `target_state`, whose `target_state` equals this one's
   `source_state`, AND whose `normalized_intent_family` is this one's matching inverse family —
@@ -903,8 +934,17 @@ thing, not two — its lifecycle-record store).
   itself is not a state-only example, Round 18 below). The rejection therefore belongs to the
   boundary that *does* see the authored
   action: an authored `map_item` action carrying `revert_after_ms` together with `destination`,
-  `revert_destination`, or any other non-state attribute is rejected fail-closed, with a named error,
-  at authoring/lowering — it must never reach `bind` at all as a revert-bearing operation. Concretely
+  `revert_destination`, `interaction` (Round 19 — classified a non-state attribute, evidence above:
+  a binding to interaction-domain content, not something `LocalObjectStateDefinition`/
+  `PreparedMutation` can apply or revert), or any other non-state attribute is rejected fail-closed,
+  with a named error, at authoring/lowering — it must never reach `bind` at all as a revert-bearing
+  operation. Consequence, stated plainly (Round 19): under this rule, no currently authored encounter
+  `map_item` action is admissible for `revert_after_ms` — every `transform` carries `destination`/
+  `revert_destination` (the Depth trio and `the_lord_of_the_lice`, evidence above) and every `create`
+  that lacks those carries `interaction` (`mazzinor`/`gaz_haragoth`/`cult_soul_remains`, evidence
+  above). Timed revert for authored content becomes available only once "Open decisions" item 3
+  (attribute-bearing object state, now explicitly including interaction bindings) is resolved; the
+  synthetic fixture in the test obligations below is the only runnable case until then. Concretely
   (evidence above): `tools/content-schema/encounter-authoring/validate_encounter.py`'s existing
   `map_item` validation (~188-201) already reads every authored field on the action, including
   `destination`/`revert_destination`/`revert_after_ms` together, and already enforces one related
@@ -1041,7 +1081,7 @@ thing, not two — its lifecycle-record store).
   and stops; do not retry it on a later wake (decided below, not left open) — a later duplicate
   presentation is answered by step 2 of the presentation order above, never a fresh occupancy check.
 
-### Open decisions for the owning lane (Rounds 15/16)
+### Open decisions for the owning lane (Rounds 15/16/19)
 
 These are genuinely open — this document deliberately does not resolve them, per PLAYABLE_FIRST and
 this section's own `CANDIDATE` status. The owning lane resolves them alongside the exact delta above,
@@ -1054,9 +1094,12 @@ not this architecture decision.
    time-window, a compact tombstone keyed by identity → outcome code once a record ages out of full
    detail, or something else — it MUST preserve GAME-INTERACTION-01 §7's "loss of a retained result
    payload MUST NOT re-enable execution": no policy may let a duplicate presentation fall through to
-   the `PENDING` fences or `prepare` once its identity has ever reached `TERMINAL`. Decide this
-   together with the matching `RESOURCE_LIMITS_REGISTRY.json` bound (FND-03 §14.1) — the same registry
-   entry as the lifecycle-record creation capacity above, or a related one, is the owning lane's call.
+   the `PENDING` fences or `prepare` once its identity has ever reached `TERMINAL`. Compaction to a
+   tombstone by itself does not reclaim capacity (Round 19, item 5 below): a tombstone still consumes
+   one entry per occurrence, so a bounded duplicate-delivery horizon or another finite dedup
+   representation is also needed before space is actually freed. Decide this together with the
+   matching `RESOURCE_LIMITS_REGISTRY.json` bound (FND-03 §14.1) — the same registry entry as the
+   lifecycle-record creation capacity above, or a related one, is the owning lane's call.
 2. **`IN_FLIGHT` reconciliation for an owner-turn interruption while the scope stays live.** Checked
    directly (evidence above): the one existing "one owner work item" precedent
    (`ComposedFreshAdmission::step`) runs synchronously once its lock is acquired, with no internal
@@ -1072,23 +1115,49 @@ not this architecture decision.
    `IN_FLIGHT` reconciliation (how a stranded record eventually reaches `TERMINAL`, or is recognized as
    needing owner intervention), which this document does not design and does not choose between.
 3. **Attribute-bearing object state and its timed revert (e.g. teleporter `destination`/
-   `revert_destination`).** `revert_after_ms` under this proposal covers only the state-key-plus-
-   collision footprint `LocalObjectStateDefinition`/`PreparedMutation::Publish` already model (Round
-   16, evidence above; "Exact delta" above rejects anything wider at authoring/lowering, Round 17 —
-   `bind` cannot do this check itself, evidence above) — it does not cover a transition that also
-   changes non-state object attributes, such as `map_item`'s authored `destination`/
-   `revert_destination` (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144; sample
-   `the_lord_of_the_lice/encounter.json` lines 70-74, evidence above). This is a new capability
-   (attribute-bearing object state), not a gap in the revert design above, and this document does not
-   design it. Two candidate directions, named without choosing between them: retain the resolved
-   inverse *attribute payload* (e.g. the pre-transform `destination`) alongside the lifecycle record's
+   `revert_destination`, and — Round 19 — `interaction` bindings).** `revert_after_ms` under this
+   proposal covers only the state-key-plus-collision footprint `LocalObjectStateDefinition`/
+   `PreparedMutation::Publish` already model (Round 16, evidence above; "Exact delta" above rejects
+   anything wider at authoring/lowering, Round 17 — `bind` cannot do this check itself, evidence
+   above) — it does not cover a transition that also changes non-state object attributes, such as
+   `map_item`'s authored `destination`/`revert_destination` (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md`
+   line 144; sample `the_lord_of_the_lice/encounter.json` lines 70-74, evidence above) or an
+   `interaction` binding (Round 19, evidence above: the same field-144 vocabulary; concrete instances
+   in `mazzinor`/`gaz_haragoth`/`cult_soul_remains`, evidence above) — with `interaction` now included,
+   **no currently authored encounter `map_item` action is admissible for `revert_after_ms`** (Round
+   19, "Exact delta" above); the synthetic fixture in the test obligations is the only runnable case
+   until this decision resolves. This is a new capability (attribute-bearing object state), not a gap
+   in the revert design above, and this document does not design it. Two candidate directions, named
+   without choosing between them: retain the resolved inverse *attribute payload* (e.g. the
+   pre-transform `destination`, or the bound `interaction` key) alongside the lifecycle record's
    existing fields, applied outside the state-key/collision model; or fold attributes into
    `LocalObjectStateDefinition`/`PreparedMutation` themselves so a state carries payload and a revert
    is again a pure state transition. Either belongs to the owning lane (and likely CW3/CW4's
    content-model lane) as its own decision, not this one. Whichever direction is chosen, the
-   authoring/lowering rejection above (Round 17) is what keeps an attribute-changing transition from
-   reaching `bind` in the meantime — this open decision is about eventually *supporting* the case, not
+   authoring/lowering rejection above (Round 17/19) is what keeps an attribute-changing transition
+   from reaching `bind` in the meantime — this open decision is about eventually *supporting* the
+   case, not
    about how it is safely refused today.
+4. **Where `revert_after_ms` and inverse-selection metadata are actually carried (Round 19, Codex
+   finding 4120487841).** "Exact delta" above described adding `revert_after_ms` to `TransitionBinding`
+   or its content source; Codex's rationale for why that is not simply an implementation detail:
+   `TransitionBinding` is shared, content-level state for a definition's transition, but different
+   invocations of the same bound transition can legitimately carry different `revert_after_ms`
+   durations, or none at all — a single shared field cannot represent that. This document does not
+   redesign the home here; it only removes the claim that `TransitionBinding` is settled as that home
+   (evidence above, "Exact delta" corrected). The owning lane decides where the duration and the
+   inverse-selection metadata actually live — plausibly on the lowered operation occurrence rather
+   than the shared binding, but that choice, and its bind-time validation shape, is the owning lane's.
+5. **Compaction still needs a bounded duplicate-delivery horizon (Round 19, Codex finding
+   4120487862).** Open decision 1 above names a compact tombstone (identity → outcome code) as one
+   possible compaction shape once a `TERMINAL` record ages out of full detail. Codex's rationale: a
+   tombstone still consumes one entry per occurrence — compaction alone does not reclaim capacity
+   unless duplicate presentations are also known to be impossible past some point. A bounded
+   duplicate-delivery horizon, or another finite dedup representation that lets a sufficiently old
+   identity's slot be reclaimed entirely, is required before "compact to a tombstone" can be counted
+   as capacity reclamation rather than a fixed-size-per-occurrence cost with a smaller constant. This
+   document does not design that horizon; the owning lane decides it together with open decision 1
+   and the matching `RESOURCE_LIMITS_REGISTRY.json` bound.
 
 ### Exact test obligations
 
@@ -1180,7 +1249,9 @@ not this architecture decision.
   outcome and never falls through to step 4 (`PENDING` fences) or re-executes `prepare`. A test MUST
   NOT assert a specific eviction trigger, window or count as required by this architecture — those are
   the owning lane's decision (below) — but it MUST assert the no-reexecution property survives
-  whichever policy is chosen.
+  whichever policy is chosen. This obligation is about correctness under compaction, not capacity: a
+  test MUST NOT assert that compacting to a tombstone by itself reclaims store capacity (Round 19,
+  "Open decisions" item 5 below — a tombstone still consumes one entry per occurrence).
 - **No partial footprint.** A revert applies its full target state in the same single commit as any
   other overlay operation (the existing `PreparedMutation::Publish` path); this is exactly the C3
   fixed-footprint boundary in §4 — only the anchor's pre-authored, bind-time-reserved footprint is
@@ -1208,6 +1279,15 @@ not this architecture decision.
   all and later fires `DISPOSITION_COMMITTED` with the object's attributes left unrestored (stale
   `destination`) must fail — `revert_after_ms` covers only what `LocalObjectStateDefinition`/
   `PreparedMutation::Publish` model today (evidence above), never a silent partial revert.
+- **An interaction-bearing timed create is rejected at lowering (P1, Round 19).** An authored
+  `map_item` `create` action carrying `revert_after_ms` together with an `interaction` binding —
+  concretely, `mazzinor`/`gaz_haragoth`/`cult_soul_remains`'s shape (evidence above) — must be
+  rejected fail-closed at authoring/lowering, the same as a `destination`-carrying `transform`; a
+  test asserting it reaches `bind` because it lacks `destination`/`revert_destination` must fail.
+  Combined with the previous obligation and the Depth-trio finding above, a test suite exercising
+  *every* authored sample under `encounter-authoring/samples/**` for `revert_after_ms` admissibility
+  must observe zero passes — only the synthetic fixture is expected to pass until "Open decisions"
+  item 3 is resolved.
 - **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
   and expected revision still hold must land the object back in precisely the state it was in
   immediately before the original operation committed — the one unique `source_state`/`target_state`
