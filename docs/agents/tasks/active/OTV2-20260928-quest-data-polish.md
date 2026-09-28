@@ -40,6 +40,17 @@ finish the quest data work that needs no runtime:
 3. the trigger ids missing from the startup map, checked against runtime-loaded maps and scripts;
 4. the data gaps of The Queen of the Banshees, the first full-quest target.
 
+Result:
+- 198 of 204 quests record wiki requirements. 196 get a typed premium flag and 184 a typed minimum
+  level; the rest stay null with a reason.
+- 53 of 56 weak chest claims link to a quest with cited wiki evidence. The catalogue grows to 204
+  quests.
+- The 65 missing trigger ids break down into 13 assigned by scripts, 24 CrystalServer-only and 28
+  found nowhere (dead scripts).
+- The Queen of the Banshees drops from 18 data gaps to 13, through value aliases (a generic change)
+  and three cited overrides. Mapped interactions rise from 256 to 268.
+- The `USE` trigger plus the reward claim now complete 86 quests on the engine side.
+
 Runtime, persistence, `content/**`, NPC-owned files and DUR-03/Character paths stay unchanged.
 
 ## Architecture and source of truth
