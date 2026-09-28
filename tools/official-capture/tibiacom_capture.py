@@ -37,7 +37,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 SNAPSHOT_PREFIX = 'imports/official/tibia-com/'
@@ -58,6 +58,9 @@ FACTS_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_FACTS/v1'
 MANIFEST_PAGE_KEYS = {'section', 'url', 'fetched_at', 'http_status', 'sha256', 'visible_text_chars'}
 FACT_KEYS = {'section', 'anchor', 'key', 'value'}
 FACT_VALUE_LIMIT = 300
+# Every serialized text field is bounded, not only `value` (P2 r4120883667): a `key`/`anchor` this
+# long is not an identifier any more, so both fetch and verify cap them the same way.
+FIELD_ID_LIMIT = 120
 FACTS_PER_SECTION_CAP = 40
 # The spell library is structured spell rows delegated to #1077's own parser, not manual-page
 # prose, so it gets its own compatible bound instead of the 40-fact manual-page cap
@@ -67,6 +70,9 @@ FACT_TO_VISIBLE_TEXT_RATIO_LIMIT = 0.25
 TOTAL_FACT_VALUE_BYTES_LIMIT = 200_000
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
 ACCEPTED_HTTP_STATUS = 200
+# Strict match on what utc_now() produces (P2 r4120883679): an ISO-8601 UTC timestamp ending in Z.
+TIMESTAMP_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$')
+MAX_FETCH_RUN_SECONDS = 3600
 
 CLOUDFLARE_MARKERS = (
     'Sorry, you have been blocked',
@@ -90,6 +96,21 @@ SENTENCE_SPLIT_RE = re.compile(r'(?<=[.!?])\s+(?=[A-Z0-9])')
 
 def utc_now():
     return datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+
+
+def bound_field(text, limit=FIELD_ID_LIMIT):
+    """Cap an identifier-like field (a fact `key` or `anchor`) at `limit` chars (P2 r4120883667)."""
+    return str(text)[:limit]
+
+
+def parse_utc_timestamp(value):
+    """Parse a strict `utc_now()`-shaped timestamp, or None if it isn't one (P2 r4120883679)."""
+    if not isinstance(value, str) or not TIMESTAMP_RE.match(value):
+        return None
+    try:
+        return datetime.strptime(value, '%Y-%m-%dT%H:%M:%SZ').replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
 
 
 def normalize_space(text):
@@ -191,7 +212,7 @@ class ManualSectionParser(html.parser.HTMLParser):
             self.buffer = []
             if text:
                 self.heading = text
-                self.anchor = self._heading_attrs.get('id') or slugify(text)
+                self.anchor = bound_field(self._heading_attrs.get('id') or slugify(text))
         elif tag in self.BLOCK_TAGS and self.in_block:
             self._flush_block()
 
@@ -232,7 +253,8 @@ def extract_facts(section, body):
             break
         if heading and anchor not in seen_headings:
             seen_headings.add(anchor)
-            facts.append({'section': section, 'anchor': anchor, 'key': f'{section}.{anchor}.heading',
+            facts.append({'section': section, 'anchor': anchor,
+                          'key': bound_field(f'{section}.{anchor}.heading'),
                           'value': heading[:FACT_VALUE_LIMIT]})
             if len(facts) >= FACTS_PER_SECTION_CAP:
                 break
@@ -243,8 +265,11 @@ def extract_facts(section, body):
             if not has_factual_signal(fragment):
                 continue
             counters[anchor] = counters.get(anchor, 0) + 1
-            facts.append({'section': section, 'anchor': heading or anchor,
-                          'key': f'{section}.{anchor}.{counters[anchor]}', 'value': fragment[:FACT_VALUE_LIMIT]})
+            # Always the parser's normalized anchor (id/slug), never the raw heading text
+            # (P2 r4120883657), so `anchor` stays a consistent HTML-id/slug reference.
+            facts.append({'section': section, 'anchor': anchor,
+                          'key': bound_field(f'{section}.{anchor}.{counters[anchor]}'),
+                          'value': fragment[:FACT_VALUE_LIMIT]})
     return facts
 
 
@@ -290,6 +315,9 @@ def fetch_page_or_abort(url, what):
 
 
 def cmd_fetch(out_dir):
+    # Stamped once, before any request, so every page's fetched_at is >= captured_at
+    # (P2 r4120883679) -- this run takes seconds, nowhere near MAX_FETCH_RUN_SECONDS.
+    captured_at = utc_now()
     pages = []
     facts = []
     for index, section in enumerate(MANUAL_SECTIONS):
@@ -328,16 +356,19 @@ def cmd_fetch(out_dir):
             for item in parse(body):
                 if spell_facts >= SPELL_RECORDS_CAP:
                     break
+                # Bound every delegated field the same way verify does (P2 r4120883667): a
+                # delegated parser is not exempt from the key/anchor/value size caps.
                 value = str(item.get('value', ''))[:FACT_VALUE_LIMIT]
-                facts.append({'section': 'spells', 'anchor': str(item.get('anchor', 'root')),
-                              'key': str(item.get('key', f'spells.{len(facts)}')), 'value': value})
+                anchor = bound_field(item.get('anchor', 'root'))
+                key = bound_field(item.get('key', f'spells.{len(facts)}'))
+                facts.append({'section': 'spells', 'anchor': anchor, 'key': key, 'value': value})
                 spell_facts += 1
             spells = 'captured'
 
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    manifest = {'schema': MANIFEST_SCHEMA, 'captured_at': utc_now(), 'pages': pages, 'spells': spells}
-    facts_doc = {'schema': FACTS_SCHEMA, 'captured_at': manifest['captured_at'], 'facts': facts}
+    manifest = {'schema': MANIFEST_SCHEMA, 'captured_at': captured_at, 'pages': pages, 'spells': spells}
+    facts_doc = {'schema': FACTS_SCHEMA, 'captured_at': captured_at, 'facts': facts}
     (out_dir / 'manifest.json').write_text(json.dumps(manifest, ensure_ascii=False, indent=1) + '\n',
                                             encoding='utf-8', newline='\n')
     (out_dir / 'facts.json').write_text(json.dumps(facts_doc, ensure_ascii=False, indent=1) + '\n',
@@ -370,6 +401,21 @@ def verify_snapshot(directory):
     if spells not in (SPELL_PENDING, 'captured'):
         errors.append(f'{directory}: manifest.json "spells" must be {SPELL_PENDING!r} or "captured", got {spells!r}')
 
+    # Capture timestamps (P2 r4120883679): both top-level captured_at must be present, ISO-8601 UTC
+    # 'Z' timestamps, and equal to each other; every page's fetched_at is checked against this below.
+    manifest_captured_at = manifest.get('captured_at')
+    facts_captured_at = facts_doc.get('captured_at')
+    captured_dt = parse_utc_timestamp(manifest_captured_at)
+    if captured_dt is None:
+        errors.append(f'{directory}: manifest.json "captured_at" must be an ISO-8601 UTC timestamp ending in Z, '
+                      f'got {manifest_captured_at!r}')
+    if parse_utc_timestamp(facts_captured_at) is None:
+        errors.append(f'{directory}: facts.json "captured_at" must be an ISO-8601 UTC timestamp ending in Z, '
+                      f'got {facts_captured_at!r}')
+    elif captured_dt is not None and manifest_captured_at != facts_captured_at:
+        errors.append(f'{directory}: manifest.json and facts.json "captured_at" must be equal '
+                      f'({manifest_captured_at!r} != {facts_captured_at!r})')
+
     pages = manifest.get('pages')
     pages_by_section = {}
     seen_urls = set()
@@ -391,6 +437,16 @@ def verify_snapshot(directory):
                           f'must be {ACCEPTED_HTTP_STATUS} (a failed/error fetch cannot become committed evidence)')
         if not isinstance(page['visible_text_chars'], int) or page['visible_text_chars'] < 0:
             errors.append(f'{directory}: manifest page {page["section"]} visible_text_chars must be a non-negative int')
+        fetched_dt = parse_utc_timestamp(page.get('fetched_at'))
+        if fetched_dt is None:
+            errors.append(f'{directory}: manifest page {page["section"]} fetched_at must be an ISO-8601 UTC '
+                          f'timestamp ending in Z, got {page.get("fetched_at")!r}')
+        elif captured_dt is not None:
+            delta = (fetched_dt - captured_dt).total_seconds()
+            if delta < 0 or delta > MAX_FETCH_RUN_SECONDS:
+                errors.append(f'{directory}: manifest page {page["section"]} fetched_at {page["fetched_at"]!r} '
+                              f'must be >= captured_at {manifest_captured_at!r} and within '
+                              f'{MAX_FETCH_RUN_SECONDS} seconds of it')
         # Duplicate sections/URLs (P2 r4120758056): a later duplicate must not silently overwrite
         # an earlier page entry in pages_by_section.
         if page['section'] in pages_by_section:
@@ -443,22 +499,41 @@ def verify_snapshot(directory):
             errors.append(f'{directory}: fact missing keys {sorted(missing)}: {fact}')
             continue
         value = fact['value']
+        key = fact['key']
+        anchor = fact['anchor']
         if not isinstance(value, str):
-            errors.append(f'{directory}: fact {fact["key"]} value must be a string')
+            errors.append(f'{directory}: fact {key!r} value must be a string')
+            continue
+        if not isinstance(key, str):
+            errors.append(f'{directory}: fact key {key!r} must be a string')
+            continue
+        if not isinstance(anchor, str):
+            errors.append(f'{directory}: fact {key!r} anchor {anchor!r} must be a string')
             continue
         if len(value) > FACT_VALUE_LIMIT:
-            errors.append(f'{directory}: fact {fact["key"]} value is {len(value)} chars, '
+            errors.append(f'{directory}: fact {key!r} value is {len(value)} chars, '
                           f'over the {FACT_VALUE_LIMIT}-char cap (no full page text)')
-        total_value_bytes += len(value.encode('utf-8'))
-        if fact['key'] in seen_keys:
-            errors.append(f'{directory}: duplicate fact key {fact["key"]!r}')
-        seen_keys.add(fact['key'])
+        # key/anchor are bounded too, not only value (P2 r4120883667).
+        if len(key) > FIELD_ID_LIMIT:
+            errors.append(f'{directory}: fact key {key!r} is {len(key)} chars, over the '
+                          f'{FIELD_ID_LIMIT}-char cap')
+        if len(anchor) > FIELD_ID_LIMIT:
+            errors.append(f'{directory}: fact {key!r} anchor is {len(anchor)} chars, over the '
+                          f'{FIELD_ID_LIMIT}-char cap')
+        # The ratio/total-byte caps below count key + anchor + value together (P2 r4120883667): a
+        # page cannot be smuggled out by padding key/anchor instead of value.
+        field_bytes = len(value.encode('utf-8')) + len(key.encode('utf-8')) + len(anchor.encode('utf-8'))
+        field_chars = len(value) + len(key) + len(anchor)
+        total_value_bytes += field_bytes
+        if key in seen_keys:
+            errors.append(f'{directory}: duplicate fact key {key!r}')
+        seen_keys.add(key)
         section = fact['section']
         if section not in pages_by_section:
-            errors.append(f'{directory}: fact {fact["key"]!r} references section {section!r}, '
+            errors.append(f'{directory}: fact {key!r} references section {section!r}, '
                           f'which is not a manifest.json page')
         fact_count_by_section[section] = fact_count_by_section.get(section, 0) + 1
-        value_chars_by_section[section] = value_chars_by_section.get(section, 0) + len(value)
+        value_chars_by_section[section] = value_chars_by_section.get(section, 0) + field_chars
 
     # Every required manual section (and a "captured" spell library) needs at least one fact
     # (P2 r4120578800).
@@ -592,13 +667,16 @@ def _valid_snapshot_documents():
     """A manifest/facts pair with all six manual sections, each with one qualifying fact."""
     pages = []
     facts = []
+    # One shared timestamp for captured_at and every page's fetched_at (P2 r4120883679): fetched_at
+    # must be >= captured_at, exactly as a real `fetch` run stamps captured_at before any request.
+    captured_at = utc_now()
     for section in MANUAL_SECTIONS:
-        pages.append({'section': section, 'url': MANUAL_URL.format(section=section), 'fetched_at': utc_now(),
+        pages.append({'section': section, 'url': MANUAL_URL.format(section=section), 'fetched_at': captured_at,
                       'http_status': 200, 'sha256': 'a' * 64, 'visible_text_chars': 1000})
         facts.append({'section': section, 'anchor': 'root', 'key': f'{section}.root.1',
                       'value': f'The {section} section has a value of 7 here.'})
-    manifest = {'schema': MANIFEST_SCHEMA, 'captured_at': utc_now(), 'spells': SPELL_PENDING, 'pages': pages}
-    facts_doc = {'schema': FACTS_SCHEMA, 'captured_at': manifest['captured_at'], 'facts': facts}
+    manifest = {'schema': MANIFEST_SCHEMA, 'captured_at': captured_at, 'spells': SPELL_PENDING, 'pages': pages}
+    facts_doc = {'schema': FACTS_SCHEMA, 'captured_at': captured_at, 'facts': facts}
     return manifest, facts_doc
 
 
@@ -625,6 +703,12 @@ def self_test():
     assert by_key['controls.combat-basics.3']['value'] == 'Hit Points: 185'
     assert all(f['section'] == 'controls' for f in facts)
     assert all(len(f['value']) <= FACT_VALUE_LIMIT for f in facts)
+    # Every fact under a heading uses the normalized anchor (id/slug), never the raw heading text
+    # (P2 r4120883657) -- 'Moving Around' has an explicit id, 'Combat Basics' is slugified.
+    assert by_key['controls.moving.1']['anchor'] == 'moving', by_key['controls.moving.1']
+    assert by_key['controls.combat-basics.1']['anchor'] == 'combat-basics', by_key['controls.combat-basics.1']
+    assert by_key['controls.combat-basics.3']['anchor'] == 'combat-basics', by_key['controls.combat-basics.3']
+    assert all(f['anchor'] in ('moving', 'combat-basics') for f in facts), facts
 
     long_html = '<h2>X</h2><p>Value: ' + ('9' * (FACT_VALUE_LIMIT + 50)) + '</p>'
     truncated = extract_facts('world', long_html)
@@ -660,9 +744,24 @@ def self_test():
     assert facts_cap_for_section('spells') == SPELL_RECORDS_CAP
     assert facts_cap_for_section('controls') == FACTS_PER_SECTION_CAP
 
+    # Every serialized text field is bounded (P2 r4120883667): key/anchor as well as value.
+    assert bound_field('x' * 300) == 'x' * FIELD_ID_LIMIT
+    assert bound_field('short') == 'short'
+    long_id_html = '<h2 id="' + ('x' * 200) + '">Heading</h2><p>Value is 5 here.</p>'
+    long_id_facts = extract_facts('world', long_id_html)
+    assert all(len(f['anchor']) == FIELD_ID_LIMIT for f in long_id_facts), long_id_facts
+    assert all(len(f['key']) <= FIELD_ID_LIMIT for f in long_id_facts), long_id_facts
+
+    # Timestamps must be strict ISO-8601 UTC 'Z' (P2 r4120883679).
+    assert parse_utc_timestamp('2026-09-28T12:00:00Z') is not None
+    assert parse_utc_timestamp('2026-09-28T12:00:00') is None  # no trailing Z
+    assert parse_utc_timestamp('2026-09-28 12:00:00Z') is None  # no 'T'
+    assert parse_utc_timestamp(None) is None
+    assert parse_utc_timestamp('not a timestamp') is None
+
     # Hash the raw response bytes, decode a separate copy for parsing (P2 r4120758054): a response
     # with bytes that are not valid UTF-8 must still be hashed exactly as received.
-    global fetch_url
+    global fetch_url, load_spell_module
     _original_fetch_url = fetch_url
     raw_sample = b'<html><body><p>Deals 42 damage.</p>broken utf8: \xff\xfe end</body></html>'
     fetch_url = lambda url: (200, raw_sample)
@@ -766,7 +865,8 @@ def self_test():
         # (P2 r4120758016): 41 spell facts must pass; over SPELL_RECORDS_CAP must fail.
         manifest = copy.deepcopy(base_manifest)
         manifest['spells'] = 'captured'
-        manifest['pages'].append({'section': 'spells', 'url': SPELL_LIBRARY_URL, 'fetched_at': utc_now(),
+        manifest['pages'].append({'section': 'spells', 'url': SPELL_LIBRARY_URL,
+                                  'fetched_at': manifest['captured_at'],
                                   'http_status': 200, 'sha256': 'b' * 64, 'visible_text_chars': 1_000_000})
         facts_doc = copy.deepcopy(base_facts)
         facts_doc['facts'] += [{'section': 'spells', 'anchor': 'root', 'key': f'spells.root.{i}',
@@ -789,6 +889,31 @@ def self_test():
         assert any('duplicate manifest page section' in e for e in errors), errors
         assert any('duplicate manifest page url' in e for e in errors), errors
 
+        # key/anchor are bounded too, not only value (P2 r4120883667).
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['facts'][0]['anchor'] = 'x' * (FIELD_ID_LIMIT + 1)
+        _write_snapshot(directory, base_manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any('anchor is' in e and 'char' in e for e in errors), errors
+
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['facts'][0]['key'] = 'x' * (FIELD_ID_LIMIT + 1)
+        _write_snapshot(directory, base_manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any('fact key' in e and 'char' in e for e in errors), errors
+
+        # The 25% ratio and total-byte caps count key + anchor + value together (P2 r4120883667):
+        # a short value with an oversized (but individually within-cap) key/anchor must still fail.
+        manifest = copy.deepcopy(base_manifest)
+        manifest['pages'][0]['visible_text_chars'] = 100
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['facts'][0]['anchor'] = 'a' * FIELD_ID_LIMIT
+        facts_doc['facts'][0]['key'] = 'k' * FIELD_ID_LIMIT
+        facts_doc['facts'][0]['value'] = 'short'
+        _write_snapshot(directory, manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any('visible-text chars, over the' in e for e in errors), errors
+
         facts_doc = copy.deepcopy(base_facts)
         facts_doc['facts'][0]['value'] = 'z' * (FACT_VALUE_LIMIT + 1)
         _write_snapshot(directory, base_manifest, facts_doc)
@@ -806,6 +931,87 @@ def self_test():
         _write_snapshot(directory, manifest, base_facts)
         errors = verify_snapshot(directory)
         assert any('64-hex-digit' in e for e in errors), errors
+
+        # Timestamps (P2 r4120883679): fetched_at/captured_at must be ISO-8601 UTC 'Z', equal
+        # between manifest.json and facts.json, and every fetched_at within
+        # [captured_at, captured_at + MAX_FETCH_RUN_SECONDS].
+        manifest = copy.deepcopy(base_manifest)
+        manifest['pages'][0]['fetched_at'] = None
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('fetched_at must be an ISO-8601' in e for e in errors), errors
+
+        manifest = copy.deepcopy(base_manifest)
+        manifest['captured_at'] = None
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('manifest.json "captured_at" must be an ISO-8601' in e for e in errors), errors
+
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['captured_at'] = None
+        _write_snapshot(directory, base_manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any('facts.json "captured_at" must be an ISO-8601' in e for e in errors), errors
+
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['captured_at'] = '2020-01-01T00:00:00Z'
+        _write_snapshot(directory, base_manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any('must be equal' in e for e in errors), errors
+
+        manifest = copy.deepcopy(base_manifest)
+        manifest['pages'][0]['fetched_at'] = '2000-01-01T00:00:00Z'  # long before captured_at
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('within' in e and 'seconds of it' in e for e in errors), errors
+
+        manifest = copy.deepcopy(base_manifest)
+        captured_dt = parse_utc_timestamp(manifest['captured_at'])
+        too_late = captured_dt + timedelta(seconds=MAX_FETCH_RUN_SECONDS + 60)
+        manifest['pages'][0]['fetched_at'] = too_late.strftime('%Y-%m-%dT%H:%M:%SZ')
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('within' in e and 'seconds of it' in e for e in errors), errors
+
+        manifest = copy.deepcopy(base_manifest)
+        manifest['pages'][0]['fetched_at'] = '2026-09-28 12:00:00'  # not ISO-8601 'Z'
+        _write_snapshot(directory, manifest, base_facts)
+        errors = verify_snapshot(directory)
+        assert any('fetched_at must be an ISO-8601' in e for e in errors), errors
+
+        # fetch enforces the same key/anchor/value bounds on delegated spell-parser output
+        # (P2 r4120883667), and stamps captured_at once, before any request (P2 r4120883679).
+        class _FakeSpellModule:
+            @staticmethod
+            def parse_spell_library(body):
+                return [{'anchor': 'a' * 300, 'key': 'k' * 300, 'value': 'x' * 300 + ' costs 5 mana.'}]
+
+        # Enough ordinary (non-factual, so excluded) filler text that the one real fact stays
+        # under the 25% ratio cap even counting its key+anchor overhead -- a tiny fixture would
+        # fail that cap on overhead alone and prove nothing about this test's actual subject.
+        filler = 'This is ordinary descriptive text about the interface. ' * 60
+        fetch_body = f'<h2 id="x">Heading</h2><p>{filler}Value is 5 here.</p>'.encode()
+
+        _original_fetch_url, _original_load_spell_module = fetch_url, load_spell_module
+        fetch_url = lambda url: (200, fetch_body)
+        load_spell_module = lambda: _FakeSpellModule()
+        _original_sleep = time.sleep
+        time.sleep = lambda seconds: None
+        try:
+            fetch_out = directory / 'fetch-out'
+            assert cmd_fetch(fetch_out) == 0
+            fetched_manifest = json.loads((fetch_out / 'manifest.json').read_text(encoding='utf-8'))
+            fetched_facts = json.loads((fetch_out / 'facts.json').read_text(encoding='utf-8'))
+        finally:
+            fetch_url, load_spell_module = _original_fetch_url, _original_load_spell_module
+            time.sleep = _original_sleep
+        spell_facts = [f for f in fetched_facts['facts'] if f['section'] == 'spells']
+        assert spell_facts, fetched_facts
+        assert all(len(f['anchor']) <= FIELD_ID_LIMIT for f in spell_facts), spell_facts
+        assert all(len(f['key']) <= FIELD_ID_LIMIT for f in spell_facts), spell_facts
+        assert all(len(f['value']) <= FACT_VALUE_LIMIT for f in spell_facts), spell_facts
+        assert fetched_manifest['captured_at'] == fetched_facts['captured_at']
+        assert verify_snapshot(fetch_out) == [], verify_snapshot(fetch_out)
 
         missing = Path(tmp) / 'missing'
         assert verify_snapshot(missing) == [f'{missing}: missing manifest.json']

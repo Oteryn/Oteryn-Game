@@ -122,33 +122,28 @@ reason: >
   or a slug of the text) and the text of `p`/`li`/`td`/`th`/`dd` blocks under each, with no
   CSS-class guess at tibia.com's real structure (unreachable here — same Cloudflare block).
 
-## Repair: Codex review findings (PR #1083, return to AUTHORING; two rounds)
+## Repair: Codex review findings (PR #1083, return to AUTHORING; three rounds, 12 findings)
 
-Round 1, head `1a82643`, 4 findings, all repaired:
+Every finding below was accepted and repaired, with a self-test case added and its review thread
+replied to before that round's push.
 
-- P1 r4120578784 (no page copy): bounded factual-signal extraction (digit/`key: value`/named
-  control key), `FACTS_PER_SECTION_CAP`=40; `manifest.json` records `visible_text_chars`; `verify`
-  rejects a page over the 25% fact-to-visible-text ratio or the per-section cap.
-- P2 r4120578795 (bad status): `fetch`/`verify` require HTTP 200 exactly.
-- P2 r4120578800 (completeness): `verify` requires exactly the six sections at their exact URL,
-  ≥1 fact each, and `spells` enum consistency.
-- P2 r4120578808 (immutability): the workflow diffs PR base→head under
-  `imports/official/tibia-com/`, rejecting `M`/`D`/`R` of an already-committed dated dir.
-
-Round 2, head `a90b128`, 5 more P2s, all repaired:
-
-- r4120758016: the spell library gets its own `SPELL_RECORDS_CAP`=600 (`facts_cap_for_section`),
-  not the 40-fact manual cap; `fetch` caps delegated spell facts at write time too.
-- r4120758045: `verify` rejects `visible_text_chars` ≤0 for any page with ≥1 fact.
-- r4120758054: `fetch_url` now returns raw response bytes; `sha256` hashes those raw bytes, with a
-  separate decode used only for parsing.
-- r4120758029: the immutability logic moved into a tested `check-immutability` tool subcommand
-  (`find_immutability_violations`) and now also rejects an `A` landing inside an already-committed
-  dated directory, not just `M`/`D`/`R`.
-- r4120758056: `verify` rejects a duplicate manifest page section or url instead of silently
-  overwriting `pages_by_section`.
-
-All nine review threads replied to before their respective pushes; self-test covers all nine.
+- Round 1, head `1a82643`: P1 r4120578784 no-page-copy (bounded factual-signal extraction,
+  `FACTS_PER_SECTION_CAP`=40, `visible_text_chars` + 25% ratio in `verify`); P2 r4120578795 bad
+  status (HTTP 200 only); P2 r4120578800 completeness (exact six sections/URLs, ≥1 fact,
+  `spells` enum); P2 r4120578808 immutability (workflow diffs PR base→head, rejects `M`/`D`/`R`
+  of an existing dated dir).
+- Round 2, head `a90b128`: r4120758016 spell cap (`SPELL_RECORDS_CAP`=600 via
+  `facts_cap_for_section`, enforced by `fetch` too); r4120758045 `visible_text_chars` must be
+  positive when a page has facts; r4120758054 hash raw response bytes, decode a separate copy;
+  r4120758029 `check-immutability` subcommand also rejects `A` into an existing dated dir;
+  r4120758056 `verify` rejects duplicate manifest sections/URLs.
+- Round 3, head `557730b`: r4120883657 block facts use the normalized `anchor` (id/slug), never
+  raw heading text; r4120883667 `key`/`anchor` are also bounded (`FIELD_ID_LIMIT`=120 chars), and
+  the 25%-ratio/total-byte caps count key+anchor+value together, enforced by `fetch` on delegated
+  spell output too; r4120883679 `fetched_at`/`captured_at` must be strict ISO-8601 UTC `Z`
+  timestamps, manifest/facts `captured_at` must be equal, and every `fetched_at` must be
+  `>= captured_at` and within `MAX_FETCH_RUN_SECONDS` (1h) of it — `fetch` now stamps
+  `captured_at` once, before any request.
 
 ## Validation
 
@@ -195,9 +190,9 @@ All nine review threads replied to before their respective pushes; self-test cov
 - required: it happened regardless of the `NO` self-assessment above (evidence/tooling-only, no
   public contract/protocol/persistence/authority surface): automated PR review is unconditional in
   this repository.
-- exact head: `1a82643` (round 1), `a90b128` (round 2)
+- exact head: `1a82643` (r1), `a90b128` (r2), `557730b` (r3)
 - method/auditor: Codex, automated PR review (not triggered by this worker)
-- material findings: 9 total across two rounds (see Repair section above) — all accepted and
+- material findings: 12 total across three rounds (see Repair section above) — all accepted and
   repaired
 - verdict: findings addressed; a fresh review of the repaired head is for the control plane to
   request, not this worker (no `@codex` trigger from this task)
