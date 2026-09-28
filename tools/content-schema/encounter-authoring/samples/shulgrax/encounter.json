@@ -32,6 +32,11 @@
       "key": "ascendant_exit",
       "kind": "point",
       "description": "Default teleporter destination; Canary (33319, 32318, 13)."
+    },
+    {
+      "key": "shulgrax_arena",
+      "kind": "area",
+      "description": "Every tile from Canary (33478, 32781, 13) to (33491, 32793, 13)."
     }
   ],
   "phases": [],
@@ -72,6 +77,56 @@
           "effect": "canary.appearance:effect/thunder",
           "revert_after_ms": 60000,
           "revert_destination": "ascendant_exit"
+        }
+      ]
+    },
+    {
+      "key": "shulgrax_summons_souls",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "shulgrax",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/shulgrax_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "summon_count",
+          "role": "shulgrax",
+          "op": "<",
+          "value": 8
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/sin_devourer",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 4,
+          "at": {
+            "random_in": "shulgrax_arena"
+          },
+          "owner": "subject",
+          "health": "full"
+        },
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/damned_soul",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 4,
+          "at": {
+            "random_in": "shulgrax_arena"
+          },
+          "owner": "none",
+          "health": "full"
         }
       ]
     }

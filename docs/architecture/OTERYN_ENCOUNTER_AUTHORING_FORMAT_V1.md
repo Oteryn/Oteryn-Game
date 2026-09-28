@@ -101,7 +101,7 @@ Encounter
 | `lethal_damage(role)` - may `prevent_death` | `onPrepareDeath` |
 | `health_crossed(role, percent or absolute health, downward)` | `onThink`/`onHealthChange` health checks; the percent may be fractional (D29) |
 | `creature_spawned(role)` | `mType.onSpawn` (D29) |
-| `ability_cast(role, AbilityRef)` | a monster spell script with fight effects (D29) |
+| `ability_cast(role, AbilityRef)` | a monster spell script with fight effects (D29); a spell whose script only summons is converted as an ability that points to its encounter, and the encounter does the summon (D45) |
 | `damage_taken(role, source: player/any)` | `onHealthChange` per hit |
 | `heal_received(role, source: player/any)` | `onHealthChange` per heal (Canary runs the handler for heals too) (D31) |
 | `damage_accumulated(role, amount)` | `onHealthChange` damage counters: fires each time one creature of the role has taken `amount` damage since it appeared or since it last fired; the count then restarts at 0 and heals do not count (D34) |
@@ -117,6 +117,8 @@ Encounter
 `chance_percent`, `counter_compare(counter, op, value)`, `flag(name, value)`,
 `creature_present(role, anchor or near(role, radius, square or circle), present/absent)`, `in_anchor(role or killer, anchor)`,
 `killer_is_player`, `has_master(role, value)` (Canary skips summoned copies of a boss),
+`summon_count(role, op, value)` (D45: how many live summons a creature of the role has; Shulgrax calls
+more only while it has fewer than 8),
 `health_percent(role, op, value)` (fractional allowed),
 `attacker_wears(ItemRef)` (the Asura counter items), `killer_progress(quest key, op, value)` - a
 read-only view of the killer's quest progress published by the quest domain (the Soul War taints);
@@ -130,7 +132,7 @@ rules.
 
 | Action | Parameters |
 |---|---|
-| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, offset, or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent, or `remembered`: the health the spawned role had when it last left the fight, full the first time (D31)) |
+| `spawn` | role or CreatureRef, count, at (`death_position`, `subject_position`, anchor, `random_in(anchor)`, `offset_tiles(n)`: a random free tile within n tiles of the subject, or `role_position(role)` optionally `otherwise: death_position` (D31)), owner (none, subject, or `death_master`: the master of the dying creature), health (`full`, `carry_over`, percent, or `remembered`: the health the spawned role had when it last left the fight, full the first time (D31)) |
 | `remove` | role, `all_in(anchor)` (monsters only; players are never removed; `keep_summons` spares monsters with a master), or `triggering`: only the creature that fired the rule (D31) |
 | `transform` | role -> next stage, CreatureRef or `random_of` several CreatureRefs (uniform); health `keep_percent`/`keep_absolute`/`full` |
 | `heal` | role, amount, range (may start at 0, D31) or `full` |
@@ -222,6 +224,7 @@ rules.
 | D30 | Crystal Server (`zimbadev/crystalserver`, a Canary fork) is consulted as a second donor wherever a Canary script is broken, ambiguous or unresolved. It is evidence only: Canary stays the transcription source and the reference-date wiki still decides (D25). | Owner request 2026-09-27 ("sprawdzać też crystal jako donor"). |
 | D31 | Vocabulary additions, each added only for an event that needs it: `heal_received`; `message` to the players in an area; `remove triggering` and `keep_summons`; weighted `one_of` branches; `role_position` (with an optional `otherwise: death_position`); a `spawned` speaker; the `party` credit; circular `near` areas; heal ranges from 0; the untyped `none` damage; `remembered` spawn health (a boss that returns with the health it left with: Foreshock, Aftershock, Outburst); in a `heal_received` rule a `this_hit` `damage_modifier` scales that heal (`HealthForgotten` doubles heals as well as damage); a `non_player` source for `damage_taken` and `heal_received` (a change by another creature; one without an attacker is not included); an optional `slot` for `attacker_wears`, which with `killer_progress` also reads the healer in a `heal_received` rule (`AsurasMechanic`). Boss attribute changes and a stepped-on trigger are not added yet. | Owner consent 2026-09-27 ("jeśli kończenie zadania tego wymaga i wiesz co robisz, to masz zgodę"). |
 | D34 | Seven more vocabulary additions, each added with the first event that needs it: a boss attribute change (the Hatred damage multiplier); damage scaled by elapsed time (King Zelos); shared life (the Magnor shards); a death explosion as an authored ability; a summon chosen by the vocation of the player; `move_lock`; and `chance_from_amount`. The fourteenth slice adds five of them: the time scaling, shared life, authored abilities, `move_lock` and `chance_from_amount`; it also fixes when `damage_accumulated` fires. The fifteenth adds the boss attribute change with the `item_used` trigger and the timer `add` it needs (the Sorrow of Burning Hatred). The per-vocation summon (Count Vlarkorth) follows with its event. | Owner answer 2026-09-27 ("Wszystkie 7"). |
+| D45 | A monster spell whose Canary script summons creatures stays an ability of the monster, but the ability points to an encounter (`encounter`) instead of listing effects. The encounter's `ability_cast` rule does the summon, with the counters, flags and timers the script keeps. The `summon_count` condition is added for it. | Owner answer 2026-09-28 ("Tak, przez encountery"). |
 
 Instance admission, party size and readiness are consumed from the shared activity-instance
 admission contract (FND-ID-01 Party Finder consequences); this format does not define them.
@@ -436,3 +439,17 @@ A fifteenth slice adds the last D34 addition used by Soul War, the boss attribut
 | `mType.onSpawn` (Mighty Splinter of Madness), `GoshnarsHatredBuff` (Goshnar's Megalomania) | 1 | 4 | A mighty splinter still in the room after 120 s is absorbed and raises the madness by 5; Canary's callback fails on an undefined global, and the wiki decides (D25). Every player hit adds the madness to Megalomania's defense. Canary's outgoing branch never applies to Megalomania. |
 
 82 encounters validate, 77 manifests resolve fully; the census rises from 1,533 to 1,539.
+
+A sixteenth slice moves the arena summon spells into their encounters (D45). Each spell stays an
+ability of its monster and points to the encounter; the encounter's `ability_cast` rule summons:
+
+| Spell | Encounter | Covered monsters | Notes |
+|---|---|---:|---|
+| `razzagorn summon` | `razzagorn` | 1 | Four Demons appear anywhere in the arena, with no master. Canary only: the reference-date wiki lists Eruption of Destruction and no Demons, so this needs checking (D25). |
+| `shulgrax summon` | `shulgrax` | 1 | While Shulgrax has fewer than 8 summons (`summon_count`), four Sin Devourers as his summons and four Damned Souls with no master; the wiki names both in his room. |
+| `rage summon`, `destruction summon` | `world_devourer` | 2 | The Rage calls a Frenzy and The Destruction a Disruption next to itself (`offset_tiles` 1) while fewer than 3 have been called; The Destruction waits 15 s between calls (a flag cleared by a timer). The wiki names both minions. |
+
+The Hunger (a counter the vortex lowers when Greed steps on it) and the Glooth Generator (a
+per-creature 14 s timer) stay unresolved. 82 encounters validate, 77 manifests resolve fully,
+`verify_encounter_schema.py` 116/116; the census rises from 1,548 to 1,552. Like the other encounter-covered monsters,
+the four wait in the creature staging until encounters are admitted.

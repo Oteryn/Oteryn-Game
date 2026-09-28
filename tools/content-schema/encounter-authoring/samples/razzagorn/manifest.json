@@ -4,6 +4,9 @@
   "covers": {
     "AscendantBossesDeath": [
       "canary:creature/razzagorn"
+    ],
+    "spell.razzagorn summon": [
+      "canary:creature/razzagorn"
     ]
   },
   "sources": [
@@ -20,6 +23,13 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/ferumbras_ascension/creaturescripts_bosses_kill.lua",
       "blob_sha1": "2c9515d9786c140168dd4af255961cf7ab3f6ac2"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/razzagorn_summon.lua",
+      "blob_sha1": "bc57c3b9d5d0ce865536e731f87be2898ac5020f"
     }
   ],
   "entries": [
@@ -98,6 +108,41 @@
       "status": "mapped",
       "resolution": "teleportPos and godbreakerPos become the exit_teleporter and godbreaker anchors (bound by the map project).",
       "destination": "/encounter/anchors"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "Razzagorn is the razzagorn participant.",
+      "destination": "/encounter/participants/0/creatures"
+    },
+    {
+      "source_index": 0,
+      "source_lines": [
+        138
+      ],
+      "status": "mapped",
+      "resolution": "Razzagorn casts the registered spell \"razzagorn summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 2,
+      "source_lines": [
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell creates four Demons at random tiles of x 33416-33431, y 32460-32474 on floor 14 (a failed creation ends the cast). The reference-date wiki lists Eruptions of Destruction (a plain summon of the monster file) and no Demons: this rule is Canary-only evidence.",
+      "destination": "/encounter/rules/1"
     }
   ],
   "outcome_evidence": [

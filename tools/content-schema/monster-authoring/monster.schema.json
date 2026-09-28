@@ -1869,6 +1869,10 @@
             "backtracking"
           ],
           "description": "D12: the effect jumps between up to max_targets creatures; target_filter players skips every creature that is not a player (the players-only chain picker)."
+        },
+        "encounter": {
+          "$ref": "#/$defs/EncounterRef",
+          "description": "D45: the cast has no effect of its own; its effect is the ability_cast rule of this Encounter, which owns the fight state the script reads (summon counts, counters, arena tiles)."
         }
       },
       "required": [
@@ -1889,6 +1893,11 @@
                 "required": [
                   "variants"
                 ]
+              },
+              {
+                "required": [
+                  "encounter"
+                ]
               }
             ]
           }
@@ -1902,6 +1911,45 @@
               {
                 "required": [
                   "effects"
+                ]
+              },
+              {
+                "required": [
+                  "area"
+                ]
+              },
+              {
+                "required": [
+                  "chain"
+                ]
+              },
+              {
+                "required": [
+                  "encounter"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "required": [
+            "encounter"
+          ],
+          "properties": {
+            "kind": {
+              "const": "spell"
+            }
+          },
+          "not": {
+            "anyOf": [
+              {
+                "required": [
+                  "effects"
+                ]
+              },
+              {
+                "required": [
+                  "variants"
                 ]
               },
               {

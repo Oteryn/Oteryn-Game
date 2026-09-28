@@ -49,6 +49,16 @@
       "family": "Item",
       "key": "canary:item/23482",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/rage_summon",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/destruction_summon",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

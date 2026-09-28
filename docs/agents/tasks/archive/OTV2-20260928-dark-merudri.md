@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-dark-merudri
 title: Wiki-authored Dark Merudri (owner decision D44)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1082
 jira: KAN-16
 base_sha: 8d320703ec39b39c44c0b38268a07e4b0579e060
-head_sha: null
-final_head_sha: null
+head_sha: 9dc4abc615129c9847bdde36db0dd6db22b04f31
+final_head_sha: 9dc4abc615129c9847bdde36db0dd6db22b04f31
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -71,3 +71,12 @@ The Count Vlarkorth encounter rule that summons it for a Monk is a follow-up.
 - The census, the staging, the tree regeneration and its validators pass (1,319 creatures).
 - The Rust tests pass.
 - Exact-head review before the Merge Queue because `content/world` changes.
+
+## Completion
+
+Merged as PR #1082 (`7c6b0df97832b363a9fd40dd4d3bac282db53fe1`) from final head `9dc4abc`; required checks passed on that
+head and the exact-head Codex review found no issues. Dark Merudri is in `content/world` (1,319 creatures) under the
+`g4-wiki-authored-creature-d44-r1` TibiaWiki import batch. Review rounds made `wiki_authored.py` fail closed: every
+authored key has a manifest row, every cited wiki fact is read by the authoring and pinned in `AUTHORED_FOR`, and
+omissions name the exact source text they approve. The Count Vlarkorth encounter rule remains a follow-up.
+Owner released.

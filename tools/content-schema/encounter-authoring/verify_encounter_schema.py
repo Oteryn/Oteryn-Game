@@ -65,6 +65,10 @@ case('players_in_anchor credit needs an area', rule([{'kind': 'emit_outcome', 'o
                                                       'anchor': 'exit'}]))
 case('has_master condition accepted', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
                                            conditions=[{'kind': 'has_master', 'role': 'boss', 'value': False}]), True)
+case('summon_count condition accepted', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                             conditions=[{'kind': 'summon_count', 'role': 'boss', 'op': '<', 'value': 8}]), True)
+case('summon_count for an unknown role', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                              conditions=[{'kind': 'summon_count', 'role': 'ghost', 'op': '<', 'value': 8}]))
 case('teleport to unknown anchor', rule([{'kind': 'teleport', 'who': {'role': 'boss'}, 'to': 'nowhere'}]))
 case('players_in needs an area', rule([{'kind': 'teleport', 'who': {'players_in': 'exit'}, 'to': 'exit'}]))
 case('unknown counter', rule([{'kind': 'counter', 'counter': 'missing', 'operation': 'add', 'value': 1}]))

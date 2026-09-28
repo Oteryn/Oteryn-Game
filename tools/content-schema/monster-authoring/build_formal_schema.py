@@ -154,9 +154,12 @@ d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range
     'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding'),
                  'target_filter':enum('players')},
                 ('max_targets','range_tiles','backtracking'),description='D12: the effect jumps between up to max_targets creatures; '
-                'target_filter players skips every creature that is not a player (the players-only chain picker).')},
+                'target_filter players skips every creature that is not a player (the players-only chain picker).'),
+    'encounter':{**use('EncounterRef'),'description':'D45: the cast has no effect of its own; its effect is the ability_cast rule '
+        'of this Encounter, which owns the fight state the script reads (summon counts, counters, arena tiles).'}},
     ('identity','kind','range_tiles','needs_target','needs_direction'),
-    oneOf=[{'required':['effects'],**forbid('variants')},{'required':['variants'],**forbid('effects','area','chain')}],
+    oneOf=[{'required':['effects'],**forbid('variants','encounter')},{'required':['variants'],**forbid('effects','area','chain','encounter')},
+           {'required':['encounter'],'properties':{'kind':{'const':'spell'}},**forbid('effects','variants','area','chain')}],
     description='For area casts, center precedence is required target position, facing-adjacent position when needs_direction, then caster position. Native execution and no-area target selection require separate qualification.')
 d['initialTick']=obj({'mode':enum('automatic','fixed'),'amount':integer(1)},('mode',),allOf=[
     {'if':{'properties':{'mode':{'const':'fixed'}},'required':['mode']},'then':{'required':['amount']},'else':forbid('amount')}])

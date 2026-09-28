@@ -102,6 +102,21 @@ class Encounters:
                 item['manifest']['covers'][event].append(ref_['key'])
         return ref_
 
+    def covers_spell(self, item, role, name, spell):
+        """Adds `name` under `role` and marks its registered spell `spell` as an ability_cast rule of this encounter (D45):
+        the monster bundle keeps the cast and schedule, the encounter owns what the cast does."""
+        creature_ref = self.participant(item, role, name)
+        monster_name, path, text = self.monster_files[name.lower()]
+        line = next((n for n, row in enumerate(text.splitlines(), 1) if f'"{spell}"' in row), 1)
+        self.entry(item, path, [line], 'mapped', '/encounter/rules',
+                   f'{monster_name} casts the registered spell "{spell}"; its effect is this encounter\'s ability_cast rule (D45).')
+        covered = item['manifest']['covers'].setdefault(f'spell.{spell}', [])
+        if creature_ref['key'] not in covered:
+            covered.append(creature_ref['key'])
+        ability = ref('Ability', f'canary:ability/spell/{slug(spell)}')
+        self.define(item, ability)
+        return ability
+
     def define(self, item, reference):
         if reference not in item['definitions']:
             item['definitions'].append(reference)
@@ -2684,12 +2699,84 @@ def respawn_and_remains(build):
                 'Ragiaz within 10 tiles of the dead dragon says the line.')
 
 
+SPELLS = 'data-otservbr-global/scripts/spells/monster/'
+
+
+def arena_summons(build):
+    """D45: registered summon spells whose effect is an encounter rule, triggered by ability_cast."""
+    # Razzagorn: four Demons at random tiles of the arena on every cast.
+    item = build.get('razzagorn', 'Ferumbras Ascension: Razzagorn', 'instance_per_party')
+    ability = build.covers_spell(item, 'razzagorn', 'Razzagorn', 'razzagorn summon')
+    item['encounter']['anchors'].append({'key': 'razzagorn_arena', 'kind': 'area',
+                                         'description': 'Every tile from Canary (33416, 32460, 14) to (33431, 32474, 14).'})
+    demon = creature('Demon')
+    build.define(item, demon)
+    path = build.rule(item, {'key': 'razzagorn_summons_demons', 'trigger': {'kind': 'ability_cast', 'role': 'razzagorn', 'ability': ability},
+                             'conditions': [], 'actions': [{'kind': 'spawn', 'creature': demon, 'count': 4,
+                                                            'at': {'random_in': 'razzagorn_arena'}, 'owner': 'none', 'health': 'full'}]})
+    build.entry(item, SPELLS + 'razzagorn_summon.lua', [3, 4, 5, 6, 7, 8, 9, 10, 11], 'mapped', path,
+                'onCastSpell creates four Demons at random tiles of x 33416-33431, y 32460-32474 on floor 14 (a failed '
+                'creation ends the cast). The reference-date wiki lists Eruptions of Destruction (a plain summon of the monster '
+                'file) and no Demons: this rule is Canary-only evidence.')
+
+    # Shulgrax: below eight summons, four Sin Devourers as his summons and four masterless Damned Souls.
+    item = build.get('shulgrax', 'Ferumbras Ascension: Shulgrax', 'instance_per_party')
+    ability = build.covers_spell(item, 'shulgrax', 'Shulgrax', 'shulgrax summon')
+    item['encounter']['anchors'].append({'key': 'shulgrax_arena', 'kind': 'area',
+                                         'description': 'Every tile from Canary (33478, 32781, 13) to (33491, 32793, 13).'})
+    devourer, soul = creature('Sin Devourer'), creature('Damned Soul')
+    build.define(item, devourer)
+    build.define(item, soul)
+    path = build.rule(item, {'key': 'shulgrax_summons_souls', 'trigger': {'kind': 'ability_cast', 'role': 'shulgrax', 'ability': ability},
+                             'conditions': [{'kind': 'summon_count', 'role': 'shulgrax', 'op': '<', 'value': 8}],
+                             'actions': [{'kind': 'spawn', 'creature': devourer, 'count': 4, 'at': {'random_in': 'shulgrax_arena'},
+                                          'owner': 'subject', 'health': 'full'},
+                                         {'kind': 'spawn', 'creature': soul, 'count': 4, 'at': {'random_in': 'shulgrax_arena'},
+                                          'owner': 'none', 'health': 'full'}]})
+    build.entry(item, SPELLS + 'shulgrax_summon.lua', list(range(3, 23)), 'mapped', path,
+                'onCastSpell: while Shulgrax has fewer than eight summons, four Sin Devourers (set as his summons) and four '
+                'Damned Souls appear at random tiles of x 33478-33491, y 32781-32793 on floor 13. The reference-date wiki places '
+                'both creatures in Shulgrax\'s room.')
+
+    # The Rage and The Destruction: one minion next to the boss while its counter is below three.
+    item = build.get('world_devourer', 'Heart of Destruction: World Devourer', 'instance_per_party')
+    encounter = item['encounter']
+    encounter['state']['flags'].append({'name': 'destruction_summon_delay', 'initial': False})
+    encounter['state']['timers'].append({'name': 'destruction_summon_delay', 'duration_ms': 15000, 'repeat': False})
+    for boss, minion, counter, script, delay, lines in (
+            ('The Rage', 'Frenzy', 'rage_summons', 'rage_summon.lua', None, list(range(9, 17))),
+            ('The Destruction', 'Disruption', 'destruction_summons', 'destruction_summon.lua', 'destruction_summon_delay',
+             list(range(1, 27)))):
+        role = slug(boss)
+        ability = build.covers_spell(item, role, boss, f'{slug(boss).split("_")[1]} summon')
+        minion_ref = creature(minion)
+        build.define(item, minion_ref)
+        conditions = [{'kind': 'counter_compare', 'counter': counter, 'op': '<', 'value': 3}]
+        actions = [{'kind': 'spawn', 'creature': minion_ref, 'count': 1, 'at': {'offset_tiles': 1}, 'owner': 'none', 'health': 'full'},
+                   {'kind': 'counter', 'counter': counter, 'operation': 'add', 'value': 1}]
+        if delay:
+            conditions.insert(0, {'kind': 'flag', 'flag': delay, 'value': False})
+            actions += [{'kind': 'flag', 'flag': delay, 'value': True}, {'kind': 'timer', 'timer': delay, 'operation': 'start'}]
+        path = build.rule(item, {'key': f'{role}_summons_{slug(minion)}', 'trigger': {'kind': 'ability_cast', 'role': role, 'ability': ability},
+                                 'conditions': conditions, 'actions': actions})
+        build.entry(item, SPELLS + script, lines, 'mapped', path,
+                    f'onCastSpell creates a {minion} on a random tile next to {boss} (x and y each -1..1) while the '
+                    f'{counter} counter is below three, then raises it'
+                    + (' and blocks the next summon for 15 s (the file-level delay flag becomes an encounter flag and timer)'
+                       if delay else '') + '. The spell\'s own combat has type COMBAT_NONE and no effect. The reference-date '
+                    f'wiki says the {minion} appears with {boss}.')
+        if delay:
+            path = build.rule(item, {'key': f'{delay}_ends', 'trigger': {'kind': 'timer_elapsed', 'timer': delay}, 'conditions': [],
+                                     'actions': [{'kind': 'flag', 'flag': delay, 'value': False}]})
+            build.entry(item, SPELLS + script, [8, 9, 10, 23], 'mapped', path, 'removeDelay clears the flag after 15 s.')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     parser.add_argument('--canary', required=True, type=Path)
     args = parser.parse_args()
     build = Encounters(args.canary)
-    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred):
+    for transcribe in (soul_war_taint_zones, dream_courts, forgotten_knowledge, ascendant, cults_of_tibia, wrath_of_the_emperor, ghulosh, dangerous_depth, hero_of_rathleton, azerus, gorzindel, heart_minions, heart_chargers, heart_bosses, small_boss_events, urmahlullu, megalomania_splinters, world_boss_events, quest_room_events, secret_library_knowledges, d31_events, respawn_and_remains, forgotten_knowledge_fights, eleventh_slice, heart_minion_forms, replica_servants, spawn_callbacks, ugly_monster_spawn, baeloc_and_nictros, king_zelos, burning_hatred, arena_summons):
         transcribe(build)
     print(json.dumps(build.write()))
 

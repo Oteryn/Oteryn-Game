@@ -131,9 +131,19 @@
       {
         "name": "the_rage_killed",
         "initial": false
+      },
+      {
+        "name": "destruction_summon_delay",
+        "initial": false
       }
     ],
-    "timers": []
+    "timers": [
+      {
+        "name": "destruction_summon_delay",
+        "duration_ms": 15000,
+        "repeat": false
+      }
+    ]
   },
   "rules": [
     {
@@ -368,6 +378,120 @@
             "revision": "canary-47dfd51f"
           },
           "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "the_rage_summons_frenzy",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "the_rage",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/rage_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "rage_summons",
+          "op": "<",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/frenzy",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "offset_tiles": 1
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "rage_summons",
+          "operation": "add",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "key": "the_destruction_summons_disruption",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "the_destruction",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/destruction_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "destruction_summon_delay",
+          "value": false
+        },
+        {
+          "kind": "counter_compare",
+          "counter": "destruction_summons",
+          "op": "<",
+          "value": 3
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/disruption",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 1,
+          "at": {
+            "offset_tiles": 1
+          },
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "counter",
+          "counter": "destruction_summons",
+          "operation": "add",
+          "value": 1
+        },
+        {
+          "kind": "flag",
+          "flag": "destruction_summon_delay",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "destruction_summon_delay",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "destruction_summon_delay_ends",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "destruction_summon_delay"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "flag",
+          "flag": "destruction_summon_delay",
+          "value": false
         }
       ]
     }

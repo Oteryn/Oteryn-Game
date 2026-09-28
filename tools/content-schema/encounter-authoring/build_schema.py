@@ -98,6 +98,7 @@ d['condition'] = {'oneOf': [
     kinded('in_anchor', {'subject': use('subject'), 'anchor': NAME}, ('subject', 'anchor')),
     kinded('killer_is_player'),
     kinded('has_master', {'role': NAME, 'value': BOOL}, ('role', 'value')),
+    kinded('summon_count', {'role': NAME, 'op': OP, 'value': integer(0)}, ('role', 'op', 'value')),
     kinded('health_percent', {'role': NAME, 'op': OP, 'value': {'type': 'number', 'minimum': 0, 'maximum': 100}},
            ('role', 'op', 'value')),
     kinded('attacker_wears', {'item': use('ItemRef'), 'wears': BOOL,
