@@ -36,7 +36,8 @@ Semantic rules:
   (and, conversely, an empty `placements` list requires either this row or the candidate is
   otherwise invalid) and a non-null `wiki`; or rule 'WIKI_PRICE' (D12) with `chosen` == 'wiki', an
   `item_name`, a `price` equal to the unit_price of the admitted offer its fact names (with `--snapshot`
-  and `--br-facts`, also the price both pinned wikis state) and an `item_name` that is the registered
+  and `--br-facts`, also the price both pinned wikis state; every admitted offer whose registered item
+  both wikis price must then carry that price) and an `item_name` that is the registered
   name of that offer's Item (committed `content/items/definitions`), a
   `trade.<item>.<direction>` fact and a non-null `wiki`; or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
   `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
@@ -441,9 +442,10 @@ def item_name_errors(report, registry_names):
     return errs
 
 
-def wiki_price_errors(report, snapshot_bytes, br_facts_bytes):
-    """With the pinned inputs at hand, every WIKI_PRICE row must be the price both wikis state (D12), using
-    the same lookup the candidates were built with."""
+def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names):
+    """With the pinned inputs at hand (D12), using the same lookup the candidates were built with: every
+    WIKI_PRICE row is the price both wikis state, and every admitted offer whose registered item both wikis
+    price for that NPC and direction carries that price, so an omitted override cannot pass."""
     errs = []
     if hashlib.sha256(snapshot_bytes).hexdigest() != report.get('snapshot_sha256'):
         errs.append('--snapshot does not match snapshot_sha256')
@@ -453,16 +455,25 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes):
         return errs
     builder = promotion_candidates.Builder(json.loads(snapshot_bytes), {'records': []}, json.loads(br_facts_bytes))
     for index, candidate in enumerate(report.get('candidates') or []):
+        name = candidate.get('name')
+        if not isinstance(name, str):
+            continue  # reported by errors()
         fandom = {row['item'].lower(): row
-                  for row in builder.wiki_trade.get(promotion_candidates.normalize_name(candidate['name']), [])}
+                  for row in builder.wiki_trade.get(promotion_candidates.normalize_name(name), [])}
         for row in candidate.get('arbitration') or []:
-            if row.get('rule') != 'WIKI_PRICE':
-                continue
-            direction = row['fact'].rsplit('.', 1)[-1]
-            stated = builder.wiki_price(candidate['name'], direction, row.get('item_name'), fandom)
+            match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') == 'WIKI_PRICE' else None
+            if match is None:
+                continue  # not a WIKI_PRICE row, or a malformed one errors() reports
+            stated = builder.wiki_price(name, match.group(2), row.get('item_name'), fandom)
             if stated != row.get('price'):
                 errs.append(f"candidates[{index}]: WIKI_PRICE {row['fact']} price {row.get('price')!r} != "
                             f"the price both wikis state ({stated!r})")
+        for offer in (candidate.get('trade_service') or {}).get('offers') or []:
+            item_name = registry_names.get((offer.get('item') or {}).get('key'))
+            stated = builder.wiki_price(name, offer.get('direction'), item_name, fandom) if item_name else None
+            if stated is not None and offer.get('unit_price') != stated:
+                errs.append(f"candidates[{index}]: offer {item_name!r} {offer.get('direction')} unit_price "
+                            f"{offer.get('unit_price')!r} != the price both wikis state ({stated!r})")
     return errs
 
 
@@ -473,9 +484,10 @@ def main():
     parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
     args = parser.parse_args()
     report = json.loads(Path(args.report).read_text(encoding='utf-8'))
-    all_errors = errors(report) + item_name_errors(report, registry_item_names())
+    registry_names = registry_item_names()
+    all_errors = errors(report) + item_name_errors(report, registry_names)
     if args.snapshot and args.br_facts:
-        all_errors += wiki_price_errors(report, args.snapshot.read_bytes(), args.br_facts.read_bytes())
+        all_errors += wiki_price_errors(report, args.snapshot.read_bytes(), args.br_facts.read_bytes(), registry_names)
 
     candidates = report.get('candidates') or []
     total = len(candidates)

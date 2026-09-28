@@ -94,10 +94,25 @@ class PromotionValidatorTests(unittest.TestCase):
                     'candidates': [{'name': 'Ahmet', 'arbitration': [
                         {'fact': 'trade.3483.SellToPlayer', 'rule': 'WIKI_PRICE', 'chosen': 'wiki',
                          'item_name': 'fishing rod', 'price': price}]}]}
-        self.assertEqual(validate_promotion.wiki_price_errors(report(150), snapshot, br_facts), [])
-        self.assertTrue(validate_promotion.wiki_price_errors(report(999999), snapshot, br_facts))
-        self.assertEqual(validate_promotion.wiki_price_errors(report(150), b'{}', br_facts),
-                         ['--snapshot does not match snapshot_sha256'])
+        names = {'oteryn:item.test.fishing_rod': 'fishing rod'}
+        def offered(price):  # the admitted offer the row names, at `price`
+            built = report(150)
+            built['candidates'][0]['trade_service'] = {'offers': [
+                {'item': {'key': 'oteryn:item.test.fishing_rod'}, 'source_item_id': 3483,
+                 'direction': 'SellToPlayer', 'unit_price': price}]}
+            return built
+        check = validate_promotion.wiki_price_errors
+        self.assertEqual(check(offered(150), snapshot, br_facts, names), [])
+        self.assertTrue(check(report(999999), snapshot, br_facts, names))
+        self.assertEqual(check(report(150), b'{}', br_facts, names), ['--snapshot does not match snapshot_sha256'])
+        # an omitted override: the offer keeps a source price although both wikis state another one
+        omitted = offered(40)
+        omitted['candidates'][0]['arbitration'] = []
+        self.assertTrue(any('!= the price both wikis state (150)' in e for e in check(omitted, snapshot, br_facts, names)))
+        # a malformed WIKI_PRICE row is reported by errors(), never a traceback here
+        malformed = offered(150)
+        del malformed['candidates'][0]['arbitration'][0]['fact']
+        self.assertEqual(check(malformed, snapshot, br_facts, names), [])
 
     def test_bad_key_format_fails(self):
         report = load_sample()
