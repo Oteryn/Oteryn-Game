@@ -177,7 +177,7 @@ jobs:
 
   wiki-br:
     # TibiaWiki BR answers 403 (Cloudflare) from the build container; this job reads it from a hosted
-    # runner. The artifact keeps infobox fields cut to 200 characters and revision ids, never raw pages.
+    # runner. The artifact keeps infobox fields cut to 200 characters (effect and notes whole, up to 4000) and revision ids, never raw pages.
     name: Spell authoring / TibiaWiki BR capture
     runs-on: ubuntu-24.04
     timeout-minutes: 30

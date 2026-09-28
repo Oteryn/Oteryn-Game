@@ -123,9 +123,15 @@ d['spell'] = obj({
         'needs_direction': use('bool'), 'target_or_direction': use('bool'), 'range_tiles': integer(),
         'block_walls': {**use('bool'), 'description': 'The cast needs a clear line of sight (Canary/Crystal '
                         'blockWalls = checkLineOfSight, engine default true).'}, 'allow_on_self': use('bool'), 'check_floor': use('bool'),
-        'parameter': enum('none', 'player_name', 'text')},
+        'parameter': enum('none', 'player_name', 'text'),
+        'aim_at_target': {**use('bool'), 'description': 'S20: a direction spell the player may set to turn towards '
+                          'the attacked creature before casting (client "Aim at Target"; BR aimattarget).'},
+        'cast_at_position': {**use('bool'), 'description': 'S20: the spell may be cast at a chosen position: with '
+                             'crosshair, at the cursor or at the target (Canary 15.30 spell:optionalTarget).'}},
         ('aggressive', 'self_target', 'needs_target', 'needs_direction', 'target_or_direction', 'block_walls',
-         'parameter')),
+         'parameter'),
+        allOf=[{'if': when('aim_at_target', True), 'then': when('needs_direction', True)},
+               {'if': when('cast_at_position', True), 'then': {'properties': {'needs_target': {'const': False}}}}]),
     'pz_locks_caster': use('bool'), 'needs_weapon': use('bool'),
     'base_power': integer(1, description='Reference base power (wiki basepower, Crystal basePower); a formula '
                           'input, not a damage value.'),

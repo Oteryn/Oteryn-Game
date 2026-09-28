@@ -9,8 +9,8 @@ Field rules (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md section 5):
   value, the most votes win and a tie goes to the 15.30 branch; otherwise the wiki page with the newer revision.
 - S16: learning_required is false (patch 15.22 unlocks spells at their level); a Wheel of Destiny spell carries
   wheel_unlock (S6), stated by the wiki or else by the Canary 15.30 needLearn.
-- S4: Canary and Crystal are equal sources; a value only one of them has is taken from it, a value they
-  disagree on (with the engine default for an absent call) and that no wiki states stays unresolved.
+- S4: a value only one of Canary and Crystal has is taken from it. S21: a value they disagree on (with the engine
+  default for an absent call) and that no wiki or tibia.com states follows the Canary 15.30 branch.
 - S5: player damage/heal formulas are the source expression trees; `level / 5` and Canary's
   calculateFlatDamageHealing become the world curve `level_base_damage_healing`. When the sources'
   executions differ only in the formula, the formula that consumes the wiki base power wins.
@@ -50,7 +50,8 @@ TIBIACOM_LIST = SAMPLES / 'tibiacom-spell-list-2026-09-28.json'
 # S15: tibia.com list names that differ from the source spell names (source name -> tibia.com name).
 TIBIACOM_NAMES = {'invisibility': 'invisible', 'paralyze rune': 'paralyse rune', 'monk familiar': 'summon monk familiar'}
 OFFICIAL = ROOT / 'official-changes.json'
-REVISION = 'spell-p2-r7'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text
+CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
+REVISION = 'spell-p2-r8'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -459,6 +460,13 @@ class Bundle:
                          method='needLearn')
         value, provenance, note = self.wikis.resolve(pages, 'wheelspell', self.name)
         destination = base + '/requirements/wheel_unlock'
+        official_level = self.official_level(pages)
+        if value == 'yes' and official_level is not None and [w for w, _ in provenance] == ['fandom']:
+            # S15: tibia.com lists a revelation spell without a level; one it gives a level unlocks at that level.
+            self.row('approved_omission', 'wheelspell', resolution=f'S15: tibia.com states level {official_level}, so '
+                     'the spell unlocks at its level; the Fandom wheelspell marking (BR states none) is superseded.',
+                     wiki=provenance[0])
+            return None
         if value is not None and (note is not None or value not in ('yes', 'no')):
             # Fail closed: an unrecognised value or a BR/Fandom conflict never makes a Wheel spell castable.
             self.row('unresolved_semantics', 'wheelspell', resolution=f'S6/S16: the wiki Wheel marking {value!r} is '
@@ -477,6 +485,13 @@ class Bundle:
                      method='needLearn')
             return True
         return None
+
+    @staticmethod
+    def official_level(pages):
+        """The level the tibia.com list states for the spell, or None ("-" or no row)."""
+        page = pages.get('tibiacom')
+        value = page['fields'].get('levelrequired') if page is not None else None
+        return ws.crosswalk_value('levelrequired', value) if value not in (None, '') else None
 
     def sound_cues(self, base):
         """S18: cast and impact sound cues. No wiki states them; a constant Lua reads as nil is silence."""
@@ -542,10 +557,19 @@ class Bundle:
             return None
         distinct = {json.dumps(v, sort_keys=True) for v in present.values()}
         if len(distinct) > 1:
-            self.row('unresolved_semantics', method, resolution='S4 conflict: ' + ', '.join(
-                f'{s} {v!r}' for s, v in present.items()) + '; no wiki states this value.', source=next(iter(present)),
-                method=method)
-            return None
+            if 'canary' not in present:
+                self.row('unresolved_semantics', method, resolution='S4 conflict: ' + ', '.join(
+                    f'{s} {v!r}' for s, v in present.items()) + '; no wiki states this value.',
+                    source=next(iter(present)), method=method)
+                return None
+            value = present['canary']
+            self.row('mapped', method, destination, CANARY_DECIDES + ' (' + ', '.join(
+                f'{s} {v!r}' for s, v in present.items()) + ').', source='canary', method=method)
+            for source in present:
+                if source != 'canary':
+                    self.row('approved_omission', method, resolution=f'{CANARY_DECIDES}: {value!r} supersedes '
+                             f'{present[source]!r}.', source=source, method=method)
+            return value
         value = next(iter(present.values()))
         for source in present:
             self.row('mapped', method, destination, 'S4: source value' + (' (both sources agree).' if len(present) > 1 else '.'),
@@ -589,13 +613,20 @@ class Bundle:
         vocations = self.vocations(pages, carrier)
         if vocations:
             requirements['vocations'] = vocations
-        level = self.field(base + '/requirements/level', 'levelrequired', 'level', pages)
-        requirements['level'] = level if level is not None else 0
+        wheel = self.wheel_unlock(base, pages)
+        if wheel and self.official_level(pages) is None:
+            # S22: the client and tibia.com list a Wheel revelation spell without a level; the Wheel gates it (S6/S16).
+            requirements['level'] = 0
+            self.row('mapped', 'level', base + '/requirements/level', 'S22: a Wheel of Destiny revelation spell has '
+                     'level 0, as the client spell list shows and tibia.com states no level; the Wheel unlock gates it.',
+                     source=next(iter(self.records)), method='level')
+        else:
+            level = self.field(base + '/requirements/level', 'levelrequired', 'level', pages)
+            requirements['level'] = level if level is not None else 0
         premium = self.field(base + '/requirements/premium', 'premium', 'isPremium', pages,
                              wiki_transform=lambda v: v == 'yes')
         requirements['premium'] = bool(premium)
         requirements['learning_required'] = False
-        wheel = self.wheel_unlock(base, pages)
         if wheel is not None:
             requirements['wheel_unlock'] = wheel
         spell['requirements'] = requirements
@@ -669,10 +700,16 @@ class Bundle:
                     return None
             else:
                 if len({json.dumps(v) for v in present.values()}) > 1:
-                    self.row('unresolved_semantics', 'vocation', resolution='S4 conflict: ' + ', '.join(
-                        f'{s} {v}' for s, v in present.items()) + '; no wiki states the vocations.',
-                        source=next(iter(present)), method='vocation')
-                    return None
+                    if 'canary' not in present:
+                        self.row('unresolved_semantics', 'vocation', resolution='S4 conflict: ' + ', '.join(
+                            f'{s} {v}' for s, v in present.items()) + '; no wiki states the vocations.',
+                            source=next(iter(present)), method='vocation')
+                        return None
+                    for source in present:
+                        if source != 'canary':
+                            self.row('approved_omission', 'vocation', resolution=f'{CANARY_DECIDES}: '
+                                     f'{present["canary"]} supersedes {present[source]}.', source=source, method='vocation')
+                    present = {'canary': present['canary']}
                 bases = next(iter(present.values()))
                 for source in present:
                     self.row('mapped', 'vocation', '/spell/spell/requirements/vocations', 'S4: source vocations.',
@@ -723,6 +760,16 @@ class Bundle:
         name_param = any(r['registrar'].get('hasPlayerNameParam') for r in self.records.values())
         text_param = any(r['registrar'].get('hasParams') for r in self.records.values())
         t['parameter'] = 'player_name' if name_param else 'text' if text_param else 'none'
+        # S20: the cast options of patch 15.25. Aim at Target is stated by BR only; the positional cast by Canary 15.30.
+        aim = self.field(base + 'aim_at_target', 'aimattarget', None, pages, wiki_transform=lambda v: v == 'yes',
+                         required=False)
+        if aim and t['needs_direction']:
+            t['aim_at_target'] = True
+        elif aim:
+            self.row('approved_omission', 'aimattarget', resolution='S20: the wiki marks Aim at Target on a spell '
+                     'without a cast direction; not applied.', source=next(iter(self.records)))
+        if self.field(base + 'cast_at_position', None, 'optionalTarget', pages, transform=bool, required=False):
+            t['cast_at_position'] = True
         return t
 
     def rune(self, pages):
@@ -737,8 +784,14 @@ class Bundle:
         flags = {json.dumps([bool(x) for x in (v or [False, False])] + [False] * (2 - len(v or []))) for v in blocking.values()}
         solid, creature = (json.loads(next(iter(flags)))[:2] if len(flags) == 1 else (False, False))
         if len(flags) > 1:
-            self.row('unresolved_semantics', 'isBlocking', resolution='S4 conflict on rune:isBlocking.',
-                     source=next(iter(self.records)), method='isBlocking')
+            if 'canary' in blocking:
+                canary = [bool(x) for x in (blocking['canary'] or [False, False])] + [False, False]
+                solid, creature = canary[:2]
+                self.row('approved_omission', 'isBlocking', resolution=f'{CANARY_DECIDES} on rune:isBlocking.',
+                         source=next(s for s in self.records if s != 'canary'), method='isBlocking')
+            else:
+                self.row('unresolved_semantics', 'isBlocking', resolution='S4 conflict on rune:isBlocking.',
+                         source=next(iter(self.records)), method='isBlocking')
         return {'item': ref('Item', f'candidate:item/{int(item or 0)}'), 'charges': int(charges or 1),
                 'magic_level': int(magic_level or 0), 'allow_far_use': bool(far), 'blocking': {'solid': solid, 'creature': creature}}
 
@@ -747,7 +800,11 @@ class Bundle:
         if all(t == 'conjure' for t in tiers.values()):
             conjures = {s: r['cast'].get('conjure') or {} for s, r in self.records.items()}
             distinct = {json.dumps({k: v for k, v in c.items() if k != 'count'}, sort_keys=True) for c in conjures.values()}
-            if len(distinct) > 1:
+            if len(distinct) > 1 and 'canary' in conjures:
+                self.row('approved_omission', 'conjureItem', resolution=f'{CANARY_DECIDES} on the conjured items: '
+                         + json.dumps(conjures), source=next(s for s in conjures if s != 'canary'), kind='script')
+                conjures = {'canary': conjures['canary']}
+            elif len(distinct) > 1:
                 self.row('unresolved_semantics', 'conjureItem', resolution='S4 conflict on the conjured items: ' +
                          json.dumps(conjures), source=next(iter(self.records)), kind='script')
             conjure = next(iter(conjures.values()))
@@ -804,13 +861,17 @@ class Bundle:
             return {'native_behavior': {'key': 'unresolved', 'parameters': {}}}
         chosen = next(iter(converted))
         if len(converted) == 2:
+            chosen = 'crystal'
             signatures = {s: execution_signature(c[1]) for s, c in converted.items()}
             if signatures['canary'] != signatures['crystal']:
-                self.row('unresolved_semantics', 'onCastSpell', resolution='S4 conflict: Canary and Crystal combats '
-                         'differ (area, effects, conditions or parameters) and no wiki states the execution.',
-                         source='canary', kind='script')
+                self.row('approved_omission', 'onCastSpell', resolution=f'{CANARY_DECIDES}: the Canary and Crystal '
+                         'combats differ (area, effects, conditions or parameters) and no wiki states the execution; '
+                         'the Canary combat is used.', source='crystal', kind='script')
+                chosen = 'canary'
             formulas = {s: [f for f in c[1]['formulas'] if f['kind'] == 'player_expression'] for s, c in converted.items()}
-            if json.dumps(formulas['canary'], sort_keys=True) == json.dumps(formulas['crystal'], sort_keys=True):
+            if chosen == 'canary':
+                pass
+            elif json.dumps(formulas['canary'], sort_keys=True) == json.dumps(formulas['crystal'], sort_keys=True):
                 chosen = 'crystal'
             else:
                 with_power = [s for s in ('crystal', 'canary') if formulas[s] and all(uses_base_power(f) for f in formulas[s])]
