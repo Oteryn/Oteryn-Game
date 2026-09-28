@@ -336,7 +336,7 @@ fn admitted_encounter_round_trips_and_stays_declarative() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 25] = [
+    let cases: [(&str, &str, Mutation); 26] = [
         (
             "an encounter-backed ability without its ability_cast rule",
             "v2 encounter-backed Ability has no ability_cast rule in its encounter",
@@ -412,6 +412,18 @@ fn each_broken_invariant_is_rejected() {
             "a covered creature without its encounter binding",
             "v2 Creature encounters differ from the creatures their encounters cover",
             |draft| {
+                for profile in &mut draft.state.authoring_profiles {
+                    if let ProjectV2AuthoringProfileData::Creature(creature) = &mut profile.data {
+                        creature.encounters.clear();
+                    }
+                }
+            },
+        ),
+        (
+            "an encounter-backed ability owner that its encounter does not cover",
+            "v2 creature owning an encounter-backed Ability is not bound to its encounter",
+            |draft| {
+                encounter_mut(draft).covers.clear();
                 for profile in &mut draft.state.authoring_profiles {
                     if let ProjectV2AuthoringProfileData::Creature(creature) = &mut profile.data {
                         creature.encounters.clear();

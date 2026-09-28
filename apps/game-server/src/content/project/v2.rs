@@ -2246,6 +2246,23 @@ fn validate_v2_encounter_bindings(
             ));
         }
     }
+    // E3: a creature that owns an encounter-backed Ability is bound to, and covered by, its encounter.
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Ability(ProjectV2AbilityAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+            && let Some(encounter) = &details.encounter
+            && owned.iter().any(|(creature, ability)| {
+                *ability == &profile.target
+                    && !bound.contains(&(&creature.key, &creature.revision, encounter))
+            })
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 creature owning an encounter-backed Ability is not bound to its encounter",
+            ));
+        }
+    }
     Ok(())
 }
 
