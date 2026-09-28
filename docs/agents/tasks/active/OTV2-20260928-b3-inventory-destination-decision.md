@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-b3-inventory-destination-decision
 title: "B3 inventory destination, capacity and stacks decision (D80-D83)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1137
 base_sha: e6141b414e0cb20fa050ba451869a8ede52a5b53
 head_sha: null
 final_head_sha: null
@@ -75,11 +75,11 @@ idempotency and evidence obligations of DUR-03 §39 are unchanged.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1137 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1137
 owner_action_required: null
 blocker: null
-next_action: open the PR, bind this record to it, freeze and route one external review
+next_action: exact-head review and Merge Queue integration of #1137
 ```
