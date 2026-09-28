@@ -83,7 +83,10 @@ d['rune'] = obj({
                     description='Canary/Crystal rune:isBlocking(blockingSolid, blockingCreature): the target tile may not '
                                 'hold a solid item / a creature; engine default false, false.')},
     ('item', 'charges', 'magic_level', 'allow_far_use', 'blocking'))
-d['conjure'] = obj({'reagent': use('ItemRef'), 'result': use('ItemRef'), 'count': integer(1)}, ('result', 'count'),
+d['conjure'] = obj({'reagent': use('ItemRef'), 'result': use('ItemRef'), 'count': integer(1),
+                    'effect_asset_binding': {**monster('assetBinding'), 'description': 'S18: the magic effect shown on '
+                                             'the caster after a successful conjure (a rune always shows magic_red).'}},
+                   ('result', 'count'),
                    description='S2: removes one reagent (when present) and creates count result items.')
 d['nativeBehavior'] = obj({
     'key': text(pattern=r'^[a-z][a-z0-9_]*$'),

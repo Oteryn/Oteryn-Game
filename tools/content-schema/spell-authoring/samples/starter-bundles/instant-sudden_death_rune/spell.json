@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/sudden_death_rune",
-      "revision": "spell-p2-r3"
+      "revision": "spell-p2-r4"
     },
     "name": "Sudden Death Rune",
     "carrier": "instant",
@@ -45,13 +45,14 @@
         "result": {
           "family": "Item",
           "key": "candidate:item/3155",
-          "revision": "spell-p2-r3"
+          "revision": "spell-p2-r4"
         },
         "count": 3,
+        "effect_asset_binding": "canary.appearance:effect/magic_red",
         "reagent": {
           "family": "Item",
           "key": "candidate:item/3147",
-          "revision": "spell-p2-r3"
+          "revision": "spell-p2-r4"
         }
       }
     }
