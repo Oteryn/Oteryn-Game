@@ -85,6 +85,35 @@ protected on `main@74bb3fd`) resolves it, and DUR-03 §39.3 now cites it:
 D41 and D42 are applied under that decision. Inventory position, capacity and weight policy,
 the `RewardClaim` physical schema and the cooldown identity stay open (D41, D42, §7).
 
+### 5.1 Amendment (2026-09-28): D92, placement and `RewardClaim` schema
+
+Resolved on #162 (comment 5876398790) after the B3 decision
+(`reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md`).
+
+- **D92 (owner, "Najpierw miejsca, jak D81").** The first chest slice checks free entries of the
+  equipped main backpack only: one free entry per top-level reward item, all checked before any
+  write (`current_entry_count < definition_capacity`, B3 §4.2). D41's weight check is a declared
+  delivery gap closed together with B3-3. The rest of D41 is unchanged: nothing is written when
+  room is missing, the player is told why, and nothing goes to the ground.
+- **Placement (architect).** A small child after B3-1, `CHEST-1`, admits a MINT whose destination
+  is a new entry of the equipped main backpack. It reuses B3-1's container-entry location tables,
+  placement ordinal and pre-insert rule; there is no second placement implementation. Each minted
+  top-level item takes its own new entry: mint into an existing stack stays excluded (DUR-03
+  §39.1), and the D83 merge shapes apply to pickup only.
+- **Container rewards.** A container reward needs container expansion (RL-05 > 0). The first chest
+  slice admits non-container rewards only; container rewards follow the nested-bags decision.
+- **`RewardClaim` schema (architect).** One row per `(character_id, claim_key)`, unique, updated in
+  place and never duplicated; `next_allowed_at` is NULL for a `once` claim. It commits in the same
+  DUR-03 transaction as the MINT and does not advance `CharacterRevision` (§5).
+- **Once-only first.** The first slice covers `once` claims (330 of 336). A second claim of a
+  `once` row is refused with nothing written; a retry returns the first outcome.
+- **Cooldown identity (later child).** The MINT cause is `(claim, character, cycle ordinal)`; the
+  ordinal increments and `next_allowed_at` advances in the same transaction as the MINT. A retry of
+  the same cycle returns the first outcome; a claim before `next_allowed_at` is refused.
+- **Order.** B3-1 → `CHEST-1` (MINT into a backpack entry plus the `RewardClaim` migration,
+  once-only, non-container) → chest `USE` wiring (D39) → cooldown claims → container rewards →
+  weight (with B3-3). Each child needs its own #162 allocation.
+
 ## 6. Not in this slice
 
 - Quest missions and transitions (D35).

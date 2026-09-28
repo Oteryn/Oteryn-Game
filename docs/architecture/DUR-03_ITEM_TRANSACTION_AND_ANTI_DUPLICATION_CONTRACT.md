@@ -934,6 +934,10 @@ touched items, quantity redistribution and nested containers, and resolve the "N
 decision test below for destination, capacity and placement. Every other obligation of this
 section is unchanged.
 
+**Reward chest amendment.** `OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md` §5.1 (D92) admits,
+in the `CHEST-1` child after B3-1, a MINT whose destination is a new entry of the equipped main
+backpack under the same placement rule. Mint into an existing stack stays excluded (§39.1).
+
 **Expected bindings versus current authority.** The immutable MINT/TRANSFER
 candidate binds expected item definition/state, source occurrence, WorldId,
 ChannelId, content/map/runtime context, destination and safe fence references.

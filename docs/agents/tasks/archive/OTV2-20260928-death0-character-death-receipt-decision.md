@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-death0-character-death-receipt-decision
 title: "DEATH-0 Character death receipt decision"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1148
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 784daecad5017d1e067cefd4d61f7dd4ab0fab92
+final_head_sha: 784daecad5017d1e067cefd4d61f7dd4ab0fab92
+final_head_frozen_at: 2026-09-28T18:27Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -53,9 +53,9 @@ idempotency. DEATH-0 and DEATH-1 carry the negative cases in the handback when a
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review, one repair generation; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`75e502a8`).
 
 ## Excluded scope
 
@@ -78,14 +78,27 @@ rule 5869165340).
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1148 merged through the Merge Queue on 2026-09-28 as `75e502a8`.
+- Review: one Codex review of `053819d` (three P1s), repaired in the single repair generation
+  `784daec`; the owner decided to merge after green CI.
+- Protected-main readback: the decision and this record on `75e502a8` are byte-identical to the
+  frozen head `784daec`.
+- The PR body predates the repair (pending respawns, intent binding, death cell); the decision is
+  authoritative.
+- Next allocations: DEATH-0 (migration); DEATH-1b after DEATH-0 (DEATH-1a requested on #162).
+- Archived under `OTV2-20260928-spell-d7-cw1-chest-amendments`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1148 open
-status: validating
+last_progress: protected-integrated as 75e502a8; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 784daecad5017d1e067cefd4d61f7dd4ab0fab92
 pr: 1148
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1148
+next_action: null
 ```

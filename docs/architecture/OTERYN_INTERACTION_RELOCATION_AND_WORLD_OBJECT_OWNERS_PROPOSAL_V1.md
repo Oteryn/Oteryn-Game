@@ -2140,6 +2140,19 @@ needed, is a new decision, not something this shape auto-supports.
   `revert_destination`-bearing occurrence, this is satisfied by construction (design point 3): lowering
   binds exactly one dedicated inverse per occurrence.
 
+### Owner decisions D90 and D91 (2026-09-28)
+
+Raised by the owning lane on #1144 (#162 comment 5875759505) and decided by the owner on #162
+comment 5875958040, both "as Global":
+
+- **D90, re-arm.** After a timed revert returns the teleporter to its natural state (or its
+  declared post-revert variant, design point 3), the same forward transition may fire again on the
+  next occurrence of its owning event. A covered teleporter opens on every such event, not once per
+  scope generation.
+- **D91, event-owned transitions.** A forward transition owned by an encounter or server event is
+  not reachable through USE selection or the session `apply` path. Only its owning event commits
+  it, and only that commit schedules the revert (§7).
+
 ### Open items for the owning lane
 
 - The exact CW3 linker/validator code that performs the fail-closed key-subset checks above and the
