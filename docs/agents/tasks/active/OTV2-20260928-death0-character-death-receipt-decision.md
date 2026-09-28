@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-death0-character-death-receipt-decision
 title: "DEATH-0 Character death receipt decision"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1148
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
 head_sha: null
 final_head_sha: null
@@ -69,11 +69,11 @@ idempotency. DEATH-0 and DEATH-1 carry the negative cases in the handback when a
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1148 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1148
 owner_action_required: null
 blocker: null
-next_action: open the PR, bind this record to it, freeze and route one external review
+next_action: exact-head review and Merge Queue integration of #1148
 ```
