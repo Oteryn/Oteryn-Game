@@ -72,7 +72,7 @@ authority_invariants:
   - Q1 Game derives Premium only from the Platform entitlement through the consumer fence; no Game record grants or extends Premium
   - Q2 an expired Premium never returns through reconnect, recovery or a replayed producer decision
   - Q3 losing Premium never blocks base login and never forces a logout
-  - Q4 the durable promotion never changes because Premium lapsed; only its effect is suspended
+  - Q4 the durable promotion never changes because Premium lapsed; its benefits are checked at each use and stop at once; only the displayed name waits for login
   - Q5 Premium spells and Premium-area entry are refused once Premium is not current, checked at use
 consumer_boundaries:
   - fresh admission
@@ -92,7 +92,7 @@ negative_cases_required_of_implementation:
   - Q1 a Game-side flag or cached value without current producer authority -> no benefit
   - Q2 a reconnect after expiry, or a replayed older active decision -> benefit not restored
   - Q3 an expired account logs in -> login succeeds without benefits; no forced logout mid-session
-  - Q4 lapse then renewal -> promotion suspended at the next login, then restored at the next login after renewal, with no fee
+  - Q4 lapse mid-session -> the next soul gain, regeneration step or death uses the unpromoted values at once; the name changes at the next login; renewal restores with no fee
   - Q5 a Premium spell cast or a Premium-area entry after expiry -> refused at use
 positive_cases_required_of_implementation:
   - an operator grant makes the account Premium; promotion, the Premium blessings, soul 200 (promoted) and Premium areas and spells work
@@ -112,7 +112,8 @@ finding_family_sweep:
   evidence:
     - docs/architecture/PROD-ENTITLEMENTS-01_GAME_CONSUMER_ENFORCEMENT_CONTRACT_CANDIDATE.md
 finding_dispositions:
-  p0_p1_accepted_and_repaired: []
+  p0_p1_accepted_and_repaired:
+    - "Codex P1 4123546264 (2e43bf1): promotion benefits outlived Premium until relog, against PROD-ENTITLEMENTS-01 §12. Repaired with owner decision D76: benefits checked at each use; only the displayed name changes at login"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred: []
 ```

@@ -1,7 +1,7 @@
 # Premium activation decision
 
 - Decision: `PREMIUM-ACTIVATION-V1`
-- Status: **CANDIDATE with owner decisions D69-D75 taken (§2)**. Acceptance requires exact-head
+- Status: **CANDIDATE with owner decisions D69-D76 taken (§2)**. Acceptance requires exact-head
   validation, independent review and protected integration.
 - Role: Sol Supervising Architect (`OTV2_SOL_SUPERVISING_ARCHITECT` 1.1)
 - Profile: `Oteryn Reference` (Global Tibia at 2026-09-27, D33)
@@ -30,6 +30,7 @@ account has it, and what happens when it expires during play?
 | D73 | On expiry: Premium spells and Premium-area entry stop at use, at once; promotion suspension and relocation out of a Premium area happen at the next login; no forced logout. | "Przy użyciu + przy logowaniu" |
 | D74 | Soul above the new maximum after demotion is kept until spent. | "Zostaje do zużycia" |
 | D75 | Yalahar is a free city. | "Darmowy" |
+| D76 | Refines D73 for promotion, to satisfy `PROD-ENTITLEMENTS-01` §12: promotion benefits (soul maximum, regeneration, the death XP reduction) are checked at each use, so they stop at once when Premium expires; only the displayed vocation and title change at the next login. | "Korzyści od razu, tytuł przy logowaniu" |
 
 ## 3. Facts
 
@@ -56,7 +57,7 @@ account has it, and what happens when it expires during play?
   - Premium spells: the per-spell Premium column of the official library.
 - The spell schema has `requirements.premium` and a Premium cast check (`OTERYN_SPELL_AUTHORING_SCHEMA_V1.md`).
 - GAME-CHAR-01 Stage B left promotion under lapse `UNKNOWN`, recommending that the promotion state
-  is kept and its benefits derive from the current entitlement (DELTA_02 E1). D73 decides this.
+  is kept and its benefits derive from the current entitlement (DELTA_02 E1). D73 and D76 decide this.
 
 **UNKNOWN**
 
@@ -80,19 +81,26 @@ account has it, and what happens when it expires during play?
 - The first grants (D69) are Platform-side operator or test grants. Game treats them like any other
   Premium entitlement.
 
-### 4.2 Promotion (D70, D72, D73)
+### 4.2 Promotion (D70, D72, D73, D76)
 
 - Promotion is durable Character state: `promoted` plus provenance. It is bought once at a
   promotion NPC (level 20, 20,000 gp, Premium current) through the NPC service child.
-- The **effective** vocation is promoted only while the account's Premium is current. Effective
-  promotion is evaluated at login; a suspension or restoration takes effect at the next login
-  (D73). The durable `promoted` state never changes because Premium lapsed.
-- Effects of effective promotion: the promoted title, soul maximum 200 (D72), the promotion
-  regeneration values and the −30% death XP reduction (first player death decision, D58).
+- A promotion **benefit** applies only while the durable `promoted` state is set and the
+  account's Premium is current at the moment of use (D76, consumer contract §12). Each benefit is
+  checked at its own authoritative point:
+  - soul maximum 200 (D72): at each soul gain or regeneration step (§4.3);
+  - the promotion regeneration values: at each regeneration step;
+  - the −30% death XP reduction: at the death transaction (first player death decision).
+- The **displayed** promoted vocation and title follow the same rule but change only at login:
+  a suspension or restoration of the name shows at the next login (D73). No gameplay effect
+  depends on the displayed name.
+- The durable `promoted` state never changes because Premium lapsed; renewal restores the benefits
+  at once and the name at the next login, with no fee.
 
 ### 4.3 Soul (D72, D74)
 
-- Maximum soul is 200 for effectively promoted characters and 100 otherwise.
+- Maximum soul is 200 while the character is promoted and Premium is current, checked at each soul
+  gain or regeneration step, and 100 otherwise (D72, D76).
 - After a demotion, current soul above the new maximum stays until spent; regeneration never raises
   soul above the maximum. Nothing is clamped.
 
@@ -154,7 +162,7 @@ apply the Premium gate to cosmetics.
 
 ```yaml
 result: RESOLVED_WITH_OWNER_DECISIONS
-owner_decisions: [D69, D70, D71, D72, D73, D74, D75]
+owner_decisions: [D69, D70, D71, D72, D73, D74, D75, D76]
 durable_decision_ref: docs/architecture/reviews/OTERYN_GAME_PREMIUM_ACTIVATION_DECISION_2026-09-28.md
 resource_values_changed: false
 production_authority_changed: false
@@ -165,7 +173,7 @@ required_independent_review: "exact-head independent review (entitlement consume
 implementation_lanes: [PREM-1, PREM-2, PREM-3, PREM-4, PREM-5, "PREM-P (Platform)"]
 required_revalidation:
   - "PREM-1: login succeeds without Premium; a reconnect never restores an expired benefit; a stale or replayed producer decision is rejected by the fence"
-  - "PREM-2: promotion suspended at the first login after lapse and restored at the first login after renewal, with no fee; soul max 200 only while effectively promoted; soul above max is kept and never regenerates above it"
+  - "PREM-2: promotion benefits (soul maximum, regeneration, death reduction) stop at the first use after lapse and return at the first use after renewal; the displayed vocation and title change at the next login; no fee; soul above max is kept and never regenerates above it"
   - "PREM-3: entry into a Premium area is refused once Premium is not current; login outside Premium relocates to the right temple; a mid-session expiry moves nobody until the next login"
   - "PREM-4: a Premium spell fails at cast time once Premium is not current"
 remaining_unknowns:
