@@ -34,7 +34,7 @@ EXPECTED_CAPTURE_ROWS_SHA256 = "62efa8385666f725f707b4f02d2372ce91ec228fc770d904
 EXPECTED_CAPTURE_BATCH = "tibiawiki-item-census:389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
 EXPECTED_CAPTURE_CENSUS_SHA256 = "389875abd364aa9bcb0b09a591989c82ece5098d63b3c23376274048f6ac2f5a"
 EXPECTED_CAPTURE_ROWS = 6918
-EXPECTED_CURRENT_COLLECTOR_SHA256 = "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748"
+EXPECTED_CURRENT_COLLECTOR_SHA256 = "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
 EXPECTED_CURRENT_STABLE_SHA256 = "34a906252a2644ea70fdbbe9c52c6f142ea21c8955b40ffb4c4aa2032f130c29"
 EXPECTED_CROSSWALK_SHA256 = "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
 EXPECTED_ITEM_COUNT = 38157
@@ -139,7 +139,7 @@ def verify_current(current: dict[str, Any], manifest: dict[str, Any], protected:
     verify_stable_current_digest(stable_digest, manifest, protected)
     if manifest.get("counts") != protected.get("counts"):
         raise PilotError("CURRENT_SOURCE_PROTECTED_PARTITION_MISMATCH")
-    if manifest.get("target_cut") != "2026-07-28" or current.get("target_cut") != "2026-07-28":
+    if manifest.get("target_cut") != "2026-09-27" or current.get("target_cut") != "2026-09-27":
         raise PilotError("CURRENT_SOURCE_TARGET_CUT_INVALID")
     rows = current.get("records")
     pages = current.get("pages")

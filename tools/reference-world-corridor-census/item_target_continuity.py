@@ -17,9 +17,9 @@ from pathlib import Path
 from typing import Any, Iterable
 
 TARGET_COUNT = 38_157
-TARGET_DATE = "2026-07-28"
-TARGET_DAY_START = "2026-07-28T00:00:00Z"
-TARGET_DAY_END = "2026-07-28T23:59:59Z"
+TARGET_DATE = "2026-09-27"
+TARGET_DAY_START = "2026-09-27T00:00:00Z"
+TARGET_DAY_END = "2026-09-27T23:59:59Z"
 
 SCHEMA = "OTERYN_ITEM_TARGET_CONTINUITY/v1"
 MANIFEST_SCHEMA = "OTERYN_ITEM_TARGET_CONTINUITY_MANIFEST/v1"
@@ -39,7 +39,7 @@ CURRENT_SOURCE_COLLECTOR_PATH = (
     "tools/reference-world-corridor-census/item_current_source_tibiawiki.py"
 )
 PROTECTED_CURRENT_SOURCE_COLLECTOR_SHA256 = (
-    "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748"
+    "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
 )
 
 MAX_CANDIDATE_FIELDS = 256
@@ -600,7 +600,7 @@ def build_manifest(full: dict[str, Any], *, compiler_sha256: str) -> dict[str, A
                 "protected #770 field state CORROBORATED_CURRENT",
                 "same protected current-source page identity",
                 "last pre-target-day revision field equals current value",
-                "every 2026-07-28 revision field equals current value",
+                "every 2026-09-27 revision field equals current value",
                 "no missing/unparsed field in the historical target window",
             ],
             "different_value": "CONFLICT",

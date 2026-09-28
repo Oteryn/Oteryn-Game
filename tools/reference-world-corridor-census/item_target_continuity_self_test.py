@@ -75,7 +75,7 @@ class FakeClient:
                 revisions = [
                     {
                         "revid": 10101,
-                        "timestamp": "2026-07-28T12:00:00Z",
+                        "timestamp": "2026-09-27T12:00:00Z",
                         "slots": {
                             "main": {
                                 "content": json.dumps({"attack": 42})
@@ -278,7 +278,7 @@ def test_derived_conflict_and_unknown_rules():
             "target_day_revisions": [
                 {
                     "revision_id": 2,
-                    "revision_timestamp": "2026-07-28T12:00:00Z",
+                    "revision_timestamp": "2026-09-27T12:00:00Z",
                     "source_digest": "b" * 64,
                     "normalized_fields": {"attack": {"state": "VALUE", "value": 42}},
                 }

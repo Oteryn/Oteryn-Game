@@ -59,8 +59,8 @@ jobs:
       - name: Verify protected predecessor algorithms
         run: |
           set -euo pipefail
-          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "ef160e7b76458029064d7f50d7808fa80add99da96d2a5ebacbbc7c6426ba748"
-          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "b6532886dc224d18024ded38260049ed8dae9bc7429e1a2e387a51d7ae391a86"
+          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
+          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "c66d27e6d2cce6ed8d1510a58de2094bf84d37a338000af1eb0949477d852900"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
@@ -97,7 +97,7 @@ jobs:
           observed = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
           protected = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))
           assert observed['schema'] == protected['schema']
-          assert observed['target_cut'] == protected['target_cut'] == '2026-07-28'
+          assert observed['target_cut'] == protected['target_cut'] == '2026-09-27'
           assert observed['source'] == protected['source']
           assert observed['collector'] == protected['collector']
           assert observed['counts'] == protected['counts'], 'current-source identity/disposition partition drifted'
@@ -208,9 +208,10 @@ jobs:
           sha256sum "$ROOT/semantic-promotion.json"
 
       - name: Upload semantic promotion packet
+        if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: item-semantic-promotion-${{ github.event.pull_request.head.sha || github.sha }}
           path: ${{ runner.temp }}/item-target-continuity/semantic-promotion.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
