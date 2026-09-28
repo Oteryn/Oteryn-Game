@@ -2,8 +2,8 @@
 //!
 //! This component owns durable application, idempotency and reconciliation
 //! only. It does not prove that Combat legitimately produced the loot output
-//! cause: [`ItemMintCause`] has no runtime constructor, because the stage D
-//! Combat owner builds it from its committed death.
+//! cause: [`ItemMintCause`]'s only runtime constructor takes the typed death
+//! key of the Channel owner's committed death, and no caller bytes.
 //!
 //! Lifecycle of one logical MINT transaction:
 //! 1. [`DurabilityRoot::freeze_item_mint`] validates every registered bound and
@@ -42,7 +42,7 @@ use super::item_mint_audit::{
 use super::runtime_scope_assignment::{NodeIncarnationProof, prove_current_incarnation, scope_key};
 use super::{DurabilityError, DurabilityRoot};
 use crate::character_recovery_fence::CharacterRecoveryFenceV1;
-use crate::foundation::{ChannelId, ScopeOwnershipGeneration, WorldId};
+use crate::foundation::{ChannelId, CreatureDeathOccurrenceKey, ScopeOwnershipGeneration, WorldId};
 use sha2::{Digest, Sha256};
 use sqlx::Row;
 
@@ -103,8 +103,8 @@ pub struct CreatureDeathKey {
 
 /// The typed loot output cause `(death key, LootTableDefinitionRef,
 /// LootEntryOrPurposeKey, DeterministicDrawOrdinal)`, stored in full as the
-/// MINT's unique source cause. Stage D owns its runtime constructor; only a
-/// test constructor exists here.
+/// MINT's unique source cause. The runtime constructor takes the death key
+/// only from the physical Channel owner's committed lethal occurrence.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemMintCause {
     death: CreatureDeathKey,
@@ -114,6 +114,32 @@ pub struct ItemMintCause {
 }
 
 impl ItemMintCause {
+    /// Loot output cause of one committed creature death (DUR-03 decision
+    /// §4.2): the full typed tuple, with no caller-supplied death bytes. The
+    /// death key has no constructor outside the carrier's committed lethal
+    /// occurrence, so every cause built here descends from a real death.
+    // Stage D1 is test-only; runtime activation is a later, separate stage.
+    #[allow(dead_code)]
+    pub(crate) fn from_creature_death(
+        death: CreatureDeathOccurrenceKey,
+        loot_table: TypedDefinitionRef,
+        purpose_key: String,
+        draw_ordinal: u32,
+    ) -> Self {
+        Self {
+            death: CreatureDeathKey {
+                world_id: death.world_id(),
+                channel_id: death.channel_id(),
+                scope_ownership_generation: death.scope_ownership_generation(),
+                actor_local_id: death.actor_local_id(),
+                actor_local_generation: death.actor_local_generation(),
+            },
+            loot_table,
+            purpose_key,
+            draw_ordinal,
+        }
+    }
+
     /// Test-only: production causes descend from a committed Combat death.
     #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
