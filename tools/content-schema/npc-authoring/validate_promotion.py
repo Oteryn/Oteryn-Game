@@ -34,7 +34,9 @@ Semantic rules:
   with `origin` == 'wiki' (and, conversely, any such placement requires this row); or rule
   'WIKI_CONFIRMED' with `chosen` == 'wiki', `fact` == 'placements', an empty `placements` list
   (and, conversely, an empty `placements` list requires either this row or the candidate is
-  otherwise invalid) and a non-null `wiki`; or rule 'WIKI_PRICE' (D12) with `chosen` == 'wiki', a
+  otherwise invalid) and a non-null `wiki`; or rule 'WIKI_PRICE' (D12) with `chosen` == 'wiki', an
+  `item_name`, a `price` equal to the unit_price of the admitted offer its fact names (with `--snapshot`
+  and `--br-facts`, also the price both pinned wikis state), a
   `trade.<item>.<direction>` fact and a non-null `wiki`; or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
   `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
@@ -51,6 +53,7 @@ Semantic rules:
 Usage: python validate_promotion.py <report.json>
 """
 import argparse
+import hashlib
 import json
 import re
 import sys
@@ -61,6 +64,7 @@ from promotion_candidates import slug
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 EVIDENCE = 'OTS_HYPOTHESIS_ONLY'
 DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8', 'D11']
+WIKI_PRICE_FACT = re.compile(r'trade\.(\d+)(?:x\d+)?(?:s-?\d+)?\.(SellToPlayer|BuyFromPlayer)')
 KEY_RE = re.compile(r'^oteryn:npc\.[a-z0-9]+(_[a-z0-9]+)*$')
 ITEM_KEY_RE = re.compile(r'^oteryn:item\.[a-z0-9_.]+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
@@ -282,8 +286,24 @@ def candidate_errors(candidate, index):
         elif rule == 'WIKI_PRICE':
             if chosen != 'wiki':
                 errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
-            if not isinstance(fact, str) or not fact.startswith('trade.') or not fact.endswith(('.SellToPlayer', '.BuyFromPlayer')):
+            if not isinstance(row.get('item_name'), str) or not row['item_name']:
+                errs.append(f"{alabel}: item_name {row.get('item_name')!r} is not a non-empty string")
+            price = row.get('price')
+            if not _is_int(price) or price < 0:
+                errs.append(f"{alabel}: price {price!r} is not a non-negative integer")
+            match = WIKI_PRICE_FACT.fullmatch(fact) if isinstance(fact, str) else None
+            if match is None:
                 errs.append(f"{alabel}: fact {fact!r} is not a trade offer direction for rule {rule!r}")
+            else:
+                # the fact names an admitted offer, and that offer carries the wiki price
+                source_item_id, direction = int(match.group(1)), match.group(2)
+                named = [offer for offer in (candidate.get('trade_service') or {}).get('offers') or []
+                         if offer.get('source_item_id') == source_item_id and offer.get('direction') == direction]
+                if not named:
+                    errs.append(f"{alabel}: fact {fact!r} names no admitted offer")
+                elif any(offer.get('unit_price') != price for offer in named):
+                    errs.append(f"{alabel}: offer unit_price {[o.get('unit_price') for o in named]!r} != "
+                                f"WIKI_PRICE price {price!r}")
             if candidate.get('wiki') is None:
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
         else:
@@ -389,12 +409,41 @@ def errors(report):
     return errs
 
 
+def wiki_price_errors(report, snapshot_bytes, br_facts_bytes):
+    """With the pinned inputs at hand, every WIKI_PRICE row must be the price both wikis state (D12)."""
+    import promotion_candidates  # the same lookup the candidates were built with
+    errs = []
+    if hashlib.sha256(snapshot_bytes).hexdigest() != report.get('snapshot_sha256'):
+        errs.append('--snapshot does not match snapshot_sha256')
+    if hashlib.sha256(br_facts_bytes).hexdigest() != report.get('br_facts_sha256'):
+        errs.append('--br-facts does not match br_facts_sha256')
+    if errs:
+        return errs
+    builder = promotion_candidates.Builder(json.loads(snapshot_bytes), {'records': []}, json.loads(br_facts_bytes))
+    for index, candidate in enumerate(report.get('candidates') or []):
+        fandom = {row['item'].lower(): row
+                  for row in builder.wiki_trade.get(promotion_candidates.normalize_name(candidate['name']), [])}
+        for row in candidate.get('arbitration') or []:
+            if row.get('rule') != 'WIKI_PRICE':
+                continue
+            direction = row['fact'].rsplit('.', 1)[-1]
+            stated = builder.wiki_price(candidate['name'], direction, row.get('item_name'), fandom)
+            if stated != row.get('price'):
+                errs.append(f"candidates[{index}]: WIKI_PRICE {row['fact']} price {row.get('price')!r} != "
+                            f"the price both wikis state ({stated!r})")
+    return errs
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('report')
+    parser.add_argument('--snapshot', type=Path, help='the pinned Fandom snapshot; checks every WIKI_PRICE row')
+    parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
     args = parser.parse_args()
     report = json.loads(Path(args.report).read_text(encoding='utf-8'))
     all_errors = errors(report)
+    if args.snapshot and args.br_facts:
+        all_errors += wiki_price_errors(report, args.snapshot.read_bytes(), args.br_facts.read_bytes())
 
     candidates = report.get('candidates') or []
     total = len(candidates)

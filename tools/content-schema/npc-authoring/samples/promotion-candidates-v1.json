@@ -2818,11 +2818,15 @@
     {
      "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
      "rule": "WIKI_PRICE"
     },
     {
      "chosen": "wiki",
      "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -9503,11 +9507,15 @@
     {
      "chosen": "wiki",
      "fact": "trade.3600.SellToPlayer",
+     "item_name": "bread",
+     "price": 4,
      "rule": "WIKI_PRICE"
     },
     {
      "chosen": "wiki",
      "fact": "trade.3607.SellToPlayer",
+     "item_name": "cheese",
+     "price": 6,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -20674,11 +20682,15 @@
     {
      "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
      "rule": "WIKI_PRICE"
     },
     {
      "chosen": "wiki",
      "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -23667,6 +23679,8 @@
     {
      "chosen": "wiki",
      "fact": "trade.3607.SellToPlayer",
+     "item_name": "cheese",
+     "price": 6,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -38617,11 +38631,15 @@
     {
      "chosen": "wiki",
      "fact": "trade.3600.SellToPlayer",
+     "item_name": "bread",
+     "price": 4,
      "rule": "WIKI_PRICE"
     },
     {
      "chosen": "wiki",
      "fact": "trade.3607.SellToPlayer",
+     "item_name": "cheese",
+     "price": 6,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -75457,11 +75475,15 @@
     {
      "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
      "rule": "WIKI_PRICE"
     },
     {
      "chosen": "wiki",
      "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -81794,11 +81816,15 @@
     {
      "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
      "rule": "WIKI_PRICE"
     },
     {
      "chosen": "wiki",
      "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -91852,6 +91878,8 @@
     {
      "chosen": "wiki",
      "fact": "trade.2853.SellToPlayer",
+     "item_name": "bag",
+     "price": 5,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -106217,6 +106245,8 @@
     {
      "chosen": "wiki",
      "fact": "trade.3378.BuyFromPlayer",
+     "item_name": "studded armor",
+     "price": 25,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -120515,11 +120545,15 @@
     {
      "chosen": "wiki",
      "fact": "trade.3577.SellToPlayer",
+     "item_name": "meat",
+     "price": 7,
      "rule": "WIKI_PRICE"
     },
     {
      "chosen": "wiki",
      "fact": "trade.3582.SellToPlayer",
+     "item_name": "ham",
+     "price": 10,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -123406,11 +123440,15 @@
     {
      "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
+     "item_name": "shovel",
+     "price": 50,
      "rule": "WIKI_PRICE"
     },
     {
      "chosen": "wiki",
      "fact": "trade.3483.SellToPlayer",
+     "item_name": "fishing rod",
+     "price": 150,
      "rule": "WIKI_PRICE"
     }
    ],
@@ -136245,6 +136283,8 @@
     {
      "chosen": "wiki",
      "fact": "trade.3349.BuyFromPlayer",
+     "item_name": "crossbow",
+     "price": 120,
      "rule": "WIKI_PRICE"
     },
     {
@@ -191739,6 +191779,8 @@
     {
      "chosen": "wiki",
      "fact": "trade.3279.BuyFromPlayer",
+     "item_name": "war hammer",
+     "price": 470,
      "rule": "WIKI_PRICE"
     },
     {

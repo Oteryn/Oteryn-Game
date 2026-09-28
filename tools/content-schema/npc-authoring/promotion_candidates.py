@@ -46,14 +46,17 @@ Merge rules:
   Tibia Global (TibiaWiki BR `removed`, TibiaWiki Fandom `status = deprecated`), the same way;
 - D12 (`--br-facts`): an admitted offer's price is replaced by the wiki price when TibiaWiki Fandom and
   TibiaWiki BR state the same explicit price for that NPC, item name and direction and it differs from the
-  source price; the row records `{"fact": "trade.<item>.<direction>", "rule": "WIKI_PRICE", "chosen": "wiki"}`.
+  source price; the row records `{"fact": "trade.<item>.<direction>", "rule": "WIKI_PRICE", "chosen": "wiki",
+  "item_name": <the offer's item name>, "price": <the wiki price>}`.
   One wiki alone, or two wikis that disagree, never change a price;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
 
 Usage: python promotion_candidates.py --canary out/canary/bundles --crystal out/crystal/bundles \
-         --snapshot out/fandom/fandom-npc-snapshot.json --out samples/promotion-candidates-v1.json
+         --snapshot out/fandom/fandom-npc-snapshot.json --item-map out/native-map.json \
+         --br-facts ../../../imports/tibiawiki/npc-br/2026-09-28/tibiawiki-br-npc-facts.json \
+         --out samples/promotion-candidates-v1.json
 """
 import argparse
 import hashlib
@@ -344,7 +347,8 @@ class Builder:
             for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
                 wiki_price = self.wiki_price(name, direction, offer['item_name'], wiki)
                 if price is not None and wiki_price is not None and wiki_price != price:
-                    arbitration.append({'fact': f'{label}.{direction}', 'rule': 'WIKI_PRICE', 'chosen': 'wiki'})
+                    arbitration.append({'fact': f'{label}.{direction}', 'rule': 'WIKI_PRICE', 'chosen': 'wiki',
+                                        'item_name': offer['item_name'], 'price': wiki_price})
                     price = wiki_price
                 if price is not None:
                     offers.append({'item': item, 'source_item_id': key[0], 'direction': direction, 'unit_price': price,

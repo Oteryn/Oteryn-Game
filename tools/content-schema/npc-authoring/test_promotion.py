@@ -3,6 +3,7 @@ mutated copies of it.
 
 Usage: python -m unittest test_promotion.py
 """
+import hashlib
 import json
 import unittest
 from pathlib import Path
@@ -54,6 +55,39 @@ class PromotionValidatorTests(unittest.TestCase):
         report['decisions'] = validate_promotion.DECISIONS
         errs = validate_promotion.errors(report)
         self.assertIn('WIKI_PRICE arbitration without br_facts_sha256 (D12)', errs)
+
+    def test_wiki_price_must_name_its_offer(self):
+        report = load_sample()
+        ahmet = find_candidate(report, 'Ahmet')
+        row = next(r for r in ahmet['arbitration'] if r['rule'] == 'WIKI_PRICE')
+        row['fact'] = 'trade.999999.SellToPlayer'
+        self.assertTrue(any('names no admitted offer' in e for e in validate_promotion.errors(report)))
+
+    def test_wiki_price_must_match_the_offer_price(self):
+        report = load_sample()
+        ahmet = find_candidate(report, 'Ahmet')
+        row = next(r for r in ahmet['arbitration'] if r['rule'] == 'WIKI_PRICE')
+        source_item_id = int(row['fact'].split('.')[1])
+        offer = next(o for o in ahmet['trade_service']['offers']
+                     if o['source_item_id'] == source_item_id and o['direction'] == 'SellToPlayer')
+        offer['unit_price'] = 999999
+        self.assertTrue(any('!= WIKI_PRICE price' in e for e in validate_promotion.errors(report)))
+
+    def test_wiki_price_matches_both_pinned_wikis(self):
+        snapshot = json.dumps({'npcs': [], 'trade': {'ahmet': [
+            {'item': 'Fishing Rod', 'buy_price': 150, 'sell_price': None}]}}).encode()
+        br_facts = json.dumps({'pages': [{'title': 'Ahmet', 'name': 'Ahmet', 'trades': {
+            'SellToPlayer': {'Fishing Rod': [150]}, 'BuyFromPlayer': {}}}]}).encode()
+        def report(price):
+            return {'snapshot_sha256': hashlib.sha256(snapshot).hexdigest(),
+                    'br_facts_sha256': hashlib.sha256(br_facts).hexdigest(),
+                    'candidates': [{'name': 'Ahmet', 'arbitration': [
+                        {'fact': 'trade.3483.SellToPlayer', 'rule': 'WIKI_PRICE', 'chosen': 'wiki',
+                         'item_name': 'fishing rod', 'price': price}]}]}
+        self.assertEqual(validate_promotion.wiki_price_errors(report(150), snapshot, br_facts), [])
+        self.assertTrue(validate_promotion.wiki_price_errors(report(999999), snapshot, br_facts))
+        self.assertEqual(validate_promotion.wiki_price_errors(report(150), b'{}', br_facts),
+                         ['--snapshot does not match snapshot_sha256'])
 
     def test_bad_key_format_fails(self):
         report = load_sample()
@@ -446,7 +480,8 @@ class PromotionValidatorTests(unittest.TestCase):
         for br in ([150], [150, 150]):
             offers, arbitration = self.price_builder(150, br)
             self.assertEqual(offers[0]['unit_price'], 150)
-            self.assertEqual(arbitration, [{'fact': 'trade.3483.SellToPlayer', 'rule': 'WIKI_PRICE', 'chosen': 'wiki'}])
+            self.assertEqual(arbitration, [{'fact': 'trade.3483.SellToPlayer', 'rule': 'WIKI_PRICE', 'chosen': 'wiki',
+                                            'item_name': 'fishing rod', 'price': 150}])
         # BR must state one explicit price in every row of the offer
         for fandom, br in ((150, [120]), (150, [None]), (None, [150]), (150, [150, 120]), (150, [150, None]), (150, [])):
             offers, arbitration = self.price_builder(fandom, br)

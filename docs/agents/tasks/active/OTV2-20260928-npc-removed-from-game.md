@@ -88,7 +88,9 @@ against TibiaWiki BR ("Kontynuuj" and "Tak kontynuuj" on the proposed fix order:
 ## Acceptance and evidence
 
 - The candidates reproduced byte for byte before the change. After it, `validate_promotion` and
-  `test_promotion` (46 tests, including REMOVED_FROM_GAME, WIKI_PRICE and missing-BR-digest cases) pass.
+  `test_promotion` (49 tests, including REMOVED_FROM_GAME, WIKI_PRICE, missing-BR-digest, unknown-offer
+  and wrong-price cases) pass; with the pinned Fandom snapshot and BR facts, `validate_promotion` confirms
+  every WIKI_PRICE row is the price both wikis state.
 - The dialogue and admission stages re-run with the same inputs as #1095.
 - `materialize_content_world_project_v2` verifies 1,088 NPCs and 2,151 NPC-side declarations.
 - `content_world_project_repository` pins the new documents and the tree digest.
