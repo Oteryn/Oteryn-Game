@@ -54,7 +54,7 @@ OFFICIAL = ROOT / 'official-changes.json'
 CHAINS = json.loads((ROOT / 'chain-behaviours.json').read_text(encoding='utf-8'))['spells']
 CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
-REVISION = 'spell-p2-r10'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup
+REVISION = 'spell-p2-r11'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains; r10: S24 removed spells, rune groups from the wiki runegroup; r11: S25 unstated secondary groups, Dawnport conjure spells
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -606,10 +606,11 @@ class Bundle:
         spell = {'identity': ident(key), 'name': primary['name'], 'carrier': carrier}
         base = '/spell/spell'
         removed = self.wikis.official.get((self.name, 'removed'))
-        if removed:
+        if removed and removed['value'] in ('yes', carrier):
             # S24: an official announcement dated before the target date removed the spell from the game.
-            self.row('unresolved_semantics', 'spell', resolution=f'S24: removed from the game by the official change of '
-                     f'{removed["date"]} ({removed["fact"]}; {removed["source"]}).', source=next(iter(self.records)),
+            self.row('unresolved_semantics', 'spell', resolution=(f'S24: removed from the game by the official change of '
+                     f'{removed["date"]} ({removed["fact"]}; {removed["source"]}).' if removed['value'] == 'yes' else
+                     f'{removed["fact"]} ({removed["source"]})'), source=next(iter(self.records)),
                      kind='script')
         if carrier == 'instant':
             normal = lambda v: re.sub(r'\s+', ' ', v.strip().lower())  # noqa: E731
@@ -763,8 +764,13 @@ class Bundle:
             if cd2:
                 groups.append({'group': secondary, 'cooldown_ms': cd2})
             else:
-                self.row('unresolved_semantics', 'groupCooldown', resolution=f'secondary group {secondary} has no '
-                         'stated cooldown.', source=next(iter(self.records)), method='groupCooldown')
+                # S25: a secondary group no source gives a cooldown is dropped; the official library lists one group.
+                for entry in self.rows:
+                    if entry.get('destination', '').startswith('/spell/spell/groups/1'):
+                        entry['status'] = 'approved_omission'
+                        entry['resolution'] = (f'S25: the secondary group {secondary} has no stated cooldown and the '
+                                               'official library lists only the primary group; it is not authored.')
+                        del entry['destination']
         return groups
 
     def targeting(self, pages):
