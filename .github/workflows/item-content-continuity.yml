@@ -54,7 +54,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
-          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "c66d27e6d2cce6ed8d1510a58de2094bf84d37a338000af1eb0949477d852900"
+          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "65673ddf1ba39f51a07bec9093be54cbe73117780afa901319c5e61cc6a78d95"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
@@ -84,7 +84,7 @@ jobs:
             --cache-dir "$ROOT/wiki-cache" \
             --output "$ROOT/current-source.json" \
             --manifest-output "$ROOT/current-source-manifest.json"
-          python - "$ROOT/current-source-manifest.json" docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json <<'PY'
+          python - "$ROOT/current-source-manifest.json" docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json <<'PY'
           import json
           import pathlib
           import sys
@@ -106,7 +106,7 @@ jobs:
           python tools/reference-world-corridor-census/item_field_verification.py \
             --classification-crosswalk "$ROOT/crosswalk.json" \
             --current-source "$ROOT/current-source.json" \
-            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json \
             --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
             --output "$ROOT/field-verification.json" \
             --manifest-output "$ROOT/field-verification-manifest.json"

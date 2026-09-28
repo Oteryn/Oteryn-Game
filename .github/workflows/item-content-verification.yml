@@ -71,7 +71,7 @@ jobs:
         run: |
           set -euo pipefail
           ROOT="$RUNNER_TEMP/item-field-verification"
-          PROTECTED_MANIFEST="docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json"
+          PROTECTED_MANIFEST="docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json"
           test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
           python tools/reference-world-corridor-census/item_current_source_tibiawiki_self_test.py
           python tools/reference-world-corridor-census/item_current_source_tibiawiki.py \
@@ -118,14 +118,14 @@ jobs:
           python tools/reference-world-corridor-census/item_field_verification.py \
             --classification-crosswalk "$ROOT/crosswalk.json" \
             --current-source "$ROOT/current-source.json" \
-            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json \
             --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
             --output "$ROOT/field-verification.json" \
             --manifest-output "$ROOT/field-verification-manifest.json"
           python tools/reference-world-corridor-census/item_field_verification.py \
             --classification-crosswalk "$ROOT/crosswalk.json" \
             --current-source "$ROOT/current-source.json" \
-            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json \
             --schema-readiness docs/agents/evidence/OTV2-20260922-content-world-item-schema-readiness.json \
             --output "$ROOT/field-verification-repeat.json" \
             --manifest-output "$ROOT/field-verification-manifest-repeat.json"
