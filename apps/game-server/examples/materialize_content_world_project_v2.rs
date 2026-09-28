@@ -63,12 +63,19 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "7d5ddf37cd70374b8bc4b35710c7a818a18592bce750ed162dee13c6f5d1e79b";
+    "9a13e6b9eb1e304a526667189fd2383a1474e8c88a47d46257d130a8b135811a";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "c8c85dd22291b34047537f31c17db1b3e33a1de4091b9590f604198d18b4bc75";
+    "f784abf15353a22372fa293bb96b47195e0cc7b1efbed882a4f2186818be9605";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
+/// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
+const CREATURE_WIKI_SAMPLE_SHA256: &str =
+    "88d21c748283df4cf059dbf1bd04cbcf7b9d00ca6cd14dc1e913e947f0242c8c";
+const CREATURE_WIKI_REVISION: &str = "tibiawiki-wiki-authored-creature-88d21c748283df4c";
+const CREATURE_WIKI_COUNT: usize = 1;
+const CREATURE_WIKI_BINDINGS: [(&str, &str); CREATURE_WIKI_COUNT] =
+    [("108320", "oteryn:creature.dark_merudri")];
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "c0af83cfe530a61734d80efa4b793dbf76032ecc985c83477df13a41d769245d";
+    "11574e19c08f1d9a04c423dbc96aeb0b9524b4d574706a7055caef4b9b8359f1";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
@@ -94,9 +101,9 @@ const NPC_DIALOGUE_STAGED_SHA256: &str =
 const NPC_DIALOGUES: usize = 701;
 const NPC_DIALOGUE_NODES: usize = 6313;
 const NPC_BINDINGS: usize = 2281;
-const CREATURE_COUNT: usize = 1318;
-const CREATURE_RECORDS: usize = 18336;
-const CREATURE_PROFILES: usize = 17369;
+const CREATURE_COUNT: usize = 1319;
+const CREATURE_RECORDS: usize = 18348;
+const CREATURE_PROFILES: usize = 17381;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -109,7 +116,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 6,
+        max_import_records: 7,
         max_reimport_states: 1,
     }
 }
@@ -1134,6 +1141,8 @@ fn populate_outfits(
 struct CreaturePopulation {
     import: ImportBatch,
     source: ProjectV2Source,
+    wiki_import: ImportBatch,
+    wiki_source: ProjectV2Source,
     records: Vec<ProjectReferenceRecord>,
     profiles: Vec<ProjectV2AuthoringProfile>,
     bindings: Vec<ProjectV2SourceIdentityBinding>,
@@ -1154,6 +1163,8 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         || counts["creatures"] != CREATURE_COUNT
         || counts["records"] != CREATURE_RECORDS
         || counts["profiles"] != CREATURE_PROFILES
+        || packet["source"]["wiki_authored"]["revision"] != CREATURE_WIKI_REVISION
+        || packet["source"]["wiki_authored"]["sample_sha256"] != CREATURE_WIKI_SAMPLE_SHA256
     {
         return Err("staged creature admission source identity drifted".into());
     }
@@ -1170,14 +1181,44 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         || profiles.len() != CREATURE_PROFILES
         || creatures != CREATURE_COUNT
         || bindings.len() != CREATURE_COUNT
+        || bindings
+            .iter()
+            .filter(|binding| binding.source_key == "oteryn:source.tibiawiki")
+            .count()
+            != CREATURE_WIKI_COUNT
         || bindings.iter().any(|binding| {
-            binding.source_key != "oteryn:source.canary"
-                || binding.source_revision != CANARY_REVISION
-                || binding.identity_namespace != "canary/monster-file"
-                || binding.target.family != ProjectV2Family::Creature
+            binding.target.family != ProjectV2Family::Creature
+                || !matches!(
+                    (
+                        binding.source_key.as_str(),
+                        binding.source_revision.as_str(),
+                        binding.identity_namespace.as_str()
+                    ),
+                    (
+                        "oteryn:source.canary",
+                        CANARY_REVISION,
+                        "canary/monster-file"
+                    ) | (
+                        "oteryn:source.tibiawiki",
+                        CREATURE_WIKI_REVISION,
+                        "mediawiki/page_id"
+                    )
+                )
         })
     {
         return Err("staged creature admission counts drifted".into());
+    }
+    let wiki_bindings: Vec<(&str, &str)> = bindings
+        .iter()
+        .filter(|binding| binding.source_key == "oteryn:source.tibiawiki")
+        .map(|binding| (binding.external_id.as_str(), binding.target.key.as_str()))
+        .collect();
+    if wiki_bindings != CREATURE_WIKI_BINDINGS
+        || bindings
+            .iter()
+            .any(|binding| binding.disposition != ProjectV2SourceIdentityDisposition::Exact)
+    {
+        return Err("wiki-authored creature page binding drifted".into());
     }
     let import = ImportBatch {
         batch_id: "g4-creature-canary-wave-a-r1".to_owned(),
@@ -1200,9 +1241,32 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         sha256: import.source_artifact_sha256.clone(),
         evidence: ProjectV2EvidenceClass::OtsHypothesisOnly,
     };
+    let wiki_import = ImportBatch {
+        batch_id: "g4-wiki-authored-creature-d44-r1".to_owned(),
+        source_repository: "tibia.fandom.com".to_owned(),
+        source_revision: CREATURE_WIKI_REVISION.to_owned(),
+        source_artifact_sha256: CREATURE_WIKI_SAMPLE_SHA256.to_owned(),
+        access_disposition: "PENDING".to_owned(),
+        source_generation_profile: "OTERYN_WIKI_AUTHORED_MONSTER/v1".to_owned(),
+        importer: "OTERYN_CANARY_MONSTER_POPULATION_CENSUS/v1".to_owned(),
+        mapper: "OTERYN_CREATURE_ADMISSION_STAGE/v1".to_owned(),
+        mapper_revision: "creature-admission-r1".to_owned(),
+        mapper_sha256: CREATURE_STAGE_TOOL_SHA256.to_owned(),
+        candidates: Vec::new(),
+        reimport_states: Vec::new(),
+    };
+    let wiki_source = ProjectV2Source {
+        key: "oteryn:source.tibiawiki".to_owned(),
+        import_batch_id: wiki_import.batch_id.clone(),
+        revision: wiki_import.source_revision.clone(),
+        sha256: wiki_import.source_artifact_sha256.clone(),
+        evidence: ProjectV2EvidenceClass::Derived,
+    };
     Ok(CreaturePopulation {
         import,
         source,
+        wiki_import,
+        wiki_source,
         records,
         profiles,
         bindings,
@@ -1428,6 +1492,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let CreaturePopulation {
         import: creature_import,
         source: creature_source,
+        wiki_import: creature_wiki_import,
+        wiki_source: creature_wiki_source,
         records: creature_records,
         profiles: mut authoring_profiles,
         bindings: creature_bindings,
@@ -1462,6 +1528,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     wave1_import,
                     mount_import,
                     creature_import,
+                    creature_wiki_import,
                     npc_import,
                 ],
                 metadata: Vec::new(),
@@ -1473,6 +1540,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     wave1_source,
                     mount_source,
                     creature_source,
+                    creature_wiki_source,
                     npc_source,
                 ],
                 declarations,

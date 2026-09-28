@@ -23,6 +23,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 INDEX = ROOT / 'tools/content-schema/monster-authoring/samples/population-bundles-canary-47dfd51f.json'
+WIKI_AUTHORED = ROOT / 'tools/content-schema/monster-authoring/samples/wiki-authored-2026-09-27.json'
+WIKI_AUTHORED_SHA256 = hashlib.sha256(WIKI_AUTHORED.read_bytes()).hexdigest()
+# D44: the source revision of the wiki-authored creatures (Tibia has them at the target, Canary does not).
+WIKI_AUTHORED_REVISION = f'tibiawiki-wiki-authored-creature-{WIKI_AUTHORED_SHA256[:16]}'
 ENCOUNTERS = ROOT / 'tools/content-schema/encounter-authoring/samples'
 BUNDLE_FILES = ('monster.json', 'dependencies.json', 'catalog.json', 'manifest.json')
 SCHEMA = 'OTERYN_CREATURE_ADMISSION_STAGED/v1'
@@ -288,7 +292,7 @@ class Stage:
         if dependencies['documents'] or dependencies['loot_tables']:
             raise StageError(f'{owner}: documents and nested loot tables are outside wave A')
 
-    def stage_monster(self, monster: dict, file: str) -> str:
+    def stage_monster(self, monster: dict, file: str, binding: dict | None = None) -> str:
         m = self.mapper
         creature, behavior, presentation = monster['creature'], monster['behavior'], monster['presentation']
         owner = creature['identity']['key']
@@ -319,9 +323,14 @@ class Stage:
         self.add(self.profiles, 'Behavior', behavior_ref['key'], profile(behavior_ref, 'Behavior', self.behavior_profile(behavior)), owner)
         self.add(self.profiles, 'Presentation', presentation_ref['key'],
                  profile(presentation_ref, 'Presentation', self.presentation_profile(presentation)), owner)
-        self.bindings.append({'source_key': 'oteryn:source.canary', 'source_revision': CANARY_REVISION,
-                              'identity_namespace': 'canary/monster-file', 'external_id': file,
-                              'target': identity, 'disposition': 'EXACT'})
+        if binding:
+            self.bindings.append({'source_key': binding['source_key'], 'source_revision': WIKI_AUTHORED_REVISION,
+                                  'identity_namespace': binding['identity_namespace'], 'external_id': binding['external_id'],
+                                  'target': identity, 'disposition': 'EXACT'})
+        else:
+            self.bindings.append({'source_key': 'oteryn:source.canary', 'source_revision': CANARY_REVISION,
+                                  'identity_namespace': 'canary/monster-file', 'external_id': file,
+                                  'target': identity, 'disposition': 'EXACT'})
         return identity['key']
 
     def creature_profile(self, monster: dict) -> dict:
@@ -554,7 +563,7 @@ def main() -> None:
             continue
         probe = Stage(mapper)
         probe.stage_dependencies(dependencies, key)
-        probe.stage_monster(monster, row['file'])
+        probe.stage_monster(monster, row['file'], row.get('binding'))
         produced = {(value['identity']['family'], value['identity']['key']) for value in probe.records.values()}
         referenced = set(definition_refs([probe.records, probe.profiles])) - produced
         candidates[row['monster']] = (row, monster, dependencies, produced, referenced)
@@ -581,7 +590,7 @@ def main() -> None:
         probe = Stage(mapper)
         probe.records, probe.profiles = dict(stage.records), dict(stage.profiles)
         probe.stage_dependencies(dependencies, key)
-        probe.stage_monster(monster, row['file'])
+        probe.stage_monster(monster, row['file'], row.get('binding'))
         stage.records, stage.profiles, stage.bindings = probe.records, probe.profiles, stage.bindings + probe.bindings
         admitted.append(name)
     if args.pilot and len(admitted) != len(PILOT):
@@ -593,7 +602,9 @@ def main() -> None:
         'wave': 'pilot' if args.pilot else 'A',
         'source': {'repository': index['source']['repository'], 'revision': CANARY_REVISION,
                    'census_index_sha256': hashlib.sha256(INDEX.read_bytes()).hexdigest(),
-                   'item_allocation_sha256': ITEM_ALLOCATION_SHA256, 'item_rekeys': rekeys},
+                   'item_allocation_sha256': ITEM_ALLOCATION_SHA256, 'item_rekeys': rekeys,
+                   'wiki_authored': {'revision': WIKI_AUTHORED_REVISION, 'sample_sha256': WIKI_AUTHORED_SHA256,
+                                     'creatures': sorted(r['monster'] for r in index['monsters'] if r.get('binding'))}},
         'counts': {'creatures': len(admitted), 'records': len(stage.records), 'profiles': len(stage.profiles),
                    'deferred_encounter': len(deferred['encounter']),
                    'deferred_unregistered_items': len(deferred['unregistered_items']),
