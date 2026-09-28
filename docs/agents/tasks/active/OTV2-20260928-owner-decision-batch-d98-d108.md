@@ -1,0 +1,80 @@
+# OTV2-20260928-owner-decision-batch-d98-d108
+
+```yaml
+task_id: OTV2-20260928-owner-decision-batch-d98-d108
+title: "Owner decision batch D98-D108"
+mode: CONTRACT
+status: implementing
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: claude/gifted-rubin-a0axzx
+issue: 162
+pr: null
+base_sha: 3dcf3c82abc5d424542388a9f65ca1507e8746a4
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
+created_at: 2026-09-28
+updated_at: 2026-09-28
+execution_policy: continuous_progress
+owned_paths:
+  - docs/architecture/reviews/OTERYN_GAME_OWNER_DECISION_BATCH_D98_D108_2026-09-28.md
+  - docs/agents/tasks/active/OTV2-20260928-owner-decision-batch-d98-d108.md
+  - docs/agents/tasks/active/OTV2-20260928-a8-donor-item-identity-epoch-decision.md   # archive move after #1163
+  - docs/agents/tasks/archive/OTV2-20260928-a8-donor-item-identity-epoch-decision.md
+public_contracts: []
+depends_on: []
+blocks: []
+cross_repository_coordination_id: null
+external_repositories: []
+```
+
+## Outcome
+
+This task records owner decisions D98-D108 (#162 comment 5879395589), taken as one batch for the
+open items of the 2026-09-27/28 decision records: creature-kill XP, respawn home town, low-level
+death protection, loot rights, blessings through an NPC, character creation, tester Premium,
+mounts, achievements, partial stack pickup and players per Channel. It records the Global facts
+that make them implementable and routes each to its lane.
+
+No schema, value, runtime or Platform change is made.
+
+## Architecture and source of truth
+
+- `PROVEN`: the tibia.com manual notes and snapshot (`docs/reference/tibia-manual/`,
+  `imports/official/tibia-com/2026-09-28-160207Z`); the superseded or amended decision records
+  named in §1.
+- `UNKNOWN`: the Newhaven level-6 rule, Global partial stack pickup, the shared-experience
+  activity window and remainder rule, respawn before a home city is chosen.
+
+## High-risk authority/recovery qualification
+
+Not applicable. Owner decisions and routing only.
+
+## Acceptance criteria
+
+- [ ] The decision document is on an exact frozen head with passing validators.
+- [ ] Independent exact-head review.
+- [ ] Protected Merge Queue integration.
+
+## Excluded scope
+
+- Schemas, values, runtime code, Platform changes and content.
+
+## Validation
+
+- `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
+- `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
+
+## Context checkpoint
+
+```yaml
+last_progress: authored
+status: implementing
+branch: claude/gifted-rubin-a0axzx
+pr: null
+owner_action_required: null
+blocker: null
+next_action: open the PR, freeze the head, exact-head review and Merge Queue integration
+```
