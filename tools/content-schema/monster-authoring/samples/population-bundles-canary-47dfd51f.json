@@ -8,6 +8,10 @@
     "file": "samples/wiki-population-2026-09-27.json",
     "sha256": "a31c2d5b143c388a6e9368436ff3b8e901efe91f0252095980cfe647c4d24daf"
   },
+  "official_library": {
+    "file": "samples/official-library-2026-09-28.json",
+    "sha256": "2a45c6e4e71640d34f39bab776fcdeaffd12e7fd0d7947cdbf39a2d9ba48279d"
+  },
   "generator": "population_census.py",
   "digest": "SHA-256 over the four bundle files in BUNDLE_FILES order, each prefixed by its name and byte length.",
   "bundle_files": [

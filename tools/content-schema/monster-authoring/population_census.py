@@ -143,7 +143,8 @@ def main():
                                             for k, n in sorted(blockers.items(), key=lambda kv: (-kv[1], kv[0]))],
               'not_converted': not_converted, 'structure_invalid': invalid, 'fully_resolved': sorted(resolved)}
     args.out.write_text(dump(report), encoding='utf-8', newline='\n')
-    head = {'source': report['source'], 'wiki_reference': report['wiki_reference'], 'generator': 'population_census.py',
+    head = {'source': report['source'], 'wiki_reference': report['wiki_reference'],
+            'official_library': report['official_library'], 'generator': 'population_census.py',
             'digest': bundle_digest.__doc__, 'bundle_files': list(BUNDLE_FILES), 'bundles': len(digests), 'monsters': []}
     lines = ',\n'.join('    ' + json.dumps({'monster': s, **d}, ensure_ascii=False, separators=(',', ':')) for s, d in sorted(digests.items()))
     INDEX.write_text(dump(head)[:-len('\n  "monsters": []\n}\n')] + '\n  "monsters": [\n' + lines + '\n  ]\n}\n',
