@@ -302,12 +302,26 @@ def slug_of(key: str) -> str:
     return slug
 
 
-def load_bundle(bundles_dir: Path, source_key: str) -> dict | None:
+SOURCE_IDENTITY = {'canary': ('opentibiabr/canary', CANARY_REVISION),
+                   'crystal': ('zimbadev/crystalserver', CRYSTAL_REVISION)}
+
+
+def load_bundle(bundles_dir: Path, source: str, provenance: dict) -> dict | None:
+    """Loads a converted bundle and binds it to the candidate: its schema, key, pinned repository and
+    revision, and the source-file digest the candidate records must all match."""
+    source_key = provenance['key']
     stem = source_key.split(':npc/', 1)[1]
     path = bundles_dir / f'{stem}.json'
     if not path.exists():
         return None
-    return json.loads(path.read_text())
+    bundle = json.loads(path.read_text())
+    repository, revision = SOURCE_IDENTITY[source]
+    origin = bundle.get('source') or {}
+    if (bundle.get('schema') != 'OTERYN_NPC_AUTHORING_CANDIDATE/v1' or bundle.get('key') != source_key
+            or origin.get('repository') != repository or origin.get('revision') != revision
+            or origin.get('sha256') != provenance.get('sha256')):
+        raise StageError(f'{source} bundle {path.name} does not match {source_key} at the pinned revision')
+    return bundle
 
 
 def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
@@ -329,7 +343,7 @@ def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
         for source, bundles_dir in (('canary', canary_dir), ('crystal', crystal_dir)):
             if source not in provenance:
                 continue
-            bundle = load_bundle(bundles_dir, provenance[source]['key'])
+            bundle = load_bundle(bundles_dir, source, provenance[source])
             if bundle is None:
                 raise StageError(f'missing {source} bundle for {npc_key}: {provenance[source]["key"]}')
             by_source[source] = build_dialogue(bundle, stats)
