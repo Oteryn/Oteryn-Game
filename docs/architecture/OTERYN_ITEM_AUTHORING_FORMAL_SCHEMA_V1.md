@@ -865,8 +865,73 @@ Together, §5i-§5j recover 134 Crystal / 93 Canary items (121+13 / 80+13):
 proven by diffing every item id's full outcome against the pre-task baseline (PR #1105,
 `bddc0616`), both engines: exactly 134 (Crystal) / 93 (Canary) ids change, every one
 previously `family_profile_unresolved`, zero unsafe diffs. See
-`docs/agents/tasks/active/OTV2-20260928-item-owner-leftover-table.md` for the full
-changed-id proof.
+`docs/agents/tasks/archive/OTV2-20260928-item-owner-leftover-table.md` (merged as PR
+#1109) for the full changed-id proof.
+
+## 5l. Donor census: upstream is a source of facts, never Oteryn truth (task B1a, 2026-09-28)
+
+Upstream `zimbadev/crystalserver` (Crystal's own upstream) periodically adds new ids to
+its own `items.xml`/`appearances.dat` between the Oteryn-pinned revision (`ff7ede5`)
+and a later one. The owner's rule: an upstream donor checkout is only a source of
+FACTS -- its `items.xml` attributes and `appearances.dat` client data -- never an
+Oteryn classification. Oteryn always decides `family_profile` with its own rules,
+applied fresh to the donor's own facts, never by trusting or copying an upstream
+label. This principle governs every future donor-ingestion step, not only this one.
+
+`tools/content-schema/item-authoring/donor_census.py` censuses the ids a donor
+revision adds over the pinned Crystal engine (the first such donor: `summer-update`
+@ `00ce02a5`, 412 new ids -- 244 in the new 15.30 appearance range `52977-55117`, 168
+older ids simply absent from the pinned 15.25-era revision). It reuses
+`engine_items.py`'s already-factored classification helpers directly (`non_item_route`,
+`classify_family_profile`, `immovable_non_item_route`, `resolve_wrap_target_profile`,
+`resolve_dead_item_route_or_profile`, the fluid/late-placeholder/no-appearance/
+empty-object last-resort routes, `fallback_entry_matches_name`) in the exact priority
+order `convert_item` uses -- `engine_items.py` itself is not forked or modified.
+
+**No identity is minted.** These ids have no CW2 B1 allocator key (`build_identity_index`
+never resolves one for them) and none is created here: identity allocation for donor
+ids is a separate, reviewed Content/World step (B1b). Rows are keyed by a provisional,
+clearly non-canonical string -- `donor:crystalserver@00ce02a5:item/<id>` -- never
+`oteryn:item.registry.*`. Because the committed wiki-evidence snapshot and the owner
+leftover-family table (§5b, §5i) are both keyed by Oteryn registry key, neither can
+ever match a donor-only id; the join is still attempted, exactly where
+`convert_item` would attempt it, for structural fidelity, but is guaranteed to return
+zero matches by construction, not by omission. Recapturing the wiki for these ids,
+once B1b assigns them identity, is B2's job; this tool never touches the network.
+Delivery-task eligibility, field mapping and Presentation binding are all out of scope
+too (all need identity); this is a family-classification census only.
+
+**Never re-classifies an existing id.** `donor_census.py` computes only the id
+set-difference (donor items.xml minus the pinned base items.xml); an id present in
+both is never touched, and a wrap-target lookup that happens to resolve through a
+shared id always prefers the pinned base's own record over a re-fetched donor copy.
+Proven by keeping both pinned population censuses (`samples/population-{crystal,
+canary}-*.json`) byte-identical -- verified via `population_census.py --check` for
+both engines, unaffected because `engine_items.py` is untouched by this task.
+
+The committed output, `samples/donor-census-crystal-summer-update-00ce02a5.json`
+(schema `OTERYN_ITEM_DONOR_CENSUS/v1`, deterministic, `--check`/`--self-check` like
+`population_census.py`), classifies all 412 new ids: 261 resolved (257 by engine
+attribute, 4 by wrap-target inheritance -- `decoration`, 127; `material_valuable`, 78;
+`document`, 24; `weapon_melee`, 14; `equipment_armor`, 5; `weapon_magic`/
+`weapon_distance`, 4 each; `plant`/`light_source`, 2 each; `food`, 1), 138 routed
+non-Item (`WorldObject:corpse` 80, `WorldObject:immovable_unclassified` 24,
+`Terrain:ground_or_border` 16, `Terrain:primarytype_world_object` 14,
+`WorldObject:primarytype_world_object` 4), and 13 `family_profile_unresolved` for lack
+of any evidence this task is scoped to supply (no wiki evidence possible without
+identity; no engine attribute, routing rule or owner-table entry applies): `sample of
+bluish tide veil` (53692), `sample of bluish whisper reed` (53693), `lunar ascension
+orb` (53695), `empty crystal flask` (53696), `shell gauge` (53783), `key` (54262),
+`moonsilver crystals` (54267), `auric moon sigil` (54480), `crystal flask with blue
+lava` (54564), `crystal flask with blessed blue lava` (54566), `skewered fish` (54638),
+`scraps of a radiant attire` (54640), `cloud in a bottle` (54651) -- B2's wiki
+recapture, once these ids have identity (B1b), is expected to resolve some of these.
+
+**Follow-ups, not implemented here:** B1b (Content/World, reviewed separately) mints
+CW2 B1 allocator identity for the 412 donor ids that should become real Oteryn Items;
+B2 recaptures wiki evidence for those ids once identified; B3 (out of this task's
+scope entirely) folds the donor facts into the pinned engine revision once B1b/B2
+land, so a future `population_census.py` run covers them natively.
 
 ## 6. Validation and non-claims
 

@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-item-owner-leftover-table
 title: Owner leftover-family decision table and empty-client-object route
 mode: MIGRATE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 1109
 base_sha: 6dc7e9c4
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 39985136d5ac73e0d04cbe4512a815bee5139cd4
+final_head_sha: 39985136d5ac73e0d04cbe4512a815bee5139cd4
+final_head_frozen_at: 2026-09-28T13:00:00Z
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T12:00:00Z
-updated_at: 2026-09-28T13:00:00Z
+updated_at: 2026-09-28T14:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/item-authoring/engine_items.py
@@ -30,7 +30,7 @@ owned_paths:
   - tools/content-schema/item-authoring/samples/promotion-crystal-ff7ede5.json
   - docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md
   - docs/agents/tasks/archive/OTV2-20260928-item-nonitem-routing.md
-  - docs/agents/tasks/active/OTV2-20260928-item-owner-leftover-table.md
+  - docs/agents/tasks/archive/OTV2-20260928-item-owner-leftover-table.md
 public_contracts: []
 depends_on:
   - "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md"
@@ -42,6 +42,9 @@ jira: KAN-16
 ```
 
 ## Outcome
+
+**Merged as PR #1109 (`a2591387`) from final head
+`39985136d5ac73e0d04cbe4512a815bee5139cd4`.**
 
 After PR #1105 (archived separately), Crystal had exactly 144 / Canary 103
 `family_profile_unresolved` ids. The owner manually reviewed every one of the 144
@@ -123,8 +126,9 @@ Full rule text/evidence: `docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_
 - [x] Changed-id invariant proven against PR #1105's head (`bddc0616`), both engines:
   exactly 134 (Crystal) / 93 (Canary) ids change, every one previously unresolved; zero
   unsafe diffs.
-- [x] `#1105` task record archived (status `completed`, PR #1105 noted, merge SHA left
-  `pending`).
+- [x] `#1105` task record archived (status `completed`, PR #1105 noted, merge SHA
+  `bddc0616`).
+- [x] Merged as PR #1109.
 
 ## Excluded scope
 
@@ -200,7 +204,7 @@ previously `family_profile_unresolved`, zero unsafe diffs.
 
 ## Self-review
 
-- exact head: `0c9d31a4` (local, not pushed/frozen)
+- exact head: `39985136d5ac73e0d04cbe4512a815bee5139cd4` (merged, PR #1109)
 - method/reviewer: implementing session
 - material findings: 17 of the review's raw 161 ids (2 "tic-tac-toe token" + 15
   "stone") had already resolved via the actualname join before this review and are
@@ -214,35 +218,39 @@ previously `family_profile_unresolved`, zero unsafe diffs.
 
 ## PR and closeout
 
-- changed-file review: pending; unresolved review threads: `NOT_APPLICABLE` (no PR)
-- related/superseded PRs: continues `OTV2-20260928-item-nonitem-routing` (PR #1105)
-- protected auto-merge: `NOT_APPLICABLE`; merge commit/result: pending; ownership
-  release: pending
+- changed-file review: completed; unresolved review threads: none blocking
+- related/superseded PRs: continues `OTV2-20260928-item-nonitem-routing` (PR #1105);
+  followed by `OTV2-20260928-item-donor-census-summer-update` (task B1a)
+- protected auto-merge: via Merge Queue, PR #1109
+- merge commit/result: merged as PR #1109, final head
+  `39985136d5ac73e0d04cbe4512a815bee5139cd4`
+- ownership release: released; downstream task `item-donor-census-summer-update`
+  picked up on top of this merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: owner table + empty-client-object route implemented and tested; censuses/promotion packet regenerated; invariant proven zero-unsafe against bddc0616; PR #1105 task record archived; committed locally to item-owner-leftover at 0c9d31a4
-status: implementing
+last_progress: owner table + empty-client-object route implemented and tested; censuses/promotion packet regenerated; invariant proven zero-unsafe against bddc0616; PR #1105 task record archived; merged as PR #1109; this record archived
+status: completed
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+head_sha: 39985136d5ac73e0d04cbe4512a815bee5139cd4
+pr: 1109
+final_head_sha: 39985136d5ac73e0d04cbe4512a815bee5139cd4
+final_head_frozen_at: 2026-09-28T13:00:00Z
+ci_trigger_source: pull_request
+ci_check_generation: 1
+ci_checks_for_current_head: required
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+runner_assignment_state: completed
+terminal_ci_wait_started_at: 2026-09-28T13:00:00Z
+terminal_ci_checks_for_current_generation: required
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
-blocker: null
-next_action: commit locally on item-owner-leftover; no push/PR in this interaction
+owner_action_required: none
+blocker: none
+next_action: null
 ```

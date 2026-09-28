@@ -36,6 +36,9 @@ Architecture and boundaries:
 | `lower_promotion_packet.py` | Lowers every zero-validator-error Crystal Item bundle's authored values for the 9 field paths (`presentation.name`, `weapon.attack`/`defense`/`extra_defense`/`range_cells`/`hit_chance`, `protection.armor`, `charges.count`, `container.capacity`) that `apps/game-server/src/content/cw2_b1_import.rs`'s `decode_item_semantic_promotion_value` accepts into a candidate `OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1` packet, in that decoder's exact typed representation. `--self-check` checks named Crystal ids (Magic Sword `3288`, a container, a charges item); `--check` diffs an in-memory regeneration against the committed file instead of writing. See "Item semantic-promotion lowering" below. |
 | `test_lower_promotion_packet.py` | No-network fixture tests for `lower_promotion_packet.py`'s encode/decode mirror of the Rust decoder and its `build_packet`/`validate_packet` wiring, against the same kind of synthetic `sources` `test_engine_items.py` uses. Run with `python test_lower_promotion_packet.py`. |
 | `samples/promotion-crystal-ff7ede5.json` | Committed candidate lowering packet for the pinned Crystal revision. |
+| `donor_census.py` | Censuses the ids a Crystal donor revision (an upstream checkout past the pinned `ff7ede5`) adds over the pinned engine: family-profile classification only, no Oteryn identity minted or consulted. Reuses `engine_items`'s classification helpers directly, in `convert_item`'s own priority order; never forks or modifies `engine_items.py`. See "Donor census" below. |
+| `test_donor_census.py` | No-network fixture tests for `donor_census.py`: `donor_key`'s provisional format, its classification priority order, and the donor/base id set-difference. Run with `python test_donor_census.py`. |
+| `samples/donor-census-crystal-summer-update-00ce02a5.json` | Committed census of the 412 ids the `summer-update` donor revision adds over pinned Crystal. |
 
 The profiles are guidance inside one schema. Missing a common capability produces a
 warning; optional capabilities preserve the wider census union without warning noise.
@@ -280,6 +283,41 @@ stone x6, tentugly, towel, wilds monsters outfit x4).
 10 ids (identical in both engines) remain the owner's own `UNSURE` verdict -- no wiki
 page, or a matched page with no distinguishing fact, and non-diagnostic client flags --
 and stay `family_profile_unresolved`, fail-closed editorial backlog.
+
+### Donor census: upstream is a source of facts, never Oteryn truth
+
+Owner rule: an upstream donor checkout (a later revision of Crystal's own upstream,
+`zimbadev/crystalserver`) is only a source of FACTS -- its own `items.xml` attributes
+and `appearances.dat` client data for ids the pinned engine does not have -- never an
+Oteryn classification. Oteryn always applies its own rules to those facts fresh, never
+trusting or copying an upstream label. `donor_census.py --donor-source <donor
+checkout> --base-source <pinned Crystal checkout>` censuses exactly the ids present in
+the donor but absent from the pinned base (a plain items.xml id set-difference); an id
+either checkout shares is never touched, so the pinned `population-*.json` censuses
+stay byte-identical (verified by `population_census.py --check`, both engines,
+unaffected since `engine_items.py` itself is untouched by this tool).
+
+It reuses `engine_items`'s already-factored classification helpers directly --
+`non_item_route`, `classify_family_profile`, `immovable_non_item_route`,
+`resolve_wrap_target_profile`, `resolve_dead_item_route_or_profile`, the
+fluid/late-placeholder/no-appearance/empty-object last-resort routes,
+`fallback_entry_matches_name` -- in `convert_item`'s own priority order, but starting
+after identity resolution instead of before it: these donor ids have no CW2 B1
+allocator key at all, and this task never mints one (a separate, reviewed
+Content/World step, B1b, does). Rows are keyed by a provisional, clearly
+non-canonical string, `donor:crystalserver@<short-commit>:item/<id>`, never
+`oteryn:item.registry.*`. Because the committed wiki-evidence snapshot and the owner
+leftover-family table above are both keyed by Oteryn registry key, neither can ever
+match a donor-only id; the join is attempted anyway, exactly where `convert_item`
+would attempt it, and the committed census reports the resulting zero-match count
+explicitly (`wiki_evidence_fallback_resolved`, `owner_leftover_table_resolved`) so
+that "no wiki evidence" reads as a proven structural fact, not a skipped step.
+Delivery-task eligibility, field mapping and Presentation binding are all out of
+scope too (all need identity). The output,
+`samples/donor-census-crystal-summer-update-00ce02a5.json` (schema
+`OTERYN_ITEM_DONOR_CENSUS/v1`), is deterministic with the same `--check`/`--self-check`
+contract as `population_census.py`. Recapturing the wiki for these ids once B1b
+assigns them identity is B2's job; this tool never touches the network.
 
 A field this converter cannot implement because the schema needs data neither pinned
 engine's evidence supplies keeps a precise blocker rather than a guessed value:

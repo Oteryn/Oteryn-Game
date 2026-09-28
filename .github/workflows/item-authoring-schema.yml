@@ -65,6 +65,9 @@ jobs:
       - name: Semantic promotion lowering fixture tests
         run: python test_lower_promotion_packet.py
 
+      - name: Donor census fixture tests
+        run: python test_donor_census.py
+
       - name: Item Master census
         working-directory: .
         run: |
