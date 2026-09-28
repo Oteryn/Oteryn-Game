@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-count-vlarkorth
 title: Count Vlarkorth per-vocation summon encounter (owner decision D34)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1116
 jira: KAN-16
 base_sha: b6c75634c8e53a26f6f3ef3a3bfa80a00e1e9c44
 head_sha: null
