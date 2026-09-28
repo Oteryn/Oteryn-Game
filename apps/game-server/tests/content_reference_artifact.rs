@@ -186,7 +186,7 @@ fn promoted_atom_count(semantics: &ReferenceItemSemantics) -> usize {
 }
 
 #[test]
-fn protected_semantic_promotion_round_trips_exact_13292_atoms_through_artifact_v4_server_and_client()
+fn protected_semantic_promotion_round_trips_exact_14643_atoms_through_artifact_v4_server_and_client()
 -> Result<(), Box<dyn std::error::Error>> {
     let linked = promoted_family_linked()?;
     assert_eq!(linked.definitions.len(), CW2_B1_FULL_ITEM_FAMILY_COUNT);
