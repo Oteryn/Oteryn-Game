@@ -62,7 +62,8 @@ test that the implementing allocation must pass; the decision handback binds tha
 applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
-  - I1 recovery fence current and admission relations locked
+  - I1a recovery fence current (assert_recovery_fence) on every path, including cause replay and reconcile
+  - I1b admission relations locked (lock_admission_relations, EXCLUSIVE) on the commit path before the cause lock
   - I2 reconnect-session row matches GameSession, Character, World, runtime scope, current_generation, lease generation, scope ownership generation, session_state IN (1,2)
   - I3 runtime-scope assignment active at the fenced ownership generation, held by the committing node registration, with current node incarnation proven
   - I4 admission character, account and runtime guards (eligible, lease generation, holder GameSession, presence, ready, ownership generation)
@@ -88,7 +89,9 @@ mutation_operators:
     - "expired, future or non-monotonic time: cooldown timing is not decided here (RewardClaim cooldown identity stays UNKNOWN) and is qualified by the allocation that defines it"
 one_invariant_per_negative_case: true
 negative_cases_required_of_implementation:
-  - I1 stale recovery fence -> AuthorityRejected, nothing written
+  - I1a stale recovery fence on a new commit -> AuthorityRejected, nothing written
+  - I1a stale recovery fence on cause replay or reconcile -> rejected, and no outcome returned
+  - I1b an authority-changing transaction (character-guard revocation, session replacement or reconnect-session update, scope-assignment move) runs concurrently with an item commit -> the two serialize on the admission relations: either the change waits until the item commit ends, or the item commit starts after it and rejects; the item never commits under revoked authority
   - I2 older connection_generation -> rejected; replaced GameSession -> rejected; moved lease generation -> rejected; session_state outside 1-2 -> rejected
   - I3 moved scope ownership generation -> rejected; other holder node or registration -> rejected; stale incarnation -> rejected
   - I4 ineligible character guard -> rejected; account presence on another Character -> rejected; runtime guard not ready -> rejected
@@ -101,7 +104,7 @@ negative_cases_required_of_implementation:
 positive_cases_required_of_implementation:
   - fresh MINT with RewardClaim commits under the full current fence
   - a still-pending reserved CommandRef commits after an eligible same-GameSession reconnect with the current connection_generation
-  - retry after an ambiguous commit replays the first outcome without current authority
+  - retry after an ambiguous commit replays the first outcome under the current recovery fence, without the live session, lease or runtime checks
   - restart and PostgreSQL reload keep the cause record, and a later replay returns the first outcome
 independent_current_fact_sources:
   - game_durability_reconnect_sessions
@@ -114,7 +117,7 @@ record_derived_matching_helper:
 finding_family_sweep:
   sibling_apis: "commit_character_experience is the reference fence; the item transaction adopts it unchanged apart from the cause key and I5"
   protocol_versions: NOT_APPLICABLE (no wire change)
-  direct_and_reconciled_paths: "new commit path fenced by I1-I7; replay path by I6 only, matching the XP writer"
+  direct_and_reconciled_paths: "new commit path fenced by I1a-I7; commit-path replay by I1a, I1b and I6; reconcile by I1a and I6. This matches commit_character_experience and reconcile_character_experience, which both assert the recovery fence before the receipt lookup"
   fenced_durable_writes: "only DUR-03 item, cause and audit rows; I9 excludes Character root and progression writes"
   restart_retry_replay_concurrency_pg_reload: "covered by I6, I8 and the positive cases"
   evidence:
@@ -125,6 +128,8 @@ finding_dispositions:
   p0_p1_accepted_and_repaired:
     - "Codex 4117445998 on 432dc37 (incomplete session-generation fence)"
     - "Codex 4117578651 on ec82b6c (this qualification was marked NOT_APPLICABLE)"
+    - "Codex 4119146493 on f7e4970 (replay dropped the recovery fence)"
+    - "Codex 4119146499 on f7e4970 (no negative case for the admission-relation locks)"
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - "Codex 4117446002 on 432dc37 (0009 claim): fixed"
@@ -151,28 +156,21 @@ finding_dispositions:
 ## Independent review
 
 - required: YES. The decision is about persistence/value and session-fence semantics.
-- Codex review of frozen head `432dc37545b94dcf50bdf7e42275ee9e911e0ea5` (review 5332650313):
-  - P1 (comment 4117445998), incomplete session-generation fence: **accepted and repaired**.
-    §3.2 now requires the XP writer's complete fence, including the reconnect-session row with
-    `current_generation` and `session_state`, the runtime-scope assignment and node
-    incarnation. §3.3 states how the DUR-03 §31 continuation is proven.
-  - P2 (comment 4117446002), non-XP semantic commits under `0009`: **accepted and repaired**.
-    §3.6 is narrowed to XP-backed writes; any other Character semantic mutation needs a later
-    migration and receipt redesign.
-  - Self-review during the repair: the §39.3 wording was corrected from "forbids" to
-    "declines" in the facts and rejected options.
-- `432dc37` is superseded. Its review and CI are historical, and the successor head needs
-  fresh exact-head review and CI.
-- Codex review of frozen head `ec82b6cb9953ccb93a1cb273f3330f26917a47d2` (review 5332793751):
-  - P1 (comment 4117578651), high-risk qualification marked `NOT_APPLICABLE`: **accepted and
-    repaired**. The section above is complete at design level. Running that sweep added
-    invariant I5, which decision §3.2 now states.
-- `ec82b6c` is superseded as well; the successor head needs fresh exact-head review and CI.
+- Codex findings, all accepted and repaired. Each head's review and CI are historical once it is
+  superseded; details are in the PR #1033 threads.
+  - `432dc37`, P1 4117445998: incomplete session fence. Fixed in §3.2–3.3.
+  - `432dc37`, P2 4117446002: `0009` claim. §3.6 narrowed to XP-backed writes.
+  - `ec82b6c`, P1 4117578651: qualification marked `NOT_APPLICABLE`. Completed; I5 added.
+  - `f7e4970` (base merge of `1cb6aab`), P1 4119146493: replay dropped the recovery fence. I1
+    split into I1a and I1b; §3.3 keeps the fence on replay.
+  - `f7e4970`, P1 4119146499: no admission-lock negative case. I1b concurrency case added.
+- Self-review also corrected §39.3 from "forbids" to "declines".
+- The current successor head needs fresh exact-head review and CI.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: returned to AUTHORING after Codex P1 on ec82b6c; qualification completed
+last_progress: returned to AUTHORING after two Codex P1s on f7e4970; I1 split and replay fence kept
 status: validating
 branch: claude/gifted-rubin-a0axzx
 head_sha: null

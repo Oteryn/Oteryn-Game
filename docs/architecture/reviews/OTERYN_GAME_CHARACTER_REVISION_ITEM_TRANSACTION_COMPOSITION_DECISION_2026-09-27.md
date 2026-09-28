@@ -63,6 +63,11 @@ How does such a transaction relate to the global `CharacterRevision`?
   6. check the admission character, account and runtime guards;
   7. lock `game_character_roots ... FOR UPDATE`, and only then check `expected_character_revision`.
 
+  `reconcile_character_experience` also asserts the recovery fence before its receipt lookup.
+  `lock_admission_relations` takes an EXCLUSIVE lock on the admission relations, including the
+  character, account and runtime guards and `game_durability_reconnect_sessions`. So a concurrent
+  authority change serializes with the writer.
+
   The fence is supplied by the current runtime owner at commit time. It is not captured at
   ingress: the binding test shows a reconnected fence yields the same command binding.
 - No migration on protected main creates an inventory or reward-claim table.
@@ -123,8 +128,10 @@ How does such a transaction relate to the global `CharacterRevision`?
    - A stale predecessor that presents an older `connection_generation`, a replaced GameSession,
      a moved lease or scope, or a session outside states 1–2 fails the reconnect-session row
      check and commits nothing.
-   - A lost response or retry after commit resolves through the cause replay step, not through
-     current authority.
+   - A lost response or retry after commit resolves through the cause replay step. Replay still
+     asserts the current recovery fence, as `commit_character_experience` and
+     `reconcile_character_experience` both do before the receipt lookup. It waives only the live
+     session, lease and runtime checks. A stale recovery fence returns no outcome.
 4. **Per-Character serialization.** A transaction whose admission depends on the Character's
    inventory occupancy, capacity or claims must hold `SELECT ... FROM game_character_roots ...
    FOR UPDATE` for that Character before it reads or writes item, occupancy or claim rows. The
@@ -197,7 +204,7 @@ required_fresh_allocation: true
 required_independent_review: "exact-head independent review (persistence/value and session-fence semantics)"
 required_revalidation:
   - DUR-03 and Character contract text for D40-D42 cites this decision (reward chest §7 step 2)
-  - "the first RewardClaim/MINT migration proves: no CharacterRevision change; each one-changed stale fence rejected (connection_generation, GameSession, lease generation, scope ownership generation, session_state, runtime assignment, node incarnation); a still-pending reserved CommandRef commits after an eligible same-GameSession reconnect with the current connection_generation; a cause keyed to another Character or a fence scope that does not own the source is rejected; a retry after commit replays the first outcome; refused capacity writes nothing; idempotent repeat per (claim, character); a concurrent XP award and item transaction serialize on character_root without deadlock"
+  - "the first RewardClaim/MINT migration proves: no CharacterRevision change; each one-changed stale fence rejected (connection_generation, GameSession, lease generation, scope ownership generation, session_state, runtime assignment, node incarnation); a still-pending reserved CommandRef commits after an eligible same-GameSession reconnect with the current connection_generation; a cause keyed to another Character or a fence scope that does not own the source is rejected; a retry after commit replays the first outcome under the current recovery fence; a stale recovery fence on replay returns no outcome; a concurrent authority change serializes with the item commit through the admission-relation locks; refused capacity writes nothing; idempotent repeat per (claim, character); a concurrent XP award and item transaction serialize on character_root without deadlock"
 remaining_unknowns:
   - inventory position/capacity/weight policy and numbers
   - RewardClaim physical schema and cooldown identity
