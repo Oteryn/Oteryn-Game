@@ -374,3 +374,38 @@ Dependencies: P3b needs the protocol and runtime-state contracts accepted, the r
 extended in v2 and the character state (mana, soul, cooldowns) under the existing session-generation
 fenced character writes. Protocol changes for spell cast/cooldown messages go through the
 `protocol-oteryn` owning contract, not this document.
+
+## 10. Import and maintenance
+
+**Import path.** Spells reach the game in four layers. Each layer is regenerated from the one before it and never edited by hand.
+
+| Layer | Artifact | Owner | State |
+|---|---|---|---|
+| 1. Evidence | Pinned Canary/Crystal commits (`SOURCES` in `convert_spells.py`), `spell_census.py` census; wiki, tibiopedia.pl and official-change facts with revision ids | spell authoring | done |
+| 2. Authoring bundles | `convert_spells.py` → `spell.json`, `dependencies.json`, `catalog.json`, `manifest.json` per spell; readiness and three-reference reports | spell authoring | done (159 ready, 93 blocked) |
+| 3. WorldProject/v2 | Ready bundles lowered into `content/` and the channel content pin (§6 GAP rows added when a P3b/P4 spell needs them) | world content lane | not started |
+| 4. Runtime | `apps/game-server/src/spell/` (P3a) wired through the SPELL-D1–D6 contract (P3b) | protocol / ability owners | P3a done, P3b allocated |
+
+Spells enter layer 3 in the §9 order: the P3b starter set, then P4 by vocation, then P5 behaviour patterns. A blocked spell never enters layer 3. Its manifest keeps the blocker until an owner decision or a native behaviour resolves it.
+
+**Maintenance.** The only inputs anyone edits are the source pins, the dated reference captures, `official-changes.json`, `cooldown-groups.json`, and the decision rows in §5. Everything else is regenerated.
+
+- **New Tibia patch or source change:**
+  1. Re-pin `SOURCES`.
+  2. Regenerate the census.
+  3. Bump `REVISION`.
+  4. Rerun the conversion, readiness and verification.
+- **Wiki or official change:**
+  1. Capture a new dated cut.
+  2. Rerun the comparisons.
+  3. Record an official change in `official-changes.json`.
+  4. S11–S15 decide.
+- **Quality gate:** `verify_spells.py` must keep `ours_differs_ready` at 0.
+- **CI:**
+  - The `schema` job checks the schema, the negative cases, the tool self-tests and the starter bundles.
+  - The `conversion` job checks out the pinned sources and fails unless the committed census, readiness report, verification report and starter bundles reproduce byte for byte.
+
+**Known gaps.**
+- Layer 3 has no owner allocation yet.
+- Nothing warns when a wiki page or a source branch changes after its capture; refreshing is manual, at each patch.
+- S15 (the tibia.com library) waits on an owner-run capture.

@@ -64,6 +64,117 @@ jobs:
               --catalog "$bundle/catalog.json" --manifest "$bundle/manifest.json" > /dev/null
           done
 
+  conversion:
+    # The committed census, readiness report, verification report and starter bundles must be exactly what
+    # the tools produce from the pinned Canary and Crystal commits (SOURCES in convert_spells.py).
+    name: Spell authoring / conversion reproduces committed outputs
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: tools/content-schema/spell-authoring
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install pinned requirements
+        run: python -m pip install -r requirements.txt
+
+      - name: Read the source pins
+        id: pins
+        run: |
+          set -euo pipefail
+          python - >> "$GITHUB_OUTPUT" <<'PY'
+          from convert_spells import SOURCES
+          for name, source in SOURCES.items():
+              print(f"{name}_repository={source['repository']}")
+              print(f"{name}_revision={source['revision']}")
+          PY
+
+      - name: Check out the pinned Canary source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.pins.outputs.canary_repository }}
+          ref: ${{ steps.pins.outputs.canary_revision }}
+          path: _sources/canary
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+                data/scripts/spells
+                data/scripts/runes
+                data/scripts/lib
+                data/libs
+                data/XML
+                src/creatures/combat
+                src/creatures/creatures_definitions.hpp
+                src/creatures/players
+                src/utils/utils_definitions.hpp
+                src/game/game_definitions.hpp
+                src/items/weapons
+                src/lua/functions/creatures/combat
+                src/lua/functions/lua_functions_loader.hpp
+                src/lua/functions/lua_functions_loader.cpp
+                src/lua/functions/core/game/lua_enums.cpp
+                config.lua.dist
+
+      - name: Check out the pinned Crystal source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: ${{ steps.pins.outputs.crystal_repository }}
+          ref: ${{ steps.pins.outputs.crystal_revision }}
+          path: _sources/crystal
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+                data/scripts/spells
+                data/scripts/runes
+                data/scripts/lib
+                data/libs
+                data/XML
+                src/creatures/combat
+                src/creatures/creatures_definitions.hpp
+                src/creatures/players
+                src/utils/utils_definitions.hpp
+                src/game/game_definitions.hpp
+                src/items/weapons
+                src/lua/functions/creatures/combat
+                src/lua/functions/lua_functions_loader.hpp
+                src/lua/functions/lua_functions_loader.cpp
+                src/lua/functions/core/game/lua_enums.cpp
+                config.lua.dist
+
+      - name: Regenerate and compare
+        env:
+          CANARY: ${{ github.workspace }}/_sources/canary
+          CRYSTAL: ${{ github.workspace }}/_sources/crystal
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/conversion"
+          mkdir -p "$out"
+          python spell_census.py --canary "$CANARY" --crystal "$CRYSTAL" --out "$out/census.json" > /dev/null
+          cmp "$out/census.json" samples/spell-census-canary-99902524-crystal-ff7ede5.json
+          python convert_spells.py --canary "$CANARY" --crystal "$CRYSTAL" \
+            --readiness "$out/readiness.json" --out "$out/bundles" > /dev/null
+          cmp "$out/readiness.json" samples/spell-readiness-p2.json
+          python verify_spells.py --bundles "$out/bundles" --out "$out/verify.json" > /dev/null
+          cmp "$out/verify.json" samples/spell-verify-3-sources-2026-09-28.json
+          python convert_spells.py --canary "$CANARY" --crystal "$CRYSTAL" --out "$out/starter" \
+            --only "cure poison" "energy strike" "great fireball rune" "ice strike" "intense healing" \
+                   "light healing" "sudden death rune" > /dev/null
+          diff -r "$out/starter" samples/starter-bundles
+          echo 'census, readiness, verification and starter bundles reproduce from the pinned sources'
+
   wiki-br:
     # TibiaWiki BR answers 403 (Cloudflare) from the build container; this job reads it from a hosted
     # runner. The artifact keeps infobox fields cut to 200 characters and revision ids, never raw pages.
