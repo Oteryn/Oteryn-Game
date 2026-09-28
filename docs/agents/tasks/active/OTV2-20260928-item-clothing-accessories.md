@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-item-clothing-accessories
 title: Old rag/ivory comb via wiki status=event + exact-id join (match_basis) for the wiki fallback
 mode: MIGRATE
-status: implementing
+status: in_review
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 1073
 base_sha: 4add578a
 head_sha: null
 final_head_sha: null
@@ -187,19 +187,19 @@ behaviour of exact id evidence overriding a same-page name match. Kraken Buoy La
 
 - changed-file review: pending
 - unresolved review threads: pending
-- related/superseded PRs: #1063
-- protected auto-merge: pending
+- related/superseded PRs: #1063, #1068 (alias reverted here)
+- protected auto-merge: SQUASH via Merge Queue, enabled on PR #1073
 - merge commit/result: pending
 - ownership release: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: clothing accessories mapped, outputs regenerated
-status: implementing
+last_progress: itemid join + status=event published as PR #1073
+status: in_review
 branch: claude/compassionate-albattani-s29syw
 head_sha: null
-pr: null
+pr: 1073
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -217,5 +217,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish PR, enable auto-merge
+next_action: required checks, Merge Queue, archive record
 ```
