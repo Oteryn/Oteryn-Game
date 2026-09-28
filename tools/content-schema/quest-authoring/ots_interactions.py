@@ -80,14 +80,21 @@ CONTAINER_FILL_EX = re.compile(r'^(\w+):addItemEx\(\s*(\w+)\s*\)$')
 CREATE_ITEM = re.compile(r'^local\s+(\w+)\s*=\s*Game\.createItem\(\s*(\d+)\s*\)$')
 TEXTED_ITEM = re.compile(r'(\w+):setAttribute\(\s*ITEM_ATTRIBUTE_TEXT\b')
 BLOCKED_MOVEMENT = BLOCKED['Movement']
+BLOCKED_WORLD_OBJECT = BLOCKED['WorldObject']
 # D38 world-object overlay operations: a call matched by one regex names its operation kind directly; a
 # bare `revertItem`/`decay`/`addEvent(Position.revertItem, ...)` schedules the same object's own later
-# transform (the proposal's "timed revert"), so it is transcribed as a TRANSFORM too (D38 §4, "revert_after
-# covers decay and revertItem/addEvent reverts").
+# transform (the proposal's "timed revert"), so it attaches as `revert_after_ms` to the operation it
+# reverts (the preceding typed operation in the same statement list) rather than becoming its own
+# child (D38 §4, "revert_after covers decay and revertItem/addEvent reverts").
 TRANSFORM_CALL = re.compile(r'[:.](transform|transformItem)\(')
 CREATE_CALL = re.compile(r'[:.]createItem\(\s*(\d+)?')
 RETAG_CALL = re.compile(r'[:.]setActionId\(')
 REVERT_CALL = re.compile(r'[:.](revertItem|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(')
+# the literal delay of `addEvent(Position.revertItem, delay, ...)`, the one revert form whose delay is
+# at a fixed, well-known argument position across this codebase's scripts; the other forms (a bare
+# `:revertItem(...)`/`:decay()` method call, or a direct `Position.revertItem(...)` static call) have no
+# argument position known to be the delay without reading the exact call, so they never claim one.
+REVERT_DELAY = re.compile(r'\baddEvent\(\s*Position\.revertItem\s*,\s*(\d+)\s*[,)]')
 # a `Name = {` anywhere in the file, used to discover which names are worth asking lua_tables to parse.
 NAME_TABLE = re.compile(r'(\w+)\s*=\s*\{')
 # a literal `Storage.…` path, an array step kept only when its index is a literal digit (never a variable).
@@ -302,15 +309,33 @@ class Script:
             # the object the script already holds), so this stays with its source line rather than guessed.
             found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number})
         elif (m := CREATE_CALL.search(raw)):
-            found.append({'owner': 'WorldObject', 'operation': 'CREATE',
-                         **({'def': ref('Item', f'{self.namespace}:item/{m.group(1)}')} if m.group(1)
-                            else {'value_source_line': number})})
+            constructor = CREATE_ITEM.match(code)
+            tail = raw[m.end():]
+            pos = POSITION.search(tail)
+            literal = {'def': ref('Item', f'{self.namespace}:item/{m.group(1)}')} if m.group(1) else {'value_source_line': number}
+            if constructor and constructor.group(1) in self.created_items:
+                # a reward-container constructor (this local is a hand-out/contents item, DUR-03), never
+                # a world placement, even though the call itself is `Game.createItem(...)`.
+                pass
+            elif pos:
+                # C3: CREATE only binds a pre-authored anchor with a fixed footprint; a literal position
+                # argument names one.
+                found.append({'owner': 'WorldObject', 'operation': 'CREATE', 'anchor': self.anchor(pos.groups()), **literal})
+            elif re.search(r'(?i)position', tail):
+                # a computed placement (a variable/expression position, not a literal): dynamic geometry,
+                # which C3 does not allow CREATE to bind, so this stays blocked rather than unanchored.
+                found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+            else:
+                found.append({'owner': 'WorldObject', 'operation': 'CREATE', **literal})
         elif RETAG_CALL.search(raw):
             # D38/coordinator decision 1c: a transition between two states of the same collision class;
             # the action id itself is not modeled as data.
             found.append({'owner': 'WorldObject', 'operation': 'RETAG', 'value_source_line': number})
-        elif REVERT_CALL.search(raw):
-            found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number})
+        elif (m := REVERT_CALL.search(raw)):
+            # never its own child (D38 §4): `convert()` attaches it to the preceding typed operation in
+            # this same statement list, or leaves it blocked when none can be associated deterministically.
+            delay = int(dm.group(1)) if (dm := REVERT_DELAY.search(raw)) else None
+            found.append({'owner': 'WorldObject', '_revert': True, '_revert_delay_ms': delay, '_source_line': number})
         if (m := CONTAINER_FILL.match(raw)) and m.group(1) in self.containers:
             # a plain item added to a reward container built earlier in this same callback (DUR-03): its contents
             self.containers[m.group(1)].setdefault('contents', []).append(
@@ -399,17 +424,39 @@ class Script:
         return (self.roles.get(receiver) == 'actor' or receiver in self.players
                 or re.search(r'(?i)creature|monster|boss|npc|summon|spectator', receiver) is not None)
 
+    def revert(self, out, child):
+        """Attach a `_revert` sentinel (from `children()`) to the preceding typed WorldObject operation
+        in this same statement list (D38 §4: the revert is the same object's own later operation, so it
+        is transcribed as a field on the operation it reverts, never its own child). No operation to
+        attach to in this same list is not a deterministic association, so the revert stays blocked."""
+        prior = next((c for c in reversed(out) if c.get('owner') == 'WorldObject' and 'operation' in c), None)
+        if prior is None:
+            blocked = {'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT,
+                      'source_line': child['_source_line']}
+            if child.get('repeated'):
+                blocked['repeated'] = True
+            out.append(blocked)
+        elif child['_revert_delay_ms'] is not None:
+            prior['revert_after_ms'] = child['_revert_delay_ms']
+
+    def append_children(self, out, children):
+        for child in children:
+            if child.pop('_revert', False):
+                self.revert(out, child)
+            else:
+                out.append(child)
+
     def convert(self, nodes):
         out = []
         for node in nodes:
             if node[0] == 'stmt':
-                out.extend(self.children(node[1]))
+                self.append_children(out, self.children(node[1]))
             elif node[0] == 'block':
                 inner = node[1][1:-1]
                 control = [n for n in inner if CONTROL.match(strip_code(self.lines[n - 1]).strip())]
                 for number in inner:
                     if number not in control:
-                        out.extend(self.children(number, in_loop=True))
+                        self.append_children(out, self.children(number, in_loop=True))
                 if control:
                     self.unresolved.append({'line': node[1][0], 'reason': 'loop with its own control flow'})
             elif node[0] == 'deferred':

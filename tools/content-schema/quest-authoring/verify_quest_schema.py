@@ -1,8 +1,11 @@
 """Focused positive/negative checks of the quest content schema and semantic validator (synthetic fixtures only)."""
 import json
 import sys
+import tempfile
+from pathlib import Path
 
 from validate_quest_content import BLOCKED, validate, validate_gates, validate_interactions, validate_storylines
+import ots_interactions as oi
 
 
 def ref(family, name):
@@ -450,6 +453,89 @@ interaction_case('conflict needs two sources',
 interaction_case('every interaction has a manifest entry', lambda i, c, m: m['entries'].clear())
 interaction_case('manifest lists an interaction once', lambda i, c, m: m['entries'].append(dict(m['entries'][0])))
 interaction_case('interaction keys are unique', lambda i, c, m: i.update(twin=True))
+
+def run_converter(lua_body, callback='onUse'):
+    """Run a small, hand-written (never real-source) Lua snippet through the real converter
+    (`ots_interactions.Script`) and return (flat children, the script's anchors). Regression coverage
+    for the converter's own classification logic, distinct from the schema-fixture cases above."""
+    text = '\n'.join([f'function test:{callback}(player, item, fromPosition, target, toPosition)']
+                     + lua_body + ['end'])
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / 'test.lua').write_text(text)
+        script = oi.Script('canary', tmp, 'test.lua', {}, 'test')
+        script.declared = {}
+        script.bind(1, callback)
+        nodes = oi.lua_blocks.parse(script.lines, oi.lua_blocks.function_body(script.lines, 1))
+        rules = script.convert(nodes)
+    return list(oi.walk(rules)), script.anchors
+
+
+def converter_case(name, lua_body, check, callback='onUse', expected=True):
+    try:
+        children, anchors = run_converter(lua_body, callback)
+        ok, detail = check(children, anchors)
+    except Exception as exc:  # a converter bug surfaces here as a failed case, not a crashed test run
+        ok, detail = False, f'{type(exc).__name__}: {exc}'
+    results.append({'name': name, 'expected_valid': expected, 'passed': ok == expected, 'first_error': None if ok else detail})
+
+
+# Finding 1 (P2): a revert call (`decay`/`revertItem`/`addEvent(Position.revertItem, ...)`) must never
+# become its own WorldObject child; it attaches `revert_after_ms` to the preceding typed operation in
+# the same statement list, or stays blocked when none can be associated deterministically.
+converter_case(
+    'a literal addEvent(Position.revertItem, delay, ...) attaches revert_after_ms to the preceding op',
+    ['item:transform(2773)', 'addEvent(Position.revertItem, 5000, item:getPosition(), 2772)'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'WorldObject' and c[0]['operation'] == 'TRANSFORM'
+                 and c[0].get('revert_after_ms') == 5000, c))
+converter_case(
+    'a non-literal revert (bare decay) attaches with no revert_after_ms, never its own child',
+    ['item:transform(2773)', 'item:decay()'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'WorldObject' and c[0]['operation'] == 'TRANSFORM'
+                 and 'revert_after_ms' not in c[0], c))
+converter_case(
+    'a revert with no preceding operation stays blocked, never a standalone TRANSFORM',
+    ['item:decay()'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'WorldObject' and c[0].get('status') == 'blocked'
+                 and 'operation' not in c[0], c))
+converter_case(
+    'a revert in a different branch from its target does not merge across branches',
+    ['if item.itemid == 2772 then', 'item:transform(2773)', 'end',
+     'if item.itemid == 9999 then', 'item:decay()', 'end'],
+    lambda c, a: (len([x for x in c if x.get('owner') == 'WorldObject' and x.get('status') == 'blocked']) == 1
+                 and len([x for x in c if x.get('operation') == 'TRANSFORM']) == 1, c))
+
+# Finding 2 (P2): CREATE only binds a literal, pre-authored anchor; a computed position stays blocked.
+converter_case(
+    'a literal position on createItem becomes a bound anchor',
+    ['Game.createItem(2793, Position(100, 200, 7))'],
+    lambda c, a: (len(c) == 1 and c[0] == {'owner': 'WorldObject', 'operation': 'CREATE', 'anchor': 'p1',
+                                           'def': {'family': 'Item', 'key': 'canary:item/2793',
+                                                   'revision': oi.REVISION}}
+                 and a == [{'key': 'p1', 'source_position': {'x': 100, 'y': 200, 'z': 7}}], (c, a)))
+converter_case(
+    'a computed position on createItem stays blocked, never an invented anchor',
+    ['Game.createItem(2793, toPosition)'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'anchor' not in c[0] and not a, c))
+converter_case(
+    'createItem with no position is unchanged (implicitly the interaction target)',
+    ['Game.createItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and 'anchor' not in c[0], c))
+
+# Finding 3 (P2): a reward-container constructor (`self.created_items`) is never also a WorldObject CREATE.
+converter_case(
+    'a bare reward constructor produces no WorldObject child by itself',
+    ['local reward = Game.createItem(2793)'],
+    lambda c, a: (c == [], c))
+converter_case(
+    'a reward constructor filled into a hand-out container stays Item, not WorldObject',
+    ['local backpack = player:addItem(2000, 1)', 'local reward = Game.createItem(2793)', 'backpack:addItemEx(reward)'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'Item' and c[0]['request'] == 'hand_out'
+                 and c[0].get('contents') == [{'item': {'family': 'Item', 'key': 'canary:item/2793',
+                                                        'revision': oi.REVISION}, 'count': 1}], c))
+converter_case(
+    'createItem with a literal position is still a world CREATE even though it is assigned to a local',
+    ['local wall = Game.createItem(2793, Position(1, 2, 7))'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1', c))
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:
