@@ -1918,6 +1918,7 @@ dependencies = [
  "cap-std",
  "ed25519-dalek",
  "oteryn-foundation",
+ "oteryn-protocol-oteryn",
  "oteryn-simulation-determinism",
  "prost",
  "rcgen",
@@ -1980,6 +1981,13 @@ version = "0.1.0"
 dependencies = [
  "oteryn-client",
  "oteryn-platform-contracts",
+]
+
+[[package]]
+name = "oteryn-protocol-oteryn"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
 ]
 
 [[package]]

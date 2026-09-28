@@ -44,12 +44,19 @@ pub use fnd04_verifier::{
 };
 pub use protocol::*;
 pub use snapshot_facade::SnapshotBarrier;
+// Shared-lease grant (#162), re-export of moved protocol error types: `FoundationProtocolError`,
+// `ProtocolDisposition`, `FrameLength` and `MAX_WIRE_FRAME_BYTES` moved to `oteryn-protocol-oteryn`
+// (task OTV2-20260928-protocol-oteryn-crate-c1a) so both the server and the future client share
+// exactly one definition. Re-exporting here keeps every existing `crate::foundation::*` consumer
+// unchanged: the type is the same type, now homed in the shared crate.
+pub use oteryn_protocol_oteryn::{
+    FoundationProtocolError, FrameLength, MAX_WIRE_FRAME_BYTES, ProtocolDisposition,
+};
 
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
-pub const MAX_WIRE_FRAME_BYTES: u32 = 1_048_576;
 pub const MAX_OUTSTANDING_COMMANDS: usize = 64;
 pub const MAX_RETAINED_TERMINAL_RECORDS: usize = 1;
 pub const MAX_RETAINED_TERMINAL_CHARGED_BYTES: u64 = 3_116;
@@ -58,132 +65,6 @@ const RETAINED_SEMANTIC_U64_FIELD_COUNT: u64 = 4;
 const RETAINED_SEMANTIC_U64_FIELD_BYTES: u64 = 8;
 const RETAINED_SEMANTIC_COMPONENT_COUNT: u64 = 6;
 const RETAINED_SEMANTIC_LENGTH_PREFIX_BYTES: u64 = 2;
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum FoundationProtocolError {
-    MalformedFrame = 1001,
-    FrameTooLarge = 1002,
-    MalformedEnvelope = 1003,
-    UnknownMessageType = 1004,
-    ProtocolMajorMismatch = 1005,
-    TransportProfileMismatch = 1006,
-    CapabilityMismatch = 1007,
-    InvalidWireIdentifier = 1008,
-    PayloadLimitExceeded = 1009,
-    StaleConnectionGeneration = 1010,
-    CommandOutcomeExpired = 1020,
-    CommandSequenceGap = 1021,
-    TooManyOutstandingCommands = 1022,
-    ServerSequenceGap = 1030,
-    StateRevisionMismatch = 1031,
-    SnapshotAssemblyInvalid = 1032,
-    SnapshotLimitExceeded = 1033,
-    BootstrapLimitExceeded = 1040,
-    InvalidCapabilitySet = 1041,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[repr(u32)]
-pub enum ProtocolDisposition {
-    OperationTerminal = 1,
-    ResyncRequired = 2,
-    SessionFatal = 3,
-    TransportFatal = 4,
-}
-
-impl FoundationProtocolError {
-    #[must_use]
-    pub const fn code(self) -> u32 {
-        self as u32
-    }
-
-    #[must_use]
-    pub const fn disposition(self) -> ProtocolDisposition {
-        match self {
-            Self::MalformedFrame
-            | Self::FrameTooLarge
-            | Self::MalformedEnvelope
-            | Self::StaleConnectionGeneration => ProtocolDisposition::TransportFatal,
-            Self::UnknownMessageType
-            | Self::ProtocolMajorMismatch
-            | Self::TransportProfileMismatch
-            | Self::CapabilityMismatch
-            | Self::InvalidWireIdentifier
-            | Self::SnapshotLimitExceeded
-            | Self::BootstrapLimitExceeded
-            | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
-            Self::PayloadLimitExceeded | Self::TooManyOutstandingCommands => {
-                ProtocolDisposition::OperationTerminal
-            }
-            Self::CommandOutcomeExpired
-            | Self::CommandSequenceGap
-            | Self::ServerSequenceGap
-            | Self::StateRevisionMismatch
-            | Self::SnapshotAssemblyInvalid => ProtocolDisposition::ResyncRequired,
-        }
-    }
-}
-
-impl Display for FoundationProtocolError {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(match self {
-            Self::MalformedFrame => "malformed protocol frame",
-            Self::FrameTooLarge => "protocol frame exceeds hard limit",
-            Self::MalformedEnvelope => "malformed protocol envelope",
-            Self::UnknownMessageType => "unknown foundation message type",
-            Self::ProtocolMajorMismatch => "protocol major mismatch",
-            Self::TransportProfileMismatch => "transport profile mismatch",
-            Self::CapabilityMismatch => "capability mismatch",
-            Self::InvalidWireIdentifier => "invalid wire identifier",
-            Self::PayloadLimitExceeded => "payload exceeds hard limit",
-            Self::StaleConnectionGeneration => "connection generation is stale",
-            Self::CommandOutcomeExpired => "command outcome is no longer retained",
-            Self::CommandSequenceGap => "command sequence contains a gap",
-            Self::TooManyOutstandingCommands => "too many commands are outstanding",
-            Self::ServerSequenceGap => "server sequence contains a gap",
-            Self::StateRevisionMismatch => "state revision mismatch",
-            Self::SnapshotAssemblyInvalid => "snapshot assembly is invalid",
-            Self::SnapshotLimitExceeded => "snapshot exceeds hard limit",
-            Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
-            Self::InvalidCapabilitySet => "invalid capability set",
-        })
-    }
-}
-
-impl Error for FoundationProtocolError {}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct FrameLength(u32);
-
-impl FrameLength {
-    pub fn new(value: u32) -> Result<Self, FoundationProtocolError> {
-        if value == 0 {
-            return Err(FoundationProtocolError::MalformedFrame);
-        }
-        if value > MAX_WIRE_FRAME_BYTES {
-            return Err(FoundationProtocolError::FrameTooLarge);
-        }
-        Ok(Self(value))
-    }
-
-    pub fn from_prefix(prefix: &[u8]) -> Result<Self, FoundationProtocolError> {
-        let bytes: [u8; 4] = prefix
-            .try_into()
-            .map_err(|_error| FoundationProtocolError::MalformedFrame)?;
-        Self::new(u32::from_be_bytes(bytes))
-    }
-
-    #[must_use]
-    pub const fn get(self) -> u32 {
-        self.0
-    }
-
-    #[must_use]
-    pub const fn to_prefix(self) -> [u8; 4] {
-        self.0.to_be_bytes()
-    }
-}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CommandIdError {
