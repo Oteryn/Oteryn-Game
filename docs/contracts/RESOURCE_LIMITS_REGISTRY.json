@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-25T08:55:50+00:00",
+  "updated_at": "2026-09-28T10:37:40+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -5048,6 +5048,361 @@
         "gameplay_transport control-loss commit (OTV2-20260927-control-loss-lifecycle)"
       ],
       "notes": "Provisional owner value, DISCONNECT-PROTECTION-V1 \u00a74 (#822 comments 5854525644 and 5854565314); matches the Tibia 60 s logout block; to be measured and tuned before release. Expiry release and positive resume are later children."
+    },
+    {
+      "id": "DUR03-RL-01",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "ItemInstances touched by one DUR-03 native one-item logical transaction",
+      "unit": "ItemInstances per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT touches its one output ItemInstance; TRANSFER's before and after are the same ItemInstance.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: MINT and TRANSFER each touch exactly one ItemInstance",
+        "max+1=2: a TRANSFER whose before and after ItemInstance ids differ is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-02",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Location/custody lines in one DUR-03 native one-item logical transaction",
+      "unit": "location/custody lines per logical transaction",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated. MINT has one Ground destination; TRANSFER has one Ground source and one direct-root CharacterInventory destination.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=2: a TRANSFER with one source and one destination line is accepted",
+        "max+1=3: an additional or duplicated location line is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-03",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Value lines in one DUR-03 native one-item logical transaction",
+      "unit": "value lines per logical transaction",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Not admitted: the registered payload has no value-line field, so any value line rejects fail-closed as an unknown field before use.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=0: a transaction with no value line is accepted",
+        "max+1=1: any value line is rejected fail-closed"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
+    },
+    {
+      "id": "DUR03-RL-04",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Transform inputs/outputs in one DUR-03 native one-item logical transaction",
+      "unit": "transform inputs/outputs per logical transaction",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Not admitted: the registered payload has no transform field, so any transform input or output rejects fail-closed as an unknown field before use.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=0: a transaction with no transform is accepted",
+        "max+1=1: any transform input or output is rejected fail-closed"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
+    },
+    {
+      "id": "DUR03-RL-05",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Container expansion in one DUR-03 native one-item logical transaction",
+      "unit": "expanded container levels per logical transaction",
+      "hard_maximum": 0,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 0
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Direct root only: the registered payload has no container-expansion field, so any expansion rejects fail-closed as an unknown field before use.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=0: a direct-root transaction is accepted",
+        "max+1=1: any container expansion is rejected fail-closed"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Fail-closed exclusion."
+    },
+    {
+      "id": "DUR03-RL-06-PARTICIPANTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Plan participants in one DUR-03 native one-item logical transaction",
+      "unit": "participants per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: one participant accepted",
+        "max+1=2: a second participant is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-06-EFFECT-WORK-UNITS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Effect work units (participant plus its effects) in one DUR-03 native one-item logical transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked before allocation or partial mutation; never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=3: three work units accepted",
+        "max+1=4: a fourth work unit is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-07-EVENTS",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Audit events for one DUR-03 native one-item logical transaction",
+      "unit": "events per logical transaction",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "TransactionEventRef count and ordinal are exactly 1; checked on the envelope before the payload is used.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1: TransactionEventRef ordinal=1, count=1 accepted",
+        "max+1=2: count=2 is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. D50: one audit event per logical transaction."
+    },
+    {
+      "id": "DUR03-RL-07-ENVELOPE-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One encoded normative ANL-01 EventEnvelope (game-events/v1/foundation.proto) carrying event type 2, including payload",
+      "unit": "bytes",
+      "hard_maximum": 9216,
+      "configurable_range": {
+        "minimum": 9216,
+        "maximum": 9216
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed envelope length before retaining, decoding, batching or publishing; ANL01-EVENT-ENVELOPE-BYTES still applies on top.",
+      "client_visible": false,
+      "boundary_tests": [
+        "9,216-byte envelope passes the size gate",
+        "9,217 bytes rejected before decode",
+        "worst-case MINT of the final schema (7,167 B) accepted",
+        "integer-overflow accounting rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Sized on the normative EventEnvelope with every optional field present, ANL-01 strings at 128 B and widest varints: overhead at most 1,038 B; worst cases MINT 6,129/7,167 B, TRANSFER 7,433/8,471 B, TRANSFER with a 128 B typed_position 7,565/8,603 B. Any valid payload fits: 7,936 + 1,038 = 8,974 B. The OfflineCandidateEnvelope evidence wrapper is not this envelope. No private 4,096 B cap is registered."
+    },
+    {
+      "id": "DUR03-RL-07-PAYLOAD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One exact OneItemTransactionV1 payload (event type 2) inside EventEnvelope.payload",
+      "unit": "bytes",
+      "hard_maximum": 7936,
+      "configurable_range": {
+        "minimum": 7936,
+        "maximum": 7936
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check the encoded or borrowed payload length before decoding or copying; ANL01-EVENT-PAYLOAD-BYTES still applies on top.",
+      "client_visible": false,
+      "boundary_tests": [
+        "7,936-byte payload passes the size gate",
+        "7,937 bytes rejected before decode",
+        "worst-case MINT payload of the final schema (6,129 B) accepted"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-07-CONTENT-KEY-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One content key or revision string in the event type 2 payload: production_key, revision_ref, map revision, ground content revision, loot table key and revision, loot purpose key, provenance content revision, ruleset and SIM revisions",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Validate each field length before retaining or copying; oversize input is rejected, never truncated.",
+      "client_visible": false,
+      "boundary_tests": [
+        "512-byte content key accepted",
+        "513 bytes rejected, not truncated"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513. Aligned with DUR04-FIRST-PROD-KEY-BYTES and DUR04-FIRST-PROD-STRING-BYTES."
+    },
+    {
+      "id": "DUR03-RL-07-TECHNICAL-FIELD-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One technical field in the event type 2 payload: definition and loot table family (closed enum name), spatial_position, corpse ref, native room/placement context, typed_cause",
+      "unit": "bytes",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Validate each field length before retaining or copying; oversize input is rejected, never truncated. retention_profile_id and other envelope strings stay bounded by ANL01-ENVELOPE-STRING-BYTES (128 B).",
+      "client_visible": false,
+      "boundary_tests": [
+        "128-byte technical field accepted",
+        "129 bytes rejected, not truncated"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-07-UUID-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "One UUID field in event type 2 payload or envelope: item, world, channel, character, session, event, transaction",
+      "unit": "bytes",
+      "hard_maximum": 16,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Exact width checked before use; any other width is rejected.",
+      "client_visible": false,
+      "boundary_tests": [
+        "16 bytes accepted",
+        "15 and 17 bytes rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-07-PAYLOAD-SHA256-BYTES",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "EventEnvelope.payload_sha256 for event type 2",
+      "unit": "bytes",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Exact width and SHA-256 equality over the exact payload bytes checked before the payload is used.",
+      "client_visible": false,
+      "boundary_tests": [
+        "32 bytes accepted",
+        "31 and 33 bytes rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D50/D51, decision \u00a7\u00a73.1-3.3; owner direction #162 comment 5866606575; registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-RL-08",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Retry and reconciliation work for one DUR-03 native one-item logical transaction",
+      "unit": "work units per logical transaction",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "All attempts reuse the same TransactionId and frozen candidate; an unknown outcome is held and never gets a new TransactionId; each pass stays within DFR-DB-PASS-MS (2,000 ms).",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=3: three retry/reconciliation work units accepted",
+        "max+1=4: a fourth work unit is rejected"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "D51, decision \u00a73.3: a policy value, not a measurement. Stage C must re-decide it once real PostgreSQL reconciliation exists and prove max/max+1 across a restart. Registered by OTV2-20260928-dur03-b4-binding-513."
+    },
+    {
+      "id": "DUR03-AUDIT-RETENTION-S",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28.md",
+      "resource": "Ordinary retention ceiling of one event type 2 durable-audit event (profile DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1)",
+      "unit": "elapsed seconds",
+      "hard_maximum": 7776000,
+      "configurable_range": {
+        "minimum": 7776000,
+        "maximum": 7776000
+      },
+      "failure_category": "UNAVAILABLE",
+      "allocation_impact": "Expiry = envelope trusted-server timestamp + 7,776,000 s over [start, expiry); never recomputed or refreshed; deletion subject only to an explicit audited case/legal hold.",
+      "client_visible": false,
+      "boundary_tests": [
+        "expiry - 1 s retained",
+        "expiry and later expired"
+      ],
+      "consumers": [
+        "apps/game-server/examples/dur03_native_one_item_audit.rs (offline codec/resource evidence; no runtime consumer yet)"
+      ],
+      "notes": "P90D, decision \u00a73.1 and OTERYN_DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_DECISION_2026-09-27.md. Registered by OTV2-20260928-dur03-b4-binding-513."
     }
   ]
 }
