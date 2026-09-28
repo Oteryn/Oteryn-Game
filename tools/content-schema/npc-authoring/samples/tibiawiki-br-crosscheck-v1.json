@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "bbff49dd318a4fcf6fbd4e394865529a214c1bd2ff6e41471743fe59da5a238d",
+  "facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,

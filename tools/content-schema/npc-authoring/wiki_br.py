@@ -202,6 +202,8 @@ EDITORIAL = re.compile(r'\s*<(?!\s*(?:nome do )?jogador\s*>)(?=[^<>]*\b(?:se|voc
 # a line that is only a stage direction (`-walking away-`, `*nods*`) or a single word (a choice separator `Ou`,
 # a topic label `Hints`) is not wrapped speech: it ends the turn instead of continuing it
 DIRECTION = re.compile(r'^(?:-[^-].*-|\*[^*].*\*|\S+)$')
+# an inline template with arguments renders as its last one: `{{tecla|CTRL}}` shows the key CTRL
+INLINE_TEMPLATE = re.compile(r'\{\{\s*[^{}|]+\|(?:[^{}|]*\|)*([^{}|]*)\}\}')
 COMMENT = re.compile(r'<!--.*?(?:-->|$)', re.S)
 BOLD_LABEL = re.compile(r"\s*'''\s*((?:\[\[[^\]]*\]\]|[^'\[\]:|])+?)\s*'''\s+(?!:)(\S.*)$")
 TRANSCRIPT_BOUNDARY = ('|', '{{', '}}', '==', '----', '[[Categoria', '[[Arquivo', '[[File', '[[Imagem')
@@ -233,7 +235,7 @@ def without_notes(text):
 
 
 def unmarked(text):
-    return LINK.sub(r'\1', text).replace("'''", '').replace("''", '')
+    return INLINE_TEMPLATE.sub(r'\1', LINK.sub(r'\1', text)).replace("'''", '').replace("''", '')
 
 
 def unmarked_prefix(raw_segment):
@@ -435,7 +437,7 @@ def cmd_self_test(_args):
             "1 Goldro: Numbered.\n'''Goldro:''' Take this! (burning effect, 5 turnos de 10 hitpoints)\n"
             "'''Goldro:''' Shh. (whispers)\n03:07 Goldro: Timestamped.\n"
             "'''Goldro:''' <chuckles> Hi, <jogador>. <dependendo da sua resposta você volta>\n<após entregar o item>\n"
-            "'''Goldro:''' Men only.\nOu\n'''Goldro:''' Goodbye.\n-walking away-\nnot mine any more\n"
+            "'''Goldro:''' Press {{tecla|CTRL}} to use.\n'''Goldro:''' Men only.\nOu\n'''Goldro:''' Goodbye.\n-walking away-\nnot mine any more\n"
             "''Inferior ao nível 25:'' '''Goldro:''' Conditioned.\n"
             "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
             "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye, and\nsee you soon.\n"
@@ -449,7 +451,7 @@ def cmd_self_test(_args):
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.',
                                   # a bold label of another name opens no turn, so it continues Goldro's
-                                  'No colon. Other not a label.', 'Numbered.', 'Take this!', 'Shh. (whispers)', 'Timestamped.', '<chuckles> Hi, <jogador>.', 'Men only.', 'Goodbye.', 'Conditioned.',
+                                  'No colon. Other not a label.', 'Numbered.', 'Take this!', 'Shh. (whispers)', 'Timestamped.', '<chuckles> Hi, <jogador>.', 'Press CTRL to use.', 'Men only.', 'Goodbye.', 'Conditioned.',
                                   'One.', 'Two. still two.',
                                   'Repeated label.', 'Typo label.', 'Bye, and see you soon.', 'Indented.'], facts
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
