@@ -91,10 +91,10 @@ fn candidate() -> ProjectV2Draft {
                 },
                 ProjectV2Declaration::Dialogue {
                     identity: identity("dialogue.courier"),
-                    greet: None,
-                    farewell: None,
-                    walkaway: None,
-                    send_trade: None,
+                    greet: vec![],
+                    farewell: vec![],
+                    walkaway: vec![],
+                    send_trade: vec![],
                     keywords: vec![],
                     voices: vec![],
                     fields: vec![ProjectV2CandidateField {

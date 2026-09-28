@@ -216,14 +216,14 @@ pub enum ProjectV2Declaration {
     },
     Dialogue {
         identity: ProjectV2Identity,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        greet: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        farewell: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        walkaway: Option<String>,
-        #[serde(default, skip_serializing_if = "Option::is_none")]
-        send_trade: Option<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        greet: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        farewell: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        walkaway: Vec<String>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        send_trade: Vec<String>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
         keywords: Vec<ProjectV2DialogueKeyword>,
         #[serde(default, skip_serializing_if = "Vec::is_empty")]
@@ -1179,14 +1179,20 @@ pub struct ProjectV2TravelDestination {
 }
 
 /// A declarative NPC dialogue keyword node: the words that trigger it, the reply and the
-/// follow-up keywords. No runtime reader executes it.
+/// follow-up keywords. No runtime reader executes it. A dialogue message (a reply, greet,
+/// farewell, walk-away or send-trade message) is one or more parts sent in order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectV2DialogueKeyword {
     /// Lowercase slug, unique among sibling keywords.
     pub key: String,
+    /// Empty exactly when `fallback` is set.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub triggers: Vec<String>,
-    pub reply: String,
+    /// Answers any words that no sibling keyword matches.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub fallback: bool,
+    pub reply: Vec<String>,
     /// Answers only while the player is in conversation with the NPC.
     #[serde(default, skip_serializing_if = "std::ops::Not::not")]
     pub only_focus: bool,
@@ -1860,6 +1866,17 @@ fn validate_v2_dialogue_text(
 
 const V2_DIALOGUE_MAX_DEPTH: usize = 8;
 
+fn validate_v2_dialogue_message(
+    field: &'static str,
+    parts: &[String],
+    limits: ProjectEvidenceLimits,
+) -> Result<(), ProjectError> {
+    limits.check(field, parts.len(), limits.max_reference_records)?;
+    parts
+        .iter()
+        .try_for_each(|part| validate_v2_dialogue_text(field, part, limits))
+}
+
 fn validate_v2_dialogue_keywords(
     keywords: &[ProjectV2DialogueKeyword],
     depth: usize,
@@ -1876,6 +1893,11 @@ fn validate_v2_dialogue_keywords(
         keywords.len(),
         limits.max_reference_records,
     )?;
+    if keywords.iter().filter(|keyword| keyword.fallback).count() > 1 {
+        return Err(ProjectError::InvalidProject(
+            "v2 Dialogue keywords have more than one fallback",
+        ));
+    }
     if keywords.windows(2).any(|pair| pair[0].key >= pair[1].key) {
         return Err(ProjectError::InvalidProject(
             "v2 Dialogue keywords are not key sorted and unique",
@@ -1894,7 +1916,12 @@ fn validate_v2_dialogue_keywords(
             keyword.triggers.len(),
             limits.max_reference_records,
         )?;
-        if keyword.triggers.is_empty() {
+        if keyword.fallback && !keyword.triggers.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue fallback keyword has triggers",
+            ));
+        }
+        if !keyword.fallback && keyword.triggers.is_empty() {
             return Err(ProjectError::InvalidProject(
                 "v2 Dialogue keyword triggers are empty",
             ));
@@ -1916,7 +1943,12 @@ fn validate_v2_dialogue_keywords(
                 ));
             }
         }
-        validate_v2_dialogue_text("v2 Dialogue keyword reply", &keyword.reply, limits)?;
+        if keyword.reply.is_empty() {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword reply is empty",
+            ));
+        }
+        validate_v2_dialogue_message("v2 Dialogue keyword reply", &keyword.reply, limits)?;
         if keyword.only_focus && keyword.only_unfocus {
             return Err(ProjectError::InvalidProject(
                 "v2 Dialogue keyword is both focus-only and unfocus-only",
@@ -2089,18 +2121,10 @@ fn validate_v2_declaration(
             voices,
             ..
         } => {
-            if let Some(value) = greet {
-                validate_v2_dialogue_text("v2 Dialogue greet", value, limits)?;
-            }
-            if let Some(value) = farewell {
-                validate_v2_dialogue_text("v2 Dialogue farewell", value, limits)?;
-            }
-            if let Some(value) = walkaway {
-                validate_v2_dialogue_text("v2 Dialogue walkaway", value, limits)?;
-            }
-            if let Some(value) = send_trade {
-                validate_v2_dialogue_text("v2 Dialogue send_trade", value, limits)?;
-            }
+            validate_v2_dialogue_message("v2 Dialogue greet", greet, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue farewell", farewell, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue walkaway", walkaway, limits)?;
+            validate_v2_dialogue_message("v2 Dialogue send_trade", send_trade, limits)?;
             limits.check(
                 "v2 Dialogue voices",
                 voices.len(),

@@ -217,7 +217,8 @@ fn keyword(
     ProjectV2DialogueKeyword {
         key: key.into(),
         triggers: triggers.iter().map(|trigger| (*trigger).into()).collect(),
-        reply: reply.into(),
+        fallback: false,
+        reply: vec![reply.into()],
         only_focus: false,
         only_unfocus: false,
         reset: false,
@@ -236,7 +237,8 @@ fn keyword_owned(
     ProjectV2DialogueKeyword {
         key,
         triggers: vec![trigger],
-        reply: reply.into(),
+        fallback: false,
+        reply: vec![reply.into()],
         only_focus: false,
         only_unfocus: false,
         reset: false,
@@ -253,17 +255,24 @@ fn dialogue_keywords() -> Vec<ProjectV2DialogueKeyword> {
             "cargo",
             &["cargo", "hold"],
             "We carry crates of spice and cloth.",
-            vec![ProjectV2DialogueKeyword {
-                only_focus: true,
-                reset: true,
-                move_up: Some(1),
-                ..keyword(
-                    "price",
-                    &["cost", "price"],
-                    "Ask about one good for its price.",
-                    vec![],
-                )
-            }],
+            vec![
+                ProjectV2DialogueKeyword {
+                    fallback: true,
+                    reset: true,
+                    ..keyword("other", &[], "I only deal in cargo.", vec![])
+                },
+                ProjectV2DialogueKeyword {
+                    only_focus: true,
+                    reset: true,
+                    move_up: Some(1),
+                    ..keyword(
+                        "price",
+                        &["cost", "price"],
+                        "Ask about one good for its price.",
+                        vec![],
+                    )
+                },
+            ],
         ),
         keyword(
             "trade",
@@ -285,10 +294,13 @@ fn dialogue_voices() -> Vec<String> {
 fn dialogue_declaration() -> ProjectV2Declaration {
     ProjectV2Declaration::Dialogue {
         identity: identity(DIALOGUE),
-        greet: Some("Welcome aboard, sailor!".into()),
-        farewell: Some("Fair winds until we meet again.".into()),
-        walkaway: Some("Suit yourself, then.".into()),
-        send_trade: Some("Have a look at my wares.".into()),
+        greet: vec!["Welcome aboard, sailor!".into()],
+        farewell: vec!["Fair winds until we meet again.".into()],
+        walkaway: vec!["Suit yourself, then.".into()],
+        send_trade: vec![
+            "Have a look at my wares.".into(),
+            "Mind the fragile goods.".into(),
+        ],
         keywords: dialogue_keywords(),
         voices: dialogue_voices(),
         fields: vec![],
@@ -429,9 +441,7 @@ fn dialogue(project: &WorldProject) -> &ProjectV2Declaration {
         .expect("dialogue")
 }
 
-fn dialogue_fields(
-    project: &WorldProject,
-) -> (&Option<String>, &[ProjectV2DialogueKeyword], &[String]) {
+fn dialogue_fields(project: &WorldProject) -> (&[String], &[ProjectV2DialogueKeyword], &[String]) {
     project
         .v2()
         .expect("v2 state")
@@ -443,7 +453,7 @@ fn dialogue_fields(
                 keywords,
                 voices,
                 ..
-            } => Some((greet, keywords.as_slice(), voices.as_slice())),
+            } => Some((greet.as_slice(), keywords.as_slice(), voices.as_slice())),
             _ => None,
         })
         .expect("dialogue")
@@ -474,12 +484,13 @@ fn npc_services_round_trip_and_stay_declarative() {
     );
     assert_eq!(travel[1].min_level, Some(8));
     let (greet, keywords, voices) = dialogue_fields(&parsed);
-    assert_eq!(greet.as_deref(), Some("Welcome aboard, sailor!"));
+    assert_eq!(greet, ["Welcome aboard, sailor!"]);
     assert_eq!(
         keywords.iter().map(|k| k.key.as_str()).collect::<Vec<_>>(),
         ["cargo", "trade"]
     );
-    assert_eq!(keywords[0].children[0].key, "price");
+    assert!(keywords[0].children[0].fallback && keywords[0].children[0].triggers.is_empty());
+    assert_eq!(keywords[0].children[1].key, "price");
     assert_eq!(voices.len(), 2);
     assert_eq!(
         parsed
@@ -547,7 +558,7 @@ fn dialogue_keywords_are_canonicalized() {
             .iter()
             .map(|child| child.key.as_str())
             .collect::<Vec<_>>(),
-        ["price"]
+        ["other", "price"]
     );
 }
 
@@ -571,7 +582,7 @@ fn dialogue_keywords_admit_the_maximum_depth() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 24] = [
+    let cases: [(&str, &str, Mutation); 27] = [
         (
             "wander without walking",
             "v2 wander requires a walking creature and a positive interval",
@@ -726,7 +737,7 @@ fn each_broken_invariant_is_rejected() {
         ),
         (
             "empty dialogue keyword reply",
-            "invalid v2 dialogue text",
+            "v2 Dialogue keyword reply is empty",
             |draft| {
                 if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
                     keywords[0].reply.clear();
@@ -738,7 +749,7 @@ fn each_broken_invariant_is_rejected() {
             "invalid v2 dialogue text",
             |draft| {
                 if let ProjectV2Declaration::Dialogue { send_trade, .. } = dialogue_mut(draft) {
-                    *send_trade = Some("  ".into());
+                    *send_trade = vec!["  ".into()];
                 }
             },
         ),
@@ -762,11 +773,41 @@ fn each_broken_invariant_is_rejected() {
             },
         ),
         (
+            "blank dialogue reply part",
+            "invalid v2 dialogue text",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].reply.push(String::new());
+                }
+            },
+        ),
+        (
+            "fallback dialogue keyword with triggers",
+            "v2 Dialogue fallback keyword has triggers",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].fallback = true;
+                }
+            },
+        ),
+        (
+            "two fallback dialogue keywords among siblings",
+            "v2 Dialogue keywords have more than one fallback",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    for keyword in keywords.iter_mut() {
+                        keyword.triggers.clear();
+                        keyword.fallback = true;
+                    }
+                }
+            },
+        ),
+        (
             "dialogue reply with a control character",
             "invalid v2 dialogue text",
             |draft| {
                 if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
-                    keywords[0].reply = "Ahoy\u{7}there.".into();
+                    keywords[0].reply = vec!["Ahoy\u{7}there.".into()];
                 }
             },
         ),
