@@ -11,7 +11,7 @@ pr: 1176
 allocation_comment: "#162 5879250283 (notice), owner standing mode 12A in 5879169470"
 base_branch: main
 branch: claude/equipa-slot-rules
-base_sha: e97cd908691fa2a1f714acd6685de705aee46f81  # stacked on PR 1172 -> 1171 -> 1154
+base_sha: 9b3f84846e7057098ee6497e2a1858b07b738288  # stacked on PR 1172 -> 1171
 head_sha: null
 owner: "Oteryn: impl domains" (Claude Code)
 created_at: 2026-09-28T22:00:00Z
@@ -22,7 +22,7 @@ owned_paths:
   - apps/game-server/src/domain/mod.rs  # one line: pub mod equipment;
   - docs/agents/tasks/active/OTV2-20260928-equipa-slot-rules.md
 public_contracts: []
-depends_on: [OTV2-20260928-death1a-outcome-calculator]
+depends_on: [OTV2-20260928-appa-appearance-validation]
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
