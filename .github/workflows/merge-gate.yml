@@ -517,7 +517,7 @@ jobs:
           from pathlib import Path
 
           forbidden = (
-              'protocol-canary', 'protocol-core', 'protocol-oteryn',
+              'protocol-canary', 'protocol-core',
               'transport', 'game-session', 'oteryn-client-domain',
               'oteryn-client-simulation', 'oteryn-synthetic-assets',
               'oteryn-test-support', 'oteryn-synthetic-client-harness',

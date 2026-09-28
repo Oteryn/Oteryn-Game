@@ -59,6 +59,8 @@ The migration must not preserve Canary as a temporary fallback and must not rena
 
 A future `protocol-oteryn` member may enter the canonical workspace only when its immediate consumer and accepted gate authorize real contract work. An empty layering crate created only to make the target tree look complete is forbidden.
 
+Amendment 2026-09-28 (owner decision A6-a, coordinator issue #162): `crates/protocol-oteryn` (`oteryn-protocol-oteryn`) enters the workspace as the real, already-accepted FND-02 wire codecs (framing, `USE-WIRE-V1` world-spatial and world-object codecs) extracted from `apps/game-server`, with `oteryn-game-server` as its immediate consumer. It is a production member of the game-server closure. The native client production entry defined in §3 is unchanged and remains fail-closed; `oteryn-client` must not depend on it until a later accepted gate.
+
 ### 3. Production gameplay entry is explicitly unavailable and fail-closed
 
 Every production path that would begin gameplay must stop before any irreversible or security-sensitive boundary, including before:

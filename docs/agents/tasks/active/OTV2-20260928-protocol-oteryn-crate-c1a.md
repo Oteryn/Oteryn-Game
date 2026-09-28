@@ -89,6 +89,10 @@ defined). Nothing else in `mod.rs` changed. Because the re-export makes it the s
 existing consumer (`connection.rs`, `qualification.rs`, `world_runtime.rs`, `snapshot_facade.rs`,
 `tcp_tls.rs`, and others) compiles unchanged - verified by the full build/test/clippy run below.
 
+## Shared-lease grant: workspace boundary guards (coordinator repair)
+
+Exact-head CI on `07b763f` failed `Merge gate / Rust policy and metadata`: `workspace-boundaries.toml` did not list the new member and forbade the `protocol-oteryn` fragment. Coordinator repair (owner decision A6-a, ADR-0011 §2 amendment): `workspace-boundaries.toml` registers `oteryn-protocol-oteryn` (production, edge `oteryn-game-server -> oteryn-protocol-oteryn`) and drops `protocol-oteryn` from `forbidden_package_fragments`; the production-closure negative lists in `merge-gate.yml`, `merge-group-gate.yml` and `rust.yml` drop `protocol-oteryn` (Canary/`protocol-core`/transport negatives unchanged). `oteryn-client` closure still excludes it.
+
 ## High-risk authority/recovery qualification
 
 ```yaml
