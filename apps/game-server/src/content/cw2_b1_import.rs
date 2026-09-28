@@ -1350,7 +1350,7 @@ const ITEM_SEMANTIC_PROMOTION_COMPILER_SHA256: &str =
 const ITEM_TARGET_CONTINUITY_COMPILER_SHA256: &str =
     "7c0d20c86541a81122c6f7d792fd25abd652b2fdfa9e9f202016166806c59646";
 const ITEM_TARGET_CONTINUITY_MANIFEST_SHA256: &str =
-    "28856a1fb150ef07b903437f1b1173f2e710a34b22ad2e57328247a34d03e66d";
+    "189770ce90b6469c979ff6e5120e103d98df36c6008fbf0981c258a27b91ef27";
 
 /// Pinned #1018 v1 lowering *candidate* (`tools/content-schema/item-authoring/
 /// lower_promotion_packet.py`, `samples/promotion-crystal-ff7ede5.json`), copied
