@@ -832,7 +832,7 @@ fn rollback_concurrency_and_ended_node_preserve_single_revision() -> TestResult 
             drop(seal);
             rollback.cleanup().await?;
 
-            let ended = Harness::create(admin, "ended", true).await?;
+            let ended = Harness::create(admin.clone(), "ended", true).await?;
             let ended_seal = ended
                 .recovery
                 .seal_current()
@@ -861,7 +861,41 @@ fn rollback_concurrency_and_ended_node_preserve_single_revision() -> TestResult 
             ));
             drop(ended_authority);
             drop(ended_seal);
-            ended.cleanup().await
+            ended.cleanup().await?;
+
+            // A revoked node incarnation cannot initialize progression either,
+            // and no progression row is written.
+            let ended_init = Harness::create(admin, "endedinit", false).await?;
+            let init_seal = ended_init
+                .recovery
+                .seal_current()
+                .map_err(|error| format!("{error:?}"))?;
+            let init_authority = ended_init
+                .root
+                .open_character_authority(&init_seal)
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            ended_init
+                .root
+                .revoke_node_registration(ended_init.node.fact())
+                .await
+                .map_err(|error| format!("{error:?}"))?;
+            assert!(matches!(
+                ended_init
+                    .root
+                    .initialize_character_progression(
+                        &init_authority,
+                        &ended_init.node,
+                        fence(1)?,
+                        initialization("policy-1")?,
+                    )
+                    .await,
+                Err(CharacterProgressionError::AuthorityRejected)
+            ));
+            assert_eq!(stored_progression(&ended_init.pool).await?, None);
+            drop(init_authority);
+            drop(init_seal);
+            ended_init.cleanup().await
         })
 }
 
