@@ -177,7 +177,9 @@ def cmd_fetch(args):
 MAPA = re.compile(r'\{\{\s*[Mm]apa\s*\|\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)')
 TRADES = re.compile(r'\{\{\s*Trades/(Buy|Sell)(.*?)\}\}', re.S)
 LINK = re.compile(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]')
-SPEAKER = re.compile(r"\s*(?:'''|\[\[)(.+?)(?::'''|\]\]:)\s*(.*)$")
+# a speaker is `'''Name:'''`, `'''Name''':` or `[[Name]]:` (the name itself may be a link inside the bold)
+SPEAKER = re.compile(r"\s*(?:'''\s*(?:\[\[)?([^'\[\]:|]+?)(?:\]\])?\s*(?::\s*'''|'''\s*:)|\[\[([^\]|:]+?)\]\]\s*:)\s*(.*)$")
+PRICE = re.compile(r"^(?:''')?\s*(\d{1,3}(?:[ .]\d{3})+|\d+)\b")
 FIELD = re.compile(r'^\|\s*([a-z0-9_]+)\s*=(.*)$', re.M)
 
 
@@ -186,6 +188,12 @@ def infobox_field(wikitext, name):
         if match.group(1) == name:
             return match.group(2).strip()
     return ''
+
+
+def price_of(field):
+    """An explicit price such as `200`, `1 000`, `1.000`, `'''1 000'''` or `200 gp`; None when the field has none."""
+    match = PRICE.match(field.strip())
+    return int(re.sub(r'[ .]', '', match.group(1))) if match else None
 
 
 def fold(text):
@@ -198,16 +206,16 @@ def page_facts(page):
     trades = {'BuyFromPlayer': {}, 'SellToPlayer': {}}
     for kind, body in TRADES.findall(wikitext):
         direction = 'SellToPlayer' if kind == 'Sell' else 'BuyFromPlayer'
-        for part in body.split('|')[1:]:
-            fields = [field.strip() for field in LINK.sub(r'\1', part).split(',')]
+        for part in LINK.sub(r'\1', body).split('|')[1:]:  # links first, so a piped link is not a separator
+            fields = [field.strip() for field in part.split(',')]
             if fields[0]:
-                trades[direction].setdefault(fields[0], int(fields[1]) if len(fields) > 1 and fields[1].isdigit() else None)
+                trades[direction].setdefault(fields[0], price_of(fields[1]) if len(fields) > 1 else None)
     speakers = {fold(page['title']), fold(name)}
     lines = []
     for raw in wikitext.split('\n'):
         match = SPEAKER.match(raw)
-        if match and fold(match.group(1)) in speakers:
-            text = re.sub(r'</?br\s*/?>', ' ', match.group(2), flags=re.I)
+        if match and fold(match.group(1) or match.group(2)) in speakers:
+            text = re.sub(r'</?br\s*/?>', ' ', match.group(3), flags=re.I)
             text = re.sub(r'\s+', ' ', LINK.sub(r'\1', text).replace("'''", '').replace("''", '')).strip()
             if text:
                 lines.append(text)
@@ -261,13 +269,18 @@ def cmd_self_test(_args):
     assert again == snapshot
     text = ("{{Infobox_NPC\n| name = Goldro\n| implemented = 15.30\n| removed = \n"
             "| location = [[Salgadora]] ({{Mapa|34055,32503,7:2|aqui}}).\n| notes = Long wiki prose.\n"
-            "| sells = {{Trades/Sell\n| Bread,4\n| [[Cheese]]}}\n| falas = \n''Jogador:'' '''Hi'''</br>\n"
-            "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n[[Other]]: Not mine.\n}}")
+            "| sells = {{Trades/Sell\n| Bread,4\n| [[Cheese]]\n| Cot, 200 [[Gold Coins|gp]]\n| Fire Sword, '''1 000'''}}\n"
+            "| falas = \n''Jogador:'' '''Hi'''</br>\n"
+            "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n"
+            "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
+            "[[Goldro]]: Link form.</br>\n[[Other]]: Not mine.\n}}")
     facts = page_facts({**page_record({'pageid': 7, 'title': 'Goldro', 'revisions': [
         {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
     assert facts['positions'] == [(34055, 32503, 7)], facts
-    assert facts['trades'] == {'BuyFromPlayer': {}, 'SellToPlayer': {'Bread': 4, 'Cheese': None}}, facts
-    assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.'], facts
+    assert facts['trades'] == {'BuyFromPlayer': {}, 'SellToPlayer': {
+        'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000}}, facts
+    assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
+                                  'Linked name.', 'Link form.'], facts
     assert 'prose' not in json.dumps(facts), facts
     print('wiki_br self-test: PASS')
 
