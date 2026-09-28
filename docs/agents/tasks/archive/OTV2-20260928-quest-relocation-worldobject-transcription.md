@@ -222,3 +222,5 @@ next_action: push round 4, report READY_FOR_INTEGRATION with the new head SHA
 ## Closeout
 
 Delivered through #1071 (merged 2026-09-28), which carried this branch head `a799e3a4` unchanged, merged `main` and ran the converter on the pinned sources. #1053 is superseded.
+
+Repair rounds 5-6 (branch head `64b32aea`), which #1071 did not carry, were ported by `OTV2-20260928-quest-d38-round6-port` after the handoff in #162 (comment 5866835509).

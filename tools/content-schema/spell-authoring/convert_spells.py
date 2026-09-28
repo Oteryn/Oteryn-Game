@@ -7,6 +7,8 @@ Field rules (docs/architecture/OTERYN_SPELL_AUTHORING_SCHEMA_V1.md section 5):
 - S3/S11/S13/S14: a value TibiaWiki BR or Fandom states decides; on a BR/Fandom conflict the official change in
   official-changes.json decides, then a vote: each wiki, tibiopedia.pl and the Canary 15.30 branch (S14) back one
   value, the most votes win and a tie goes to the 15.30 branch; otherwise the wiki page with the newer revision.
+- S16: learning_required is false (patch 15.22 unlocks spells at their level); a Wheel of Destiny spell carries
+  wheel_unlock (S6), stated by the wiki or else by the Canary 15.30 needLearn.
 - S4: Canary and Crystal are equal sources; a value only one of them has is taken from it, a value they
   disagree on (with the engine default for an absent call) and that no wiki states stays unresolved.
 - S5: player damage/heal formulas are the source expression trees; `level / 5` and Canary's
@@ -54,6 +56,8 @@ VOCATIONS = {'druid': 'elder_druid', 'sorcerer': 'master_sorcerer', 'knight': 'e
 SOURCE_VOCATION = {'druid': 'druid', 'elder druid': 'elder_druid', 'sorcerer': 'sorcerer', 'master sorcerer': 'master_sorcerer',
                    'knight': 'knight', 'elite knight': 'elite_knight', 'paladin': 'paladin', 'royal paladin': 'royal_paladin',
                    'monk': 'monk', 'exalted monk': 'exalted_monk'}
+LEVEL_UNLOCK_NOTE = ('since patch 15.22 (27 January 2026) spells unlock automatically and free at their level; trainers '
+                     'no longer teach spells (https://tibiopedia.pl/updates/15.22.c93366).')
 # Registrar calls whose Canary 15.30 value votes in a BR/Fandom conflict (S14a); same units as the wiki crosswalk.
 VOTE_METHODS = {'level', 'mana', 'soul', 'cooldown', 'groupCooldown', 'basePower', 'magicLevel', 'range'}
 PRIMARY_GROUPS = {'attack', 'healing', 'support', 'special'}
@@ -382,6 +386,28 @@ class Bundle:
             out[source] = transform(value) if value is not None else None
         return out
 
+    def wheel_unlock(self, base, pages):
+        """S16: since patch 15.22 every spell unlocks at its level; a Wheel of Destiny spell is gated (S6)."""
+        for source, record in self.records.items():
+            if record['registrar'].get('needLearn') is not None:
+                self.row('approved_omission', 'needLearn', resolution=f'S16: {LEVEL_UNLOCK_NOTE} learning_required '
+                         'is false; the source needLearn only marks Wheel spells (wheel_unlock).', source=source,
+                         method='needLearn')
+        value, provenance, note = self.wikis.resolve(pages, 'wheelspell', self.name)
+        destination = base + '/requirements/wheel_unlock'
+        if value is not None:
+            for wiki, page in provenance:
+                self.row('mapped', 'wheelspell', destination, note or 'S6/S16: the wiki marks a Wheel of Destiny '
+                         'revelation spell (Fandom wheelspell, BR wheelSpellType Revelação) or not.', wiki=(wiki, page))
+            return value == 'yes'  # a stated "no" (a conviction perk or a plain spell) is kept explicitly
+        branch = self.records.get('canary', {}).get('registrar', {}).get('needLearn')
+        if branch:
+            self.row('mapped', 'needLearn', destination, 'S6/S16: no wiki states it; the Canary 15.30 branch, the only '
+                     'source that implements the 15.22 unlock, keeps needLearn only for Wheel spells.', source='canary',
+                     method='needLearn')
+            return True
+        return None
+
     def branch_vote(self, method):
         """The Canary (15.30 branch, S14) registrar value of a numeric field, in wiki units, as a tie vote."""
         record = self.records.get('canary')
@@ -455,8 +481,10 @@ class Bundle:
         premium = self.field(base + '/requirements/premium', 'premium', 'isPremium', pages,
                              wiki_transform=lambda v: v == 'yes')
         requirements['premium'] = bool(premium)
-        learn = self.field(base + '/requirements/learning_required', None, 'needLearn', pages)
-        requirements['learning_required'] = bool(learn)
+        requirements['learning_required'] = False
+        wheel = self.wheel_unlock(base, pages)
+        if wheel is not None:
+            requirements['wheel_unlock'] = wheel
         spell['requirements'] = requirements
         costs = {}
         mana = self.field(base + '/costs/mana', 'mana', 'mana', pages if carrier == 'instant' else {}, required=False)

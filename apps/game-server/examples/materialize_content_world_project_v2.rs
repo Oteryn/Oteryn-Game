@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -73,9 +73,9 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "13e37595332b466e0b0dcda0a1648aeda010d3453b937522b70b5704da077bf4";
+const NPC_STAGED_SHA256: &str = "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd";
 const NPC_STAGE_TOOL_SHA256: &str =
-    "8c519ad2b42fb7bdcffb70f1652f30a3a14bcba89e8319e89d4aa4d9775c8d87";
+    "ec23b6f42dd0551e701c72e51aaeda82e5d837efb685cda589efb59a4d57ccd0";
 const NPC_CANDIDATES_SHA256: &str =
     "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2";
 const NPC_WIKI_SNAPSHOT_SHA256: &str =
@@ -86,7 +86,13 @@ const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
 const NPC_COUNT: usize = 1093;
 const NPC_RECORDS: usize = 2186;
-const NPC_DECLARATIONS: usize = 1456;
+const NPC_DECLARATIONS: usize = 2157;
+const NPC_DIALOGUE_STAGED: &[u8] =
+    include_bytes!("../../../docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json");
+const NPC_DIALOGUE_STAGED_SHA256: &str =
+    "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90";
+const NPC_DIALOGUES: usize = 701;
+const NPC_DIALOGUE_NODES: usize = 6313;
 const NPC_BINDINGS: usize = 2281;
 const CREATURE_COUNT: usize = 1318;
 const CREATURE_RECORDS: usize = 18336;
@@ -1212,6 +1218,62 @@ struct NpcPopulation {
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
 
+/// Every admitted Dialogue must be exactly the declaration in the pinned dialogue evidence.
+fn verify_npc_dialogues(
+    declarations: &[ProjectV2Declaration],
+) -> Result<(), Box<dyn std::error::Error>> {
+    if hex_sha256(NPC_DIALOGUE_STAGED) != NPC_DIALOGUE_STAGED_SHA256 {
+        return Err("staged NPC dialogue input digest drifted".into());
+    }
+    let packet: Value = serde_json::from_slice(NPC_DIALOGUE_STAGED)?;
+    if packet["schema"] != "OTERYN_NPC_DIALOGUE_STAGED/v1"
+        || packet["source"]["canary_revision"] != CANARY_REVISION
+        || packet["source"]["crystal_revision"] != CRYSTAL_REVISION
+        || packet["source"]["candidates_sha256"] != NPC_CANDIDATES_SHA256
+    {
+        return Err("staged NPC dialogue source identity drifted".into());
+    }
+    let mut staged = BTreeMap::new();
+    let mut staged_by_npc = BTreeMap::new();
+    for entry in packet["dialogues"]
+        .as_array()
+        .ok_or("staged NPC dialogues missing")?
+    {
+        let declaration: ProjectV2Declaration =
+            serde_json::from_value(entry["declaration"].clone())?;
+        let ProjectV2Declaration::Dialogue { identity, .. } = &declaration else {
+            return Err("staged NPC dialogue is not a Dialogue".into());
+        };
+        let npc = entry["npc"]
+            .as_str()
+            .ok_or("staged NPC dialogue names no NPC")?;
+        staged_by_npc.insert(npc.to_owned(), identity.key.clone());
+        staged.insert(identity.key.clone(), declaration);
+    }
+    for declaration in declarations {
+        match declaration {
+            ProjectV2Declaration::Dialogue { identity, .. }
+                if staged.get(&identity.key) != Some(declaration) =>
+            {
+                return Err(
+                    "admitted NPC dialogue differs from the staged dialogue evidence".into(),
+                );
+            }
+            ProjectV2Declaration::Npc {
+                identity, dialogue, ..
+            } if dialogue.as_ref().map(|reference| &reference.key)
+                != staged_by_npc.get(&identity.key) =>
+            {
+                return Err(
+                    "NPC dialogue reference differs from the staged dialogue evidence".into(),
+                );
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
 fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
     if hex_sha256(NPC_STAGED) != NPC_STAGED_SHA256 {
         return Err("staged NPC admission input digest drifted".into());
@@ -1231,12 +1293,16 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         || counts["records"] != NPC_RECORDS
         || counts["declarations"] != NPC_DECLARATIONS
         || counts["bindings"] != NPC_BINDINGS
+        || source["dialogue_staged_sha256"] != NPC_DIALOGUE_STAGED_SHA256
+        || counts["dialogues"] != NPC_DIALOGUES
+        || counts["dialogue_nodes"] != NPC_DIALOGUE_NODES
     {
         return Err("staged NPC admission source identity drifted".into());
     }
     let records: Vec<ProjectReferenceRecord> = serde_json::from_value(packet["records"].clone())?;
     let declarations: Vec<ProjectV2Declaration> =
         serde_json::from_value(packet["declarations"].clone())?;
+    verify_npc_dialogues(&declarations)?;
     let profiles: Vec<ProjectV2AuthoringProfile> =
         serde_json::from_value(packet["authoring_profiles"].clone())?;
     let bindings: Vec<ProjectV2SourceIdentityBinding> =
@@ -1245,10 +1311,15 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         .iter()
         .filter(|declaration| matches!(declaration, ProjectV2Declaration::Npc { .. }))
         .count();
+    let dialogues = declarations
+        .iter()
+        .filter(|declaration| matches!(declaration, ProjectV2Declaration::Dialogue { .. }))
+        .count();
     if records.len() != NPC_RECORDS
         || profiles.len() != NPC_RECORDS
         || declarations.len() != NPC_DECLARATIONS
         || npcs != NPC_COUNT
+        || dialogues != NPC_DIALOGUES
         || bindings.len() != NPC_BINDINGS
         || bindings.iter().any(|binding| {
             binding.target.family != ProjectV2Family::Npc
@@ -1275,7 +1346,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         return Err("staged NPC admission counts drifted".into());
     }
     let import = ImportBatch {
-        batch_id: "g4-npc-wave-a-tibiawiki-r2".to_owned(),
+        batch_id: "g4-npc-wave-a-tibiawiki-r3".to_owned(),
         source_repository: "tibia.fandom.com".to_owned(),
         source_revision: NPC_WIKI_REVISION.to_owned(),
         source_artifact_sha256: NPC_WIKI_SNAPSHOT_SHA256.to_owned(),
@@ -1283,7 +1354,7 @@ fn populate_npcs() -> Result<NpcPopulation, Box<dyn std::error::Error>> {
         source_generation_profile: "OTERYN_NPC_FANDOM_SNAPSHOT/v1".to_owned(),
         importer: "OTERYN_NPC_PROMOTION_CANDIDATES/v1".to_owned(),
         mapper: "OTERYN_NPC_ADMISSION_STAGE/v1".to_owned(),
-        mapper_revision: "npc-admission-r2".to_owned(),
+        mapper_revision: "npc-admission-r3".to_owned(),
         mapper_sha256: NPC_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
         reimport_states: Vec::new(),
@@ -1378,7 +1449,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let documents = CanonicalProjectDocuments::from_v2_draft(
         ProjectV2Draft {
             core: ProjectDraft {
-                project_revision: "g4-npc-wave-a-r2".to_owned(),
+                project_revision: "g4-npc-wave-a-r3".to_owned(),
                 package_key: "oteryn:content.world-project".to_owned(),
                 semantic_schema_version: "reference-schema-v1".to_owned(),
                 licensing_metadata: "PENDING".to_owned(),

@@ -12,6 +12,7 @@
       "level": "<integer>",
       "premium": "<bool>",
       "learning_required": "<bool>",
+      "wheel_unlock": "<bool>",
       "acquisition_interactions": [
         "<InteractionRef>"
       ]

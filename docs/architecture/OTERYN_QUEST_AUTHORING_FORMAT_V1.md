@@ -390,13 +390,13 @@ joined by that key; `interaction.schema.json` and
 |---|---:|
 | Interactions | 1,221 |
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
-| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation / Movement / WorldObject | 947 / 208 / 345 (160, 185) / 36 / 14 / 5 / 9 / 2,679 / 800 / 865 |
+| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation / Movement / WorldObject | 947 / 208 / 345 (160, 185) / 36 / 14 / 5 / 9 / 2,679 / 800 / 844 |
 | D37 relocation children: to a named anchor / to the previous tile / blocked (a computed target) | 217 / 203 / 380 |
-| D38 overlay operations: `TRANSFORM` / `CREATE` / `REMOVE` / `RETAG` / blocked (no provable anchor or id) | 493 / 42 / 174 / 39 / 117 |
+| D38 overlay operations: `TRANSFORM` / `CREATE` / `REMOVE` / `RETAG` / blocked (object, id, delay or call not provable) | 479 / 27 / 133 / 39 / 166 |
 | Quest children naming a mission transition | 215 |
-| Unresolved statements / conditions | 1,913 / 1,786 |
+| Unresolved statements / conditions | 1,902 / 1,786 |
 | Of the statements, naming a missing owner: delayed callback / key-value write / creature removal / condition / boss cooldown | 304 / 56 / 43 / 26 / 25 |
-| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 268 / 953 / 37 |
+| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 267 / 954 / 38 |
 
 An independent spot check of 56 randomly sampled classified lines against their source found no
 misclassification. Most interactions keep some unresolved part: local tables and lookups,
@@ -440,15 +440,18 @@ list):
 - **D38:**
   - a literal `Position(x,y,z)` argument names a pre-authored anchor;
   - a `createItem` id is literal only when its own first argument is a complete integer;
-  - a receiver may be a call chain such as `Tile(pos):getItemById(id)`;
+  - an operation is typed only from a call confirmed in string-stripped code, closed on its own line
+    and with a literal receiver; a receiver reached through a call (`Tile(pos):getItemById(id)`),
+    a multi-line call, a duplicate scheduled revert or a non-positive delay stays blocked with its
+    own reason;
   - a revert attaches only when its own receiver or position provably names the one candidate
     operation it can match unambiguously.
 
 For The Queen of the Banshees this gives:
 - **Movement:** 9 relocations to an anchor, 9 to the previous tile, 1 blocked.
-- **WorldObject:** 12 `TRANSFORM`, 6 `REMOVE`, 3 `CREATE`, 5 blocked.
+- **WorldObject:** 10 `TRANSFORM`, 1 `REMOVE`, 15 blocked.
 
-Across the corpus, 380 Movement and 117 WorldObject children stay blocked, because their target or
+Across the corpus, 380 Movement and 166 WorldObject children stay blocked, because their target or
 object is computed.
 
 ### 6.4 Conflict decisions (D25)
@@ -459,7 +462,7 @@ is copied. The converters apply it and stop when a recorded decision no longer m
 
 | Basis | Chests | Doors | Missions | Interactions |
 |---|---:|---:|---:|---:|
-| Equivalent behaviour or implementation detail (Canary kept) | 1 | 4 | 6 | 10 |
+| Equivalent behaviour or implementation detail (Canary kept) | 1 | 4 | 6 | 11 |
 | Wording: spelling or grammar (the correct version) | | | 6 | |
 | Wiki decides for Canary | | 6 | | 6 |
 | Wiki decides for CrystalServer | | | 8 | 9 |
@@ -554,6 +557,48 @@ Built in the order that completes the most quests first, the features give (204 
   Candia bosses, Marapur, the Raging Mage tower, Soulpit and others), not quest content.
   Five script directories whose name differs from their quest key are joined explicitly
   (`DIRECTORY_QUESTS`).
+
+### 6.8 What is still needed: gap triage
+
+`samples/gap-triage/triage.json` (`ots_gap_triage.py`, deterministic) sorts every part the
+transcription could not express into three buckets. That is 3,688 items: 1,902 unresolved statements
+and 1,786 unresolved conditions. A line enters a bucket only through a written rule checked against
+the pinned sources. Anything no rule matches is bespoke.
+
+| Bucket | Items | What finishes it |
+|---|---:|---|
+| Runtime owner missing | 467 | Each item names its owner: scheduler 287, key-value state 68, creature removal 43, boss cooldown 43, player condition 26. When the owner exists, the converter types these items. |
+| Shared mechanism | 145 | One engine mechanism covers them across quests (below). |
+| Bespoke | 3,076 | Per-quest logic, written by hand when that quest is brought up. |
+
+Accepted shared mechanisms, each matched by the library call it uses:
+
+| Mechanism | Rule | Lines / quests |
+|---|---|---:|
+| `kill_reward_fanout` | a death callback hands the kill to every damaging player or party member (`onDeathForDamagingPlayers`, `onDeathForParty`) | 67 / 36 |
+| `boss_room_entry_gate` | a lever or portal checks that a boss room is free (`roomIsOccupied`, `doCheckBossRoom`) | 21 / 9 |
+| `boss_portal_spectator_gate` | a portal screens a mini-boss room with a `Spectators()` query, then teleports and spawns | 57 / 4 |
+
+Rejected candidates, with the reason recorded in the triage file:
+- the tile-scan boss lever (one quest);
+- area cleanup on exit (one quest reached);
+- generic spectator and range loops (too many distinct purposes to rule on);
+- scripted combat damage (a new-owner question, not a mechanism);
+- random picks (two quests).
+
+What this means for finishing the quests:
+- **112 of 204 quests** have no gap at all.
+- **92 quests** need bespoke work, and the work is concentrated:
+  - the ten largest (Cults of Tibia, Ferumbras Ascension, Heart of Destruction, The Dream Courts,
+    A Pirate's Tail, Forgotten Knowledge, Grave Danger, The Secret Library, Soul War, The Rookie
+    Guard) hold 1,322 of the 2,993 quest-linked bespoke items;
+  - 25 quests need five items or fewer.
+- **Owners and mechanisms alone** complete one more quest. Adding the five owners and three
+  mechanisms leaves 63 quests needing only bespoke work.
+- **The Queen of the Banshees** needs the scheduler owner and 14 bespoke items.
+
+Bespoke logic is not transcribed further. Each quest gets it when it is scheduled, as a DUR-04
+component that proposes a plan, in the readiness order (§6.7).
 
 ## 7. Ownership
 

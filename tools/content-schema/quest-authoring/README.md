@@ -22,6 +22,7 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | `interaction.schema.json` | JSON Schema of interaction definitions (D36), including the D37 relocation and D38 world-object overlay child shapes. |
 | `ots_map_check.py` | Checks chest, door and interaction positions against Canary's `otservbr.otbm` and CrystalServer's `world.otbm` (not committed; sha256 pinned), reading Canary's startup id tables; writes `samples/map-check/report.json`. |
 | `ots_readiness.py` | Per quest, the engine features it needs and its data gaps, and the unlock order; reads only the committed samples. |
+| `ots_gap_triage.py` | Classifies every unresolved interaction line and unresolved condition into `owner_pending` (an already-named or same-shape missing owner), `shared_mechanism` (a recurring >=3-quest pattern with an explicit rule) or `bespoke`; per quest and a ranked, unlock-order summary; reads the committed samples plus the pinned checkouts for line text; writes `samples/gap-triage/triage.json`. |
 | `validate_quest_content.py` | Schema plus semantic checks: unique keys and positions, non-empty rewards, text on a handed-out item, claim/quest links in both directions, gate conditions against the claims (progress marker, key source), one identity per quest, mission ranges and stages against the progress tracks, catalog and manifest coverage; for interactions: anchors, blocked reasons, named transitions against the missions, undeclared progress tracks, manifest status. |
 | `verify_quest_schema.py` | Focused positive/negative cases on synthetic fixtures (`--verbose` prints each case's first error). |
 | `samples/quest-coverage-2026-09-27.json` | The 373 wiki quests (facts only) with their status in each server. |
@@ -29,6 +30,7 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | `samples/doors/` | `gates.json`, `manifest.json`. |
 | `samples/questlog/` | `quests.json` (the whole quest catalogue), `progress.json`, `manifest.json`. |
 | `samples/interactions/` | `interactions.json`, `manifest.json`. |
+| `samples/gap-triage/` | `triage.json`. |
 
 ```sh
 pip install -r ../monster-authoring/requirements.txt
@@ -38,6 +40,7 @@ python ots_doors.py --canary <canary checkout> --crystal <crystalserver checkout
 python ots_questlog.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_interactions.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_readiness.py
+python ots_gap_triage.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_map_check.py <otservbr.otbm> --crystalserver <decompressed world.otbm> --canary <canary checkout>
 python validate_quest_content.py samples/chests/claims.json samples/questlog/quests.json \
   --catalog samples/chests/catalog.json --manifest samples/chests/manifest.json \

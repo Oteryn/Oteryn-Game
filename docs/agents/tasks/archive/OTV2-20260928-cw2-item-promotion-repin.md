@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw2-item-promotion-repin
 title: Re-pin the #1048 Item semantic-promotion lowering v1 packet to the grown sample
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cw2-item-promotion-repin
 issue: 162
 pr: 1084
 base_sha: 13dadcaa30f803e8a3676390cee51a84179890f6
-head_sha: ec7e212642002f0bbc2a3e8cf34b3a51a286b75b
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 636626d30010f0f9c66d8f2ad151fbf288ca53d5
+final_head_sha: 636626d30010f0f9c66d8f2ad151fbf288ca53d5
+final_head_frozen_at: 2026-09-28T09:41:00Z
 owner: worker E (Oteryn: content world build)
 created_at: 2026-09-28T08:29:00Z
-updated_at: 2026-09-28T09:30:00Z
+updated_at: 2026-09-28T09:50:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -197,49 +197,51 @@ deterministic content re-pin plus test/constant update.
 
 ## Self-review
 
-- exact head: pending (pre-freeze)
+- exact head: `636626d30010f0f9c66d8f2ad151fbf288ca53d5` (frozen final head)
 - method/reviewer: implementing/coordinating agent (worker E)
 - material findings: none found; the two monk-weapon identity findings
   (i00037538, i00037526) remain out of scope (tracked in the closeout record
   `OTV2-20260928-cw2-item-promotion-consolidation`).
-- verdict: pending final diff re-read before freeze
+- verdict: PASS
 
 ## Independent review
 
-- required: pending
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- required: YES; re-pins the single Item semantic-promotion source's evidence
+  feeding the committed `content/world/**`/`content/items/**` package, plus
+  one CI workflow step.
+- exact head: `636626d3` (frozen final head admitted by Merge Queue)
+- method/auditor: exact-head CI + protected-main readback for the frozen final head
+- material findings: none surfaced beyond this task's own self-review
+- verdict: PASS; Merge Queue admitted the frozen final head
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
-- related/superseded PRs: sequenced after #1074 (closeout) per coordinator
-  ordering; not a code dependency (disjoint file sets)
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: pending
+- changed-file review: complete (see Terminal integration)
+- unresolved review threads: none outstanding at merge
+- related/superseded PRs: sequenced after #1074 (closeout); re-pins the
+  evidence file wired by #1064/#1074's predecessor task, no code dependency
+- protected auto-merge: Merge Queue
+- merge commit/result: `da27100e` on protected `main`
+- ownership release: complete; owned paths released at archive
 
 ## Context checkpoint
 
 ```yaml
-last_progress: pushed ec7e2126 and opened PR #1084; reported READY_FOR_INTEGRATION
-status: validating
+last_progress: terminal integration recorded; PR #1084 merged via Merge Queue as da27100e; record archived
+status: completed
 branch: claude/cw2-item-promotion-repin
-head_sha: ec7e212642002f0bbc2a3e8cf34b3a51a286b75b
+head_sha: 636626d30010f0f9c66d8f2ad151fbf288ca53d5
 pr: 1084
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+final_head_sha: 636626d30010f0f9c66d8f2ad151fbf288ca53d5
+final_head_frozen_at: 2026-09-28T09:41:00Z
+ci_trigger_source: merge_group
+ci_check_generation: final
+ci_checks_for_current_head: 1
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
@@ -247,5 +249,28 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: await required checks and review on PR #1084
+next_action: none; task closed
 ```
+
+## Terminal integration
+
+This section supersedes the historical `validating`/pending metadata and
+checkpoint above with the frozen terminal outcome; the complete implementation
+record above remains verbatim as historical evidence. This closeout performs
+no code, schema or content mutation of its own; it only moves this record from
+`docs/agents/tasks/active/` to `docs/agents/tasks/archive/` and binds terminal
+lifecycle fields. Coordination: issue #162 "CLAIM ... two sequential
+allocations for worker E" (control plane).
+
+Candidate head `636626d30010f0f9c66d8f2ad151fbf288ca53d5` (rebased twice onto
+a moving `origin/main` during authoring; see Implementation/findings) was
+frozen at 2026-09-28T09:41:00Z (issue #162 FREEZE comment for `636626d3`). PR
+#1084 merged via Merge Queue as commit `da27100e` on protected `main`.
+Protected-main readback passed: the evidence file's sha256 on `main` equals
+the pinned sample sha `dda86c1a…`, and the `14,643`-field constant is present
+in `cw2_b1_import.rs` on `main`.
+
+Task status: `completed`. Aggregate issue #162 and Jira `KAN-16` remain open.
+No further follow-up is opened by this closeout; the two monk-weapon identity
+findings remain tracked as an open data-quality follow-up in the
+`OTV2-20260928-cw2-item-promotion-consolidation` closeout record.

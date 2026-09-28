@@ -101,7 +101,10 @@ d['spell'] = obj({
     'requirements': obj({
         'vocations': array(use('vocation'), 1, True),
         'level': integer(0, description='Required character level; 0 = none (monk starter spells).'), 'premium': use('bool'),
-        'learning_required': use('bool'),
+        'learning_required': {**use('bool'), 'description': 'S10/S16: false since patch 15.22 (spells unlock at '
+                              'their level); learned spells are Character state.'},
+        'wheel_unlock': {**use('bool'), 'description': 'S6/S16: a Wheel of Destiny revelation spell; not castable '
+                         'until a Wheel owner exists (fails closed).'},
         'acquisition_interactions': array(use('InteractionRef'), 1, True, description='S10: trainer NPC services.')},
         ('vocations', 'level', 'premium', 'learning_required')),
     'costs': obj({'mana': integer(), 'mana_percent': integer(0, 100), 'soul': integer()}, ('soul',),

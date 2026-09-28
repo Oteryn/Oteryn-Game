@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - Status: CANDIDATE / authoring schema with executable validation and source evidence; S1–S5, S11 and S12
-  decided by the owner on 2026-09-27, S13–S15 on 2026-09-28, S6–S10 PROPOSED; no runtime, WorldProject storage or `content/` change
+  decided by the owner on 2026-09-27, S13–S17 on 2026-09-28, S6–S10 PROPOSED; no runtime, WorldProject storage or `content/` change
 - Request: owner request of 2026-09-27 (schema and implementation plan for player spells, as for monsters);
   programme story KAN-16; no GitHub task allocation yet
 - Machine artifacts: `tools/content-schema/spell-authoring/`
@@ -251,6 +251,11 @@ With S14 the census reads that branch (`samples/spell-census-canary-99902524-cry
 - the vote returns Wound Cleansing's cooldown to 2 s (BR and the branch against Fandom and tibiopedia.pl;
   the official news of 2026-07-07 changes only its mana).
 
+With S16 (patch 15.22 unlock) and the S9 catalogue: 154 ready and 98 blocked; with S17: 159 ready and 93 blocked. The 14 `needLearn` S4 conflicts are
+gone, and 15 Wheel revelation spells carry `wheel_unlock`: the avatars, Divine Empowerment, Divine Grenade,
+Executioner's Throw, Flurry of Blows, Focus Harmony, Forceful Uppercut, Ice Burst, Mystic Repulse, Spiritual Outburst
+and Terra Burst.
+
 The official tibia.com spell library (S15) answers a Cloudflare browser check from the build container
 and blocks GitHub-hosted runners outright ("Sorry, you have been blocked"). `tibiacom_spells.py fetch`
 therefore runs on an ordinary machine the site serves (no challenge bypass). S15 applies once such a
@@ -275,6 +280,8 @@ capture is committed; until then the rules above decide.
 | S13 | **DECIDED (owner, 2026-09-28).** Without an official change (S11), a BR/Fandom conflict is decided by tibiopedia.pl when it agrees with one of them (two of three references); only when all three differ does the newer wiki revision decide. tibiopedia.pl never supplies a value neither wiki states. Applied in `convert_spells.py` (`spell-p2-r2`); it changed 9 fields of 6 ready spells (§4.3). | §4.3: in 8 of the 9 fields the majority also matches Canary and Crystal. |
 | S14 | **DECIDED (owner, 2026-09-28).** The Canary source is the Tibia 15.30 branch `dudantas/fix-tibia-15-30-regressions` at `99902524` (not yet in Canary `main`): (a) in a BR/Fandom conflict without an official change, each wiki, tibiopedia.pl and the branch back one value, the most votes win and a tie goes to the branch; (b) formulas, effects and areas come from the branch instead of the older Canary pin, with Crystal still an equal source (S4, S5); (c) the single-target range stated by BR and tibiopedia.pl decides like other wiki fields; (d) its new and renamed spells join the census. Where all wikis agree, they decide even against the branch. | §4.4 |
 | S15 | **DECIDED (owner, 2026-09-28).** The official tibia.com spell library decides every field it states, ahead of the wikis, S11, S13 and S14; the wikis, tibiopedia.pl and the sources supply what it does not state. Captured by `tibiacom_spells.py fetch` on a machine tibia.com serves (it blocks hosted runners); single facts with the page URL and page SHA-256 only. Not yet applied: no capture exists. | §4.4; tibia.com is the game publisher's reference. |
+| S16 | **DECIDED (owner, 2026-09-28).** Since patch 15.22 (27 January 2026) spells unlock automatically and free at their level and trainers no longer teach them, so `learning_required` is false for every spell. A Wheel of Destiny revelation spell carries `requirements.wheel_unlock` (S6): stated by the wiki (Fandom `wheelspell`, BR `wheelSpellType` Revelação; Convicção is a perk on a level-unlocked spell), else by the Canary 15.30 `needLearn`, the only source that implements the 15.22 unlock. The Game core rejects a `wheel_unlock` spell until a Wheel owner exists. S9 is applied as a declared closed catalogue, `cooldown-groups.json`. | https://tibiopedia.pl/updates/15.22.c93366; §4.4 |
+| S17 | **DECIDED (owner, 2026-09-28).** The shared `condition` (monster schema) gains `light` (`level` 1–255, `color` 0–255), `regeneration` (`health_gain`/`health_interval_ms` and/or `mana_gain`/`mana_interval_ms`) and `buff_spell`, each only on its own condition type and never on a damage schedule. Canary and Crystal agree on all five spells it unblocks: Light, Great Light, Ultimate Light, Recovery and Intense Recovery. The Game core still treats a condition effect as unsupported. | `condition:setParameter(CONDITION_PARAM_LIGHT_*, CONDITION_PARAM_HEALTHGAIN/HEALTHTICKS, CONDITION_PARAM_BUFF_SPELL)` in both sources. |
 
 ## 6. Mapping to WorldProject/v2
 

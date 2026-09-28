@@ -36,7 +36,7 @@ protected Item identity map for Item references.
 | Trade services | 289, with 10,723 offer rows (507 with a count, 66 with a sub type) |
 | Travel services | 53, with 189 ungated routes |
 | Placements admitted | 0 (§5) |
-| Dialogue records admitted | 0 (D5: Oteryn-authored text first) |
+| Dialogue records admitted | 0 in the first wave; 701 later (§7 slices 4b and 4c) |
 
 Held back and reported in the candidates: 145 NPCs (91 unplaced in both sources, 32 single-source
 NPCs the wiki does not know, 7 outfit/movement conflicts, 6 placement conflicts the wiki cannot
@@ -56,10 +56,11 @@ Keys are production keys, revision `definition-r1` (D4). The `canary:` / `crysta
 | Behavior | `oteryn:behavior.npc.<slug>` |
 | Trade service | `oteryn:service.trade.<slug>` |
 | Travel service | `oteryn:service.travel.<slug>` |
+| Dialogue | `oteryn:dialogue.npc.<slug>` |
 
 `<slug>` is derived once from the registered NPC name and frozen at admission; a later rename keeps
-the key. The NPC declaration lists its services in `services`; `dialogue` stays empty until
-authored text exists.
+the key. The NPC declaration lists its services in `services`. Its `dialogue` names the NPC's Dialogue
+declaration once one is admitted (§7 slice 4b).
 
 **Item references.** Offers and non-gold currencies resolve the source item id through the protected
 Item identity map (`export_reference_item_identity_map`, map SHA-256 `83ba3c26…`, the digest the Item
@@ -160,8 +161,36 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    - 1 placement conflict;
    - 3 naming issues;
    - 3 NPCs that do not load.
-5. Later: placements after World admission; dialogue after Oteryn-authored text; held NPCs, offers and
-   routes as their blockers close.
+4b. Dialogue: `OTV2-20260928-npc-dialogue-wave-a` (D9). `tools/content-migration/npc_dialogue_stage.py`
+   builds the typed Dialogue declarations from the Canary and Crystal NPC texts, and
+   `npc_admission_stage.py --dialogues` links them to their NPCs. Only static content is admitted:
+   - greet, farewell, walk-away and send-trade messages, as lists of parts;
+   - ambient voices with their cadence and say/yell mode;
+   - `say` keyword replies with no condition and no effect, in source sibling order, with their
+     conversation flags and fallback nodes.
+
+   Conditional, scripted and action keywords (5,927 nodes) are left out, and so is every reply that an earlier
+   sibling left out here can shadow (815 nodes; the engine answers with the first matching sibling, the rule
+   `convert.py` applies to services). A voice profile
+   without an interval or chance is left out (21 NPCs). A dialogue is admitted when both sources agree, or
+   when only one source has the NPC; a source bundle named by a candidate must exist. Each text bundle is
+   authenticated against the committed census: the reference-only conversion must reproduce the census
+   `bundle_digest`, and the text bundle without its text must equal its reference bundle. 129 NPCs whose
+   sources disagree are held with `DIALOGUE_CONFLICT`; Captain Dreadnought, whose script registers keywords
+   in Lua `pairs()` order and so converts differently per run, is held with `TEXT_BUNDLE_UNVERIFIED`. 617 Dialogue declarations (4,220 keyword nodes) are admitted;
+   the deferred Dragon Ancestor Spirit keeps none. The materializer verifies each admitted Dialogue against
+   the pinned dialogue evidence. The successor tree
+   gains `content/dialogues/definitions`.
+4c. Dialogue conflicts (D10): `OTV2-20260928-npc-dialogue-transcripts`. `npc_dialogue_stage.py --transcripts`
+   breaks Canary/Crystal dialogue conflicts with the Tibia Global in-game transcripts of `s2ward/tibia`
+   (commit `8824eb38`): the source whose differing texts match more transcript lines is admitted whole, and
+   the decision, its scores and the transcript used are recorded (`resolved`, `source.transcripts_digest`).
+   84 conflicts are resolved (75 Canary, 9 Crystal). 45 stay held: 44 whose transcript matches neither
+   side better and one without a transcript. 701 Dialogue declarations (6,313 keyword nodes) are admitted.
+5. Later:
+   - placements after World admission;
+   - conditional dialogue and dialogue conflicts;
+   - held NPCs, offers and routes as their blockers close.
 
 Each slice runs the repository gates. A slice that changes `content/world/**` also gets one independent
 exact-head review before the Merge Queue (standing authorization in `OWNER_FUNDED_AI_POLICY.md`).
@@ -169,5 +198,5 @@ exact-head review before the Merge Queue (standing authorization in `OWNER_FUNDE
 ## 8. Boundaries
 
 Admission adds no runtime behaviour: no conversation, trade settlement, currency movement, travel
-execution, spawn or placement. It admits no Tibia text, no Lua, no gated offer or route, and changes no
+execution, spawn or placement. It admits no Lua, no gated offer or route, and changes no
 Item semantics. Everything stays candidate-only under the v2 rule.

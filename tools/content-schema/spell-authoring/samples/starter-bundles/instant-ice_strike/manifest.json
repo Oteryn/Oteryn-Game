@@ -163,26 +163,6 @@
       "resolution": "S3: superseded by the wiki value False (source True)."
     },
     {
-      "source_index": 0,
-      "source_file": "data/scripts/spells/attack/ice_strike.lua",
-      "source_line": 1,
-      "source_field": "needLearn",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/requirements/learning_required",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 1,
-      "source_file": "data/scripts/spells/attack/ice_strike.lua",
-      "source_line": 1,
-      "source_field": "needLearn",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/requirements/learning_required",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
       "source_index": 2,
       "source_file": "Ice Strike",
       "source_line": 1,
