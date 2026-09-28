@@ -82,6 +82,8 @@ Limits:
 
 Possible evidence outcomes: `PROVEN`, or input to `DERIVED`; current post-target material also requires target-continuity analysis.
 
+Access (2026-09-28): tibia.com blocks the cloud containers, GitHub runners and web fetch tools, so agents do not fetch it. For the manual, read `docs/reference/tibia-manual/` (Oteryn-written notes on all 19 sections, owner capture 2026-09-28). The full text is private, in Jira `KAN-33`. For library data such as spells, creatures, bosses, worlds, news and highscores, use the TibiaData API (`https://api.tibiadata.com/v4/...`, JSON, reachable from the containers; see `OTHER_STRUCTURED_TIBIA_DATA`). A dated snapshot of an official page can still be taken with `tools/official-capture/tibiacom_capture.py`, which the owner runs locally.
+
 ---
 
 ### `GLOBAL_BLACKBOX` — source role `CONTROLLED_GLOBAL_OBSERVATION`
@@ -121,6 +123,12 @@ Primary structured encyclopedia:
 - https://www.tibiawiki.com.br/
 
 This source is deliberately promoted to a **first-class bulk Reference data source** for programme #486.
+
+Access (2026-09-28): both wikis block page fetches from the containers (Cloudflare).
+
+- **TibiaWiki (Fandom):** read it through the MediaWiki API only (`https://tibia.fandom.com/api.php`), which answers the containers. Request the revision at the target date (`prop=revisions&rvprop=ids|timestamp|content&rvslots=main&rvstart=<target date>&rvdir=older`), batch up to 50 titles per request, and record page id and revision id. Never fetch `/wiki/` HTML pages.
+- **TibiaWiki BR:** the containers cannot reach it. Collect the pages a batch needs and fetch them in one run on a GitHub-hosted runner (as `wiki_br_capture.py` does). Do not retry from the session.
+- After one failed attempt, switch to the route above instead of retrying. Record a missing value as `UNKNOWN` with the unreachable source named.
 
 Use aggressively for high-volume static/semi-static content extraction:
 
@@ -192,6 +200,8 @@ Promotion discipline:
 ### `OTHER_STRUCTURED_TIBIA_DATA` — source role `STRUCTURED_REFERENCE_DATA`
 
 Examples include other maintained Tibia encyclopedias/databases such as Tibiopedia when accessible.
+
+TibiaData (`https://api.tibiadata.com/v4/`) mirrors tibia.com library and live data as JSON: spells, creatures, boostable bosses, worlds, news and highscores. It is reachable from the containers. It shows the current state, so record the fetch date and treat a value as target-date evidence only when it is unchanged since the target date or re-read at it. It depends on tibia.com, so it is not independent corroboration of tibia.com.
 
 Use primarily as an **independent structured cross-check** against Tibia Wiki and for fields absent from one source.
 
