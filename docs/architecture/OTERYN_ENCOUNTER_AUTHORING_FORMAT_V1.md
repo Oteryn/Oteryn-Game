@@ -80,7 +80,7 @@ Encounter
   phases[]                      ordered named phases; multi-form bosses move by `set_phase`
   anchors[]                     named point or area (rectangle/zone) to be bound by the map project;
                                 optional location (E2): a point {x, y, floor} or boxes of whole tiles
-                                {x: [min, max], y: [min, max], floor: [min, max]} in Canary map coordinates
+                                {x: [min, max], y: [min, max], floor}, each on one floor, in Canary map coordinates
   state
     counters[]                  name, initial integer
     flags[]                     name, initial boolean
@@ -497,12 +497,13 @@ A nineteenth slice adds D46:
 1,557 (The Hunger and Soulcatcher).
 
 A twentieth slice adds the anchor locations of E2 (`OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1.md`, owner answer
-2026-09-28 "tak"). A point is `{x, y, floor}` and an area is a list of boxes of whole tiles; the validator checks that a
-point has a point and an area has boxes, and that no box starts after it ends. `canary_encounters.py` reads each location
+2026-09-28 "tak"). A point is `{x, y, floor}` and an area is a list of boxes of whole tiles, each on one floor; the validator
+checks that a point has a point and an area has boxes, and that no box starts after it ends. Two corners on different
+floors fail. `canary_encounters.py` reads each location
 from the Canary coordinates the anchor already describes: a point, a rectangle between two corners, a square of a
 radius around a tile, or a list of single tiles. It fails on any other form. The five Essence of Malice spots are read
 from the positions in the lever script. 141 of the 142 anchors are located. The Soul War taint zones stay without a
 location: they subtract safe areas and include the Goshnar boss rooms, so that encounter is not admitted yet.
 
-83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 147/147. No manifest changes, so the
+83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 148/148. No manifest changes, so the
 census is unchanged.

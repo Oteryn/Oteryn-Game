@@ -51,7 +51,7 @@ POSITION = r'\((\d+), (\d+), (\d+)\)'
 
 
 def box(x, y, floor):
-    return {'x': [min(x), max(x)], 'y': [min(y), max(y)], 'floor': [min(floor), max(floor)]}
+    return {'x': [min(x), max(x)], 'y': [min(y), max(y)], 'floor': floor}
 
 
 def locate(anchor):
@@ -65,17 +65,17 @@ def locate(anchor):
         match = re.search(r'Canary x (\d+)-(\d+), y (\d+)-(\d+), z (\d+)', text)
         if match:
             x0, x1, y0, y1, floor = map(int, match.groups())
-            return {'boxes': [box((x0, x1), (y0, y1), (floor, floor))]}
+            return {'boxes': [box((x0, x1), (y0, y1), floor)]}
         match = re.search(r'within (\d+) (?:tiles )?of Canary ' + POSITION, text)
         if match:
             radius, x, y, floor = map(int, match.groups())
-            return {'boxes': [box((x - radius, x + radius), (y - radius, y + radius), (floor, floor))]}
+            return {'boxes': [box((x - radius, x + radius), (y - radius, y + radius), floor)]}
         match = re.search(POSITION + r' to ' + POSITION, text)
-        if match and len(points) == 2:
-            (ax, ay, af), (bx, by, bf) = points
-            return {'boxes': [box((ax, bx), (ay, by), (af, bf))]}
+        if match and len(points) == 2 and points[0][2] == points[1][2]:
+            (ax, ay, floor), (bx, by, _) = points
+            return {'boxes': [box((ax, bx), (ay, by), floor)]}
         if text.startswith('Exactly') and points:
-            return {'boxes': [box((x, x), (y, y), (floor, floor)) for x, y, floor in points]}
+            return {'boxes': [box((x, x), (y, y), floor) for x, y, floor in points]}
     raise SystemExit(f"anchor {anchor['key']!r}: no location in {text!r}")
 
 

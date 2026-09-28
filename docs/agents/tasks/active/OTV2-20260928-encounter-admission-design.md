@@ -41,11 +41,11 @@ WorldProject/v2 as typed declarative profiles together with their creatures. The
 encounter bindings, and admission is closed over references and anchor locations.
 
 This change is slices 1 and 2: the decision, and the anchor locations of E2 in the encounter authoring format. A point
-is `{x, y, floor}` and an area is a list of boxes of whole tiles. 141 of the 142 anchors are located; the Soul War taint
+is `{x, y, floor}` and an area is a list of boxes of whole tiles, each on one floor. 141 of the 142 anchors are located; the Soul War taint
 zones stay unlocated. It also archives the task record of #1127.
 
 ## Acceptance and evidence
 
-- `verify_encounter_schema.py` 147/147; 83 encounters validate and 78 manifests resolve fully.
+- `verify_encounter_schema.py` 148/148; 83 encounters validate and 78 manifests resolve fully.
 - No manifest changes, so the census, the staging and `content/world` are unchanged.
 - `validate_governance.py` passes.

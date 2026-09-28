@@ -275,13 +275,14 @@ def locate(key, location):
     return mutate
 
 
-BOX = {'x': [100, 110], 'y': [200, 210], 'floor': [7, 7]}
+BOX = {'x': [100, 110], 'y': [200, 210], 'floor': 7}
 case('point location accepted (E2)', locate('exit', {'x': 100, 'y': 200, 'floor': 7}), True)
-case('area boxes accepted (E2)', locate('arena', {'boxes': [BOX, {**BOX, 'floor': [8, 9]}]}), True)
+case('area boxes accepted (E2)', locate('arena', {'boxes': [BOX, {**BOX, 'floor': 8}]}), True)
+case('a box is on one floor', locate('arena', {'boxes': [{**BOX, 'floor': [7, 8]}]}))
 case('a point takes a point location', locate('exit', {'boxes': [BOX]}))
 case('an area takes boxes', locate('arena', {'x': 100, 'y': 200, 'floor': 7}))
 case('a box does not start after it ends', locate('arena', {'boxes': [{**BOX, 'x': [110, 100]}]}))
-case('a box floor stays on the map', locate('arena', {'boxes': [{**BOX, 'floor': [7, 16]}]}))
+case('a box floor stays on the map', locate('arena', {'boxes': [{**BOX, 'floor': 16}]}))
 case('an area needs a box', locate('arena', {'boxes': []}))
 case('a point needs its floor', locate('exit', {'x': 100, 'y': 200}))
 

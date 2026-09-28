@@ -56,9 +56,10 @@ def span(maximum):
     return {'type': 'array', 'items': integer(0, maximum), 'minItems': 2, 'maxItems': 2}
 
 
-# E2: an anchor's location in Canary map coordinates (the project frame on admission): a point, or boxes of whole tiles.
+# E2: an anchor's location in Canary map coordinates (the project frame on admission): a point, or boxes of whole
+# tiles, each on one floor.
 LOCATION = {'oneOf': [obj({'x': integer(0, 65535), 'y': integer(0, 65535), 'floor': integer(0, 15)}, ('x', 'y', 'floor')),
-                      obj({'boxes': array(obj({'x': span(65535), 'y': span(65535), 'floor': span(15)}, ('x', 'y', 'floor')), 1)},
+                      obj({'boxes': array(obj({'x': span(65535), 'y': span(65535), 'floor': integer(0, 15)}, ('x', 'y', 'floor')), 1)},
                           ('boxes',))]}
 
 
