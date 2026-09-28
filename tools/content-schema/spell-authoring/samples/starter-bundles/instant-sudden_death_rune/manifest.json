@@ -107,26 +107,6 @@
       "resolution": "S3: the wiki states this value."
     },
     {
-      "source_index": 0,
-      "source_file": "data/scripts/spells/conjuring/sudden_death_rune.lua",
-      "source_line": 1,
-      "source_field": "needLearn",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/requirements/learning_required",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
-      "source_index": 1,
-      "source_file": "data/scripts/spells/conjuring/sudden_death_rune.lua",
-      "source_line": 1,
-      "source_field": "needLearn",
-      "kind": "field",
-      "status": "mapped",
-      "destination": "/spell/spell/requirements/learning_required",
-      "resolution": "S4: source value (both sources agree)."
-    },
-    {
       "source_index": 2,
       "source_file": "Sudden Death",
       "source_line": 1,

@@ -418,7 +418,8 @@ BR_GROUP = {'ataque': 'Attack', 'cura': 'Healing', 'suporte': 'Support', 'suprim
 BR_PRIMARY_GROUP = {'Supply': 'Support', 'Summon': 'Support', 'Party': 'Support', 'Stance': 'Support'}
 BR_YES_NO = {'sim': 'yes', 'não': 'no', 'nao': 'no'}
 BR_DAMAGE = {'físico': 'Physical', 'fisico': 'Physical'}
-BR_WORDS = {'virtude': 'virtue'}  # Portuguese group names BR keeps as page categories
+BR_WORDS = {'virtude': 'virtue',  # Portuguese group names BR keeps as page categories
+            'revelação': 'yes', 'convicção': 'no'}  # wheelSpellType: revelation spell or Wheel conviction perk
 
 
 def br_value(key, value):
@@ -643,6 +644,7 @@ def self_test():
     assert wiki_seconds_ms('1 800') == 1800000
     assert crosswalk_value('mana', 'Varies.') == crosswalk_value('mana', 'var.') == 'varies'
     assert crosswalk_value('secondarygroup', 'Virtude') == crosswalk_value('secondarygroup', 'Virtue') == 'virtue'
+    assert crosswalk_value('wheelspell', 'Revelação') == 'yes' and crosswalk_value('wheelspell', 'Convicção') == 'no'
     assert join_words({'exura sio name': 1, 'exura': 2}, {'exura sio': 1, 'exura': 2}) == {'exura': 'exura', 'exura sio name': 'exura sio'}
     print('wiki_spells self-test: ok')
     return 0

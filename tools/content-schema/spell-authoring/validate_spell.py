@@ -10,6 +10,9 @@ from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
 ROOT = Path(__file__).resolve().parent
+# S9: the declared closed catalogue of cooldown groups and the roles each may take.
+COOLDOWN_GROUPS = {g['key']: tuple(g['roles']) for g in
+                   json.loads((ROOT / 'cooldown-groups.json').read_text(encoding='utf-8'))['groups']}
 MONSTER = ROOT.parent / 'monster-authoring'
 SCHEMA_FILES = {
     'spell.schema.json': ROOT / 'spell.schema.json',
@@ -202,6 +205,11 @@ def validate(bundle, deps, catalog=None, manifest=None):
     groups = [g['group'] for g in spell['groups']]
     if len(set(groups)) != len(groups):
         errors.append('spell/groups: group keys must differ')
+    for index, group in enumerate(groups):
+        role = 'primary' if index == 0 else 'secondary'
+        if role not in COOLDOWN_GROUPS.get(group, ()):
+            errors.append(f'spell/groups/{index}/group: {group!r} is not a declared {role} cooldown group (S9, '
+                          'cooldown-groups.json)')
     execution = spell['execution']
     if 'conjure' in execution and spell['carrier'] != 'instant':
         errors.append('spell/execution/conjure: only an instant spell conjures')

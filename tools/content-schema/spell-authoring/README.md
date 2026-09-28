@@ -16,10 +16,11 @@ the one shared Ability); this folder adds the player-casting layer and the `play
 | `verify_formal_schema.py` | Focused positive/negative cases; regenerates the `synthetic-*.json` fixtures (Light Healing, Sudden Death rune and its conjuring spell, from Crystal Server). |
 | `spell_census.py` | Loads every `data/scripts/spells/**` and `data/scripts/runes/**` script of a Canary and a Crystal Server checkout in a stubbed LuaJIT sandbox (needs `lupa==2.8`); records registrar calls, Combats, cast tier and the damage/heal formulas as exact expression trees; compares the two sources. |
 | `wiki_spells.py` | Fetches TibiaWiki (Fandom) `Infobox Spell` pages and `Category:Runes` as of a given day (default today; owner decision S3), keeps allowlisted facts only, and compares them with the census. |
-| `convert_spells.py` | Plan phase P2: turns the census into Spell bundles (Spell, Ability/Effect/Formula, catalog, import manifest) under S1–S5, S11, S13, S14; plain combats go through the monster converter's `combat_ability`. Needs both checkouts and `lupa`. |
+| `convert_spells.py` | Plan phase P2: turns the census into Spell bundles (Spell, Ability/Effect/Formula, catalog, import manifest) under S1–S5, S11, S13, S14, S16; plain combats go through the monster converter's `combat_ability`. Needs both checkouts and `lupa`. |
 | `tibiopedia_spells.py` | Fetches the tibiopedia.pl spell pages (owner decision S12) and keeps single facts with the page URL and page SHA-256, in Fandom field names; no descriptions or comments. |
 | `verify_spells.py` | Checks every converted bundle against Fandom, BR and tibiopedia.pl field by field: `agree`, `ours_differs` (the references agree, we do not), `sources_disagree`. |
 | `tibiacom_spells.py` | Captures the official tibia.com spell library (S15) in Chromium on a machine tibia.com serves (it blocks the build container and hosted runners); `facts` maps the table cells to Fandom field names. |
+| `cooldown-groups.json` | S9: the declared closed catalogue of cooldown groups and their roles (primary, secondary); `validate_spell.py` rejects any other group. |
 | `official-changes.json` | S11 evidence: official changes that decide a BR/Fandom conflict (fact, date, source URL). |
 | `samples/spell-readiness-p2.json` | `convert_spells.py --readiness`: per spell `ready`/`blocked`, its blockers and the bundle SHA-256 (bundles are not committed). |
 | `samples/starter-bundles/` | The P3 starter spells converted by `convert_spells.py --only ... --out`; validated in CI with their manifests. |
