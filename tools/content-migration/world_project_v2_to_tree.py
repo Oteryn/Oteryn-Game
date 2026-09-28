@@ -211,14 +211,20 @@ def main() -> int:
     creature_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Creature"]
     item_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Item"]
     mount_bindings = [row for row in sources["source_identity_bindings"] if row["target"]["family"] == "Mount"]
+    # Import-only TibiaWiki evidence (a facts file naming its own batch, e.g. the Item family fallback) is not
+    # part of WorldProject/v2; keep its source and batch rows when regenerating the shared import indexes.
+    wiki_facts = sorted((ROOT / "imports/tibiawiki/facts").glob("*.json"))
+    import_only = {load(path).get("batch_id") for path in wiki_facts} - {row["batch_id"] for row in imports["batches"]} - {None}
+    kept_sources = [row for row in load(ROOT / "imports/tibiawiki/sources.json")["sources"] if row["import_batch_id"] in import_only]
+    kept_batches = [row for row in load(ROOT / "imports/tibiawiki/batches.json")["batches"] if row["batch_id"] in import_only]
     outputs = {
         "imports/crystalserver/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.crystalserver"]},
         "imports/crystalserver/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["source_repository"] == "zimbadev/crystalserver"]},
         "imports/canary/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.canary"]},
         "imports/canary/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["source_repository"] == "opentibiabr/canary"]},
         "imports/canary/bindings/creatures.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Creature", "bindings": creature_bindings},
-        "imports/tibiawiki/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.tibiawiki"]},
-        "imports/tibiawiki/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["batch_id"] in {source["import_batch_id"] for source in sources["sources"] if source["key"] == "oteryn:source.tibiawiki"}]},
+        "imports/tibiawiki/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.tibiawiki"] + kept_sources},
+        "imports/tibiawiki/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["batch_id"] in {source["import_batch_id"] for source in sources["sources"] if source["key"] == "oteryn:source.tibiawiki"}] + kept_batches},
         "imports/tibiawiki/bindings/items.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Item", "bindings": item_bindings},
         "imports/tibiawiki/bindings/mounts.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Mount", "bindings": mount_bindings},
         "imports/tibiawiki/facts/items-wave1.json": {
@@ -273,7 +279,7 @@ def main() -> int:
     })
 
     npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
-    if len(npc_declarations) != 983:
+    if len(npc_declarations) != 1093:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
@@ -314,7 +320,7 @@ def main() -> int:
     })
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 342:
+    if len(service_records) != 363:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

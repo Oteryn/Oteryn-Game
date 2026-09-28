@@ -1,4 +1,4 @@
-"""Build NPC promotion candidates: merged Canary+Crystal facts with native keys (owner decisions D4-D6).
+"""Build NPC promotion candidates: merged Canary+Crystal facts with native keys (owner decisions D4-D8).
 
 Evidence tooling only; nothing is written to content/. A candidate is what a later, reviewed
 promotion would write to content/npcs/definitions/ and content/services/travel/.
@@ -15,6 +15,33 @@ Merge rules:
   the fact open and it is left out of the candidate;
 - a definition conflict holds the whole NPC (the wiki has no outfit/movement facts);
 - a gated route (LUA_PREDICATE) is left out and reported;
+- D8 (owner request 2026-09-27, completing held NPCs from the wiki):
+  - an NPC neither source places, whose wiki page has a position, is promoted with that one
+    wiki-origin placement (direction/spawn_interval_s/spawn_radius unknown, so null; marked
+    `"origin": "wiki"`); arbitration records `{"fact": "placements", "rule": "WIKI_POSITION",
+    "chosen": "wiki"}`. A wiki page with no position either (e.g. a seasonal/roaming NPC such as
+    Santa Claus, city "Varies") still admits the definition, with an empty `placements` list and
+    `{"fact": "placements", "rule": "WIKI_CONFIRMED", "chosen": "wiki"}`. No wiki page at all
+    stays held UNPLACED. The same two fallbacks resolve a placement conflict between two sources
+    (PLACEMENT_CONFLICT_WIKI_UNDECIDED / PLACEMENT_CONFLICT_NO_WIKI_POSITION) once a wiki page is
+    matched: the wiki position, when it has one, wins outright over both disagreeing sources
+    (WIKI_POSITION); with no wiki position either, the wiki still confirms the NPC (WIKI_CONFIRMED,
+    empty placements). A conflict with no wiki page at all still stays held;
+  - wiki NPC lookup matches on normalised title, `name` or `actualname` (the wiki infobox's
+    in-game name, e.g. "Omniphant (NPC)"'s actualname "Omniphant"), title taking precedence on a
+    key claimed by more than one page;
+  - a single-source NPC absent from the wiki under its own name is tried again under a base name
+    (stripping a trailing ` (Day)`/` (Night)`, or ` Init`/` Vampires Lair`/` Back`); a wiki match
+    on the base name confirms the NPC (records `{"fact": "identity", "rule": "WIKI_BASE_NAME",
+    "chosen": "wiki"}`); several name variants may then share one wiki page. Failing that, a
+    strict spelling match (name >=10 chars, exactly one wiki NPC's name/actualname within one
+    edit -- insertion, deletion, substitution or adjacent transposition) also confirms it
+    (`{"fact": "identity", "rule": "WIKI_SPELLING", "chosen": "wiki"}`). No match at all stays
+    held SINGLE_SOURCE_NOT_ON_WIKI;
+  - a fixed, explicit `OWNER_REJECTED` table (owner decision 2026-09-27) holds a small set of
+    source-only NPCs that exist only in that OT server, not in Tibia (`canary:npc/canary` "Canary",
+    `crystal:npc/loot_buyer` "Loot Buyer"), before any wiki matching, so they are never promoted
+    by any rule above;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -37,11 +64,95 @@ SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 POSITION_RANK = {'MATCH': 0, 'NEAR': 1, 'MISMATCH': 2}
 LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
+WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
+                           'WIKI_CONFIRMED')  # kept in the output
+DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
+VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
+SPELLING_MIN_LENGTH = 10
+# Owner decision 2026-09-27: these source-only NPCs exist only in that OT server, not in Tibia,
+# and are never promoted by any rule (wiki confirmation, base-name, spelling or otherwise).
+OWNER_REJECTED = {
+    'canary:npc/canary': 'server-only NPC, owner decision 2026-09-27',
+    'crystal:npc/loot_buyer': 'server-only NPC, owner decision 2026-09-27',
+}
 
 
 def slug(name):
     folded = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode()
     return re.sub(r'[^a-z0-9]+', '_', folded.lower()).strip('_')
+
+
+def base_name(name):
+    """D8: strip a known name-variant suffix so a Day/Night (or Init/Vampires Lair/Back) variant can be
+    matched to its base wiki page. Returns None when `name` carries none of these suffixes."""
+    match = DAY_NIGHT_RE.match(name)
+    if match:
+        return match.group(1)
+    for suffix in VARIANT_NAME_SUFFIXES:
+        if name.endswith(suffix) and len(name) > len(suffix):
+            return name[:-len(suffix)]
+    return None
+
+
+def build_wiki_index(npcs):
+    """D8: alias index for wiki NPC lookup. Normalised title is indexed first and always wins a
+    key an alias also claims. Normalised `name`/`actualname` (the infobox in-game name, which may
+    differ from a disambiguated page title, e.g. "Omniphant (NPC)"'s actualname "Omniphant") are
+    then added, but only when exactly one distinct page produces that alias key: a key two or
+    more different pages expose (and no exact title owns) is ambiguous and left out entirely,
+    rather than silently bound to whichever page happened to be seen first."""
+    index = {}
+    for npc in npcs:
+        key = normalize_name(npc['title'])
+        if key:
+            index.setdefault(key, npc)
+    alias_pageids = defaultdict(set)
+    alias_npc = {}
+    for npc in npcs:
+        for field in ('name', 'actualname'):
+            key = normalize_name(npc.get(field))
+            if not key or key in index:  # an exact title already owns this key; title wins
+                continue
+            alias_pageids[key].add(npc['pageid'])
+            alias_npc[key] = npc
+    for key, pageids in alias_pageids.items():
+        if len(pageids) == 1:
+            index[key] = alias_npc[key]
+    return index
+
+
+def within_one_edit(a, b):
+    """D8 WIKI_SPELLING: restricted Damerau-Levenshtein distance == 1 -- exactly one insertion,
+    deletion, substitution or adjacent transposition turns `a` into `b`. Equal strings are not
+    "one edit" (they are an exact match, handled elsewhere)."""
+    if a == b:
+        return False
+    la, lb = len(a), len(b)
+    if la == lb:
+        diffs = [i for i in range(la) if a[i] != b[i]]
+        if len(diffs) == 1:
+            return True
+        if len(diffs) == 2 and diffs[1] == diffs[0] + 1:
+            i, j = diffs
+            return a[i] == b[j] and a[j] == b[i]
+        return False
+    if abs(la - lb) != 1:
+        return False
+    shorter, longer = (a, b) if la < lb else (b, a)
+    i = 0
+    while i < len(shorter) and shorter[i] == longer[i]:
+        i += 1
+    return shorter[i:] == longer[i + 1:]
+
+
+def wiki_position_placement(wiki):
+    """D8: a synthetic placement for an UNPLACED NPC whose wiki page has a position. direction,
+    spawn_interval_s and spawn_radius are unknown from the wiki, so they are left null; `origin`
+    marks the row as wiki-derived rather than sourced from Canary/Crystal."""
+    if not wiki or not wiki.get('position'):
+        return None
+    return {'position': wiki['position'], 'direction': None, 'spawn_interval_s': None,
+            'spawn_radius': None, 'origin': 'wiki'}
 
 
 def definition_facts(bundle):
@@ -81,7 +192,8 @@ def source_offers(bundle):
 
 class Builder:
     def __init__(self, snapshot, item_map):
-        self.wiki = {normalize_name(npc['title']): npc for npc in snapshot['npcs']}
+        self.wiki_npcs = snapshot['npcs']
+        self.wiki = build_wiki_index(self.wiki_npcs)
         self.wiki_trade = snapshot.get('trade', {})
         self.items = {row['source_item_id']: row for row in item_map['records']}
         self.held, self.stats = [], Counter()
@@ -89,6 +201,19 @@ class Builder:
     def hold(self, name, sources, reason, detail=None):
         self.held.append({'name': name, 'sources': sources, 'reason': reason, 'detail': detail})
         self.stats[f'held:{reason}'] += 1
+
+    def fuzzy_wiki_matches(self, name_norm):
+        """D8 WIKI_SPELLING: every distinct wiki NPC whose normalised name or actualname is
+        exactly one edit away from `name_norm`."""
+        matches = {}
+        for npc in self.wiki_npcs:
+            for field in ('name', 'actualname'):
+                value = npc.get(field)
+                candidate = normalize_name(value) if value else ''
+                if candidate and within_one_edit(name_norm, candidate):
+                    matches[npc['pageid']] = npc
+                    break
+        return list(matches.values())
 
     def merge_definition(self, bundles, arbitration):
         facts = [definition_facts(b) for b in bundles.values()]
@@ -213,18 +338,53 @@ class Builder:
     def candidate(self, bundles):
         name = next(b['definition']['name'] for b in bundles.values())
         sources = {s: b['key'] for s, b in bundles.items()}
-        wiki = self.wiki.get(normalize_name(name))
-        if len(bundles) == 1 and wiki is None:
-            return self.hold(name, sources, 'SINGLE_SOURCE_NOT_ON_WIKI')
+        rejected = next((OWNER_REJECTED[b['key']] for b in bundles.values() if b['key'] in OWNER_REJECTED), None)
+        if rejected is not None:
+            return self.hold(name, sources, 'OWNER_REJECTED', rejected)
+        name_norm = normalize_name(name)
+        wiki = self.wiki.get(name_norm)
         arbitration, left_out = [], []
+        if len(bundles) == 1 and wiki is None:
+            variant = base_name(name)
+            wiki = self.wiki.get(normalize_name(variant)) if variant else None
+            if wiki is not None:
+                arbitration.append({'fact': 'identity', 'rule': 'WIKI_BASE_NAME', 'chosen': 'wiki'})
+            elif len(name_norm) >= SPELLING_MIN_LENGTH:
+                fuzzy = self.fuzzy_wiki_matches(name_norm)
+                if len(fuzzy) == 1:
+                    wiki = fuzzy[0]
+                    arbitration.append({'fact': 'identity', 'rule': 'WIKI_SPELLING', 'chosen': 'wiki'})
+            if wiki is None:
+                return self.hold(name, sources, 'SINGLE_SOURCE_NOT_ON_WIKI')
         definition, conflicts = self.merge_definition(bundles, arbitration)
         if conflicts:
             return self.hold(name, sources, 'DEFINITION_CONFLICT', ','.join(conflicts))
         placements, problem = self.merge_placements(bundles, wiki, arbitration)
-        if problem:
+        if problem == 'PLACEMENT_CONFLICT_WIKI_UNDECIDED':
+            # D6/D8: both sources disagree with each other and with the wiki; the wiki position
+            # wins outright over either source (merge_placements only returns this problem when
+            # wiki['position'] is set, so the fallback always succeeds here).
+            placements = [wiki_position_placement(wiki)]
+            arbitration.append({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'})
+        elif problem == 'PLACEMENT_CONFLICT_NO_WIKI_POSITION' and wiki is not None:
+            # D8 WIKI_CONFIRMED: the sources conflict and the wiki has no position either, but the
+            # wiki still confirms the NPC exists; the definition is admitted with no placements.
+            placements = []
+            arbitration.append({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'})
+        elif problem:
             return self.hold(name, sources, problem)
-        if not placements:
-            return self.hold(name, sources, 'UNPLACED')
+        elif not placements:
+            fallback = wiki_position_placement(wiki)
+            if fallback is not None:
+                placements = [fallback]
+                arbitration.append({'fact': 'placements', 'rule': 'WIKI_POSITION', 'chosen': 'wiki'})
+            elif wiki is not None:
+                # D8 WIKI_CONFIRMED: a wiki page exists (e.g. a seasonal/roaming NPC with no fixed
+                # position) but has no position to promote either; the definition is still admitted,
+                # with no placements at all.
+                arbitration.append({'fact': 'placements', 'rule': 'WIKI_CONFIRMED', 'chosen': 'wiki'})
+            else:
+                return self.hold(name, sources, 'UNPLACED')
         key_slug = slug(name)
         if not key_slug:  # a punctuation-only name has no slug; it needs a hand-chosen key
             return self.hold(name, sources, 'EMPTY_SLUG')
@@ -247,7 +407,7 @@ class Builder:
             'trade_service': trade,
             'provenance': {s: {'key': b['key'], 'sha256': b['source']['sha256']} for s, b in sorted(bundles.items())},
             'wiki': {'pageid': wiki['pageid'], 'revid': wiki['revid']} if wiki else None,
-            'arbitration': [a for a in arbitration if a['rule'] == 'WIKI_ARBITER'],
+            'arbitration': [a for a in arbitration if a['rule'] in WIKI_ARBITRATION_RULES],
             'left_out': left_out,
         }
         return record
@@ -296,7 +456,7 @@ def main():
         for row in record['left_out']:
             builder.stats['left_out_offers' if row['fact'].startswith('trade.') else 'left_out_routes'] += 1
     report = {
-        'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY', 'decisions': ['D4', 'D5', 'D6', 'D7'],
+        'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY', 'decisions': ['D4', 'D5', 'D6', 'D7', 'D8'],
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
         'totals': {'candidates': len(promoted), 'with_travel': sum(1 for r in promoted if r['travel_service']),

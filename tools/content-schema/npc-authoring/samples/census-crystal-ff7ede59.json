@@ -1,5 +1,5 @@
 {
- "bundle_digest": "c8db5995e3f65707470e04bcdfc645581912ba7ddc235c59e5f91cd560f8f8eb",
+ "bundle_digest": "22f1bb998cd01b8e70a098fc616ab0c16626dac93ee4e5dbfdc9fbb39d2fa3eb",
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "rows": [
   {
@@ -2251,10 +2251,18 @@
    }
   },
   {
-   "error": "[string \"<python>\"]:373: attempt to index a nil value",
    "key": "crystal:npc/captain_dreadnought",
-   "readiness": "LOAD_ERROR",
-   "status": "LOAD_ERROR"
+   "name": "Captain Dreadnought",
+   "placements": 1,
+   "readiness": "STATIC_SERVICES",
+   "services": {},
+   "status": "PARTIAL",
+   "unresolved": {
+    "LUA_CALLBACK": 153,
+    "LUA_PREDICATE": 1,
+    "UNMAPPED_CONFIG_FIELD": 1,
+    "UNMAPPED_ENGINE_CALL": 1
+   }
   },
   {
    "key": "crystal:npc/captain_fearless",
@@ -11941,10 +11949,12 @@
    }
   },
   {
-   "error": "[string \"<python>\"]:44: attempt to compare number with table",
    "key": "crystal:npc/towncryer",
-   "readiness": "LOAD_ERROR",
-   "status": "LOAD_ERROR"
+   "name": "Towncryer",
+   "placements": 1,
+   "readiness": "STATIC_COMPLETE",
+   "services": {},
+   "status": "RESOLVED"
   },
   {
    "key": "crystal:npc/trimegis",
@@ -13054,8 +13064,8 @@
   "npcs_by_unresolved_reason": {
    "ERROR_AFTER_REGISTER": 2,
    "LUA_ACTION": 60,
-   "LUA_CALLBACK": 621,
-   "LUA_PREDICATE": 114,
+   "LUA_CALLBACK": 622,
+   "LUA_PREDICATE": 115,
    "MULTIPLE_KEYWORD_HANDLERS": 1,
    "NON_SEQUENTIAL_SHOP_TABLE": 1,
    "NON_STATIC_DESTINATION": 10,
@@ -13063,20 +13073,16 @@
    "NON_STATIC_TEXT": 1,
    "NO_PLACEMENT": 116,
    "PLAYER_STORAGE_GATE": 9,
-   "UNMAPPED_CONFIG_FIELD": 2,
-   "UNMAPPED_ENGINE_CALL": 413
+   "UNMAPPED_CONFIG_FIELD": 3,
+   "UNMAPPED_ENGINE_CALL": 414
   },
-  "orphan_placement_names": [
-   "Captain Dreadnought",
-   "Towncryer"
-  ],
+  "orphan_placement_names": [],
   "placements_in_spawn_files": 1073,
   "readiness": {
-   "LOAD_ERROR": 2,
    "NOT_AN_NPC": 2,
    "SCRIPTED": 39,
-   "STATIC_COMPLETE": 215,
-   "STATIC_SERVICES": 745,
+   "STATIC_COMPLETE": 216,
+   "STATIC_SERVICES": 746,
    "UNPLACED": 116
   },
   "services": {
@@ -13084,7 +13090,7 @@
    "blessings_rows": 32,
    "kick_npcs": 24,
    "kick_rows": 24,
-   "placements": 1072,
+   "placements": 1074,
    "promotion_npcs": 6,
    "promotion_rows": 6,
    "spells_npcs": 53,
@@ -13095,16 +13101,15 @@
    "travel_rows": 359
   },
   "status": {
-   "LOAD_ERROR": 2,
    "NOT_AN_NPC": 2,
-   "PARTIAL": 900,
-   "RESOLVED": 215
+   "PARTIAL": 901,
+   "RESOLVED": 216
   },
   "unresolved_rows_by_reason": {
    "ERROR_AFTER_REGISTER": 2,
    "LUA_ACTION": 311,
-   "LUA_CALLBACK": 973,
-   "LUA_PREDICATE": 932,
+   "LUA_CALLBACK": 1126,
+   "LUA_PREDICATE": 933,
    "MULTIPLE_KEYWORD_HANDLERS": 1,
    "NON_SEQUENTIAL_SHOP_TABLE": 1,
    "NON_STATIC_DESTINATION": 45,
@@ -13112,8 +13117,8 @@
    "NON_STATIC_TEXT": 1,
    "NO_PLACEMENT": 116,
    "PLAYER_STORAGE_GATE": 129,
-   "UNMAPPED_CONFIG_FIELD": 5,
-   "UNMAPPED_ENGINE_CALL": 413
+   "UNMAPPED_CONFIG_FIELD": 6,
+   "UNMAPPED_ENGINE_CALL": 414
   }
  }
 }
