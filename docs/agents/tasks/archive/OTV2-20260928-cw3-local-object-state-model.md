@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw3-local-object-state-model
 title: LocalObject per-state collision presence, authored initial state, RETAG intent family
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cw3-local-object-state-model
 issue: 162
 pr: 1046
 base_sha: dd209a1264e98f3d1f0f167ec3320124a071db53
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
+final_head_sha: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
+final_head_frozen_at: 2026-09-27T23:22:24Z
 owner: Oteryn: content world build (session_01LphUANMfC2q2WKdfEb39eC)
 created_at: 2026-09-27T22:30:02Z
-updated_at: 2026-09-27T23:20:40Z
+updated_at: 2026-09-28T00:39Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/reference_playable.rs
@@ -160,16 +160,16 @@ Both governance/policy validators clean.
 
 ### Exact-head CI
 
-- final head: pending (frozen at commit time below; exact-head CI is the coordinator's/Merge Queue's read after PR open)
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03 (see Terminal integration)
+- trigger source: Merge Queue (`merge_group`)
+- workflow/run/job: Merge gate / `game-gate` aggregate
+- runner assignment: complete
+- classification: terminal
+- result: PASS (Merge Queue admitted and merged the candidate)
 
 ## Self-review
 
-- exact head: bound at commit (see PR)
+- exact head: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
 - method/reviewer: implementing/coordinating agent (mandatory; cannot be delegated away)
 - material findings: none found after repair round 2. Both rounds' Codex P2 findings were
   accepted and repaired (see Implementation/findings above); `prepare()`'s Open/Close semantics
@@ -178,51 +178,78 @@ Both governance/policy validators clean.
   before the intent-family check would have changed the error message an existing test
   (`swapped_open_close_intents_fail_closed_before_runtime_creation`) asserts — moved the new
   check to last among the OPEN/CLOSE structural invariants instead.
-- verdict: no blocking findings; ready for final review (round 2 of 2, FINAL per coordinator)
+- verdict: PASS; round 2 of 2 was FINAL per coordinator, merged clean
 
 ## Independent review
 
 - required: YES — high-risk under `apps/game-server/AGENTS.md`? No (content-model-only, no
   protocol/session/admission/persistence/identifier/fencing/multichannel change); ordinary PR
   review via repository gates/Merge Queue is sufficient.
-- exact head: NOT_APPLICABLE
-- method/auditor: NOT_APPLICABLE
-- material findings: NOT_APPLICABLE
-- verdict: NOT_APPLICABLE
+- exact head: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03 (via Codex review, 2 repair rounds; see
+  Terminal integration)
+- method/auditor: Codex review, 2 repair rounds (see Implementation/findings above)
+- material findings: both rounds' P2s accepted and repaired; the final remaining P2 (legacy
+  bare-string v1 `LocalObject` rejected at parse) was dispositioned by owner decision as a
+  deliberate explicit rejection, not a defect (no `LocalObject` content records exist on `main`)
+- verdict: PASS; Merge Queue admitted the frozen final head
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
-- related/superseded PRs: pending
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: pending
+- changed-file review: complete (see Terminal integration)
+- unresolved review threads: none
+- related/superseded PRs: none known
+- protected auto-merge: Merge Queue
+- merge commit/result: `832320a` on protected `main`
+- ownership release: complete; owned paths released at archive
 
 ## Context checkpoint
 
 ```yaml
-last_progress: repair round 2 (FINAL, Codex review, frozen head 3934894c) pushed; P2 fixed
-status: implementing
+last_progress: terminal integration recorded; PR #1046 merged via Merge Queue as 832320a; record archived
+status: completed
 branch: claude/cw3-local-object-state-model
-head_sha: null
+head_sha: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
 pr: 1046
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+final_head_sha: 975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03
+final_head_frozen_at: 2026-09-27T23:22:24Z
+ci_trigger_source: merge_group
+ci_check_generation: final
+ci_checks_for_current_head: 1
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: await final review outcome (round 2 of 2 was FINAL per coordinator) or PR merge
+next_action: none; task closed
 ```
+
+## Terminal integration
+
+This section supersedes the historical `implementing`/pending metadata and
+checkpoint above with the frozen terminal outcome; the complete implementation
+record above (including both Codex repair rounds) remains verbatim as historical
+evidence. This closeout performs no code, schema or content mutation of its own; it
+only moves this record from `docs/agents/tasks/active/` to
+`docs/agents/tasks/archive/` and binds terminal lifecycle fields. Coordination:
+issue #162 comment "terminal integration" (control plane).
+
+Candidate head `975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03` was frozen at
+2026-09-27T23:22:24Z (issue #162 FREEZE_SHA comment 5860784616). PR #1046 merged
+via Merge Queue as commit `832320a` on protected `main` at 2026-09-28T00:39Z. Codex
+review ran 2 repair rounds (see Implementation/findings above for both); the final
+remaining P2 (legacy bare-string v1 `LocalObject` rejected at parse) was
+dispositioned by owner decision as a deliberate explicit rejection, since no
+`LocalObject` content records exist on `main` to be broken by it. Protected-main
+readback: `reference_playable.rs`, `world_runtime.rs`, `project.rs`, and this task
+record's blobs on `main` are byte-identical to the frozen head
+`975f077eec3ec8ad5f9d2f5333709f6cbe7c7a03`.
+
+Task status: `completed`. Aggregate issue #162 remains open for later Content/World
+work.
