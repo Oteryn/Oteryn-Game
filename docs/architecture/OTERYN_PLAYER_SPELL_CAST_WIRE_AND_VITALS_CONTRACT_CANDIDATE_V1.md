@@ -2,7 +2,8 @@
 
 - Date: 2026-09-27
 - DecisionStatus: `ACCEPTED WITH CHANGES` for SPELL-D1 to SPELL-D6 (owner, 2026-09-28; architect
-  verdicts in #162 comment 5867161696; §8). Each delivery child still needs its own allocation and
+  verdicts in #162 comment 5867161696; §8). SPELL-D7 (owner decision D89, #162 comment
+  5875958040) amends the target intent (§3, §8.1). Each delivery child still needs its own allocation and
   independent review.
 - Scope: the first connected player spell cast. It covers the client cast intent, the cast
   result, observation of own-actor vitals, and where cast inputs come from on the server.
@@ -68,14 +69,28 @@ enum SpellTargetIntent {
   SPELL_TARGET_INTENT_UNSPECIFIED = 0;
   SPELL_TARGET_INTENT_NONE = 1;          // self or area spells; the server derives the target
   SPELL_TARGET_INTENT_ATTACK_TARGET = 2; // the actor's current attack target, as the server holds it
+  SPELL_TARGET_INTENT_POSITION = 3;      // SPELL-D7: a world position, for cast_at_position spells
 }
 
-// ClientCommand.payload of the proposed command type 3 WORLD_ACTOR_SPELL_CAST_INTENT. At most 8 bytes.
+// SPELL-D7: a position in the actor's own Channel, in the pinned frame's native coordinates.
+message SpellTargetPositionV1 {
+  sint32 x = 1;
+  sint32 y = 2;
+  // Limited to the int16 range.
+  sint32 floor = 3;
+}
+
+// ClientCommand.payload of the proposed command type 3 WORLD_ACTOR_SPELL_CAST_INTENT. At most 8 bytes
+// before SPELL-D7; with the SPELL-D7 fields at most 32 bytes.
 message WorldActorSpellCastIntentV1 {
   // 1-based index into the spell book of the loaded content generation. The index, not the words:
   // no free text in the first child, and the server looks the spell up in O(1).
   uint32 spell = 1;
   SpellTargetIntent target = 2;
+  // SPELL-D7: present only with SPELL_TARGET_INTENT_POSITION; otherwise absent.
+  SpellTargetPositionV1 target_position = 3;
+  // SPELL-D7: per cast, stateless. Honoured only for a spell with targeting.aim_at_target.
+  bool aim_at_target = 4;
 }
 
 enum SpellCastDisposition {
@@ -207,6 +222,34 @@ SPELL-D1 to SPELL-D6, because D1-D52 are already used in the owner-decision regi
 | SPELL-D4 | Self heal is the first connected spell child (§6). | **Accepted.** Composition (§9 step 2) stays behind the Character progression initialization/readiness gate (VSL-COMBAT-01 §24.1); registries and codecs (§9 step 1) do not. |
 | SPELL-D5 | Product source for max HP, mana and soul per vocation and level. | **Accepted with change.** The same source rule as spells: the official tibia.com library, then the wikis decide where they state the values (S15, S3, S11, S13, S14); Canary/Crystal `vocations.xml` fills only what they do not state (S4); provenance is kept; a conflict goes to the owner. These become the V1 product input for vitals only (VSL-COMBAT-01 §24.5). Owner sub-decisions of 2026-09-28, applied in `tools/content-schema/spell-authoring/samples/vocation-vitals-candidate-2026-09-28.json` (#1093): **D5a** the soul maximum follows the account type as the wiki states (free 100, premium 200; Platform owns the account type); **D5b** where Canary and Crystal differ on monk and exalted monk regeneration, the Canary 15.30 branch decides. The V1 soul maximum is 100 for every account. Accepting `PROD-ENTITLEMENTS-01` does not activate Premium: Premium/VIP activation stays unauthorized (architecture README) until an explicit, product-specific Premium activation or transition decision is in force. That decision must define when the maximum is re-evaluated for a running actor (PROD-ENTITLEMENTS-01 §6.4 makes expiry and revocation effective for running sessions) and whether current soul above a lowered maximum is clamped; composition must not assume either. |
 | SPELL-D6 | Route the `SPELL-RL-*` rows to the resource owner (§7). | **Accepted with change.** RL-01 = 1, RL-02 = 2, RL-03 = 1. RL-04 must be a finite measured value at registration. The rows go into `RESOURCE_LIMITS_REGISTRY.json` under its single-writer lease, serialized with B4 (#513). |
+
+### 8.1 SPELL-D7: cast at position and aim at target (owner decision D89)
+
+Owner decision D89 (#162 comment 5875958040, "Tak, jak Global") accepts the review packet in #162
+comment 5875913331. Source: Tibia 15.25 targeting modes (TibiaWiki BR `aimattarget`; Canary 15.30
+`spell:optionalTarget`, `applyInstantSpellDirection`, `playerCastInstant`; Fandom `Divine Grenade`).
+
+- **Position intent.** `SPELL_TARGET_INTENT_POSITION` with `target_position` is valid only for a
+  spell whose data carries `targeting.cast_at_position`; for any other spell it is `REJECTED`.
+  The server checks the position against the spell's `range_tiles`, line of sight
+  (`block_walls`), floor (`check_floor`) and the protection zone; a failure is
+  `SPELL_CAST_DISPOSITION_TARGET_ILLEGAL`. `target_position` present with another intent, or
+  absent with `POSITION`, fails closed. The client maps crosshair and cursor modes to `POSITION`
+  and "at target" to `ATTACK_TARGET`; `NONE` casts at the caster's own position.
+- **"At target" for a position spell.** For a `cast_at_position` spell, `ATTACK_TARGET` resolves to
+  the current position of the actor's attack target, as the server holds it at the cast, and then
+  applies exactly the `POSITION` checks (range, walls, floor, protection zone). No attack target is
+  `TARGET_REQUIRED`. It does not use the `needs_target` path, which S20 forbids for these spells.
+- **Aim at target.** `aim_at_target` is a per-cast flag, **stateless**: no persisted character
+  setting and no equivalent of Canary's client opcode `0xC8`. The server honours it only for a
+  spell with `targeting.aim_at_target` and only when the actor holds an attack target; it then
+  turns the actor to the primary direction of that target before it resolves the direction area.
+  Otherwise the flag is ignored.
+- **Dispositions.** Unchanged; no new value.
+- **Bounds.** The intent payload grows to at most 32 bytes; the protocol owner registers it with
+  the command type (§9 step 1).
+- **Until delivered.** The Game core keeps rejecting `cast_at_position` spells (fail closed), as
+  today.
 
 **Protocol IDs.** They are assigned by the protocol owner lane (VSL-COMBAT-01 §24.3 child E, Server
 Seam/protocol composition), which #162 allocates with the single-writer lease on

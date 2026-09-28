@@ -2140,6 +2140,28 @@ needed, is a new decision, not something this shape auto-supports.
   `revert_destination`-bearing occurrence, this is satisfied by construction (design point 3): lowering
   binds exactly one dedicated inverse per occurrence.
 
+### Owner decisions D90 and D91 (2026-09-28)
+
+Raised by the owning lane on #1144 (#162 comment 5875759505) and decided by the owner on #162
+comment 5875958040, both "as Global":
+
+- **D90, re-arm.** After a timed revert returns the teleporter to its natural state, the same
+  forward transition fires again on the next occurrence of its owning event. When the revert lands
+  on a declared post-revert variant C (design point 3, `revert_destination`), the original forward
+  edge A→B no longer matches its source state, so lowering also synthesizes a forward edge C→B: the
+  same owning event, action, target state, attributes and `revert_after_ms`, bound like A→B, whose
+  inverse is the existing B→C revert. A covered teleporter therefore opens on every such event,
+  not once per scope generation.
+- **D91, event-owned transitions.** A forward transition owned by an encounter or server event is
+  not reachable through USE selection or the session `apply` path. Only its owning event commits
+  it, and only that commit schedules the revert (§7).
+  - **Enforcement.** Each bound transition carries a typed origin, `PLAYER_USE` or
+    `EVENT(owner)`, set at lowering from the authored action and never from client input.
+    `select_use_transition` considers only `PLAYER_USE` edges, and session `apply` refuses an
+    `EVENT` edge fail-closed. Only the owning event's execution path may commit an `EVENT` edge,
+    and it names its owner. The origin is part of the binding's identity, so an edge cannot change
+    origin without a new binding.
+
 ### Open items for the owning lane
 
 - The exact CW3 linker/validator code that performs the fail-closed key-subset checks above and the
