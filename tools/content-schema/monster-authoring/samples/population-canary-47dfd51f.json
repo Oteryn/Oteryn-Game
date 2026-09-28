@@ -8,6 +8,10 @@
     "file": "samples/wiki-population-2026-09-27.json",
     "sha256": "a31c2d5b143c388a6e9368436ff3b8e901efe91f0252095980cfe647c4d24daf"
   },
+  "official_library": {
+    "file": "samples/official-library-2026-09-28.json",
+    "sha256": "2a45c6e4e71640d34f39bab776fcdeaffd12e7fd0d7947cdbf39a2d9ba48279d"
+  },
   "br_fill_reference": {
     "file": "samples/wiki-br-fill-2026-09-27.json",
     "sha256": "03c78a85ad1da5c31601bbadaa9255e16dcee9c5377adcdcf821a3ad9bfaff52"
@@ -22,24 +26,24 @@
     "blocked": 93,
     "fully_resolved": 1557,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1186,
+    "wiki_adopted_monsters": 1188,
     "wiki_authored": 1
   },
   "wiki_adopted_rows": {
     "Loot2": 12722,
     "Infobox Creature.mitigation": 748,
     "Infobox Creature.runsat": 122,
-    "Infobox Creature.exp": 110,
     "Infobox Creature.paraimmune": 86,
     "Infobox Creature.fire modifier": 70,
     "Infobox Creature.pushobjects": 65,
     "Infobox_Criatura.hp": 65,
-    "Infobox Creature.hp": 64,
+    "Infobox Creature.hp": 63,
     "Infobox Creature.ice modifier": 56,
     "Infobox Creature.earth modifier": 55,
     "Infobox Creature.energy modifier": 54,
     "Infobox Creature.armor": 48,
     "Infobox Creature.senseinvis": 42,
+    "Infobox Creature.exp": 39,
     "Infobox Creature.death modifier": 37,
     "Infobox Creature.physical modifier": 37,
     "Infobox_Criatura.exp": 37,
@@ -47,9 +51,11 @@
     "Infobox Creature.occurrence": 30,
     "Infobox Creature.pushable": 26,
     "Infobox Creature.illusionable": 18,
+    "Infobox Creature.convince": 15,
     "Infobox Creature.bestiarylevel": 12,
     "Infobox Creature.life_drain modifier": 8,
     "Infobox Creature.bestiaryclass": 5,
+    "Infobox Creature.summon": 5,
     "Infobox Creature.drowning modifier": 4
   },
   "blockers_by_monster_count": [

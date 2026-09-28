@@ -528,3 +528,13 @@ fn a_chain_spell_is_not_admitted() {
     let error = spell_from_bundle(&spell, &dependencies).expect_err("chain admitted");
     assert!(error.to_string().contains("chain"), "{error}");
 }
+
+#[test]
+fn a_harmony_spell_is_not_admitted() {
+    let (spell, dependencies) = STARTER[0];
+    let mut spell: Value = serde_json::from_str(spell).expect("spell");
+    let dependencies: Value = serde_json::from_str(dependencies).expect("dependencies");
+    spell["spell"]["harmony_role"] = Value::String("builder".into());
+    let error = spell_from_bundle(&spell, &dependencies).expect_err("harmony admitted");
+    assert!(error.to_string().contains("Harmony"), "{error}");
+}

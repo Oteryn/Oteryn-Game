@@ -29808,10 +29808,162 @@
       "url": "https://tibia.fandom.com/wiki/Sail_Pass",
       "value": "Documents and Papers",
       "wiki_title": "Sail Pass"
+    },
+    "oteryn:item.registry.i00038246": {
+      "availability_status": null,
+      "captured_at": "2026-09-28T22:54:30Z",
+      "content_sha256": "9d2ef279e118fb124affbb002351c3fc8a82ff744ab1f3d034ec081c5ecb5b47",
+      "field": "primarytype",
+      "match_basis": "itemid",
+      "matched_names": [
+        "sickbed"
+      ],
+      "page_id": 108243,
+      "registry_key": "oteryn:item.registry.i00038246",
+      "resolution": "direct",
+      "revision_id": 1093301,
+      "revision_sha1": "de9f54d1f84e659e499410320d17c007b8ab53a6",
+      "revision_timestamp": "2025-03-01T23:56:20Z",
+      "url": "https://tibia.fandom.com/wiki/Sickbed",
+      "value": "Furniture",
+      "wiki_title": "Sickbed"
+    },
+    "oteryn:item.registry.i00038247": {
+      "availability_status": null,
+      "captured_at": "2026-09-28T22:54:30Z",
+      "content_sha256": "9d2ef279e118fb124affbb002351c3fc8a82ff744ab1f3d034ec081c5ecb5b47",
+      "field": "primarytype",
+      "match_basis": "itemid",
+      "matched_names": [
+        "sickbed"
+      ],
+      "page_id": 108243,
+      "registry_key": "oteryn:item.registry.i00038247",
+      "resolution": "direct",
+      "revision_id": 1093301,
+      "revision_sha1": "de9f54d1f84e659e499410320d17c007b8ab53a6",
+      "revision_timestamp": "2025-03-01T23:56:20Z",
+      "url": "https://tibia.fandom.com/wiki/Sickbed",
+      "value": "Furniture",
+      "wiki_title": "Sickbed"
+    },
+    "oteryn:item.registry.i00038248": {
+      "availability_status": null,
+      "captured_at": "2026-09-28T22:54:30Z",
+      "content_sha256": "9d2ef279e118fb124affbb002351c3fc8a82ff744ab1f3d034ec081c5ecb5b47",
+      "field": "primarytype",
+      "match_basis": "itemid",
+      "matched_names": [
+        "sickbed"
+      ],
+      "page_id": 108243,
+      "registry_key": "oteryn:item.registry.i00038248",
+      "resolution": "direct",
+      "revision_id": 1093301,
+      "revision_sha1": "de9f54d1f84e659e499410320d17c007b8ab53a6",
+      "revision_timestamp": "2025-03-01T23:56:20Z",
+      "url": "https://tibia.fandom.com/wiki/Sickbed",
+      "value": "Furniture",
+      "wiki_title": "Sickbed"
+    },
+    "oteryn:item.registry.i00038249": {
+      "availability_status": null,
+      "captured_at": "2026-09-28T22:54:30Z",
+      "content_sha256": "9d2ef279e118fb124affbb002351c3fc8a82ff744ab1f3d034ec081c5ecb5b47",
+      "field": "primarytype",
+      "match_basis": "itemid",
+      "matched_names": [
+        "sickbed"
+      ],
+      "page_id": 108243,
+      "registry_key": "oteryn:item.registry.i00038249",
+      "resolution": "direct",
+      "revision_id": 1093301,
+      "revision_sha1": "de9f54d1f84e659e499410320d17c007b8ab53a6",
+      "revision_timestamp": "2025-03-01T23:56:20Z",
+      "url": "https://tibia.fandom.com/wiki/Sickbed",
+      "value": "Furniture",
+      "wiki_title": "Sickbed"
+    },
+    "oteryn:item.registry.i00038309": {
+      "availability_status": null,
+      "captured_at": "2026-09-28T22:54:30Z",
+      "content_sha256": "66361844b9bb98a6e1b12c0c15373bd05f9420450aa39ce817c1e9cf6f83269c",
+      "field": "primarytype",
+      "match_basis": "itemid",
+      "matched_names": [
+        "lunar ascension orb"
+      ],
+      "page_id": 110770,
+      "registry_key": "oteryn:item.registry.i00038309",
+      "resolution": "direct",
+      "revision_id": 1205302,
+      "revision_sha1": "ac8ac4a06b8fe26afc532e5da02561a25f52db18",
+      "revision_timestamp": "2026-09-07T01:06:23Z",
+      "url": "https://tibia.fandom.com/wiki/Lunar_Ascension_Orb",
+      "value": "Valuables",
+      "wiki_title": "Lunar Ascension Orb"
+    },
+    "oteryn:item.registry.i00038444": {
+      "availability_status": null,
+      "captured_at": "2026-09-28T22:54:30Z",
+      "content_sha256": "6eb32c0df47707319e45d6535c310e952145113041a15f5d0f05789cc8aa1f8d",
+      "field": "primarytype",
+      "match_basis": "itemid",
+      "matched_names": [
+        "auric moon sigil"
+      ],
+      "page_id": 110862,
+      "registry_key": "oteryn:item.registry.i00038444",
+      "resolution": "direct",
+      "revision_id": 1205296,
+      "revision_sha1": "435d2aa5bc25963deeb161f4f45fdcceca035521",
+      "revision_timestamp": "2026-09-07T01:04:32Z",
+      "url": "https://tibia.fandom.com/wiki/Auric_Moon_Sigil",
+      "value": "Valuables",
+      "wiki_title": "Auric Moon Sigil"
+    },
+    "oteryn:item.registry.i00038475": {
+      "availability_status": null,
+      "captured_at": "2026-09-28T22:54:30Z",
+      "content_sha256": "6dc8a3da33f934f245df8a89b4c9b5dc399bc05573b6bc7e9b4c6eef6bb6dee9",
+      "field": "primarytype",
+      "match_basis": "itemid",
+      "matched_names": [
+        "skewered fish"
+      ],
+      "page_id": 110926,
+      "registry_key": "oteryn:item.registry.i00038475",
+      "resolution": "direct",
+      "revision_id": 1196579,
+      "revision_sha1": "347217d19dc80c14318fd654b9883bc56abb53ca",
+      "revision_timestamp": "2026-07-16T16:00:48Z",
+      "url": "https://tibia.fandom.com/wiki/Skewered_Fish",
+      "value": "Taming Items",
+      "wiki_title": "Skewered Fish"
+    },
+    "oteryn:item.registry.i00038482": {
+      "availability_status": null,
+      "captured_at": "2026-09-28T22:54:30Z",
+      "content_sha256": "d08ab52424e851600922ed6eab66c6d11230a1013466a13649a9efb7f71ee7db",
+      "field": "primarytype",
+      "match_basis": "itemid",
+      "matched_names": [
+        "cloud in a bottle"
+      ],
+      "page_id": 110932,
+      "registry_key": "oteryn:item.registry.i00038482",
+      "resolution": "direct",
+      "revision_id": 1196567,
+      "revision_sha1": "61df40de13a81a455c0ca247f9d9380c9c5b8f51",
+      "revision_timestamp": "2026-07-16T14:28:59Z",
+      "url": "https://tibia.fandom.com/wiki/Cloud_In_a_Bottle",
+      "value": "Taming Items",
+      "wiki_title": "Cloud In a Bottle"
     }
   },
   "schema": "OTERYN_ITEM_FAMILY_FALLBACK_SNAPSHOT/v1",
-  "snapshot_sha256": "177083ab282fe5e60567ac36c9c7197caefc58e165f13407dba6d2bbf9108491",
+  "snapshot_sha256": "c47aadf2974d4dadbbe1c2500c30b3fa10c08ec7aed40eed9e09e23a9fcd183f",
   "source": {
     "api": "https://tibia.fandom.com/api.php",
     "provider": "tibia_fandom",

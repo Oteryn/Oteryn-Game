@@ -24,6 +24,7 @@
       "soul": "<integer>"
     },
     "cooldown_ms": "<ms>",
+    "harmony_role": "<builder|spender>",
     "groups": [
       {
         "group": "<string>",

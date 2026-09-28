@@ -84,6 +84,10 @@ pub(crate) fn spell_from_bundle(
     if requirements.get("wheel_unlock").is_some() && flag(requirements, "wheel_unlock")? {
         return fail("the spell is unlocked by the Wheel of Destiny, which has no owner yet");
     }
+    // S26: a monk Harmony builder or spender needs the Harmony resource, which has no owner yet (fails closed).
+    if spell.get("harmony_role").is_some() {
+        return fail("the spell builds or spends monk Harmony, which has no owner yet");
+    }
     let costs = field(spell, "costs")?;
     let targeting = field(spell, "targeting")?;
     // S20: a cast at a chosen position needs a position cast intent, which the cast wire does not carry yet.
