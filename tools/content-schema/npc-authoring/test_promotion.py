@@ -624,5 +624,81 @@ class PromotionValidatorTests(unittest.TestCase):
                          ['--tibiopedia-facts does not match tibiopedia_facts_sha256'])
 
 
+    # -- D13 offers: offers two of three wikis agree on that the sources lack --------------------------
+
+    def offer_builder(self, fandom_rope, tibiopedia_rope, name='Ahmet', names=None, left_out=()):
+        builder = promotion_candidates.Builder(
+            {'npcs': [], 'trade': {name.lower(): [{'item': 'Rope', 'buy_price': fandom_rope, 'sell_price': None}]}},
+            {'records': [{'source_item_id': 3483, 'native_key': 'oteryn:item.registry.i1', 'native_revision': 'r1'},
+                         {'source_item_id': 3003, 'native_key': 'oteryn:item.registry.i2', 'native_revision': 'r1'}]},
+            {'pages': []},
+            {'pages': [{'title': f'NPC: {name}', 'name': name, 'trades': {
+                'SellToPlayer': {'Rope': tibiopedia_rope}, 'BuyFromPlayer': {}}}]},
+            names or {'oteryn:item.registry.i1': 'fishing rod', 'oteryn:item.registry.i2': 'rope'})
+        have = [{'item': {'key': 'oteryn:item.registry.i1'}, 'direction': 'SellToPlayer'}]
+        arbitration = []
+        return builder.wiki_offers(name, have, list(left_out), arbitration), arbitration
+
+    def test_wiki_offer_needs_two_wikis_and_one_registered_item(self):
+        offers, rows = self.offer_builder(50, [50])
+        self.assertEqual(offers, [{'item': {'family': 'Item', 'key': 'oteryn:item.registry.i2', 'revision': 'r1'},
+                                   'source_item_id': 3003, 'direction': 'SellToPlayer', 'unit_price': 50,
+                                   'count': None, 'sub_type': None}])
+        self.assertEqual(rows, [{'fact': 'trade.3003.SellToPlayer', 'rule': 'WIKI_OFFER', 'chosen': 'wiki',
+                                 'item_name': 'rope', 'price': 50, 'wikis': ['fandom', 'tibiopedia']}])
+        for fandom, tibiopedia in ((50, [60]), (None, [50]), (50, [])):
+            self.assertEqual(self.offer_builder(fandom, tibiopedia), ([], []))
+        # two registered Items with the name "rope": the wiki name settles neither
+        ambiguous = {'oteryn:item.registry.i1': 'rope', 'oteryn:item.registry.i2': 'rope'}
+        self.assertEqual(self.offer_builder(50, [50], names=ambiguous), ([], []))
+        # the sources gate the Item: the wikis do not open it
+        self.assertEqual(self.offer_builder(50, [50], left_out=[{'fact': 'trade.3003', 'reason': 'GATED_OFFER'}]),
+                         ([], []))
+
+    def test_wiki_offer_rows(self):
+        report = self.majority_report(150)
+        ahmet = find_candidate(report, 'Ahmet')
+        row = ahmet['arbitration'].pop()
+        ahmet['arbitration'].append({**row, 'rule': 'WIKI_OFFER', 'wikis': ['br', 'fandom']})
+        self.assertEqual(validate_promotion.errors(report), [])
+        ahmet['arbitration'][-1]['wikis'] = ['fandom']
+        self.assertTrue(any('are not 2-3 sorted wikis' in e for e in validate_promotion.errors(report)))
+        ahmet['arbitration'][-1]['wikis'] = ['br', 'fandom']
+        del report['tibiopedia_facts_sha256']
+        report['decisions'] = validate_promotion.DECISIONS + ['D12']
+        self.assertIn('WIKI_OFFER arbitration without tibiopedia_facts_sha256 (D13)', validate_promotion.errors(report))
+
+    def test_wiki_offer_matches_the_pinned_wikis(self):
+        snapshot = json.dumps({'npcs': [], 'trade': {'ahmet': [
+            {'item': 'Rope', 'buy_price': 50, 'sell_price': None}]}}).encode()
+        br_facts = json.dumps({'pages': []}).encode()
+        tibiopedia = json.dumps({'pages': [{'title': 'NPC: Ahmet', 'name': 'Ahmet', 'trades': {
+            'SellToPlayer': {'Rope': [50]}, 'BuyFromPlayer': {}}}]}).encode()
+        item_map = json.dumps({'records': [{'source_item_id': 3003, 'native_key': 'oteryn:item.test.rope',
+                                            'native_revision': 'definition-r1'}]}).encode()
+        names = {'oteryn:item.test.rope': 'rope'}
+        row = {'fact': 'trade.3003.SellToPlayer', 'rule': 'WIKI_OFFER', 'chosen': 'wiki', 'item_name': 'rope',
+               'price': 50, 'wikis': ['fandom', 'tibiopedia']}
+        def report(rows, offers):
+            return {'snapshot_sha256': hashlib.sha256(snapshot).hexdigest(),
+                    'br_facts_sha256': hashlib.sha256(br_facts).hexdigest(),
+                    'tibiopedia_facts_sha256': hashlib.sha256(tibiopedia).hexdigest(),
+                    'item_map_sha256': hashlib.sha256(item_map).hexdigest(),
+                    'candidates': [{'name': 'Ahmet', 'arbitration': rows, 'left_out': [],
+                                    'trade_service': {'currency': None, 'offers': offers} if offers else None}]}
+        rope = {'item': {'key': 'oteryn:item.test.rope'}, 'source_item_id': 3003, 'count': None, 'sub_type': None,
+                'direction': 'SellToPlayer', 'unit_price': 50}
+        check = validate_promotion.wiki_price_errors
+        self.assertEqual(check(report([row], [rope]), snapshot, br_facts, names, tibiopedia, item_map), [])
+        # an omitted wiki offer, and an invented one
+        self.assertTrue(any('WIKI_OFFER rows differ' in e for e in check(report([], []), snapshot, br_facts, names,
+                                                                          tibiopedia, item_map)))
+        self.assertTrue(any('WIKI_OFFER rows differ' in e for e in check(
+            report([row, {**row, 'fact': 'trade.3003.BuyFromPlayer'}], [rope]), snapshot, br_facts, names,
+            tibiopedia, item_map)))
+        self.assertEqual(check(report([row], [rope]), snapshot, br_facts, names, tibiopedia, b'{}'),
+                         ['--item-map does not match item_map_sha256'])
+
+
 if __name__ == '__main__':
     unittest.main()

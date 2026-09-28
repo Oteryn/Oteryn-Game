@@ -74,6 +74,8 @@ EVIDENCE = 'OTS_HYPOTHESIS_ONLY'
 DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8', 'D11']
 # `trade.<source item id>[x<count>][s<sub type>].<direction>`, as promotion_candidates labels an offer
 PRICE_RULES = ('WIKI_PRICE', 'WIKI_MAJORITY_PRICE')  # D12, D13
+ITEM_RULES = PRICE_RULES + ('WIKI_OFFER',)  # rows that name an offer's registered Item
+WIKIS = {'fandom', 'br', 'tibiopedia'}
 WIKI_PRICE_FACT = re.compile(r'trade\.(\d+)(?:x(\d+))?(?:s(-?\d+))?\.(SellToPlayer|BuyFromPlayer)')
 
 
@@ -302,13 +304,19 @@ def candidate_errors(candidate, index):
                              f"provenance has {sorted(provenance)}")
             if candidate.get('wiki') is None:
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
-        elif rule in ('WIKI_PRICE', 'WIKI_MAJORITY_PRICE'):
+        elif rule in ITEM_RULES:
             wikis = row.get('wikis')
             if rule == 'WIKI_MAJORITY_PRICE' and (
                     not isinstance(wikis, list) or not 2 <= len(wikis) <= 3 or wikis != sorted(set(wikis))
-                    or not set(wikis) <= {'fandom', 'br', 'tibiopedia'} or 'tibiopedia' not in wikis):
+                    or not set(wikis) <= WIKIS or 'tibiopedia' not in wikis):
                 errs.append(f"{alabel}: wikis {wikis!r} are not 2-3 sorted wikis from fandom/br/tibiopedia "
                             f"including tibiopedia")
+            if rule == 'WIKI_OFFER' and (
+                    not isinstance(wikis, list) or not 2 <= len(wikis) <= 3 or wikis != sorted(set(wikis))
+                    or not set(wikis) <= WIKIS):
+                errs.append(f"{alabel}: wikis {wikis!r} are not 2-3 sorted wikis from fandom/br/tibiopedia")
+            if rule == 'WIKI_OFFER' and isinstance(fact, str) and not re.fullmatch(r'trade\.\d+\.\w+', fact):
+                errs.append(f"{alabel}: a WIKI_OFFER fact {fact!r} names an offer with a count or sub type")
             if rule == 'WIKI_PRICE' and 'wikis' in row:
                 errs.append(f"{alabel}: rule 'WIKI_PRICE' carries no wikis")
             if chosen != 'wiki':
@@ -385,10 +393,11 @@ def errors(report):
     if 'tibiopedia_facts_sha256' in report and 'br_facts_sha256' not in report:
         errs.append('tibiopedia_facts_sha256 without br_facts_sha256 (D13 needs D12)')
     # a WIKI_MAJORITY_PRICE row is only valid with the Tibiopedia facts it was decided from (D13)
-    if 'tibiopedia_facts_sha256' not in report and any(
-            row.get('rule') == 'WIKI_MAJORITY_PRICE' for candidate in report.get('candidates') or []
-            for row in candidate.get('arbitration') or []):
-        errs.append('WIKI_MAJORITY_PRICE arbitration without tibiopedia_facts_sha256 (D13)')
+    for d13_rule in ('WIKI_MAJORITY_PRICE', 'WIKI_OFFER'):
+        if 'tibiopedia_facts_sha256' not in report and any(
+                row.get('rule') == d13_rule for candidate in report.get('candidates') or []
+                for row in candidate.get('arbitration') or []):
+            errs.append(f'{d13_rule} arbitration without tibiopedia_facts_sha256 (D13)')
     # a WIKI_PRICE row is only valid with the BR facts it was decided from (D12)
     if 'br_facts_sha256' not in report and any(row.get('rule') == 'WIKI_PRICE' for candidate in
                                                report.get('candidates') or [] for row in candidate.get('arbitration') or []):
@@ -453,7 +462,7 @@ def item_name_errors(report, registry_names):
     errs = []
     for index, candidate in enumerate(report.get('candidates') or []):
         for row in candidate.get('arbitration') or []:
-            match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') in PRICE_RULES else None
+            match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') in ITEM_RULES else None
             if match is None:
                 continue
             named = {registry_names.get((offer.get('item') or {}).get('key')) for offer in named_offers(candidate, match)}
@@ -463,11 +472,13 @@ def item_name_errors(report, registry_names):
     return errs
 
 
-def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, tibiopedia_bytes=None):
+def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, tibiopedia_bytes=None, item_map_bytes=None):
     """With the pinned inputs at hand (D12, and D13 with the Tibiopedia facts), using the same lookup the
     candidates were built with: every WIKI_PRICE row is the price Fandom and BR both state, every
     WIKI_MAJORITY_PRICE row the price its wikis state, and every admitted offer whose registered item two
-    wikis price the same for that NPC and direction carries that price, so an omitted override cannot pass."""
+    wikis price the same for that NPC and direction carries that price, so an omitted override cannot pass.
+    With the item map as well (D13 offers), each candidate's WIKI_OFFER rows are exactly the ones the builder
+    derives from its other offers, so an omitted or invented wiki offer cannot pass either."""
     errs = []
     if hashlib.sha256(snapshot_bytes).hexdigest() != report.get('snapshot_sha256'):
         errs.append('--snapshot does not match snapshot_sha256')
@@ -475,10 +486,13 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, ti
         errs.append('--br-facts does not match br_facts_sha256')
     if (tibiopedia_bytes and hashlib.sha256(tibiopedia_bytes).hexdigest()) != report.get('tibiopedia_facts_sha256'):
         errs.append('--tibiopedia-facts does not match tibiopedia_facts_sha256')
+    if item_map_bytes is not None and hashlib.sha256(item_map_bytes).hexdigest() != report.get('item_map_sha256'):
+        errs.append('--item-map does not match item_map_sha256')
     if errs:
         return errs
-    builder = promotion_candidates.Builder(json.loads(snapshot_bytes), {'records': []}, json.loads(br_facts_bytes),
-                                           json.loads(tibiopedia_bytes) if tibiopedia_bytes else None)
+    item_map = json.loads(item_map_bytes) if item_map_bytes is not None else {'records': []}
+    builder = promotion_candidates.Builder(json.loads(snapshot_bytes), item_map, json.loads(br_facts_bytes),
+                                           json.loads(tibiopedia_bytes) if tibiopedia_bytes else None, registry_names)
 
     def expected(name, direction, item_name, fandom, plain=True):
         """The price (D12, else D13) the offer must carry, the rule that sets it and that rule's wikis; D13 only
@@ -504,7 +518,20 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, ti
             if (stated, rule, wikis) != (row.get('price'), row['rule'], row.get('wikis')):
                 errs.append(f"candidates[{index}]: {row['rule']} {row['fact']} price {row.get('price')!r} "
                             f"wikis {row.get('wikis')!r} != what the wikis state ({rule} {stated!r} {wikis!r})")
-        for offer in (candidate.get('trade_service') or {}).get('offers') or []:
+        trade = candidate.get('trade_service') or {}
+        if tibiopedia_bytes and item_map_bytes is not None and trade.get('currency') is None \
+                and name not in promotion_candidates.WIKI_SHOP_HELD:
+            stated_rows = [row for row in candidate.get('arbitration') or [] if row.get('rule') == 'WIKI_OFFER']
+            facts = {row.get('fact') for row in stated_rows}
+            base = [offer for offer in trade.get('offers') or []
+                    if f"trade.{offer.get('source_item_id')}.{offer.get('direction')}" not in facts
+                    or offer.get('count') is not None or offer.get('sub_type') is not None]
+            derived = []
+            builder.wiki_offers(name, base, candidate.get('left_out') or [], derived)
+            if sorted(json.dumps(row, sort_keys=True) for row in derived) != sorted(json.dumps(row, sort_keys=True) for row in stated_rows):
+                errs.append(f"candidates[{index}]: WIKI_OFFER rows differ from the offers two wikis agree on "
+                            f"({len(stated_rows)} stated, {len(derived)} derived)")
+        for offer in trade.get('offers') or []:
             item_name = registry_names.get((offer.get('item') or {}).get('key'))
             plain = offer.get('count') is None and offer.get('sub_type') is None
             stated = expected(name, offer.get('direction'), item_name, fandom, plain)[0] if item_name else None
@@ -519,19 +546,24 @@ def main():
     parser.add_argument('report')
     parser.add_argument('--snapshot', type=Path, help='the pinned Fandom snapshot; checks every WIKI_PRICE row')
     parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
+    parser.add_argument('--item-map', type=Path, help='the pinned item map; checks every WIKI_OFFER row (D13 offers)')
     parser.add_argument('--tibiopedia-facts', type=Path,
                         help='the pinned Tibiopedia facts; checks every WIKI_MAJORITY_PRICE row (with the two above)')
     args = parser.parse_args()
     if bool(args.snapshot) != bool(args.br_facts):
         parser.error('--snapshot and --br-facts check the WIKI_PRICE evidence together; pass both or neither')
+    parser_item_map = args.item_map
     if args.tibiopedia_facts and not args.snapshot:
         parser.error('--tibiopedia-facts checks the D13 evidence with --snapshot and --br-facts')
+    if parser_item_map and not args.tibiopedia_facts:
+        parser.error('--item-map checks the D13 wiki offers with --tibiopedia-facts')
     report = json.loads(Path(args.report).read_text(encoding='utf-8'))
     registry_names = registry_item_names()
     all_errors = errors(report) + item_name_errors(report, registry_names)
     if args.snapshot and args.br_facts:
         all_errors += wiki_price_errors(report, args.snapshot.read_bytes(), args.br_facts.read_bytes(), registry_names,
-                                        args.tibiopedia_facts.read_bytes() if args.tibiopedia_facts else None)
+                                        args.tibiopedia_facts.read_bytes() if args.tibiopedia_facts else None,
+                                        args.item_map.read_bytes() if args.item_map else None)
 
     candidates = report.get('candidates') or []
     total = len(candidates)
