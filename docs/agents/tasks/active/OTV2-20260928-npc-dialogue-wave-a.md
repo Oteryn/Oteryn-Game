@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-npc-dialogue-wave-a
 title: NPC dialogue wave A - admit static Canary/Crystal NPC dialogue into WorldProject/v2 and the content tree
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: null
+pr: 1078
 jira: KAN-16
 base_sha: 3b41c0f4c0b3d4480a392d1c0ea4c4b40f7c16ea
 head_sha: null
