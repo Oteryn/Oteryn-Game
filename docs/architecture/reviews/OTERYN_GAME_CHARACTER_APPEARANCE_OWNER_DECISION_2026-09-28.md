@@ -79,27 +79,37 @@ Presentation belongs to the client; the server owns what is selected and whether
 
 - Persisted as Character state under DUR-02, written only inside a fenced character event
   (session-generation fence). The physical schema belongs to the implementing child.
-- Mounted or not is runtime state, not durable.
+- **Mount activation is deferred.** `mount_key` is stored and validated, but mounting, the mounted
+  state, its projection into the actor's appearance and any speed effect wait for a separate
+  mount decision (with the world ruleset's speed fact, D47). Until then no mount is shown to
+  anyone, and the observation contract (§4.5) carries no mount.
 
 ### 4.3 Allowed selection
 
 The owner accepts a selection only if, on this world's active content:
 
-1. the outfit is a starter outfit for the character's sex, or its key is in the account's unlock
-   set;
-2. every selected addon bit is unlocked for that outfit;
+1. the outfit is authorized by exactly one of:
+   - **starter:** the active content marks it a starter outfit for the character's sex. No unlock
+     fact exists or is needed; it is validated against the active content revision only;
+   - **earned unlock:** its key is in the account's `AccountUnlock` set, and the active definition
+     is compatible with the unlock's recorded provenance (#707 decision §4.3);
+   - **Store purchase:** a usable Platform entitlement for that cosmetic (#707 decision §4.3 and
+     §4.5; the Store unlock follows the Platform lifecycle, not the `AccountUnlock` fact). This path
+     stays unavailable until the gap register §32 delivery decision defines how Game reads it;
+2. every selected addon bit is authorized the same way (a starter addon from content, an earned
+   unlock with compatible provenance, or a usable Store entitlement);
 3. every colour is within the palette;
-4. the mount, if any, is unlocked;
-5. each definition is compatible with the unlock's recorded provenance (#707 decision §4.3).
+4. the mount, if any, is authorized the same way (for storage only while mount activation is
+   deferred, §4.2).
 
 Premium flags do not restrict usability in V1 (D61). When Premium activation is decided, that
 decision defines the premium gate and what happens to a premium selection on a non-premium account.
 
 ### 4.4 Incompatible world
 
-If the stored selection is not valid on a world (a key missing or incompatible there), the world
-shows the content's default outfit for the character's sex with default colours and no mount. The
-stored selection is not changed, and the key is never reinterpreted (D49).
+If the stored selection is not valid on a world (a key missing or incompatible there, or a Store
+entitlement no longer usable), the world shows the content's fallback look for the character's
+sex (§4.6). The stored selection is not changed, and the key is never reinterpreted (D49).
 
 ### 4.5 Change and observation
 
@@ -115,6 +125,9 @@ stored selection is not changed, and the key is never reinterpreted (D49).
   sex, a premium flag (recorded, not enforced in V1) and unlock sources.
 - Mount definitions carry the mount look type, the speed fact and the premium flag.
 - The palette is content, not an engine constant.
+- The active content declares exactly one **fallback look** per sex: one starter outfit key and
+  four explicit colour indices, with no addons and no mount. Content validation rejects a content
+  generation without it.
 - Values come from the target-date sources (tibia.com, then the wikis; the client 15.30
   `appearances.dat` resolves look types through the #1025 loader follow-up). Missing values fail
   content validation.
@@ -124,7 +137,8 @@ stored selection is not changed, and the key is never reinterpreted (D49).
 - Starter outfits: implicit, per sex, from content; no fact is written.
 - Quest and NPC grants: an `AccountUnlock` inserted inside the fenced character event of the grant
   (#707 decision §4.6).
-- Store: account scope and portability as above; delivery and lifecycle stay under gap register §32.
+- Store: authorized by a usable Platform entitlement, not by an `AccountUnlock` fact (§4.3);
+  delivery and lifecycle stay under gap register §32, which is a prerequisite for this path.
 
 ### 4.8 Dependencies
 
@@ -176,7 +190,8 @@ implementation_lanes: [APP-1, APP-2, APP-3, APP-4]
 required_revalidation:
   - "APP-1: a locked outfit, addon or mount is rejected; an out-of-palette colour is rejected; a stale character fence writes nothing; a selection survives relog"
   - "APP-3: other players see a committed look; a rejected change publishes nothing"
-  - "a world without a compatible definition shows the default outfit and keeps the stored selection"
+  - "a world without a compatible definition shows the content fallback look (one per sex, explicit colours) and keeps the stored selection"
+  - "a starter outfit is accepted from the active content without any unlock fact; a Store cosmetic is rejected until the §32 path exists; no mount is shown while mount activation is deferred"
 remaining_unknowns:
   - Reference outfit facts at the target date (content)
   - Character sex as a creation input

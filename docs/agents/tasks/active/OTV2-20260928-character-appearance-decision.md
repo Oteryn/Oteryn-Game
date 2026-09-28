@@ -69,7 +69,7 @@ applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
   - P1 a selection is written only inside a fenced character event (full session-generation fence)
-  - P2 an outfit, addon or mount is accepted only if it is a starter outfit for the sex or in the account unlock set, and compatible with the unlock provenance on this world
+  - P2 an outfit, addon or mount is accepted only through one authorization path: starter (active content only), earned unlock (compatible provenance) or usable Store entitlement (after §32)
   - P3 an incompatible world shows the default and never rewrites or reinterprets the stored selection
   - P4 the client never decides a look; other players see only a committed, validated selection
 consumer_boundaries:
@@ -107,9 +107,13 @@ finding_family_sweep:
   evidence:
     - apps/game-server/migrations/0005_character_authority.sql
 finding_dispositions:
-  p0_p1_accepted_and_repaired: []
+  p0_p1_accepted_and_repaired:
+    - "Codex P1 4123151388 (5611abc): the fallback look was not deterministic. Repaired: content declares exactly one fallback look per sex with explicit colours; validation requires it"
+    - "Codex P1 4123151399 (5611abc): starters were checked against unlock provenance they do not have. Repaired: three authorization paths; starters validate against active content only"
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - "Codex P2 4123151419 (5611abc): mounted-state lifecycle undefined. Fixed: mount activation explicitly deferred; no mount is projected or shown until a mount decision"
+    - "Codex P2 4123151408 (5611abc): Store cosmetics had no authorization path. Fixed: a Platform-entitlement path, unavailable until the gap register §32 delivery decision"
 ```
 
 ## Acceptance criteria
