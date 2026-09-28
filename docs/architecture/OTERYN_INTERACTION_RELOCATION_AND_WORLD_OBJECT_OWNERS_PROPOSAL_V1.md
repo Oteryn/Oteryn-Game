@@ -540,6 +540,23 @@ that cites FND-03 §15.4 near this ordering; the staging bullet and the capacity
 obligation already correctly separated the two (FND-03 for fail-before-commit only, evidence above),
 so open decision 7's own text was the only other misattributed occurrence, fixed the same way.
 
+Round 23 correction (owner-authorized; Codex finding on PR #1099 thread 4122104484, ~line 1793):
+§9's Round 2 fix (design point 3) bound a `revert_destination`-bearing occurrence's inverse as
+B→C (the forward transition's own target to a fresh post-revert state C), but never reconciled this
+against §7's own literal unique-inverse rule below (Option 2 above and "Exact delta" below), which
+before this round accepted only a candidate whose `target_state` **exactly equals** the forward
+transition's own `source_state` — C ≠ A, so `bind` would find zero qualifying candidates and reject
+every `revert_destination`-bearing forward transition, including all four samples §9 covers. Fixed
+by widening §7's rule itself (both citations below), not by asserting the old rule was already
+satisfied: a new, optional, content-level field on `LocalObjectStateDefinition`,
+`attribute_variant_of: Option<ProductionKey>`, names which other declared state (if any) a state is
+a pure attribute-variant of — same `collision`, differing only in per-placement
+`local_object_state_attributes`. The inverse-uniqueness search now accepts a candidate whose
+`target_state` *either* equals the forward transition's `source_state` *or* is that source state's
+declared `attribute_variant_of`, still requiring *exactly one* matching candidate — uniqueness is
+unchanged, only the equality test is widened. §9 (design point 3, corrected this round) registers
+each post-revert state with `attribute_variant_of` set to the natural source state it stands in for.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -784,12 +801,14 @@ today.
 2. **An FND-03 §10 authoritative timer bound to a monotonic `Deadline` computed from the authored
    duration (RECOMMENDED).** `revert_after_ms` is admissible only on a bound transition with exactly
    one *inverse* — a transition bound on the same runtime instance, for the same placement
-   definition, whose `source_state`/`target_state` are this transition's swapped *and* whose
-   `normalized_intent_family` is this transition's matching inverse family (TRANSFORM↔TRANSFORM,
-   CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE); `bind` rejects (`InvalidBinding`) a `revert_after_ms`-
-   carrying transition with zero such matches or more than one — an ambiguous inverse is exactly as
-   invalid as a missing one — so firing never has to guess which delta restores the object (evidence
-   above). At commit time, for a non-timer-origin operation — every authoritative input except the
+   definition, whose `source_state` equals this transition's `target_state` and whose `target_state`
+   either equals this transition's `source_state` or is that source state's declared
+   `attribute_variant_of` (Round 23, §9 below: `LocalObjectStateDefinition.attribute_variant_of`,
+   same `collision`, differing only in per-placement attributes) *and* whose `normalized_intent_family`
+   is this transition's matching inverse family (TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG,
+   OPEN↔CLOSE); `bind` rejects (`InvalidBinding`) a `revert_after_ms`-carrying transition with zero
+   such matches or more than one — an ambiguous inverse is exactly as invalid as a missing one — so
+   firing never has to guess which delta restores the object (evidence above). At commit time, for a non-timer-origin operation — every authoritative input except the
    firing of a pending revert timer itself, which never re-arms itself even when its own transition
    also carries `revert_after_ms` (Round 7/8) — whose own `prepare` result is `DISPOSITION_COMMITTED`/
    `PreparedMutation::Publish` (Round 20, Codex finding 4120634397: every `unchanged` disposition —
@@ -987,16 +1006,23 @@ thing, not two — its lifecycle-record store).
   Whichever home is chosen, validate it fail-closed inside `bind`
   (`apps/game-server/src/world_runtime.rs` ~590-750): for every transition invoked with
   `revert_after_ms`, find every OTHER bound transition for the same `definition` whose
-  `source_state` equals this one's `target_state`, whose `target_state` equals this one's
-  `source_state`, AND whose `normalized_intent_family` is this one's matching inverse family —
-  TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE (this covers TRANSFORM a→b needing
-  bound b→a, CREATE needing the bound REMOVE of the same anchor/def, REMOVE needing the bound
-  CREATE, and RETAG needing the reverse RETAG; RETAG's own same-collision-class constraint is
-  already enforced elsewhere in CW3's linker, so this check adds only the family-pairing rule, not a
-  second collision-class check). Reject the whole binding with `WorldRuntimeError::InvalidBinding`
-  unless *exactly one* transition matches — zero matches is a missing inverse, more than one is an
-  ambiguous inverse, and both are equally invalid — producing the one unique inverse `TransitionKey`
-  the lifecycle record stores (complete field list above).
+  `source_state` equals this one's `target_state`, whose `target_state` either equals this one's
+  `source_state` or is that source state's declared `attribute_variant_of` (Round 23, §9 below —
+  `LocalObjectStateDefinition.attribute_variant_of: Option<ProductionKey>`, same `collision`,
+  differing only in per-placement `local_object_state_attributes`; `None` for every state outside
+  §9's covered shape, so this widening is inert for ordinary content), AND whose
+  `normalized_intent_family` is this one's matching inverse family — TRANSFORM↔TRANSFORM,
+  CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE (this covers TRANSFORM a→b needing bound b→a, CREATE
+  needing the bound REMOVE of the same anchor/def, REMOVE needing the bound CREATE, and RETAG
+  needing the reverse RETAG; RETAG's own same-collision-class constraint is already enforced
+  elsewhere in CW3's linker, so this check adds only the family-pairing rule, not a second
+  collision-class check). Reject the whole binding with `WorldRuntimeError::InvalidBinding` unless
+  *exactly one* transition matches — zero matches is a missing inverse, more than one is an ambiguous
+  inverse, and both are equally invalid — producing the one unique inverse `TransitionKey` the
+  lifecycle record stores (complete field list above). CW3 link time validates `attribute_variant_of`
+  fail-closed, mirroring `validate_local_object_placement_state`'s existing pattern (evidence above,
+  §9): a named variant base must exist in the same declared vocabulary and share the same `collision`
+  presence as the state naming it.
 - Scope of what `revert_after_ms` covers, rejected at the boundary that can actually see it (Round
   17, corrects round 16's "`bind` rejects it"): `revert_after_ms` is admissible only on a transition
   whose full effect is modeled today by `LocalObjectStateDefinition` — the state `key` plus
@@ -1606,6 +1632,14 @@ architecture decision.
   field and the death-position creates (`mazzinor`/`gaz_haragoth`/`cult_soul_remains`) are *not*
   covered — see the Problem section and new §7 open decision 8. (3) `local_object_revert_after_ms`
   is now keyed by `(TransitionKey, LoweredActionId)`, not `TransitionKey` alone (design points 1/5).
+  **Round 3 correction** (Codex P1 on head `d417e860`, PR #1099 thread 4122104484, accepted, owner
+  stop rule applies): Round 2's post-revert state (design point 3) made every covered forward
+  transition unbindable, because its dedicated inverse's `target_state` never equals the forward
+  transition's own `source_state` — §7's unique-inverse rule as written before this round required
+  exact equality. Fixed by widening that rule (§7 Round 23, both citations) to also accept a
+  candidate whose `target_state` is the source state's declared `attribute_variant_of` — a new
+  optional field on `LocalObjectStateDefinition` this round adds (design point 3), inert for every
+  state that does not declare one.
 
 ### Problem
 
@@ -1664,6 +1698,10 @@ does when used or stepped on (D29)."
   `LocalObject` placement must have one from the definition's declared vocabulary; a non-`LocalObject`
   placement must not have one. This is the existing precedent for validating a new per-placement
   field's keys against the definition's own state vocabulary.
+- PROVEN (`LocalObjectStateDefinition` ~805-813, re-verified this round): exactly `key: ProductionKey`
+  plus `collision: LocalObjectCollisionPresence` — no relationship field between two states exists
+  today. `attribute_variant_of` (design point 3, Round 23) is a genuinely new, optional field on this
+  same struct, not a repurposing of anything that already exists.
 - PROVEN (`LocalObjectRuntime::bind` ~590-750, re-verified this task): loads `local_object_initial_state`
   and computes `collision_cells`/`initial_blocking` once, from the placement, before constructing
   `Self` (~716-749); `LocalObjectRuntime` (~574-586) has no attribute field of any kind.
@@ -1783,38 +1821,41 @@ does when used or stepped on (D29)."
      in the definition's declared `LocalObjectStateDefinition` vocabulary, rendering as the *same
      item* as the natural source state (so it looks identical to a player) but under its *own*,
      distinct state key, since `local_object_state_attributes` is keyed by state and two states
-     needing different attribute values need different keys. Call it the post-revert state; lowering
-     sets `local_object_state_attributes[post_revert_state].destination =
-     Some(revert_destination)`. The natural `source_state` itself is left untouched — no entry, no
-     attributes, exactly as if `revert_destination` had never been authored (satisfies the new test
-     obligation below: before the forward action commits, the placement exposes no destination).
-     Lowering binds the inverse `TransitionBinding` explicitly as `source_state = target_state`
-     (the forward transition's own target), `target_state = post_revert_state` — an *explicitly
-     bound* transition from the forward's target to the post-revert state, not a reuse of any
-     existing transition.
-   - **Satisfying §7's unique-inverse/intent-family rule with a state the forward transition's own
-     `source_state` never names:** §7's bind-time check (Exact delta above) searches, for a
-     `revert_after_ms`-carrying forward transition F, for exactly one *other* bound transition at
-     this placement whose `source_state`/`target_state` are F's swapped and whose
-     `normalized_intent_family` matches. When lowering constructs a *dedicated* inverse per
-     `revert_destination`-bearing occurrence — as it now always does when `revert_destination` is
-     authored — that dedicated transition is, by construction, the *only* other `TRANSFORM`-family
-     transition this placement binds whose `source_state` equals F's `target_state`; uniqueness holds
-     trivially because lowering builds exactly one candidate, not because the search itself changes.
-     What generalizes is only which *state key* plays the role of "the transition's own
-     `source_state`" for the purpose of the swap check: for a plain (no-`revert_destination`)
-     transition it is literally the placement's natural source state (today's shape, unchanged); for
-     a `revert_destination`-bearing occurrence, lowering registers the dedicated inverse's own
-     `target_state` as the post-revert state and the swap check is satisfied against *that*
-     transition's own declared fields — the rule's mechanics (exactly one matching `TRANSFORM`-family
-     candidate among this placement's bound transitions) are identical in both cases; only the
-     concrete state key differs, and that key is always **some** state this placement's own bound
-     inverse transition declares as its `target_state`, never asserted independently.
+     needing different attribute values need different keys. This new entry's `collision` matches the
+     natural source state's exactly (same footprint, the two states differ *only* in declared
+     attributes), and it names the natural source state as its `attribute_variant_of` (Round 23,
+     evidence above — the new `LocalObjectStateDefinition` field this round adds, required for the
+     next bullet). Call it the post-revert state; lowering sets
+     `local_object_state_attributes[post_revert_state].destination = Some(revert_destination)`. The
+     natural `source_state` itself is left untouched — no entry, no attributes, exactly as if
+     `revert_destination` had never been authored (satisfies the test obligation below: before the
+     forward action commits, the placement exposes no destination). Lowering binds the inverse
+     `TransitionBinding` explicitly as `source_state = target_state` (the forward transition's own
+     target), `target_state = post_revert_state` — an *explicitly bound* transition from the forward's
+     target to the post-revert state, not a reuse of any existing transition.
+   - **Satisfying §7's unique-inverse/intent-family rule (Round 23 correction — Codex P1, PR #1099
+     thread 4122104484).** The post-revert state's key is not the forward transition's own
+     `source_state`, so §7's rule *as written before this round* — requiring the candidate inverse's
+     `target_state` to equal the forward transition's `source_state` exactly — would find zero
+     qualifying candidates for every `revert_destination`-bearing forward transition and reject all
+     four covered samples; §9's earlier text claiming this was "satisfied by construction" was wrong,
+     because it never checked the inverse's `target_state` against the forward transition's *actual*
+     declared `source_state`. Fixed by widening §7's rule itself (evidence above), not by asserting
+     the old rule already worked: the inverse-uniqueness search now accepts a candidate whose
+     `target_state` *either* equals the forward transition's `source_state` *or* is that source
+     state's declared `attribute_variant_of` — which the post-revert state always is, by the previous
+     bullet's construction. Uniqueness is unchanged (still *exactly one* matching candidate required);
+     only the equality test admits one additional, narrowly-scoped case. For a plain
+     (no-`revert_destination`) transition, no state anywhere declares an `attribute_variant_of`, so
+     the widened rule reduces to exactly the original equality check — this round changes nothing
+     about existing, already-covered content.
    - If more than one `revert_destination`-bearing occurrence at the same placement invokes the same
      forward `TransitionKey` (not exercised by any covered sample — each of the four covered samples
      authors exactly one `map_item transform` per placement), each occurrence needs its own dedicated
-     post-revert state and its own dedicated inverse `TransitionBinding`, keyed apart the same way
-     `local_object_revert_after_ms` now is (design point 1, `LoweredActionId`); this document does not
+     post-revert state (each its own `attribute_variant_of: Some(source_state)`) and its own dedicated
+     inverse `TransitionBinding`, keyed apart the same way `local_object_revert_after_ms` now is
+     (design point 1, `LoweredActionId`); §7's widened rule would then find more than one matching
+     candidate unless CW3 lowering also scopes which inverse pairs with which occurrence — this document does not
      design that case further since no covered sample exercises it.
 
 4. **How the Round 17/19 lowering rejection is lifted for exactly these shapes (Round 2: narrowed).**
@@ -1885,18 +1926,20 @@ does when used or stepped on (D29)."
 This design adds exactly: two optional fields on `PlacementRef` (`local_object_state_attributes`,
 `local_object_revert_after_ms`); one new one-field struct (`LocalObjectStateAttributes`, Round 2:
 `interaction` removed); two new immutable fields on `LocalObjectRuntime` loaded once at `bind`; one
-new read accessor (`attributes()`); and, for `revert_destination`-bearing occurrences, one fresh
-content-level state/`TransitionBinding` pair per occurrence, synthesized at lowering time exactly the
-way per-encounter content is already synthesized elsewhere in this proposal (design point 3). It adds
-no new field to `PreparedMutation::Publish`, no change to `commit`'s mutation logic, no change to
-`LocalObjectStateDefinition`'s existing shared shape, and no new lifecycle-record field. It does not
-implement teleportation or anything that *consumes* a `destination` value once an object commits into
-a state that carries one — reading `attributes()` and acting on it (moving a player) is the existing,
-separate interaction/movement system's job, unaffected and unblocked by this design either way,
-exactly as it already was before this section. It does not cover `interaction` bindings or
-runtime-resolved anchors (Round 2: narrowed to the teleporter-transform shapes; §7 open decision 8) —
-a third authored attribute kind or a runtime-created-placement mechanism, if one is ever needed, is a
-new decision, not something this shape auto-supports.
+new read accessor (`attributes()`); one new optional field on `LocalObjectStateDefinition`
+(`attribute_variant_of`, Round 23 — the one change to its existing shared shape, needed to keep §7's
+own unique-inverse rule satisfiable, evidence above); and, for `revert_destination`-bearing
+occurrences, one fresh content-level state/`TransitionBinding` pair per occurrence, synthesized at
+lowering time exactly the way per-encounter content is already synthesized elsewhere in this proposal
+(design point 3). It adds no new field to `PreparedMutation::Publish`, no change to `commit`'s
+mutation logic, and no new lifecycle-record field. It does not implement teleportation or anything
+that *consumes* a `destination` value once an object commits into a state that carries one — reading
+`attributes()` and acting on it (moving a player) is the existing, separate interaction/movement
+system's job, unaffected and unblocked by this design either way, exactly as it already was before
+this section. It does not cover `interaction` bindings or runtime-resolved anchors (Round 2: narrowed
+to the teleporter-transform shapes; §7 open decision 8) — a third authored attribute kind or a
+runtime-created-placement mechanism, if one is ever needed, is a new decision, not something this
+shape auto-supports.
 
 ### Exact test obligations
 
@@ -1914,11 +1957,29 @@ new decision, not something this shape auto-supports.
 - **`the_lord_of_the_lice`'s transform lowers and both directions reach `bind` (corrected, Round 2).**
   The forward transition's target state (`canary:item/22761`) carries `destination:
   Some(godbreaker)`. `revert_destination` (`ascendant_exit`) lowers onto a *distinct* post-revert
-  state — same rendered item (`canary:item/1949`) as the natural source, different state key —
-  carrying `destination: Some(ascendant_exit)`; the bound inverse transition's own `target_state` is
-  that post-revert state, not the natural `source_state`. A test asserting the inverse targets the
-  natural `local_object_initial_state`, or that the natural source state ever carries a `destination`,
-  must fail.
+  state — same rendered item (`canary:item/1949`) as the natural source, different state key,
+  `attribute_variant_of` naming the natural source state — carrying `destination:
+  Some(ascendant_exit)`; the bound inverse transition's own `target_state` is that post-revert state,
+  not the natural `source_state`. A test asserting the inverse targets the natural
+  `local_object_initial_state`, or that the natural source state ever carries a `destination`, must
+  fail.
+- **`bind` accepts the post-revert-state inverse under the widened rule (P1, Round 23, Codex finding
+  on PR #1099 thread 4122104484).** For all four covered samples, `bind` must accept the forward
+  transition as `revert_after_ms`-carrying: the dedicated inverse's `target_state` does not equal the
+  forward transition's own `source_state`, but does equal that source state's declared
+  `attribute_variant_of`. A test asserting `bind` rejects these four samples with `InvalidBinding`
+  ("missing inverse") — the exact bug this round fixes — must fail; a test asserting `bind` still
+  accepts them under the *unwidened* rule (i.e., without the `attribute_variant_of` check) must also
+  fail, since that is the bug, not the fix.
+- **The widened rule is inert for ordinary, non-attribute-bearing content (regression, Round 23).** A
+  plain `TRANSFORM a→b` / bound inverse `b→a` pair, neither state declaring `attribute_variant_of`,
+  must be accepted or rejected by `bind` exactly as it already is today — the widened rule's `OR`
+  branch never matches when no state declares a variant relationship, so it must not change the
+  outcome for any placement outside this section's covered shape.
+- **`attribute_variant_of` is validated fail-closed at CW3 link time.** A state naming an
+  `attribute_variant_of` that is absent from the same declared vocabulary, or whose `collision` does
+  not match, must be rejected — mirroring `validate_local_object_placement_state`'s existing
+  fail-closed pattern (evidence above). A test asserting such a mismatch reaches `bind` must fail.
 - **A non-covered attribute stays rejected.** A synthetic `map_item` action carrying `revert_after_ms`
   together with any authored field other than `destination`/`revert_destination` on a pre-authored
   anchor must still be rejected fail-closed at authoring/lowering (§7's existing obligation, unchanged
@@ -1950,9 +2011,11 @@ new decision, not something this shape auto-supports.
 
 ### Open items for the owning lane
 
-- The exact CW3 linker/validator code that performs the fail-closed key-subset checks above (this
-  document specifies the shape and the existing precedent it mirrors, not the linker's own
-  implementation).
+- The exact CW3 linker/validator code that performs the fail-closed key-subset checks above and the
+  `attribute_variant_of` existence/`collision`-match check (Round 23) — this document specifies the
+  shape and the existing precedent it mirrors, not the linker's own implementation.
+- The exact `bind`-time implementation of the widened inverse-uniqueness search (Round 23, §7 Option
+  2/Exact delta above) — this document specifies the accept condition, not the search code.
 - The exact production lowering step that turns an authored `map_item transform` action into
   `local_object_state_attributes`/`local_object_revert_after_ms` entries and, when `revert_destination`
   is present, synthesizes the post-revert state/`TransitionBinding` pair (design point 3) — no such
