@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-item-promotion-repin-v2
 title: Re-pin the Item semantic-promotion lowering v1 packet to the further-grown sample (v2)
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/item-promotion-repin-v2
 issue: 162
-pr: null
+pr: 1155
 base_sha: 64720c2086ec1838c7dcd0fe4faae496557096d4
 head_sha: null
 final_head_sha: null
@@ -201,8 +201,8 @@ update.
 
 ### Exact-head CI
 
-- final head: pending — bound to the frozen final head of PR
-  `PR_NUMBER_PENDING` once opened, not to a commit SHA in this record.
+- final head: bound to the frozen final head of PR #1155, not to any
+  commit SHA recorded here (a record cannot contain its own SHA).
 - result: pending Merge Queue / `game-gate`.
 
 ## Self-review
@@ -224,24 +224,24 @@ update.
 
 ## PR and closeout
 
-- PR to be opened against `main` with `Coordination: #162`, using the
+- PR #1155 opened against `main` with `Coordination: #162`, using the
   repository PR template.
-- Evidence for merge/closeout binds to the frozen final head of that PR
+- Evidence for merge/closeout binds to the frozen final head of PR #1155
   (per issue #162 FREEZE convention), not to any commit SHA recorded here.
 - No `@codex`, no auto-merge.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: full #1084-shaped re-pin complete on owned+leased paths; all targeted tests/validators green; rebased onto fresh origin/main; pushing and opening PR next
-status: implementing
+last_progress: full #1084-shaped re-pin complete on owned+leased paths; all targeted tests/validators green; PR #1155 opened; reporting READY_FOR_INTEGRATION
+status: ready
 branch: claude/item-promotion-repin-v2
 head_sha: null
-pr: null
+pr: 1155
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: pending
-ci_check_generation: pending
+ci_trigger_source: pull_request
+ci_check_generation: initial
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -255,5 +255,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: none
 blocker: null
-next_action: push branch, open PR, report READY_FOR_INTEGRATION
+next_action: await PR #1155 CI / Merge Queue; bind evidence to its frozen final head at closeout
 ```
