@@ -172,11 +172,17 @@ XP amount as input). `durability/**` itself is untouched (consumed only).
 
 ## Independent review
 
-- required: pending control-plane triage
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- required: YES (control plane)
+- exact head: `ffea776` (Codex)
+- material findings:
+  - P1, fixed: the XP principal carried a second `character_id` beside the fence. Removed; the
+    fence's own `character_id` binds the occurrence.
+  - P1, fixed: `death`/`corpse` were caller-supplied. They now come only from the owner's
+    projection (`CurrentOwnerCombatDeath::projected_death`).
+  - P2, deferred (binding for D/E admission): the `COMBAT01-INFLIGHT-LOOT-MINTS-PER-SCOPE`
+    precheck takes a caller snapshot. A shared per-scope reservation/release with backpressure
+    must land with the first production caller.
+- verdict: P1-only stop rule; repair head requalified by CI
 
 ## PR and closeout
 

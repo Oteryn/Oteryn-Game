@@ -536,7 +536,6 @@ fn reward_principal(
     character_revision: u64,
 ) -> TestResult<RewardPrincipal> {
     Ok(RewardPrincipal {
-        character_id: CharacterId::from_bytes(id(41)).map_err(debug)?,
         gameplay_fence: gameplay_fence(scope_ownership_generation, character_revision)?,
     })
 }
@@ -583,12 +582,10 @@ fn one_creature_death_mints_the_plan_and_awards_xp_once() -> TestResult {
         fixture
             .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
             .map_err(debug)?;
-        let (death, corpse) = fixture.project_death().map_err(debug)?;
+        fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
         let outcome = settle_creature_death_rewards(
-            death,
-            corpse,
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
@@ -645,14 +642,12 @@ fn replay_is_idempotent_with_no_duplicate_mint_or_xp() -> TestResult {
         // fence's `expected_character_revision` (1, still current for the
         // first attempt): `commit_character_experience`'s occurrence-keyed
         // replay resolves without re-checking that fence, and
-        // `settle_experience` skips the redundant `initialize_character_
-        // progression` call once the occurrence is already memoized, so the
-        // stale revision on the retry never needs re-validating.
+        // `settle_experience` reaches the D88 initializer only on
+        // `MissingProgressionState`, so the stale revision on the retry never
+        // needs re-validating.
         for _ in 0..2 {
-            let (death, corpse) = fixture.project_death().map_err(debug)?;
+            fixture.project_death().map_err(debug)?;
             let outcome = settle_creature_death_rewards(
-                death,
-                corpse,
                 actor,
                 &mut fixture.borrow_combat_death(),
                 &session,
@@ -696,7 +691,7 @@ fn generation_change_leaves_a_stale_death_rejected_with_no_write() -> TestResult
         fixture
             .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
             .map_err(debug)?;
-        let (death, corpse) = fixture.project_death().map_err(debug)?;
+        fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
         // D52: the scope moves to another node before any reward is settled.
@@ -729,8 +724,6 @@ fn generation_change_leaves_a_stale_death_rejected_with_no_write() -> TestResult
         assert_eq!(moved.assignment.ownership_generation, 2);
 
         let outcome = settle_creature_death_rewards(
-            death,
-            corpse,
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
@@ -792,12 +785,10 @@ fn a_stale_xp_fence_rejects_xp_without_blocking_loot() -> TestResult {
         fixture
             .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
             .map_err(debug)?;
-        let (death, corpse) = fixture.project_death().map_err(debug)?;
+        fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
         let outcome = settle_creature_death_rewards(
-            death,
-            corpse,
             actor,
             &mut fixture.borrow_combat_death(),
             &session,
@@ -844,12 +835,10 @@ fn an_unsupported_loot_table_rejects_loot_without_blocking_xp() -> TestResult {
         fixture
             .strike("fixture:reward.strike.lethal", CombatDeathFixture::HEALTH)
             .map_err(debug)?;
-        let (death, corpse) = fixture.project_death().map_err(debug)?;
+        fixture.project_death().map_err(debug)?;
         let actor = fixture.actor();
 
         let outcome = settle_creature_death_rewards(
-            death,
-            corpse,
             actor,
             &mut fixture.borrow_combat_death(),
             &session,

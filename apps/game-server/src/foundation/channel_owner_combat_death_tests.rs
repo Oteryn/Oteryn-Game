@@ -858,3 +858,26 @@ fn stale_generation_death_cannot_mint_a_reward_occurrence() {
         Err(CarrierError::WrongScope)
     );
 }
+
+#[test]
+fn projected_death_is_read_only_from_the_owner_projection() {
+    let (owner, mut carrier, actor) = fixture(146, true);
+    assert_eq!(
+        carrier
+            .current_owner_combat_death(&owner)
+            .projected_death(actor)
+            .map(|_| ()),
+        Err(CarrierError::CommittedLethalUnavailable)
+    );
+
+    let mut fixture = d1_fixture(148);
+    fixture
+        .strike("strike:projected-death", CombatDeathFixture::HEALTH)
+        .expect("lethal commit");
+    let projected = fixture.project_death().expect("death");
+    let actor = fixture.actor();
+    assert_eq!(
+        fixture.borrow_combat_death().projected_death(actor),
+        Ok(projected)
+    );
+}

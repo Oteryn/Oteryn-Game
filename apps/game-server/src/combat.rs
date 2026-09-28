@@ -29,9 +29,10 @@ mod loot_plan;
 pub(crate) use death_reward::{
     COMBAT01_INFLIGHT_LOOT_MINTS_PER_SCOPE_MAX, COMBAT01_REWARD_PRINCIPALS_MAX,
     COMBAT01_XP_DESCENDANTS_PER_DEATH_MAX, CombatDeathRewardLootError, CombatDeathRewardXpError,
-    CombatResourceLimitError, CreatureDeathRewardInput, CreatureDeathRewardOutcome,
-    DeathGroundContext, DurabilitySession, RewardPrincipal, RewardProgressionBinding,
-    check_inflight_loot_mint_capacity, check_reward_principal_count, settle_creature_death_rewards,
+    CombatResourceLimitError, CreatureDeathRewardAdmissionError, CreatureDeathRewardInput,
+    CreatureDeathRewardOutcome, DeathGroundContext, DurabilitySession, RewardPrincipal,
+    RewardProgressionBinding, check_inflight_loot_mint_capacity, check_reward_principal_count,
+    settle_creature_death_rewards,
 };
 #[allow(
     unused_imports,

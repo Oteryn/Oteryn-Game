@@ -529,6 +529,21 @@ impl CurrentOwnerCombatDeath<'_> {
         )
     }
 
+    /// D2b: the death key and corpse position of this generation's projected
+    /// committed death of `actor`, read from the owner's own projection.
+    pub(crate) fn projected_death(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<(CreatureDeathOccurrenceKey, MovementLocalPosition), CarrierError> {
+        self.carrier.validate_ref(self.continuity, actor.0)?;
+        self.carrier
+            .corpse_projection
+            .as_ref()
+            .filter(|projection| projection.occurrence.actor == actor)
+            .map(|projection| (projection.occurrence.death_key(), projection.position()))
+            .ok_or(CarrierError::CommittedLethalUnavailable)
+    }
+
     /// D2b: the memoized XP `ExperienceRewardOccurrence` bytes of this
     /// generation's committed death for `character`, minting them on first
     /// call. See [`ChannelActorCarrier::reward_occurrence_inner`].

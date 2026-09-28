@@ -17,7 +17,6 @@ use super::loot_plan::{
     LootDefinitionRef, LootPlan, LootPlanDeathKey, LootPlanError, LootTableDefinition,
     plan_creature_loot,
 };
-use crate::domain::CharacterId;
 use crate::domain::progression::{FiniteProgressionPolicy, ProgressionRevisionContext};
 use crate::durability::DurabilityRoot;
 use crate::durability::character_authority::ReconciledCharacterAuthority;
@@ -122,7 +121,8 @@ pub(crate) struct DeathGroundContext {
 /// award it.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct RewardPrincipal {
-    pub(crate) character_id: CharacterId,
+    /// The rewarded character is the fence's own `character_id`: there is no
+    /// second identity field that could disagree with the XP writer's fence.
     pub(crate) gameplay_fence: CurrentCharacterGameplayFence,
 }
 
@@ -174,6 +174,14 @@ pub(crate) struct CreatureDeathRewardInput<const N: usize> {
     pub(crate) reward_principals: Vec<RewardPrincipal>,
     pub(crate) xp_amount: ExactI64,
     pub(crate) progression: RewardProgressionBinding<N>,
+}
+
+/// Refusals before either descendant runs.
+#[derive(Debug)]
+pub(crate) enum CreatureDeathRewardAdmissionError {
+    Limit(CombatResourceLimitError),
+    /// `actor` is not this generation's projected committed death.
+    Death(CarrierError),
 }
 
 #[derive(Debug)]
@@ -324,7 +332,7 @@ async fn settle_experience<const N: usize>(
     // never strands the award (a retry re-initializes), and an already
     // advanced revision never rejects a legitimate replay.
     let (occurrence_bytes, _) = owner
-        .reward_occurrence(actor, *principal.character_id.as_bytes())
+        .reward_occurrence(actor, *principal.gameplay_fence.character_id.as_bytes())
         .map_err(CombatDeathRewardXpError::Occurrence)?;
     let occurrence = ExperienceRewardOccurrence::from_bytes(occurrence_bytes)
         .map_err(|_| CombatDeathRewardXpError::InvalidOccurrence)?;
@@ -387,14 +395,18 @@ pub(crate) struct DurabilitySession<'a, 'f, 's> {
 /// anything else runs; loot and XP then always both run, independently,
 /// regardless of whether the other fails.
 pub(crate) async fn settle_creature_death_rewards<const N: usize>(
-    death: CreatureDeathOccurrenceKey,
-    corpse: MovementLocalPosition,
     actor: ExactActorRef,
     owner: &mut CurrentOwnerCombatDeath<'_>,
     session: &DurabilitySession<'_, '_, '_>,
     input: CreatureDeathRewardInput<N>,
-) -> Result<CreatureDeathRewardOutcome, CombatResourceLimitError> {
-    check_reward_principal_count(input.reward_principals.len())?;
+) -> Result<CreatureDeathRewardOutcome, CreatureDeathRewardAdmissionError> {
+    check_reward_principal_count(input.reward_principals.len())
+        .map_err(CreatureDeathRewardAdmissionError::Limit)?;
+    // The death key and corpse position come only from the owner's own
+    // projection of `actor`, so loot and XP always settle one bound death.
+    let (death, corpse) = owner
+        .projected_death(actor)
+        .map_err(CreatureDeathRewardAdmissionError::Death)?;
     let principal = input.reward_principals[0];
 
     let loot = settle_loot(
