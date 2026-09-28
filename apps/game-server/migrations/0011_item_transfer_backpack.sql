@@ -111,11 +111,11 @@ CREATE TABLE game_item_transfer_receipts (
     event_id UUID NOT NULL UNIQUE,
     shape SMALLINT NOT NULL CHECK (shape BETWEEN 1 AND 4),
     source_item_instance_id UUID NOT NULL REFERENCES game_item_instances (item_instance_id),
-    source_quantity_before BIGINT NOT NULL CHECK (source_quantity_before BETWEEN 1 AND 4294967295),
-    source_quantity_after BIGINT NOT NULL CHECK (source_quantity_after BETWEEN 0 AND 4294967295),
+    source_quantity_before BIGINT NOT NULL CHECK (source_quantity_before BETWEEN 1 AND 100),
+    source_quantity_after BIGINT NOT NULL CHECK (source_quantity_after BETWEEN 0 AND 100),
     receiver_item_instance_id UUID NULL REFERENCES game_item_instances (item_instance_id),
-    receiver_quantity_before BIGINT NULL CHECK (receiver_quantity_before BETWEEN 1 AND 4294967295),
-    receiver_quantity_after BIGINT NULL CHECK (receiver_quantity_after BETWEEN 1 AND 4294967295),
+    receiver_quantity_before BIGINT NULL CHECK (receiver_quantity_before BETWEEN 1 AND 100),
+    receiver_quantity_after BIGINT NULL CHECK (receiver_quantity_after BETWEEN 1 AND 100),
     destination_parent_item_instance_id UUID NULL,
     destination_ordinal NUMERIC(20,0) NULL
         CHECK (destination_ordinal BETWEEN 1 AND 18446744073709551615),
@@ -571,3 +571,23 @@ GRANT SELECT ON
     game_item_transfer_quantity_evidence,
     game_item_ground_removal_evidence
 TO oteryn_game_control;
+
+-- D82's absolute stack ceiling (100) is enforced by the receipt quantity
+-- CHECKs above, so no TRANSFER can commit an oversized stack.
+--
+-- `created_xact_id` must prove which physical transaction inserted a row, so a
+-- caller-supplied value is never trusted: every insert is stamped with the
+-- inserting transaction's own id, overriding any explicit value.
+CREATE FUNCTION game_item_stamp_created_xact_id() RETURNS trigger
+LANGUAGE plpgsql SET search_path = pg_catalog, public, pg_temp AS $$
+BEGIN
+    NEW.created_xact_id := pg_current_xact_id();
+    RETURN NEW;
+END;
+$$;
+CREATE TRIGGER game_item_mint_receipts_stamp_xact BEFORE INSERT
+    ON game_item_mint_receipts FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
+CREATE TRIGGER game_item_transfer_receipts_stamp_xact BEFORE INSERT
+    ON game_item_transfer_receipts FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
+CREATE TRIGGER game_item_audit_outbox_stamp_xact BEFORE INSERT
+    ON game_item_audit_outbox FOR EACH ROW EXECUTE FUNCTION game_item_stamp_created_xact_id();
