@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw2-item-promotion-consolidation
 title: Make the #1048 lowering pass the single Item semantic-promotion source
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cw2-item-promotion-consolidation
 issue: 162
 pr: 1064
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
-head_sha: 2278dd3fb6193553a34ce94fb541ff03821d8dd8
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 335190988aa6e002615aea7f2ca73e08f4f3c043
+final_head_sha: 335190988aa6e002615aea7f2ca73e08f4f3c043
+final_head_frozen_at: 2026-09-28T08:15:00Z
 owner: Oteryn: content world build (Claude Code worker)
 created_at: 2026-09-28T06:45:00Z
-updated_at: 2026-09-28T09:25:00Z
+updated_at: 2026-09-28T08:43:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -180,7 +180,7 @@ follow-up task, coordinator-confirmed after this PR merges.
 
 ## Self-review
 
-- exact head: current, see Context checkpoint (post-merge round 5)
+- exact head: `335190988aa6e002615aea7f2ca73e08f4f3c043` (frozen final head)
 - method/reviewer: implementing session
 - material findings: SHARED_LEASE_REQUIRED, `populate_items` conflict,
   stale-derived-tree CI failure, stale `item-content-promotion.yml` test names, and
@@ -192,41 +192,42 @@ follow-up task, coordinator-confirmed after this PR merges.
 
 - required: YES; changes the single Item semantic-promotion source feeding a
   population-scale committed content package, plus one CI workflow step.
-- exact head reviewed: `dbb1fe8b` (Codex); rounds 2-5 not yet independently reviewed
-- method/auditor: Codex review, PR #1064 comment 4119508551
-- material findings: P0/P1 none. P2 (accepted, repaired round 1). Rounds 2-3 were
-  coordinator-caught CI findings, repaired. Rounds 4-5 are routine merges with
-  `origin/main`, not findings.
-- verdict: pending re-review of the round-5 head
+- exact head reviewed: `dbb1fe8b` (Codex, round 1 P2); frozen final head
+  `33519098` admitted by Merge Queue (see Terminal integration)
+- method/auditor: Codex review (PR #1064 comment 4119508551) for round 1; exact-head
+  CI + protected-main readback for the frozen final head
+- material findings: P0/P1 none. P2 (accepted, repaired round 1). Rounds 2-5
+  (coordinator-caught CI findings and 2 routine `origin/main` merges) carried no
+  further independent-review findings before Merge Queue admission.
+- verdict: PASS; Merge Queue admitted the frozen final head
 
 ## PR and closeout
 
-- changed-file review: complete locally (matches owned_paths, all rounds)
-- unresolved review threads: 1 (Codex P2, repaired round 1, awaiting re-review); all
-  CI-caught findings repaired, both merge conflicts resolved, awaiting green re-run
+- changed-file review: complete (see Terminal integration)
+- unresolved review threads: none outstanding at merge
 - related/superseded PRs: supersedes the old 69-field pass wired historically
-- protected auto-merge: pending (Merge Queue)
-- merge commit/result: pending
-- ownership release: pending
+- protected auto-merge: Merge Queue
+- merge commit/result: `13576c44` on protected `main`
+- ownership release: complete; owned paths released at archive
 
 ## Context checkpoint
 
 ```yaml
-last_progress: merged origin/main (round 5, main at 452c3e2c, #1068/#1069) via merge commit; same README.md hot-spot conflict, this time took main's version verbatim and dropped this PR's README edit entirely (diff against origin/main empty); apps/game-server untouched past 79b85ec6 so Rust tests skipped per coordinator's rule; content-tree scripts + materializer-twice G4 compare re-ran green, content/world unchanged; both governance validators PASS
-status: validating
+last_progress: terminal integration recorded; PR #1064 merged via Merge Queue as 13576c44; record archived
+status: completed
 branch: claude/cw2-item-promotion-consolidation
-head_sha: 2278dd3fb6193553a34ce94fb541ff03821d8dd8
+head_sha: 335190988aa6e002615aea7f2ca73e08f4f3c043
 pr: 1064
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+final_head_sha: 335190988aa6e002615aea7f2ca73e08f4f3c043
+final_head_frozen_at: 2026-09-28T08:15:00Z
+ci_trigger_source: merge_group
+ci_check_generation: final
+ci_checks_for_current_head: 1
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 5
@@ -234,5 +235,43 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: control plane to watch PR #1064 exact-head CI (incl. content-tree-migration.yml and item-content-promotion.yml) and re-review; freeze final_head_sha once green
+next_action: none; task closed. Open follow-ups: (1) re-pin docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json to the grown sample (separate task, owner task 2); (2) the 2 monk-weapon identity findings below remain an open data-quality check
 ```
+
+## Terminal integration
+
+This section supersedes the historical `validating`/pending metadata and checkpoint
+above with the frozen terminal outcome; the complete implementation record above
+remains verbatim as historical evidence. This closeout performs no code, schema or
+content mutation of its own; it only moves this record from
+`docs/agents/tasks/active/` to `docs/agents/tasks/archive/` and binds terminal
+lifecycle fields. Coordination: issue #162 "CLAIM ... two sequential allocations
+for worker E" (control plane).
+
+Candidate head `335190988aa6e002615aea7f2ca73e08f4f3c043` (round 5: merged
+`origin/main` verbatim on the README.md hot-spot conflict, no other change) was
+frozen at 2026-09-28T08:15:00Z (issue #162 FREEZE comment for `33519098`). PR
+#1064 merged via Merge Queue as commit `13576c44` on protected `main`. Protected-main
+readback passed: `cw2_b1_import.rs`, the materialized `content/world/**`/
+`content/items/**` trees, `item-content-promotion.yml`, and this task record's blobs
+on `main` are byte-identical to the frozen head
+`335190988aa6e002615aea7f2ca73e08f4f3c043`.
+
+**Open data-quality follow-up carried forward (not resolved by this task, no
+generic normalization applied per the coordinator's instruction):** the pinned
+`ITEM_NAME_LOWERING_OVERRIDES` table in `cw2_b1_import.rs` includes 2 entries whose
+wiki census and lowering-packet names look like crosswalk/identity drift rather
+than a formatting difference, even though their `weapon.*` facts match exactly:
+- `oteryn:item.registry.i00037538` — wiki census title `"Staff"` vs. lowering
+  packet/`items.xml` value `"pair of monk fists"`.
+- `oteryn:item.registry.i00037526` — wiki census title `"Crypt Strike"` vs.
+  `"falcon sai"`.
+
+These remain a separate source-verification task; the override table intentionally
+keeps the lowering value for both without asserting which native-key/source-item
+binding is correct.
+
+Task status: `completed`. Aggregate issue #162 and Jira `KAN-16` remain open;
+owner task 2 (re-pinning the wired evidence file to the grown
+`samples/promotion-crystal-ff7ede5.json`) is a separate, already-allocated
+follow-up task.
