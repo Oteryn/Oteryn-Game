@@ -172,11 +172,11 @@ jobs:
           cargo +1.94.0 test --locked -p oteryn-game-server \
             --test content_world_cw2_b1_import \
             protected_semantic_promotion_changes_exactly_13292_atoms_with_only_the_r7_p04_identity_rename_as_incidental_drift -- --exact \
-            | tee /dev/stderr | grep -q 'test result: ok\. 1 passed'
+            | tee /dev/stderr | grep 'test result: ok\. 1 passed' >/dev/null
           cargo +1.94.0 test --locked -p oteryn-game-server \
             --test content_reference_artifact \
             protected_semantic_promotion_round_trips_exact_13292_atoms_through_artifact_v4_server_and_client -- --exact \
-            | tee /dev/stderr | grep -q 'test result: ok\. 1 passed'
+            | tee /dev/stderr | grep 'test result: ok\. 1 passed' >/dev/null
 
       - name: Verify and emit semantic promotion packet
         run: |
