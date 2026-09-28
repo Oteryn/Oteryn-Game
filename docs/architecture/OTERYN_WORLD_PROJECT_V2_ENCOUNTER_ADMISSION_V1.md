@@ -94,6 +94,13 @@ creatures, in the same slices.
    stay unlocated, and their encounter is not admitted yet.
 3. Rust: the typed Encounter profile (E1), the Creature `encounters` field (E3), `canonicalize`, validation, and
    focused positive and negative tests. No content changes.
+   Done in `OTV2-20260928-encounter-admission-rust`, in `apps/game-server/src/content/project/v2/encounter.rs`.
+   `ProjectV2EncounterAuthoring.details` holds the typed vocabulary, with percentages as exact ppm and every union as a
+   tagged value. Rust checks ranges, exact references, and that every role, anchor, area, counter, flag, timer, phase,
+   outcome and encounter ability a rule names is declared. `ProjectV2CreatureAuthoring.encounters` binds a creature to
+   its encounters (E3). The D45 summon spells get `ProjectV2AbilityDetails.encounter`: exactly one of effects, variants
+   and encounter, and an encounter-backed ability must be a spell. Tests:
+   `apps/game-server/tests/content_world_project_v2_encounter_admission.rs`.
 4. Writer and the first wave: `creature_admission_stage.py` stages the encounters and their creatures under E4, the
    materializer pins the result, and the content tree is regenerated (`content/encounters/{bosses,…}`). One
    independent exact-head review applies, because `content/world` changes.

@@ -435,6 +435,9 @@ pub struct ProjectV2AbilityDetails {
     /// Each cast runs one variant picked uniformly; exclusive with effects, area and chain.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub variants: Vec<ProjectV2DefinitionRef>,
+    /// D45: a spell whose script summons through an encounter rule instead of listing effects.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub encounter: Option<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub path_requirement: Option<ProjectV2PathRequirement>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -1360,10 +1363,28 @@ pub(super) fn validate_ability_details(
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
     limits: ProjectEvidenceLimits,
 ) -> Result<(), ProjectError> {
-    if details.variants.is_empty() == details.effects.is_empty() {
+    let bodies = [
+        !details.effects.is_empty(),
+        !details.variants.is_empty(),
+        details.encounter.is_some(),
+    ];
+    if bodies.into_iter().filter(|present| *present).count() != 1 {
         return Err(ProjectError::InvalidProject(
-            "v2 Ability details need exactly one of effects and variants",
+            "v2 Ability details need exactly one of effects, variants and encounter",
         ));
+    }
+    if let Some(encounter) = &details.encounter {
+        if details.kind != ProjectV2AbilityKind::Spell {
+            return Err(ProjectError::InvalidProject(
+                "v2 encounter-backed Ability must be a spell",
+            ));
+        }
+        family(
+            encounter,
+            ProjectV2Family::Encounter,
+            "v2 Ability encounter family mismatch",
+            require_ref,
+        )?;
     }
     if !details.variants.is_empty() {
         if details.variants.len() < 2 || details.area.is_some() || details.chain.is_some() {

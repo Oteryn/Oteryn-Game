@@ -4,7 +4,9 @@
 use super::*;
 
 mod creature;
+mod encounter;
 pub use creature::*;
+pub use encounter::*;
 
 pub const WORLD_PROJECT_V2_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2";
 pub const WORLD_PROJECT_V2_ROOT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_ROOT/v2";
@@ -672,6 +674,10 @@ pub struct ProjectV2CreatureAuthoring {
     /// Admission §5: the rest of the monster authoring creature section.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub details: Option<Box<ProjectV2CreatureDetails>>,
+    /// Encounter admission E3: the encounters that cover this creature. A later spawn, placement
+    /// or activation slice never activates the creature without them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub encounters: Vec<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -789,6 +795,9 @@ pub struct ProjectV2EncounterAuthoring {
     pub repeatable: Option<bool>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub interactions: Vec<ProjectV2DefinitionRef>,
+    /// Encounter admission E1: the whole encounter authoring format v1.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<ProjectV2EncounterDetails>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -840,6 +849,7 @@ impl ProjectV2AuthoringProfile {
                     .sort_by(|left, right| left.damage_type.cmp(&right.damage_type));
                 profile.immunities.sort();
                 profile.abilities.sort();
+                profile.encounters.sort();
                 if let Some(bestiary) = &mut profile.bestiary {
                     bestiary.kill_thresholds.sort();
                 }
@@ -884,6 +894,9 @@ impl ProjectV2AuthoringProfile {
             ProjectV2AuthoringProfileData::Encounter(profile) => {
                 profile.areas.sort();
                 profile.interactions.sort();
+                if let Some(details) = &mut profile.details {
+                    details.canonicalize();
+                }
                 profile
                     .fields
                     .sort_by(|left, right| left.field_path.cmp(&right.field_path));
@@ -2214,6 +2227,14 @@ fn validate_v2_authoring_profile(
                 require_ref,
                 limits,
             )?;
+            validate_v2_ref_list(
+                &value.encounters,
+                ProjectV2Family::Encounter,
+                "v2 Creature encounters",
+                "v2 Creature encounters are invalid",
+                require_ref,
+                limits,
+            )?;
             if let Some(bestiary) = &value.bestiary {
                 validate_v2_source_text("v2 Bestiary difficulty", &bestiary.difficulty, limits)?;
                 if let Some(occurrence) = &bestiary.occurrence {
@@ -2414,6 +2435,9 @@ fn validate_v2_authoring_profile(
                 require_ref,
                 limits,
             )?;
+            if let Some(details) = &value.details {
+                validate_encounter_details(details, require_ref, limits)?;
+            }
             validate_v2_candidate_fields(&value.fields)?;
         }
         ProjectV2AuthoringProfileData::WorldObject(value) => {
