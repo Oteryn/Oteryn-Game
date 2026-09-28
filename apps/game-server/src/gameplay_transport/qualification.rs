@@ -670,7 +670,9 @@ fn client_command_at(generation: u64, id: u64, command_type: u64, payload: &[u8]
 }
 
 /// The exact frames after `ServerAccepted` for the first-control scenario, from the committed
-/// room of `world`: start (0,0,0), east (1,0,0) walkable, north blocked, south absent.
+/// room of `world`: start (0,0,0), east (1,0,0) walkable, north blocked, south absent. The join
+/// snapshot also carries the door's current (closed, revision 0) `WORLD_OBJECT_OVERLAY`
+/// (USE-WIRE-V1, #162 5868482467).
 fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
     let room = crate::content::qualify_native_entry_room(world)
         .map_err(|e| format!("native entry room: {e}"))?;
@@ -694,16 +696,38 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
             &at(x),
         )
     };
+    let door_overlay = crate::gameplay_transport::world_object::WorldObjectOverlayEntry {
+        content_generation: room.compiled().client_digest(),
+        placement: crate::content::accepted::DOOR_CELL.0.as_bytes().to_vec(),
+        state: crate::content::accepted::DOOR_CLOSED_STATE
+            .as_bytes()
+            .to_vec(),
+        revision: 0,
+    };
     let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
         1,
         1,
         0,
-        &[DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            revision: 1,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-            payload: &at(0),
-        }],
+        &[
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 1,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &at(0),
+            },
+            DomainSnapshot {
+                domain_id:
+                    crate::gameplay_transport::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 0,
+                snapshot_type:
+                    crate::gameplay_transport::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload:
+                    &crate::gameplay_transport::world_object::encode_world_object_overlay_snapshot(
+                        &[door_overlay],
+                    )
+                    .map_err(|_| "encode door overlay snapshot")?,
+            },
+        ],
     )?
     .into();
     frames.extend([
@@ -717,6 +741,126 @@ fn first_control_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
         encode_command_result(1, 7, 5, CommandStatus::Rejected, &[])?,
         // Command 7 after 5: a gap naming the offending and the expected ID.
         encode_command_protocol_error(FoundationProtocolError::CommandSequenceGap, 1, 7, 6)?,
+    ]);
+    Ok(frames)
+}
+
+/// The exact frames after `ServerAccepted` for the USE-WIRE-V1 scenario (#162 5868482467,
+/// M2b): the door starts closed at revision 0 (join snapshot). Adjacent USE opens it
+/// (COMMITTED, revision 1); stepping north now moves through the open doorway; USE while
+/// standing in the doorway is OCCUPIED (no mutation); stepping south vacates it; USE now
+/// COMMITs the close (revision 2); stepping north again is Blocked by the closed door; a
+/// stale-revision USE is STALE_STATE; an unknown placement is NOTHING_TO_USE; and replaying the
+/// already-consumed CommandId 6 expires and closes the connection — the same FND-02 CommandId
+/// discipline a replayed STEP CommandId gets, so it can never make a second transition. Every
+/// accepted cell in the qualified room is within Chebyshev distance 1 of the door (#935/#937),
+/// so a genuine TOO_FAR case cannot be exercised through real movement here; it is covered by
+/// `gameplay_transport::tests::use_object_reachable_is_chebyshev_one_same_floor_only` instead.
+fn use_wire_frames(world: WorldId) -> TestResult<Vec<Vec<u8>>> {
+    use crate::gameplay_transport::world_object::{
+        DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1, SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+        STATE_DOMAIN_WORLD_OBJECT_OVERLAY, UseDisposition, WorldObjectOverlayEntry,
+        encode_use_result, encode_world_object_overlay_delta, encode_world_object_overlay_snapshot,
+    };
+    let room = crate::content::qualify_native_entry_room(world)
+        .map_err(|e| format!("native entry room: {e}"))?;
+    let content_generation = room.compiled().client_digest();
+    let door_key = crate::content::accepted::DOOR_CELL.0.as_bytes();
+    let spatial_at = |x, y| {
+        encode_world_spatial(&WorldSpatialObservation {
+            content_generation,
+            actor_position: ActorPosition { x, y, floor: 0 },
+        })
+    };
+    let overlay_entry = |state: &str, revision: u64| WorldObjectOverlayEntry {
+        content_generation,
+        placement: door_key.to_vec(),
+        state: state.as_bytes().to_vec(),
+        revision,
+    };
+    let step_result = |sequence, id, disposition| {
+        encode_command_result(
+            1,
+            sequence,
+            id,
+            CommandStatus::Accepted,
+            &encode_step_result(disposition),
+        )
+    };
+    let spatial_delta = |sequence, from, x, y| {
+        encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+            from,
+            from + 1,
+            DELTA_TYPE_WORLD_SPATIAL_V1,
+            &spatial_at(x, y),
+        )
+    };
+    let use_result = |sequence, id, disposition| {
+        encode_command_result(
+            1,
+            sequence,
+            id,
+            CommandStatus::Accepted,
+            &encode_use_result(disposition),
+        )
+    };
+    let overlay_delta = |sequence, from, state: &str, to| -> TestResult<Vec<u8>> {
+        let payload = encode_world_object_overlay_delta(&overlay_entry(state, to))
+            .map_err(|_| "encode overlay delta")?;
+        Ok(encode_state_delta(
+            1,
+            sequence,
+            STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+            from,
+            to,
+            DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            &payload,
+        )?)
+    };
+    let mut frames: Vec<Vec<u8>> = encode_single_chunk_snapshot(
+        1,
+        1,
+        0,
+        &[
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 1,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &spatial_at(0, 0),
+            },
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 0,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &encode_world_object_overlay_snapshot(&[overlay_entry(
+                    crate::content::accepted::DOOR_CLOSED_STATE,
+                    0,
+                )])
+                .map_err(|_| "encode overlay snapshot")?,
+            },
+        ],
+    )?
+    .into();
+    frames.extend([
+        step_result(1, 1, StepDisposition::Moved)?, // cmd1: east (0,0)->(1,0)
+        spatial_delta(2, 1, 1, 0)?,
+        use_result(3, 2, UseDisposition::Committed)?, // cmd2: use open, adjacent
+        overlay_delta(4, 0, crate::content::accepted::DOOR_OPEN_STATE, 1)?,
+        step_result(5, 3, StepDisposition::Moved)?, // cmd3: north (1,0)->(1,-1), door open
+        spatial_delta(6, 2, 1, -1)?,
+        use_result(7, 4, UseDisposition::Occupied)?, // cmd4: use close, standing in the doorway
+        step_result(8, 5, StepDisposition::Moved)?,  // cmd5: south (1,-1)->(1,0), vacates
+        spatial_delta(9, 3, 1, 0)?,
+        use_result(10, 6, UseDisposition::Committed)?, // cmd6: use close, now unoccupied
+        overlay_delta(11, 1, crate::content::accepted::DOOR_CLOSED_STATE, 2)?,
+        step_result(12, 7, StepDisposition::Blocked)?, // cmd7: north again, door now closed
+        use_result(13, 8, UseDisposition::StaleState)?, // cmd8: use open, expected_revision=0 (stale)
+        use_result(14, 9, UseDisposition::NothingToUse)?, // cmd9: use, unknown placement
+        // cmd6 replayed: already consumed, expires and closes (same FND-02 discipline as STEP).
+        encode_command_protocol_error(FoundationProtocolError::CommandOutcomeExpired, 1, 6, 0)?,
     ]);
     Ok(frames)
 }
@@ -938,7 +1082,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
         frame_binding_digest: room.frame_binding().digest(),
     };
     let mut content_controller = crate::content::ContentActivationController::new();
-    let (channel_pin, movement_cells) = crate::content::activate_native_entry_room(
+    let (channel_pin, movement_cells, door_content) = crate::content::activate_native_entry_room(
         &mut content_controller,
         &crate::content::NodeBootQuiescence::before_channel_runtime(),
         world,
@@ -946,6 +1090,29 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     )
     .map_err(|e| format!("native entry activation: {e}"))?
     .into_channel_parts();
+    // #162 5868482467 (M2b): the same door-binding the production boot sequence performs, from
+    // the same committed scope and ownership generation this Channel runtime is composed with
+    // below.
+    let door_scope_generation =
+        crate::foundation::ScopeOwnershipGeneration::new(assigned.assignment.ownership_generation)
+            .map_err(|e| format!("native entry door scope generation: {e:?}"))?;
+    let door_content_generation =
+        crate::world_runtime::ReferenceContentGeneration::from_content(&door_content)
+            .map_err(|e| format!("native entry door content generation: {e:?}"))?;
+    let door_fence = crate::world_runtime::ScopeContentGenerationFence::for_activation(
+        scope,
+        door_scope_generation,
+        door_content_generation,
+    );
+    let door = tokio::sync::Mutex::new(
+        crate::world_runtime::bind_native_entry_door(
+            &door_content,
+            &door_fence,
+            scope,
+            door_scope_generation,
+        )
+        .map_err(|e| format!("native entry door runtime: {e:?}"))?,
+    );
     // KAN-26: the Channel runtime is composed from this exact committed
     // assignment before readiness, as `serve` does.
     let runtime = tokio::sync::Mutex::new(
@@ -1050,6 +1217,7 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
             channel_id: channel,
             runtime: &runtime,
             movement_cells: &movement_cells,
+            door: &door,
         },
         &shutdown,
     );
@@ -1098,18 +1266,21 @@ async fn seam_flow(accounts: &[String; 2], key_id: &str, signing: &SigningKey) -
     // KAN-26: every committed fresh admission holds exactly one player actor;
     // refused, replayed and losing attempts leave no reservation behind; and
     // ordinary disconnect (every client has closed by now) removes nothing.
-    // #822: the two lost actors were removed only by a durable terminal release: the
-    // silent one after grace, the resumed one when its recovered connection ended again.
-    // The re-admitted character holds the one remaining actor, and a plain disconnect
-    // removed nothing (its loss window was cut by shutdown).
+    // #822: three lost actors were removed only by a durable terminal release: the silent
+    // (concurrent[0]) one after grace, the resumed (session) one when its recovered connection
+    // ended again, and the use-wire (#162 5868482467) one after its own grace. The re-admitted
+    // character[0] holds the one remaining actor, and a plain disconnect removed nothing (its
+    // loss window was cut by shutdown). `committed_admissions` is a durable receipt count that
+    // never decreases, so it reflects all four admissions made (fresh, concurrent-winner,
+    // grace-expiry re-admission, use-wire re-admission), not the one actor still committed.
     let (committed_players, pending) = runtime.lock().await.player_slot_counts();
-    if committed_players != 1 || pending != 0 || committed_admissions(&url).await? != 3 {
+    if committed_players != 1 || pending != 0 || committed_admissions(&url).await? != 4 {
         return Err(
             format!("channel runtime committed={committed_players} pending={pending}").into(),
         );
     }
     evidence(
-        "channel_runtime committed_players=1 pending_reservations=0 released_after_grace=2 disconnect_removed=0",
+        "channel_runtime committed_players=1 pending_reservations=0 released_after_grace=3 disconnect_removed=0",
     );
     // #935: the remaining committed actor was positioned once, by the Channel
     // owner, at the pinned generation's start cell under the pinned context,
@@ -1244,16 +1415,41 @@ fn resume_frames(
             selected_capabilities: &[],
         },
     )?];
+    // USE-WIRE-V1 (#162 5868482467): the resync join snapshot also carries the door's current
+    // `WORLD_OBJECT_OVERLAY`; nothing in this scenario touches the door, so it is still closed
+    // at revision 0.
+    let door_overlay = crate::gameplay_transport::world_object::WorldObjectOverlayEntry {
+        content_generation: room.compiled().client_digest(),
+        placement: crate::content::accepted::DOOR_CELL.0.as_bytes().to_vec(),
+        state: crate::content::accepted::DOOR_CLOSED_STATE
+            .as_bytes()
+            .to_vec(),
+        revision: 0,
+    };
     frames.extend(encode_single_chunk_snapshot(
         generation,
         1,
         sequence,
-        &[DomainSnapshot {
-            domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-            revision,
-            snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-            payload: &at(x),
-        }],
+        &[
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &at(x),
+            },
+            DomainSnapshot {
+                domain_id:
+                    crate::gameplay_transport::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 0,
+                snapshot_type:
+                    crate::gameplay_transport::world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload:
+                    &crate::gameplay_transport::world_object::encode_world_object_overlay_snapshot(
+                        &[door_overlay],
+                    )
+                    .map_err(|_| "encode door overlay snapshot")?,
+            },
+        ],
     )?);
     frames.extend([
         encode_command_result(
@@ -1776,8 +1972,120 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
             tokio::time::sleep(Duration::from_millis(500)).await;
         }
     }
-    // The Channel removes the exact actor only after the TERMINAL fact, so a fresh entry
-    // is refused until then; retry with a fresh grant for a bounded time.
+    evidence("grace_expiry closed=terminal silent=terminal admissions=2");
+
+    evidence("stage=use_wire");
+    // USE-WIRE-V1 (#162 5868482467, M2b): the released character[1] (now TERMINAL, above) is
+    // admitted fresh (a 3rd durable admission — the receipt count never decreases, see
+    // `committed_admissions`), then drives the full door interaction in one batch (see
+    // `use_wire_frames` for the exact expected disposition of each command). The connection ends
+    // the same way the "admission" stage's own `session` does (a command replay closes it): the
+    // resulting durable GameSession becomes RECONNECTABLE and is then released after its own
+    // grace, exactly like `session`/`concurrent[0]` above. This whole stage — admission through
+    // full release — runs *before* character[0]'s own final re-admission below, and not
+    // concurrently with it: character[0]'s plain-disconnect connection (below) survives only
+    // because `seam_clients` returns, and `shutdown` cancels the listener, before its own missed-
+    // liveness control-loss timer fires; letting this stage's ~160s release wait run afterward
+    // (delaying that return) would give that timer time to fire too and terminally release
+    // character[0] as well, breaking `seam_flow`'s final invariant (exactly the P1 this ordering
+    // fixes: r4122215795's companion CI finding).
+    let use_session = {
+        use crate::gameplay_transport::world_object::{
+            COMMAND_TYPE_USE_INTENT, WorldObjectTarget, encode_use_intent,
+        };
+        let door_key = crate::content::accepted::DOOR_CELL.0;
+        let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+        let step_type = u64::from(COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT);
+        let use_frame = |id: u64, placement: &str, expected_revision: u64| -> TestResult<Vec<u8>> {
+            let payload = encode_use_intent(&WorldObjectTarget {
+                placement: placement.as_bytes().to_vec(),
+                expected_revision,
+            })
+            .map_err(|_| "encode use intent")?;
+            Ok(client_command(id, use_type, &payload))
+        };
+        let step_frame = |id: u64, direction: StepDirection| {
+            client_command(id, step_type, &encode_step_intent(direction))
+        };
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
+        loop {
+            let generation = platform_generation(descriptor, &accounts[1]).await?;
+            let again = next_grant(&accounts[1], characters[1], generation);
+            let token = sign_grant(&again.borrowed(), now_seconds()?);
+            let mut raw = framed(&bootstrap(1, 1, &characters[1], &token));
+            for frame in [
+                step_frame(1, StepDirection::East),
+                use_frame(2, door_key, 0)?,
+                step_frame(3, StepDirection::North),
+                use_frame(4, door_key, 1)?,
+                step_frame(5, StepDirection::South),
+                use_frame(6, door_key, 1)?,
+                step_frame(7, StepDirection::North),
+                use_frame(8, door_key, 0)?,
+                use_frame(9, "oteryn:cell/unknown", 2)?,
+                // Replays the already-consumed CommandId 6.
+                use_frame(6, door_key, 1)?,
+            ] {
+                raw.extend_from_slice(&framed(&frame));
+            }
+            let reply = exchange_must_close(address, &exact, &raw).await?;
+            if let Some(session) = accepted_session(&reply) {
+                let Reply::Frames(frames) = &reply else {
+                    return Err("missing frames".into());
+                };
+                let expected = use_wire_frames(WorldId::decode(&world)?)?;
+                if frames.get(1..) != Some(expected.as_slice()) {
+                    return Err(format!("use-wire scenario diverged: {reply:?}").into());
+                }
+                break session;
+            }
+            if tokio::time::Instant::now() >= deadline {
+                return Err(format!("use-wire character was not admitted again: {reply:?}").into());
+            }
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+    };
+    if committed_admissions(url).await? != 3 {
+        return Err("use-wire admission did not commit exactly one GameSession".into());
+    }
+    evidence(
+        "use_wire door_open=committed step_through=moved use_in_doorway=occupied step_out=moved door_close=committed step_blocked=blocked stale_revision=stale_state unknown_placement=nothing_to_use replayed_command_id=expired admissions=3",
+    );
+
+    // Release the use-wire actor the same way the "closed" transport above is released:
+    // control loss (RECONNECTABLE, epoch 1) after the missed-liveness window, then terminal
+    // release after its own grace. No resume is attempted for it. This completes in full, here,
+    // before character[0]'s own final re-admission below is even attempted.
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(60);
+    loop {
+        if let Some((1, epoch, grace)) = session_loss_row(url, use_session).await? {
+            if epoch != "1" || !(58..=62).contains(&grace) {
+                return Err(format!("use-wire loss epoch={epoch} grace={grace}").into());
+            }
+            break;
+        }
+        if tokio::time::Instant::now() >= deadline {
+            return Err("use-wire session never became reconnectable".into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    let deadline = tokio::time::Instant::now() + Duration::from_secs(100);
+    while !matches!(session_loss_row(url, use_session).await?, Some((3, _, _))) {
+        if tokio::time::Instant::now() >= deadline {
+            return Err("use-wire session was not released after grace".into());
+        }
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+    evidence("use_wire released=terminal admissions=3");
+
+    // character[0]'s own final re-admission (#822): the Channel removes the exact actor only
+    // after the TERMINAL fact (already proven above), so a fresh entry is refused until then;
+    // retry with a fresh grant for a bounded time. This is deliberately the *last* action before
+    // this function returns: the connection below is a plain disconnect (never a command-gap
+    // close), so its own control-loss timer is racing the `shutdown` this function's caller
+    // fires immediately once every client case is done, and it must win that race — exactly as
+    // it did before this stage existed — to remain the one committed actor `seam_flow`'s final
+    // invariant expects.
     let deadline = tokio::time::Instant::now() + Duration::from_secs(10);
     loop {
         let generation = platform_generation(descriptor, &accounts[0]).await?;
@@ -1797,12 +2105,10 @@ async fn seam_clients(clients: SeamClients<'_>) -> TestResult {
         }
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
-    if committed_admissions(url).await? != 3 {
+    if committed_admissions(url).await? != 4 {
         return Err("readmission after release did not commit exactly one GameSession".into());
     }
-    evidence(
-        "grace_expiry closed=terminal silent=terminal readmitted_after_release=1 admissions=3",
-    );
+    evidence("grace_expiry readmitted_after_release=1 admissions=4");
     Ok(())
 }
 

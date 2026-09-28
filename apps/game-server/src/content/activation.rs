@@ -432,6 +432,10 @@ pub struct NativeEntryContentPin {
     entry_start: super::NativeEntryStart,
     map_revision_digest: [u8; 32],
     movement_cells: super::NativeEntryMovementCells,
+    /// The one door's own genuine, fully linked Reference-profile content (M2b, 5868482467),
+    /// carried through from the same qualified room this pin activates. The Channel activation
+    /// owner binds the door's `LocalObjectRuntime` from this exact content.
+    door: super::CanonicalReferencePlayableContent,
 }
 
 impl NativeEntryContentPin {
@@ -451,16 +455,19 @@ impl NativeEntryContentPin {
         self.entry_start
     }
 
-    /// The digest-level pin the Channel runtime is created with, and the qualified cells the
-    /// Channel's Movement reads. Consuming the activation pin keeps one active generation per
-    /// Channel creation.
+    /// The digest-level pin the Channel runtime is created with, the qualified cells the
+    /// Channel's Movement reads, and the door's own qualified content the Channel's door
+    /// `LocalObjectRuntime` binds from (M2b). Consuming the activation pin keeps one active
+    /// generation per Channel creation.
     pub(crate) fn into_channel_parts(
         self,
     ) -> (
         crate::foundation::ChannelContentPin,
         super::NativeEntryMovementCells,
+        super::CanonicalReferencePlayableContent,
     ) {
-        (self.channel_pin(), self.movement_cells)
+        let channel_pin = self.channel_pin();
+        (channel_pin, self.movement_cells, self.door)
     }
 
     #[cfg(test)]
@@ -591,6 +598,7 @@ pub fn activate_native_entry_room(
         entry_start: room.entry_start(),
         map_revision_digest: room.map_revision_digest(),
         movement_cells: room.movement_cells().clone(),
+        door: room.door().clone(),
     })
 }
 

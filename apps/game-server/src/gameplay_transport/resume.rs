@@ -12,6 +12,7 @@
 use super::connection::{
     AdmissionRefusal, AdmittedSession, ControllerBinding, FreshAdmissionAuthority, ResumeAttempt,
 };
+use super::world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY;
 use super::world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY;
 use super::{ComposedFreshAdmission, canonical_uuid};
 use crate::durability::admission_authority_guards::AdmissionGuardStore;
@@ -244,6 +245,11 @@ impl ComposedFreshAdmission<'_, '_, '_> {
                     lost.continuity.spatial_revision,
                 )
                 .map_err(|_| Unavailable)?,
+                StateDomainRevisionV1::new(
+                    STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                    lost.continuity.overlay_revision,
+                )
+                .map_err(|_| Unavailable)?,
             ],
         )
         .map_err(|_| Unavailable)?;
@@ -415,4 +421,62 @@ async fn recovery_budget_of(
         .recovery_budget(session, epoch)
         .await
         .map_err(|_| AdmissionRefusal::Unavailable)
+}
+
+#[cfg(test)]
+#[allow(clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    /// #162 5870253781 (r4122215795, reconnect fence P1): `resume_lost`'s FND-02
+    /// reconciliation fence must carry both domain 1 (`WORLD_SPATIAL_VISIBILITY`) and domain 2
+    /// (`WORLD_OBJECT_OVERLAY`) revisions after a resume, in ascending domain-id order —
+    /// `Fnd02ReconciliationFenceV1::new` itself requires strictly ascending order and refuses
+    /// otherwise. This exercises the exact two-entry construction `resume_lost` builds, with the
+    /// same domain constants and field types it reads from `lost.continuity`.
+    #[test]
+    fn reconciliation_fence_carries_both_spatial_and_overlay_domains() {
+        let fence = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(7).expect("command id"),
+            Vec::new(),
+            9,
+            vec![
+                StateDomainRevisionV1::new(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, 3)
+                    .expect("spatial domain revision"),
+                StateDomainRevisionV1::new(STATE_DOMAIN_WORLD_OBJECT_OVERLAY, 2)
+                    .expect("overlay domain revision"),
+            ],
+        )
+        .expect("reconciliation fence");
+        let domains = fence.domain_revisions();
+        assert_eq!(domains.len(), 2);
+        assert_eq!(
+            domains[0].domain_id(),
+            STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY
+        );
+        assert_eq!(domains[0].revision(), 3);
+        assert_eq!(domains[1].domain_id(), STATE_DOMAIN_WORLD_OBJECT_OVERLAY);
+        assert_eq!(domains[1].revision(), 2);
+    }
+
+    /// The reverse (descending domain-id) order the fence would carry if the overlay entry were
+    /// ever placed before the spatial one is refused, proving the ordering in `resume_lost`
+    /// matters and is exercised, not incidental.
+    #[test]
+    fn reconciliation_fence_refuses_descending_domain_order() {
+        assert!(
+            Fnd02ReconciliationFenceV1::new(
+                CommandId::new(1).expect("command id"),
+                Vec::new(),
+                1,
+                vec![
+                    StateDomainRevisionV1::new(STATE_DOMAIN_WORLD_OBJECT_OVERLAY, 1)
+                        .expect("overlay domain revision"),
+                    StateDomainRevisionV1::new(STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, 1)
+                        .expect("spatial domain revision"),
+                ],
+            )
+            .is_err()
+        );
+    }
 }

@@ -104,6 +104,29 @@ impl ScopeContentGenerationFence {
         }
     }
 
+    /// The crate-visible, non-test constructor for the Channel activation owner (#162
+    /// 5868482467, M2b). Built once, at Channel activation, directly from the exact scope
+    /// being activated, its current ownership generation and the content generation of the
+    /// content that activation is bringing up — never from any value a later `bind` call is
+    /// validating against it (`validate_candidate` below still re-checks every candidate that
+    /// tries to bind against this fixed fence). The caller is `node/serve.rs`'s boot sequence,
+    /// which already holds the committed `RuntimeScopeRefV1`, `ScopeOwnershipGeneration` and
+    /// the door's own `ReferenceContentGeneration` at the same point it builds the Channel
+    /// runtime; nothing here derives any of the three from the door `LocalObjectRuntime` this
+    /// fence is then used to bind.
+    #[must_use]
+    pub(crate) fn for_activation(
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        content_generation: ReferenceContentGeneration,
+    ) -> Self {
+        Self {
+            scope,
+            scope_generation,
+            content_generation,
+        }
+    }
+
     fn validate_candidate(
         &self,
         scope: RuntimeScopeRefV1,
@@ -382,6 +405,85 @@ fn validate_synthetic_placement_evidence(
     Ok(())
 }
 
+/// Builds the native entry-room door's synthetic, non-promotable `PlacementRef` (#162 A4-a,
+/// M2b 5868482467) from the qualified door cell and binds its `LocalObjectRuntime` under
+/// `fence`. `door_content` is the exact qualified, fully linked door content
+/// (`NativeEntryContentPin::door` / `QualifiedNativeEntryRoom::door`); its own `placements` stay
+/// empty (M2a DECISION_REQUIRED, r4120444680 — the accepted evidence manifest has no
+/// `CONTENT_WORLD` case that can promote any placement claim honestly yet), so this placement is
+/// injected into a local clone rather than authored through `link_reference_playable`, exactly
+/// as the CW4 test fixtures elsewhere in this file inject their own synthetic placements. The
+/// injected placement changes nothing `ReferenceContentGeneration::from_content` hashes, so it
+/// binds under the same fence the caller already built from the unmutated `door_content`.
+///
+/// The sole caller is the Channel activation owner (`node/serve.rs`'s boot sequence, and the WP5
+/// seam qualification harness building the same owners), once per Channel activation.
+pub(crate) fn bind_native_entry_door(
+    door_content: &CanonicalReferencePlayableContent,
+    fence: &ScopeContentGenerationFence,
+    scope: RuntimeScopeRefV1,
+    scope_generation: ScopeOwnershipGeneration,
+) -> Result<LocalObjectRuntime, WorldRuntimeError> {
+    use crate::content::accepted as door_accepted;
+    let invalid =
+        |_| WorldRuntimeError::InvalidBinding("native entry door synthetic placement fixture");
+    let evidence = crate::content::EvidenceBindingRef::new(
+        crate::content::ProductionAtom::new("native entry door manifest revision", "manifest-r0")
+            .map_err(invalid)?,
+        ProductionKey::new("oteryn:cw4.native-entry-door-placement").map_err(invalid)?,
+        crate::content::EvidenceDisposition::Unknown,
+    );
+    let members = vec![crate::content::FootprintCell {
+        dx: 0,
+        dy: 0,
+        dz: 0,
+    }];
+    let placement_key = PlacementKey::new(door_accepted::DOOR_CELL.0).map_err(invalid)?;
+    let placement = crate::content::PlacementRef {
+        key: placement_key.clone(),
+        map_revision: crate::content::MapRevisionRef::new(door_accepted::REVISIONS[1])
+            .map_err(invalid)?,
+        definition: crate::content::TypedDefinitionRef::new(
+            DefinitionFamily::LocalObject,
+            ProductionKey::new(door_accepted::DOOR_DEFINITION).map_err(invalid)?,
+            crate::content::DefinitionRevisionRef::new(door_accepted::DEFINITION_REVISION)
+                .map_err(invalid)?,
+        ),
+        address: crate::content::SpatialAddress {
+            world_id: door_content.world_id,
+            coordinate_frame: door_content.coordinate_frame.clone(),
+            cell: LogicalCell {
+                x: door_accepted::DOOR_CELL.1,
+                y: door_accepted::DOOR_CELL.2,
+                z: i32::from(door_accepted::DOOR_CELL.3),
+            },
+            evidence: evidence.clone(),
+        },
+        presentation_footprint: FootprintRelation::Qualified {
+            members: members.clone(),
+            evidence: evidence.clone(),
+        },
+        collision_footprint: FootprintRelation::Qualified { members, evidence },
+        local_object_initial_state: Some(
+            ProductionKey::new(door_accepted::DOOR_CLOSED_STATE).map_err(invalid)?,
+        ),
+    };
+    let mut content = door_content.clone();
+    content.placements = vec![placement];
+    LocalObjectRuntime::bind(
+        &content,
+        fence,
+        scope,
+        scope_generation,
+        &placement_key,
+        1,
+        &[
+            TransitionKey::new(door_accepted::DOOR_OPEN_TRANSITION).map_err(invalid)?,
+            TransitionKey::new(door_accepted::DOOR_CLOSE_TRANSITION).map_err(invalid)?,
+        ],
+    )
+}
+
 /// A D38 world-object operation on this runtime's pre-authored anchor, identified by the
 /// authored `TransitionBinding` it invokes (docs/architecture/
 /// OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md §4). `TRANSFORM(from,
@@ -406,6 +508,26 @@ impl LocalObjectOperation {
     fn transition_key(&self) -> &TransitionKey {
         &self.0
     }
+}
+
+/// USE-WIRE-V1 selection-kernel failure (#162 5868482467): `select_use_transition` found no
+/// transition, or more than one, bound to the runtime's current state.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum UseSelectionError {
+    NoCandidate,
+    Ambiguous,
+}
+
+/// USE-WIRE-V1 (#162 5868482467) outcome of `LocalObjectRuntime::attempt_use`, one-to-one with
+/// the wire `UseDisposition` the gameplay seam encodes, except this type carries the committed
+/// state and revision instead of duplicating them into a disposition-only enum.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) enum LocalObjectUseOutcome {
+    Committed { state: ProductionKey, revision: u64 },
+    NothingToUse,
+    Occupied,
+    StaleState,
+    Rejected,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -782,6 +904,86 @@ impl LocalObjectRuntime {
     #[must_use]
     pub(crate) fn blocking_cells(&self) -> &BTreeSet<LogicalCell> {
         &self.blocking_cells
+    }
+
+    /// USE-WIRE-V1 selection kernel (#162 5868482467): the client's `UseIntentV1` names no
+    /// transition, only the target placement. The server selects the unique transition this
+    /// runtime binds whose `source_state` is this runtime's *current* state. Zero candidates
+    /// (nothing usable from here) and more than one candidate (an ambiguous authored binding)
+    /// both fail closed; this method reads only, it never mutates and never picks a plausible
+    /// candidate over an exact one.
+    fn select_use_transition(&self) -> Result<TransitionKey, UseSelectionError> {
+        let mut candidates = self
+            .transitions
+            .values()
+            .filter(|transition| transition.source_state == self.state)
+            .map(|transition| transition.key.clone());
+        let first = candidates.next().ok_or(UseSelectionError::NoCandidate)?;
+        if candidates.next().is_some() {
+            return Err(UseSelectionError::Ambiguous);
+        }
+        Ok(first)
+    }
+
+    /// USE-WIRE-V1 (#162 5868482467): applies exactly the one server-selected transition (see
+    /// `select_use_transition`) this runtime's current state binds. This is the seam-local,
+    /// in-memory integration level `ComposedFreshAdmission::use_object` uses — the same level
+    /// `ComposedFreshAdmission::step` already uses for Movement — and not the durable
+    /// `CommandIngress`/`GameSessionAuthoritySnapshot` command lifecycle `apply`/
+    /// `resume_pending` serve. `occupied_cells` carries only the cells the caller has already
+    /// proven are currently occupied (WOBJ-RL-01: at most one use input per actor per Channel
+    /// work cycle, so the caller supplies at most the acting actor's own current cell here).
+    pub(crate) fn attempt_use(
+        &mut self,
+        expected_revision: u64,
+        occupied_cells: &BTreeSet<LogicalCell>,
+    ) -> Result<LocalObjectUseOutcome, WorldRuntimeError> {
+        // Codex 5869579920: a stale caller's `expected_revision` is checked against the
+        // current revision before selection ever runs. Selection reads the runtime's
+        // *current* state (a different state than the one the stale caller last saw), so
+        // running it first can report NOTHING_TO_USE/REJECTED/OCCUPIED computed from a state
+        // the caller does not know about, instead of the STALE_STATE its evidence actually
+        // calls for. A stale caller must always get STALE_STATE, regardless of what the
+        // current state's own transition topology looks like.
+        if expected_revision != self.revision {
+            return Ok(LocalObjectUseOutcome::StaleState);
+        }
+        let transition_key = match self.select_use_transition() {
+            Ok(key) => key,
+            Err(UseSelectionError::NoCandidate) => return Ok(LocalObjectUseOutcome::NothingToUse),
+            Err(UseSelectionError::Ambiguous) => return Ok(LocalObjectUseOutcome::Rejected),
+        };
+        let transition =
+            self.transitions
+                .get(&transition_key)
+                .ok_or(WorldRuntimeError::InvalidBinding(
+                    "selected use transition is no longer bound",
+                ))?;
+        // Guaranteed by `select_use_transition`'s own filter, not re-derived from client input.
+        debug_assert_eq!(transition.source_state, self.state);
+        let target_collision = local_object_state_collision(&self.states, &transition.target_state)
+            .ok_or(WorldRuntimeError::InvalidBinding(
+                "bound transition's target state is not declared by the local object",
+            ))?;
+        if target_collision == LocalObjectCollisionPresence::Present
+            && !self.collision_cells.is_disjoint(occupied_cells)
+        {
+            return Ok(LocalObjectUseOutcome::Occupied);
+        }
+        let Some(next_revision) = self.revision.checked_add(1) else {
+            return Ok(LocalObjectUseOutcome::Rejected);
+        };
+        let next_state = transition.target_state.clone();
+        self.blocking_cells = match target_collision {
+            LocalObjectCollisionPresence::Present => self.collision_cells.clone(),
+            LocalObjectCollisionPresence::Absent => BTreeSet::new(),
+        };
+        self.state = next_state.clone();
+        self.revision = next_revision;
+        Ok(LocalObjectUseOutcome::Committed {
+            state: next_state,
+            revision: next_revision,
+        })
     }
 
     fn transition_for(
@@ -2703,6 +2905,185 @@ mod tests {
         );
         assert_eq!(restarted.revision(), 0);
         assert!(restarted.blocking_cells().is_empty());
+        Ok(())
+    }
+
+    // USE-WIRE-V1 selection kernel and `attempt_use` (#162 5868482467, M2b). SEAM_EVIDENCE:
+    // world_runtime.rs use-selection kernel unit coverage.
+
+    #[test]
+    fn use_selection_kernel_fails_closed_on_an_ambiguous_current_state()
+    -> Result<(), WorldRuntimeError> {
+        let content = world_object_overlay_content("wo-r1")?;
+        let (_authority, _session, scope) = authority(90, 18, 1, 1)?;
+        let mut runtime =
+            world_object_runtime_for(&content, scope, 1, &world_object_all_transitions()?)?;
+        let empty = BTreeSet::new();
+
+        // "absent" binds exactly one outgoing transition (CREATE): a unique candidate commits.
+        assert_eq!(
+            runtime.attempt_use(0, &empty)?,
+            LocalObjectUseOutcome::Committed {
+                state: ProductionKey::new("oteryn:reference.state.world-object-present")?,
+                revision: 1,
+            }
+        );
+
+        // "present" binds two outgoing transitions (REMOVE, RETAG): ambiguous fails closed
+        // before any state read that would leak which one a real selection would have picked,
+        // and makes no mutation.
+        assert_eq!(
+            runtime.attempt_use(1, &empty)?,
+            LocalObjectUseOutcome::Rejected
+        );
+        assert_eq!(runtime.revision(), 1);
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-present"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn use_selection_kernel_fails_closed_with_no_candidate_from_a_terminal_state()
+    -> Result<(), WorldRuntimeError> {
+        let mut content = world_object_overlay_content("wo-r1")?;
+        let placement = content
+            .placements
+            .iter_mut()
+            .find(|placement| placement.key.as_str() == WORLD_OBJECT_PLACEMENT)
+            .ok_or(fixture_error("world object placement"))?;
+        placement.local_object_initial_state = Some(ProductionKey::new(
+            "oteryn:reference.state.world-object-dormant",
+        )?);
+        let (_authority, _session, scope) = authority(91, 19, 1, 1)?;
+        let mut runtime =
+            world_object_runtime_for(&content, scope, 1, &world_object_all_transitions()?)?;
+        let empty = BTreeSet::new();
+
+        // "dormant" binds no outgoing transition among the four bound here: zero candidates
+        // fails closed as NothingToUse, and makes no mutation.
+        assert_eq!(
+            runtime.attempt_use(0, &empty)?,
+            LocalObjectUseOutcome::NothingToUse
+        );
+        assert_eq!(runtime.revision(), 0);
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-dormant"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn stale_revision_wins_over_an_ambiguous_current_state() -> Result<(), WorldRuntimeError> {
+        let content = world_object_overlay_content("wo-r1")?;
+        let (_authority, _session, scope) = authority(93, 21, 1, 1)?;
+        let mut runtime =
+            world_object_runtime_for(&content, scope, 1, &world_object_all_transitions()?)?;
+        let empty = BTreeSet::new();
+
+        // Reach "present" (revision 1), which binds two outgoing transitions (REMOVE, RETAG):
+        // selecting from here alone would be Ambiguous/Rejected.
+        assert_eq!(
+            runtime.attempt_use(0, &empty)?,
+            LocalObjectUseOutcome::Committed {
+                state: ProductionKey::new("oteryn:reference.state.world-object-present")?,
+                revision: 1,
+            }
+        );
+
+        // Codex 5869579920: a stale `expected_revision` (the caller's last-known revision 0,
+        // now behind the current revision 1) must report STALE_STATE, never the Rejected an
+        // ambiguous *current* state would otherwise produce, and must not mutate.
+        assert_eq!(
+            runtime.attempt_use(0, &empty)?,
+            LocalObjectUseOutcome::StaleState
+        );
+        assert_eq!(runtime.revision(), 1);
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-present"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn stale_revision_wins_over_a_terminal_current_state() -> Result<(), WorldRuntimeError> {
+        let mut content = world_object_overlay_content("wo-r1")?;
+        let placement = content
+            .placements
+            .iter_mut()
+            .find(|placement| placement.key.as_str() == WORLD_OBJECT_PLACEMENT)
+            .ok_or(fixture_error("world object placement"))?;
+        placement.local_object_initial_state = Some(ProductionKey::new(
+            "oteryn:reference.state.world-object-dormant",
+        )?);
+        let (_authority, _session, scope) = authority(94, 22, 1, 1)?;
+        let mut runtime =
+            world_object_runtime_for(&content, scope, 1, &world_object_all_transitions()?)?;
+        let empty = BTreeSet::new();
+
+        // Codex 5869579920: "dormant" binds no outgoing transition (would select NothingToUse),
+        // but a stale `expected_revision` (7, never reached: the runtime starts and stays at 0)
+        // must still report STALE_STATE, never NothingToUse, and must not mutate.
+        assert_eq!(
+            runtime.attempt_use(7, &empty)?,
+            LocalObjectUseOutcome::StaleState
+        );
+        assert_eq!(runtime.revision(), 0);
+        assert_eq!(
+            runtime.state_key().as_str(),
+            "oteryn:reference.state.world-object-dormant"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn attempt_use_commits_the_unique_transition_and_reports_stale_and_occupied()
+    -> Result<(), WorldRuntimeError> {
+        let content = synthetic_content("package-r1")?;
+        let (_authority, _session, scope) = authority(92, 20, 1, 1)?;
+        let mut runtime = runtime_for(&content, scope, PLACEMENT_A, 1)?;
+        let empty = BTreeSet::new();
+
+        // Stale: `expected_revision` does not match the runtime's current revision (0).
+        assert_eq!(
+            runtime.attempt_use(7, &empty)?,
+            LocalObjectUseOutcome::StaleState
+        );
+        assert_eq!(runtime.revision(), 0);
+
+        // Closed -> open: the target state's collision is Absent, so this commits regardless
+        // of `occupied_cells`.
+        assert_eq!(
+            runtime.attempt_use(0, &empty)?,
+            LocalObjectUseOutcome::Committed {
+                state: ProductionKey::new("oteryn:reference.state.open")?,
+                revision: 1,
+            }
+        );
+        assert!(runtime.blocking_cells().is_empty());
+
+        // Open -> closed: the target state's collision is Present, so a currently occupied
+        // footprint refuses the transition and makes no mutation.
+        let occupied = runtime.collision_cells().clone();
+        assert_eq!(
+            runtime.attempt_use(1, &occupied)?,
+            LocalObjectUseOutcome::Occupied
+        );
+        assert_eq!(runtime.revision(), 1);
+        assert_eq!(runtime.state_key().as_str(), "oteryn:reference.state.open");
+
+        // The same close now succeeds once the footprint is clear.
+        assert_eq!(
+            runtime.attempt_use(1, &empty)?,
+            LocalObjectUseOutcome::Committed {
+                state: ProductionKey::new("oteryn:reference.state.closed")?,
+                revision: 2,
+            }
+        );
+        assert_eq!(runtime.blocking_cells(), runtime.collision_cells());
         Ok(())
     }
 }

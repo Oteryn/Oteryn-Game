@@ -51,7 +51,7 @@ use crate::foundation::{
 use connection::{
     AdmissionRefusal, AdmittedSession, ConnectionIdentifiers, ControlLossResult, ControllerBinding,
     FirstEntryOutcome, FreshAdmissionAttempt, FreshAdmissionAuthority, GraceExpiryResult,
-    IDLE_LIVENESS, SessionContinuity, StepOutcome, admit_frame, serve_admitted,
+    IDLE_LIVENESS, SessionContinuity, StepOutcome, UseOutcome, admit_frame, serve_admitted,
 };
 pub use fresh_evidence::FreshEvidenceSource;
 use oteryn_foundation::CancellationToken;
@@ -321,6 +321,10 @@ pub struct GameplaySeamOwners<'a, 'f, 's> {
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
     /// The active generation's qualified cells the Channel's Movement reads (#935).
     pub(crate) movement_cells: &'a NativeEntryMovementCells,
+    /// The one entry-room door's bound runtime (#162 5868482467, M2b): the Channel-owner state
+    /// `ComposedFreshAdmission::step` and `::use_object` both lock, alongside `runtime`, to
+    /// decide movement blocking and USE_INTENT transitions.
+    pub(crate) door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
 }
 
 /// Explicit listener configuration; nothing has a production default.
@@ -389,6 +393,7 @@ pub async fn serve_gameplay(
         channel_id: owners.channel_id,
         runtime: owners.runtime,
         movement_cells: owners.movement_cells,
+        door: owners.door,
         lost: std::sync::Mutex::default(),
     };
     serve_listener(
@@ -453,6 +458,10 @@ pub(crate) struct ComposedFreshAdmission<'a, 'f, 's> {
     pub(crate) channel_id: ChannelId,
     pub(crate) runtime: &'a Mutex<ChannelRuntimeV1>,
     pub(crate) movement_cells: &'a NativeEntryMovementCells,
+    /// The one entry-room door's bound runtime (#162 5868482467, M2b). Always locked after
+    /// `runtime`, never before, so `step` and `use_object` can never deadlock against each
+    /// other.
+    pub(crate) door: &'a Mutex<crate::world_runtime::LocalObjectRuntime>,
     /// Ended admitted sessions whose loss is durably recorded and whose grace has not ended:
     /// the only sessions a `ClientResume` can name. At most one entry per admitted session.
     pub(crate) lost: std::sync::Mutex<std::collections::HashMap<GameSessionId, AdmittedSession>>,
@@ -527,6 +536,24 @@ impl ComposedFreshAdmission<'_, '_, '_> {
             },
         }
     }
+
+    /// USE-WIRE-V1 reach (#162 5868482467): same floor, Chebyshev distance <=1 from any of the
+    /// target's own collision cells, no line-of-sight check. A pure function so it is directly
+    /// unit-testable independent of any Channel runtime: the qualified native entry room is too
+    /// small (#935/#937: every accepted walkable cell is already within one step of the door) to
+    /// exercise a genuine TOO_FAR case through real movement.
+    fn use_object_reachable(
+        actor_x: i32,
+        actor_y: i32,
+        actor_floor: i32,
+        target_cells: &std::collections::BTreeSet<crate::content::LogicalCell>,
+    ) -> bool {
+        target_cells.iter().any(|cell| {
+            cell.z == actor_floor
+                && (i64::from(cell.x) - i64::from(actor_x)).abs() <= 1
+                && (i64::from(cell.y) - i64::from(actor_y)).abs() <= 1
+        })
+    }
 }
 
 impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
@@ -537,6 +564,19 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             return None;
         }
         Some(Self::observation(&runtime, snapshot.position()))
+    }
+
+    /// The Channel's current door `WORLD_OBJECT_OVERLAY` (USE-WIRE-V1, #162 5868482467), for
+    /// the join/resync snapshot. Channel-global, unlike `observe`: no actor is involved.
+    async fn observe_world_object_overlay(&self) -> Option<world_object::WorldObjectOverlayEntry> {
+        let runtime = self.runtime.lock().await;
+        let door = self.door.lock().await;
+        Some(world_object::WorldObjectOverlayEntry {
+            content_generation: runtime.content_pin().client_artifact_digest(),
+            placement: door.placement_key().as_str().as_bytes().to_vec(),
+            state: door.state_key().as_str().as_bytes().to_vec(),
+            revision: door.revision(),
+        })
     }
 
     /// One Channel-owner work item for one actor (`MOVE-RL-02` = 1): the pinned context, one
@@ -564,6 +604,37 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             StepDirection::South => CardinalStep::South,
             StepDirection::West => CardinalStep::West,
         };
+        // M2b (#162 5868482467): the door cell is now ordinary `Walkable` terrain in
+        // `self.movement_cells.index()` (native_entry.rs), so a closed door must be refused
+        // here, before the terrain lookup, from the door `LocalObjectRuntime`'s own current
+        // `blocking_cells()` — the exact same Channel-owner turn, so no path can observe a
+        // closed door as walkable. An open door (or any other destination) falls through to the
+        // unchanged terrain lookup below.
+        if let Ok(expected) = runtime.borrow_movement_position().read(actor) {
+            let position = expected.position();
+            let delta = match direction {
+                StepDirection::North => (0, -1),
+                StepDirection::East => (1, 0),
+                StepDirection::South => (0, 1),
+                StepDirection::West => (-1, 0),
+            };
+            if let (Some(x), Some(y)) = (
+                position.x.checked_add(delta.0),
+                position.y.checked_add(delta.1),
+            ) {
+                let target = crate::content::LogicalCell {
+                    x,
+                    y,
+                    z: i32::from(position.floor),
+                };
+                if self.door.lock().await.blocking_cells().contains(&target) {
+                    return StepOutcome {
+                        disposition: StepDisposition::Blocked,
+                        moved_to: None,
+                    };
+                }
+            }
+        }
         let outcome = {
             let mut turn = MovementOwnerTurn::begin(&mut runtime, NonZeroUsize::MIN);
             let Ok(expected) = turn.read(actor) else {
@@ -596,6 +667,85 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
                 moved_to: None,
             },
             Ok(MovementTurnOutcome::Deferred) | Err(_) => StepOutcome::rejected(),
+        }
+    }
+
+    /// One `USE_INTENT` for the admitted actor against the one entry-room door (#162
+    /// 5868482467, USE-WIRE-V1). The client names only the target placement and its expected
+    /// revision; the server selects the unique bound transition
+    /// (`LocalObjectRuntime::attempt_use`). Reach is same floor, Chebyshev distance <=1 from the
+    /// door's own collision cell, no line-of-sight check. `runtime` is locked first, then
+    /// `door`, the same fixed order `step` uses, so the two can never deadlock against each
+    /// other; both stay locked for this whole decision so nothing else can move the acting actor
+    /// or the door state in between.
+    async fn use_object(
+        &self,
+        actor: ExactActorRef,
+        target: world_object::WorldObjectTarget,
+    ) -> UseOutcome {
+        let mut runtime = self.runtime.lock().await;
+        let Ok(expected) = runtime.borrow_movement_position().read(actor) else {
+            return UseOutcome::rejected();
+        };
+        let position = expected.position();
+        let mut door = self.door.lock().await;
+        if target.placement.as_slice() != door.placement_key().as_str().as_bytes() {
+            return UseOutcome {
+                disposition: world_object::UseDisposition::NothingToUse,
+                committed: None,
+            };
+        }
+        let actor_floor = i32::from(position.floor);
+        if !Self::use_object_reachable(position.x, position.y, actor_floor, door.collision_cells())
+        {
+            return UseOutcome {
+                disposition: world_object::UseDisposition::TooFar,
+                committed: None,
+            };
+        }
+        // #162 5868482467 (shared-lease P1 repair r4121956127): occupancy is every currently
+        // positioned committed actor in the Channel, not only the issuer — including one
+        // retained during disconnect grace, which stays positioned (only its `control_loss`
+        // mark changes, never its slot's `committed`/`position`). Read under the same `runtime`
+        // lock and the same work item as `attempt_use` below, so this is TOCTOU-free: nothing
+        // else can move an actor or change the door's state between this read and that call.
+        let occupied: std::collections::BTreeSet<crate::content::LogicalCell> = runtime
+            .committed_player_positions()
+            .into_iter()
+            .map(|other| crate::content::LogicalCell {
+                x: other.x,
+                y: other.y,
+                z: i32::from(other.floor),
+            })
+            .collect();
+        let content_generation = runtime.content_pin().client_artifact_digest();
+        match door.attempt_use(target.expected_revision, &occupied) {
+            Ok(crate::world_runtime::LocalObjectUseOutcome::Committed { state, revision }) => {
+                UseOutcome {
+                    disposition: world_object::UseDisposition::Committed,
+                    committed: Some(world_object::WorldObjectOverlayEntry {
+                        content_generation,
+                        placement: door.placement_key().as_str().as_bytes().to_vec(),
+                        state: state.as_str().as_bytes().to_vec(),
+                        revision,
+                    }),
+                }
+            }
+            Ok(crate::world_runtime::LocalObjectUseOutcome::NothingToUse) => UseOutcome {
+                disposition: world_object::UseDisposition::NothingToUse,
+                committed: None,
+            },
+            Ok(crate::world_runtime::LocalObjectUseOutcome::Occupied) => UseOutcome {
+                disposition: world_object::UseDisposition::Occupied,
+                committed: None,
+            },
+            Ok(crate::world_runtime::LocalObjectUseOutcome::StaleState) => UseOutcome {
+                disposition: world_object::UseDisposition::StaleState,
+                committed: None,
+            },
+            Ok(crate::world_runtime::LocalObjectUseOutcome::Rejected) | Err(_) => {
+                UseOutcome::rejected()
+            }
         }
     }
 
@@ -1349,6 +1499,209 @@ mod tests {
         0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x71, 0x11, 0x91, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
         0x11,
     ];
+
+    // USE-WIRE-V1 reach (#162 5868482467). SEAM_EVIDENCE: gameplay_transport/mod.rs
+    // use_object_reachable unit coverage (a genuine TOO_FAR case cannot be reached through real
+    // movement in the qualified native entry room; see `use_object_reachable`'s own doc comment).
+    #[test]
+    fn use_object_reachable_is_chebyshev_one_same_floor_only() {
+        let door =
+            std::collections::BTreeSet::from([crate::content::LogicalCell { x: 1, y: -1, z: 0 }]);
+        // Same cell, every adjacent (including diagonal) cell, and up to distance 1 inclusive.
+        for (x, y) in [
+            (1, -1),
+            (0, -1),
+            (2, -1),
+            (1, 0),
+            (1, -2),
+            (0, 0),
+            (2, 0),
+            (0, -2),
+            (2, -2),
+        ] {
+            assert!(
+                ComposedFreshAdmission::use_object_reachable(x, y, 0, &door),
+                "({x},{y}) expected reachable"
+            );
+        }
+        // Distance 2 on either axis: TOO_FAR.
+        for (x, y) in [(3, -1), (1, 1), (-1, -1), (1, -3)] {
+            assert!(
+                !ComposedFreshAdmission::use_object_reachable(x, y, 0, &door),
+                "({x},{y}) expected too far"
+            );
+        }
+        // The same (x, y) on a different floor is never reachable.
+        assert!(!ComposedFreshAdmission::use_object_reachable(
+            1, -1, 1, &door
+        ));
+        // No collision cell at all (an unbound/empty door) is never reachable.
+        assert!(!ComposedFreshAdmission::use_object_reachable(
+            1,
+            -1,
+            0,
+            &std::collections::BTreeSet::new()
+        ));
+    }
+
+    /// #162 5868482467 shared-lease P1 repair (r4121956127, Codex): the occupancy set
+    /// `use_object` builds must contain every committed actor's cell, not only the issuing
+    /// actor's own. Two real actors in one real `ChannelRuntimeV1`: actor A stands in the door
+    /// cell, actor B stands adjacent (the accepted `east` cell) and is the one attempting to
+    /// close the door. `ChannelRuntimeV1::committed_player_positions` (the new read this repair
+    /// adds, reusing the existing per-slot position store) must report both, and the real door
+    /// `LocalObjectRuntime` (bound exactly as `node/serve.rs` binds it) must then report
+    /// OCCUPIED for the close attempt, with no transition and no revision change.
+    #[test]
+    fn use_object_occupancy_includes_every_committed_actor_not_only_the_issuer()
+    -> Result<(), Box<dyn std::error::Error>> {
+        use crate::content::LogicalCell;
+        use crate::content::accepted;
+        use crate::foundation::{ChannelContentPin, MovementLocalPosition, NodeId};
+        use crate::world_runtime::{
+            LocalObjectUseOutcome, ReferenceContentGeneration, ScopeContentGenerationFence,
+            bind_native_entry_door,
+        };
+
+        let world_id = WorldId::decode(&uuid_v7(0x50)).expect("world");
+        let channel_id = ChannelId::decode(&uuid_v7(0x51)).expect("channel");
+        let node_id = NodeId::decode(&uuid_v7(0x52)).expect("node");
+        let mut runtime = ChannelRuntimeV1::from_committed_assignment(
+            world_id,
+            channel_id,
+            node_id,
+            1,
+            1,
+            1,
+            "runtime-scope-assignment:1",
+            4,
+            ChannelContentPin::test(world_id),
+        )
+        .expect("channel runtime");
+
+        let session_a = GameSessionId::decode(&uuid_v7(0x53)).expect("session a");
+        let session_b = GameSessionId::decode(&uuid_v7(0x54)).expect("session b");
+        let reservation_a = runtime.reserve_fresh_session(session_a).expect("reserve a");
+        let actor_a = runtime
+            .commit_fresh_session(reservation_a)
+            .expect("commit a");
+        let reservation_b = runtime.reserve_fresh_session(session_b).expect("reserve b");
+        let actor_b = runtime
+            .commit_fresh_session(reservation_b)
+            .expect("commit b");
+
+        // Actor A stands in the door cell; actor B stands adjacent (accepted `east`). Both
+        // start at the pinned first-entry cell (0,0,0) under the runtime's real pinned
+        // context, then step by real cardinal commits — `initialize_movement_test_position`
+        // deliberately uses a synthetic context that would not match the pinned one
+        // `committed_player_positions` filters by.
+        runtime
+            .initialize_first_entry_position(actor_a)
+            .expect("first entry a");
+        runtime
+            .initialize_first_entry_position(actor_b)
+            .expect("first entry b");
+        let door_cell = accepted::DOOR_CELL;
+        {
+            let mut position = runtime.borrow_movement_position();
+            let snapshot = position.read(actor_a).expect("read a at start");
+            let snapshot = position
+                .commit_cardinal(
+                    snapshot,
+                    MovementLocalPosition {
+                        x: 1,
+                        y: 0,
+                        floor: 0,
+                    },
+                )
+                .expect("step a east");
+            position
+                .commit_cardinal(
+                    snapshot,
+                    MovementLocalPosition {
+                        x: door_cell.1,
+                        y: door_cell.2,
+                        floor: door_cell.3,
+                    },
+                )
+                .expect("step a north into the door cell");
+        }
+        let east = accepted::CELLS[1];
+        {
+            let mut position = runtime.borrow_movement_position();
+            let snapshot = position.read(actor_b).expect("read b at start");
+            position
+                .commit_cardinal(
+                    snapshot,
+                    MovementLocalPosition {
+                        x: east.1,
+                        y: east.2,
+                        floor: east.3,
+                    },
+                )
+                .expect("step b east");
+        }
+
+        // The exact read `use_object` performs already includes both actors, not only
+        // whichever one happens to be the issuer.
+        let occupied: std::collections::BTreeSet<LogicalCell> = runtime
+            .committed_player_positions()
+            .into_iter()
+            .map(|position| LogicalCell {
+                x: position.x,
+                y: position.y,
+                z: i32::from(position.floor),
+            })
+            .collect();
+        assert_eq!(occupied.len(), 2);
+        let door_logical_cell = LogicalCell {
+            x: door_cell.1,
+            y: door_cell.2,
+            z: i32::from(door_cell.3),
+        };
+        assert!(occupied.contains(&door_logical_cell));
+        assert!(occupied.contains(&LogicalCell {
+            x: east.1,
+            y: east.2,
+            z: i32::from(east.3),
+        }));
+
+        // Bind the real door runtime from the real qualified native entry room content, exactly
+        // as `node/serve.rs` does at activation, then open it (opening's target collision is
+        // Absent, so it is never occupancy-checked) so a subsequent close can be.
+        let room = crate::content::qualify_native_entry_room(world_id).expect("qualified room");
+        let door_content = room.door().clone();
+        let scope = RuntimeScopeRefV1::channel(world_id, channel_id);
+        let scope_generation = ScopeOwnershipGeneration::new(1).expect("scope generation");
+        let content_generation = ReferenceContentGeneration::from_content(&door_content)
+            .map_err(|error| format!("{error:?}"))?;
+        let fence = ScopeContentGenerationFence::for_activation(
+            scope,
+            scope_generation,
+            content_generation,
+        );
+        let mut door = bind_native_entry_door(&door_content, &fence, scope, scope_generation)
+            .map_err(|error| format!("{error:?}"))?;
+        let empty = std::collections::BTreeSet::new();
+        let opened = door
+            .attempt_use(0, &empty)
+            .map_err(|error| format!("{error:?}"))?;
+        assert!(matches!(
+            opened,
+            LocalObjectUseOutcome::Committed { revision: 1, .. }
+        ));
+
+        // Actor B (adjacent, the issuer) attempts to close the door while actor A is standing
+        // in the doorway: OCCUPIED, no transition, no revision change.
+        assert_eq!(
+            door.attempt_use(1, &occupied)
+                .map_err(|error| format!("{error:?}"))?,
+            LocalObjectUseOutcome::Occupied
+        );
+        assert_eq!(door.revision(), 1);
+        assert_eq!(door.state_key().as_str(), accepted::DOOR_OPEN_STATE);
+        Ok(())
+    }
 
     /// Admits after `gate` opens; counts calls.
     struct GatedAuthority {
