@@ -178,7 +178,8 @@ implementation it applies to.
 ### 4.4 Achievements (D48, D49)
 
 - An achievement is an `AccountAchievement(account_id, achievement_key)` fact: write-once. It
-  records the character and earning time of the grant request it was derived from. Because
+  records the character and earning time of the grant request it was derived from, and the
+  achievement-definition provenance (key and content revision) that the request carries. Because
   requests may be consumed out of order, that is not guaranteed to be the account's earliest
   earner, and no ranking or reward may depend on it.
 - The character event that earns it records a durable achievement grant request in its own fenced
@@ -198,7 +199,7 @@ implementation it applies to.
   sense.
 - An achievement or its points carry no gameplay value. Giving them one needs a separate decision.
 - They apply on every world of the account, in both profiles (ADR-0010 §6 permission), where the
-  world's achievement catalogue defines a compatible entry for the key. Elsewhere the achievement
+  world's achievement catalogue defines an entry compatible with the recorded provenance. Elsewhere the achievement
   is not shown and is never reinterpreted; the fact is unchanged. This is a declared difference
   from the Reference target, which counts achievements per character.
 

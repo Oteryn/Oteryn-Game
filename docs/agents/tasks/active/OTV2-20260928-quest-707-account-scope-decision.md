@@ -122,6 +122,7 @@ finding_dispositions:
     - "Codex P1 4122277170 (ac27b40): the finding-family sweep still required every account-fact insert inside the triggering transaction. Repaired: the sweep separates direct quest/cosmetic inserts from reconciled achievement consumption and lists grant requests as a fact source"
     - "Codex P1 4122330351 (952d3a2): the exclusive-choice opt-out conflicted with the grant default. Repaired: compile-time precedence exclusive-choice none, then declared, then default grant; K5 extended"
     - "Codex P1 4122330364 (952d3a2): cosmetic portability had no content-compatibility rule. Repaired: AccountUnlock records appearance provenance and applies only where a compatible appearance exists, else fails closed without reinterpretation; the same rule is applied to achievement catalogue entries (family sweep)"
+    - "Codex P1 4122392106 and 4122392097 (bf9e636), FINAL_SWEEP_MISS of the previous repair: achievement facts now record definition provenance, and the scope-matrix Store row carries the appearance-compatibility gate"
   p0_p1_rejected_with_exact_evidence:
     - "Codex P1 4122231506 (d002a3f): a commit cannot contain its own SHA (ANTI_STALL_AND_EXECUTION_BUDGET.md:71,84); each frozen head and freeze time is recorded on #162 and the terminal archive records the final head"
   p2_fixed_accepted_or_deferred:
