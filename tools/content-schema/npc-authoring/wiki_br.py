@@ -1,11 +1,18 @@
-"""Capture the NPC pages of TibiaWiki BR (tibiawiki.com.br) as an exact-revision wikitext snapshot.
+"""Capture the NPC pages of TibiaWiki BR (tibiawiki.com.br) and extract their compared facts.
 
 Evidence tooling only. TibiaWiki BR is a player-observed reference source; its NPC pages carry the
-outfit, position and in-game dialogue of Tibia Global NPCs, including recent ones that the Fandom
-wiki only stubs. The snapshot records each page's id, exact revision, timestamp, the SHA-256 of its
-wikitext and the wikitext itself, so any later comparison can be re-checked against the same bytes.
-Tibia NPC text is reference data under OTERYN_NPC_AUTHORING_SCHEMA_V1 D9; the snapshot is a CI
-artifact, not a committed corpus.
+position, trade lists and in-game dialogue transcripts of Tibia Global NPCs, including recent ones
+that the Fandom wiki only stubs.
+
+`fetch` writes the raw snapshot: each page's id, exact revision, timestamp, the SHA-256 of its
+wikitext and the wikitext itself. It stays a CI artifact and is never committed (wiki prose is not
+bulk-copied, OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION).
+
+`facts` reduces a snapshot to the facts that are compared (OTERYN_NPC_AUTHORING_SCHEMA_V1 D3): page and
+revision ids, the SHA-256 of each raw page, infobox name, `implemented` and `removed` versions, map
+positions, trade lists (item name and each row's explicit price) and the lines the NPC itself speaks in the
+transcript, which are Tibia NPC text kept as reference data (D9). No notes, descriptions or other wiki
+prose. That file is committed.
 
 Pages: every namespace-0 member of `Categoria:NPCs no Tibia` and its subcategories, plus every
 namespace-0 subpage (`<NPC>/...`) of those pages. Python stdlib only, <= 2 requests/s, neutral
@@ -16,11 +23,13 @@ refuse other networks.
 
 Usage:
     python wiki_br.py fetch --out <dir>/tibiawiki-br-npc-snapshot.json
+    python wiki_br.py facts --snapshot <dir>/tibiawiki-br-npc-snapshot.json --out <facts.json>
     python wiki_br.py self-test
 """
 import argparse
 import hashlib
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -32,6 +41,7 @@ API = 'https://www.tibiawiki.com.br/api.php'
 USER_AGENT = 'OterynNpcAuthoring/1.0 (+https://github.com/Oteryn/Oteryn-Game)'
 ROOT_CATEGORY = 'Categoria:NPCs no Tibia'
 SNAPSHOT_SCHEMA = 'OTERYN_NPC_TIBIAWIKI_BR_SNAPSHOT/v1'
+FACTS_SCHEMA = 'OTERYN_NPC_TIBIAWIKI_BR_FACTS/v1'
 LICENSE_NOTE = 'TibiaWiki BR, player-observed reference data; used under OTERYN_NPC_AUTHORING_SCHEMA_V1 D9.'
 THROTTLE_SECONDS = 0.5  # <= 2 requests/s
 RETRIES = 4
@@ -128,6 +138,8 @@ def page_record(page):
 
 
 def build_snapshot(npc_pages, sub_pages, records, categories, fetched_at):
+    enumerated = {**npc_pages, **sub_pages}
+    missing = [{'pageid': pageid, 'title': enumerated[pageid]} for pageid in sorted(enumerated) if pageid not in records]
     pages = []
     for pageid in sorted(records):
         record = dict(records[pageid])
@@ -138,8 +150,8 @@ def build_snapshot(npc_pages, sub_pages, records, categories, fetched_at):
         'schema': SNAPSHOT_SCHEMA, 'license': LICENSE_NOTE, 'api': API, 'root_category': ROOT_CATEGORY,
         'fetched_at': fetched_at, 'categories': categories,
         'counts': {'categories': len(categories), 'npc_pages': len(npc_pages), 'subpages': len(sub_pages),
-                   'captured': len(pages), 'missing': len(npc_pages) + len(sub_pages) - len(pages)},
-        'pages_digest': digest, 'pages': pages,
+                   'captured': len(pages), 'missing': len(missing)},
+        'pages_digest': digest, 'pages': pages, 'missing_pages': missing,
     }
 
 
@@ -150,12 +162,251 @@ def cmd_fetch(args):
     sub_pages = {pageid: title for pageid, title in subpages(set(npc_pages.values())).items()
                  if pageid not in npc_pages}
     records = fetch_revisions(set(npc_pages) | set(sub_pages))
+    missing = (set(npc_pages) | set(sub_pages)) - set(records)
+    if missing:  # a page can lose its revision between enumeration and fetch; retry once, then record it
+        records.update(fetch_revisions(missing))
     snapshot = build_snapshot(npc_pages, sub_pages, records, categories,
                               datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(snapshot, ensure_ascii=False, indent=1, sort_keys=True) + '\n', encoding='utf-8')
     print(json.dumps({'out': str(out), 'counts': snapshot['counts'], 'pages_digest': snapshot['pages_digest']}))
+
+
+# -- facts ---------------------------------------------------------------------------------------
+MAPA = re.compile(r'\{\{\s*[Mm]apa\s*\|\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)')
+TRADES = re.compile(r'\{\{\s*Trades/(Buy|Sell)(.*?)\}\}', re.S)
+LINK = re.compile(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]')
+# after links and bold/italic markup are removed, a transcript line is `Speaker: text`; the speaker may be
+# written plain, bold, italic or as a link, before or around the colon, and may contain an apostrophe
+SPEAKER = re.compile(r"\s*([^:<>{}|]{1,60}?)\s*:\s*(.*)$")
+TIMESTAMP = re.compile(r'^\s*\d{1,2}:\d{2}(?::\d{2})?\s+')  # `03:07 Marcus: ...` is a chat log line
+# a trade table introduced as historical (`Antes do Update 12.70`) is not a current offer list
+HISTORICAL = re.compile(r'(?i)\bantes d[oa]\b')
+# a transcript section headed as dialogue from before an update (`Antes do Update 10.20`) is not current speech;
+# a section headed as after one (`Após o Update 10.20`, `Depois do Patch ...`) is current again
+HISTORICAL_SECTION = re.compile(r'(?i)\bantes d[oa]\b[^:]*?\b(?:update|patch)')
+CURRENT_SECTION = re.compile(r'(?i)\b(?:depois d[oa]|ap[oó]s [oa]|a partir d[oa])\b[^:]*?\b(?:update|patch)')
+SECTION_MARKER_MAX = 100  # a section heading is short; a long prose sentence mentioning an update is not one
+# the infobox `location` field, up to the next field; map links elsewhere (notes, travel) are not NPC positions
+LOCATION = re.compile(r'^\|\s*location\s*=(.*?)(?=^\|\s*[a-z0-9_]+\s*=|\Z)', re.M | re.S)
+ORDERED = re.compile(r'^\s*\d+[.)]?\s+')  # `1 Edgar-Ellen: ...` numbers a turn
+# an editor's note in parentheses (Portuguese, or English conditions such as `(if you ...)`), not NPC speech
+ANNOTATION = re.compile(r'\s*\((?=[^()]*\b(?:se|você|voce|jogador|caso|para|ao|turnos?|abre|termina|perde|já|não|nao'
+                        r'|esteja|homens|mulheres|conversa|dirá|ou|que|está|hora|lhe|ele|atual|if you|burning effect)\b)[^()]*\)', re.I)
+# an editor's note in angle brackets written in Portuguese (`<dependendo da sua resposta ...>`); the NPC's own
+# English stage text (`<chuckles>`) and the player placeholder (`<jogador>`, `<nome do jogador>`) stay
+EDITORIAL = re.compile(r'\s*<(?!\s*(?:nome do )?jogador\s*>)(?=[^<>]*\b(?:se|você|voce|jogador|caso|para|ao|turnos?'
+                       r'|abre|termina|perde|já|não|nao|esteja|homens|mulheres|conversa|dirá|ou|que|está|hora|lhe|ele'
+                       r'|atual|após|apos|depois|dependendo|sua|seu|usar|entregar)\b)[^<>]*>', re.I)
+# a line that is only a stage direction (`-walking away-`, `*nods*`) or a single word (a choice separator `Ou`,
+# a topic label `Hints`) is not wrapped speech: it ends the turn instead of continuing it
+DIRECTION = re.compile(r'^(?:-[^-].*-|\*[^*].*\*|\S+)$')
+# an inline template with arguments renders as its last one: `{{tecla|CTRL}}` shows the key CTRL
+INLINE_TEMPLATE = re.compile(r'\{\{\s*[^{}|]+\|(?:[^{}|]*\|)*([^{}|]*)\}\}')
+COMMENT = re.compile(r'<!--.*?(?:-->|$)', re.S)
+BOLD_LABEL = re.compile(r"\s*'''\s*((?:\[\[[^\]]*\]\]|[^'\[\]:|])+?)\s*'''\s+(?!:)(\S.*)$")
+TRANSCRIPT_BOUNDARY = ('|', '{{', '}}', '==', '----', '[[Categoria', '[[Arquivo', '[[File', '[[Imagem')
+INDENT = re.compile(r'\s*[:*#;]+\s*')
+BREAK = re.compile(r'<\s*/?\s*br\s*/?\s*>', re.I)
+# structural wiki/HTML markup that is never part of what the NPC says (a closing infobox, spoiler, paragraph ...)
+STRUCTURE = re.compile(r'</?\s*(?:spoiler|p|div|span|small|big|center|noinclude|includeonly|onlyinclude|nowiki|ref|s|u|b|i)\b[^>]*>'
+                       r'|\}\}\s*$'
+                       r'|<\s*/?\s*br\s*/?\s*$|^\s*/?\s*br\s*/?\s*>', re.I)  # a break split across physical lines
+PRICE = re.compile(r"^(?:''')?\s*(\d{1,3}(?:[ .]\d{3})+|\d+)\b")
+FIELD = re.compile(r'^\|\s*([a-z0-9_]+)\s*=(.*)$', re.M)
+
+
+def infobox_field(wikitext, name):
+    for match in FIELD.finditer(wikitext):
+        if match.group(1) == name:
+            return match.group(2).strip()
+    return ''
+
+
+def price_of(field):
+    """An explicit price such as `200`, `1 000`, `1.000`, `'''1 000'''` or `200 gp`; None when the field has none."""
+    match = PRICE.match(field.strip())
+    return int(re.sub(r'[ .]', '', match.group(1))) if match else None
+
+
+def without_notes(text):
+    return re.sub(r'\s+', ' ', EDITORIAL.sub('', ANNOTATION.sub('', text))).strip()
+
+
+def unmarked(text):
+    return INLINE_TEMPLATE.sub(r'\1', LINK.sub(r'\1', text)).replace("'''", '').replace("''", '')
+
+
+def unmarked_prefix(raw_segment):
+    """Drop an ordered-list number that precedes the (possibly bold) label: `'''1 Name:'''`, `1 '''Name:'''`."""
+    return re.sub(r"^(\s*(?:''')?)\s*\d+[.)]?\s+", r'\1', raw_segment)
+
+
+def read_turn(raw_segment, speakers):
+    """(folded speaker, text) when a raw segment opens a transcript turn, else None. A bold label without a
+    colon (`'''Ceiron''' text`) opens a turn only for one of this page's own speakers."""
+    raw_segment = ORDERED.sub('', unmarked_prefix(TIMESTAMP.sub('', raw_segment)))
+    bold = BOLD_LABEL.match(raw_segment)
+    if bold and fold(LINK.sub(r'\1', bold.group(1))) in speakers:
+        text = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(bold.group(2)))).strip()
+        return fold(LINK.sub(r'\1', bold.group(1))), text
+    match = SPEAKER.match(re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(raw_segment))).strip())
+    if not match:
+        return None
+    label, text = fold(match.group(1)), match.group(2).strip()
+    # a condition before the label (`''Inferior ao nível 25:'' '''Phillip:''' Hello`) is not the speaker
+    inner = SPEAKER.match(text)
+    while label not in speakers and inner and fold(inner.group(1)) in speakers:
+        label, text = fold(inner.group(1)), inner.group(2).strip()
+        inner = SPEAKER.match(text)
+    return label, text
+
+
+def edit_distance(a, b):
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        current = [i]
+        for j, cb in enumerate(b, 1):
+            current.append(min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (ca != cb)))
+        previous = current
+    return previous[-1]
+
+
+def fold(text):
+    return re.sub(r'\s+', ' ', text).strip().casefold()
+
+
+def section_period(raw, speakers, historical):
+    """Whether the transcript is inside a historical section after this physical line. An infobox field, a
+    heading or a rule starts a new section; a short line that opens no turn and names the text as from before
+    (or after) an update opens a historical (or current) one; any other line keeps the section as it is."""
+    line = raw.strip()
+    if line.startswith(('|', '==', '----')) or re.match(r'<\s*h\d', line, re.I):
+        historical = False
+        if line.startswith('|'):
+            return historical
+    first = BREAK.split(line)[0]
+    text = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(first))).strip()
+    if not text or len(text) > SECTION_MARKER_MAX:
+        return historical
+    turn = read_turn(first, speakers)
+    if turn and turn[1]:
+        return historical
+    if HISTORICAL_SECTION.search(text):
+        return True
+    if CURRENT_SECTION.search(text):
+        return False
+    return historical
+
+
+def page_facts(page):
+    wikitext = COMMENT.sub('', page['wikitext'])  # hidden HTML comments are not page content
+    name = infobox_field(wikitext, 'name') or page['title']
+    trades = {'BuyFromPlayer': {}, 'SellToPlayer': {}}
+    previous_end = 0
+    for table in TRADES.finditer(wikitext):
+        kind, body = table.groups()
+        lead = wikitext[previous_end:table.start()]
+        lead = lead[lead.rfind('\n|') + 1:]  # only this field's own text: a `notes` sentence above does not count
+        historical = HISTORICAL.search(lead)
+        previous_end = table.end()
+        if historical:
+            continue
+        direction = 'SellToPlayer' if kind == 'Sell' else 'BuyFromPlayer'
+        for part in LINK.sub(r'\1', body).split('|')[1:]:  # links first, so a piped link is not a separator
+            fields = [field.strip() for field in part.split(',')]
+            # `Blood;Vial of Blood` names the content page, then the offer's in-game name
+            fields[0] = fields[0].rsplit(';', 1)[-1].strip()
+            if fields[0]:
+                # a row listed twice is two offers; every row keeps its own price (None: the item's usual price)
+                trades[direction].setdefault(fields[0], []).append(price_of(fields[1]) if len(fields) > 1 else None)
+    # a qualified page (`Hyacinth (NPC)`) labels its turns with the plain name
+    speakers = {fold(re.sub(r'\s*\([^()]*\)$', '', label)) for label in (page['title'], name)}
+    speakers |= {fold(page['title']), fold(name)}
+    # a label a single character away from the NPC's name (`Nivev` for Ninev) is a typo on that page;
+    # unrelated labels, such as another NPC's copied transcript, stay excluded
+    labels = {turn[0] for raw in wikitext.split('\n') for segment in BREAK.split(raw)
+              if (turn := read_turn(segment, speakers))}
+    speakers |= {label for label in labels if len(label) >= 4
+                 and any(edit_distance(label, speaker) == 1 for speaker in speakers)}
+    lines = []
+    speaker = None
+    historical = False
+    for raw in wikitext.split('\n'):
+        historical = section_period(raw, speakers, historical)
+        if historical:  # dialogue from before an update is not what the NPC says now
+            speaker = None
+            continue
+        # one physical line can hold several turns separated by <br>; a segment without a speaker continues the
+        # turn before it, also across physical lines, until a transcript boundary (a blank line, an infobox
+        # field, a template, a heading or a rule) ends it. MediaWiki indentation (`:`, `*`, `#`, `;`) is stripped
+        # first; an indented line that opens no turn is a boundary too (`:Respostas:` opens a non-NPC one)
+        indented = INDENT.match(raw)
+        line = raw[indented.end():] if indented else raw
+        if (not line.strip() or line.lstrip().startswith(TRANSCRIPT_BOUNDARY) or '----' in line
+                or (indented and not read_turn(BREAK.split(line)[0], speakers))):
+            speaker = None
+            continue
+        for raw_segment in BREAK.split(line):
+            turn = read_turn(raw_segment, speakers)
+            segment = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(raw_segment))).strip()
+            if turn:
+                speaker, text = turn
+                repeated = SPEAKER.match(text)
+                while repeated and fold(repeated.group(1)) == speaker:  # `Name: Name: text` repeats the label
+                    text = repeated.group(2).strip()
+                    repeated = SPEAKER.match(text)
+                text = without_notes(text)
+                if speaker in speakers and text:
+                    lines.append(text)
+            elif segment and DIRECTION.match(segment):
+                speaker = None
+            elif segment and speaker in speakers and lines:
+                lines[-1] = without_notes(f'{lines[-1]} {segment}')
+    return {'pageid': page['pageid'], 'revid': page['revid'], 'timestamp': page['timestamp'],
+            'sha256': page['sha256'], 'title': page['title'], 'role': page['role'], 'name': name,
+            'implemented': infobox_field(wikitext, 'implemented'), 'removed': infobox_field(wikitext, 'removed'),
+            'positions': sorted({(int(x), int(y), int(z)) for block in LOCATION.findall(wikitext)
+                                 for x, y, z in MAPA.findall(block)}),
+            'trades': trades, 'npc_lines': lines}
+
+
+def build_facts(snapshot, snapshot_sha256):
+    """`snapshot_sha256` is the SHA-256 of the raw snapshot file; it binds every copied value (titles, timestamps,
+    roles, the missing-page inventory) to the capture artifact, beyond what `pages_digest` covers."""
+    if snapshot['schema'] != SNAPSHOT_SCHEMA:
+        raise SystemExit('not a TibiaWiki BR snapshot')
+    missing = snapshot.get('missing_pages', [])
+    counts = snapshot['counts']
+    if (counts['captured'] != len(snapshot['pages']) or counts['missing'] != len(missing)
+            or {p['pageid'] for p in missing} & {p['pageid'] for p in snapshot['pages']}):
+        raise SystemExit('snapshot counts or missing-page inventory are inconsistent')
+    for page in snapshot['pages']:
+        if hashlib.sha256(page['wikitext'].encode('utf-8')).hexdigest() != page['sha256']:
+            raise SystemExit(f'page {page["pageid"]} wikitext does not match its sha256')
+    ordered = sorted(snapshot['pages'], key=lambda p: p['pageid'])
+    digest = hashlib.sha256('\n'.join(f'{p["pageid"]}:{p["revid"]}:{p["sha256"]}' for p in ordered).encode()).hexdigest()
+    if digest != snapshot['pages_digest']:
+        raise SystemExit('snapshot pages do not match its pages_digest')
+    pages = [page_facts(page) for page in sorted(snapshot['pages'], key=lambda p: p['pageid'])]
+    return {'schema': FACTS_SCHEMA, 'license': LICENSE_NOTE, 'api': snapshot['api'],
+            'fetched_at': snapshot['fetched_at'], 'snapshot_pages_digest': snapshot['pages_digest'],
+            'snapshot_sha256': snapshot_sha256, 'missing_pages': missing,
+            'counts': {'pages': len(pages), 'with_positions': sum(1 for p in pages if p['positions']),
+                       'with_trades': sum(1 for p in pages if any(p['trades'].values())),
+                       'with_npc_lines': sum(1 for p in pages if p['npc_lines']),
+                       'removed': sum(1 for p in pages if p['removed'])},
+            'pages': pages}
+
+
+def cmd_facts(args):
+    data = Path(args.snapshot).read_bytes()
+    facts = build_facts(json.loads(data), hashlib.sha256(data).hexdigest())
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(facts, ensure_ascii=False, indent=1, sort_keys=True) + '\n', encoding='utf-8')
+    print(json.dumps({'out': str(out), 'counts': facts['counts']}))
 
 
 def cmd_self_test(_args):
@@ -171,8 +422,66 @@ def cmd_self_test(_args):
     assert [p['pageid'] for p in snapshot['pages']] == [7, 9]
     assert [p['role'] for p in snapshot['pages']] == ['npc', 'subpage']
     assert snapshot['counts'] == {'categories': 1, 'npc_pages': 2, 'subpages': 1, 'captured': 2, 'missing': 1}
+    assert snapshot['missing_pages'] == [{'pageid': 10, 'title': 'Gone'}]
     again = build_snapshot({7: 'Goldro', 10: 'Gone'}, {9: 'Goldro/Diálogos'}, {7: record, 9: sub}, [ROOT_CATEGORY], 'T')
     assert again == snapshot
+    text = ("{{Infobox_NPC\n| name = Goldro\n| implemented = 15.30\n| removed = \n"
+            "| location = [[Salgadora]] ({{Mapa|34055,32503,7:2|aqui}}).\n| notes = Long wiki prose.\n"
+            "| notes = Ferry to {{Mapa|1,2,3:1|there}}. Antes do update 12.70 it sold potions.\n"
+            "| sells = <small>''Antes do Update 12.70''</small>\n{{Trades/Sell\n| Old Potion,50}}\n{{Trades/Sell\n| Bread,4\n| [[Cheese]]\n| Cot, 200 [[Gold Coins|gp]]\n| Fire Sword, '''1 000'''\n| Blood;Vial of Blood\n| Beer; Mug of Beer, 3\n| Mug of Beer, 3}}\n"
+            "| falas = \n''Jogador:'' '''Hi'''</br>\n"
+            "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n"
+            "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
+            "[[Goldro]]: Link form.</br>\nGoldro: Plain form.</br>\n''Goldro:'' Italic form.</br>\n"
+            "<!--\nGoldro: Hidden comment.\n-->\n'''Goldro''' No colon.\n'''Other''' not a label.\n"
+            "1 Goldro: Numbered.\n'''Goldro:''' Take this! (burning effect, 5 turnos de 10 hitpoints)\n"
+            "'''Goldro:''' Shh. (whispers)\n03:07 Goldro: Timestamped.\n"
+            "'''Goldro:''' <chuckles> Hi, <jogador>. <dependendo da sua resposta você volta>\n<após entregar o item>\n"
+            "'''Goldro:''' Press {{tecla|CTRL}} to use.\n'''Goldro:''' Men only.\nOu\n'''Goldro:''' Goodbye.\n-walking away-\nnot mine any more\n"
+            "''Inferior ao nível 25:'' '''Goldro:''' Conditioned.\n"
+            "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
+            "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye, and\nsee you soon.\n"
+            ":''Jogador:'' Trade?\n:'''Goldro:''' Indented.\n:Respostas:\nNot Goldro any more.\n\n"
+            "Wiki prose after a blank line.\n}}")
+    facts = page_facts({**page_record({'pageid': 7, 'title': 'Goldro', 'revisions': [
+        {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
+    assert facts['positions'] == [(34055, 32503, 7)], facts
+    assert facts['trades'] == {'BuyFromPlayer': {}, 'SellToPlayer': {
+        'Bread': [4], 'Cheese': [None], 'Cot': [200], 'Fire Sword': [1000], 'Vial of Blood': [None], 'Mug of Beer': [3, 3]}}, facts
+    assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
+                                  'Linked name.', 'Link form.', 'Plain form.', 'Italic form.',
+                                  # a bold label of another name opens no turn, so it continues Goldro's
+                                  'No colon. Other not a label.', 'Numbered.', 'Take this!', 'Shh. (whispers)', 'Timestamped.', '<chuckles> Hi, <jogador>.', 'Press CTRL to use.', 'Men only.', 'Goodbye.', 'Conditioned.',
+                                  'One.', 'Two. still two.',
+                                  'Repeated label.', 'Typo label.', 'Bye, and see you soon.', 'Indented.'], facts
+    apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
+        {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "'''Lee'Delle:''' Welcome."}}}]}), 'role': 'npc'})
+    assert apostrophe['npc_lines'] == ['Welcome.'], apostrophe
+    qualified = page_facts({**page_record({'pageid': 9, 'title': 'Hyacinth (NPC)', 'revisions': [
+        {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "[[Hyacinth (NPC)|Hyacinth]]: Greetings."}}}]}),
+        'role': 'npc'})
+    assert qualified['npc_lines'] == ['Greetings.'], qualified
+    periods = page_facts({**page_record({'pageid': 10, 'title': 'Bozo', 'revisions': [
+        {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': (
+            "| notes = Antes do update 12.70 he sold potions.\n| falas =\n"
+            "Antes do início do evento:\n'''Bozo:''' Event phase.\n"
+            "<big>Antes do [[Updates/10.20|Update 10.20]].</big></br>\n'''Bozo:''' Old greeting.\n\n"
+            "'''Bozo:''' Old, after a blank line.\n''Depois do Update de Natal 2007:''</br>\n'''Bozo:''' New greeting.\n"
+            "''Jogador:'' '''hi''' (''antes do level 300'')</br>\n'''Bozo:''' Still new.\n"
+            "''Antes do Patch 13.34''</br>\n'''Bozo:''' Old again.\n=== Quest ===\n'''Bozo:''' Quest line.")}}}]}),
+        'role': 'npc'})
+    assert periods['npc_lines'] == ['Event phase.', 'New greeting.', 'Still new.', 'Quest line.'], periods
+    assert build_facts(snapshot, 'f' * 64)['snapshot_sha256'] == 'f' * 64
+    dropped = {**snapshot, 'pages': snapshot['pages'][:1], 'counts': {**snapshot['counts'], 'captured': 1}}
+    inconsistent = {**snapshot, 'missing_pages': []}
+    for tampered in (dropped, inconsistent):
+        try:
+            build_facts(tampered, 'f' * 64)
+        except SystemExit:
+            pass
+        else:
+            raise AssertionError('a snapshot that does not match its digest or its own counts must be rejected')
+    assert 'prose' not in json.dumps(facts), facts
     print('wiki_br self-test: PASS')
 
 
@@ -182,6 +491,10 @@ def main():
     fetch_parser = sub.add_parser('fetch', help='capture the NPC pages into a snapshot')
     fetch_parser.add_argument('--out', required=True)
     fetch_parser.set_defaults(func=cmd_fetch)
+    facts_parser = sub.add_parser('facts', help='reduce a snapshot to its compared facts')
+    facts_parser.add_argument('--snapshot', required=True)
+    facts_parser.add_argument('--out', required=True)
+    facts_parser.set_defaults(func=cmd_facts)
     sub.add_parser('self-test', help='offline checks, no network').set_defaults(func=cmd_self_test)
     args = parser.parse_args()
     args.func(args)

@@ -42,12 +42,17 @@ jobs:
           set -euo pipefail
           python tools/content-schema/npc-authoring/wiki_br.py fetch \
             --out "$RUNNER_TEMP/npc-tibiawiki-br/tibiawiki-br-npc-snapshot.json"
-          sha256sum "$RUNNER_TEMP/npc-tibiawiki-br/tibiawiki-br-npc-snapshot.json"
+          python tools/content-schema/npc-authoring/wiki_br.py facts \
+            --snapshot "$RUNNER_TEMP/npc-tibiawiki-br/tibiawiki-br-npc-snapshot.json" \
+            --out "$RUNNER_TEMP/npc-tibiawiki-br/tibiawiki-br-npc-facts.json"
+          sha256sum "$RUNNER_TEMP"/npc-tibiawiki-br/*.json
 
-      - name: Upload snapshot
+      - name: Upload snapshot and facts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: npc-tibiawiki-br-snapshot-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ${{ runner.temp }}/npc-tibiawiki-br/tibiawiki-br-npc-snapshot.json
+          path: |
+            ${{ runner.temp }}/npc-tibiawiki-br/tibiawiki-br-npc-snapshot.json
+            ${{ runner.temp }}/npc-tibiawiki-br/tibiawiki-br-npc-facts.json
           if-no-files-found: error
           retention-days: 30

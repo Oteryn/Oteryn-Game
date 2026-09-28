@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-npc-tibiawiki-br-capture
 title: NPC TibiaWiki BR capture - exact-revision wikitext snapshot of every NPC page for Tibia Global fidelity checks
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
@@ -13,7 +13,7 @@ pr: 1103
 jira: KAN-16
 base_sha: 43807fb40549ba9aa7c102862c705ddf146c4866
 head_sha: null
-final_head_sha: null
+final_head_sha: d17a38266d7197b807ff4d68c064eb1394849e2b
 final_head_frozen_at: null
 owner: claude-code-session-01RTD1d7GsT7uFSBHg5syB4T
 created_at: 2026-09-28
