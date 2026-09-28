@@ -12,12 +12,12 @@ base_branch: main
 branch: claude/use-wire-m2b
 pr: 1104
 base_sha: 69284a571a3b58249546e17f992dff59883be42f
-head_sha: d220ec3789e257b12d7a33b69733cac22a9fecad
+head_sha: 1d1032cdc4e1dba17261d9b4ceae06289f45a3d1
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: impl server seam" (Claude Code)
 created_at: 2026-09-28T11:30:00Z
-updated_at: 2026-09-28T13:30:00Z
+updated_at: 2026-09-28T14:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs
@@ -30,6 +30,7 @@ owned_paths:
   - apps/game-server/src/node/serve.rs
   - docs/agents/tasks/active/OTV2-20260928-use-wire-m2b.md
   - apps/game-server/src/foundation/runtime_actor_carrier.rs  # shared-lease, committed_player_positions only (r4121956127)
+  - apps/game-server/src/gameplay_transport/resume.rs  # shared-lease grant (#162 5870253781), reconnect fence domain 2
 public_contracts: []
 depends_on:
   - OTV2-20260928-use-wire-m1 (#1066, merged)
@@ -97,12 +98,21 @@ record's Repair sections track the review/CI rounds since the first freeze.
 
 Replied once on the r4122215795 thread covering both findings.
 
+## Repair round 3 (`1d1032c` -> this push): reconnect fence domain 2, shared lease used
+
+Shared lease granted (#162 5870253781), scoped to exactly the `Fnd02ReconciliationFenceV1`
+domain-revision `vec` in `resume.rs` (~lines 237-248). Used it, nothing else in that file
+changed: added the `STATE_DOMAIN_WORLD_OBJECT_OVERLAY` import and one
+`StateDomainRevisionV1::new(STATE_DOMAIN_WORLD_OBJECT_OVERLAY, lost.continuity.overlay_revision)`
+entry after the existing spatial one (ascending domain id 1 then 2, per
+`Fnd02ReconciliationFenceV1::new`'s own strict-order check). New `resume.rs` test module (none
+existed before): both-domains-present/ordered, and a descending-order case proving the ordering
+is load-bearing. `resume_lost` itself still has no direct unit test (needs `DurabilityRoot` etc.,
+exercised only by the WP5 E2E); these exercise the exact fence-construction shape it uses.
+
 ## Architecture and source of truth
 
 - `PROVEN`: #162 5868482467 is this task's exact allocation.
-- `PROVEN`: `resume.rs` is excluded/unleased; `resume_lost`'s `Fnd02ReconciliationFenceV1`
-  construction at lines 237-248 is the exact site a domain-2 entry belongs next to the existing
-  domain-1 one.
 - `DERIVED`: the qualification E2E's character[0] final re-admission relies on a timing race
   against `shutdown`; any stage that delays the overall scenario's completion risks flipping that
   race, as round 2 finding 2 showed.
@@ -125,8 +135,7 @@ reason: >
 - [x] CI admissions-count invariant (round 1).
 - [x] `SessionContinuity.overlay_revision` tracked from both snapshot and delta; regression tests.
 - [x] CI committed-actor-count invariant restored by stage reordering (round 2).
-- [ ] Reconnect fence's domain-2 entry in `resume_lost` — `SHARED_LEASE_REQUIRED`,
-      `gameplay_transport/resume.rs:237-248`, not made by this task.
+- [x] Reconnect fence's domain-2 entry in `resume_lost` (round 3, shared lease #162 5870253781).
 - [x] Full required-validation suite green on the repaired head.
 
 ## Deviations from the literal allocation text
@@ -134,7 +143,6 @@ reason: >
 - **TOO_FAR** not exercised through real E2E movement (room geometry); unit-tested instead.
 - **Replayed-CommandId** demonstrates "expires and closes" (STEP's own pattern), not a
   same-result replay of prior bytes.
-- **Reconnect fence domain-2 entry**: `SHARED_LEASE_REQUIRED` — needs `resume.rs`, excluded.
 - **Second-admitted-session E2E** for the P1 occupancy repair: not attempted; covered by an
   integration-level unit test against the real `ChannelRuntimeV1`/`LocalObjectRuntime` instead.
 
@@ -170,17 +178,20 @@ reason: >
 
 ## Self-review
 
-- exact head: pending (this repair not yet pushed at record-write time).
-- method/reviewer: implementing agent (this session), addressing Codex's P1 r4122215795 and the
-  CI committed-actor-count finding, per coordinator direction.
-- material findings: both above; the domain-2 fence entry is explicitly out of lease and reported
-  as `SHARED_LEASE_REQUIRED` rather than worked around.
-- verdict: ready to re-freeze for the owned-path portion; the fence entry needs a separate grant.
+- exact head: `1d1032cdc4e1dba17261d9b4ceae06289f45a3d1` (round 3 not yet pushed at last edit).
+- method/reviewer: implementing agent (this session), addressing Codex's P1 r4122215795, the CI
+  committed-actor-count finding, and (round 3) the domain-2 reconnect-fence entry under the
+  granted shared lease (#162 5870253781).
+- material findings: all above, all fixed and unit-tested. The domain-2 fence entry was correctly
+  deferred with `SHARED_LEASE_REQUIRED` until the control plane granted the exact-scoped lease,
+  then made minimally (import + one `vec` entry + a new test module; nothing else in `resume.rs`
+  changed).
+- verdict: ready to re-freeze.
 
 ## Independent review
 
-- required: YES — Server Seam composition, a content-admission change, and a `foundation/**`
-  shared-lease read addition, per root governance norm.
+- required: YES — Server Seam composition, a content-admission change, and two `foundation`/
+  `resume.rs` shared-lease additions, per root governance norm.
 - exact head: pending.
 - method/auditor: Codex, automated PR review (not triggered by this worker).
 - verdict: awaiting Codex's review of the repaired head.
@@ -195,13 +206,13 @@ reason: >
 ## Context checkpoint
 
 ```yaml
-last_progress: Repair round 2 complete (SessionContinuity.overlay_revision tracked in owned
-  paths; resume.rs's fence entry reported SHARED_LEASE_REQUIRED; qualification.rs stage reordered
-  to restore the committed-actor-count invariant); fmt/clippy/full tests/both validators green;
-  replying on the r4122215795 thread and pushing.
+last_progress: Repair round 3 complete under the granted shared lease (#162 5870253781):
+  resume.rs's Fnd02ReconciliationFenceV1 now carries the domain-2 overlay revision next to
+  domain-1 spatial, ascending order, with new fence-construction tests; fmt/clippy/full
+  tests/both validators green; pushing.
 status: validating
 branch: claude/use-wire-m2b
-head_sha: d220ec3789e257b12d7a33b69733cac22a9fecad
+head_sha: 1d1032cdc4e1dba17261d9b4ceae06289f45a3d1
 pr: 1104
 final_head_sha: null
 final_head_frozen_at: null
@@ -209,9 +220,7 @@ ci_trigger_source: push to claude/use-wire-m2b
 ci_checks_for_current_head: 0
 runner_assignment_state: unknown
 stall_warnings: 0
-owner_action_required: grant a shared-lease extension for gameplay_transport/resume.rs:237-248
-  (or make that change itself) to complete the reconnect fence's domain-2 entry
-blocker: SHARED_LEASE_REQUIRED gameplay_transport/resume.rs:237-248
-next_action: await CI/exact-head readback and independent review on the repaired head; separately,
-  resolve the resume.rs shared-lease request
+owner_action_required: null
+blocker: null
+next_action: await CI/exact-head readback and independent review on the repaired head
 ```
