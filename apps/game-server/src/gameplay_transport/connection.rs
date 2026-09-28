@@ -569,10 +569,6 @@ where
             snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
             payload: &overlay_payload,
         });
-        // The overlay is Channel-global (unlike `spatial_revision`, this actor's own counter),
-        // so the reconnect fence (`resume.rs`, r4122215795) must record what was actually just
-        // sent here, not trust a value carried over from before this snapshot.
-        admitted.continuity.overlay_revision = entry.revision;
     }
     let snapshot =
         encode_single_chunk_snapshot(generation, 1, admitted.continuity.server_sequence, &domains);
@@ -583,6 +579,14 @@ where
         if write_frame(stream, frame).await.is_err() {
             return ConnectionEnd::AdmittedThenDisconnected(admitted);
         }
+    }
+    // r4122508665: only a fully, successfully transmitted snapshot (every frame, including
+    // `SnapshotCommit`, above) may update continuity. The overlay is Channel-global (unlike
+    // `spatial_revision`, this actor's own counter), so the reconnect fence (`resume.rs`,
+    // r4122215795) must record what was actually confirmed delivered, never a value written
+    // before transmission could still fail partway through.
+    if let Some(entry) = &overlay {
+        admitted.continuity.overlay_revision = entry.revision;
     }
     let mut sequence = admitted.continuity.server_sequence;
     let mut next_command = admitted.continuity.next_command_id;
@@ -775,12 +779,15 @@ where
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     };
                     sequence = delta_sequence;
-                    revision = new_revision;
                     admitted.continuity.server_sequence = sequence;
-                    admitted.continuity.spatial_revision = revision;
                     if write_frame(stream, &delta).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
+                    // r4122508665: only record the new spatial revision once the delta that
+                    // carries it has actually been transmitted (this had the same
+                    // before-the-write ordering bug the overlay path did).
+                    revision = new_revision;
+                    admitted.continuity.spatial_revision = revision;
                 }
             }
             Dispatch::Use(outcome) => {
@@ -810,10 +817,12 @@ where
                     };
                     sequence = delta_sequence;
                     admitted.continuity.server_sequence = sequence;
-                    admitted.continuity.overlay_revision = entry.revision;
                     if write_frame(stream, &delta).await.is_err() {
                         return ConnectionEnd::AdmittedThenDisconnected(admitted);
                     }
+                    // r4122508665: only record the new overlay revision once the delta that
+                    // carries it has actually been transmitted.
+                    admitted.continuity.overlay_revision = entry.revision;
                 }
             }
             Dispatch::Unregistered => {}
@@ -1785,6 +1794,120 @@ mod tests {
                 return Err(format!("unexpected end {end:?}").into());
             };
             assert_eq!(ended.continuity.overlay_revision, 5);
+            Ok(())
+        })
+    }
+
+    /// Wraps a stream so its `poll_write` deterministically fails once `ok_writes` successful
+    /// calls have gone through the inner stream, then fails every call after. Reads are
+    /// unaffected. Used to prove a specific frame's transmission fails, without racing a real
+    /// duplex's buffering/timing.
+    struct FailNthWrite<S> {
+        inner: S,
+        ok_writes: usize,
+    }
+
+    impl<S: tokio::io::AsyncRead + Unpin> tokio::io::AsyncRead for FailNthWrite<S> {
+        fn poll_read(
+            self: std::pin::Pin<&mut Self>,
+            context: &mut std::task::Context<'_>,
+            buffer: &mut tokio::io::ReadBuf<'_>,
+        ) -> std::task::Poll<std::io::Result<()>> {
+            let this = self.get_mut();
+            std::pin::Pin::new(&mut this.inner).poll_read(context, buffer)
+        }
+    }
+
+    impl<S: AsyncWrite + Unpin> AsyncWrite for FailNthWrite<S> {
+        fn poll_write(
+            self: std::pin::Pin<&mut Self>,
+            context: &mut std::task::Context<'_>,
+            buffer: &[u8],
+        ) -> std::task::Poll<std::io::Result<usize>> {
+            let this = self.get_mut();
+            if this.ok_writes == 0 {
+                return std::task::Poll::Ready(Err(std::io::Error::other(
+                    "injected write failure",
+                )));
+            }
+            this.ok_writes -= 1;
+            std::pin::Pin::new(&mut this.inner).poll_write(context, buffer)
+        }
+
+        fn poll_flush(
+            self: std::pin::Pin<&mut Self>,
+            context: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<std::io::Result<()>> {
+            let this = self.get_mut();
+            std::pin::Pin::new(&mut this.inner).poll_flush(context)
+        }
+
+        fn poll_shutdown(
+            self: std::pin::Pin<&mut Self>,
+            context: &mut std::task::Context<'_>,
+        ) -> std::task::Poll<std::io::Result<()>> {
+            let this = self.get_mut();
+            std::pin::Pin::new(&mut this.inner).poll_shutdown(context)
+        }
+    }
+
+    /// r4122508665: a write failing *after* the committed overlay entry has already been
+    /// encoded must not update `continuity.overlay_revision`. `write_frame` issues exactly two
+    /// low-level writes per frame (the length prefix, then the body); the join snapshot (3
+    /// frames) plus the `USE_INTENT`'s own `CommandResult` (1 frame) are let through in full (8
+    /// writes), and the 5th frame — the `WORLD_OBJECT_OVERLAY` `StateDelta` — is made to fail on
+    /// its very first write. `continuity.overlay_revision` must still hold the value from before
+    /// this connection (the FRESH baseline, 0), never the committed entry's revision (7) that
+    /// was never confirmed delivered.
+    #[test]
+    fn admitted_use_commit_write_failure_does_not_record_the_overlay_revision()
+    -> Result<(), Box<dyn Error>> {
+        run(async {
+            let committed = WorldObjectOverlayEntry {
+                content_generation: [0x44; 32],
+                placement: b"oteryn:cell/entry-door".to_vec(),
+                state: b"oteryn:reference.state.open".to_vec(),
+                revision: 7,
+            };
+            let authority = UseAuthority {
+                uses: RefCell::new(Vec::new()),
+                overlay: None,
+                outcome: UseOutcome {
+                    disposition: UseDisposition::Committed,
+                    committed: Some(committed),
+                },
+            };
+            let use_type = u64::from(COMMAND_TYPE_USE_INTENT);
+            let world_id = WorldId::decode(&WORLD)?;
+            let channel_id = ChannelId::decode(&CHANNEL)?;
+            let admitted = AdmittedSession {
+                game_session_id: GameSessionId::decode(&SESSION)?,
+                world_id,
+                channel_id,
+                runtime_actor: Some(ExactActorRef::transport_fixture(world_id, channel_id)),
+                first_entry: FirstEntryOutcome::Positioned,
+                controller: None,
+                continuity: SessionContinuity::FRESH,
+            };
+            let (server, mut client): (DuplexStream, DuplexStream) = tokio::io::duplex(1 << 21);
+            client
+                .write_all(&framed(&use_command(
+                    1,
+                    1,
+                    use_type,
+                    b"oteryn:cell/entry-door",
+                    0,
+                )))
+                .await?;
+            let mut server = FailNthWrite {
+                inner: server,
+                ok_writes: 8,
+            };
+            let end = serve_admitted(&mut server, admitted, &authority, IDLE_LIVENESS).await;
+            let ConnectionEnd::AdmittedThenDisconnected(ended) = end else {
+                return Err(format!("unexpected end {end:?}").into());
+            };
+            assert_eq!(ended.continuity.overlay_revision, 0);
             Ok(())
         })
     }
