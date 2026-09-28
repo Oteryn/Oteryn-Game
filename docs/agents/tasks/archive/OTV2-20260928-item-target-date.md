@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-item-target-date
 title: Item evidence chain at the 2026-09-27 target date (target-date step 3a)
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1061
 jira: KAN-16
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
-head_sha: null
-final_head_sha: null
+head_sha: a3b12ccd577fc69d064cc0b08bf6da391550104d
+final_head_sha: a3b12ccd577fc69d064cc0b08bf6da391550104d
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -94,3 +94,12 @@ Protected evidence and `content/world` Item values change. The exact-head review
 - Every item workflow passes against the new protected evidence.
 - The Rust tests pass; `content/world` is unchanged.
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1061 (`cb00b2655def59d67debd40cb40d35a796bb8541`) from final head `a3b12cc`; required checks passed on that head. The protected Item
+evidence chain is at the 2026-09-27 target with the same partitions and the same 69 promoted values as at 2026-07-28.
+Three Codex findings were fixed and the chain re-protected: the field-verification limitation text, the pre-target
+continuity lookup (`PRE_TARGET_DAY_END`) and the target-cut-namespaced current-source cache. #1064 retired the importer
+binding of the promotion packet, so the merge kept main's importer. Step 3b (the G4 re-captures) remains open.
+Owner released.

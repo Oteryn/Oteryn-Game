@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/light_healing",
-      "revision": "spell-p2-r3"
+      "revision": "spell-p2-r4"
     },
     "name": "Light Healing",
     "carrier": "instant",
@@ -47,12 +47,15 @@
     },
     "pz_locks_caster": false,
     "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_light_healing"
+    },
     "base_power": 40,
     "execution": {
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/light_healing",
-        "revision": "spell-p2-r3"
+        "revision": "spell-p2-r4"
       }
     }
   }

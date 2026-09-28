@@ -1216,12 +1216,15 @@ def test_routed_non_item_unmove_map_geometry():
     check(report["converted"] is True, report)
     check(item["physical"]["movable"] is False, item)
 
-    # negative: no unmove and no resolvable family stays editorial backlog
-    # (family_profile_unresolved), never routed_non_item.
+    # negative: no unmove, no resolvable family, and no appearance object at all --
+    # routed WorldObject/no_client_appearance (task h), never left in editorial backlog.
     item, _deps, report = convert({450: {"attrs": {}}}, item_id=450)
-    check(report.get("routed_non_item") is None, report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "no_client_appearance"},
+        report,
+    )
     check(report["converted"] is False, report)
-    check("family_profile_unresolved" in report["blockers"], report)
 
 
 def test_wrap_target_inheritance_resolves():
@@ -1246,13 +1249,18 @@ def test_wrap_target_inheritance_resolves():
 
 
 def test_wrap_target_inheritance_unresolved_target_stays_unresolved():
-    # wrapableto names an id absent from items.xml entirely.
+    # wrapableto names an id absent from items.xml entirely. None of these fixtures
+    # carries an appearance object, so once wrap-target inheritance itself fails to
+    # resolve them, the task h catch-all routes them WorldObject/no_client_appearance
+    # rather than leaving them in `family_profile_unresolved` -- the point of each
+    # check below is that wrap-target inheritance never guesses a family, not the
+    # exact terminal bucket.
     item, _deps, report = convert(
         {461: {"attrs": {"wrapableto": "90099"}}}, item_id=461
     )
     check(item is None, report)
     check(report["converted"] is False, report)
-    check("family_profile_unresolved" in report["blockers"], report)
+    check("family_profile_basis" not in report, report)
 
     # wrapableto names a real id whose own primarytype is not admitted.
     item, _deps, report = convert(
@@ -1263,14 +1271,14 @@ def test_wrap_target_inheritance_unresolved_target_stays_unresolved():
         item_id=462,
     )
     check(item is None, report)
-    check("family_profile_unresolved" in report["blockers"], report)
+    check("family_profile_basis" not in report, report)
 
     # wrapableto names a real id with no primarytype attribute at all.
     item, _deps, report = convert(
         {463: {"attrs": {"wrapableto": "90003"}}, 90003: {"attrs": {}}}, item_id=463
     )
     check(item is None, report)
-    check("family_profile_unresolved" in report["blockers"], report)
+    check("family_profile_basis" not in report, report)
 
 
 def test_wrap_target_never_overrides_already_resolved_item():
@@ -1379,6 +1387,232 @@ def test_real_corpse_flag_item_unchanged_by_dead_name_rule():
     )
 
 
+def test_fluid_type_without_appearance_routes_non_item():
+    # Owner decision 2026-09-28 (task b): an items.xml-only fluid-kind name (both pinned
+    # engines' `Fluids_t` enum, `src/utils/utils_definitions.hpp`) with no appearance
+    # object routes non-Item, owner Fluid.
+    sources = synthetic_sources("crystal", {470: {"name": "wine", "attrs": {}}})
+    check(470 not in sources["appearances"], "fixture must lack an appearance")
+    item, _deps, report = engine_items.convert_item(sources, 470)
+    check(item is None, report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "Fluid", "reason": "fluid_type_without_appearance"},
+        report,
+    )
+    check(report["blockers"] == [], report)
+
+    # Every admitted fluid name routes the same way.
+    for name in sorted(engine_items.FLUID_TYPE_NAMES):
+        sources = synthetic_sources("crystal", {471: {"name": name, "attrs": {}}})
+        _item, _deps, report = engine_items.convert_item(sources, 471)
+        check(
+            report["routed_non_item"]
+            == {"owner": "Fluid", "reason": "fluid_type_without_appearance"},
+            (name, report),
+        )
+
+
+def test_fluid_type_with_appearance_is_not_routed():
+    # The exact same name WITH an appearance object is a real, physical Item candidate
+    # (e.g. a "small flask of wine"-style entry): the fluid-type rule must never apply.
+    sources = synthetic_sources(
+        "crystal", {472: {"name": "wine", "attrs": {}, "flags": {}}}
+    )
+    check(472 in sources["appearances"], "fixture must carry an appearance")
+    _item, _deps, report = engine_items.convert_item(sources, 472)
+    check(report.get("routed_non_item") is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_fluid_type_route_requires_items_xml_record():
+    # No items.xml record at all (appearance-only entry): the fluid rule never applies,
+    # since it only ever recognizes an items.xml-only name.
+    sources = synthetic_sources("crystal", {})
+    sources["appearances"][473] = {
+        "id": 473,
+        "flags": {},
+        "frame_groups": [],
+        "name": "water",
+        "description": None,
+    }
+    _item, _deps, report = engine_items.convert_item(sources, 473)
+    check(report.get("routed_non_item") is None, report)
+
+
+def test_appearance_less_non_fluid_name_routes_no_client_appearance():
+    # A non-fluid, appearance-less name (e.g. one of the real editorial-backlog engine
+    # names such as "bridge"/"hive structure") is never guessed as a fluid; owner
+    # decision 2026-09-28 (task h) routes it WorldObject/no_client_appearance instead
+    # of leaving it in `family_profile_unresolved` (the pinned client build simply has
+    # no sprite for this id).
+    sources = synthetic_sources("crystal", {474: {"name": "bridge", "attrs": {}}})
+    check(474 not in sources["appearances"], "fixture must lack an appearance")
+    item, _deps, report = engine_items.convert_item(sources, 474)
+    check(item is None, report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "no_client_appearance"},
+        report,
+    )
+    check(report["blockers"] == [], report)
+
+
+def test_item_with_appearance_never_routed_no_client_appearance():
+    # An item that genuinely HAS an appearances.dat object, and resolves nothing else,
+    # stays plain `family_profile_unresolved` editorial backlog; task h only ever fires
+    # for an id with no appearance object at all.
+    sources = synthetic_sources(
+        "crystal", {475: {"name": "some unresolved name", "attrs": {}, "flags": {}}}
+    )
+    check(475 in sources["appearances"], "fixture must carry an appearance")
+    item, _deps, report = engine_items.convert_item(sources, 475)
+    check(item is None, report)
+    check(report.get("routed_non_item") is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_late_placeholder_names_route_non_item():
+    # Owner decision 2026-09-28 (task c): these names are only ever routed once every
+    # other classifier has already failed -- unlike `PLACEHOLDER_APPEARANCE_NAMES`, this
+    # never gates on "no other items.xml attribute" (see the resolved-item test below for
+    # why that early gate is what makes the late rule necessary here).
+    for name in sorted(engine_items.LATE_PLACEHOLDER_APPEARANCE_NAMES):
+        item, _deps, report = convert(
+            {475: {"name": name, "attrs": {"weight": "10"}, "flags": {}}}, item_id=475
+        )
+        check(item is None, report)
+        check(
+            report["routed_non_item"]
+            == {"owner": "WorldObject", "reason": "appearance_placeholder_slot"},
+            (name, report),
+        )
+        check(report["blockers"] == [], report)
+
+
+def test_late_placeholder_name_on_already_resolved_item_is_not_rerouted():
+    # An id whose name happens to be one of the late-placeholder names, but which the
+    # engine's own attributes (or, in production, the wiki-evidence itemid join) already
+    # resolve to a real family, must never be rerouted: the late rule only ever runs
+    # once family classification has already failed for this exact item.
+    item, _deps, report = convert(
+        {476: {"name": "event item", "attrs": {"primarytype": "valuables"}}},
+        item_id=476,
+    )
+    check(item is not None, report)
+    check(item["family_profile"] == "material_valuable", item)
+    check(report.get("routed_non_item") is None, report)
+
+    # Same guarantee through the wiki-evidence fallback specifically (mirrors the real
+    # production concern the task called out: an "old tibia item"/"event item" id the
+    # snapshot resolves by itemid must never be rerouted to the placeholder owner).
+    key = engine_items.build_identity_index()[477][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "decoration", ["old tibia item"], field="primarytype", value="Decorations"
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {477: {"name": "old tibia item", "attrs": {}}}, fallback, item_id=477
+    )
+    check(item is not None, report)
+    check(item["family_profile"] == "decoration", item)
+    check(item["family_profile_basis"] == "wiki_evidence_fallback", item)
+    check(report.get("routed_non_item") is None, report)
+
+
+def test_skip_post_wiki_fallback_routes_probe_flag():
+    """`sources["skip_post_wiki_fallback_routes"]` (set only by
+    `item_wiki_family_capture.collect_unresolved`'s wiki-OFF probe) must disable every
+    rule ranked below the wiki fallback -- wrap-target inheritance, the dead-item rules,
+    and the fluid-type/late-placeholder routes -- so the probe never mistakes one of them
+    for "this id doesn't need a wiki lookup" and silently excludes an id that still needs
+    (and, in production, still prefers) real wiki evidence. This is the bug found and
+    fixed while regenerating the wiki-evidence snapshot for this task."""
+    # Wrap-target inheritance: normally resolves; with the flag, stays unresolved.
+    sources = synthetic_sources(
+        "crystal",
+        {
+            500: {"attrs": {"wrapableto": "90001"}},
+            90001: {"attrs": {"primarytype": "furniture"}},
+        },
+    )
+    item, _deps, report = engine_items.convert_item(sources, 500)
+    check(item is not None and item["family_profile"] == "decoration", report)
+    sources["skip_post_wiki_fallback_routes"] = True
+    item, _deps, report = engine_items.convert_item(sources, 500)
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+    # Dead-item profile rule: normally resolves; with the flag, stays unresolved.
+    sources = synthetic_sources(
+        "crystal",
+        {501: {"name": "dead rat", "attrs": {}, "flags": {"flags.take": True}}},
+    )
+    item, _deps, report = engine_items.convert_item(sources, 501)
+    check(item is not None and item["family_profile"] == "material_valuable", report)
+    sources["skip_post_wiki_fallback_routes"] = True
+    item, _deps, report = engine_items.convert_item(sources, 501)
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+    # Dead-item route (corpse_decoration): normally routed; with the flag, unresolved.
+    sources = synthetic_sources(
+        "crystal", {502: {"name": "dead dragon", "attrs": {}, "flags": {}}}
+    )
+    _item, _deps, report = engine_items.convert_item(sources, 502)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "corpse_decoration"},
+        report,
+    )
+    sources["skip_post_wiki_fallback_routes"] = True
+    _item, _deps, report = engine_items.convert_item(sources, 502)
+    check(report.get("routed_non_item") is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+    # Late placeholder name: normally routed; with the flag, unresolved.
+    sources = synthetic_sources(
+        "crystal", {503: {"name": "old tibia item", "attrs": {}}}
+    )
+    _item, _deps, report = engine_items.convert_item(sources, 503)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "appearance_placeholder_slot"},
+        report,
+    )
+    sources["skip_post_wiki_fallback_routes"] = True
+    _item, _deps, report = engine_items.convert_item(sources, 503)
+    check(report.get("routed_non_item") is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+    # Fluid type without appearance: normally routed; with the flag, unresolved.
+    sources = synthetic_sources("crystal", {504: {"name": "wine", "attrs": {}}})
+    _item, _deps, report = engine_items.convert_item(sources, 504)
+    check(
+        report["routed_non_item"]
+        == {"owner": "Fluid", "reason": "fluid_type_without_appearance"},
+        report,
+    )
+    sources["skip_post_wiki_fallback_routes"] = True
+    _item, _deps, report = engine_items.convert_item(sources, 504)
+    check(report.get("routed_non_item") is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+    # No-client-appearance catch-all: normally routed; with the flag, unresolved.
+    sources = synthetic_sources("crystal", {505: {"name": "bridge", "attrs": {}}})
+    _item, _deps, report = engine_items.convert_item(sources, 505)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "no_client_appearance"},
+        report,
+    )
+    sources["skip_post_wiki_fallback_routes"] = True
+    _item, _deps, report = engine_items.convert_item(sources, 505)
+    check(report.get("routed_non_item") is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
 def test_family_profile_fallbacks():
     # soul cores: a new PRIMARYTYPE_PROFILE entry.
     item, _deps, report = convert(
@@ -1432,11 +1666,16 @@ def test_family_profile_fallbacks():
     )
     check(item["family_profile"] == "document", report)
 
-    # the ~heterogeneous tail with no structural signal at all stays unresolved; no
-    # name-pattern guess is made for it.
+    # the ~heterogeneous tail with no structural signal at all, and no appearance
+    # object, is routed WorldObject/no_client_appearance (task h); no name-pattern
+    # guess is ever made for its family.
     item, _deps, report = convert({405: {"attrs": {}}}, item_id=405)
     check(report["converted"] is False, report)
-    check("family_profile_unresolved" in report["blockers"], report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "no_client_appearance"},
+        report,
+    )
 
 
 # --- wiki-evidence family fallback (items-family-fallback.json) --------------------
@@ -1458,7 +1697,13 @@ def sample_wiki_source(**overrides):
 
 
 def synthetic_wiki_fallback_entry(
-    profile, matched_names, field=None, value=None, candidates=None
+    profile,
+    matched_names,
+    field=None,
+    value=None,
+    candidates=None,
+    match_basis=None,
+    availability=None,
 ):
     """Build one already-resolved fallback entry, exactly the shape
     `load_wiki_family_fallback` would return, for injecting straight into
@@ -1472,11 +1717,18 @@ def synthetic_wiki_fallback_entry(
         }
     else:
         evidence = {"resolution": "disambiguation", "candidates": candidates}
-    return {
+    entry = {
         "profile": profile,
         "matched_names": set(matched_names),
         "evidence": evidence,
+        "availability": availability,
     }
+    # Real fallback entries always carry a `match_basis` (the loader requires it); a
+    # test that doesn't care which one it is gets the generic, high-confidence
+    # "itemid" default so it still resolves ahead of wrap-target/dead-item, same as
+    # every pre-(e)/(g) test always assumed.
+    entry["match_basis"] = match_basis if match_basis is not None else "itemid"
+    return entry
 
 
 def convert_with_fallback(item_records, wiki_fallback, item_id=200, engine="crystal"):
@@ -1527,6 +1779,159 @@ def test_wiki_fallback_direct_hit():
     check(report["family_profile_basis"] == "wiki_evidence_fallback", report)
 
 
+def test_availability_wired_from_wiki_fallback():
+    # Owner decision 2026-09-28 (task f): present only when the wiki fallback decided
+    # this Item's family_profile and the snapshot carries an availability fact for it.
+    key = engine_items.build_identity_index()[416][0]
+    availability = {
+        "status": "unavailable",
+        "evidence": {
+            "source": "tibiawiki",
+            "page_id": 1,
+            "revision_id": 1,
+            "wiki_title": "Axe of Mayhem",
+            "match_basis": "actualname",
+        },
+    }
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "weapon_melee",
+            ["axe of mayhem"],
+            field="primarytype",
+            value="Axe Weapons",
+            availability=availability,
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {416: {"name": "axe of mayhem", "attrs": {}}}, fallback, item_id=416
+    )
+    check(item is not None, report)
+    check(item["availability"] == availability, item)
+
+
+def test_availability_absent_when_wiki_fallback_carries_none():
+    key = engine_items.build_identity_index()[417][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "decoration", ["no status thing"], field="primarytype", value="Decorations"
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {417: {"name": "no status thing", "attrs": {}}}, fallback, item_id=417
+    )
+    check(item is not None, report)
+    check("availability" not in item, item)
+
+
+def test_availability_absent_when_not_wiki_resolved():
+    # An engine-attribute-resolved Item never carries availability, even if its key
+    # happens to have an (unused) wiki fallback entry with one.
+    key = engine_items.build_identity_index()[418][0]
+    availability = {
+        "status": "event",
+        "evidence": {
+            "source": "tibiawiki",
+            "page_id": 1,
+            "revision_id": 1,
+            "wiki_title": "Some Page",
+            "match_basis": "title",
+        },
+    }
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "decoration",
+            ["engine wins"],
+            field="primarytype",
+            value="Decorations",
+            availability=availability,
+        )
+    }
+    item, _deps, _report = convert_with_fallback(
+        {418: {"name": "Engine Wins", "attrs": {"primarytype": "valuables"}}},
+        fallback,
+        item_id=418,
+    )
+    check(item["family_profile"] == "material_valuable", item)
+    check("availability" not in item, item)
+
+
+def test_wiki_fallback_loader_accepts_valid_availability_status():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["a wall thing"],
+        "resolution": "direct",
+        "match_basis": "title",
+        "field": "primarytype",
+        "value": "Decorations",
+        "availability_status": "unavailable",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        resolved = engine_items.load_wiki_family_fallback(
+            path, engine_items.build_identity_index()
+        )
+        check(resolved[key]["availability"]["status"] == "unavailable", resolved)
+        check(
+            resolved[key]["availability"]["evidence"]["source"] == "tibiawiki", resolved
+        )
+        check(
+            resolved[key]["availability"]["evidence"]["match_basis"] == "title",
+            resolved,
+        )
+
+
+def test_wiki_fallback_loader_rejects_unadmitted_availability_status():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["a"],
+        "resolution": "direct",
+        "match_basis": "title",
+        "field": "primarytype",
+        "value": "Decorations",
+        "availability_status": "made_up_status",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        raised = False
+        try:
+            engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        except SystemExit:
+            raised = True
+        check(raised, "an unadmitted availability_status must be rejected")
+
+
+def test_wiki_fallback_loader_null_availability_status_is_no_availability():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["a"],
+        "resolution": "direct",
+        "match_basis": "title",
+        "field": "primarytype",
+        "value": "Decorations",
+        "availability_status": None,
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        resolved = engine_items.load_wiki_family_fallback(
+            path, engine_items.build_identity_index()
+        )
+        check(resolved[key]["availability"] is None, resolved)
+
+
 def test_wiki_fallback_name_mismatch_is_ignored():
     # The snapshot resolved a match for a *different* engine name than this item's own;
     # it must never be borrowed for a same-key-but-different-name item.
@@ -1545,22 +1950,33 @@ def test_wiki_fallback_name_mismatch_is_ignored():
 
 
 def test_wiki_fallback_needs_an_appearance_object():
-    # Rows such as the fluid-kind names 1-20 have no appearances.dat object; wiki
-    # evidence for a same-named object must not turn them into Items.
+    # An entry with no appearances.dat object at all (e.g. the fluid-kind name rows
+    # 1-20 -- see `test_fluid_type_without_appearance_routes_non_item` for that specific
+    # rule instead) is not a physical Item; wiki evidence for a same-named object must
+    # not turn it into one -- it correctly falls through to the task h catch-all
+    # instead. "gemstone slab" is not a fluid name, keeping this test isolated from the
+    # dedicated fluid-type routing rule below.
     key = engine_items.build_identity_index()[409][0]
     fallback = {
         key: synthetic_wiki_fallback_entry(
-            "fluid", ["wine"], field="primarytype", value="Liquids"
+            "decoration", ["gemstone slab"], field="primarytype", value="Decorations"
         )
     }
-    sources = synthetic_sources("crystal", {409: {"name": "wine", "attrs": {}}})
+    sources = synthetic_sources(
+        "crystal", {409: {"name": "gemstone slab", "attrs": {}}}
+    )
     sources["wiki_family_fallback"] = fallback
     check(409 not in sources["appearances"], "fixture must lack an appearance")
     item, _deps, report = engine_items.convert_item(sources, 409)
     check(item is None, report)
-    check("family_profile_unresolved" in report["blockers"], report)
+    check(
+        report["routed_non_item"]
+        == {"owner": "WorldObject", "reason": "no_client_appearance"},
+        "a resolvable wiki record must never resolve an appearance-less item; it must "
+        "still fall through to the no-client-appearance catch-all",
+    )
     sources = synthetic_sources(
-        "crystal", {409: {"name": "wine", "attrs": {}, "flags": {}}}
+        "crystal", {409: {"name": "gemstone slab", "attrs": {}, "flags": {}}}
     )
     sources["wiki_family_fallback"] = fallback
     check(409 in sources["appearances"], "fixture must carry an appearance")
@@ -1612,6 +2028,257 @@ def test_wiki_fallback_disambiguation_accepted_when_candidates_agree():
     check(len(item["family_profile_evidence"]["candidates"]) == 2, item)
 
 
+def test_wiki_fallback_appearance_title_matches_appearance_name():
+    # Owner decision 2026-09-28 (task e): an `appearance_title` record is checked
+    # against this item's own appearances.dat name, not its items.xml name -- e.g. a
+    # blanket items.xml range label ("weapon of mayhem") over an id whose real client
+    # name is per-id ("slayer of mayhem").
+    key = engine_items.build_identity_index()[410][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "weapon_melee",
+            ["slayer of mayhem"],
+            field="primarytype",
+            value="Sword Weapons",
+            match_basis="appearance_title",
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {
+            410: {
+                "name": "weapon of mayhem",
+                "appearance_name": "Slayer of Mayhem",
+                "attrs": {},
+            }
+        },
+        fallback,
+        item_id=410,
+    )
+    check(item is not None, report)
+    check(item["family_profile"] == "weapon_melee", item)
+    check(item["family_profile_basis"] == "wiki_evidence_fallback", item)
+
+
+def test_wiki_fallback_appearance_title_ignores_items_xml_name():
+    # The same record must NOT match against the items.xml name, even though that is
+    # what every other match_basis checks.
+    key = engine_items.build_identity_index()[411][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "weapon_melee",
+            ["slayer of mayhem"],
+            field="primarytype",
+            value="Sword Weapons",
+            match_basis="appearance_title",
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {
+            411: {
+                "name": "weapon of mayhem",
+                "appearance_name": "weapon of mayhem",
+                "attrs": {},
+            }
+        },
+        fallback,
+        item_id=411,
+    )
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_wiki_fallback_appearance_title_name_mismatch_is_ignored():
+    # This item's own appearance name is not the one the snapshot resolved.
+    key = engine_items.build_identity_index()[412][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "weapon_melee",
+            ["slayer of mayhem"],
+            field="primarytype",
+            value="Sword Weapons",
+            match_basis="appearance_title",
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {
+            412: {
+                "name": "weapon of mayhem",
+                "appearance_name": "chopper of mayhem",
+                "attrs": {},
+            }
+        },
+        fallback,
+        item_id=412,
+    )
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_wiki_fallback_loader_accepts_valid_appearance_title_record():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["slayer of mayhem"],
+        "resolution": "direct",
+        "match_basis": "appearance_title",
+        "field": "primarytype",
+        "value": "Sword Weapons",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        resolved = engine_items.load_wiki_family_fallback(
+            path, engine_items.build_identity_index()
+        )
+        check(resolved[key]["match_basis"] == "appearance_title", resolved)
+        check(resolved[key]["profile"] == "weapon_melee", resolved)
+
+
+def test_wiki_fallback_loader_rejects_unknown_match_basis_value():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["a"],
+        "resolution": "direct",
+        "match_basis": "made_up_basis",
+        "field": "primarytype",
+        "value": "Decorations",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        raised = False
+        try:
+            engine_items.load_wiki_family_fallback(
+                path, engine_items.build_identity_index()
+            )
+        except SystemExit:
+            raised = True
+        check(raised, "an unrecognized match_basis value must be rejected")
+
+
+def test_wiki_fallback_loader_accepts_valid_actualname_record():
+    key = FIXTURE_ITEM_KEYS[101]
+    record = {
+        "registry_key": key,
+        "matched_names": ["slayer of mayhem"],
+        "resolution": "direct",
+        "match_basis": "actualname",
+        "field": "primarytype",
+        "value": "Sword Weapons",
+        **sample_wiki_source(),
+    }
+    payload = build_wiki_fallback_payload({key: record})
+    with tempfile.TemporaryDirectory() as directory:
+        path = Path(directory) / "items-family-fallback.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        resolved = engine_items.load_wiki_family_fallback(
+            path, engine_items.build_identity_index()
+        )
+        check(resolved[key]["match_basis"] == "actualname", resolved)
+        check(resolved[key]["profile"] == "weapon_melee", resolved)
+
+
+def test_wiki_fallback_actualname_matches_either_items_xml_or_appearance_name():
+    # Owner decision 2026-09-28 (task g): an `actualname` record is checked against
+    # EITHER this item's items.xml name or its appearance name, whichever the capture
+    # tool actually matched.
+    key_a = engine_items.build_identity_index()[413][0]
+    fallback_a = {
+        key_a: synthetic_wiki_fallback_entry(
+            "weapon_melee",
+            ["axe of mayhem"],
+            field="primarytype",
+            value="Axe Weapons",
+            match_basis="actualname",
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {413: {"name": "axe of mayhem", "attrs": {}}}, fallback_a, item_id=413
+    )
+    check(item is not None and item["family_profile"] == "weapon_melee", report)
+
+    key_b = engine_items.build_identity_index()[414][0]
+    fallback_b = {
+        key_b: synthetic_wiki_fallback_entry(
+            "weapon_melee",
+            ["axe of mayhem"],
+            field="primarytype",
+            value="Axe Weapons",
+            match_basis="actualname",
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {
+            414: {
+                "name": "weapon of mayhem",
+                "appearance_name": "axe of mayhem",
+                "attrs": {},
+            }
+        },
+        fallback_b,
+        item_id=414,
+    )
+    check(item is not None and item["family_profile"] == "weapon_melee", report)
+
+
+def test_wiki_fallback_actualname_mismatch_is_rejected():
+    key = engine_items.build_identity_index()[415][0]
+    fallback = {
+        key: synthetic_wiki_fallback_entry(
+            "weapon_melee",
+            ["axe of mayhem"],
+            field="primarytype",
+            value="Axe Weapons",
+            match_basis="actualname",
+        )
+    }
+    item, _deps, report = convert_with_fallback(
+        {
+            415: {
+                "name": "weapon of mayhem",
+                "appearance_name": "some other name",
+                "attrs": {},
+            }
+        },
+        fallback,
+        item_id=415,
+    )
+    check(item is None, report)
+    check("family_profile_unresolved" in report["blockers"], report)
+
+
+def test_capture_tool_actualname_index_and_disagreement():
+    capture = load_capture_module()
+    axe_page = _fake_wiki_page(
+        1,
+        "Axe of Mayhem",
+        "{{Infobox Object\n|actualname = axe of mayhem\n|primarytype = Axe Weapons\n}}",
+    )
+    fetcher = capture.WikiFetcher()
+    fetcher.cache["Axe of Mayhem"] = axe_page
+    index = capture.build_actualname_index(fetcher, ["Axe of Mayhem"])
+    check(index["axe of mayhem"] == [axe_page], index)
+    record = capture.resolve_page_group(index["axe of mayhem"], "actualname")
+    check(record is not None and record["match_basis"] == "actualname", record)
+    check(record["value"] == "Axe Weapons", record)
+
+    # Two pages sharing the same actualname but disagreeing on profile: unresolved.
+    other_page = _fake_wiki_page(
+        2,
+        "Some Other Axe of Mayhem Page",
+        "{{Infobox Object\n|actualname = axe of mayhem\n|primarytype = Others\n}}",
+    )
+    check(
+        capture.resolve_page_group([axe_page, other_page], "actualname") is None,
+        "disagreeing actualname-matched pages must not resolve",
+    )
+
+
 def test_wiki_fallback_loader_missing_file_is_empty():
     resolved = engine_items.load_wiki_family_fallback(
         Path("/nonexistent-does-not-exist/items-family-fallback.json"),
@@ -1648,7 +2315,7 @@ def test_committed_wiki_fallback_snapshot_loads_fail_closed():
     resolved = engine_items.load_wiki_family_fallback(
         engine_items.WIKI_FAMILY_FALLBACK_PATH, engine_items.build_identity_index()
     )
-    check(len(resolved) == 1415, len(resolved))
+    check(len(resolved) == 1482, len(resolved))
     check(
         all(
             entry["profile"] in engine_items.PROFILE_ITEM_CLASS
@@ -2080,6 +2747,25 @@ def test_wiki_fallback_real_snapshot_old_rag_and_ivory_comb():
     )
 
 
+def test_capture_tool_parses_last_field_before_closing_braces():
+    # A page's last infobox parameter is sometimes written with no trailing newline
+    # before the template's own closing `}}` (e.g. `|status=unobtainable}}`, as on the
+    # real "Masterpiece of a Muse" page); that closer must never be captured as part of
+    # the field's own value.
+    capture = load_capture_module()
+    content = "{{Infobox Object\n|itemid = 1\n|status=unobtainable}}"
+    fields = capture.parse_infobox_fields(content)
+    check(fields["status"] == "unobtainable", fields)
+    check(capture.page_status_value(fields) == "unobtainable", fields)
+
+
+def test_capture_tool_page_status_value_defaults():
+    capture = load_capture_module()
+    check(capture.page_status_value({"status": "  Unavailable  "}) == "unavailable", "")
+    check(capture.page_status_value({"status": ""}) is None, "empty status is None")
+    check(capture.page_status_value({}) is None, "absent status is None")
+
+
 def test_capture_tool_itemlist_template_parsing():
     """Fandom disambiguation pages sometimes list variants inside `{{ItemList ...}}`
     instead of `[[links]]` (the owner's Kraken Buoy Lamp finding); `key=value`
@@ -2171,6 +2857,34 @@ def test_capture_tool_itemid_join_disagreement_or_failure_has_no_name_fallback()
         capture.resolve_id_matched_pages([decorations_page, unresolved_page]) is None,
         "one id-matched page failing to resolve fails the whole id match, even when "
         "another one of the same id's pages would have resolved on its own",
+    )
+
+
+def test_capture_tool_diagnose_id_matched_unresolved_is_report_only():
+    """`diagnose_id_matched_unresolved` reports the distinct `field=value` strings an
+    id-matched-but-unresolved page carries, for a human to review; it never decides a
+    routing outcome (there is no reachable routing decision to compare it against)."""
+    capture = load_capture_module()
+    others_page = _fake_wiki_page(
+        1,
+        "Some Trinket",
+        "{{Infobox Object\n|itemid = 90001\n|primarytype = Others\n}}",
+    )
+    check(capture.resolve_id_matched_pages([others_page]) is None, others_page)
+    check(
+        capture.diagnose_id_matched_unresolved([others_page]) == ["primarytype=others"],
+        "the diagnostic must report the value for a human to review",
+    )
+    # Two pages carrying different unresolved field/value pairs both get reported.
+    household_page = _fake_wiki_page(
+        2,
+        "Some Household Thing",
+        "{{Infobox Object\n|itemid = 90002\n|objectclass = Household Items\n}}",
+    )
+    check(
+        capture.diagnose_id_matched_unresolved([others_page, household_page])
+        == ["objectclass=household items", "primarytype=others"],
+        "every distinct unresolved field/value pair across the group is reported",
     )
 
 
@@ -2743,12 +3457,34 @@ def main():
         test_corpse_with_take_in_owner_table,
         test_corpse_takeable_unlisted_name_stays_unresolved,
         test_real_corpse_flag_item_unchanged_by_dead_name_rule,
+        test_fluid_type_without_appearance_routes_non_item,
+        test_fluid_type_with_appearance_is_not_routed,
+        test_fluid_type_route_requires_items_xml_record,
+        test_appearance_less_non_fluid_name_routes_no_client_appearance,
+        test_item_with_appearance_never_routed_no_client_appearance,
+        test_late_placeholder_names_route_non_item,
+        test_late_placeholder_name_on_already_resolved_item_is_not_rerouted,
+        test_skip_post_wiki_fallback_routes_probe_flag,
         test_family_profile_fallbacks,
         test_wiki_fallback_direct_hit,
+        test_availability_wired_from_wiki_fallback,
+        test_availability_absent_when_wiki_fallback_carries_none,
+        test_availability_absent_when_not_wiki_resolved,
+        test_wiki_fallback_loader_accepts_valid_availability_status,
+        test_wiki_fallback_loader_rejects_unadmitted_availability_status,
+        test_wiki_fallback_loader_null_availability_status_is_no_availability,
         test_wiki_fallback_name_mismatch_is_ignored,
         test_wiki_fallback_needs_an_appearance_object,
         test_engine_attribute_always_wins_over_wiki_fallback,
         test_wiki_fallback_disambiguation_accepted_when_candidates_agree,
+        test_wiki_fallback_appearance_title_matches_appearance_name,
+        test_wiki_fallback_appearance_title_ignores_items_xml_name,
+        test_wiki_fallback_appearance_title_name_mismatch_is_ignored,
+        test_wiki_fallback_loader_accepts_valid_appearance_title_record,
+        test_wiki_fallback_loader_rejects_unknown_match_basis_value,
+        test_wiki_fallback_loader_accepts_valid_actualname_record,
+        test_wiki_fallback_actualname_matches_either_items_xml_or_appearance_name,
+        test_wiki_fallback_actualname_mismatch_is_rejected,
         test_wiki_fallback_loader_missing_file_is_empty,
         test_wiki_fallback_loader_accepts_valid_direct_record,
         test_wiki_fallback_loader_rejects_unadmitted_broad_bucket_value,
@@ -2761,9 +3497,13 @@ def main():
         test_resolve_wiki_family_value_status_field,
         test_wiki_status_event_priority_below_primarytype_in_capture_tool,
         test_wiki_fallback_real_snapshot_old_rag_and_ivory_comb,
+        test_capture_tool_parses_last_field_before_closing_braces,
+        test_capture_tool_page_status_value_defaults,
         test_capture_tool_itemlist_template_parsing,
         test_capture_tool_itemid_join_precedence_over_name_match,
         test_capture_tool_itemid_join_disagreement_or_failure_has_no_name_fallback,
+        test_capture_tool_diagnose_id_matched_unresolved_is_report_only,
+        test_capture_tool_actualname_index_and_disagreement,
         test_wiki_fallback_loader_rejects_missing_or_unknown_match_basis,
         test_committed_wiki_fallback_snapshot_loads_fail_closed,
         test_wiki_fallback_snapshot_is_registered,

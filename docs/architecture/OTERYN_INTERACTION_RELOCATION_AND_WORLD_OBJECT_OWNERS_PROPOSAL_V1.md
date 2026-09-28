@@ -211,10 +211,12 @@ The owner accepted every recommendation below ("zgadzam się", 2026-09-27):
   `DISPOSITION_COMMITTED`/`PreparedMutation::Publish`, Round 20/21); the state+collision-only revert
   scope (`revert_after_ms` covers exactly what `LocalObjectStateDefinition`/`PreparedMutation::Publish`
   model today, Round 16); and rejection of attribute-changing transitions at authoring/lowering (Round
-  17/19). Delegated to the owning lane, unresolved by this document: open decisions 1, 2, 4, 5, 6 and
-  7 below. Open decision 3 (attribute-bearing object state) is owner-decided `YES` — needed for the
-  playable path — with its design in progress as a further `CANDIDATE` section of this document (Round
-  21 narrative below; task `OTV2-20260928-cw1-attribute-bearing-object-state`).
+  17/19). Delegated to the owning lane, unresolved by this document: open decisions 1, 2, 5, 6, 7 and
+  8 below. Open decision 3 (attribute-bearing object state) is owner-decided `YES` — needed for the
+  playable path — with its design, and open decision 4's resolution (coupled to it), in a further
+  `CANDIDATE` §9 (Round 21 narrative below; task `OTV2-20260928-cw1-attribute-bearing-object-state`);
+  §9's own Round 2 narrowed that design to the teleporter-transform shapes only and added open
+  decision 8 for the runtime-created-placement gap it found.
 
 The independent review of D38 (2026-09-27/28) returned `ACCEPT_WITH_CONDITIONS` with an
 `EVIDENCE_GAP`: `revert_after` names no scheduling mechanism. This section originally answered only
@@ -518,12 +520,71 @@ after that PR's round-20 freeze and merge, too late to fold into that PR: the ro
 lifecycle-record capacity for every non-timer-origin `revert_after`-carrying operation *before*
 `prepare` ran, then released that reservation on an `unchanged` result — correct in outcome (no record
 survives an `unchanged` result) but reserving capacity speculatively before the outcome is known is
-unnecessary against FND-03 §15.4's "reserve only what will actually be spent" discipline. Fixed here as
-open decision 7: capacity for one new lifecycle record is now reserved only once `prepare` has already
-returned `DISPOSITION_COMMITTED`/`PreparedMutation::Publish`, in the same staged commit as everything
-else — never before `prepare` runs, and never at all for an `unchanged` result. Corrected the staging
-bullet and the capacity-atomicity/no-revert-on-unchanged test obligations that the old pre-`prepare`
-reservation wording superseded.
+unnecessary work. Fixed here as open decision 7: capacity for one new lifecycle record is now reserved
+only once `prepare` has already returned `DISPOSITION_COMMITTED`/`PreparedMutation::Publish`, in the
+same staged commit as everything else — never before `prepare` runs, and never at all for an
+`unchanged` result. Corrected the staging bullet and the capacity-atomicity/no-revert-on-unchanged
+test obligations that the old pre-`prepare` reservation wording superseded.
+
+Round 22 correction (owner-authorized; Codex finding 4121718203 on PR #1097's thread, ~line 521 on
+`main`): round 21's own text above, and open decision 7's own list entry below, misattributed the
+reserve-only-after-`Publish` ordering to an "FND-03 §15.4 discipline." FND-03 §15.4 itself (evidence
+above, its exact text) requires only that committing an operation needing a timer fails before commit
+when capacity is unavailable, and that an already-accepted timer is not discarded for due-queue
+congestion — it says nothing about *when* a reservation attempt happens relative to `prepare`. Fixed:
+the reserve-only-after-`Publish` ordering is restated as this section's own accepted requirement
+(open decision 7, part of §7's owner-accepted direction, Round 21), never presented as something
+FND-03 mandates; FND-03 §15.4's fail-before-commit rule is cited only for what happens once a
+reservation is actually attempted and found wanting. Grepped the whole document for every other place
+that cites FND-03 §15.4 near this ordering; the staging bullet and the capacity-atomicity test
+obligation already correctly separated the two (FND-03 for fail-before-commit only, evidence above),
+so open decision 7's own text was the only other misattributed occurrence, fixed the same way.
+
+Round 23 correction (owner-authorized; Codex finding on PR #1099 thread 4122104484, ~line 1793):
+§9's Round 2 fix (design point 3) bound a `revert_destination`-bearing occurrence's inverse as
+B→C (the forward transition's own target to a fresh post-revert state C), but never reconciled this
+against §7's own literal unique-inverse rule below (Option 2 above and "Exact delta" below), which
+before this round accepted only a candidate whose `target_state` **exactly equals** the forward
+transition's own `source_state` — C ≠ A, so `bind` would find zero qualifying candidates and reject
+every `revert_destination`-bearing forward transition, including all four samples §9 covers. Fixed
+by widening §7's rule itself (both citations below), not by asserting the old rule was already
+satisfied: a new, optional, content-level field on `LocalObjectStateDefinition`,
+`attribute_variant_of: Option<ProductionKey>`, names which other declared state (if any) a state is
+a pure attribute-variant of — same `collision`, differing only in per-placement
+`local_object_state_attributes`. The inverse-uniqueness search now accepts a candidate whose
+`target_state` *either* equals the forward transition's `source_state` *or* has its own declared
+`attribute_variant_of` equal to the forward transition's `source_state` — i.e.
+`states[candidate.target_state].attribute_variant_of == Some(forward.source_state)` (Round 24, Codex
+finding 4122246542: an earlier phrasing of this predicate read backwards and would have checked the
+*source* state's own `attribute_variant_of` instead) — still requiring *exactly one* matching
+candidate — uniqueness is unchanged, only the equality test is widened. §9 (design point 3, corrected
+this round) registers each post-revert state with its *own* `attribute_variant_of` set to the natural
+source state it stands in for.
+
+Round 24 correction (owner-authorized; PR #1099 round 4 on head `93940915`, 2 P1s + 1 P2, all
+accepted, owner stop rule applies): (1) Codex finding 4122246542 — Round 23's own predicate for the
+widened inverse-uniqueness check read backwards: it said a candidate qualifies when its `target_state`
+"is that source state's declared `attribute_variant_of`," which names the *source* state's own field,
+not the *candidate*'s. The correct, and now-corrected, predicate is
+`states[candidate.target_state].attribute_variant_of == Some(forward.source_state)` — checking the
+*candidate target's own* declared field against the forward transition's `source_state`, never the
+reverse. Fixed everywhere the rule is stated: both §7 citations above, §9's design point 3, and the
+matching test obligation. (2) Codex finding 4122246550 — the still-binding "revert restores exactly
+the pre-operation state" test obligation (below) did not account for the widened rule: a
+`revert_destination`-bearing revert now lands on a declared `attribute_variant_of`, not literally the
+pre-operation `source_state` key. Added a narrow, explicit exception to that obligation: the revert
+lands on the declared variant — same `collision`, differing only in declared attributes — only when
+the bound inverse carries one; scanned §7 and §9 for every other "exactly the prior state" claim
+this could contradict and found none beyond the one fixed (the encounter-format line-144 quotation
+and the C3 "no partial footprint" obligation are unaffected — evidence above). (3) Codex finding
+4122246563 (P2, not designed for, owner stop rule) — pre-authored `CREATE` teleporters carrying
+`destination` together with `revert_after_ms` at an authored anchor (`death_priest_shargon`,
+`the_ravager`, and any other matching samples found this round) are a *distinct* shape from open
+decision 8's runtime-resolved-anchor gap: these have a pre-authored `PlacementRef`, so `bind` is not
+structurally blocked the way `death_position` creates are, but this section's design (transform-only,
+design point 4) does not cover a `CREATE` carrying `destination` either. Recorded as new open
+decision 9, not designed for; corrected the corpus-enumeration claim (Problem section below) so it no
+longer asserts completeness.
 
 ### Problem
 
@@ -769,12 +830,17 @@ today.
 2. **An FND-03 §10 authoritative timer bound to a monotonic `Deadline` computed from the authored
    duration (RECOMMENDED).** `revert_after_ms` is admissible only on a bound transition with exactly
    one *inverse* — a transition bound on the same runtime instance, for the same placement
-   definition, whose `source_state`/`target_state` are this transition's swapped *and* whose
-   `normalized_intent_family` is this transition's matching inverse family (TRANSFORM↔TRANSFORM,
-   CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE); `bind` rejects (`InvalidBinding`) a `revert_after_ms`-
-   carrying transition with zero such matches or more than one — an ambiguous inverse is exactly as
-   invalid as a missing one — so firing never has to guess which delta restores the object (evidence
-   above). At commit time, for a non-timer-origin operation — every authoritative input except the
+   definition, whose `source_state` equals this transition's `target_state` and whose `target_state`
+   either equals this transition's `source_state` or has its *own* declared `attribute_variant_of`
+   equal to this transition's `source_state` (Round 24, correcting Round 23's reversed phrasing, Codex
+   finding 4122246542: `states[candidate.target_state].attribute_variant_of ==
+   Some(this_transition.source_state)`, never the other direction; §9 below:
+   `LocalObjectStateDefinition.attribute_variant_of`, same `collision`, differing only in
+   per-placement attributes) *and* whose `normalized_intent_family`
+   is this transition's matching inverse family (TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG,
+   OPEN↔CLOSE); `bind` rejects (`InvalidBinding`) a `revert_after_ms`-carrying transition with zero
+   such matches or more than one — an ambiguous inverse is exactly as invalid as a missing one — so
+   firing never has to guess which delta restores the object (evidence above). At commit time, for a non-timer-origin operation — every authoritative input except the
    firing of a pending revert timer itself, which never re-arms itself even when its own transition
    also carries `revert_after_ms` (Round 7/8) — whose own `prepare` result is `DISPOSITION_COMMITTED`/
    `PreparedMutation::Publish` (Round 20, Codex finding 4120634397: every `unchanged` disposition —
@@ -972,16 +1038,25 @@ thing, not two — its lifecycle-record store).
   Whichever home is chosen, validate it fail-closed inside `bind`
   (`apps/game-server/src/world_runtime.rs` ~590-750): for every transition invoked with
   `revert_after_ms`, find every OTHER bound transition for the same `definition` whose
-  `source_state` equals this one's `target_state`, whose `target_state` equals this one's
-  `source_state`, AND whose `normalized_intent_family` is this one's matching inverse family —
-  TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE (this covers TRANSFORM a→b needing
-  bound b→a, CREATE needing the bound REMOVE of the same anchor/def, REMOVE needing the bound
-  CREATE, and RETAG needing the reverse RETAG; RETAG's own same-collision-class constraint is
-  already enforced elsewhere in CW3's linker, so this check adds only the family-pairing rule, not a
-  second collision-class check). Reject the whole binding with `WorldRuntimeError::InvalidBinding`
-  unless *exactly one* transition matches — zero matches is a missing inverse, more than one is an
-  ambiguous inverse, and both are equally invalid — producing the one unique inverse `TransitionKey`
-  the lifecycle record stores (complete field list above).
+  `source_state` equals this one's `target_state`, whose `target_state` either equals this one's
+  `source_state` or has its *own* declared `attribute_variant_of` equal to this one's `source_state`
+  — `states[candidate.target_state].attribute_variant_of == Some(this.source_state)`, never the
+  reverse (Round 24, correcting Round 23's reversed phrasing, Codex finding 4122246542; §9 below —
+  `LocalObjectStateDefinition.attribute_variant_of: Option<ProductionKey>`, same `collision`,
+  differing only in per-placement `local_object_state_attributes`; `None` for every state outside
+  §9's covered shape, so this widening is inert for ordinary content), AND whose
+  `normalized_intent_family` is this one's matching inverse family — TRANSFORM↔TRANSFORM,
+  CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE (this covers TRANSFORM a→b needing bound b→a, CREATE
+  needing the bound REMOVE of the same anchor/def, REMOVE needing the bound CREATE, and RETAG
+  needing the reverse RETAG; RETAG's own same-collision-class constraint is already enforced
+  elsewhere in CW3's linker, so this check adds only the family-pairing rule, not a second
+  collision-class check). Reject the whole binding with `WorldRuntimeError::InvalidBinding` unless
+  *exactly one* transition matches — zero matches is a missing inverse, more than one is an ambiguous
+  inverse, and both are equally invalid — producing the one unique inverse `TransitionKey` the
+  lifecycle record stores (complete field list above). CW3 link time validates `attribute_variant_of`
+  fail-closed, mirroring `validate_local_object_placement_state`'s existing pattern (evidence above,
+  §9): a named variant base must exist in the same declared vocabulary and share the same `collision`
+  presence as the state naming it.
 - Scope of what `revert_after_ms` covers, rejected at the boundary that can actually see it (Round
   17, corrects round 16's "`bind` rejects it"): `revert_after_ms` is admissible only on a transition
   whose full effect is modeled today by `LocalObjectStateDefinition` — the state `key` plus
@@ -1158,7 +1233,8 @@ thing, not two — its lifecycle-record store).
   and stops; do not retry it on a later wake (decided below, not left open) — a later duplicate
   presentation is answered by step 2 of the presentation order above, never a fresh occupancy check.
 
-### Open decisions for the owning lane (Rounds 15/16/19/20/21)
+### Open decisions for the owning lane (Rounds 15/16/19/20/21; item 8 added from §9 Round 2; item 9
+added from §9 Round 4)
 
 These are genuinely open — this document deliberately does not resolve them, per PLAYABLE_FIRST; the
 owner's Round 21 acceptance covers this section's *direction* only (`DecisionStatus` above) and
@@ -1222,15 +1298,20 @@ architecture decision.
    case, not
    about how it is safely refused today.
 4. **Where `revert_after_ms` and inverse-selection metadata are actually carried (Round 19, Codex
-   finding 4120487841).** "Exact delta" above described adding `revert_after_ms` to `TransitionBinding`
-   or its content source; Codex's rationale for why that is not simply an implementation detail:
-   `TransitionBinding` is shared, content-level state for a definition's transition, but different
-   invocations of the same bound transition can legitimately carry different `revert_after_ms`
-   durations, or none at all — a single shared field cannot represent that. This document does not
-   redesign the home here; it only removes the claim that `TransitionBinding` is settled as that home
-   (evidence above, "Exact delta" corrected). The owning lane decides where the duration and the
-   inverse-selection metadata actually live — plausibly on the lowered operation occurrence rather
-   than the shared binding, but that choice, and its bind-time validation shape, is the owning lane's.
+   finding 4120487841) — resolved by §9 (CANDIDATE).** "Exact delta" above described adding
+   `revert_after_ms` to `TransitionBinding` or its content source; Codex's rationale for why that is
+   not simply an implementation detail: `TransitionBinding` is shared, content-level state for a
+   definition's transition, but different invocations of the same bound transition can legitimately
+   carry different `revert_after_ms` durations, or none at all — a single shared field cannot
+   represent that. This document did not redesign the home here at the time this item was written; it
+   only removed the claim that `TransitionBinding` is settled as that home (evidence above, "Exact
+   delta" corrected). §9 below (design point 5, CANDIDATE, coupled to open decision 3 since both are
+   per-placement facts) now names the home: `local_object_revert_after_ms`, keyed by
+   `(TransitionKey, LoweredActionId)` *per placement* (§9 Round 2, Codex finding 4121918234: a bare
+   `TransitionKey` key cannot hold two authored actions at the same placement invoking the same
+   transition with different durations) — this item is kept, not deleted, as the record of the
+   finding and the reasoning §9's design answers; the owning lane implements §9's shape once it is
+   accepted, rather than choosing its own.
 5. **Compaction still needs a bounded duplicate-delivery horizon (Round 19, Codex finding
    4120487862).** Open decision 1 above names a compact tombstone (identity → outcome code) as one
    possible compaction shape once a `TERMINAL` record ages out of full detail. Codex's rationale: a
@@ -1255,18 +1336,62 @@ architecture decision.
    left `IN_FLIGHT`. Nothing in this document should be read as claiming the current ordering already
    handles this safely.
 7. **Reserve lifecycle-record capacity only after `prepare` returns `Publish`, not speculatively
-   before `prepare` runs (Round 21, Codex finding 4120777222 on PR #1045's thread, raised after that
-   PR's round-20 freeze and merge).** Round 20 reserved capacity for every non-timer-origin
-   `revert_after`-carrying operation *before* calling `prepare`, then released that reservation again
-   on an `unchanged` result — correct in outcome, but reserving speculatively before the outcome is
-   known is unnecessary work against FND-03 §15.4's "reserve only what will actually be spent"
-   discipline. This document now states the corrected direction (staging bullet and the matching test
-   obligations above, Round 21): reserve capacity only once `prepare` has already returned
-   `DISPOSITION_COMMITTED`/`PreparedMutation::Publish`, as part of the same staged commit as the object
-   mutation itself. What remains open for the owning lane is the exact implementation-level mechanics
-   of that atomicity — `prepare` is a pure query today (evidence above); making "check capacity" and
-   "commit the object mutation and create the `PENDING` record" a single atomic step around a
-   already-computed `prepare` result is an implementation detail this document does not design.
+   before `prepare` runs — this section's own accepted requirement, not an FND-03 invariant (Round
+   21, Codex finding 4120777222 on PR #1045's thread; corrected Round 22, Codex finding 4121718203).**
+   Round 20 reserved capacity for every non-timer-origin `revert_after`-carrying operation *before*
+   calling `prepare`, then released that reservation again on an `unchanged` result — correct in
+   outcome, but reserving speculatively before the outcome is known is unnecessary work. This ordering
+   choice is *this document's own* accepted requirement (§7's `DecisionStatus`, Round 21), not
+   something FND-03 §15.4 itself mandates: FND-03 §15.4's own text (evidence above) requires only that
+   committing an operation needing a timer fails before commit when capacity is unavailable, and that
+   an already-accepted timer is not discarded for due-queue congestion — it says nothing about when a
+   reservation attempt happens relative to `prepare`. This document now states the corrected direction
+   (staging bullet and the matching test obligations above, Round 21): reserve capacity only once
+   `prepare` has already returned `DISPOSITION_COMMITTED`/`PreparedMutation::Publish`, as part of the
+   same staged commit as the object mutation itself; FND-03 §15.4's fail-before-commit rule then
+   governs what happens once that reservation is actually attempted and found wanting. What remains
+   open for the owning lane is the exact implementation-level mechanics of that atomicity — `prepare`
+   is a pure query today (evidence above); making "check capacity" and "commit the object mutation and
+   create the `PENDING` record" a single atomic step around an already-computed `prepare` result is an
+   implementation detail this document does not design.
+8. **Runtime-created local objects at a runtime-resolved anchor (`death_position`) — added from §9,
+   Codex findings 4121918211/4121918220 on PR #1099's Round 2 review.** §9's attribute-bearing-state
+   design (`revert_after_ms` combined with `destination`/`interaction`) was originally scoped to cover
+   `mazzinor`/`gaz_haragoth`/`cult_soul_remains` as well as the teleporter-transform samples, but
+   those three all author `map_item create` at `at: death_position`
+   (`tools/content-schema/encounter-authoring/samples/mazzinor/encounter.json` lines 47-57;
+   `.../gaz_haragoth/encounter.json` lines 123-132; `.../cult_soul_remains/encounter.json` lines
+   53-62 and 70-79), a runtime-resolved position with no pre-authored `PlacementRef`. `azerus`
+   (`.../azerus/encounter.json` lines 52-63, added Round 4, Codex finding 4122246563's corpus
+   re-scan) shares the exact same `at: death_position` blocker, carrying `destination`+
+   `revert_after_ms` instead of `interaction` — the blocker is the missing `PlacementRef`, not which
+   attribute the action carries, so it is the same gap, not a new one.
+   `LocalObjectRuntime::bind` (`apps/game-server/src/world_runtime.rs` ~620-630) requires its
+   `placement_key: &PlacementKey` argument to already exist in `content.placements` — a fixed,
+   pre-authored list, with no dynamic-placement-creation path anywhere in the read code — and C3
+   (§4 "Out of scope," lines 154-162) already excludes "a `CREATE` that reserves cells not already
+   known at bind time" as a general rule. §9 does **not** design a runtime-created-placement
+   mechanism to satisfy these four samples; they stay rejected fail-closed at authoring/lowering.
+   Whether and how a runtime-resolved anchor could ever bind a `LocalObjectRuntime` — a
+   dynamically-registered `PlacementRef`, a different runtime primitive entirely, or something else —
+   is a new decision this document does not make; it would need its own C3-adjacent hardening review
+   given C3 explicitly excludes dynamically materialized geometry today.
+9. **Pre-authored `map_item create` teleporters carrying `destination`+`revert_after_ms` at an authored
+   anchor — added from §9, Codex finding 4122246563 on PR #1099's Round 4 review.** Distinct from open
+   decision 8 above: `death_priest_shargon`
+   (`tools/content-schema/encounter-authoring/samples/death_priest_shargon/encounter.json` lines
+   47-58, `anchor: exit_teleporter`, `destination: shargon_exit`, `revert_after_ms: 300000`) and
+   `the_ravager` (`.../the_ravager/encounter.json` lines 47-58, `destination: ravager_exit`,
+   `revert_after_ms: 300000`) both author `operation: create` at a pre-authored `anchor` — a
+   `PlacementRef` genuinely exists, so `LocalObjectRuntime::bind`'s `PlacementKey` lookup is not
+   structurally blocked the way open decision 8's `death_position` samples are. The gap is different:
+   §9's design (Design point 4) admits only `map_item transform` carrying `destination`, never
+   `create`, at any anchor. A full corpus re-scan this round (evidence: the two samples above) found
+   no other sample combining `operation: create` with a pre-authored `anchor` and `destination`. §9
+   does **not** extend its design to admit `create`; these two samples stay rejected fail-closed at
+   authoring/lowering. Whether and how a `CREATE` could ever carry `destination`/`revert_after_ms` —
+   treating it as equivalent to a `transform` into a synthesized state, or something else — is a new
+   decision this document does not make.
 
 ### Exact test obligations
 
@@ -1410,10 +1535,19 @@ architecture decision.
   reaches the reservation step at all. A test asserting a record is created (and a timer later fires),
   or that capacity was reserved and then released, for an operation whose own `prepare` result was
   `unchanged` must fail — a revert has nothing to undo when the original operation changed nothing.
-- **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
-  and expected revision still hold must land the object back in precisely the state it was in
-  immediately before the original operation committed — the one unique `source_state`/`target_state`
-  pair the bind-time inverse check validated, not an approximation.
+- **Revert restores exactly the pre-operation state, or its declared attribute variant (P1; Round 24
+  narrow exception, Codex finding 4122246550).** Firing a scheduled revert whose fences and expected
+  revision still hold must land the object in precisely the state the bind-time inverse check
+  validated as the unique match — the one unique `source_state`/`target_state` pair, not an
+  approximation. For the ordinary case, that `target_state` is literally the pre-operation
+  `source_state` — unchanged from before this round. **Narrow exception:** when the bound inverse's
+  `target_state` is a declared `attribute_variant_of` of the pre-operation `source_state` (§9
+  evidence above — a `revert_destination`-bearing occurrence), the revert lands on that variant
+  instead — the *same* `collision` as the pre-operation state, differing *only* in declared
+  attributes (§9's own construction, evidence above), never a different footprint or a different
+  underlying item. This is the sole exception; a test must not assert the revert lands on a declared
+  variant when the bound inverse carries none (still literal equality), nor that it lands on the
+  literal pre-operation state key when the bound inverse is a declared variant.
 - **Intervening change yields STALE_STATE, no mutation, via the one path (P1).** If the object was
   changed again after the revert was scheduled (a later operation on the same anchor moved it away
   from the state the revert's stored expected revision names), firing must reach `prepare` — never a
@@ -1538,8 +1672,491 @@ architecture decision.
    implementation of §7 (direction ACCEPTED, Round 21, issue #162).
 7. **Scope-runtime / Foundation carrier lane (`ChannelRuntimeV1`/`InstanceRuntime`).** Own §7's
    implementation now that its direction is owner-accepted (Round 21): supply the exact delta §7
-   names, resolve open decisions 1, 2, 4, 5, 6 and 7 — including, if no existing scope cadence is
+   names, resolve open decisions 1, 2, 5, 6 and 7 — including, if no existing scope cadence is
    proven, the scope's own step driver itself. CW4 then adds `revert_after` on top of the
    already-shipped operations. Open decision 3 (attribute-bearing object state, owner-decided `YES`)
-   is designed separately (task `OTV2-20260928-cw1-attribute-bearing-object-state`) before this lane
-   can support the currently-rejected authored shapes.
+   and open decision 4 (where `revert_after_ms`/inverse-selection metadata live, coupled to decision
+   3) are both designed in §9 below (CANDIDATE, narrowed to the teleporter-transform shapes in §9's
+   own Round 2); this lane implements §9's design, once accepted, for every sample matching that
+   covered shape (§9 Problem section — at least sixteen, not an exhaustive list; the Depth trio and
+   `the_lord_of_the_lice` among them). Open decision 8 (runtime-created local objects at
+   `death_position`) is a separate, undesigned gap §9's Round 2 found — `mazzinor`/`gaz_haragoth`/
+   `cult_soul_remains`/`azerus` stay rejected until it is resolved, by this lane or another owner C3
+   hardening review names. Open decision 9 (pre-authored `CREATE` teleporters carrying `destination`,
+   §9 Round 4) is a further separate, undesigned gap — `death_priest_shargon`/`the_ravager` stay
+   rejected until it is resolved.
+
+## 9. Attribute-bearing object state: teleporter destination — CANDIDATE
+
+- DecisionStatus: CANDIDATE. The owner decided §7's open decision 3 `YES` (issue #162, 2026-09-28):
+  supporting attribute-bearing object state is needed for the playable path. This section is the
+  minimal design that makes it admissible; it is not itself owner-accepted, and the owning lane
+  (CW3 Content-model linker for the authoring-side shape, CW4/scope-runtime for `bind`/`prepare`)
+  still implements and may refine the exact mechanics against real code. **Round 2 correction**
+  (Codex findings 4121918211/4121918220/4121918234 on head `db49049d`, all accepted, owner stop rule
+  applies): (1) `revert_destination` no longer bakes into the placement's natural source state —
+  lowering creates a distinct post-revert state instead (design point 3). (2) Narrowed to the
+  teleporter-transform shapes only (the Depth trio and `the_lord_of_the_lice`); the `interaction`
+  field and the death-position creates (`mazzinor`/`gaz_haragoth`/`cult_soul_remains`) are *not*
+  covered — see the Problem section and new §7 open decision 8. (3) `local_object_revert_after_ms`
+  is now keyed by `(TransitionKey, LoweredActionId)`, not `TransitionKey` alone (design points 1/5).
+  **Round 3 correction** (Codex P1 on head `d417e860`, PR #1099 thread 4122104484, accepted, owner
+  stop rule applies): Round 2's post-revert state (design point 3) made every covered forward
+  transition unbindable, because its dedicated inverse's `target_state` never equals the forward
+  transition's own `source_state` — §7's unique-inverse rule as written before this round required
+  exact equality. Fixed by widening that rule (§7 Round 23, both citations) to also accept a
+  candidate whose *own* declared `attribute_variant_of` equals the forward transition's
+  `source_state` — a new optional field on `LocalObjectStateDefinition` this round adds (design
+  point 3), inert for every state that does not declare one. **Round 4 correction** (Codex 2 P1s +
+  1 P2 on head `93940915`, accepted, owner stop rule applies): (1) Round 23's own phrasing of the
+  widened predicate read backwards — it named "the source state's declared `attribute_variant_of`"
+  when the check is the *candidate*'s own declared `attribute_variant_of`; corrected everywhere the
+  rule is stated (both §7 citations, this section, the test obligations) to
+  `states[candidate.target_state].attribute_variant_of == Some(forward.source_state)`. (2) §7's
+  still-binding "revert restores exactly the pre-operation state" obligation now has a narrow,
+  explicit exception for the `attribute_variant_of` case — the revert lands on the declared variant,
+  same `collision`, differing only in declared attributes — added below and to the matching test
+  obligation, with a full scan of §7/§9 for any other now-contradicted "exactly the prior state"
+  claim. (3) Pre-authored `CREATE` teleporters carrying `destination`+`revert_after_ms`
+  (`death_priest_shargon`, `the_ravager`, and any other matching samples) are recorded as a new open
+  decision, not designed for — see §7 open decision 9 and the Problem section below.
+
+### Problem
+
+Under §7 as it stands (Round 16/17/19), `revert_after_ms` is admissible only on a transition whose
+full effect is modeled by `LocalObjectStateDefinition`'s `key`+`collision` pair
+(`apps/game-server/src/content/reference_playable.rs` ~805-813) — exactly what
+`PreparedMutation::Publish` restores (`next_state`/`next_revision`/`next_blocking`,
+`apps/game-server/src/world_runtime.rs` ~1150-1159, re-verified this task, unchanged). A `map_item`
+action that also carries `destination`, `revert_destination` or `interaction` is rejected fail-closed
+at authoring/lowering today, because nothing in the runtime model can apply or revert those values.
+This section's design covers one shape — `map_item transform` at a pre-authored anchor, carrying
+`destination` (optionally `revert_destination`) — and does not extend to `map_item create` in any
+form (**Round 2**: narrowed from the original scope, see DecisionStatus above and Open decision 8).
+**Round 4 correction (Codex finding 4122246563):** a full corpus re-scan this round found the covered
+shape in considerably more authored samples than the four line-cited below — at least sixteen,
+re-verified this round (the four below plus, among others, `deep_terror`, `ferumbras_mortal_shell`,
+`glooth_horror`, `mazoran`, `plagirath`, `professor_maxxen`, `ragiaz`, `razzagorn`, `shulgrax`,
+`tarbaz`, `the_shatterer`, `zamulosh`). The four cited below remain a representative, line-cited
+illustrative subset, not an exhaustive list; no enumeration in this section is claimed to be
+exhaustive. Two distinct `map_item create` shapes are **not** covered and stay rejected — see §7 open
+decisions 8 and 9:
+
+**Covered by this section — `map_item transform` at a pre-authored anchor, carrying `destination`:**
+
+- `tools/content-schema/encounter-authoring/samples/the_lord_of_the_lice/encounter.json` lines 58-75:
+  `map_item transform` (item `canary:item/1949` → `canary:item/22761`), `anchor: exit_teleporter`,
+  `destination: godbreaker` (line 71), `revert_after_ms: 60000` (line 73),
+  `revert_destination: ascendant_exit` (line 74).
+- `.../samples/the_duke_of_the_depths/encounter.json` lines 53-68: same shape, `destination:
+  reward_destination` (line 66), `revert_after_ms: 1200000` (line 67), `revert_destination:
+  warzone_exit` (line 68).
+- `.../samples/the_baron_from_below/encounter.json` lines 63-78 and
+  `.../samples/the_count_of_the_core/encounter.json` lines 63-78: identical shape to
+  `the_duke_of_the_depths`.
+
+**NOT covered — `map_item create` at a runtime-resolved `death_position`, carrying `interaction`; stays
+rejected at lowering; see §7 open decision 8:**
+
+- `.../samples/mazzinor/encounter.json` lines 47-57: `map_item create` (item `canary:item/28673`),
+  `at: death_position` (line 54), `revert_after_ms: 60000` (line 55),
+  `interaction: canary:interaction/4951` (line 56) — no `destination`, no pre-authored anchor.
+- `.../samples/gaz_haragoth/encounter.json` lines 123-132: same shape,
+  `interaction: canary:interaction/33542` (line 132).
+- `.../samples/cult_soul_remains/encounter.json` lines 53-62 and 70-79 (two occurrences): same shape,
+  `interaction: canary:interaction/5580` (lines 62, 79).
+- `.../samples/azerus/encounter.json` lines 52-63 (re-verified this round, Round 4 corpus re-scan):
+  same `at: death_position` blocker, but carries `destination: azerus_escape` (line 61) and
+  `revert_after_ms: 120000` (line 62) instead of `interaction` — no pre-authored anchor either way, so
+  it is the same runtime-resolved-anchor gap as the other three, not a new one.
+
+**NOT covered — `map_item create` at a pre-authored `anchor`, carrying `destination`+`revert_after_ms`;
+stays rejected at lowering; see §7 open decision 9 (Round 4, Codex finding 4122246563):**
+
+- `.../samples/death_priest_shargon/encounter.json` lines 47-58: `map_item create` (item
+  `canary:item/1949`), `anchor: exit_teleporter` (line 55), `destination: shargon_exit` (line 56),
+  `revert_after_ms: 300000` (line 57) — a pre-authored anchor exists (unlike the death-position shape
+  above), but this section's design (Design point 4 below) admits only `map_item transform`, not
+  `create`.
+- `.../samples/the_ravager/encounter.json` lines 47-58: same shape, `destination: ravager_exit`
+  (line 56), `revert_after_ms: 300000` (line 57).
+
+`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144 (re-verified this task): "`map_item` | create/
+transform/remove ItemRef at an anchor or `at: death_position` ..., `revert_after_ms`; a teleporter
+carries `destination` and optionally `revert_destination` anchors; a revert restores the original
+item with its original attributes unless `revert_destination` overrides the destination; optional
+`effect`; optional `interaction`: the key of interaction-domain content that defines what the item
+does when used or stepped on (D29)."
+
+### Evidence
+
+- PROVEN (`apps/game-server/src/content/reference_playable.rs` `PlacementRef` ~1293-1306): a
+  `LocalObject` placement already carries one authored, per-placement, fail-closed-validated field —
+  `local_object_initial_state: Option<ProductionKey>` — distinct from the shared, content-level
+  `LocalObjectStateDefinition` vocabulary (`ReferenceDefinitionKind::LocalObjectStates`, shared by
+  every placement of the same definition). This is the existing precedent for "a fact that varies
+  per placement, not per shared content definition."
+- PROVEN (`validate_local_object_placement_state` ~2093-2124, called from `validate_placement`
+  ~2126-2132): `local_object_initial_state` is validated fail-closed both directions — a
+  `LocalObject` placement must have one from the definition's declared vocabulary; a non-`LocalObject`
+  placement must not have one. This is the existing precedent for validating a new per-placement
+  field's keys against the definition's own state vocabulary.
+- PROVEN (`LocalObjectStateDefinition` ~805-813, re-verified this round): exactly `key: ProductionKey`
+  plus `collision: LocalObjectCollisionPresence` — no relationship field between two states exists
+  today. `attribute_variant_of` (design point 3, Round 23) is a genuinely new, optional field on this
+  same struct, not a repurposing of anything that already exists.
+- PROVEN (`LocalObjectRuntime::bind` ~590-750, re-verified this task): loads `local_object_initial_state`
+  and computes `collision_cells`/`initial_blocking` once, from the placement, before constructing
+  `Self` (~716-749); `LocalObjectRuntime` (~574-586) has no attribute field of any kind.
+  `transitions: BTreeMap<TransitionKey, TransitionBinding>` (~679-714) is already built per-placement,
+  scoped to exactly the `transition_keys` this one placement binds — not a content-level search.
+- PROVEN (`prepare` ~973-1050, `PreparedMutation`/`commit` ~1148-1183, re-verified this task):
+  `next_blocking` is derived fresh from `target_collision` (the target state's own authored collision
+  presence) inside `prepare`, never stored as separate mutable state — collision presence is a pure
+  function of `(states, target_state)`. `commit` (~1162-1183) sets `runtime.state`/`runtime.revision`/
+  `runtime.blocking_cells` and asserts the pre-commit values matched what `prepare` validated; it
+  touches nothing else.
+- PROVEN (`TransitionBinding` ~1334-1342): shared, content-level; `source_state`/`target_state`/
+  `normalized_intent_family` name the edge, `owner_capability`/`policy_guard_refs` gate it — no
+  per-invocation payload of any kind, and (§7 open decision 4, Codex 4120487841) cannot represent a
+  per-invocation `revert_after_ms` since different placements bind the same shared transition.
+- PROVEN (`ProductionKey::new` `apps/game-server/src/content/production.rs` ~148-166): a bounded,
+  namespaced (`namespace:local`) string key. `PlacementKey` (`reference_playable.rs` ~1167-1181) is
+  itself a `ProductionKey` newtype — the existing "a place in the world" reference type, matching §8
+  item 2 ("Anchors bind to world placements").
+- PROVEN (`tools/content-schema/encounter-authoring/validate_encounter.py` ~188-201, evidence
+  unchanged from §7): `destination`/`revert_destination` are validated as anchor references
+  (`need('anchor', action[field], anchors, at)`), not free-form strings; `effect` is a sibling field
+  on the same action with no validation tying it to state or collision — nothing in the encounter
+  format or the runtime model ties `effect` to object state.
+- PROVEN (`LocalObjectRuntime::bind` ~620-630, re-verified this task): `bind` requires its
+  `placement_key: &PlacementKey` argument to already exist in `content.placements` — a fixed,
+  pre-authored list (`content.placements.iter().filter(|placement| &placement.key ==
+  placement_key)... .ok_or(InvalidBinding("PlacementKey is absent from active Content"))`); no
+  dynamic-placement-creation path exists anywhere in the read code. `mazzinor`/`gaz_haragoth`/
+  `cult_soul_remains` all author `at: death_position` (evidence above), never `anchor:` — a
+  runtime-resolved position, not a `PlacementKey` this or any other bind-time step can look up. This
+  is a distinct blocker from the attribute-modeling problem this section solves (§7 open decision 8).
+- PROVEN (§4 "Out of scope," C3, lines 154-162, re-verified this task): "the supported collision
+  footprint is the anchor's own fixed, bind-time-reserved cells... a `CREATE` that reserves cells not
+  already known at bind time... stays out of scope." C3 already excludes exactly this shape (a
+  placement materialized at a runtime-computed position) as a general rule; the death-position
+  creates are a concrete instance of the already-excluded case, not a new gap this section opens.
+
+### Design
+
+1. **Where the attributes live: per-placement, keyed by state — not shared content, not
+   `TransitionBinding`.** A shared `LocalObjectStateDefinition` (one per content definition, reused
+   by every placement of that definition) cannot hold a single `destination`: the Depth trio and
+   `the_lord_of_the_lice` plausibly share the same content-level teleporter transform, each with its
+   *own* `destination`/`revert_destination`. `TransitionBinding` cannot represent a per-invocation
+   duration either (open decision 4). The precedent already in this content model —
+   `local_object_initial_state`, evidence above — is exactly "a per-placement fact, validated against
+   the shared definition's vocabulary." Two new fields on `PlacementRef`
+   (`reference_playable.rs` ~1293-1306), mirroring it:
+   - `local_object_state_attributes: BTreeMap<ProductionKey, LocalObjectStateAttributes>` — this
+     placement's own attribute values, keyed by state; empty for the overwhelming majority of
+     `LocalObject` placements (doors, walls, anything state-only), which keep today's behavior
+     unchanged.
+   - a new struct, `LocalObjectStateAttributes { destination: Option<PlacementKey> }` — one optional
+     field (**Round 2**: `interaction` removed — narrowed to the covered teleporter-transform shapes
+     only, evidence above; §7 open decision 8 covers the death-position/`interaction` case
+     separately, not via this struct), reusing `PlacementKey` (a place in the world, evidence above)
+     rather than inventing a dedicated destination-reference type.
+   - `local_object_revert_after_ms: BTreeMap<(TransitionKey, LoweredActionId), u64>` — this
+     placement's own authored revert duration, keyed by which of *this placement's own bound*
+     transitions it applies to *and* which authored action/occurrence invokes it (**Round 2**, Codex
+     finding 4121918234: a bare `TransitionKey` key cannot hold two authored actions at the same
+     placement invoking the same transition with different — or no — durations). `LoweredActionId` is
+     a new, lowering-assigned identifier distinguishing one authored `map_item` action from another
+     at the same placement; its exact representation (e.g., an index into the placement's authored
+     action list) is the owning lane's implementation choice, the same way this document already
+     leaves the exact lifecycle-record storage representation and the exhaustion-recovery mechanics
+     open elsewhere. None of the four covered samples actually needs more than one entry per
+     transition — each authors exactly one `map_item transform` per placement — so `LoweredActionId`
+     is a structural-completeness fix, not something the covered samples exercise; resolves open
+     decision 4 directly (below).
+
+   Validated fail-closed at CW3 link time, mirroring `validate_local_object_placement_state` exactly
+   (~2093-2124): every key in `local_object_state_attributes` must be a state in the definition's
+   declared vocabulary; every `TransitionKey` component of a `local_object_revert_after_ms` key must
+   be one of this placement's own bound `TransitionKey`s; a non-`LocalObject` placement must carry
+   neither (same "must not carry" half of the existing check). `destination`'s `PlacementKey`, if
+   present, must resolve to a real placement in the same content — the same existence check
+   `unique_transition` (`world_runtime.rs` ~1058-1075) already performs for a bound `TransitionKey`,
+   applied to a placement reference instead.
+
+2. **How `prepare`/`Publish` carry and apply them: they don't need to — attributes are a pure
+   read of `(state_attributes, current state)`, exactly like collision presence already is.**
+   `LocalObjectRuntime::bind` (~590-750) loads both new maps once from the placement, in the same
+   pass as `local_object_initial_state`/`collision_cells` (~716-749), as two new immutable fields on
+   `LocalObjectRuntime` (~574-586): `state_attributes: BTreeMap<ProductionKey,
+   LocalObjectStateAttributes>`, `transition_revert_after_ms: BTreeMap<(TransitionKey,
+   LoweredActionId), u64>`. Neither
+   is ever mutated after `bind` — attributes are a pure function of *which state the object is in*,
+   never separately tracked mutable state, the same relationship `target_collision` already has to
+   `self.states`/`transition.target_state` inside `prepare`. Concretely: **`PreparedMutation::Publish`
+   needs no new field, and `commit` (~1162-1183) needs no new line.** `commit` already sets
+   `runtime.state = next_state`; a caller reads the object's current attributes through a new
+   accessor, `fn attributes(&self) -> Option<&LocalObjectStateAttributes>` (mirroring `state_key()`/
+   `collision_cells()`, ~767-785), which does `self.state_attributes.get(&self.state)`. Attributes
+   ride the existing state-transition commit path for free; this is the smallest possible extension,
+   not a second, parallel payload-application mechanism next to `PreparedMutation`.
+
+3. **How the inverse restores them, including `revert_destination` semantics (encounter-format line
+   144) — Round 2 correction (Codex P1 finding 4121918211).** The revert is a bound inverse
+   `TransitionKey` firing through the *same* `prepare`/`commit` path as any other operation (§7
+   already establishes the revert as "the scope runtime's own later operation," never a distinct
+   mechanism). `attributes()` always returns `state_attributes[self.state]` (design point 2) — since
+   `attributes()` is keyed purely by *current state*, whichever state the revert lands the object in
+   is what the placement exposes from the moment that revert commits onward, with no distinction
+   between "before the forward action ever ran" and "after a revert." This is exactly why
+   `revert_destination` **must not** be baked into the placement's *original, natural* source state:
+   doing so would make `the_lord_of_the_lice`'s sealed teleporter (item `1949`, naturally no
+   destination) act as a teleporter to `ascendant_exit` from the moment the placement is bound —
+   before the boss-death action ever transforms it — which is wrong (the P1 this round fixes).
+   Corrected design:
+   - **Without `revert_destination`:** unchanged from before this round. The inverse targets the
+     placement's own natural `source_state` (`local_object_initial_state`, evidence above), which
+     keeps whatever attributes it naturally has (`None` for a plain state-only object). Lowering does
+     not touch `local_object_state_attributes[source_state]` at all.
+   - **With `revert_destination`:** lowering creates a **distinct post-revert state** — a new entry
+     in the definition's declared `LocalObjectStateDefinition` vocabulary, rendering as the *same
+     item* as the natural source state (so it looks identical to a player) but under its *own*,
+     distinct state key, since `local_object_state_attributes` is keyed by state and two states
+     needing different attribute values need different keys. This new entry's `collision` matches the
+     natural source state's exactly (same footprint, the two states differ *only* in declared
+     attributes), and it names the natural source state as its `attribute_variant_of` (Round 23,
+     evidence above — the new `LocalObjectStateDefinition` field this round adds, required for the
+     next bullet). Call it the post-revert state; lowering sets
+     `local_object_state_attributes[post_revert_state].destination = Some(revert_destination)`. The
+     natural `source_state` itself is left untouched — no entry, no attributes, exactly as if
+     `revert_destination` had never been authored (satisfies the test obligation below: before the
+     forward action commits, the placement exposes no destination). Lowering binds the inverse
+     `TransitionBinding` explicitly as `source_state = target_state` (the forward transition's own
+     target), `target_state = post_revert_state` — an *explicitly bound* transition from the forward's
+     target to the post-revert state, not a reuse of any existing transition.
+   - **Satisfying §7's unique-inverse/intent-family rule (Round 23 correction — Codex P1, PR #1099
+     thread 4122104484).** The post-revert state's key is not the forward transition's own
+     `source_state`, so §7's rule *as written before this round* — requiring the candidate inverse's
+     `target_state` to equal the forward transition's `source_state` exactly — would find zero
+     qualifying candidates for every `revert_destination`-bearing forward transition and reject all
+     four covered samples; §9's earlier text claiming this was "satisfied by construction" was wrong,
+     because it never checked the inverse's `target_state` against the forward transition's *actual*
+     declared `source_state`. Fixed by widening §7's rule itself (evidence above), not by asserting
+     the old rule already worked: the inverse-uniqueness search now accepts a candidate whose
+     `target_state` *either* equals the forward transition's `source_state` *or* has its *own*
+     declared `attribute_variant_of` equal to the forward transition's `source_state` —
+     `states[candidate.target_state].attribute_variant_of == Some(forward.source_state)`, never the
+     reverse (Round 24, correcting an earlier reversed phrasing here, Codex finding 4122246542) —
+     which the post-revert state's own declared `attribute_variant_of` always is, by the previous
+     bullet's construction. Uniqueness is unchanged (still *exactly one* matching candidate required);
+     only the equality test admits one additional, narrowly-scoped case. For a plain
+     (no-`revert_destination`) transition, no state anywhere declares an `attribute_variant_of`, so
+     the widened rule reduces to exactly the original equality check — this round changes nothing
+     about existing, already-covered content.
+   - If more than one `revert_destination`-bearing occurrence at the same placement invokes the same
+     forward `TransitionKey` (not exercised by any covered sample — each of the four covered samples
+     authors exactly one `map_item transform` per placement), each occurrence needs its own dedicated
+     post-revert state (each its own `attribute_variant_of: Some(source_state)`) and its own dedicated
+     inverse `TransitionBinding`, keyed apart the same way `local_object_revert_after_ms` now is
+     (design point 1, `LoweredActionId`); §7's widened rule would then find more than one matching
+     candidate unless CW3 lowering also scopes which inverse pairs with which occurrence — this document does not
+     design that case further since no covered sample exercises it.
+
+4. **How the Round 17/19 lowering rejection is lifted for exactly these shapes (Round 2: narrowed).**
+   The authoring/lowering rejection (§7, evidence above: `validate_encounter.py`'s `map_item` block,
+   offline; no production lowering step exists yet either) now admits a `map_item transform` action
+   at a pre-authored anchor carrying `revert_after_ms` together *only* with `destination` (optionally
+   with `revert_destination`) — the Depth trio and `the_lord_of_the_lice` shape — lowering it into
+   exactly the fields above (design point 3's post-revert-state handling applies when
+   `revert_destination` is present):
+   - `local_object_state_attributes[target_state].destination = Some(destination)`.
+   - If `revert_destination` is present: a fresh post-revert state is registered with
+     `local_object_state_attributes[post_revert_state].destination = Some(revert_destination)`, and
+     the bound inverse targets it (design point 3) — the natural `source_state` is left untouched.
+     If absent: the natural `source_state` is the inverse's target, as it already was, with no
+     attribute entry.
+   - `local_object_revert_after_ms` gets an entry for `(the invoked TransitionKey, this action's
+     LoweredActionId)` = `revert_after_ms`.
+
+   A `map_item create` at `at: death_position` carrying `interaction` — `mazzinor`/`gaz_haragoth`/
+   `cult_soul_remains`'s shape — is **not** admitted by this section (Round 2, evidence above: no
+   pre-authored `PlacementKey` exists for `death_position`; §7 open decision 8). A `map_item create` at
+   a pre-authored `anchor` carrying `destination`+`revert_after_ms` — `death_priest_shargon`/
+   `the_ravager`'s shape — is also **not** admitted: this design point names only `map_item transform`,
+   never `create`, regardless of whether a pre-authored anchor exists (Round 4, Codex finding
+   4122246563; §7 open decision 9). `effect` (evidence
+   above: a sibling field with no state/collision/destination tie in either the encounter format or
+   the runtime model) is presentational and stays entirely outside the world-object overlay model —
+   its presence on `the_lord_of_the_lice`'s action does not affect this design and is not lowered
+   into `LocalObjectStateAttributes`. Any authored `map_item` action carrying `revert_after_ms`
+   together with a non-state attribute *other than* `destination`/`revert_destination` on a
+   pre-authored anchor stays rejected fail-closed exactly as §7 already specifies — PLAYABLE_FIRST:
+   this section names exactly the one attribute shape the covered samples need (Problem section above
+   — at least sixteen, not an exhaustive count), not a generic attribute system.
+
+5. **Open decision 4, resolved: `revert_after_ms` and the inverse-selection metadata live on the
+   placement (and, Round 2, the specific authored occurrence), not the shared `TransitionBinding`.**
+   `local_object_revert_after_ms` (design point 1) is keyed by `(TransitionKey, LoweredActionId)`
+   *per placement*, directly answering Codex's 4120487841 concern that a single shared
+   `TransitionBinding` field cannot represent different invocations carrying different or no
+   duration — different placements sharing the same content-level transition each author their own
+   entry, or none, and (Round 2, Codex 4121918234) two different authored actions at the *same*
+   placement invoking the *same* transition each get their own entry too, keyed apart by
+   `LoweredActionId`. The inverse-uniqueness check §7 already specifies (exactly one bound inverse
+   transition, matching `source_state`/`target_state`/`normalized_intent_family`) now runs scoped to
+   *this placement's own* `transitions` map (`bind` ~679-714, already built per-placement) for every
+   `TransitionKey` present in `local_object_revert_after_ms`, instead of a content-level search across
+   every `TransitionBinding` — a placement only needs an inverse among the specific transitions *it*
+   binds, which simplifies, not complicates, the search §7 originally envisioned; design point 3
+   covers how this stays satisfied when a dedicated post-revert state/inverse is synthesized per
+   occurrence.
+
+6. **The lifecycle-record fields added: none.** The round-14 lifecycle record's existing field list
+   (§7 "Exact delta," "Lifecycle record: complete field list") already stores exactly what firing
+   needs to reach `prepare` again — `PlacementKey`/`incarnation`/`content_generation`/inverse
+   `TransitionKey`/expected state and revision. Attributes are re-derived fresh, at firing time, from
+   the *same* bind-time-loaded `state_attributes` table the original operation used, keyed by
+   whichever state `prepare` lands on (design point 2); nothing about an attribute value is
+   scheduling-time-dynamic, so nothing needs to be captured on the record at scheduling time and
+   carried forward — it is placement-static, fixed since `bind`, for both the forward direction and
+   (via the lowering-time post-revert-state construction, design point 3) the revert direction. The
+   field list's `Deadline` row ("Source at scheduling time") is *clarified*, not extended:
+   `Deadline::after(clock, revert_after_ms)` now names its concrete source as
+   `self.transition_revert_after_ms.get(&(transition_key, lowered_action_id))` (design point 5) in
+   place of the previously-unresolved "`TransitionBinding` or the lowered operation occurrence" —
+   requiring the invoking operation to also carry the matching `LoweredActionId`, an addition beyond
+   what design point 2 needs for attributes (duration lookup was never claimed to be a pure state
+   read; it is tied to the invoking operation, not the resulting state, the same way §7 already scopes
+   duration-scheduling separately from the state-commit path).
+
+### PLAYABLE_FIRST scoping
+
+This design adds exactly: two optional fields on `PlacementRef` (`local_object_state_attributes`,
+`local_object_revert_after_ms`); one new one-field struct (`LocalObjectStateAttributes`, Round 2:
+`interaction` removed); two new immutable fields on `LocalObjectRuntime` loaded once at `bind`; one
+new read accessor (`attributes()`); one new optional field on `LocalObjectStateDefinition`
+(`attribute_variant_of`, Round 23 — the one change to its existing shared shape, needed to keep §7's
+own unique-inverse rule satisfiable, evidence above); and, for `revert_destination`-bearing
+occurrences, one fresh content-level state/`TransitionBinding` pair per occurrence, synthesized at
+lowering time exactly the way per-encounter content is already synthesized elsewhere in this proposal
+(design point 3). It adds no new field to `PreparedMutation::Publish`, no change to `commit`'s
+mutation logic, and no new lifecycle-record field. It does not implement teleportation or anything
+that *consumes* a `destination` value once an object commits into a state that carries one — reading
+`attributes()` and acting on it (moving a player) is the existing, separate interaction/movement
+system's job, unaffected and unblocked by this design either way, exactly as it already was before
+this section. It does not cover `interaction` bindings, runtime-resolved anchors (Round 2: narrowed
+to the teleporter-transform shapes; §7 open decision 8), or `map_item create` at a pre-authored anchor
+carrying `destination` (Round 4; §7 open decision 9) — a third authored attribute kind, a
+runtime-created-placement mechanism, or admitting `create` alongside `transform`, if any is ever
+needed, is a new decision, not something this shape auto-supports.
+
+### Exact test obligations
+
+- **A placement with no `local_object_state_attributes`/`local_object_revert_after_ms` entries
+  behaves identically to today (regression).** `attributes()` returns `None` for every state; `bind`,
+  `prepare`, `commit` and the existing revert design (§7) are unchanged for every currently-shipped
+  door/wall/toggle placement.
+- **Before the forward action commits, the source-state placement exposes no destination (P1, Round
+  2, Codex finding 4121918211).** For `the_lord_of_the_lice`'s lowered content, before the boss-death
+  `map_item transform` action ever commits (the placement freshly `bind`-ed, still in its natural
+  `local_object_initial_state`, item `canary:item/1949`), `attributes()` must return `None` — a test
+  asserting the natural source state carries `destination: Some(ascendant_exit)` (the old, incorrect
+  bake-in this round replaces) must fail. The `revert_destination` value must never be reachable from
+  the placement's natural state under any presentation.
+- **`the_lord_of_the_lice`'s transform lowers and both directions reach `bind` (corrected, Round 2).**
+  The forward transition's target state (`canary:item/22761`) carries `destination:
+  Some(godbreaker)`. `revert_destination` (`ascendant_exit`) lowers onto a *distinct* post-revert
+  state — same rendered item (`canary:item/1949`) as the natural source, different state key,
+  `attribute_variant_of` naming the natural source state — carrying `destination:
+  Some(ascendant_exit)`; the bound inverse transition's own `target_state` is that post-revert state,
+  not the natural `source_state`. A test asserting the inverse targets the natural
+  `local_object_initial_state`, or that the natural source state ever carries a `destination`, must
+  fail.
+- **`bind` accepts the post-revert-state inverse under the widened rule (P1, Round 23, Codex finding
+  on PR #1099 thread 4122104484).** For every covered, `revert_destination`-bearing sample (the four
+  line-cited in the Problem section, and — Round 4 corpus re-scan — at least eight more of the same
+  shape; not asserted to be an exhaustive count), `bind` must accept the forward
+  transition as `revert_after_ms`-carrying: the dedicated inverse's `target_state` does not equal the
+  forward transition's own `source_state`, but that `target_state`'s *own* declared
+  `attribute_variant_of` does equal the forward transition's `source_state` —
+  `states[inverse.target_state].attribute_variant_of == Some(forward.source_state)` (Round 24
+  correction, Codex finding 4122246542: checking the reverse direction is the bug, not the fix). A
+  test asserting `bind` rejects these samples with `InvalidBinding` ("missing inverse") — the
+  exact bug Round 23 fixes — must fail; a test asserting `bind` still accepts them under the
+  *unwidened* rule, or under a predicate that checks the *source* state's own `attribute_variant_of`
+  instead of the *candidate target* state's, must also fail, since that is the bug, not the fix.
+- **The widened rule is inert for ordinary, non-attribute-bearing content (regression, Round 23).** A
+  plain `TRANSFORM a→b` / bound inverse `b→a` pair, neither state declaring `attribute_variant_of`,
+  must be accepted or rejected by `bind` exactly as it already is today — the widened rule's `OR`
+  branch never matches when no state declares a variant relationship, so it must not change the
+  outcome for any placement outside this section's covered shape.
+- **`attribute_variant_of` is validated fail-closed at CW3 link time.** A state naming an
+  `attribute_variant_of` that is absent from the same declared vocabulary, or whose `collision` does
+  not match, must be rejected — mirroring `validate_local_object_placement_state`'s existing
+  fail-closed pattern (evidence above). A test asserting such a mismatch reaches `bind` must fail.
+- **A non-covered attribute stays rejected.** A synthetic `map_item` action carrying `revert_after_ms`
+  together with any authored field other than `destination`/`revert_destination` on a pre-authored
+  anchor must still be rejected fail-closed at authoring/lowering (§7's existing obligation, unchanged
+  by this design).
+- **`mazzinor`/`gaz_haragoth`/`cult_soul_remains` stay rejected (Round 2, narrowed scope).** Their
+  `map_item create` actions at `at: death_position` carrying `interaction` must still be rejected
+  fail-closed at authoring/lowering — this section's design does not admit them (§7 open decision 8).
+  A test asserting any of these three samples lowers successfully under this section's design must
+  fail.
+- **`death_priest_shargon`/`the_ravager` stay rejected (Round 4, Codex finding 4122246563).** Their
+  `map_item create` actions at a pre-authored `anchor` carrying `destination`+`revert_after_ms` (and no
+  `interaction`) must still be rejected fail-closed at authoring/lowering — this section's design
+  admits only `map_item transform`, never `create` (design point 4, §7 open decision 9). A test
+  asserting either sample lowers successfully under this section's design must fail.
+- **Different placements of the same shared transition carry independent durations.** Bind two
+  `LocalObjectRuntime`s at two different `PlacementKey`s that both invoke the same content-level
+  `TransitionKey`, one with a `local_object_revert_after_ms` entry set and one without. Firing the
+  first must register a revert; the second, invoked identically, must register none — the duration is
+  placement-scoped, never read from `TransitionBinding` itself.
+- **Two authored actions at the same placement invoking the same transition carry independent
+  durations (P2, Round 2, Codex finding 4121918234).** Author two distinct `map_item` actions at the
+  same placement that both invoke the same bound `TransitionKey`, one with `revert_after_ms` set and
+  one without (or with a different value). Each must lower to its own `local_object_revert_after_ms`
+  entry keyed by its own `LoweredActionId`; a test asserting the second action's duration silently
+  overwrites, is overwritten by, or is shared with the first's — because the map was keyed by
+  `TransitionKey` alone — must fail.
+- **Inverse-uniqueness validation is scoped to the placement's own bound transitions.** `bind` must
+  reject (`InvalidBinding`) a placement whose `local_object_revert_after_ms` names a `TransitionKey`
+  for which *this placement's own* bound `transitions` map contains zero or more than one matching
+  inverse (by `source_state`/`target_state`/`normalized_intent_family`), even if a matching inverse
+  exists elsewhere in the content's full transition set but is not bound at this placement. For a
+  `revert_destination`-bearing occurrence, this is satisfied by construction (design point 3): lowering
+  binds exactly one dedicated inverse per occurrence.
+
+### Open items for the owning lane
+
+- The exact CW3 linker/validator code that performs the fail-closed key-subset checks above and the
+  `attribute_variant_of` existence/`collision`-match check (Round 23) — this document specifies the
+  shape and the existing precedent it mirrors, not the linker's own implementation.
+- The exact `bind`-time implementation of the widened inverse-uniqueness search (Round 23, §7 Option
+  2/Exact delta above) — this document specifies the accept condition, not the search code.
+- The exact production lowering step that turns an authored `map_item transform` action into
+  `local_object_state_attributes`/`local_object_revert_after_ms` entries and, when `revert_destination`
+  is present, synthesizes the post-revert state/`TransitionBinding` pair (design point 3) — no such
+  step exists in production yet (§7 evidence, unchanged); `validate_encounter.py` remains offline
+  evidence of the shape, not a wired boundary.
+- The exact representation of `LoweredActionId` (design point 1) and how the invoking operation
+  carries it through to the commit-time duration lookup (design point 6) — this document names the
+  requirement, not the code-level plumbing.
+- Whatever downstream system eventually reads `attributes()` to actually move a player to
+  `destination` is a separate, already-existing interaction/movement concern (GAME-INTERACTION-01) —
+  explicitly out of scope here, exactly as it was before this section existed.
+- `interaction` bindings and runtime-created local objects at a runtime-resolved anchor
+  (`death_position`) are explicitly **not** designed by this section (Round 2) — see §7 open
+  decision 8.
+- `map_item create` at a pre-authored anchor carrying `destination`+`revert_after_ms`
+  (`death_priest_shargon`/`the_ravager`) is explicitly **not** designed by this section (Round 4,
+  Codex finding 4122246563) — see §7 open decision 9.
+- §7's other open decisions (retention/compaction, `IN_FLIGHT` reconciliation, ordinal-issuance
+  exhaustion, and any later addition to that list) are unaffected by this section — only open decision
+  3 (this section) and open decision 4 (design point 5 above) are resolved here; open decisions 8 and 9
+  are this section's own new findings, added to §7's list rather than kept separate, but they too
+  remain unresolved and the owning lane's — and everything §7 lists stays the owning lane's, as written in
+  §7 at whatever revision the owning lane implements against.

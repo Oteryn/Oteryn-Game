@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/intense_healing",
-      "revision": "spell-p2-r3"
+      "revision": "spell-p2-r4"
     },
     "name": "Intense Healing",
     "carrier": "instant",
@@ -47,12 +47,15 @@
     },
     "pz_locks_caster": false,
     "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_intense_healing"
+    },
     "base_power": 120,
     "execution": {
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/intense_healing",
-        "revision": "spell-p2-r3"
+        "revision": "spell-p2-r4"
       }
     }
   }

@@ -2,7 +2,7 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/cure_poison",
-      "revision": "spell-p2-r3"
+      "revision": "spell-p2-r4"
     },
     "name": "Cure Poison",
     "carrier": "instant",
@@ -49,11 +49,14 @@
     },
     "pz_locks_caster": false,
     "needs_weapon": false,
+    "presentation": {
+      "cast_cue": "canary.sound:spell_cure_poison"
+    },
     "execution": {
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/cure_poison",
-        "revision": "spell-p2-r3"
+        "revision": "spell-p2-r4"
       }
     }
   }

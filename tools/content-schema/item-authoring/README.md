@@ -176,6 +176,81 @@ has no `flags.take` (a non-take-able map/quest decoration corpse); when it does 
 `{rule: "take_able_dead_creature", name}`) and stays `family_profile_unresolved` (fail
 closed) if the table does not name it.
 
+Two further owner decisions (2026-09-28), applied lowest-priority still, once every rule
+above (including the two just described) has already failed: (1) **fluid types with no
+appearance** — an items.xml-only entry (both pinned engines' ids 1-20) whose exact
+lower-cased name is a `Fluids_t` enum name (`FLUID_TYPE_NAMES`: water, wine, beer, mud,
+blood, slime, oil, urine, milk, manafluid, lifefluid, lemonade, rum, fruit juice, coconut
+milk, mead, tea, ink, candyfluid, chocolate — verified against
+`src/utils/utils_definitions.hpp`'s `enum Fluids_t`, identical in both engines) and no
+`appearances.dat` object routes `routed_non_item` owner `Fluid`, reason
+`fluid_type_without_appearance`; any other appearance-less name stays
+`family_profile_unresolved`. (2) **late placeholder names** — `old tibia item`,
+`unknown item`, `unknow`, `event item`, `unknown corpse` (`LATE_PLACEHOLDER_APPEARANCE_NAMES`)
+route the same way the early `PLACEHOLDER_APPEARANCE_NAMES` check does (owner
+`WorldObject`, reason `appearance_placeholder_slot`), but only once every other
+classifier has already failed — unlike the early check, this one never gates on "no
+other items.xml attribute", because these particular names are also real wiki-resolvable
+item names on some ids, and only running it last guarantees a wiki- or engine-resolved id
+sharing one of these names is never rerouted.
+
+The wiki-evidence capture tool's own `collect_unresolved` probe (which decides which ids
+still need a wiki lookup) must ask that question using only classifiers that outrank the
+wiki fallback -- never wrap-target inheritance, the dead-item rules, or the two rules
+above, all of which rank *below* it -- or a recapture would silently drop real wiki
+evidence for an id one of those lower-priority rules also resolves.
+`sources["skip_post_wiki_fallback_routes"]` enforces this in that one probe path; it is
+never set for a real conversion.
+
+### Name-joined wiki evidence, availability, and a last-resort no-appearance route
+
+Two more `match_basis` values extend the wiki-evidence fallback for a key the exact
+`itemid`/`title` joins still miss (owner decisions 2026-09-28): **`appearance_title`**
+looks up this item's own `appearances.dat` name (not its items.xml name, which can be a
+blanket range label -- Crystal/Canary ids 23577-23667 all share the single items.xml name
+`weapon of mayhem`, while the client's own per-id appearance names, e.g. `slayer of
+mayhem`, `blade of mayhem`, are the real per-weapon titles) in the same exact-title index
+the `title` basis already builds; **`actualname`** looks up this item's items.xml name *or*
+appearance name in a second index built from every already-fetched Infobox Object page's
+own `actualname` field (TibiaWiki's own asserted in-game object name, which often differs
+from the page title, e.g. page "Water (Liquid)" `actualname` "vial of water"), resolving
+only when every page sharing that literal `actualname` agrees through the existing
+primarytype/objectclass/status order.
+
+Both are looser, name-string joins, unlike the exact `itemid`/`title` bases: a generic
+engine name (e.g. "dead rat", "dead goblin") can coincidentally be the literal
+`actualname` of an unrelated quest-specific wiki page. `convert_item` therefore consults
+`appearance_title`/`actualname` evidence only *after* wrap-target inheritance and the
+dead-item rules have both already failed to resolve or route the item -- both of those
+already resolve those generic names correctly from engine data alone, with no collision
+risk, so a same-named-but-unrelated wiki page reached only through a name join can never
+override them. The exact `itemid`/`title` bases are unaffected and still rank above
+wrap-target/dead-item, as before. See `fallback_entry_matches_name`'s docstring and
+`HIGH_CONFIDENCE_MATCH_BASES`/`NAME_JOINED_MATCH_BASES` in `engine_items.py`.
+
+Every wiki-matched record (any `match_basis`) also carries the matched page's own
+`status` infobox field, lower-cased/trimmed, as an optional top-level Item `availability`
+field: `{"status": <one of "deprecated"/"ts-only"/"event"/"unobtainable"/"unavailable">,
+"evidence": {"source": "tibiawiki", "page_id", "revision_id", "wiki_title",
+"match_basis"}}`. TibiaWiki's `Infobox Object` forwards `status` to `Status Messagebox`,
+which renders nothing when the field is absent or empty -- there is no confirmed "active"
+default, so an absent/empty `status` field, or an item with no wiki record at all, carries
+no `availability` field, never a guessed "active" one. A disambiguation record only ever
+carries `availability` when every candidate page agrees on `status`. Availability is a
+purely additive fact: it never affects `family_profile`, routing, or any existing outcome.
+Owner decision: the 10.94 Carving/Mayhem/Remedy weapons (`status: unavailable`, merged
+into "of Destruction" in the 2017 Winter Update) are kept as ordinary Items with their
+real weapon family -- `status = unavailable` is recorded truthfully, never used to exclude
+or specially route an item.
+
+Once every rule above -- including both wiki-evidence tiers, wrap-target and dead-item --
+has failed, an item with no `appearances.dat` object at all (never any client-visible
+presence in the 15.30 universe: a map-authoring id gap inside a blanket items.xml range,
+e.g. `bridge`, `hive structure`, `stone pavement`) routes `routed_non_item` owner
+`WorldObject`, reason `no_client_appearance`; the fluid-type and late-placeholder routes
+above stay checked first and keep their own reasons. An item with a resolvable wiki
+record, or any `appearances.dat` object at all, is never affected.
+
 A field this converter cannot implement because the schema needs data neither pinned
 engine's evidence supplies keeps a precise blocker rather than a guessed value:
 `flags.upgradeclassification`/`upgradeclassification.upgrade_classification`

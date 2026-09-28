@@ -336,6 +336,10 @@
         "count": {
           "type": "integer",
           "minimum": 1
+        },
+        "effect_asset_binding": {
+          "$ref": "urn:oteryn:monster-authoring:candidate:1#/$defs/assetBinding",
+          "description": "S18: the magic effect shown on the caster after a successful conjure (a rune always shows magic_red)."
         }
       },
       "required": [

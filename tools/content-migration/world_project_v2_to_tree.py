@@ -222,11 +222,15 @@ def main() -> int:
         "imports/crystalserver/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["source_repository"] == "zimbadev/crystalserver"]},
         "imports/canary/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.canary"]},
         "imports/canary/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["source_repository"] == "opentibiabr/canary"]},
-        "imports/canary/bindings/creatures.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Creature", "bindings": creature_bindings},
+        "imports/canary/bindings/creatures.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Creature",
+                                                   "bindings": [row for row in creature_bindings if row["source_key"] == "oteryn:source.canary"]},
         "imports/tibiawiki/sources.json": {"schema": "OTERYN_IMPORT_SOURCES/v1", "sources": [row for row in sources["sources"] if row["key"] == "oteryn:source.tibiawiki"] + kept_sources},
         "imports/tibiawiki/batches.json": {"schema": "OTERYN_IMPORT_BATCHES/v1", "batches": [row for row in imports["batches"] if row["batch_id"] in {source["import_batch_id"] for source in sources["sources"] if source["key"] == "oteryn:source.tibiawiki"}] + kept_batches},
         "imports/tibiawiki/bindings/items.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Item", "bindings": item_bindings},
         "imports/tibiawiki/bindings/mounts.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Mount", "bindings": mount_bindings},
+        # D44 wiki-authored creatures bind to their TibiaWiki page id.
+        "imports/tibiawiki/bindings/creatures.json": {"schema": "OTERYN_SOURCE_IDENTITY_BINDINGS/v1", "family": "Creature",
+                                                      "bindings": [row for row in creature_bindings if row["source_key"] == "oteryn:source.tibiawiki"]},
         "imports/tibiawiki/facts/items-wave1.json": {
             "schema": "OTERYN_IMPORTED_FACT_PROVENANCE/v1",
             "family": "Item",

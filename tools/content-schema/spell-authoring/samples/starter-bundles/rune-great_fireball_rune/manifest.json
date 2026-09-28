@@ -357,6 +357,46 @@
       "resolution": "S4: source value (both sources agree)."
     },
     {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/great_fireball.lua",
+      "source_line": 24,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/great_fireball.lua",
+      "source_line": 23,
+      "source_field": "castSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/cast_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 0,
+      "source_file": "data/scripts/runes/great_fireball.lua",
+      "source_line": 25,
+      "source_field": "impactSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/impact_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
+      "source_index": 1,
+      "source_file": "data/scripts/runes/great_fireball.lua",
+      "source_line": 24,
+      "source_field": "impactSound",
+      "kind": "field",
+      "status": "mapped",
+      "destination": "/spell/spell/presentation/impact_cue",
+      "resolution": "S18: sound cue named by its SoundEffect_t member."
+    },
+    {
       "source_index": 2,
       "source_file": "Great Fireball Rune",
       "source_line": 1,

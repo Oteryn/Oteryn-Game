@@ -15,10 +15,10 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 38157, "Mount": 252,
-    "Creature": 1318, "Presentation": 2411, "Behavior": 2411, "Loot": 978, "Ability": 5254, "Effect": 3926, "Formula": 4224,
+    "Creature": 1319, "Presentation": 2412, "Behavior": 2412, "Loot": 978, "Ability": 5257, "Effect": 3929, "Formula": 4227,
     "NPC": 1093, "Dialogue": 701, "Service.Trade": 308, "Service.Travel": 55,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1318, "NPC": 2281}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1319, "NPC": 2281}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -31,6 +31,7 @@ assert any(path.startswith("content/dialogues/definitions/dialogues-") for path 
 assert any(path.startswith("content/services/trade/trade-") for path in paths)
 assert any(path.startswith("content/services/travel/travel-") for path in paths)
 assert "imports/canary/bindings/creatures.json" in paths
+assert "imports/tibiawiki/bindings/creatures.json" in paths
 assert all(not path.startswith("content/world/") for path in paths)
 
 assert manifest["families"]["NPC"] == {"records": 1093, "index": "content/npcs/definitions/index.json"}

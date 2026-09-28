@@ -17,17 +17,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "0ce532c56b89dff127390f69e625c7d58f21400b1aa8c86eb75d49ff77ecf2ed",
+        "506c9ba27c59c3f72f0e964731b6bef239a603449504f54edf09706358f44dc7",
     ),
     (
         "definitions/declarations.json",
-        13_538_652,
-        "8179fe8940f6fd81bda079ee7a42ff66dab79d0a646b5d32b65e01495f8d382d",
+        13_544_048,
+        "39e7b48a9e7ad548797590e1b189fdcaaf5c9540f79608ba229e23687e84a219",
     ),
     (
         "definitions/reference.json",
-        21_705_834,
-        "5ac1a947b17ae96031c5f4553be52061a49bf7450b9780d36250b914f344cf5a",
+        21_708_581,
+        "68c6bcd1178e668b8966c99c9d5b72548daf0b50489bf01a1fa4c0754ceea364",
     ),
     (
         "editor/author.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "43d1ba7b3c304aa7d5a826bfcc063d5a124d30a54d8bb0d52449a6c77a6cf8a1",
+        "d9aef98599237dbe9967623dfabc6925aba9b45d2ab84801bca9d4f41202e425",
     ),
     (
         "presentations/bindings.json",
@@ -47,17 +47,17 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "81a3424a0eeec0d9d6d7dbfb93d50d01400b96144c373b52e3dabd123b171e9b",
+        "c27525372aab2c49918fce90e4c12061490608c305aa63cae01f6535c5e2b998",
     ),
     (
         "provenance/imports.json",
-        3836,
-        "88db71107238f8d4aa79d2d41532198a6e5c450832a15881ebf618e07075bf1d",
+        4442,
+        "0c46bddb838602acd2cf3eea9051a22d39670508bef33bc58d42615d3bcfee69",
     ),
     (
         "provenance/sources.json",
-        1_213_365,
-        "3f33758e6c4cfb3ac7fd529126cd65cf33c484278cad5ae98ca3c3491eadb9d5",
+        1_213_904,
+        "0cad021d9a919d9ed911bb12a145db871dba57de01339a7adb74763a57b07679",
     ),
     (
         "worlds/world.json",
@@ -84,13 +84,13 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "dec5a7b22f43ed1158bc58ebb17480b1f59076411d9d0867f33f8983a28557ab";
+const TREE_SHA256: &str = "126c8186e63439309d007f093301cbd6e1eb060802e297d9c0ea454b23010433";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
-const CREATURES: usize = 1318;
-const CREATURE_RECORDS: usize = 18336;
-const CREATURE_PROFILES: usize = 17369;
+const CREATURES: usize = 1319;
+const CREATURE_RECORDS: usize = 18348;
+const CREATURE_PROFILES: usize = 17381;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1093;
 const NPC_RECORDS: usize = 2186;
@@ -117,7 +117,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_bytes: 160,
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
-        max_import_records: 6,
+        max_import_records: 7,
         max_reimport_states: 1,
     }
 }
@@ -275,7 +275,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     )
     .expect("capture tracked canonical package");
     assert_eq!(project.project_revision(), "g4-npc-wave-a-r3");
-    assert_eq!(project.imports().len(), 6);
+    assert_eq!(project.imports().len(), 7);
     let provenance = &project.imports()[0];
     assert_eq!(provenance.batch_id, "cw2-b1-full-item-family-registry-r1");
     assert_eq!(provenance.source_repository, "zimbadev/crystalserver");
@@ -436,7 +436,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert!(v2.placements.is_empty());
     assert!(v2.appearance_bindings.is_empty());
     assert!(v2.assets.is_empty());
-    assert_eq!(v2.sources.len(), 6);
+    assert_eq!(v2.sources.len(), 7);
     assert_eq!(v2.sources[0].key, "oteryn:source.canary");
     assert_eq!(v2.sources[0].import_batch_id, creature_import.batch_id);
     assert_eq!(v2.sources[0].revision, creature_import.source_revision);
@@ -475,6 +475,36 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
     assert_eq!(v2.sources[5].import_batch_id, npc_import.batch_id);
     assert_eq!(v2.sources[5].revision, npc_import.source_revision);
     assert_eq!(v2.sources[5].evidence, ProjectV2EvidenceClass::Derived);
+    // D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki.
+    let wiki_creature_import = &project.imports()[6];
+    assert_eq!(
+        wiki_creature_import.batch_id,
+        "g4-wiki-authored-creature-d44-r1"
+    );
+    assert_eq!(wiki_creature_import.source_repository, "tibia.fandom.com");
+    assert!(wiki_creature_import.candidates.is_empty());
+    assert_eq!(v2.sources[6].key, "oteryn:source.tibiawiki");
+    assert_eq!(v2.sources[6].import_batch_id, wiki_creature_import.batch_id);
+    assert_eq!(v2.sources[6].revision, wiki_creature_import.source_revision);
+    assert_eq!(v2.sources[6].evidence, ProjectV2EvidenceClass::Derived);
+    assert_eq!(
+        v2.source_identity_bindings
+            .iter()
+            .filter(|binding| binding.source_revision == wiki_creature_import.source_revision)
+            .map(|binding| (
+                binding.identity_namespace.as_str(),
+                binding.external_id.as_str(),
+                binding.target.key.as_str(),
+                binding.disposition
+            ))
+            .collect::<Vec<_>>(),
+        [(
+            "mediawiki/page_id",
+            "108320",
+            "oteryn:creature.dark_merudri",
+            ProjectV2SourceIdentityDisposition::Exact
+        )]
+    );
     assert_eq!(
         v2.source_identity_bindings.len(),
         550 + CREATURES + NPC_BINDINGS
@@ -491,6 +521,12 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             ProjectV2SourceIdentityDisposition::Exact
         );
         if binding.target.family == ProjectV2Family::Creature {
+            if binding.source_key == "oteryn:source.tibiawiki" {
+                // D44 wiki-authored creature, checked above.
+                assert_eq!(binding.source_revision, v2.sources[6].revision);
+                assert!(binding.target.key.starts_with("oteryn:creature."));
+                continue;
+            }
             assert_eq!(binding.source_key, "oteryn:source.canary");
             assert_eq!(binding.source_revision, v2.sources[0].revision);
             assert_eq!(binding.identity_namespace, "canary/monster-file");
@@ -536,7 +572,7 @@ fn repository_package_recaptures_and_rewrites_without_identity_or_layer_drift() 
             _ => panic!("only Item, Outfit, Mount and Creature source bindings are populated"),
         }
     }
-    assert_eq!(creature_files.len(), CREATURES);
+    assert_eq!(creature_files.len(), CREATURES - 1);
     assert_eq!(npc_bindings, NPC_BINDINGS);
     assert_eq!(item_ids.len(), 165);
     assert_eq!(outfit_ids.len(), 133);
