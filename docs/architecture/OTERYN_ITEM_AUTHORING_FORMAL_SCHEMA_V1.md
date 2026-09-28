@@ -392,10 +392,10 @@ TibiaWiki BR binding also exists it must agree.
 |---|---|---|
 | entries | 38,157 | 37,527 |
 | validator errors | 0 | 0 |
-| valid, only the sprite atlas pending | 10,654 | 10,317 |
+| valid, only the sprite atlas pending | 11,119 | 10,782 |
 | valid, other blockers | 902 | 877 |
 | routed to a non-Item owner | 25,656 | 25,193 |
-| not converted (no family, or no identity binding) | 945 | 1,140 |
+| not converted (no family, or no identity binding) | 480 | 675 |
 | Delivery Task eligible | 433 | 401 |
 
 Entries that are not portable Items are counted as `routed_non_item` with an owner and
@@ -419,20 +419,23 @@ identical in both engines) and mantra damage types (energy, fire, earth, ice). A
 with proficiency `238` cites both engines' admitted crosswalks.
 
 Remaining blockers (Crystal): `sprite_atlas_not_admitted` on every converted Item (no
-admitted sprite atlas yet); `family_profile_unresolved` 945 (no structural signal and no
+admitted sprite atlas yet); `family_profile_unresolved` 480 (no structural signal and no
 admitted wiki evidence either; editorial backlog); other proficiency ids 642, `augments`
 83 and `runespellname` 36 (need an Ability identity crosswalk); `flags.forceuse` 34
 (loaded but unused by both engines); and small data-quality residuals such as
 `stopduration` without decay or a container without `containersize`. Canary's own
-`family_profile_unresolved` is 904, plus 236 `identity_not_in_b1_catalog` (no Crystal
+`family_profile_unresolved` is 439, plus 236 `identity_not_in_b1_catalog` (no Crystal
 allocator key at all, so the wiki fallback below is never consulted for those).
 
 `family_profile_basis` distinguishes how each converted Item's `family_profile` was
 decided: `engine_attribute` (the engine's own `primarytype`/`weapontype`/slot/etc., as
 `classify_family_profile` always decides first) or `wiki_evidence_fallback` (§5b below,
-applied only when the engine carried no such signal at all). Crystal: 10,681
-`engine_attribute`, 875 `wiki_evidence_fallback`. Canary: 10,359 `engine_attribute`, 835
-`wiki_evidence_fallback`.
+applied only when the engine carried no such signal at all). Crystal: 10,679
+`engine_attribute`, 1,342 `wiki_evidence_fallback`. Canary: 10,357 `engine_attribute`,
+1,302 `wiki_evidence_fallback`. `clothing accessories` is never an admitted
+engine-attribute `primarytype` value (old rag and ivory comb both carry it natively but
+it names no one real family on its own; see §5b), so both fall to the wiki fallback
+instead of `engine_attribute`.
 
 `delivery_task_eligible` follows the owner-approved authoring rule
 `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5`: an Item is eligible iff its Crystal id is on the
@@ -452,54 +455,100 @@ locally, not by repository CI.
 ## 5b. Wiki-evidence family fallback (English TibiaWiki)
 
 `tools/content-census/item_wiki_family_capture.py` is a manual, network-using capture
-tool (not run by repository CI) that looks up every `family_profile_unresolved` engine
-Item's own name on English TibiaWiki (`tibia.fandom.com`) against an exact,
-case-insensitive index of every main-namespace title (`list=allpages`, `apnamespace=0`,
-`apfilterredir=all`, walked to completion — 29,012 titles on the wiki as captured). A
-name's candidate titles are every title whose lower case equals the name itself, or the
-name plus a `" (item)"`/`" (object)"` disambiguating suffix (TibiaWiki's own convention
-for an item that shares a bare name with an NPC or other page); content is fetched with
-`redirects=1`. That is the full extent of the matching: exact case-insensitivity,
-redirects and the two admitted suffixes, never a capitalisation guess. Each candidate is
-parsed for `{{Infobox Object`/`{{Infobox Item` `primarytype`/`objectclass` fields, or, for
-a `{{Disambig}}` page, resolved through every linked candidate page instead; a page with
-neither is not evidence (e.g. an NPC page sharing an item's bare name) and is ignored. A
-match is only ever committed when `engine_items.resolve_wiki_family_value` — the admitted
-mapping, `PRIMARYTYPE_PROFILE` folded to lower case plus a small dedicated
-`WIKI_OBJECTCLASS_PROFILE` for the `objectclass` fallback — resolves it to exactly one
-profile; when a name's candidates include two or more pages carrying admitted evidence
-(directly, or through a disambiguation page's own linked candidates), every one must
-independently resolve and all must agree on the exact same profile, recorded with the
-existing disambiguation shape ("several wiki pages, all agree"). Broad buckets (`others`,
-`other items`, `household items`, `tools and other equipment`, `utilities`, `plants,
-animal products, food and drink`, `other objects`) and the owner-decision-pending values
-`fireworks` never resolve. By owner decision (2026-09-28) `clothing accessories` resolves to
-`material_valuable` (TibiaWiki files green piece of cloth and ivory comb as Creature
-Products with that secondary type; old rag is the look-alike Tibia Anniversary drop), and
-`blessing charms` resolves to
-`progression_material` by owner decision (2026-09-28): the charms are single-use items that
-grant one blessing (Crystal `data/libs/systems/blessing.lua` `Blessings.All[*].charm`:
-10341-10345, 25360, 25361); the blessing effect itself is runtime behaviour. The snapshot
-(`imports/tibiawiki/facts/items-family-fallback.json`, batch `g5-item-family-fallback-
-tibiawiki-r1`) holds only page/revision identity, digests and the one or two field
-observations each record needed — never wikitext bodies or images — and is strictly
-loaded and re-validated (`engine_items.load_wiki_family_fallback`, mirroring
+tool (not run by repository CI) that resolves every `family_profile_unresolved` engine
+Item's own numeric id or name against English TibiaWiki (`tibia.fandom.com`), recording
+which join produced the evidence as an auditable `match_basis: "itemid" | "title"` on
+every record and in the emitted `family_profile_evidence`.
+
+The exact-id join (`match_basis: "itemid"`) runs first and is authoritative: every
+main-namespace page embedding `{{Infobox Object` (`list=embeddedin&eititle=Template:
+Infobox Object` — 9,980 pages as captured) is fetched once and indexed by the integer(s)
+in its own `| itemid = ...` field (comma-separated lists included; 13,906 distinct ids
+indexed). When one or more pages list the engine's own numeric id, only those pages are
+ever considered for it — one page resolves through the admitted fields as usual, 2+ pages
+must all agree on the exact same profile — and if the id-matched pages exist but do not
+resolve (or disagree), the item stays unresolved with no fallback to name matching: exact
+id evidence, once it has an opinion at all, is never overridden by a name guess. Only when
+no page lists the id at all does the item fall back to the pre-existing name-based join
+(`match_basis: "title"`).
+
+That name-based join looks up the engine's own name against an exact, case-insensitive
+index of every main-namespace title (`list=allpages`, `apnamespace=0`, `apfilterredir=all`,
+walked to completion — 29,012 titles on the wiki as captured). A name's candidate titles
+are every title whose lower case equals the name itself, or the name plus a `" (item)"`/
+`" (object)"` disambiguating suffix (TibiaWiki's own convention for an item that shares a
+bare name with an NPC or other page); content is fetched with `redirects=1`. That is the
+full extent of the matching: exact case-insensitivity, redirects and the two admitted
+suffixes, never a capitalisation guess. Each candidate is parsed for `{{Infobox Object`/
+`{{Infobox Item` `primarytype`/`objectclass` fields, or, for a `{{Disambig}}` page,
+resolved through every linked candidate page (read from both `[[wikilinks]]` and the
+positional entries of an `{{ItemList ...}}` template, Fandom's own alternative to linking
+each variant, `key=value` parameters skipped either way) instead; a page with neither is
+not evidence (e.g. an NPC page sharing an item's bare name) and is ignored. A match is
+only ever committed when `engine_items.resolve_wiki_family_value` — the admitted mapping,
+`PRIMARYTYPE_PROFILE` folded to lower case plus a small dedicated
+`WIKI_OBJECTCLASS_PROFILE` for the `objectclass` fallback, plus `WIKI_STATUS_PROFILE` for
+the `status` fallback — resolves it to exactly one profile; when a name's candidates
+include two or more pages carrying admitted evidence (directly, or through a
+disambiguation page's own linked candidates), every one must independently resolve and
+all must agree on the exact same profile, recorded with the existing disambiguation shape
+("several pages, all agree"), regardless of which join produced them. Broad buckets
+(`others`, `other items`, `household items`, `tools and other equipment`, `utilities`,
+`plants, animal products, food and drink`, `other objects`) and the owner-decision-pending
+values `fireworks` and `clothing accessories` never resolve as `primarytype`/`objectclass`.
+`blessing charms` resolves to `progression_material` by owner decision (2026-09-28): the
+charms are single-use items that grant one blessing (Crystal
+`data/libs/systems/blessing.lua` `Blessings.All[*].charm`: 10341-10345, 25360, 25361); the
+blessing effect itself is runtime behaviour.
+
+An infobox `status` field is a third, lowest-priority admitted field: consulted only once
+neither `primarytype` nor `objectclass` has resolved (a non-empty, unadmitted value in
+either never blocks it), and admitting only `status = event` -> `event_collectible`. By
+owner decision (2026-09-28): TibiaWiki's own "Clothing Accessories" `primarytype` names no
+one real family (green piece of cloth and ivory comb are filed there only as a *secondary*
+type, their real family being the `primarytype = Creature Products` -> `material_valuable`
+each also carries; old rag carries no such secondary evidence and is instead TibiaWiki's
+own `status = event` 20th-anniversary drop, resolving to `event_collectible` through the
+new field instead). Both old rag (Crystal/Canary `24415`) and ivory comb (`32773`) carry
+`primarytype = clothing accessories` as their only native engine attribute, so neither
+resolves from `engine_attribute` at all; each depends entirely on its own wiki fallback
+record.
+
+The snapshot (`imports/tibiawiki/facts/items-family-fallback.json`, batch
+`g5-item-family-fallback-tibiawiki-r1`) holds only page/revision identity, digests and the
+one or two field observations each record needed — never wikitext bodies or images — and
+is strictly loaded and re-validated (`engine_items.load_wiki_family_fallback`, mirroring
 `load_delivery_overrides`'s fail-closed style: duplicate-key rejection, unknown-key
 rejection, a recomputed-and-compared `snapshot_sha256`, every `registry_key` required in
-the identity index, every mapped value required to resolve through the admitted mapping)
-before `convert_item` ever applies it. It is applied only after `classify_family_profile`
-and the non-item/immovable routing have already found no family, and only when the
-unresolved item's own lower-cased engine name is one the snapshot actually matched, and
-only to an entry that has an `appearances.dat` object (the fluid-kind name rows 1-20 and
-other appearance-less rows are not physical Items and stay unresolved);
+the identity index, a `match_basis` required on every record and exactly `itemid` or
+`title`, every mapped value required to resolve through the admitted mapping) before
+`convert_item` ever applies it. It is applied only after `classify_family_profile` and the
+non-item/immovable routing have already found no family, and only when the unresolved
+item's own lower-cased engine name is one the snapshot actually matched (regardless of
+which join produced the record: `matched_names` is always the engine's own lower-cased
+name), and only to an entry that has an `appearances.dat` object (the fluid-kind name rows
+1-20 and other appearance-less rows are not physical Items and stay unresolved);
 engine-attribute classification always wins. A hit sets `family_profile_basis:
-"wiki_evidence_fallback"` and a `family_profile_evidence` citation (matched field/value,
-wiki title/page id/revision id/content digest, or the full candidate list for a
-disambiguation) on the converted Item. Of 3,573 previously-unresolved (engine, id) pairs
-(1,827 Crystal + 1,746 Canary) across 1,065 unique engine names, the snapshot holds 948
-registry-key records resolved to one admitted profile (887 direct, 61 disambiguation),
-recovering 875 Crystal and 835 Canary Items (1,710 total; ivory comb now resolves from
-its engine `primarytype` instead); the remainder stays `family_profile_unresolved`, still fail-closed.
+"wiki_evidence_fallback"` and a `family_profile_evidence` citation (`match_basis`, matched
+field/value, wiki title/page id/revision id/content digest, or the full candidate list for
+a disambiguation) on the converted Item. Of 3,563 previously-unresolved (engine, id) pairs
+(1,822 Crystal + 1,741 Canary) across 1,060 unique engine names, the exact-id join matched
+1,565 registry keys by their own numeric id (1,378 resolved directly, 2 as an
+agreeing-candidate disambiguation, 185 left unresolved with no name fallback because the
+id-matched pages did not resolve or disagreed), and the remaining 108 names went through
+the pre-existing name-based join, resolving 35 more. The snapshot holds 1,415 registry-key
+records total (1,380 `match_basis: "itemid"`, 35 `match_basis: "title"`; 1,412 direct, 3
+disambiguation), recovering 1,342 Crystal and 1,302 Canary Items (2,644 total, up from 877
+Crystal / 837 Canary before the exact-id join); the remainder stays
+`family_profile_unresolved`, still fail-closed. Ten registry keys that already had a
+title-based record changed profile once exact id evidence disagreed with it (id evidence
+always wins), and four keys that used to resolve by title (`cm token`, `glowworms` x2,
+`empty bucket`) lost their record entirely because their own id-matched pages exist but do
+not resolve — both are the intended, owner-specified behaviour of exact id evidence
+overriding a same-page name match. Old rag (Crystal/Canary `24415`) and ivory comb
+(`32773`) both now resolve through the exact-id join (`match_basis: "itemid"`) rather
+than a name match, to the same `status = event` -> `event_collectible` and `primarytype =
+Creature Products` -> `material_valuable` evidence as before (§5a).
 The title index itself is not pinned in the schema (it is provenance, not correctness --
 every record's own wiki page/revision identity is what the loader verifies); its count and
 digest are recorded in the capture tool's uncommitted report only.

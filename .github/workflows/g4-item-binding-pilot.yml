@@ -100,14 +100,14 @@ jobs:
             --cache-dir "$ROOT/current-source-cache" \
             --output "$ROOT/current-source.json" \
             --manifest-output "$ROOT/current-source-manifest.json"
-          python - "$ROOT/current-source-manifest.json" docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json <<'PY'
+          python - "$ROOT/current-source-manifest.json" docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json <<'PY'
           import json, pathlib, sys
           current = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
           protected = json.loads(pathlib.Path(sys.argv[2]).read_text(encoding='utf-8'))
           assert current['schema'] == protected['schema']
           assert current['collector'] == protected['collector']
           assert current['counts'] == protected['counts']
-          assert protected['full_output']['stable_without_retrieval_timestamp_sha256'] == '34a906252a2644ea70fdbbe9c52c6f142ea21c8955b40ffb4c4aa2032f130c29'
+          assert protected['full_output']['stable_without_retrieval_timestamp_sha256'] == '7337f533b0c6b6c059d62e6c97d59af4398e2ed3baf0b5c8ec8f06f7574ecd1f'
           assert current['counts']['records'] == 38157
           assert current['counts']['dispositions']['WIKI_MATCHED'] == 22
           print('protected current-source partition: PASS')
@@ -122,7 +122,7 @@ jobs:
             --source-manifest "$ROOT/capture/g4-item-source-capture-manifest.json" \
             --current-source "$ROOT/current-source.json" \
             --current-source-manifest "$ROOT/current-source-manifest.json" \
-            --protected-current-source-manifest docs/agents/evidence/OTV2-20260922-content-world-item-current-source.json \
+            --protected-current-source-manifest docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json \
             --crosswalk "$ROOT/crosswalk.json" \
             --output "$ROOT/g4-item-binding-pilot.json" \
             --manifest-output "$ROOT/g4-item-binding-pilot-manifest.json"

@@ -68,13 +68,22 @@ container hand-out from CrystalServer. It changes two things:
 | D41 | The destination is the character's inventory only. Before anything is created, the game checks that the total reward weight fits the free capacity and that the main backpack has a free slot for each top-level reward item, or for the reward container. When either check fails, the player is told which one failed (too heavy, or no room). No item is created, no claim is written and nothing goes to the ground; the player can make room and use the chest again. | DUR-03 with the Character owner |
 | D42 | A `RewardClaim` record is its own per-character durable record, unique on (character, claim). It is not a quest-progress track and does not reuse the XP tables. A cooldown claim stores the next allowed time. The record commits in the same DUR-03 transaction as the minted items, fenced by the character session generation like the XP award. The item and the claim commit together or not at all. | DUR-03 with the Character owner |
 
-## 5. Open point before implementation
+## 5. Character revision composition (resolved)
 
-DUR-03 §39.3 records a conflict. The character progression migration (0009) ties the character
-revision to XP receipts only, and does not say how a non-XP inventory change or a claim record
-moves that revision. D41 and D42 need that composition written in the DUR-03 and Character text
-before any migration or runtime code. If the answer does not fit a single transaction, the work
-stops and returns to the owner rather than choosing a weaker rule.
+DUR-03 §39.3 recorded a conflict: the character progression migration (0009) ties the character
+revision to XP receipts only, and did not say how a non-XP inventory change or a claim record
+moves that revision. `CHARACTER-REVISION-ITEM-TRANSACTION-COMPOSITION-V1`
+(`reviews/OTERYN_GAME_CHARACTER_REVISION_ITEM_TRANSACTION_COMPOSITION_DECISION_2026-09-27.md`,
+protected on `main@74bb3fd`) resolves it, and DUR-03 §39.3 now cites it:
+
+- The chest MINT, its `RewardClaim` and the mandatory audit commit in one DUR-03 transaction.
+- That transaction does not advance the character revision and writes no Character root,
+  progression or XP-receipt row; migration 0009 is unchanged.
+- It is fenced by the character session generation like the XP award, and it serializes on the
+  character root row lock.
+
+D41 and D42 are applied under that decision. Inventory position, capacity and weight policy,
+the `RewardClaim` physical schema and the cooldown identity stay open (D41, D42, §7).
 
 ## 6. Not in this slice
 
