@@ -183,7 +183,8 @@ SPEAKER = re.compile(r"\s*([^:<>{}|]{1,60}?)\s*:\s*(.*)$")
 BREAK = re.compile(r'<\s*/?\s*br\s*/?\s*>', re.I)
 # structural wiki/HTML markup that is never part of what the NPC says (a closing infobox, spoiler, paragraph ...)
 STRUCTURE = re.compile(r'</?\s*(?:spoiler|p|div|span|small|big|center|noinclude|includeonly|onlyinclude|nowiki|ref|s|u|b|i)\b[^>]*>'
-                       r'|\}\}\s*$', re.I)
+                       r'|\}\}\s*$'
+                       r'|<\s*/?\s*br\s*/?\s*$|^\s*/?\s*br\s*/?\s*>', re.I)  # a break split across physical lines
 PRICE = re.compile(r"^(?:''')?\s*(\d{1,3}(?:[ .]\d{3})+|\d+)\b")
 FIELD = re.compile(r'^\|\s*([a-z0-9_]+)\s*=(.*)$', re.M)
 
@@ -205,6 +206,16 @@ def unmarked(text):
     return LINK.sub(r'\1', text).replace("'''", '').replace("''", '')
 
 
+def edit_distance(a, b):
+    previous = list(range(len(b) + 1))
+    for i, ca in enumerate(a, 1):
+        current = [i]
+        for j, cb in enumerate(b, 1):
+            current.append(min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + (ca != cb)))
+        previous = current
+    return previous[-1]
+
+
 def fold(text):
     return re.sub(r'\s+', ' ', text).strip().casefold()
 
@@ -224,6 +235,12 @@ def page_facts(page):
     # a qualified page (`Hyacinth (NPC)`) labels its turns with the plain name
     speakers = {fold(re.sub(r'\s*\([^()]*\)$', '', label)) for label in (page['title'], name)}
     speakers |= {fold(page['title']), fold(name)}
+    # a label a single character away from the NPC's name (`Nivev` for Ninev) is a typo on that page;
+    # unrelated labels, such as another NPC's copied transcript, stay excluded
+    labels = {fold(match.group(1)) for raw in wikitext.split('\n') for segment in BREAK.split(unmarked(raw))
+              if (match := SPEAKER.match(STRUCTURE.sub('', segment).strip()))}
+    speakers |= {label for label in labels if len(label) >= 4
+                 and any(edit_distance(label, speaker) == 1 for speaker in speakers)}
     lines = []
     for raw in wikitext.split('\n'):
         # one physical line can hold several turns separated by <br>; a segment without a speaker
@@ -310,7 +327,7 @@ def cmd_self_test(_args):
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
             "[[Goldro]]: Link form.</br>\nGoldro: Plain form.</br>\n''Goldro:'' Italic form.</br>\n"
             "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
-            "'''Goldro:''' Goldro: Repeated label.\nGoldro: Bye.</spoiler></p></noinclude>}}")
+            "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye.</spoiler></p></noinclude>}}")
     facts = page_facts({**page_record({'pageid': 7, 'title': 'Goldro', 'revisions': [
         {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
     assert facts['positions'] == [(34055, 32503, 7)], facts
@@ -318,7 +335,7 @@ def cmd_self_test(_args):
         'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000, 'Vial of Blood': None, 'Mug of Beer': 3}}, facts
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.', 'One.', 'Two. still two.',
-                                  'Repeated label.', 'Bye.'], facts
+                                  'Repeated label.', 'Typo label.', 'Bye.'], facts
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
         {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "'''Lee'Delle:''' Welcome."}}}]}), 'role': 'npc'})
     assert apostrophe['npc_lines'] == ['Welcome.'], apostrophe

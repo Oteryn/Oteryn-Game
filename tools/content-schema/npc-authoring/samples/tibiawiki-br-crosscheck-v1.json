@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "831a3a3acdf5e15d2592880ac7d4a82f8f7e1b61343a4e27e5319256e4affa32",
+  "facts_sha256": "9b7d8c0c0a958d6639e26b9afc50e405f51e28147999b4392fe6d4fafada1a3c",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -1259,8 +1259,8 @@
    },
    "dialogue": {
     "br_lines": 66,
-    "matched": 57,
-    "near": 4,
+    "matched": 59,
+    "near": 2,
     "texts": 68
    },
    "name": "Al Dee",
@@ -17351,7 +17351,7 @@
     "title": "Markwin"
    },
    "dialogue": {
-    "br_lines": 22,
+    "br_lines": 23,
     "matched": 22,
     "near": 0,
     "texts": 33
@@ -19058,6 +19058,12 @@
     "pageid": 46661,
     "revid": 368336,
     "title": "Ninev"
+   },
+   "dialogue": {
+    "br_lines": 43,
+    "matched": 0,
+    "near": 0,
+    "texts": 9
    },
    "name": "Ninev",
    "npc": "oteryn:npc.ninev",
@@ -29339,11 +29345,11 @@
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
   "dialogue:br_only": 179,
-  "dialogue:checked": 366,
-  "dialogue:matched": 2708,
-  "dialogue:near": 337,
-  "dialogue:no_text_matched": 69,
-  "dialogue:texts": 5486,
+  "dialogue:checked": 367,
+  "dialogue:matched": 2710,
+  "dialogue:near": 335,
+  "dialogue:no_text_matched": 70,
+  "dialogue:texts": 5495,
   "matched_by_position_alias": 7,
   "no_br_page": 14,
   "npcs": 1093,
