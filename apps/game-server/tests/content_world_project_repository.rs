@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "957440d7342097eddc284051270dcdde0449c9aafd0420174c61da2b2450a17d",
+        "f2356dde4d4dee4f0a49928a0df627572c3705eb068134cded5e848466306ca6",
     ),
     (
         "definitions/declarations.json",
-        13_201_439,
-        "2fff0ef5d4204bc73c9afbd85c4b22b6effc7e9081239390acb84366c9965d25",
+        13_544_048,
+        "39e7b48a9e7ad548797590e1b189fdcaaf5c9540f79608ba229e23687e84a219",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1936,
-        "05ddbd6f713c547f6bf331aa56fe136008a020d8b4ee41b2bf6875a82870d73e",
+        "a9a7b15fd845e231e78f029ab0906f4e2ccf9dedec1ce7365965b923a458e3ab",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "6d2a43e239da6c6affc3e3c81c06f7ca1c9c2e17b9332d6aeac1369adc474067",
+        "a3dfe94fc748b3b6811ac1bc44708b0ad1df59752921fd8021755991e0647b78",
     ),
     (
         "provenance/imports.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "d1ef07d9322e4e8d2b4e57e0bc1348abe864c32f94d81b5474ec75cf6a114d52";
+const TREE_SHA256: &str = "211fdbded27adf2a40bf34f3c1a20612e0569015cff2ee1d4d90bfddf8a3f682";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -94,8 +94,8 @@ const CREATURE_PROFILES: usize = 17381;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1093;
 const NPC_RECORDS: usize = 2186;
-const NPC_DECLARATIONS: usize = 2073;
-const NPC_DIALOGUES: usize = 617;
+const NPC_DECLARATIONS: usize = 2157;
+const NPC_DIALOGUES: usize = 701;
 const NPC_BINDINGS: usize = 2281;
 
 fn repository_root() -> PathBuf {

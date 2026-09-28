@@ -80,7 +80,7 @@ const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260927-npc-admission-wave-a-staged.json");
-const NPC_STAGED_SHA256: &str = "b49ffa0d19b514651130a8b832e3c6b451c911edd8ff4e9d3cb9c01448adcf5c";
+const NPC_STAGED_SHA256: &str = "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd";
 const NPC_STAGE_TOOL_SHA256: &str =
     "ec23b6f42dd0551e701c72e51aaeda82e5d837efb685cda589efb59a4d57ccd0";
 const NPC_CANDIDATES_SHA256: &str =
@@ -93,13 +93,13 @@ const NPC_WIKI_REVISION: &str = "tibiawiki-npc-52f87d29eddd1a4e";
 const CRYSTAL_REVISION: &str = "ff7ede593c69d4c658b382c97443e8155926924a";
 const NPC_COUNT: usize = 1093;
 const NPC_RECORDS: usize = 2186;
-const NPC_DECLARATIONS: usize = 2073;
+const NPC_DECLARATIONS: usize = 2157;
 const NPC_DIALOGUE_STAGED: &[u8] =
     include_bytes!("../../../docs/agents/evidence/OTV2-20260928-npc-dialogue-wave-a-staged.json");
 const NPC_DIALOGUE_STAGED_SHA256: &str =
-    "fec058688c59968f156df6aebbed75ec8df72760947c945487becc3c6a3f6fad";
-const NPC_DIALOGUES: usize = 617;
-const NPC_DIALOGUE_NODES: usize = 4220;
+    "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90";
+const NPC_DIALOGUES: usize = 701;
+const NPC_DIALOGUE_NODES: usize = 6313;
 const NPC_BINDINGS: usize = 2281;
 const CREATURE_COUNT: usize = 1319;
 const CREATURE_RECORDS: usize = 18348;

@@ -558,6 +558,48 @@ Built in the order that completes the most quests first, the features give (204 
   Five script directories whose name differs from their quest key are joined explicitly
   (`DIRECTORY_QUESTS`).
 
+### 6.8 What is still needed: gap triage
+
+`samples/gap-triage/triage.json` (`ots_gap_triage.py`, deterministic) sorts every part the
+transcription could not express into three buckets. That is 3,688 items: 1,902 unresolved statements
+and 1,786 unresolved conditions. A line enters a bucket only through a written rule checked against
+the pinned sources. Anything no rule matches is bespoke.
+
+| Bucket | Items | What finishes it |
+|---|---:|---|
+| Runtime owner missing | 467 | Each item names its owner: scheduler 287, key-value state 68, creature removal 43, boss cooldown 43, player condition 26. When the owner exists, the converter types these items. |
+| Shared mechanism | 145 | One engine mechanism covers them across quests (below). |
+| Bespoke | 3,076 | Per-quest logic, written by hand when that quest is brought up. |
+
+Accepted shared mechanisms, each matched by the library call it uses:
+
+| Mechanism | Rule | Lines / quests |
+|---|---|---:|
+| `kill_reward_fanout` | a death callback hands the kill to every damaging player or party member (`onDeathForDamagingPlayers`, `onDeathForParty`) | 67 / 36 |
+| `boss_room_entry_gate` | a lever or portal checks that a boss room is free (`roomIsOccupied`, `doCheckBossRoom`) | 21 / 9 |
+| `boss_portal_spectator_gate` | a portal screens a mini-boss room with a `Spectators()` query, then teleports and spawns | 57 / 4 |
+
+Rejected candidates, with the reason recorded in the triage file:
+- the tile-scan boss lever (one quest);
+- area cleanup on exit (one quest reached);
+- generic spectator and range loops (too many distinct purposes to rule on);
+- scripted combat damage (a new-owner question, not a mechanism);
+- random picks (two quests).
+
+What this means for finishing the quests:
+- **112 of 204 quests** have no gap at all.
+- **92 quests** need bespoke work, and the work is concentrated:
+  - the ten largest (Cults of Tibia, Ferumbras Ascension, Heart of Destruction, The Dream Courts,
+    A Pirate's Tail, Forgotten Knowledge, Grave Danger, The Secret Library, Soul War, The Rookie
+    Guard) hold 1,322 of the 2,993 quest-linked bespoke items;
+  - 25 quests need five items or fewer.
+- **Owners and mechanisms alone** complete one more quest. Adding the five owners and three
+  mechanisms leaves 63 quests needing only bespoke work.
+- **The Queen of the Banshees** needs the scheduler owner and 14 bespoke items.
+
+Bespoke logic is not transcribed further. Each quest gets it when it is scheduled, as a DUR-04
+component that proposes a plan, in the readiness order (§6.7).
+
 ## 7. Ownership
 
 - Static claim and placement: Content (`content/interactions/`, `content/world/placements/`),
