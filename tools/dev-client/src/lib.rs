@@ -93,6 +93,12 @@ pub enum DevClientError {
     /// The negotiated TLS ALPN protocol was not exactly `oteryn-game/1`, including when no ALPN
     /// was negotiated at all (FND-02: an ALPN mismatch terminates the connection).
     AlpnMismatch,
+    /// A `LivenessProbe`'s `probe_id` did not strictly exceed the last one this session acked
+    /// (FND-02 §17: probe ids are monotonic and never reused within a connection generation).
+    ProbeIdNotAdvancing {
+        last: u64,
+        received: u64,
+    },
     Protocol(FoundationProtocolError),
     WorldSpatial(world_spatial::WorldSpatialError),
     WorldObject(world_object::WorldObjectError),
@@ -255,6 +261,10 @@ impl fmt::Display for DevClientError {
                 "session is unusable after an earlier failed command exchange"
             ),
             Self::CommandIdExhausted => write!(formatter, "CommandId space exhausted"),
+            Self::ProbeIdNotAdvancing { last, received } => write!(
+                formatter,
+                "liveness probe id {received} does not advance past {last}"
+            ),
             Self::CommandIdMismatch { expected, actual } => write!(
                 formatter,
                 "command id mismatch: sent {expected}, CommandResult carried {actual}"
@@ -572,6 +582,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
         join_snapshot: snapshot,
         unusable: false,
         duplicates: Vec::new(),
+        last_probe_id: 0,
     })
 }
 
@@ -643,6 +654,7 @@ pub struct DevClientSession {
     unusable: bool,
     first_command_id: u64,
     duplicates: Vec<DuplicateOutcome>,
+    last_probe_id: u64,
 }
 
 /// A duplicate-status `CommandResult` (FND-02 §13.2) for an earlier `CommandId` of this session:
@@ -755,6 +767,13 @@ impl DevClientSession {
 
     async fn answer_probe(&mut self, payload: &[u8]) -> Result<(), DevClientError> {
         let probe_id = decode_liveness_probe(payload)?;
+        if probe_id <= self.last_probe_id {
+            return Err(DevClientError::ProbeIdNotAdvancing {
+                last: self.last_probe_id,
+                received: probe_id,
+            });
+        }
+        self.last_probe_id = probe_id;
         let ack = encode_liveness_ack(
             self.connection_generation,
             probe_id,
@@ -3201,6 +3220,43 @@ mod tests {
     }
 
     /// `service_liveness` fails closed on anything but a probe, and the session is then unusable.
+    #[test]
+    fn service_liveness_rejects_a_reused_probe_id() -> Result<(), BoxError> {
+        block_on(run_idle_reused_probe_case())?
+    }
+
+    async fn run_idle_reused_probe_case() -> Result<(), BoxError> {
+        let (mut session, server) = joined_session(TEST_DEADLINE, |mut stream| async move {
+            for _ in 0..2 {
+                send(
+                    &mut stream,
+                    &[oteryn_protocol_oteryn::encode_liveness_probe(
+                        GENERATION, 5,
+                    )?],
+                )
+                .await?;
+            }
+            let _first_ack = read_frame(&mut stream).await?;
+            wait_for_client_close(&mut stream).await;
+            Ok(())
+        })
+        .await?;
+        assert!(matches!(
+            session.service_liveness(Duration::from_secs(2)).await,
+            Err(DevClientError::ProbeIdNotAdvancing {
+                last: 5,
+                received: 5
+            })
+        ));
+        assert!(matches!(
+            session.service_liveness(Duration::from_millis(10)).await,
+            Err(DevClientError::SessionUnusable)
+        ));
+        drop(session);
+        server.await??;
+        Ok(())
+    }
+
     #[test]
     fn service_liveness_fails_closed_on_an_unexpected_frame() -> Result<(), BoxError> {
         block_on(run_idle_unexpected_frame_case())?
