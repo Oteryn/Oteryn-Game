@@ -4,10 +4,12 @@
 task_id: OTV2-20260928-dev-client-step-use-c2
 title: dev client C2 - step and USE commands, decoded results and deltas, stage=dev_client door scenario
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1166
+merge_pr: 1166
+merge_sha: 75a5baa285e691f8d1ac9c310ba790b299fc0dee
 allocation_comment: control-plane allocation on #162 (alias "impl interaction")
 base_branch: main
 branch: claude/dev-client-step-use-c2
@@ -176,11 +178,11 @@ other than `qualification.rs`, registries and proto files, `wp5_s3b/run.sh`: unc
 
 ```yaml
 last_progress: Codex fix round (3 P2 + 1 P1) applied and validated locally on PR #1166
-status: ready
+status: completed
 branch: claude/dev-client-step-use-c2
 pr: 1166
 final_head_sha: the frozen final head of the PR
 owner_action_required: null
 blocker: null
-next_action: await required checks and independent review on PR #1166
+next_action: none - merged as PR #1166
 ```
