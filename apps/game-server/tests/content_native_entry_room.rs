@@ -93,11 +93,27 @@ fn committed_room_binds_any_world_id_deterministically() {
     assert_eq!(first.documents(), second.documents());
     assert_eq!(first.documents().len(), 11);
     let project = qualify_bound_room(world_id, "local");
-    // #162 A4-a: the three room Terrain cells plus the door's own walkable Terrain cell.
+    // #162 A4-a (amendment §7 positive geometry requirement, r4120942499): the three room Terrain
+    // cells plus the door's own walkable Terrain cell, and the door's LocalObject definition and
+    // its two transitions, are all actually loaded from the qualified committed source — not just
+    // refused by the negative mutation cases in `content_native_entry.rs`.
     assert_eq!(
         project.source().cells.len(),
         NATIVE_ENTRY_CELLS + NATIVE_ENTRY_DOOR_CELLS
     );
+    let door_cell = project
+        .source()
+        .cells
+        .iter()
+        .find(|cell| cell.key.as_str() == "oteryn:cell/entry-door")
+        .expect("door cell loaded from the qualified source");
+    assert_eq!(door_cell.collision, CollisionClass::Walkable);
+    assert_eq!(project.door().definitions.len(), 1);
+    assert_eq!(
+        project.door().definitions[0].definition.key().as_str(),
+        "oteryn:local-object/entry-door"
+    );
+    assert_eq!(project.door().transitions.len(), 2);
     // DECISION_REQUIRED (r4120444680): `door()` stays genuinely, fully linked with no fabricated
     // placement — see `NativeEntryProject::door()`'s doc comment.
     assert!(project.door().placements.is_empty());
