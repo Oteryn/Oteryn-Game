@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw2-item-promotion-consolidation
 title: Make the #1048 lowering pass the single Item semantic-promotion source
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/cw2-item-promotion-consolidation
 issue: 162
-pr: null
+pr: 1064
 base_sha: 45b6cc73d8dbd2988ec0153cfa5ad03318367d51
-head_sha: null
+head_sha: 00f26734a086b06007af2ff38f482a97ce90fd32
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: content world build (Claude Code worker)
 created_at: 2026-09-28T06:45:00Z
-updated_at: 2026-09-28T07:20:00Z
+updated_at: 2026-09-28T07:35:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/cw2_b1_import.rs
@@ -121,14 +121,11 @@ stripping) in `populate_items`.
   after the case-insensitive check fails, plus an "every table entry must be hit"
   assertion so the table cannot go stale. Every other disagreement still hard-errors.
 - **Tracked data-quality finding (not a blocker for this task):** two of those 8 look
-  like crosswalk/identity drift rather than a naming-style difference — their
-  `weapon.*` facts match exactly, but the names are unrelated:
-  - `oteryn:item.registry.i00037538`: wiki census title `"Staff"` vs. lowering
-    packet/`items.xml` value `"pair of monk fists"`.
-  - `oteryn:item.registry.i00037526`: wiki census title `"Crypt Strike"` vs. lowering
-    packet/`items.xml` value `"falcon sai"`.
-  Flagged to the coordinator for a separate source check; not resolved here per
-  explicit instruction (no generic normalization, no silent skip).
+  like crosswalk/identity drift, not a naming-style difference — `weapon.*` facts
+  match exactly, but the names are unrelated: `oteryn:item.registry.i00037538` wiki
+  `"Staff"` vs. lowering/`items.xml` `"pair of monk fists"`; `i00037526` wiki
+  `"Crypt Strike"` vs. `"falcon sai"`. Flagged to the coordinator for a separate
+  source check; not resolved here (no generic normalization, no silent skip).
 - `populate_items`' field partition shifted from `promoted=526 equal=32 post_cut=3` to
   `promoted=12 equal=546 post_cut=3` (total 561 unchanged) since the lowering pass now
   pre-populates almost all of the wiki census's overlapping fields.
@@ -208,8 +205,8 @@ stripping) in `populate_items`.
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: complete locally (12 files; matches owned_paths exactly)
+- unresolved review threads: none yet (PR just opened)
 - related/superseded PRs: supersedes the old 69-field pass wired historically; none
   other known
 - protected auto-merge: pending (Merge Queue)
@@ -219,11 +216,11 @@ stripping) in `populate_items`.
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation + full local validation complete; committing and opening PR
-status: implementing
+last_progress: PR #1064 opened at head 00f26734a086b06007af2ff38f482a97ce90fd32; full local validation green; awaiting exact-head CI and independent review
+status: validating
 branch: claude/cw2-item-promotion-consolidation
-head_sha: null
-pr: null
+head_sha: 00f26734a086b06007af2ff38f482a97ce90fd32
+pr: 1064
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -241,5 +238,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit, push claude/cw2-item-promotion-consolidation, open PR, then a follow-up commit binding pr/head_sha and status:validating
+next_action: control plane to watch PR #1064 exact-head CI and route independent review; freeze final_head_sha once green
 ```
