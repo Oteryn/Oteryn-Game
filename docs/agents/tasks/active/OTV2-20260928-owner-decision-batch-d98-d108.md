@@ -62,6 +62,19 @@ Not applicable. Owner decisions and routing only.
 
 - Schemas, values, runtime code, Platform changes and content.
 
+## Finding dispositions
+
+Codex review of `caaf436`: two P1 and one P2, all ACCEPTED in repair generation 1 of 1 (#162
+convergence rule 5869165340). No owner decision changed.
+
+- 4127412556 (D100 vs D59): D59, the D58 formula from level 1, stays; D100 only confirms the D65
+  item threshold (§1, §2.1, §3).
+- 4127412566 (shared experience vs `COMBAT01-REWARD-PRINCIPALS` = 1): base XP and stamina ship
+  with one principal; shared experience waits for an owner re-decision of the principal ceiling
+  (§1, §3, §5).
+- 4127412576 (Premium relocation timing): relocation happens on the next login, as the Premium
+  activation decision specifies (§2.6).
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.

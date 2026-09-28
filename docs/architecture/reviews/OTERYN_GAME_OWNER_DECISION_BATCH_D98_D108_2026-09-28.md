@@ -17,9 +17,9 @@
 
 | # | Topic | Owner choice (2026-09-28) | Supersedes or amends |
 |---|---|---|---|
-| D98 | Creature-kill XP | Full Global in the first XP slice: base creature XP, party shared experience and stamina | VSL Combat rows decision §5 "XP values not decided"; D79 (no XP path) ends when this lane lands |
+| D98 | Creature-kill XP | Full Global in the first XP slice: base creature XP, party shared experience and stamina | VSL Combat rows decision §5 "XP values not decided"; D79 (no XP path) ends when this lane lands. Shared experience also needs the `COMBAT01-REWARD-PRINCIPALS` re-decision (§3) |
 | D99 | Respawn place | Home town as in Global: a character has a home town and respawns at its temple | first player death decision §3 UNKNOWN (home town), D63 placement |
-| D100 | Low-level death protection | As Global at 2026-09-27 | confirms D65 (§2.1) |
+| D100 | Low-level death protection | As Global at 2026-09-27 | confirms D65 (§2.1); D59 (the XP-loss formula) is unchanged |
 | D101 | Corpses and loot | As Global: loot rights first for the top-damage character or party, then everyone; the corpse is a container; decay time per creature | VSL Combat rows decision §5, WO-0 §7 (corpse loot link) |
 | D102 | Blessings | NPC and prices as Global first; DEATH-4 waits for the NPC trade lane; no stopgap grant | first player death decision §5 DEATH-4 |
 | D103 | Character creation | Sex chosen at creation; starter outfit per sex as Global | character appearance decision remaining unknowns |
@@ -38,10 +38,11 @@ Sources: tibia.com manual notes in `docs/reference/tibia-manual/` and the tibia.
 
 - Characters of level 8 or below lose no items on death (`characters.md`). This is D65; D100
   confirms it.
-- There is no XP-loss exemption by level: up to level 23 a death costs 10% of total experience.
+- There is no XP-loss exemption by level. Global charges 10% of total experience up to level 23;
+  Oteryn keeps D59 (the D58 formula from level 1), which D100 does not change.
 - A TibiaWiki snippet mentions a Newhaven change (Update 15.12, 2025-10-21) for level 6 on the
-  mainland; the manual snapshot does not state it. **UNKNOWN**: DEATH-1 keeps D65 and the 10% rule;
-  the rule changes only when tibia.com evidence at the target date proves it.
+  mainland; the manual snapshot does not state it. **UNKNOWN**: DEATH-1 keeps D65 and D59; the
+  threshold changes only when tibia.com evidence at the target date proves it.
 
 ### 2.2 Partial stack pickup (D107)
 
@@ -75,7 +76,9 @@ Mounted characters gain +10 speed (TibiaWiki; the manual gives no number). Per-m
 
 Characters on Newhaven or Rookgaard have no citizenship; they pick a home city with a public port
 when they leave the starter island. A Portal of Citizenship changes it. Death respawns at the home
-city's temple. When Premium expires, a character in a Premium city moves to the Thais temple. The
+city's temple. When Premium expires, a character whose home city is a Premium city moves to the Thais temple on
+its next login, as the Premium activation decision already specifies; an online character stays
+in place until then. The
 respawn before a city is chosen is **UNKNOWN**; until the starter island exists, the first world
 assigns one home town with a temple.
 
@@ -83,8 +86,8 @@ assigns one home town with a temple.
 
 | Lane | Carries | Depends on |
 |---|---|---|
-| Combat D/E | D98 (base XP first, then shared experience and stamina in the same XP slice), D101 | progression readiness; VIS-2 for observation |
-| DEATH-1/2 | D99 (respawn at the home-town temple), D100 | DEATH-0; the home town lane |
+| Combat D/E | D98: base XP and stamina with one reward principal first; shared experience lands in the same XP slice once the owner re-decides `COMBAT01-REWARD-PRINCIPALS` (1 per death today, VSL Combat rows decision row 10) with the Global party rules as evidence. D101 | progression readiness; VIS-2 for observation; the principal re-decision for shared experience |
+| DEATH-1/2 | D99 (respawn at the home-town temple), D100 with D59 unchanged | DEATH-0; the home town lane |
 | Home town and temple (new) | a Character home town and temple positions, the default town | a Character position lane (DEATH-0 §3.4) |
 | NPC trade and dialogue (new, priority) | NPC services, blessing sale at Global prices | Interaction owners; content |
 | DEATH-4 | blessing purchase receipts (DEATH-0 §3.3) | NPC trade lane |
@@ -124,5 +127,6 @@ remaining_unknowns:
   - Global partial stack pickup
   - shared-experience activity window and remainder rule
   - respawn before a home city is chosen
+  - the reward-principal ceiling for shared experience (owner re-decision)
 next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates the lanes in §3."
 ```
