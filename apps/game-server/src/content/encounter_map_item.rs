@@ -1063,16 +1063,46 @@ mod tests {
         );
         assert_eq!(runtime.revert_after_ms(&revert, &action), None);
 
-        assert_eq!(invoke(&mut runtime, &mut ingress, 1, FORWARD)?, "COMMITTED");
+        // #1144 P1 4125535249: the timed forward is not session-invocable (the session path never
+        // schedules its revert), refused before ingress or mutation like an unbound transition.
+        let refused = invoke(&mut runtime, &mut ingress, 1, FORWARD)
+            .err()
+            .and_then(|error| error.downcast::<WorldRuntimeError>().ok());
+        assert!(matches!(
+            refused.as_deref(),
+            Some(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(runtime.revision(), 0);
+
+        // It commits only through the scope-origin path the §7 driver uses.
+        let (_, _, scope) = authority(10)?;
+        let forward = crate::world_runtime::ScopeLocalObjectOperation::new(
+            runtime.placement_key().clone(),
+            runtime.incarnation(),
+            runtime.content_generation().clone(),
+            LocalObjectOperation::new(TransitionKey::new(FORWARD)?),
+            runtime.revision(),
+        );
+        let committed = runtime.apply_scope_operation(
+            scope,
+            ScopeOwnershipGeneration::new(1).map_err(fixture)?,
+            &forward,
+            &BTreeSet::new(),
+            |_| Ok::<(), std::convert::Infallible>(()),
+        )?;
+        assert!(matches!(&committed, Ok(outcome) if outcome.disposition() == "COMMITTED"));
         assert_eq!(
             destination_of(&runtime),
             Some(anchor_placement_key(DUKE_KEY, "reward_destination")?.as_str())
         );
 
-        // The dedicated inverse (invoked directly; the timed §7 driver is a later allocation)
-        // lands on the post-revert variant, which exposes `revert_destination`.
+        // The untimed dedicated inverse stays session-invocable and lands on the post-revert
+        // variant, which exposes `revert_destination`.
         assert_eq!(
-            invoke(&mut runtime, &mut ingress, 2, revert.as_str())?,
+            invoke(&mut runtime, &mut ingress, 1, revert.as_str())?,
             "COMMITTED"
         );
         assert_eq!(runtime.state_key(), &duke_post_revert()?);

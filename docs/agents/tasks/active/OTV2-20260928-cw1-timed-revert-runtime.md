@@ -23,6 +23,7 @@ owned_paths:
   - apps/game-server/src/lib.rs
   - apps/game-server/src/world_runtime.rs
   - apps/game-server/src/content/reference_playable.rs
+  - apps/game-server/src/content/encounter_map_item.rs (round-2 amendment on #162: only the test duke_lowered_content_binds_under_the_widened_rule_and_exposes_attributes_by_state)
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
   - docs/agents/tasks/active/OTV2-20260928-cw1-timed-revert-runtime.md
@@ -51,9 +52,9 @@ smallest runtime slice, and closes out task A:
 - `world_object_revert.rs` (new): records are keyed by the canonical GAME-INTERACTION
   `interaction::ChildOccurrenceRef` (round 2, P1 4125535254), derived by `revert_child_occurrence`
   through `ChildOccurrenceRef::for_child` from the caller-supplied forward child. §7 names no
-  discriminator values, so the lane uses: definition = the authored `LoweredActionId`, target = the
-  `PlacementKey`, edge = the bound inverse `TransitionKey`, no ordinal, and the caller's
-  `SemanticRevisionContext`. `interaction` is now registered in `lib.rs`; nothing inside
+  discriminator values; the lane choice, accepted by the coordinator on #162, is: definition = the
+  authored `LoweredActionId`, target = the `PlacementKey`, edge = the bound inverse
+  `TransitionKey`, ordinal none, plus the caller's `SemanticRevisionContext`. `interaction` is now registered in `lib.rs`; nothing inside
   `interaction/` changed. It also adds a lifecycle-record store
   (`PENDING` / `IN_FLIGHT` / `TERMINAL`, with §7's field list) and `ScopeRevertDriver`, which owns
   one ordinal issuer (`ScopeRuntimeFence` in production), one `MonotonicClock` and the store.
@@ -139,21 +140,22 @@ Deferred, with reasons:
   nor session-invocable (`apply`/`resume_pending` refuse it exactly like an unbound transition), so
   a timed forward commits only through the scheduling path. The untimed bound inverse stays
   selectable, so carry-over (b) is unchanged.
-- Round-2 blocker: task A's test
+- Round 2: task A's test
   `content::encounter_map_item::tests::duke_lowered_content_binds_under_the_widened_rule_and_exposes_attributes_by_state`
-  commits the timed forward through session `apply`, which P1 4125535249 now refuses by design. That
-  file is outside this task's owned paths; the repair awaits coordinator authorization.
+  committed the timed forward through session `apply`, which P1 4125535249 now refuses. Under the
+  #162 amendment it now asserts that refusal, commits the forward through `apply_scope_operation`,
+  and keeps the attribute assertions by state; the timed entry is kept.
 
 ## Validation
 
 - `cargo +1.94.0 fmt --all --check`: pass.
 - `cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings`: pass.
 - Round 1 (`dbbe9e38`): full `oteryn-game-server` package tests pass.
-- Round 2 (local, not pushed): full package tests pass except the one task A test named above
-  (730 lib tests pass, 1 fails); fmt and clippy pass.
+- Round 2: fmt, clippy `-D warnings`, the full `oteryn-game-server` package tests, the
+  architecture check and both Python validators pass; `content/` diff empty.
 - `git diff origin/main -- content/`: empty.
 
 ## Context checkpoint
 
-last_progress: round 2 (Codex P1 4125535254, 4125535249) repaired locally; blocked on an unowned task A test before push
+last_progress: round 2 (Codex P1 4125535254, 4125535249) repaired and validated; pushed for CI and review
 jira: pending (no mapped Story resolved in this worker session)
