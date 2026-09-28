@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 
 TARGET_COUNT = 38_157
-TARGET_CUT = "2026-07-28"
+TARGET_CUT = "2026-09-27"
 SCHEMA = "OTERYN_ITEM_FIELD_VERIFICATION/v1"
 MANIFEST_SCHEMA = "OTERYN_ITEM_FIELD_VERIFICATION_MANIFEST/v1"
 RULE_PROFILE = "OTERYN_ITEM_FIELD_RULE_ENGINE/v1"
@@ -30,8 +30,8 @@ CURRENT_SOURCE_ID = "TIBIAWIKI_STRUCTURED"
 # Immutable protected lineage inputs for this bounded generation.
 CROSSWALK_FULL_SHA256 = "004948eeda07afb20d5560ec583eaa2a32397f19f891a7d8749962bc32fa0f8d"
 SCHEMA_READINESS_SHA256 = "c69b7626ca052b5494d14c034848088175f79a662aa7d9e41876d3452917eb78"
-PROTECTED_CURRENT_SOURCE_MANIFEST_SHA256 = "06e40dd1472cd3650e641e9e8b33af8e930d3c4345967aec917a08baf73022ed"
-PROTECTED_CURRENT_SOURCE_SHA256 = "005761fa0c464da0f64cedcb7efcfc7afb5f0dc19eded97ed935013d72d095d0"
+PROTECTED_CURRENT_SOURCE_MANIFEST_SHA256 = "b420f24eae00a1b19634370cfe7fafb114328e8e89e491e16977104efd9c0daa"
+PROTECTED_CURRENT_SOURCE_SHA256 = "7cedb9cb721ceedccb87906c8c253cd822d3cb246a2108fd59bd3938aac81cc1"
 
 FIELD_STATES = (
     "CONFIRMED_CURRENT",
@@ -806,8 +806,8 @@ def build_manifest(
             (
                 "The protected #767 current-source snapshot and later fresh "
                 "observations retain target_continuity=UNKNOWN unless separately "
-                "proven; current September values are never auto-promoted to the "
-                "July 28 target."
+                "proven; values observed after the target day are never "
+                "auto-promoted to the 2026-09-27 target."
             ),
             (
                 "TibiaWiki structured data remains Reference evidence, not "
