@@ -91,6 +91,9 @@ complete this qualification itself.
 - The `pull_request` workflows did not start for `78d046c` (only `pull_request_target` ran), so
   this task-record update is the successor head that carries CI. Its only delta from `78d046c` is
   this record.
+- Root cause of the missing CI: #1087 (S16 and the S9 catalogue) changed the schema status line on
+  main, so the PR conflicted. Main was merged in; the status line now reads S13–S16 plus S6–S10, and
+  the S1–S15 references read S1–S16.
 
 ## Context checkpoint
 

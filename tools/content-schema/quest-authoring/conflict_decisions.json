@@ -710,6 +710,13 @@
    "difference": "Canary requires Contract storage exactly 1; crystal's '<1' check allows reuse after progress.",
    "wiki": null
   },
+  "canary:interaction/wrath_of_the_emperor/actions_mission02_firstcontact_repair_teleport": {
+   "decision": "canary",
+   "basis": "equivalent",
+   "category": "equivalent",
+   "difference": "CrystalServer 9f5a72c6 adds nil guards on the tile and item before the transform (its #952); the teleport repair behaves the same whenever the tile exists.",
+   "wiki": null
+  },
   "canary:interaction/wrath_of_the_emperor/actions_mission10_a_message_of_freedom_sceptre": {
    "decision": "canary",
    "basis": "wiki",

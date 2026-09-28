@@ -159,7 +159,7 @@ fn lowering_v1_packet_bytes_are_pinned() {
 }
 
 #[test]
-fn lowering_v1_promotes_exactly_13292_atoms_across_10674_items_without_identity_or_materialization_drift()
+fn lowering_v1_promotes_exactly_14643_atoms_across_12021_items_without_identity_or_materialization_drift()
  {
     let base = base_family_import();
     let promoted = lowering_v1_import();

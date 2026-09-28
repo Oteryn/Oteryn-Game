@@ -16,6 +16,12 @@ static TEMP_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 const WORLD_ID: &str = "0123456789ab70cd8ef0123456789abc";
 const FRAME: &str = "oteryn:entry.frame";
 const REV: &str = "oteryn:rev/entry-r1";
+// Records are written family-then-key sorted: Ability, Behavior, Creature, Effect, Formula, Item,
+// LocalObject (index 6), Presentation x3, Terrain.
+const DOOR_RECORD_INDEX: usize = 6;
+// Placements are written key-sorted, so "oteryn:cell/entry-door" (index 0) sorts before
+// east/north/start.
+const DOOR_PLACEMENT_INDEX: usize = 0;
 
 fn limits() -> ProjectEvidenceLimits {
     native_entry_first_slice_limits().project
@@ -49,8 +55,37 @@ fn records() -> Value {
         {"kind": "Generic", "identity": def("Presentation", "oteryn:presentation/rat"),
          "client_projection": "ClientSafe"},
         {"kind": "Generic", "identity": def("Terrain", "oteryn:terrain/stone-floor"),
-         "client_projection": "ServerOnly"}
+         "client_projection": "ServerOnly"},
+        {"kind": "LocalObject", "identity": def("LocalObject", "oteryn:local-object/entry-door"),
+         "client_projection": "ClientSafe",
+         "states": [
+            {"key": "oteryn:reference.state.closed", "collision": "Present"},
+            {"key": "oteryn:reference.state.open", "collision": "Absent"}
+         ]}
     ])
+}
+
+fn door_cell() -> Value {
+    json!({
+        "key": "oteryn:cell/entry-door", "world": "oteryn:entry.world",
+        "map_revision": "oteryn:map/entry-r1",
+        "definition": def("Terrain", "oteryn:terrain/stone-floor"),
+        "area": def("Area", "oteryn:area/entry-room"),
+        "coordinate_frame": FRAME, "x": 1, "y": -1, "floor": 0,
+        "presentation_order": {"plane": 0, "order": 0}, "disposition": "CandidateOnly"
+    })
+}
+
+fn door_overlay() -> Value {
+    json!({
+        "cell": {"placement_key": "oteryn:cell/entry-door", "region_key": "oteryn:region/entry",
+            "collision": "Walkable"},
+        "definition": def("LocalObject", "oteryn:local-object/entry-door"),
+        "closed_state": "oteryn:reference.state.closed",
+        "open_state": "oteryn:reference.state.open",
+        "open_transition": {"key": "oteryn:transition/entry-door-open"},
+        "close_transition": {"key": "oteryn:transition/entry-door-close"}
+    })
 }
 
 fn placement(key: &str, x: i32, y: i32) -> Value {
@@ -73,7 +108,8 @@ fn state() -> Value {
         "placements": [
             placement("oteryn:cell/entry-start", 0, 0),
             placement("oteryn:cell/entry-east", 1, 0),
-            placement("oteryn:cell/entry-north", 0, -1)
+            placement("oteryn:cell/entry-north", 0, -1),
+            door_cell()
         ]
     })
 }
@@ -99,6 +135,7 @@ fn overlay() -> Value {
             {"placement_key": "oteryn:cell/entry-north", "region_key": "oteryn:region/entry",
              "collision": "Blocked"}
         ],
+        "doors": [door_overlay()],
         "relocation": {"key": "oteryn:relocation/entry-east-return",
             "from_cell": "oteryn:cell/entry-east", "to_cell": "oteryn:cell/entry-start"},
         "behavior": {"definition": def("Behavior", "oteryn:behavior/passive-idle"),
@@ -297,7 +334,15 @@ fn native_entry_captures_qualifies_and_compiles_a_deterministic_pair() {
     fs::remove_dir_all(parent).expect("cleanup");
     assert_eq!(first, second);
     let source = first.source();
-    assert_eq!(source.cells.len(), 3);
+    // #162 A4-a: the three room Terrain cells plus the door's own walkable Terrain cell.
+    assert_eq!(source.cells.len(), 4);
+    let door = first.door();
+    // DECISION_REQUIRED (r4120444680): no placement is genuinely linker-validated today (the
+    // accepted evidence manifest has no CONTENT_WORLD case bound to any target-sensitive claim),
+    // so `door()` stays genuinely, fully linked with no fabricated placement.
+    assert!(door.placements.is_empty());
+    assert_eq!(door.transitions.len(), 2);
+    assert_eq!(door.definitions.len(), 1);
     assert_eq!(
         source.package_manifest.licensing_metadata.as_str(),
         NATIVE_ENTRY_LICENSING
@@ -423,6 +468,7 @@ fn accepted_product_bindings_are_enforced() {
     refuses(
         &overlay_edit(|o| {
             o["region"]["key"] = json!("oteryn:region/other");
+            o["doors"][0]["cell"]["region_key"] = json!("oteryn:region/other");
             for cell in o["cells"].as_array_mut().expect("cells") {
                 cell["region_key"] = json!("oteryn:region/other");
             }
@@ -653,6 +699,176 @@ fn every_single_invariant_mutation_refuses_for_its_reason() {
             w["placements"][1]["area"] = Value::Null
         }),
         "placement binding",
+    );
+}
+
+/// #162 comment 5865792400 (owner decision A4-a): the entry room's one usable door. Every
+/// negative case changes one invariant of the otherwise-valid door while the three room cells and
+/// everything else stay valid.
+#[test]
+fn door_admission_refuses_every_invariant_mutation() {
+    // No door.
+    refuses(
+        &overlay_edit(|o| o["doors"] = json!([])),
+        "exactly one door",
+    );
+    // Two doors.
+    refuses(
+        &overlay_edit(|o| {
+            let extra = o["doors"][0].clone();
+            o["doors"].as_array_mut().expect("doors").push(extra);
+        }),
+        "exactly one door",
+    );
+    // Not adjacent / off the room frame: the accepted World envelope exactly fits the four placed
+    // cells (`accepted::BOUNDS`, not grown to make refusal tests distinct — #162 A4-a cleanup), so
+    // every other in-bounds coordinate is already occupied by a room cell. A door moved off that
+    // frame is refused by the generic v2 placement/World bounds check before native-entry's own
+    // door-adjacency check would even run; that adjacency check itself remains structurally
+    // exercised by every passing admission (the accepted door cell must satisfy it).
+    refuses(
+        &edit("worlds/world.json", |w| {
+            w["placements"][DOOR_PLACEMENT_INDEX]["x"] = json!(5);
+        }),
+        "world/frame/position mismatch",
+    );
+    // Unknown state: the overlay names a state the LocalObject record never declares.
+    refuses(
+        &overlay_edit(|o| {
+            o["doors"][0]["closed_state"] = json!("oteryn:reference.state.other");
+        }),
+        "unknown state",
+    );
+    // Unknown state: the record's own vocabulary no longer matches (both states end up Absent).
+    refuses(
+        &edit("definitions/reference.json", |r| {
+            r["records"][DOOR_RECORD_INDEX]["states"][0]["collision"] = json!("Absent");
+        }),
+        "unknown state",
+    );
+    // Bad transition: the door's own two transitions must keep their exactly-accepted, distinct
+    // keys — collapsing them onto one key is refused as an unaccepted door transition binding.
+    refuses(
+        &overlay_edit(|o| {
+            let close_key = o["doors"][0]["close_transition"]["key"].clone();
+            o["doors"][0]["open_transition"]["key"] = close_key;
+        }),
+        "not the accepted binding",
+    );
+}
+
+/// r4120444694: the resolved door definition key must match `accepted::DOOR_DEFINITION`, the same
+/// way every other product binding is checked — not merely resolve to exactly one LocalObject
+/// record. Changing both the record's own identity and `doors[0].definition.key` to the same new
+/// key still refuses, because that key is not the accepted one.
+#[test]
+fn door_definition_key_must_match_the_accepted_binding() {
+    let mut docs = valid_docs();
+    let mut records = value(&docs, "definitions/reference.json");
+    records["records"][DOOR_RECORD_INDEX]["identity"]["key"] =
+        json!("oteryn:local-object/other-door");
+    put(&mut docs, "definitions/reference.json", &records);
+    let mut declarations = value(&docs, "definitions/declarations.json");
+    declarations["native_first_entry"]["doors"][0]["definition"]["key"] =
+        json!("oteryn:local-object/other-door");
+    put(&mut docs, "definitions/declarations.json", &declarations);
+    reseal(&mut docs);
+    refuses(&docs, "not the accepted binding");
+}
+
+/// r4120672740: a malformed project can declare World bounds spanning the full accepted i32
+/// coordinate range, reaching the door-adjacency distance calculation before the later
+/// accepted-coordinate pin. With a room cell near `i32::MIN` and the door near `i32::MAX`, i32
+/// subtraction/addition here would overflow (a debug-build panic); it must instead refuse with a
+/// `ProjectError`.
+#[test]
+fn door_adjacency_near_i32_extremes_refuses_without_panicking() {
+    let docs = edit("worlds/world.json", |w| {
+        w["worlds"][0]["bounds"]["min_x"] = json!(i64::from(i32::MIN));
+        w["worlds"][0]["bounds"]["max_x_exclusive"] = json!(i64::from(i32::MAX) + 1);
+        // Placements are written key-sorted: door(0), east(1), north(2), start(3).
+        w["placements"][0]["x"] = json!(i32::MAX);
+        w["placements"][2]["x"] = json!(i32::MIN);
+    });
+    refuses(&docs, "must be adjacent");
+}
+
+/// r4120444668: zero placements must refuse with a `ProjectError`, not panic by indexing
+/// `state.placements[0]` before cardinality is checked.
+#[test]
+fn zero_placements_refuses_without_panicking() {
+    refuses(
+        &edit("worlds/world.json", |w| {
+            w["placements"] = json!([]);
+        }),
+        "requires exactly three cells and placements",
+    );
+}
+
+/// DECISION_REQUIRED (r4120444680): reconstructs the door's own genuinely linked content plus a
+/// placement built exactly like the one M2a's earlier revision fabricated, and re-runs that
+/// source through the real `link_reference_playable`. It refuses — proving no placement, honest
+/// or malformed, can pass `validate_placement`'s reference-promotion check today, because the
+/// accepted evidence manifest has no `CONTENT_WORLD` case bound to any target-sensitive claim
+/// (`REFERENCE_TARGET_CLAIM_CASE_BINDINGS` in `content/reference_playable.rs`). This is why
+/// `NativeEntryProject::door()` carries no placement at all rather than an unlinked, fabricated
+/// one labeled canonical.
+#[test]
+fn door_placement_is_refused_by_the_real_linker_path() {
+    let door = admit(&valid_docs())
+        .expect("valid native entry project")
+        .door()
+        .clone();
+    let evidence = EvidenceBindingRef::new(
+        ProductionAtom::new("reference manifest revision", "manifest-r0").expect("atom"),
+        ProductionKey::new("oteryn:cw4.native-entry-door-placement").expect("key"),
+        EvidenceDisposition::Unknown,
+    );
+    let footprint = FootprintRelation::Qualified {
+        members: vec![FootprintCell {
+            dx: 0,
+            dy: 0,
+            dz: 0,
+        }],
+        evidence: evidence.clone(),
+    };
+    let placement = PlacementRef {
+        key: PlacementKey::new("oteryn:cell/entry-door").expect("placement key"),
+        map_revision: MapRevisionRef::new("oteryn:map/entry-r1").expect("map revision"),
+        definition: door.definitions[0].definition.clone(),
+        address: SpatialAddress {
+            world_id: door.world_id,
+            coordinate_frame: door.coordinate_frame.clone(),
+            cell: LogicalCell { x: 1, y: -1, z: 0 },
+            evidence: evidence.clone(),
+        },
+        presentation_footprint: footprint.clone(),
+        collision_footprint: footprint,
+        local_object_initial_state: Some(
+            ProductionKey::new("oteryn:reference.state.closed").expect("state key"),
+        ),
+    };
+    let source = ReferencePlayableContentSource {
+        profile_revision: door.profile_revision,
+        capability_profile: door.capability_profile,
+        package_manifest: door.package_manifest,
+        content_lock: door.content_lock,
+        world_id: door.world_id,
+        coordinate_frame: door.coordinate_frame,
+        definitions: door.definitions,
+        placements: vec![placement],
+        ordered_placements: vec![],
+        transitions: door.transitions,
+    };
+    let error =
+        link_reference_playable(source).expect_err("no placement can be linker-validated today");
+    let message = format!("{error:?}");
+    assert!(
+        message.contains("promotable")
+            || message.contains("not bound to target-sensitive")
+            || message.contains("evidence manifest revision")
+            || message.contains("evidence case"),
+        "{message}"
     );
 }
 

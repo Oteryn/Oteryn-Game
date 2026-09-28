@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - Status: CANDIDATE / authoring schema with executable validation and source evidence; S1–S5, S11 and S12
-  decided by the owner on 2026-09-27, S13–S15 and S6–S10 on 2026-09-28 (#162 comment 5867161696); no runtime, WorldProject storage or `content/` change
+  decided by the owner on 2026-09-27, S13–S16 and S6–S10 on 2026-09-28 (S6–S10: #162 comment 5867161696); no runtime, WorldProject storage or `content/` change
 - Request: owner request of 2026-09-27 (schema and implementation plan for player spells, as for monsters);
   programme story KAN-16; no GitHub task allocation yet
 - Machine artifacts: `tools/content-schema/spell-authoring/`
@@ -251,6 +251,11 @@ With S14 the census reads that branch (`samples/spell-census-canary-99902524-cry
 - the vote returns Wound Cleansing's cooldown to 2 s (BR and the branch against Fandom and tibiopedia.pl;
   the official news of 2026-07-07 changes only its mana).
 
+With S16 (patch 15.22 unlock) and the S9 catalogue: 154 ready and 98 blocked. The 14 `needLearn` S4 conflicts are
+gone, and 15 Wheel revelation spells carry `wheel_unlock`: the avatars, Divine Empowerment, Divine Grenade,
+Executioner's Throw, Flurry of Blows, Focus Harmony, Forceful Uppercut, Ice Burst, Mystic Repulse, Spiritual Outburst
+and Terra Burst.
+
 The official tibia.com spell library (S15) answers a Cloudflare browser check from the build container
 and blocks GitHub-hosted runners outright ("Sorry, you have been blocked"). `tibiacom_spells.py fetch`
 therefore runs on an ordinary machine the site serves (no challenge bypass). S15 applies once such a
@@ -275,6 +280,7 @@ capture is committed; until then the rules above decide.
 | S13 | **DECIDED (owner, 2026-09-28).** Without an official change (S11), a BR/Fandom conflict is decided by tibiopedia.pl when it agrees with one of them (two of three references); only when all three differ does the newer wiki revision decide. tibiopedia.pl never supplies a value neither wiki states. Applied in `convert_spells.py` (`spell-p2-r2`); it changed 9 fields of 6 ready spells (§4.3). | §4.3: in 8 of the 9 fields the majority also matches Canary and Crystal. |
 | S14 | **DECIDED (owner, 2026-09-28).** The Canary source is the Tibia 15.30 branch `dudantas/fix-tibia-15-30-regressions` at `99902524` (not yet in Canary `main`): (a) in a BR/Fandom conflict without an official change, each wiki, tibiopedia.pl and the branch back one value, the most votes win and a tie goes to the branch; (b) formulas, effects and areas come from the branch instead of the older Canary pin, with Crystal still an equal source (S4, S5); (c) the single-target range stated by BR and tibiopedia.pl decides like other wiki fields; (d) its new and renamed spells join the census. Where all wikis agree, they decide even against the branch. | §4.4 |
 | S15 | **DECIDED (owner, 2026-09-28).** The official tibia.com spell library decides every field it states, ahead of the wikis, S11, S13 and S14; the wikis, tibiopedia.pl and the sources supply what it does not state. Captured by `tibiacom_spells.py fetch` on a machine tibia.com serves (it blocks hosted runners); single facts with the page URL and page SHA-256 only. Not yet applied: no capture exists. | §4.4; tibia.com is the game publisher's reference. |
+| S16 | **DECIDED (owner, 2026-09-28).** Since patch 15.22 (27 January 2026) spells unlock automatically and free at their level and trainers no longer teach them, so `learning_required` is false for every spell. A Wheel of Destiny revelation spell carries `requirements.wheel_unlock` (S6): stated by the wiki (Fandom `wheelspell`, BR `wheelSpellType` Revelação; Convicção is a perk on a level-unlocked spell), else by the Canary 15.30 `needLearn`, the only source that implements the 15.22 unlock. The Game core rejects a `wheel_unlock` spell until a Wheel owner exists. S9 is applied as a declared closed catalogue, `cooldown-groups.json`. | https://tibiopedia.pl/updates/15.22.c93366; §4.4 |
 
 ## 6. Mapping to WorldProject/v2
 
@@ -303,7 +309,7 @@ GAP rows are added to v2 only when a spell in the current playable slice needs t
 
 This candidate does not change WorldProject/v2, the compiler, the runtime ability engine, protocol or
 persistence; does not populate `content/abilities/**` or mint native Spell keys; does not admit Lua;
-records the owner decisions S1–S15 (§5) but is not their implementation; does not establish Tibia Global parity or asset/licensing rights. The wiki files
+records the owner decisions S1–S16 (§5) but is not their implementation; does not establish Tibia Global parity or asset/licensing rights. The wiki files
 keep only allowlisted short infobox values with page and revision ids, never article prose.
 
 ## 8. Validation
@@ -355,7 +361,7 @@ of spells a new character actually uses.
 | Phase | Result | Scope | Exit evidence |
 |---|---|---|---|
 | **P0** (this change) | Schema candidate, census, Fandom comparison, plan | `tools/content-schema/spell-authoring/`, this document | validator + 38 cases green; census and compare regenerate |
-| **P1** Reference data | Done for capture and crosswalk (§4.1, §4.2); remaining: owner resolution of the BR ↔ Fandom conflicts (decisions S1–S15 are taken) | `.github/workflows/spell-wiki-capture.yml` (BR answers 403 here), `wiki_spells.py --wiki br` | every player spell has a per-field disposition: MATCH, adopted wiki value, CONFLICT or UNKNOWN |
+| **P1** Reference data | Done for capture and crosswalk (§4.1, §4.2); remaining: owner resolution of the BR ↔ Fandom conflicts (decisions S1–S16 are taken) | `.github/workflows/spell-wiki-capture.yml` (BR answers 403 here), `wiki_spells.py --wiki br` | every player spell has a per-field disposition: MATCH, adopted wiki value, CONFLICT or UNKNOWN |
 | **P2** Converter and readiness | Done (§8.1): `convert_spells.py`, 141 ready / 108 blocked, starter bundles | `tools/content-schema/spell-authoring/` | readiness census and starter bundles regenerate; CI validates the starter bundles |
 | **P3a** Spell core in the server (unwired) | Done: `apps/game-server/src/spell/` — spoken words and rune lookup (`SpellBook`), the cast checks in the Canary `Spell::playerSpellCheck` order (cooldowns, level, magic level, mana, soul, learning or vocation, premium, target), mana/soul debit, own and group cooldowns on `SemanticTimeMicros`, `player_expression` evaluation with the exact integer level curve, and resolved damage/heal/conjure effects; the candidate bundle reader (`spell/authoring.rs`); the hand-off of a resolved cast to the Ability pipeline as an `EffectPlan` (`spell/plan.rs`), with condition removal and conjure returned beside it | private module, no protocol, persistence or live composition | 12 unit tests on the starter bundles, including the official level table for levels 0–20000 and plans committed through `AbilityEngine` |
 | **P3b** First castable slice (live) | A character casts the starter set in the running server | protocol contract (cast/talk command, use-with for runes, own HP/mana/cooldown and effect deltas in `PROTOCOL_OTERYN_V1_REGISTRY.json`), player combat state (health, mana, vocation, magic level, soul, premium) in the runtime slot, heal and player-target commits in the ability owner commit, WorldProject/v2 lowering of Spell definitions into the channel content pin, inventory for runes; the damage distribution world rule | protocol and state contracts accepted with changes ([`OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md`](OTERYN_PLAYER_SPELL_CAST_WIRE_AND_VITALS_CONTRACT_CANDIDATE_V1.md), SPELL-D1–D6, 2026-09-28; first child is self heal); GAME-ABILITY implementation allocation; `game-gate` green |

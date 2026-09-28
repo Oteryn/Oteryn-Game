@@ -6,7 +6,7 @@ from pathlib import Path
 
 import ots_interactions as oi
 from ots_chests import parse_level, parse_premium, requirements_of
-from validate_quest_content import BLOCKED, BLOCKED_SCHEDULED_REVERT_DELAY, validate, validate_gates, validate_interactions, validate_storylines
+from validate_quest_content import BLOCKED, BLOCKED_DUPLICATE_SCHEDULED_REVERT, BLOCKED_INCOMPLETE_CALL, BLOCKED_SCHEDULED_REVERT_DELAY, validate, validate_gates, validate_interactions, validate_storylines
 
 
 def ref(family, name):
@@ -462,6 +462,300 @@ interaction_case('conflict needs two sources',
 interaction_case('every interaction has a manifest entry', lambda i, c, m: m['entries'].clear())
 interaction_case('manifest lists an interaction once', lambda i, c, m: m['entries'].append(dict(m['entries'][0])))
 interaction_case('interaction keys are unique', lambda i, c, m: i.update(twin=True))
+
+def run_converter(lua_body, callback='onUse'):
+    """Run a small, hand-written (never real-source) Lua snippet through the real converter
+    (`ots_interactions.Script`) and return (flat children, the script's anchors). Regression coverage
+    for the converter's own classification logic, distinct from the schema-fixture cases above."""
+    text = '\n'.join([f'function test:{callback}(player, item, fromPosition, target, toPosition)']
+                     + lua_body + ['end'])
+    with tempfile.TemporaryDirectory() as tmp:
+        (Path(tmp) / 'test.lua').write_text(text)
+        script = oi.Script('canary', tmp, 'test.lua', {}, 'test')
+        script.declared = {}
+        script.bind(1, callback)
+        nodes = oi.lua_blocks.parse(script.lines, oi.lua_blocks.function_body(script.lines, 1))
+        rules = script.convert(nodes)
+        oi.strip_internal(rules)  # exactly what interactions() does before a rule tree is ever committed
+    return list(oi.walk(rules)), script.anchors
+
+
+def converter_case(name, lua_body, check, callback='onUse', expected=True):
+    try:
+        children, anchors = run_converter(lua_body, callback)
+        ok, detail = check(children, anchors)
+    except Exception as exc:  # a converter bug surfaces here as a failed case, not a crashed test run
+        ok, detail = False, f'{type(exc).__name__}: {exc}'
+    results.append({'name': name, 'expected_valid': expected, 'passed': ok == expected, 'first_error': None if ok else detail})
+
+
+# Round 1, Finding 1 (P2): a revert call (`decay`/`revertItem`/`addEvent(Position.revertItem, ...)`)
+# must never become its own WorldObject child.
+converter_case(
+    'a same-receiver bare decay attaches with no revert_after_ms, never its own child',
+    ['item:transform(2773)', 'item:decay()'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'WorldObject' and c[0]['operation'] == 'TRANSFORM'
+                 and 'revert_after_ms' not in c[0], c))
+converter_case(
+    'a revert with no preceding operation stays blocked, never a standalone TRANSFORM',
+    ['item:decay()'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'WorldObject' and c[0].get('status') == 'blocked'
+                 and 'operation' not in c[0], c))
+converter_case(
+    'a revert in a different branch from its target does not merge across branches',
+    ['if item.itemid == 2772 then', 'item:transform(2773)', 'end',
+     'if item.itemid == 9999 then', 'item:decay()', 'end'],
+    lambda c, a: (len([x for x in c if x.get('owner') == 'WorldObject' and x.get('status') == 'blocked']) == 1
+                 and len([x for x in c if x.get('operation') == 'TRANSFORM']) == 1, c))
+
+# Round 2, Finding 1 (P2): only a bare `teleportTo(fromPosition)` is a previous-tile relocation; an
+# offset or lookup that merely mentions `fromPosition` stays a computed, blocked target.
+converter_case(
+    'a bare teleportTo(fromPosition) is a previous-tile relocation',
+    ['creature:teleportTo(fromPosition)'],
+    lambda c, a: (c == [{'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
+                         'target': {'kind': 'previous_position'}}], c), callback='onStepIn')
+converter_case(
+    'a trailing non-positional argument does not disqualify the previous tile',
+    ['creature:teleportTo(fromPosition, true)'],
+    lambda c, a: (c[0].get('target', {}).get('kind') == 'previous_position', c), callback='onStepIn')
+converter_case(
+    'the exact Codex example: an offset that merely references fromPosition stays blocked',
+    ['creature:teleportTo(Position(fromPosition.x + 1, fromPosition.y, fromPosition.z))'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'target' not in c[0], c), callback='onStepIn')
+converter_case(
+    'a field access on fromPosition (not the bare variable) stays blocked',
+    ['creature:teleportTo(fromPosition.x)'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked', c), callback='onStepIn')
+
+# Round 2, Finding 2 (P2): a revert attaches only when its own receiver or literal position provably
+# names the same target as the candidate operation; never by list order alone.
+converter_case(
+    'a revert on a different receiver does not attach to an unrelated preceding operation',
+    ['wall1:transform(2773)', 'wall2:decay()'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM']) == 1
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+converter_case(
+    'the exact Codex example: addEvent(Position.revertItem, ...) with no provable same target stays blocked',
+    ['item:transform(2773)', 'addEvent(Position.revertItem, 5000, item:getPosition(), 2772)'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM' and 'revert_after_ms' in x]) == 0
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+converter_case(
+    'addEvent(Position.revertItem, ...) with a literal position matching the prior anchor attaches',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, 5000, Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 5000, c))
+converter_case(
+    'addEvent(Position.revertItem, ...) with a different literal position does not attach',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, 5000, Position(1, 1, 7), 2772)'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'CREATE' and 'revert_after_ms' in x]) == 0
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+
+# Round 2, Finding 3 (P2): `def` only when the first argument is a complete literal integer.
+converter_case(
+    'the exact Codex example: createItem(2793 + offset, ...) keeps its source line, no def',
+    ['Game.createItem(2793 + offset)'],
+    lambda c, a: (len(c) == 1 and 'def' not in c[0] and c[0].get('value_source_line') is not None, c))
+
+# Round 2, Finding 4 (P2): CREATE decides its placement by argument structure (the engine signature
+# `createItem(itemId, count/subtype, position)`), never a substring/name heuristic.
+converter_case(
+    'the exact Codex example: createItem(id, count, destination) stays blocked, not typed without an anchor',
+    ['Game.createItem(2793, 1, destination)'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'operation' not in c[0], c))
+converter_case(
+    'createItem(id, count, literal position) binds the anchor, count is not mistaken for a placement',
+    ['Game.createItem(2793, 1, Position(1, 2, 7))'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1', c))
+converter_case(
+    'createItem(id, count) with no placement argument at all is the implicit target',
+    ['Game.createItem(2793, 1)'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and 'anchor' not in c[0], c))
+converter_case(
+    'a literal position on createItem becomes a bound anchor',
+    ['Game.createItem(2793, Position(100, 200, 7))'],
+    lambda c, a: (len(c) == 1 and c[0] == {'owner': 'WorldObject', 'operation': 'CREATE', 'anchor': 'p1',
+                                           'def': {'family': 'Item', 'key': 'canary:item/2793',
+                                                   'revision': oi.REVISION}}
+                 and a == [{'key': 'p1', 'source_position': {'x': 100, 'y': 200, 'z': 7}}], (c, a)))
+converter_case(
+    'a computed position on createItem stays blocked, never an invented anchor',
+    ['Game.createItem(2793, toPosition)'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'anchor' not in c[0] and not a, c))
+converter_case(
+    'createItem with no position is unchanged (implicitly the interaction target)',
+    ['Game.createItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and 'anchor' not in c[0], c))
+
+# a reward-container constructor (`self.created_items`) is never also a WorldObject CREATE (round 1,
+# Finding 3), re-verified with the internal `_identity` bookkeeping now in play.
+converter_case(
+    'a bare reward constructor produces no WorldObject child by itself',
+    ['local reward = Game.createItem(2793)'],
+    lambda c, a: (c == [], c))
+converter_case(
+    'a reward constructor filled into a hand-out container stays Item, not WorldObject',
+    ['local backpack = player:addItem(2000, 1)', 'local reward = Game.createItem(2793)', 'backpack:addItemEx(reward)'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'Item' and c[0]['request'] == 'hand_out'
+                 and c[0].get('contents') == [{'item': {'family': 'Item', 'key': 'canary:item/2793',
+                                                        'revision': oi.REVISION}, 'count': 1}], c))
+converter_case(
+    'createItem with a literal position is still a world CREATE even though it is assigned to a local',
+    ['local wall = Game.createItem(2793, Position(1, 2, 7))'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1'
+                 and '_identity' not in c[0], c))
+
+# Round 3, Finding 1 (P2, affects committed D37 data): teleportTo's own target argument -- not the
+# whole statement -- must fully match a literal Position(x,y,z) to bind an anchor.
+converter_case(
+    'the exact Codex example: teleportTo(toPosition or Position(1,2,7)) stays blocked, not typed as (1,2,7)',
+    ['creature:teleportTo(toPosition or Position(1, 2, 7))'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'target' not in c[0], c), callback='onStepIn')
+converter_case(
+    'a bare teleportTo(Position(x,y,z)) is still a relocation to a named anchor',
+    ['creature:teleportTo(Position(100, 200, 7))'],
+    lambda c, a: (c == [{'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
+                         'target': {'kind': 'anchor', 'anchor': 'p1'}}]
+                 and a == [{'key': 'p1', 'source_position': {'x': 100, 'y': 200, 'z': 7}}], (c, a)), callback='onStepIn')
+converter_case(
+    'a trailing argument after a literal position does not disqualify the anchor',
+    ['creature:teleportTo(Position(100, 200, 7), true)'],
+    lambda c, a: (c[0].get('target', {}).get('kind') == 'anchor', c), callback='onStepIn')
+
+# Round 3, Finding 2 (P2): revert association searches every preceding candidate for exactly one match,
+# not only the immediately preceding operation; more than one equally plausible candidate stays blocked.
+converter_case(
+    'the exact Codex example: wall1:decay() attaches to wall1, not the nearer wall2',
+    ['wall1:transform(2773)', 'wall2:transform(2773)', 'wall1:decay()'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM']) == 2
+                 and len([x for x in c if x.get('status') == 'blocked']) == 0, c))
+converter_case(
+    'two equally plausible candidates for the same receiver stay blocked, not the nearest one',
+    ['wall1:transform(2773)', 'wall1:transform(2774)', 'wall1:decay()'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM']) == 2
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+
+# Round 3, Finding 3 (P2): a revert's own position argument (split from the rest, per its call's own
+# convention) must itself fully match a literal position; a look-alike buried in a larger expression
+# elsewhere in the argument list must not match.
+converter_case(
+    "the exact Codex example: toPosition + Position(1,2,7) is not itself a literal position argument",
+    ['item:transform(2773)', 'addEvent(Position.revertItem, 5000, toPosition + Position(1, 2, 7), 2772)'],
+    lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM' and 'revert_after_ms' in x]) == 0
+                 and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+
+# Round 4, Finding 1 (P2): a scheduled (addEvent) revert with a non-literal delay fails closed -- a
+# blocked WorldObject child with its own explicit reason -- rather than merging silently with no
+# revert_after_ms; only an inherently undelayed revert (:decay()/:revertItem(...)/direct
+# Position.revertItem(...)) may merge without one.
+converter_case(
+    'a scheduled revert with a non-literal delay stays blocked with its own explicit reason, not silent',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, someDelay, Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and 'revert_after_ms' not in c[0]
+                 and c[1].get('status') == 'blocked' and c[1]['reason'] == BLOCKED_SCHEDULED_REVERT_DELAY, c))
+converter_case(
+    'an unscheduled decay still merges silently with no revert_after_ms (unaffected by the fail-closed rule)',
+    ['item:transform(2773)', 'item:decay()'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'TRANSFORM' and 'revert_after_ms' not in c[0], c))
+
+# Round 4, Finding 2 (P2): a direct Position.revertItem(Position(x,y,z), ...) call must be parsed for
+# its own literal position argument, not consumed by the generic REVERT_METHOD receiver match (which
+# would otherwise see it as a method call with the useless receiver "Position" and never look inside).
+converter_case(
+    'the exact Codex example: Position.revertItem(Position(x,y,z), ...) associates by its own literal position',
+    ['Game.createItem(2793, Position(100, 200, 7))', 'Position.revertItem(Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('anchor') == 'p1', c))
+converter_case(
+    'Position.revertItem(Position(x,y,z), ...) at a different position does not associate',
+    ['Game.createItem(2793, Position(100, 200, 7))', 'Position.revertItem(Position(1, 1, 7), 2772)'],
+    lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and c[1].get('status') == 'blocked', c))
+
+# Round 5, Finding 1 (P2, comment 4119390219): a second addEvent(Position.revertItem, ...) that provably
+# targets an operation which already carries a revert_after_ms (from an earlier one, in source order)
+# never overwrites it -- it stays its own blocked WorldObject child instead.
+converter_case(
+    'the exact Codex example: a second scheduled revert on the same operation never overwrites the first',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, 5000, Position(100, 200, 7), 2772)',
+     'addEvent(Position.revertItem, 10000, Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 5000
+                 and c[1].get('status') == 'blocked' and c[1]['reason'] == BLOCKED_DUPLICATE_SCHEDULED_REVERT, c))
+converter_case(
+    'negative control: two single scheduled reverts on two different operations both attach, no duplicate',
+    ['Game.createItem(2793, Position(100, 200, 7))', 'Game.createItem(2793, Position(1, 1, 7))',
+     'addEvent(Position.revertItem, 5000, Position(100, 200, 7), 2772)',
+     'addEvent(Position.revertItem, 7000, Position(1, 1, 7), 2772)'],
+    lambda c, a: (len(c) == 2 and {x.get('revert_after_ms') for x in c} == {5000, 7000}, c))
+
+# Round 5, Finding 2 (P2, comment 4119390226): a non-positive literal delay (`addEvent(Position.revertItem,
+# 0, ...)`) is treated exactly like an unresolved (non-literal) one -- the schema requires revert_after_ms
+# >= 1 -- so it stays blocked with the same BLOCKED_SCHEDULED_REVERT_DELAY reason, never revert_after_ms: 0.
+converter_case(
+    'the exact Codex example: addEvent(Position.revertItem, 0, ...) stays blocked, never revert_after_ms: 0',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, 0, Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and 'revert_after_ms' not in c[0]
+                 and c[1].get('status') == 'blocked' and c[1]['reason'] == BLOCKED_SCHEDULED_REVERT_DELAY, c))
+converter_case(
+    'negative control: the minimum valid literal delay (1) still attaches',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, 1, Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('revert_after_ms') == 1, c))
+
+# Round 6, Finding 1 (P2, comment 4120202014): every D38 matcher is gated on a match in the
+# string-stripped `code` before `raw` is ever searched, so a look-alike inside a string literal is
+# never mistaken for the real call.
+converter_case(
+    'the exact Codex example: a string literal containing Game.createItem(...) is never typed',
+    ['player:say("Game.createItem(2793)")'],
+    lambda c, a: (c == [{'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': 2}], c))
+converter_case(
+    'negative control: the same call outside a string is still typed',
+    ['Game.createItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE', c))
+
+# Round 6, Finding 2 (P2, comment 4120202000): a call whose argument list never closes on its own
+# source line (a multi-line call) is never parsed for typed fields -- it stays blocked with a new
+# explicit BLOCKED_INCOMPLETE_CALL reason instead of emitting an unanchored typed op from partial args.
+converter_case(
+    'the exact Codex example: a multi-line createItem call stays blocked, never an unanchored CREATE',
+    ['Game.createItem(', '2793', ')'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and c[0]['reason'] == BLOCKED_INCOMPLETE_CALL
+                 and 'operation' not in c[0], c))
+converter_case(
+    'negative control: the same call complete on one line is still typed',
+    ['Game.createItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE', c))
+
+# Round 6, Finding 3 (P2, comment 4120202007): any assigned, positionless `Game.createItem(...)`
+# constructor is a reward item, of any arity (not only the bare single-id form) -- never a world
+# CREATE, and its addItemEx fill resolves when its own id argument was itself a literal.
+converter_case(
+    'the exact Codex example: the count/subtype constructor form is a reward item, not a world CREATE',
+    ['local reward = Game.createItem(2793, 5)', 'local backpack = player:addItem(2000, 1)', 'backpack:addItemEx(reward)'],
+    lambda c, a: (len(c) == 1 and c[0]['owner'] == 'Item' and c[0]['request'] == 'hand_out'
+                 and c[0].get('contents') == [{'item': {'family': 'Item', 'key': 'canary:item/2793',
+                                                        'revision': oi.REVISION}, 'count': 1}], c))
+converter_case(
+    'negative control: the same constructor form with a literal position is still a world CREATE',
+    ['local wall = Game.createItem(2793, Position(1, 2, 7))'],
+    lambda c, a: (len(c) == 1 and c[0].get('operation') == 'CREATE' and c[0].get('anchor') == 'p1', c))
+
+# Round 6, Finding 4 (P2, comment 4120202022): a REMOVE receiver that is itself a fully-delimited
+# literal Position(x,y,z) binds that position via self.anchor(); a computed receiver (a call whose own
+# result is not itself a literal position) stays blocked instead of typed against an unprovable target.
+converter_case(
+    'the exact Codex example: a literal-position REMOVE receiver binds its own anchor',
+    ['Position(100, 200, 7):removeItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'REMOVE' and c[0].get('anchor') == 'p1'
+                 and a == [{'key': 'p1', 'source_position': {'x': 100, 'y': 200, 'z': 7}}], (c, a)))
+converter_case(
+    'negative control: a computed REMOVE receiver stays blocked, never typed against an unprovable target',
+    ['getTile(1, 2, 7):removeItem(2793)'],
+    lambda c, a: (len(c) == 1 and c[0].get('status') == 'blocked' and 'operation' not in c[0], c))
+
 
 # ots_interactions.py's curated interaction_overrides.json mechanism (D36 exception), on synthetic rule trees so
 # it never needs the real Canary/CrystalServer checkouts.

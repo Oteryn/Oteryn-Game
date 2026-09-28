@@ -453,7 +453,12 @@
               "$ref": "#/$defs/bool"
             },
             "learning_required": {
-              "$ref": "#/$defs/bool"
+              "$ref": "#/$defs/bool",
+              "description": "S10/S16: false since patch 15.22 (spells unlock at their level); learned spells are Character state."
+            },
+            "wheel_unlock": {
+              "$ref": "#/$defs/bool",
+              "description": "S6/S16: a Wheel of Destiny revelation spell; not castable until a Wheel owner exists (fails closed)."
             },
             "acquisition_interactions": {
               "type": "array",

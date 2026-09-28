@@ -101,9 +101,9 @@ python lower_promotion_packet.py --source /path/to/crystalserver --self-check
 python lower_promotion_packet.py --source /path/to/crystalserver --check
 ```
 
-The committed output is `samples/promotion-crystal-ff7ede5.json`: 14,643 rows over
-12,021 Items (`charges.count` 122, `container.capacity` 453, `presentation.name`
-12,021, `protection.armor` 432, `weapon.attack` 621, `weapon.defense` 636,
+The committed output is `samples/promotion-crystal-ff7ede5.json`: 14,742 rows over
+12,118 Items (`charges.count` 124, `container.capacity` 453, `presentation.name`
+12,118, `protection.armor` 432, `weapon.attack` 621, `weapon.defense` 636,
 `weapon.extra_defense` 160, `weapon.hit_chance` 56, `weapon.range_cells` 142;
 ~3.7 MiB). Its `schema`/`profile`/`status`/`next_action` are deliberately different
 literal strings from the pinned Rust constants and from the wired packet's own values,
@@ -153,6 +153,28 @@ also routed to `routed_non_item` instead of staying `family_profile_unresolved`:
 set, otherwise owner `WorldObject`/reason `immovable_unclassified`. An `unmove=false` (or
 absent) entry with no resolved family keeps `family_profile_unresolved`, since that case
 stays editorial backlog rather than a known non-Item owner decision.
+
+Two more owner decisions (2026-09-28), applied lowest-priority and in this order, once
+every existing classifier, `immovable_non_item_route` and the wiki-evidence fallback have
+all already failed to resolve a family (so no already-resolved item is ever affected):
+(1) **engine wrap-target inheritance** — an unresolved item's own `items.xml`
+`wrapableto="T"` names another items.xml id `T` whose own `primarytype` resolves through
+`PRIMARYTYPE_PROFILE` (one hop only: never chained through T's own `wrapableto`, never
+through T's wiki fallback); the item takes that profile with
+`family_profile_basis: "engine_wrap_target"` and evidence
+`{wrap_target_id, wrap_target_primarytype}`. This resolves house furniture (chairs, a
+forge, a workbench, lamps) wrapped into the generic decoration-kit id 23398
+(`primarytype = furniture` -> `decoration`); an item whose wrap target does not itself
+resolve stays unresolved. (2) **corpse-like "dead ..." items** — an appearance-flagged
+corpse (`flags.corpse`/`flags.player_corpse`) is already routed to WorldObject/corpse by
+the rule above, before family classification even starts. An engine name starting with
+"dead " that carries neither flag and still has no resolved family is routed to
+`routed_non_item` (`{"owner": "WorldObject", "reason": "corpse_decoration"}`) when it also
+has no `flags.take` (a non-take-able map/quest decoration corpse); when it does have
+`flags.take`, its exact lower-cased name is looked up in the small, explicit
+`DEAD_CREATURE_PROFILE` owner table (`family_profile_basis: "owner_name_rule"`, evidence
+`{rule: "take_able_dead_creature", name}`) and stays `family_profile_unresolved` (fail
+closed) if the table does not name it.
 
 A field this converter cannot implement because the schema needs data neither pinned
 engine's evidence supplies keeps a precise blocker rather than a guessed value:
