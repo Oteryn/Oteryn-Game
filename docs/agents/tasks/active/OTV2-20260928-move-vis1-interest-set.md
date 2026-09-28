@@ -23,12 +23,12 @@ owned_paths:
   - apps/game-server/src/movement.rs
   - docs/agents/tasks/active/OTV2-20260928-move-vis1-interest-set.md
   - docs/agents/tasks/archive/OTV2-20260928-move-rl11-visibility-decision.md
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json   # six inserted rows after MOVE-RL-11 (#162 5876395221)
 public_contracts: []
 depends_on:
   - "decision docs/architecture/reviews/OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md (#1141, 7d1134f)"
   - "#162 comments 5875929512 (packet), 5875958040 (sequencing accepted), 5876031379 (claim)"
 blocks:
-  - "VIS-1 registry rows (serialized after PR #1144)"
   - "VIS-2 wire schema and entity payload"
 cross_repository_coordination_id: null
 external_repositories: []
@@ -70,8 +70,8 @@ semantics.
 ## Excluded scope
 
 `lib.rs`, `crates/protocol-oteryn/**`, wire/codec/capability, config loader, Channel wiring,
-entity payload fields (VIS-2), `MOVE-RL-11` and the resource registry (rows follow after PR #1144
-under the registry lease).
+entity payload fields (VIS-2), and `MOVE-RL-11` (stays 1; its change moves to VIS-2). The only
+registry change is six inserted rows after `MOVE-RL-11`.
 
 ## Implementation / findings
 
@@ -85,16 +85,23 @@ under the registry lease).
   rejected; it makes the 1,024 ceiling reachable and testable ahead of VIS-2.
 - No module-level `dead_code` allow: `movement` is already allowed in `lib.rs`.
 
+## Registry rows
+
+Inserted immediately after `MOVE-RL-11` under the registry lease granted in freeze order
+(#162 5876395221): `MOVE-RL-08`, `-09`, `-10`, `MOVE-VIEW-WIDTH`, `MOVE-VIEW-HEIGHT`,
+`MOVE-VIEW-FLOORS`. Insert-only (135 lines); no existing row and no `updated_at` changed. Consumers
+name only `movement::interest::` items; the wire consumer of `-08`/`-10` arrives with VIS-2.
+
 ## Validation
 
 ### Focused
 
 - command/run: `cargo test --locked -p oteryn-game-server --lib movement::interest`
-- result: 18 passed
+- result: 18 passed (re-run after merging main `840072a` and inserting the registry rows)
 
 ### Component/integration
 
-- command/run: `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo test --locked -p oteryn-protocol-oteryn`
+- command/run: `cargo fmt --all --check`; `cargo clippy --locked -p oteryn-game-server --all-targets -- -D warnings`; `cargo test --locked -p oteryn-protocol-oteryn`; `validate_governance.py`; `validate_repository_policy.py`; `python3 -m json.tool` on the registry
 - result: pass
 
 ### E2E
@@ -137,7 +144,7 @@ under the registry lease).
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation and local validation complete; awaiting publish
+last_progress: main merged, registry rows written, local validation complete; awaiting freeze
 status: implementing
 branch: claude/move-vis1-interest-set
 head_sha: null

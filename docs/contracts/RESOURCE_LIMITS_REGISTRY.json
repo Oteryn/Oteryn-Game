@@ -4876,6 +4876,141 @@
       "notes": "Accepted by the resource owner in #139 comment 5853424970. Other actors are not visible in the first child."
     },
     {
+      "id": "MOVE-RL-08",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Enter, leave and update entries in one visibility delta",
+      "unit": "entries per delta",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A larger change is sent as a full snapshot (resync); a delta never exceeds 256 entries.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=256: a change of exactly 256 entries is a delta",
+        "max+1=257: a change of 257 entries becomes a resync snapshot"
+      ],
+      "consumers": [
+        "movement::interest::diff_interest",
+        "movement::interest::INTEREST_DELTA_ENTRIES_MAX"
+      ],
+      "notes": "Re-decided in D87. Decision section 4.4; #162 comment 5875958040. Wire consumer arrives with VIS-2 (new WORLD_SPATIAL revision); MOVE-RL-11 remains 1 until then."
+    },
+    {
+      "id": "MOVE-RL-09",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Candidates examined by one visibility query",
+      "unit": "candidates per query",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Candidates are enumerated in canonical order and the query stops at 1,024 examined, so the selection is identical on replay; the own actor counts as one examined candidate.",
+      "client_visible": false,
+      "boundary_tests": [
+        "max=1024: 1,024 candidates are all examined",
+        "max+1=1025: the 1,025th candidate is never examined"
+      ],
+      "consumers": [
+        "movement::interest::InterestIndex::query_with",
+        "movement::interest::VISIBILITY_QUERY_CANDIDATES_MAX"
+      ],
+      "notes": "D87. Decision section 4.4; #162 comment 5875958040."
+    },
+    {
+      "id": "MOVE-RL-10",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Results returned by one visibility query",
+      "unit": "results per query",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "The query returns the nearest 256 in canonical order and never allocates beyond it; the own actor is always one of them.",
+      "client_visible": true,
+      "boundary_tests": [
+        "max=256: 256 visible entities are all returned",
+        "max+1=257: the farthest visible entity in canonical order is excluded"
+      ],
+      "consumers": [
+        "movement::interest::InterestIndex::query_with",
+        "movement::interest::VISIBILITY_QUERY_RESULTS_MAX"
+      ],
+      "notes": "Equals the future MOVE-RL-11 value (D87). Decision section 4.4; #162 comment 5875958040. Wire consumer arrives with VIS-2 (new WORLD_SPATIAL revision); MOVE-RL-11 remains 1 until then."
+    },
+    {
+      "id": "MOVE-VIEW-WIDTH",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Interest area width per Channel",
+      "unit": "tiles",
+      "hard_maximum": 36,
+      "configurable_range": {
+        "minimum": 15,
+        "maximum": 36
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Fixed per Channel for its lifetime; default 18 (Reference). A width outside 15..36 is rejected at construction.",
+      "client_visible": true,
+      "boundary_tests": [
+        "min=15 and max=36 are accepted",
+        "min-1=14 and max+1=37 are rejected"
+      ],
+      "consumers": [
+        "movement::interest::VisibilitySettings"
+      ],
+      "notes": "D84. Decision section 4.4; #162 comment 5875958040."
+    },
+    {
+      "id": "MOVE-VIEW-HEIGHT",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Interest area height per Channel",
+      "unit": "tiles",
+      "hard_maximum": 28,
+      "configurable_range": {
+        "minimum": 11,
+        "maximum": 28
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Fixed per Channel for its lifetime; default 14 (Reference). A height outside 11..28 is rejected at construction.",
+      "client_visible": true,
+      "boundary_tests": [
+        "min=11 and max=28 are accepted",
+        "min-1=10 and max+1=29 are rejected"
+      ],
+      "consumers": [
+        "movement::interest::VisibilitySettings"
+      ],
+      "notes": "D84. Decision section 4.4; #162 comment 5875958040."
+    },
+    {
+      "id": "MOVE-VIEW-FLOORS",
+      "owner_contract": "OTERYN_GAME_MOVE_RL11_VISIBILITY_DECISION_2026-09-28.md",
+      "resource": "Floors visible to one observer",
+      "unit": "floors",
+      "hard_maximum": 8,
+      "configurable_range": {
+        "minimum": 5,
+        "maximum": 8
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Above ground (floor <= 7) floors 0..7 (8 floors); underground the observer floor +/- 2, clamped at 15 (5 floors, fewer at 14 and 15). Tiles beyond the floor rule are not candidates; never an error. Not configurable.",
+      "client_visible": true,
+      "boundary_tests": [
+        "floor 7 sees floors 0..7 and not 8",
+        "floor 10 sees 8..12; floor 14 sees 12..15; floor 15 sees 13..15"
+      ],
+      "consumers": [
+        "movement::interest::floor_visible"
+      ],
+      "notes": "D86. Decision section 4.4; #162 comment 5875958040."
+    },
+    {
       "id": "WOBJ-RL-01",
       "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
       "resource": "Use inputs applied for one actor in one Channel owner work cycle",
