@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260928-item-clothing-accessories
-title: Old rag resolves event_collectible via wiki status=event; ivory comb stays material_valuable via wiki
+title: Old rag/ivory comb via wiki status=event + exact-id join (match_basis) for the wiki fallback
 mode: MIGRATE
 status: implementing
 repository: Oteryn/Oteryn-Game
@@ -45,15 +45,29 @@ jira: KAN-16
 
 ## Outcome
 
-Reverses the prior implementation of this task (commit `4add578a`, PR #162), on a
-corrected 2026-09-28 owner decision: `clothing accessories` is a TibiaWiki *secondary*
-type, never the item's real family, so `PRIMARYTYPE_PROFILE` never admits it as a
-`primarytype` alias. TibiaWiki's own infobox `status = event` field is instead admitted
-(lowest priority, only when neither `primarytype` nor `objectclass` resolves) as
-`event_collectible`, because old rag (24415) is TibiaWiki's own 20th-anniversary
-event-only drop (`status = event`), not a creature product. Ivory comb (32773) keeps
-resolving to `material_valuable` through its own, already-committed wiki fallback
-record (`primarytype = Creature Products`), unaffected by the alias revert.
+Two owner decisions landed on this branch, in sequence:
+
+1. (2026-09-28, first) Reverses the prior implementation of this task (commit
+   `4add578a`, PR #162): `clothing accessories` is a TibiaWiki *secondary* type, never
+   the item's real family, so `PRIMARYTYPE_PROFILE` never admits it as a `primarytype`
+   alias. TibiaWiki's own infobox `status = event` field is instead admitted (lowest
+   priority, only when neither `primarytype` nor `objectclass` resolves) as
+   `event_collectible`, because old rag (24415) is TibiaWiki's own 20th-anniversary
+   event-only drop (`status = event`), not a creature product. Ivory comb (32773) keeps
+   resolving to `material_valuable` through its own, already-committed wiki fallback
+   record (`primarytype = Creature Products`), unaffected by the alias revert.
+   (Committed as `414b4f78`.)
+2. (2026-09-28, continuation) A real miss the owner found (TibiaWiki's own
+   `Kraken_Buoy_Lamp_(Unlit)` page existed but the engine name "kraken buoy lamp" landed
+   in `disambiguation_no_candidates`) replaces name-guessing with the exact `itemid`
+   evidence TibiaWiki already publishes. The wiki fallback capture tool now joins every
+   unresolved (engine, item id) against every page's own `| itemid = ...` infobox field
+   FIRST, and only falls back to the pre-existing name-based join when no page lists
+   that id at all; id evidence is authoritative (no name fallback when it exists but
+   fails or disagrees). Every record now carries an auditable `match_basis: "itemid" |
+   "title"`. Also adds `{{ItemList ...}}` template parsing to the disambiguation-page
+   candidate reader (Fandom's alternative to `[[links]]` for listing variants), which is
+   what surfaced the Kraken Buoy Lamp pages in the first place.
 
 ## Architecture and source of truth
 
@@ -89,11 +103,19 @@ record (`primarytype = Creature Products`), unaffected by the alias revert.
   ivory comb still resolves via its pre-existing direct record.
 - [x] `imports/tibiawiki/batches.json`/`sources.json` are updated to the recaptured
   snapshot's digest; `test_wiki_fallback_snapshot_is_registered` and the record-count
-  assertion in `test_committed_wiki_fallback_snapshot_loads_fail_closed` (949) pass.
+  assertion in `test_committed_wiki_fallback_snapshot_loads_fail_closed` pass.
 - [x] The censuses and the promotion packet are regenerated, and `--check` passes.
-  `routed_non_item` is unchanged (25,656 / 25,193); both items still fully resolve
-  (only their `family_profile_basis`/evidence changed), so `not_converted`/
-  `fully_resolved` are unchanged too.
+  `routed_non_item` is unchanged (25,656 / 25,193).
+- [x] Exact-id join (`match_basis`): `fetch_infobox_object_titles`/`build_itemid_index`/
+  `resolve_id_matched_pages` in the capture tool; `{{ItemList ...}}` template parsing in
+  `extract_candidate_links`; `match_basis` required and validated fail-closed in
+  `load_wiki_family_fallback`, added to `build_formal_schema.py`'s `familyProfileEvidence`
+  (schema regenerated, idempotent); id evidence takes precedence over, and is never
+  overridden by, name matching. Recaptured a second time with the id join live: snapshot
+  949 -> 1,415 records (1,380 `itemid`, 35 `title`).
+- [x] Tests: ItemList parsing, id-match precedence, id-matched disagreement/failure with
+  no name fallback, loader rejecting a missing/unknown `match_basis` -- all added and
+  passing.
 - [ ] Required checks pass on the frozen PR head.
 
 ## Excluded scope
@@ -106,21 +128,40 @@ record (`primarytype = Creature Products`), unaffected by the alias revert.
 |---|---|---|
 | `family_profile_unresolved` (with the alias, superseded) | 945 | 904 |
 | `family_profile_unresolved` (without the alias, baseline) | 946 | 905 |
-| `family_profile_unresolved` (status=event rule, this task) | 945 | 904 |
-| fully resolved (this task) | 10,654 | 10,317 |
-| `family_profile_basis: engine_attribute` | 10,679 | 10,357 |
-| `family_profile_basis: wiki_evidence_fallback` | 877 | 837 |
+| `family_profile_unresolved` (status=event rule, before the id join) | 945 | 904 |
+| `family_profile_unresolved` (status=event rule + exact-id join, final) | 480 | 439 |
+| fully resolved (before the id join) | 10,654 | 10,317 |
+| fully resolved (final, with the id join) | 11,119 | 10,782 |
+| `family_profile_basis: engine_attribute` (unchanged throughout) | 10,679 | 10,357 |
+| `family_profile_basis: wiki_evidence_fallback` (before the id join) | 877 | 837 |
+| `family_profile_basis: wiki_evidence_fallback` (final) | 1,342 | 1,302 |
 
-Old rag and ivory comb both still fully resolve (net counts identical to the superseded
-alias-based implementation); only their basis changed from `engine_attribute` to
-`wiki_evidence_fallback`. Newly resolved via the new `status = event` rule, repository-wide:
-old rag (Crystal/Canary id `24415`, registry key `oteryn:item.registry.i00023587`) — the
-only item in either engine's unresolved universe whose wiki page carries `status = event`.
+`routed_non_item` stayed exactly 25,656 / 25,193 throughout both owner decisions, as
+required. Old rag and ivory comb both fully resolve throughout; old rag via
+`status = event`, ivory comb via `primarytype = Creature Products` -- both now joined by
+exact `itemid`, not by name, since the id join runs first and both happen to have an
+id-matched page.
+
+Wiki fallback snapshot: 949 -> 1,415 records once the exact-id join went live. Of 3,563
+unresolved (engine, id) pairs across 1,060 unique names: the id join matched 1,565
+registry keys by their own numeric id (1,378 resolved direct, 2 disambiguation, 185 left
+unresolved with no name fallback because their id-matched pages did not resolve or
+disagreed), the remaining 108 names went through the pre-existing name join and resolved
+35 more. 1,380 records are `match_basis: "itemid"`, 35 are `match_basis: "title"`. Ten
+registry keys that already had a title-based record changed profile once the (higher
+priority) id evidence disagreed with it; four keys that used to resolve by name
+(`cm token`, `glowworms` x2, `empty bucket`) lost their record entirely because their own
+id-matched pages exist but do not resolve -- both are the intended, owner-specified
+behaviour of exact id evidence overriding a same-page name match. Kraken Buoy Lamp
+(Crystal/Canary ids `37187` and `37519`) now resolves via `itemid` to `Kraken Buoy Lamp
+(Lit)`/`Kraken Buoy Lamp (Unlit)` respectively, `primarytype = Decorations` ->
+`decoration` -- confirming the owner's finding.
 
 ## Validation
 
-- `test_engine_items.py`: PASS (368 checks, including new `status`-field and real-snapshot
-  old-rag/ivory-comb tests).
+- `test_engine_items.py`: PASS (387 checks, including `status`-field, real-snapshot
+  old-rag/ivory-comb, ItemList-parsing, id-match-precedence, id-match-disagreement and
+  `match_basis`-rejection tests).
 - `build_formal_schema.py` regenerated twice: no further diff (idempotent);
   `verify_formal_schema.py`: PASS (242 checks).
 - `--check --self-check` on both censuses: PASS. `lower_promotion_packet.py --check`: PASS.

@@ -975,6 +975,7 @@ def load_wiki_family_fallback(path, identity_index):
     is fail-closed, exactly like `load_delivery_overrides`: an unknown top-level or
     record key, a duplicate JSON key, a `snapshot_sha256` that does not match the
     recomputed digest of `records`, a `registry_key` absent from the identity index, a
+    missing or unrecognized `match_basis` (must be exactly `itemid` or `title`), a
     `field`/`value` (or, for a disambiguation, any candidate's `field`/`value`) that the
     admitted mapping does not resolve to exactly one profile, or a profile absent from
     `PROFILE_ITEM_CLASS` (the converter's own admitted family_profile set) is a hard
@@ -1038,6 +1039,7 @@ def load_wiki_family_fallback(path, identity_index):
         "registry_key",
         "matched_names",
         "resolution",
+        "match_basis",
         "wiki_title",
         "page_id",
         "revision_id",
@@ -1130,12 +1132,16 @@ def load_wiki_family_fallback(path, identity_index):
         resolution = record.get("resolution")
         if resolution not in ("direct", "disambiguation"):
             raise SystemExit(f"{where}: 'resolution' must be direct or disambiguation")
+        match_basis = record.get("match_basis")
+        if match_basis not in ("itemid", "title"):
+            raise SystemExit(f"{where}: 'match_basis' must be itemid or title")
 
         if resolution == "direct":
             wiki_source_fields(record, where)
             profile = resolve_field_value(record, where)
             evidence = {
                 "resolution": "direct",
+                "match_basis": match_basis,
                 "field": record["field"],
                 "value": record["value"],
                 "wiki_source": _wiki_evidence_source_from_record(record),
@@ -1172,6 +1178,7 @@ def load_wiki_family_fallback(path, identity_index):
             (profile,) = profiles
             evidence = {
                 "resolution": "disambiguation",
+                "match_basis": match_basis,
                 "candidates": evidence_candidates,
             }
 

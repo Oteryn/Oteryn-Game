@@ -18,8 +18,20 @@ outcome is a report-only entry, never a committed record. No wikitext body or im
 ever stored -- only page/revision identity, digests and the one or two structured field
 observations this needs.
 
-Every engine name is resolved against an exact, case-insensitive index of every
-main-namespace TibiaWiki title (`action=query&list=allpages&apnamespace=0
+Before any name matching, every unresolved (engine, item_id) is first tried against an
+exact-id join (`match_basis: "itemid"`): every main-namespace page embedding `{{Infobox
+Object` (via `list=embeddedin&eititle=Template:Infobox Object`) is fetched once and
+indexed by the integer(s) in its own `| itemid = ...` field (comma-separated lists
+included). When one or more pages list the engine's own numeric id, ONLY those pages are
+ever considered for that id -- one page resolves through the admitted fields as usual;
+2+ pages must all agree on the exact same profile -- and this evidence is authoritative:
+if the id-matched pages exist but do not resolve (or disagree), the item stays
+unresolved with no fallback to name matching. Only when no page lists the id at all does
+this fall back to the pre-existing name-based join (`match_basis: "title"`) described
+next.
+
+Every engine name without an id match is resolved against an exact, case-insensitive
+index of every main-namespace TibiaWiki title (`action=query&list=allpages&apnamespace=0
 &apfilterredir=all`, walked to completion) instead of any capitalisation guess: the
 candidate titles for a name are every title whose lower case equals the name itself, or
 the name plus a `" (item)"`/`" (object)"` disambiguating suffix (TibiaWiki's own
@@ -30,8 +42,11 @@ two admitted suffixes -- nothing here title-cases or guesses. When a name's cand
 include two or more pages that each carry an admitted item/object infobox (directly, or
 through a disambiguation page's own linked candidates), they must all resolve to the exact
 same family_profile before any of them is admitted; a page with no item/object infobox
-(e.g. an NPC page) is never itself a candidate for resolution. Generic placeholder engine
-names (e.g. "old tibia item") are never looked up at all; they are always report-only.
+(e.g. an NPC page) is never itself a candidate for resolution. A disambiguation page's
+candidates are read from both `[[wikilinks]]` and the positional entries of an
+`{{ItemList ...}}` template (Fandom's own alternative to linking each variant),
+`key=value` parameters skipped either way. Generic placeholder engine names (e.g. "old
+tibia item") are never looked up at all; they are always report-only.
 """
 
 from __future__ import annotations
@@ -82,11 +97,13 @@ GENERIC_PLACEHOLDER_NAMES = {
 
 INFOBOX_RE = re.compile(r"\{\{\s*Infobox[ _](Object|Item)\b", re.IGNORECASE)
 FIELD_RE = re.compile(
-    r"^\|[ \t]*(primarytype|objectclass|status)[ \t]*=[ \t]*(.*?)[ \t]*$",
+    r"^\|[ \t]*(primarytype|objectclass|status|itemid)[ \t]*=[ \t]*(.*?)[ \t]*$",
     re.IGNORECASE | re.MULTILINE,
 )
 DISAMBIG_RE = re.compile(r"\{\{\s*Disambig\b", re.IGNORECASE)
 LINK_RE = re.compile(r"\[\[([^|\]\n#]+)")
+ITEMLIST_RE = re.compile(r"\{\{\s*ItemList\b(.*?)\}\}", re.IGNORECASE | re.DOTALL)
+ITEMLIST_KEY_VALUE_RE = re.compile(r"^[A-Za-z_][\w ]*=")
 IGNORED_LINK_PREFIXES = (
     "category:",
     "file:",
@@ -97,6 +114,14 @@ IGNORED_LINK_PREFIXES = (
     "template:",
     "help:",
 )
+# Every main-namespace page embedding this template carries `{{Infobox Object ... |
+# itemid = <n>[, <n>, ...] }}`; the exact-id join (`build_itemid_index`) indexes them all.
+INFOBOX_OBJECT_TEMPLATE = "Template:Infobox Object"
+EMBEDDEDIN_BATCH_LIMIT = "max"
+# The owner-measured page count (~9,980) for `INFOBOX_OBJECT_TEMPLATE`; content is
+# fetched in larger batches than the default `WikiFetcher` batch size for this one bulk
+# pass, since there is no per-name candidate-title fan-out to keep small here.
+ITEMID_JOIN_FETCH_BATCH_SIZE = 50
 
 
 def fetch_all_page_titles():
@@ -125,6 +150,99 @@ def fetch_all_page_titles():
         request_params.update(cont)
         time.sleep(REQUEST_SLEEP_SECONDS)
     return sorted(titles)
+
+
+def fetch_infobox_object_titles():
+    """Enumerate every main-namespace page embedding `Template:Infobox Object`
+    (`list=embeddedin`, walked to continuation) -- every real item/object page on the
+    wiki, independent of any name (~9,980 pages as measured by the owner)."""
+    params = {
+        "action": "query",
+        "format": "json",
+        "formatversion": "2",
+        "list": "embeddedin",
+        "eititle": INFOBOX_OBJECT_TEMPLATE,
+        "einamespace": "0",
+        "eilimit": EMBEDDEDIN_BATCH_LIMIT,
+    }
+    titles = []
+    request_params = dict(params)
+    while True:
+        data = fetch_json(request_params)
+        for page in data.get("query", {}).get("embeddedin", []):
+            titles.append(page["title"])
+        cont = data.get("continue")
+        if not cont:
+            break
+        request_params = dict(params)
+        request_params.update(cont)
+        time.sleep(REQUEST_SLEEP_SECONDS)
+    return sorted(titles)
+
+
+def parse_itemids(value):
+    """Every integer in an infobox `itemid` field's raw value (comma-separated lists
+    included, e.g. `37187, 37519`); TibiaWiki uses no other separator for this field."""
+    return {int(match) for match in re.findall(r"\d+", value)}
+
+
+def build_itemid_index(fetcher, titles):
+    """{item_id: [page, ...]} from the own `itemid` field of every already-fetched
+    `Infobox Object` page in `titles` (see `fetch_infobox_object_titles`); `fetcher`'s
+    cache must already hold their content. No wikitext is retained beyond this call's
+    return value -- only the same page/revision identity every other evidence row keeps."""
+    index = defaultdict(list)
+    for title in titles:
+        page = fetcher.cache.get(title)
+        if page is None:
+            continue
+        fields = parse_infobox_fields(page["content"])
+        if not fields or "itemid" not in fields:
+            continue
+        for item_id in parse_itemids(fields["itemid"]):
+            bucket = index[item_id]
+            if not any(existing["page_id"] == page["page_id"] for existing in bucket):
+                bucket.append(page)
+    return index
+
+
+def resolve_id_matched_pages(pages):
+    """Resolve one item id's already-fetched, id-matched `pages` (see
+    `build_itemid_index`) to a `match_basis: "itemid"` record base, or `None` when they
+    do not all resolve to the exact same admitted profile -- id evidence is
+    authoritative once it exists, so the caller never falls back to name matching on
+    `None`. Mirrors `resolve_direct_page`/the multi-candidate branch of `resolve_name`,
+    but never reports (id-join outcomes are counted separately by the caller) and never
+    needs a `{{Disambig}}` page: every page here already carries its own admitted
+    infobox by construction (it embeds `Template:Infobox Object`)."""
+    resolved = []
+    for page in pages:
+        fields = parse_infobox_fields(page["content"])
+        if not fields:
+            return None
+        profile, field, value = resolve_infobox_fields(fields)
+        if profile is None:
+            return None
+        resolved.append((profile, field, value, page))
+    if len({profile for profile, _f, _v, _p in resolved}) != 1:
+        return None
+    if len(resolved) == 1:
+        profile, field, value, page = resolved[0]
+        return {
+            "resolution": "direct",
+            "field": field,
+            "value": value,
+            "match_basis": "itemid",
+            **evidence_row(page),
+        }
+    return {
+        "resolution": "disambiguation",
+        "candidates": [
+            {**evidence_row(page), "field": field, "value": value}
+            for _profile, field, value, page in resolved
+        ],
+        "match_basis": "itemid",
+    }
 
 
 def build_title_index(titles):
@@ -183,6 +301,57 @@ def parse_infobox_fields(content):
     return fields
 
 
+def split_template_params(body):
+    """Split one `{{Template...}}` match's inner `body` on top-level `|` separators,
+    respecting `[[...]]`/`{{...}}` nesting depth so a piped wikilink or a nested
+    template inside one positional entry is never split apart."""
+    parts = []
+    current = []
+    depth = 0
+    i = 0
+    n = len(body)
+    while i < n:
+        two = body[i : i + 2]
+        if two in ("[[", "{{"):
+            depth += 1
+            current.append(two)
+            i += 2
+            continue
+        if two in ("]]", "}}"):
+            depth = max(0, depth - 1)
+            current.append(two)
+            i += 2
+            continue
+        if body[i] == "|" and depth == 0:
+            parts.append("".join(current))
+            current = []
+            i += 1
+            continue
+        current.append(body[i])
+        i += 1
+    parts.append("".join(current))
+    return parts
+
+
+def extract_itemlist_titles(content):
+    """Positional entries of every `{{ItemList ...}}` template (Fandom's alternative to
+    linking each disambiguation variant, e.g. `{{ItemList|type=ItemList/Sorted\n |Kraken
+    Buoy Lamp (Lit)\n |Kraken Buoy Lamp (Unlit)\n}}`); `key=value` parameters (the first
+    entry is almost always `type=...`) are skipped, never treated as a candidate title.
+    An entry may itself be a `[[wikilink]]` (its target is used) or bare text."""
+    titles = []
+    for match in ITEMLIST_RE.finditer(content):
+        for raw in split_template_params(match.group(1)):
+            text = raw.strip()
+            if not text or ITEMLIST_KEY_VALUE_RE.match(text):
+                continue
+            link_match = LINK_RE.match(text)
+            title = link_match.group(1).strip() if link_match else text
+            if title and title not in titles:
+                titles.append(title)
+    return titles
+
+
 def extract_candidate_links(content):
     seen = []
     for match in LINK_RE.finditer(content):
@@ -193,6 +362,11 @@ def extract_candidate_links(content):
             continue
         if raw not in seen:
             seen.append(raw)
+    for title in extract_itemlist_titles(content):
+        if title.lower().startswith(IGNORED_LINK_PREFIXES):
+            continue
+        if title not in seen:
+            seen.append(title)
     return seen
 
 
@@ -202,7 +376,7 @@ class WikiFetcher:
     def __init__(self):
         self.cache = {}
 
-    def fetch_titles(self, titles):
+    def fetch_titles(self, titles, batch_size=BATCH_SIZE):
         """Resolve+fetch a list of titles; return {input_title: page_or_None}.
 
         `page_or_None` is `None` for a missing/invalid title, else a dict with
@@ -210,8 +384,8 @@ class WikiFetcher:
         `revision_timestamp`, `revision_sha1`, `content_sha256`, `content`.
         """
         to_fetch = sorted({t for t in titles if t not in self.cache})
-        for start in range(0, len(to_fetch), BATCH_SIZE):
-            batch = to_fetch[start : start + BATCH_SIZE]
+        for start in range(0, len(to_fetch), batch_size):
+            batch = to_fetch[start : start + batch_size]
             data = fetch_json(
                 {
                     "action": "query",
@@ -259,7 +433,7 @@ _NO_EXISTING_WIKI_FALLBACK = Path("/dev/null/no-existing-wiki-family-fallback-sn
 
 
 def collect_unresolved(engine, source_root, rule_source, captured_at, report):
-    """Yield (registry_key, name_lower) for every family_profile_unresolved id.
+    """Yield (registry_key, item_id, name_lower) for every family_profile_unresolved id.
 
     Always run as if no wiki-evidence fallback snapshot were committed yet
     (`wiki_fallback_path` points at a path that can never exist): this discovers new
@@ -293,7 +467,7 @@ def collect_unresolved(engine, source_root, rule_source, captured_at, report):
         if not name:
             report["no_name"] += 1
             continue
-        out.append((key, name.lower()))
+        out.append((key, item_id, name.lower()))
     return out
 
 
@@ -344,8 +518,10 @@ def resolve_infobox_fields(fields):
         if status_profile is not None:
             return status_profile, "status", status_value
     if primarytype_or_objectclass_failure is not None:
-        return None, primarytype_or_objectclass_failure[0], (
-            primarytype_or_objectclass_failure[1]
+        return (
+            None,
+            primarytype_or_objectclass_failure[0],
+            (primarytype_or_objectclass_failure[1]),
         )
     return None, None, None
 
@@ -364,6 +540,7 @@ def resolve_direct_page(name, page, report, report_examples):
             "resolution": "direct",
             "field": field,
             "value": value,
+            "match_basis": "title",
             **evidence_row(page),
         }
     if field is None:
@@ -434,6 +611,7 @@ def resolve_disambiguation_page(name, page, fetcher, report, report_examples):
         "matched_names": [name],
         "resolution": "disambiguation",
         "candidates": candidates,
+        "match_basis": "title",
     }
 
 
@@ -515,6 +693,7 @@ def resolve_name(name, candidate_titles, fetcher, report, report_examples):
         "matched_names": [name],
         "resolution": "disambiguation",
         "candidates": evidence,
+        "match_basis": "title",
     }
 
 
@@ -553,15 +732,67 @@ def main():
         "canary", args.canary_source, args.crystal_source, captured_at, report
     )
 
-    # {key: {name_lower, ...}}
+    # {key: {name_lower, ...}} / {key: {item_id, ...}}
     names_by_key = defaultdict(set)
-    for key, name in pairs:
+    ids_by_key = defaultdict(set)
+    for key, item_id, name in pairs:
         names_by_key[key].add(name)
-    unique_names = sorted({name for _key, name in pairs})
+        ids_by_key[key].add(item_id)
     print(f"unresolved (engine,id) pairs: {len(pairs)}", file=sys.stderr)
-    print(f"unique engine names: {len(unique_names)}", file=sys.stderr)
+    print(
+        f"unique engine names: {len({name for _k, _i, name in pairs})}", file=sys.stderr
+    )
 
     fetcher = WikiFetcher()
+
+    # Exact-id join first: authoritative over name matching whenever it has an opinion
+    # at all (resolved or not) -- see `resolve_id_matched_pages`.
+    print("fetching the Infobox Object embeddedin page list...", file=sys.stderr)
+    infobox_object_titles = fetch_infobox_object_titles()
+    print(
+        f"itemid join: fetching {len(infobox_object_titles)} Infobox Object pages",
+        file=sys.stderr,
+    )
+    fetcher.fetch_titles(infobox_object_titles, batch_size=ITEMID_JOIN_FETCH_BATCH_SIZE)
+    itemid_index = build_itemid_index(fetcher, infobox_object_titles)
+    print(
+        f"itemid join: {len(itemid_index)} distinct item ids indexed", file=sys.stderr
+    )
+
+    id_matched_records = {}  # key -> record-base-or-None
+    for key, ids in ids_by_key.items():
+        pages = []
+        seen_page_ids = set()
+        for item_id in ids:
+            for page in itemid_index.get(item_id, ()):
+                if page["page_id"] not in seen_page_ids:
+                    seen_page_ids.add(page["page_id"])
+                    pages.append(page)
+        if not pages:
+            continue
+        base = resolve_id_matched_pages(pages)
+        id_matched_records[key] = base
+        if base is None:
+            report["itemid_match_unresolved"] += 1
+            report_examples["itemid_match_unresolved"].append(key)
+        elif base["resolution"] == "direct":
+            report["itemid_match_resolved_direct"] += 1
+        else:
+            report["itemid_match_resolved_disambiguation"] += 1
+    print(
+        f"itemid join: {len(id_matched_records)} registry keys matched by id "
+        f"({sum(1 for v in id_matched_records.values() if v is not None)} resolved)",
+        file=sys.stderr,
+    )
+
+    # Only a key with no id match at all falls back to name matching; a key whose id
+    # evidence failed to resolve stays unresolved with no name fallback (the id join is
+    # authoritative once it has anything to say for that id).
+    unique_names = sorted(
+        {name for key, _item_id, name in pairs if key not in id_matched_records}
+    )
+    print(f"names needing title lookup: {len(unique_names)}", file=sys.stderr)
+
     lookup_names = []
     for name in unique_names:
         if name in GENERIC_PLACEHOLDER_NAMES:
@@ -623,24 +854,34 @@ def main():
 
     records = {}
     for key, names in sorted(names_by_key.items()):
-        # A registry key can be shared by more than one engine name only when every
-        # name that reaches it resolves to the exact same admitted profile; otherwise
-        # the whole key stays unresolved rather than picking one name's evidence.
-        resolved_names = sorted(n for n in names if n in resolution_by_name)
-        if not resolved_names:
-            continue
-        base = resolution_by_name[resolved_names[0]]
-        if len(resolved_names) > 1:
-            first_shape = json.dumps(base, sort_keys=True)
-            if any(
-                json.dumps(resolution_by_name[n], sort_keys=True) != first_shape
-                for n in resolved_names[1:]
-            ):
-                report["multi_name_key_divergent"] += 1
-                report_examples["multi_name_key_divergent"].append(key)
+        if key in id_matched_records:
+            base = id_matched_records[key]
+            if base is None:
+                continue  # id evidence exists but does not resolve: no name fallback.
+            # The id join matches by numeric id, not by name; every one of the engine's
+            # own names for this key is equally covered by that one id's evidence.
+            matched_names = sorted(names)
+        else:
+            # A registry key can be shared by more than one engine name only when every
+            # name that reaches it resolves to the exact same admitted profile;
+            # otherwise the whole key stays unresolved rather than picking one name's
+            # evidence.
+            resolved_names = sorted(n for n in names if n in resolution_by_name)
+            if not resolved_names:
                 continue
+            base = resolution_by_name[resolved_names[0]]
+            if len(resolved_names) > 1:
+                first_shape = json.dumps(base, sort_keys=True)
+                if any(
+                    json.dumps(resolution_by_name[n], sort_keys=True) != first_shape
+                    for n in resolved_names[1:]
+                ):
+                    report["multi_name_key_divergent"] += 1
+                    report_examples["multi_name_key_divergent"].append(key)
+                    continue
+            matched_names = resolved_names
         record = dict(base)
-        record["matched_names"] = resolved_names
+        record["matched_names"] = matched_names
         record["registry_key"] = key
         if record["resolution"] == "direct":
             record["captured_at"] = captured_at
@@ -671,13 +912,26 @@ def main():
         encoding="utf-8",
     )
 
+    match_basis_counts = Counter(record["match_basis"] for record in records.values())
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(
         json.dumps(
             {
                 "unresolved_pairs": len(pairs),
-                "unique_names": len(unique_names),
+                "unique_names": len({name for _k, _i, name in pairs}),
                 "records_written": len(records),
+                "records_by_match_basis": dict(sorted(match_basis_counts.items())),
+                "itemid_join": {
+                    "pages_indexed": len(infobox_object_titles),
+                    "distinct_item_ids": len(itemid_index),
+                    "keys_with_id_match": len(id_matched_records),
+                    "keys_resolved_by_id": sum(
+                        1 for v in id_matched_records.values() if v is not None
+                    ),
+                    "keys_unresolved_by_id_no_fallback": sum(
+                        1 for v in id_matched_records.values() if v is None
+                    ),
+                },
                 "title_index": {
                     "count": title_index_count,
                     "sha256": title_index_sha256,

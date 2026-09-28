@@ -1107,18 +1107,22 @@ def build_item_schema():
     d["familyProfileEvidence"] = obj(
         {
             "resolution": enum("direct", "disambiguation"),
+            "match_basis": enum("itemid", "title"),
             "field": enum("primarytype", "objectclass", "status"),
             "value": text(),
             "wiki_source": use("wikiEvidenceSource"),
             "candidates": array(use("wikiEvidenceCandidate"), 2, unique=True),
         },
-        ("resolution",),
+        ("resolution", "match_basis"),
         description=(
             "Present only when family_profile_basis is wiki_evidence_fallback: the "
             "admitted-mapping fact that resolved family_profile when no engine "
             "attribute did. 'direct' cites the one matched page's field/value; "
             "'disambiguation' cites 2+ candidate pages that all resolved to the same "
-            "profile (the family invariant across candidates)."
+            "profile (the family invariant across candidates). 'match_basis' is an "
+            "audit field: 'itemid' when the pages were joined by the item's own exact "
+            "numeric TibiaWiki 'itemid', which takes precedence and is authoritative "
+            "over 'title' (the engine name matched against the wiki title index)."
         ),
         **{
             "if": {"properties": {"resolution": {"const": "direct"}}},
