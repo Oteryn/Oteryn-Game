@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-vortex-conditions
 title: Stepped-on trigger and caster condition (owner decision D46)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1127
 jira: KAN-16
 base_sha: a311c4eb2b16d88b45b24f20a12f7f2b76fb78c3
 head_sha: null
