@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-cw1-object-state-attributes-impl
 title: Implement §9 attribute-bearing local-object state and map_item transform lowering (task A of 2)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-object-state-attributes-impl
-pr: null
+pr: 1133
 base_sha: 0a3d795992a68f57c595baf3f5ced87d1224a60c
 head_sha: null
 final_head_sha: null
@@ -90,5 +90,5 @@ Implements the owner-accepted §9 of
 
 ## Context checkpoint
 
-last_progress: implementation and focused validation complete; PR pending
+last_progress: implementation and focused validation complete; PR #1133 opened, awaiting CI and review
 jira: pending (no mapped Story resolved in this worker session)
