@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-char-progression-init
 title: Character progression readiness, fenced D88 initializer (level 1, total experience 0)
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/oteryn-work-coordinator-jv59l0
@@ -12,9 +12,9 @@ issue: 162
 pr: 1143
 allocation: "#162 comment 5875188437 (Character progression readiness, owner decision D88)"
 base_sha: e5cbcfa
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 87d55eeb182d7a79daa70504875ccbb9b2d1371b
+final_head_sha: 87d55eeb182d7a79daa70504875ccbb9b2d1371b
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: #162 coordinator lane (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 authored_by: coordinator lane
 created_at: 2026-09-28
@@ -24,7 +24,7 @@ owned_paths:
   - apps/game-server/src/durability/character_progression.rs
   - apps/game-server/src/durability/mod.rs                          # test linkage only
   - apps/game-server/tests/support/character_progression_postgres_cases.rs
-  - docs/agents/tasks/active/OTV2-20260928-char-progression-init.md
+  - docs/agents/tasks/archive/OTV2-20260928-char-progression-init.md
 public_contracts:
   - DUR-02
   - DUR-03
@@ -122,12 +122,22 @@ the first XP award, with the same policy binding it passes to the XP writer.
   The only failures are the known `170006` version-pin asserts. The progression cases were also
   run with the pin locally relaxed (not committed), and all of them passed.
 
+## Terminal evidence
+
+- exact reviewed heads: Codex on `f1250e1`, `31c368a` and `954cc28`. Every P1 was fixed (full policy validation, root match on the idempotent branch, revoked-node coverage) or answered (the policy-digest binding is the existing 0009 contract). All threads are resolved.
+- final head `87d55ee`: test-only coverage plus the D84→D88 renumbering (#162 5875903216). The risk is unchanged, so no new paid review was run.
+- duplicate PR #1145 (the same allocation from the other window) was closed in favour of #1143.
+- protected integration: Merge Queue with auto-merge. Merge commit `303f29f` on protected `main`. A readback of every owned file is byte-identical to `87d55ee`.
+- ownership release: no shared leases were held.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: local commit on wip/char-progression-init; not pushed
-status: implementing
+last_progress: PR #1143 merged via Merge Queue as 303f29f; protected-main readback matched 87d55ee; record archived
+status: completed
 pr: 1143
+head_sha: 87d55eeb182d7a79daa70504875ccbb9b2d1371b
+final_head_sha: 87d55eeb182d7a79daa70504875ccbb9b2d1371b
 blocker: null
-next_action: control plane freezes, publishes and routes exact-head CI and independent review
+next_action: none; Combat D2b calls initialize_character_progression before its first XP settlement
 ```
