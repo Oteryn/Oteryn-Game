@@ -15,6 +15,8 @@ history is at `https://www.tibiawiki.com.br/index.php?curid=<pageid>&oldid=<revi
 
 | Facts | Pages | Raw capture `pages_digest` | Source run |
 | --- | --- | --- | --- |
-| `2026-09-28/tibiawiki-br-npc-facts.json` | 1,253 NPC pages, 0 subpages, 0 missing | `d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815` | Actions run 36418989024, artifact 10967214435 (zip `sha256:97d6f833…c1cb4`, expires 2026-10-28) |
+| `2026-09-28/tibiawiki-br-npc-facts.json` | 1,253 NPC pages, 0 subpages, 0 missing | `d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815` | Actions run 36418989024, artifact 10967214435 (zip `sha256:97d6f833…c1cb4`, expires 2026-10-28); raw snapshot file `sha256:bb03c726…37a11` |
 
-`pages_digest` is the SHA-256 over the sorted `<pageid>:<revid>:<sha256>` lines of the raw capture.
+`pages_digest` is the SHA-256 over the sorted `<pageid>:<revid>:<sha256>` lines of the raw capture; the facts
+also record `snapshot_sha256`, the SHA-256 of the whole raw snapshot file, which binds every copied value
+(titles, timestamps, the missing-page inventory) to the capture.

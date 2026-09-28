@@ -221,7 +221,9 @@ def page_facts(page):
             fields[0] = fields[0].rsplit(';', 1)[-1].strip()
             if fields[0]:
                 trades[direction].setdefault(fields[0], price_of(fields[1]) if len(fields) > 1 else None)
-    speakers = {fold(page['title']), fold(name)}
+    # a qualified page (`Hyacinth (NPC)`) labels its turns with the plain name
+    speakers = {fold(re.sub(r'\s*\([^()]*\)$', '', label)) for label in (page['title'], name)}
+    speakers |= {fold(page['title']), fold(name)}
     lines = []
     for raw in wikitext.split('\n'):
         # one physical line can hold several turns separated by <br>; a segment without a speaker
@@ -247,9 +249,16 @@ def page_facts(page):
             'trades': trades, 'npc_lines': lines}
 
 
-def build_facts(snapshot):
+def build_facts(snapshot, snapshot_sha256):
+    """`snapshot_sha256` is the SHA-256 of the raw snapshot file; it binds every copied value (titles, timestamps,
+    roles, the missing-page inventory) to the capture artifact, beyond what `pages_digest` covers."""
     if snapshot['schema'] != SNAPSHOT_SCHEMA:
         raise SystemExit('not a TibiaWiki BR snapshot')
+    missing = snapshot.get('missing_pages', [])
+    counts = snapshot['counts']
+    if (counts['captured'] != len(snapshot['pages']) or counts['missing'] != len(missing)
+            or {p['pageid'] for p in missing} & {p['pageid'] for p in snapshot['pages']}):
+        raise SystemExit('snapshot counts or missing-page inventory are inconsistent')
     for page in snapshot['pages']:
         if hashlib.sha256(page['wikitext'].encode('utf-8')).hexdigest() != page['sha256']:
             raise SystemExit(f'page {page["pageid"]} wikitext does not match its sha256')
@@ -260,7 +269,7 @@ def build_facts(snapshot):
     pages = [page_facts(page) for page in sorted(snapshot['pages'], key=lambda p: p['pageid'])]
     return {'schema': FACTS_SCHEMA, 'license': LICENSE_NOTE, 'api': snapshot['api'],
             'fetched_at': snapshot['fetched_at'], 'snapshot_pages_digest': snapshot['pages_digest'],
-            'missing_pages': snapshot.get('missing_pages', []),
+            'snapshot_sha256': snapshot_sha256, 'missing_pages': missing,
             'counts': {'pages': len(pages), 'with_positions': sum(1 for p in pages if p['positions']),
                        'with_trades': sum(1 for p in pages if any(p['trades'].values())),
                        'with_npc_lines': sum(1 for p in pages if p['npc_lines']),
@@ -269,7 +278,8 @@ def build_facts(snapshot):
 
 
 def cmd_facts(args):
-    facts = build_facts(json.loads(Path(args.snapshot).read_text(encoding='utf-8')))
+    data = Path(args.snapshot).read_bytes()
+    facts = build_facts(json.loads(data), hashlib.sha256(data).hexdigest())
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(facts, ensure_ascii=False, indent=1, sort_keys=True) + '\n', encoding='utf-8')
@@ -312,13 +322,20 @@ def cmd_self_test(_args):
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
         {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "'''Lee'Delle:''' Welcome."}}}]}), 'role': 'npc'})
     assert apostrophe['npc_lines'] == ['Welcome.'], apostrophe
-    tampered = {**snapshot, 'pages': snapshot['pages'][:1]}
-    try:
-        build_facts(tampered)
-    except SystemExit:
-        pass
-    else:
-        raise AssertionError('a snapshot whose pages do not match pages_digest must be rejected')
+    qualified = page_facts({**page_record({'pageid': 9, 'title': 'Hyacinth (NPC)', 'revisions': [
+        {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "[[Hyacinth (NPC)|Hyacinth]]: Greetings."}}}]}),
+        'role': 'npc'})
+    assert qualified['npc_lines'] == ['Greetings.'], qualified
+    assert build_facts(snapshot, 'f' * 64)['snapshot_sha256'] == 'f' * 64
+    dropped = {**snapshot, 'pages': snapshot['pages'][:1], 'counts': {**snapshot['counts'], 'captured': 1}}
+    inconsistent = {**snapshot, 'missing_pages': []}
+    for tampered in (dropped, inconsistent):
+        try:
+            build_facts(tampered, 'f' * 64)
+        except SystemExit:
+            pass
+        else:
+            raise AssertionError('a snapshot that does not match its digest or its own counts must be rejected')
     assert 'prose' not in json.dumps(facts), facts
     print('wiki_br self-test: PASS')
 
