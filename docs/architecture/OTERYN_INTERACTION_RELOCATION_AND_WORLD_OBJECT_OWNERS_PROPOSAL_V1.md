@@ -8,6 +8,8 @@
   ACCEPTED by the owner (2026-09-28, issue #162, §7's own `DecisionStatus` line), with several items
   delegated to the owning lane and one (attribute-bearing object state) owner-decided `YES` and under
   design in a further section of this document — see §7 for the exact scope of what is accepted.
+  §10 (created local objects: §7 open decisions 8 and 9) is `CANDIDATE`, pending independent
+  review (owner decisions of 2026-09-28, issue #162 comment 5879299188).
 - DeliveryStatus: OPEN
 - ImplementationStatus: NOT_STARTED
 - Requested by: the owner (2026-09-27) after the quest interaction transcription
@@ -1390,6 +1392,10 @@ architecture decision.
    dynamically-registered `PlacementRef`, a different runtime primitive entirely, or something else —
    is a new decision this document does not make; it would need its own C3-adjacent hardening review
    given C3 explicitly excludes dynamically materialized geometry today.
+   **Status (2026-09-28):** the owner decided to design this now (issue #162 comment 5879299188,
+   item 1). The design is §10.3, `CANDIDATE`, pending independent review. It covers runtime
+   placements bound from a lowered template, collision-`Absent` only, as a narrow C3 lift. Until
+   §10 is accepted, these four samples stay rejected at lowering.
 9. **Pre-authored `map_item create` teleporters carrying `destination`+`revert_after_ms` at an authored
    anchor — added from §9, Codex finding 4122246563 on PR #1099's Round 4 review.** Distinct from open
    decision 8 above: `death_priest_shargon`
@@ -1406,6 +1412,9 @@ architecture decision.
    authoring/lowering. Whether and how a `CREATE` could ever carry `destination`/`revert_after_ms` —
    treating it as equivalent to a `transform` into a synthesized state, or something else — is a new
    decision this document does not make.
+   **Status (2026-09-28):** the owner decided to admit these as a §9 transform from a synthesized
+   absent state (issue #162 comment 5879299188, item 2). The design is §10.4, `CANDIDATE`, pending
+   independent review. Until §10 is accepted, both samples stay rejected at lowering.
 
 ### Exact test obligations
 
@@ -1707,7 +1716,8 @@ architecture decision.
    `cult_soul_remains`/`azerus` stay rejected until it is resolved, by this lane or another owner C3
    hardening review names. Open decision 9 (pre-authored `CREATE` teleporters carrying `destination`,
    §9 Round 4) is a further separate, undesigned gap — `death_priest_shargon`/`the_ravager` stay
-   rejected until it is resolved.
+   rejected until it is resolved. Both are now designed in §10 (`CANDIDATE`, pending independent
+   review); the samples stay rejected until §10 is accepted.
 
 ## 9. Attribute-bearing object state: teleporter destination — ACCEPTED
 
@@ -2175,6 +2185,12 @@ comment 5875958040, both "as Global":
     `EVENT` edge fail-closed. Only the owning event's execution path may commit an `EVENT` edge,
     and it names its owner. The origin is part of the binding's identity, so an edge cannot change
     origin without a new binding.
+- **Owner decision 3 of 2026-09-28 (issue #162 comment 5879299188): a kill while the teleporter is
+  open is a no-op.** The timer is not extended or reset. This conforms to Canary: the Depth script
+  (`data-global/scripts/quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua:22-26`)
+  transforms and schedules only when item 1949 is present. The behaviour is implemented in #1164:
+  `select_timed_forward` returns `None` while the teleporter is open. §10.4 applies the same rule
+  to the `CREATE` teleporters, and §10.7 Q2 records how their Canary scripts differ.
 
 ### Open items for the owning lane
 
@@ -2196,13 +2212,424 @@ comment 5875958040, both "as Global":
   explicitly out of scope here, exactly as it was before this section existed.
 - `interaction` bindings and runtime-created local objects at a runtime-resolved anchor
   (`death_position`) are explicitly **not** designed by this section (Round 2) — see §7 open
-  decision 8.
+  decision 8, now designed in §10.3 (`CANDIDATE`).
 - `map_item create` at a pre-authored anchor carrying `destination`+`revert_after_ms`
   (`death_priest_shargon`/`the_ravager`) is explicitly **not** designed by this section (Round 4,
-  Codex finding 4122246563) — see §7 open decision 9.
+  Codex finding 4122246563) — see §7 open decision 9, now designed in §10.4 (`CANDIDATE`).
 - §7's other open decisions (retention/compaction, `IN_FLIGHT` reconciliation, ordinal-issuance
   exhaustion, and any later addition to that list) are unaffected by this section — only open decision
   3 (this section) and open decision 4 (design point 5 above) are resolved here; open decisions 8 and 9
-  are this section's own new findings, added to §7's list rather than kept separate, but they too
-  remain unresolved and the owning lane's — and everything §7 lists stays the owning lane's, as written in
+  are this section's own new findings, added to §7's list rather than kept separate, and are now
+  designed in §10 (`CANDIDATE`) — and everything §7 lists stays the owning lane's, as written in
   §7 at whatever revision the owning lane implements against.
+
+## 10. Created local objects: runtime placements at `death_position` (OD8) and pre-authored `CREATE` teleporters (OD9)
+
+- DecisionStatus: CANDIDATE, pending independent review. The owner decided on issue #162
+  (comment 5879299188, "OWNER DECISIONS: Content/World batch", 2026-09-28) that open decision 8 is
+  designed now (item 1), that the open decision 9 teleporters are admitted as a §9 transform from a
+  synthesized absent state (item 2), and that a boss kill while a teleporter is open is a no-op
+  (item 3). The standing rule (item 6) applies: this section follows the CrystalServer/Canary
+  behaviour where it is clear, and lists each deviation as an owner question at the end. Nothing
+  here is implemented; `encounter_map_item.rs` keeps rejecting both shapes until this section is
+  accepted.
+- Scope: exactly the six samples §7 open decisions 8 and 9 name. OD8: `mazzinor`, `gaz_haragoth`,
+  `cult_soul_remains` and `azerus`. OD9: `death_priest_shargon` and `the_ravager`.
+
+### 10.1 Canary behaviour (reference evidence)
+
+All paths are under the CrystalServer tree, `data-global/scripts/`, unless noted otherwise.
+
+| Sample | Canary source | Created object | Lifetime and removal | Use of the object |
+|---|---|---|---|---|
+| `mazzinor` | `quests/the_secret_library_quest/library_area/creaturescripts_mazzinor.lua:6-19`: on the death of `wild knowledge` | item 28673 at the creature's position, action id 4951 (lines 9-11) | `addEvent` after 60 s removes item 28673 found on that tile, if any (lines 12-17) | Step-in (`movements_mazzinor.lua:7-20`, aid 4951): outfit condition, then `item:remove(1)`. The first player to step in consumes it. |
+| `gaz_haragoth` | `creaturescripts/monster/minion_gaz_haragoth_vortex.lua:10-25`: on a minion's death | item 20121 at `deathPosition`, action id 33542 (lines 16-20) | `removeTeleport` after 60 s removes item 20121 found on that tile, if any (lines 1-6, 22) | Step-in (`movements/roshamuul/strange_vortex_tp.lua:5-18`, aid 33542) teleports the player to a fixed position. It is not consumed. |
+| `cult_soul_remains` | `quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua:2-12`: on a cultist's death | item 32414 or 32415 (random) at the corpse position, action id 5580 (lines 3-5) | After 60 s, removes that item id found on that tile, if any (lines 6-11) | Step-in (`quests/cults_of_tibia/movements_task_teleport.lua:18-53`, aid 5580): either refuses (already absorbed, or at the maximum), or advances quest storage and `teleport:remove()`. |
+| `azerus` | `quests/in_service_of_yalahar/creaturescritps_azerus_kill.lua:10-32`: on Azerus's death | teleporter 1949 at the death position, destination (32780, 31168, 14) (lines 13-17) | `removeTeleport` after 2 min removes item 1949 found on that tile, with a poff effect (lines 1-7, 20) | A plain teleporter (item type `teleport`). |
+| `death_priest_shargon` | `quests/dark_trails/creaturescripts_kill_death_priest_shargon.lua:20-38`: on the boss's death | teleporter 1949 at the fixed `teleportPosition` (33487, 32101, 9), destination (33489, 32088, 9) (lines 1-4, 23-26) | `removeTeleport` after 5 min removes item 1949 at the fixed position, if any (lines 10-16, 36) | A plain teleporter. |
+| `the_ravager` | `quests/dark_trails/creaturescripts_kill_the_ravager.lua:10-24`: on the boss's death | teleporter 1949 at the fixed (33496, 32070, 8), destination (33459, 32083, 8) (lines 13-16) | `removeTeleport` after 5 min (lines 1-7, 22) | A plain teleporter. |
+
+Properties that follow from the source and bind this design:
+
+1. **Creation ignores tile contents.** `Game.createItem` (`src/lua/functions/core/game/game_functions.cpp:501-590`)
+   refuses only when no tile exists at the position (lines 557-564). Otherwise it adds the item
+   with `FLAG_NOLIMIT` (line 566), whoever stands there.
+2. **Every created object can be walked onto.** Each one is used through `onStepIn`, and its item
+   type is a teleport, field or vortex (`data/items/items.xml:3938-3943` for 1949, `:54090-54092`
+   for 28672-28673, `:40660-40662` for 20121, `:60706` for 32414-32416). None of them blocks
+   movement.
+3. **Removal is by lookup and is idempotent.** Each timer removes "the item of that id on that
+   tile" if one is there. Once the item has already gone (consumed on step-in), the timer does
+   nothing.
+4. **Two creations on one tile stack.** Each is a separate item, and each timer removes one.
+5. **Removal restores nothing.** The object disappears; nothing reappears in its place.
+6. **The death-position objects are one per death.** A later death creates another object; it
+   never re-arms or extends an earlier one.
+7. **The fixed-position teleporters (OD9) are created without checking whether one is already
+   there.** A second kill while one is open would stack a second teleporter with its own 5-minute
+   timer (see owner question Q2 in 10.7).
+
+### 10.2 The shared model: a synthesized absent state
+
+OD8 and OD9 use one mechanism. A created object is a `LocalObject` with two states, and "create"
+is a transition between them:
+
+- **Absent state** `<action id>/absent`: synthesized at lowering. Its `collision` is `Absent`, it
+  carries no attributes, and it is **non-visible**. One new optional marker on
+  `LocalObjectStateDefinition`, `absent: bool` (false for every existing state), tells the
+  projection to render no object for it. The CW3 linker validates it fail-closed: an absent state
+  must declare `collision: Absent`, must declare no `attribute_variant_of`, and must carry no
+  per-placement attributes.
+- **Present state**: the created item's own state, keyed by its `ItemRef` key (the §9 lowering
+  convention). Its attributes are `destination` (the §9 attribute) or `interaction` (new, see
+  10.3 D5).
+- **Forward** `<action id>/create`: absent → present, `CREATE` intent family,
+  `LOCAL_OBJECT_TRANSITION_CAPABILITY`, no policy guards. The owning event commits it through
+  `ScopeRevertDriver::apply_forward`, carrying `revert_after_ms` keyed by
+  `(<action id>/create, action id)` (§9 design point 5).
+- **Inverse** `<action id>/remove`: present → absent, `REMOVE` intent family. Its `target_state`
+  equals the forward's `source_state` exactly, so `bind`'s unique-inverse rule (§7, with the
+  existing `CREATE`↔`REMOVE` pairing) accepts it without the §9 `attribute_variant_of` widening.
+
+Because a revert lands exactly on the absent state, where the authored forward matches again, no
+separate re-arm edge is needed. This is the case `encounter_map_item.rs` already describes for a
+`revert_after_ms` without `revert_destination` (D90). Nothing in `prepare`, `commit`,
+`PreparedMutation`, `PendingRevert` or the lifecycle record changes.
+
+### 10.3 OD8: runtime placements at `death_position`
+
+**D1. Template, lowered from content.** CW3 lowering turns each admitted
+`map_item create … at: death_position` action into one immutable `RuntimePlacementTemplate`,
+keyed by its `LoweredActionId`. The template holds:
+
+- the `LocalObject` definition of the created item, supplied by the caller the way
+  `anchor_objects` is for transforms;
+- the absent and present states, and the create/remove transitions, from 10.2, added to that
+  definition's vocabulary;
+- `initial_state = <action id>/absent`;
+- the present state's attributes;
+- the one `revert_after_ms` entry;
+- a collision footprint of exactly one cell, `(0, 0, 0)`.
+
+The template is ordinary immutable content (DUR-04). It carries no position.
+
+- **Admitted shape:** `operation: create`, `at: death_position`, `item`, and `revert_after_ms`
+  (required, positive). Optionally, exactly one of `destination` (an anchor, lowered to a §9
+  marker placement) or `interaction`. Optionally `effect`, which is presentational and ignored as
+  in §9.
+- **Rejected fail-closed with named errors:**
+  - a missing `revert_after_ms` (an untimed runtime object would live until the scope restarts);
+  - `revert_destination`;
+  - both `destination` and `interaction`;
+  - any other field;
+  - a created item whose declared state is not `collision: Absent` (C3; see D4);
+  - `at: death_position` on a trigger that is not a death or lethal-damage trigger (the existing
+    encounter-format rule, `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 152).
+- **One template per branch.** Each `one_of` branch has its own `LoweredActionId`, so
+  `cult_soul_remains` lowers to two templates (items 32414 and 32415). Its runtime `one_of` picks
+  one per death, as Canary's `math.random` does.
+
+**D2. Runtime placement: identity, fencing and bind.** When the owning event fires, the scope owner
+(`ChannelRuntime`/`InstanceRuntime`, D38 W1) runs one synchronous owner-turn step:
+
+1. **Resolve the position.** `death_position` is the dying creature's committed position, read
+   from the scope's own position owner (VSL-MOVE-01) at the death commit. A `delay_ms` rule uses
+   the position captured at the death (encounter format line 200).
+2. **Check capacity.** If `WOBJ-RL-08` (D6) is already at its limit, the creation fails
+   `CAPACITY_EXCEEDED`. Nothing is minted, bound or committed.
+3. **Mint the key.** `PlacementKey = oteryn-runtime:<action id>/<n>`. `n` is a scope-owned `u64`
+   creation sequence that starts at 1 and is never reset or reused within one scope generation;
+   overflow fails closed as `CAPACITY_EXCEEDED`. The CW3 linker refuses the reserved namespace
+   `oteryn-runtime` on every authored placement, and bind also checks that the key is absent from
+   `content.placements`. Lowering rejects an action id that would push the key past
+   `FIRST_PRODUCTION_MAX_KEY_BYTES` (512).
+4. **Bind.** The scope owner synthesizes a `PlacementRef` from the template, the key and the
+   resolved cell:
+   - the address is the scope's World and Content coordinate frame;
+   - the evidence is non-promotable, as for the entry door;
+   - the footprint is the template's one cell;
+   - `local_object_initial_state` is the absent state;
+   - the template's attribute and revert tables are copied in.
+
+   It then binds the `PlacementRef` with `incarnation = 1`, through exactly the validations of
+   `LocalObjectRuntime::bind`. This is the existing injection precedent:
+   `bind_native_entry_door` (`apps/game-server/src/world_runtime.rs` ~409-489) binds a
+   synthesized placement under the unchanged content-generation fence, because an injected
+   placement changes nothing `ReferenceContentGeneration::from_content` hashes. The owning lane
+   may factor `bind`'s body so that it takes the synthesized `PlacementRef` directly and avoids a
+   content clone per creation. The validations must stay identical. This is the whole answer to
+   "`bind` requires a pre-existing `PlacementKey`"; there is no second binding path.
+5. **Create.** `ScopeRevertDriver::apply_forward` runs with the create transition. That step mints
+   the scheduling ordinal and schedules the §7 record in the same staged commit.
+   - On `COMMITTED`, the runtime is inserted into the scope's `runtimes` map (the one
+     `ScopeRevertDriver::wake` already takes) and its overlay delta is published.
+   - On any other outcome or error, the freshly bound runtime is dropped. It was never inserted
+     or published: it sat at revision 0 in a non-visible state, so dropping it is unobservable.
+
+**Fences.** The runtime object carries the ordinary fences: scope and scope generation (checked
+by `apply_scope_operation`), placement, incarnation and content generation (checked by `prepare`),
+and the §7 record fences. Its key never repeats within a generation, so no later binding can match
+an old record.
+
+**Safety conditions for the creation step:**
+
+- **C-A (in-turn only).** A runtime object is created only inside the scope owner's own turn
+  that commits the triggering event. It is never created from an externally presented, queued or
+  retried input. There is therefore no duplicate presentation of a creation to de-duplicate, and
+  the creation sequence is its identity. The encounter-trigger wiring must preserve this.
+- **C-B (bounded).** A creation is refused unless `WOBJ-RL-08` has room and the template carries
+  `revert_after_ms`. The number of live runtime objects is therefore bounded, and so is each
+  object's lifetime.
+
+**D3. Lifetime, unbind and cleanup.** A runtime object is retired, meaning removed from `runtimes`
+with its `WOBJ-RL-08` slot freed, in the same owner turn in which any commit lands it on its
+absent state:
+
+- **Timed removal.** The §7 record fires the remove inverse (`wake` → `present` →
+  `apply_scope_operation`). `COMMITTED` lands on absent, and the scope owner retires the object.
+  This is Canary's `removeTeleport`.
+- **Consumed first (`mazzinor`, `cult_soul_remains`).** The step-in interaction child (the
+  `interaction` content, GAME-INTERACTION) asks the scope owner to commit the untimed remove edge.
+  The object lands on absent and is retired. Its still-`PENDING` record later reaches `present`,
+  finds no runtime at the placement, and becomes `TERMINAL` as `Fenced(Incarnation)` with no
+  mutation. This is Canary's "item already gone, timer does nothing".
+- **Last overlay word.** The delta that publishes the absent state is the last one sent for that
+  key; later snapshots omit the retired placement. No new wire message is needed.
+- **Scope restart (C2).** The scope's runtime objects, the creation sequence and the revert
+  driver are all scope-ephemeral, so a restart drops them together; nothing is persisted (W2).
+  Canary does not persist script-created map items either.
+- **Content-generation change.** If the scope owner ever rebinds its local objects under a new
+  content generation, runtime objects are retired, not rebound. Their `PENDING` records fence
+  (`ContentGeneration` or `Incarnation`) as they do today.
+- **Record release (a narrow exception to open decisions 1 and 5).** A lifecycle record whose
+  placement is a runtime key is released when it becomes `TERMINAL`. It is not retained for the
+  generation.
+  - `PendingRevert` gains one flag, set at scheduling when the placement is runtime-created.
+  - Why the exception is needed: without it, `cult_soul_remains` and `gaz_haragoth`
+    (`channel_shared`) would exhaust `WOBJ-RL-04` (1,024 records per generation) after 1,024
+    deaths in one long-lived Channel generation. From then on no remains would appear, which
+    deviates from Canary.
+  - Why it is safe: GAME-INTERACTION-01 §7 requires that the loss of a retained result never
+    re-enables execution, and that holds structurally here. The released record's placement key
+    is retired and never re-bindable (D2 step 3). The forward cannot be presented again (C-A). A
+    late re-presentation of the revert identity returns `UnknownOccurrence`, never an execution.
+  - `WOBJ-RL-04` still bounds records in any state at any moment. Only the retention horizon
+    differs for runtime keys.
+
+**D4. Collision and footprint: why C3's exclusion is lifted, and on what conditions.** C3 (§4, "Out
+of scope") excludes dynamically materialized geometry. That is a `CREATE` that reserves cells
+unknown at bind time, which would add blocking truth outside the fixed bind-time footprint the
+movement owner and the `OCCUPIED` checks reason about. OD8 needs a runtime position but no
+geometry, because every created object is walk-onto (Canary property 2). The exclusion is
+therefore lifted only for runtime objects that contribute nothing to collision, under these
+conditions:
+
+- **C3-1.** Every state of a runtime template is `collision: Absent`. This is checked at lowering
+  (D1) and again by the runtime bind, fail-closed. Absent collision means `blocking_cells` is
+  always empty, `OCCUPIED` can never apply (`prepare` checks it only for a `Present` target), and
+  movement truth is unchanged. This also matches Canary property 1: a creation succeeds whoever
+  stands on the cell.
+- **C3-2.** The footprint is exactly one cell at the resolved position. It is used only for
+  presentation and addressing, never for reservation.
+- **C3-3.** The resolved cell is a committed position of a creature inside this scope, so it lies
+  in the scope's World and frame. `bind`'s address checks re-verify this.
+- **C3-4.** Several runtime objects may share a cell with each other and with pre-authored
+  placements (Canary property 4). They are distinct placements, and none of them blocks.
+
+Runtime objects with collision `Present` (for example, a wall materialized at a creature's
+position) stay excluded by C3, unchanged. That would be a new decision.
+
+**D5. Attributes and the timed revert.**
+
+- `LocalObjectStateAttributes` gains one optional field, `interaction: Option<ProductionKey>`. It
+  holds the key of interaction-domain content (D29) and is set only on the present state. This is
+  what `mazzinor`, `gaz_haragoth` and `cult_soul_remains` need.
+  - Lowering validates it only as a well-formed key.
+  - Resolving the key and executing it on step-in (outfit, teleport, quest storage, consumption)
+    is the interaction lane's consumer, which reads it through the existing `attributes()`
+    accessor. That consumer is out of scope here, as the §9 teleport consumer is.
+- `destination` (`azerus`) is the §9 attribute, reused as is.
+- Both attributes are a pure read of `(state_attributes, state)`: present exposes them, absent
+  exposes none.
+- The timed revert is §7 without change. The record's inverse is the remove edge, its expected
+  state is present, its deadline is `revert_after_ms` from the create commit, and a timer-origin
+  firing schedules nothing. No re-arm or extension exists, since each death creates a new object
+  (Canary property 6).
+- **Dependency on D91.** The create forward is timed, so it is never USE-selectable or
+  session-invocable (existing rule). The untimed remove edge must not be either: otherwise a
+  player's USE on a vortex or teleporter would delete it, which Canary does not do. D91's typed
+  origin (`EVENT(owner)`, excluded from `select_use_transition` and session `apply`) is therefore
+  a precondition for admitting these shapes. The consuming remove requested by the step-in
+  interaction is committed by the scope owner on that child's behalf. It is not a USE.
+
+**D6. Capacity: proposed row `WOBJ-RL-08`.** This is named here only; `RESOURCE_LIMITS_REGISTRY.json`
+is not edited by this section.
+
+- **Resource:** live runtime-created local objects bound by one scope owner at once.
+- **Unit and value:** objects per scope; proposed hard maximum 64, configurable 1-64.
+- **Failure:** `CAPACITY_EXCEEDED`. It is checked before the key is minted or anything is bound,
+  so the creation commits nothing: no object, no record, no ordinal.
+- **Allocation impact:** a runtime entry counts against `WOBJ-RL-03` (486 overlay entries per
+  snapshot), so 64 leaves at least 422 entries for pre-authored placements. Memory per object is
+  one `LocalObjectRuntime` (bounded keys) plus one `WOBJ-RL-04` record.
+- **Boundary tests:** at 64 the create commits; at 65 it fails before bind, with the object
+  count, overlay and records unchanged; a retire frees a slot.
+
+The value is lane policy, not a measurement. The owning lane files the `#139` packet with it. The
+same packet amends the `WOBJ-RL-04` allocation note for D3's record release.
+
+### 10.4 OD9: pre-authored `CREATE` teleporters
+
+- **Lowering.** The `death_priest_shargon` and `the_ravager` actions are a `map_item create` at a
+  pre-authored `anchor` carrying `destination` and `revert_after_ms`. They lower onto the anchor's
+  placement, whose `LocalObject` definition the caller names in `anchor_objects` as for transforms:
+  - the absent state `<action id>/absent` and the create/remove pair from 10.2 are added to that
+    definition;
+  - the placement's `local_object_initial_state` is the absent state;
+  - `local_object_state_attributes[present].destination = Some(<destination marker>)`, so the
+    absent state carries none;
+  - `local_object_revert_after_ms[(<action id>/create, action id)] = revert_after_ms`.
+
+  The forward runs from absent to present: the owner's "§9 transform from a synthesized absent
+  state", run by the unchanged §7 driver and §9 attribute tables.
+- **Admitted shape.** `create` at an `anchor` with `destination` and `revert_after_ms` both
+  required, plus optional `effect`.
+- **Still rejected fail-closed:** `revert_destination` on a `create` (reverting to absent leaves
+  nothing to carry a destination), `interaction` on an anchor `create`, and any other field.
+  `CreateWithDestinationNotAdmitted` is retired for exactly this shape.
+- **Collision.** The absent state is `collision: Absent`. The present state uses whatever the
+  definition declares for the item; the teleporter 1949 is `Absent`. The anchor's footprint is
+  pre-authored and fixed at bind time, so C3 holds unchanged. A `Present` item would get the
+  existing `OCCUPIED` check. No covered sample has one, so no Canary deviation arises; see
+  `FLAG_NOLIMIT` in 10.1.
+- **Re-arm, consistent with D90.** The revert lands exactly on the natural initial state (absent),
+  where the authored forward matches again. `select_timed_forward`
+  (`apps/game-server/src/world_object_revert.rs` ~90-106) then behaves as follows:
+  - it returns the create edge from absent;
+  - it returns `None` while the teleporter is present, so a kill while open commits nothing, mints
+    no ordinal and extends or resets nothing (owner decision 3);
+  - it returns the create edge again after the revert.
+
+  No `/rearm` edge is lowered; D90's synthesized C→B edge exists only for the
+  `revert_destination` variant.
+- **Before the first kill.** The placement is bound, non-visible and non-colliding, and it exposes
+  no destination. Stepping on the anchor does nothing, as on Canary's empty tile.
+- **The D91 dependency from 10.3 D5 applies too.** USE on an open teleporter must not select the
+  remove edge.
+
+### 10.5 PLAYABLE_FIRST scoping
+
+This section adds:
+
+- one `bool` marker on `LocalObjectStateDefinition` (`absent`);
+- one optional field on `LocalObjectStateAttributes` (`interaction`);
+- one immutable content artifact per `death_position` action (`RuntimePlacementTemplate`);
+- one scope-owned creation sequence and live-object count, with the retire-on-absent rule;
+- one flag on `PendingRevert` for record release;
+- one proposed limit (`WOBJ-RL-08`);
+- the lowering of `create` into the absent/present pair.
+
+It adds no second binding path, no change to `prepare`, `commit` or `PreparedMutation`, no new
+driver mechanism, no persistence, no collision-bearing runtime geometry and no new wire message.
+It does not implement:
+
+- the step-in interaction consumers (outfit, teleport, quest storage, consumption);
+- the teleport consumer;
+- the encounter-trigger wiring;
+- the client-side rendering of absent states.
+
+Each of these belongs to its existing owner.
+
+### 10.6 Exact test obligations
+
+OD8:
+
+- **Lowering.** Each of `mazzinor`, `gaz_haragoth`, `cult_soul_remains` (two templates, one per
+  branch) and `azerus` lowers to the template in D1:
+  - an absent state with `collision: Absent`, `absent: true` and no attributes;
+  - a create/remove pair with the `CREATE`/`REMOVE` families;
+  - the present-state `interaction` or `destination`;
+  - one `revert_after_ms` entry.
+
+  Each D1 rejection (a missing `revert_after_ms`, `revert_destination`, both attributes, an
+  unknown field, a `collision: Present` item, the reserved namespace on an authored placement, an
+  over-long key) fails with a named error.
+- **Bind parity.** A runtime placement binds through exactly `bind`'s validations. A synthesized
+  `PlacementRef` that fails any of them (foreign definition, undeclared initial state, an
+  inverse-less timed edge, a key present in `content.placements`, a `Present` state) is rejected
+  before a runtime exists.
+- **Create, then timed removal (the `azerus` shape, `ManualClock`).**
+  - Death at cell P: the object binds at absent, `apply_forward` commits create (absent → present,
+    revision 1) and schedules one record.
+  - `attributes()` exposes `destination`.
+  - After `revert_after_ms` the remove edge commits, the object is retired (absent from
+    `runtimes`), its slot is freed and its record is released.
+  - A second presentation of the revert identity returns `UnknownOccurrence` and mutates nothing.
+- **Consumed first (the `mazzinor` shape).**
+  - A consuming remove commits before the deadline, and the object is retired.
+  - At the deadline, the record becomes `TERMINAL` as `Fenced(Incarnation)`, with no ordinal
+    minted for `prepare` and nothing mutated, and is then released.
+- **Occupied cell.** A creation at a cell occupied by a player commits (never `OCCUPIED`), and
+  `blocking_cells` stays empty in both states.
+- **Same cell, two deaths.** Two creations at P get distinct keys (`…/1`, `…/2`), are both present,
+  and are each removed by their own record. A key is never reused after retirement within the
+  generation.
+- **Capacity (`WOBJ-RL-08`).** At the configured maximum N (tested at N=1), the next creation fails
+  `CAPACITY_EXCEEDED` with no key minted, no bind, no record, no ordinal and no overlay change.
+  After a retire, a creation succeeds.
+- **Failed create is unobservable.** If `apply_forward` fails (for example `WOBJ-RL-04` is full),
+  the bound runtime is dropped, and no overlay entry or record exists for its key.
+- **Scope restart.** Dropping the scope drops all runtime objects, the sequence and the records.
+  A new generation starts from an empty set, and its sequence restarts.
+- **USE and session exclusion (after D91).** USE on a present runtime object selects nothing, and
+  session `apply` naming its create or remove edge is refused.
+
+OD9:
+
+- **Lowering and bind.** `death_priest_shargon` and `the_ravager` lower to an anchor placement
+  whose initial state is absent, with the create/remove pair and `destination` on present.
+  `bind` accepts the remove edge as the unique inverse of the create edge under the unwidened
+  rule. Before any kill, `attributes()` is `None` and the placement does not block.
+- **Kill, revert, re-arm (`ManualClock`).**
+  - Kill 1 commits absent → present with the destination and schedules a record.
+  - After 300,000 ms the remove edge commits back to absent.
+  - Kill 2 selects create again and opens it. The run ends with two distinct `TERMINAL` records.
+- **Kill while open is a no-op (owner decision 3).** While the teleporter is present,
+  `select_timed_forward` returns `None`: no ordinal, no record and no mutation. The open record's
+  deadline is unchanged, so no extension or reset happens.
+- **Still rejected.** A `create` at an anchor carrying `revert_destination`, or `interaction`,
+  still fails with a named error.
+
+### 10.7 Owner questions (deviations from Canary only)
+
+- **Q1 (OD8, capacity).** Canary creates a death-position object with no limit. This design caps
+  live runtime objects per scope at `WOBJ-RL-08` (proposed 64). A death beyond the cap creates no
+  object (fail-closed, no queue), so for example a soul remains would not appear during a
+  pathological kill rate in one Channel. Does the owner accept this cap-and-skip, or does the
+  owner want a different value or behaviour, such as evicting the oldest object? The
+  recommendation is to accept: the repository requires every scope resource to be bounded
+  (FND-03 §14.1), and 64 simultaneous one-minute objects in one scope exceeds what these hunting
+  rules produce in normal play.
+- **Q2 (OD9, kill while open).** Owner decision 3 cites the Depth script
+  (`quests/dangerous_depth/creaturescripts_bosses_mission_depths.lua:22-26`: transform and schedule
+  only when 1949 is present), which this design follows. The OD9 bosses differ in Canary: their
+  scripts call `Game.createItem` unconditionally
+  (`creaturescripts_kill_death_priest_shargon.lua:23`, `creaturescripts_kill_the_ravager.lua:13`).
+  A second kill within the 5 minutes would therefore stack a second teleporter with its own
+  timer, keeping a teleporter open until 5 minutes after the second kill. This design applies
+  decision 3 to both (a no-op). Under D26 `instance_per_party`, the scope of both samples, a
+  second kill in the same instance within the window would need a second boss spawn there, so the
+  difference is not reachable in normal play. Does the owner confirm that decision 3 also covers
+  these `CREATE` teleporters? The recommendation is yes.
+
+### 10.8 Open items for the owning lane
+
+- The exact CW3 lowering code and linker checks for D1, 10.2 and 10.4, including the reserved
+  namespace, and the representation of `RuntimePlacementTemplate`.
+- Whether `bind` is factored to take a `PlacementRef` (D2 step 4). The validations stay identical.
+- The scope owner's creation step and retire-on-absent hook, and the `PendingRevert` release flag
+  (D3), in the live Channel/Instance owner. This is not yet wired, as for §7.
+- How the transport projection renders an `absent` state. Server-side, it renders no object; the
+  exact client mapping belongs to the transport lane.
+- D91 enforcement, a precondition for admitting both shapes live (10.3 D5).
+- The `#139` resource packet for `WOBJ-RL-08` and the `WOBJ-RL-04` note (D6).

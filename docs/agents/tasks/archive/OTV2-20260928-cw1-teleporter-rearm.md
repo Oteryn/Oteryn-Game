@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw1-teleporter-rearm
 title: D90 teleporter re-arm - lower the post-revert re-arm forward and select the forward by state
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-teleporter-rearm
 pr: 1164
 base_sha: 4e65a5e450f7f6f301abbd45fa2457d56a628ba5
-head_sha: null
-final_head_sha: null
+head_sha: efcc7d78673b62d6d16a8b59a9a216f322fa9126
+final_head_sha: efcc7d78673b62d6d16a8b59a9a216f322fa9126
 final_head_frozen_at: null
 owner: Oteryn: content world runtime
 created_at: 2026-09-28T20:00:00Z
-updated_at: 2026-09-28T20:00:00Z
+updated_at: 2026-09-28T22:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/encounter_map_item.rs
@@ -90,7 +90,19 @@ smallest slice, and closes out task B:
   `python3 tools/repository/validate_repository_policy.py`: pass.
 - `git diff origin/main -- content/`: empty.
 
+## Terminal integration
+
+- **Final head:** `efcc7d78673b62d6d16a8b59a9a216f322fa9126`.
+- **Integration:** merged into main through the Merge Queue as PR #1164, merge commit `195ef53a`
+  (2026-09-28T20:45:35Z).
+- **Closeout:** the record was archived by `OTV2-20260928-cw1-od8-od9-design` (issue #162, the
+  ALLOCATIONS comment, item A).
+- **Owned paths:** released.
+- **Follow-up:** owner decision 3 of 2026-09-28 (a kill while the teleporter is open is a no-op,
+  #162 comment 5879299188) confirms this task's `select_timed_forward` behaviour. It is recorded in
+  the proposal's §9, "Owner decisions D90 and D91".
+
 ## Context checkpoint
 
-last_progress: D90 re-arm implemented and validated locally (code head 17d58265); PR #1164 opened for CI and review
+last_progress: merged as 195ef53a via PR #1164; archived as completed
 jira: pending (no mapped Story resolved in this worker session)
