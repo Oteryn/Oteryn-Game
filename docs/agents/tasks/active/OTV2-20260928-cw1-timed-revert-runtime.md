@@ -4,11 +4,12 @@
 task_id: OTV2-20260928-cw1-timed-revert-runtime
 title: §7 timed revert runtime - lifecycle records, scope driver, apply_scope_operation (task B of 2)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-timed-revert-runtime
+pr: 1144
 base_sha: f11058ecdb82e3256ae3d8857fe650ca2bd1943d
 head_sha: null
 final_head_sha: null
@@ -143,5 +144,5 @@ Deferred, with reasons:
 
 ## Context checkpoint
 
-last_progress: implementation and focused validation complete; PR pending
+last_progress: implementation and validation complete on dbbe9e38; PR #1144 opened, awaiting CI and review
 jira: pending (no mapped Story resolved in this worker session)
