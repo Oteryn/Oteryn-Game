@@ -67,6 +67,18 @@ PLAYER_ONLY = r'local player = creature:getPlayer\(\) if not (?:creature or not 
 GUARD = r'^if not creature then return(?: false)? end '
 VOICE = r'^creature:say\("[^"]*", TALKTYPE_MONSTER_(?:SAY|YELL)\) '
 LUA_CALLBACKS = ('CALLBACK_PARAM_TARGETCREATURE', 'CALLBACK_PARAM_TARGETTILE', 'CALLBACK_PARAM_CHAINPICKER')
+# The chain picker body that keeps only players outside a protection zone (poison_chain.lua and its copies).
+PLAYERS_ONLY_PICKER = ('if target:isPlayer() then if target:getPosition():isProtectionZoneTile() then return false end '
+                       'return true end return false')
+
+
+def players_only_chain_picker(text):
+    """True when the script's CALLBACK_PARAM_CHAINPICKER function is exactly the players-only template."""
+    match = re.search(r'setCallback\(\s*CALLBACK_PARAM_CHAINPICKER\s*,\s*"(\w+)"\s*\)', text)
+    if not match:
+        return False
+    body = re.search(r'function\s+' + match.group(1) + r'\s*\(\s*\w+\s*,\s*target\s*\)(.*?)\nend\b', text, re.S)
+    return bool(body) and re.sub(r'\s+', ' ', body.group(1)).strip() == PLAYERS_ONLY_PICKER
 
 
 def body_tier(text, shared, callbacks):
@@ -199,7 +211,11 @@ class SpellScripts:
         result['spell_calls'] = {m: a for m, a in calls(spell) if m not in ('name', 'words', 'register')}
         combats = list(rec['combats'].values())
         callbacks = {str(a[0]).lstrip('@') for c in combats for m, a in calls(c) if m == 'setCallback' and a}
-        result['tier'], result['tier_reasons'] = body_tier(path.read_text(encoding='utf-8', errors='replace'), result['shared'], callbacks)
+        text = path.read_text(encoding='utf-8', errors='replace')
+        players_only = players_only_chain_picker(text)
+        if players_only:
+            callbacks.discard('CALLBACK_PARAM_CHAINPICKER')
+        result['tier'], result['tier_reasons'] = body_tier(text, result['shared'], callbacks)
         if result['tier'] in ('P4', 'NOOP'):
             return result
 
@@ -232,6 +248,9 @@ class SpellScripts:
             return {**result, 'error': f'a cast ran {len(executed)} combats'}
         result['variants'] = variants
         result['combats'] = {n: self._combat(lua, combats[n]) for n in sorted(set(variants))}
+        for combat in result['combats'].values():
+            if players_only and 'CALLBACK_PARAM_CHAINPICKER' in combat['callbacks']:
+                combat['chain_target_filter'] = 'players'
         return result
 
     def _combat(self, lua, combat):
