@@ -105,12 +105,13 @@ pub const INITIAL_TOTAL_EXPERIENCE: i64 = 0;
 /// Policy binding stored with the initial progression row.  Profile, ruleset
 /// and content must equal the Character root; the remaining revisions bind
 /// the context the XP writer later requires.  Level and experience are not
-/// caller input.
+/// caller input; the bound policy must map level 1 to 0 experience.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProgressionInitializationRequest {
+pub struct ProgressionInitializationRequest<const N: usize> {
     pub context: ProgressionRevisionContext<String>,
     pub policy_revision: String,
     pub reward_revision: String,
+    pub policy: FiniteProgressionPolicy<String, N>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -378,12 +379,12 @@ impl DurabilityRoot {
     /// CharacterRevision does not advance.  An existing row is never
     /// overwritten or regressed: the same binding is an idempotent no-op that
     /// returns the stored state, any other binding fails closed.
-    pub async fn initialize_character_progression(
+    pub async fn initialize_character_progression<const N: usize>(
         &self,
         authority: &ReconciledCharacterAuthority<'_, '_>,
         node: &NodeIncarnationProof,
         fence: CurrentCharacterGameplayFence,
-        request: ProgressionInitializationRequest,
+        request: ProgressionInitializationRequest<N>,
     ) -> Result<ProgressionInitializationOutcome> {
         validate_initialization(&fence, &request)?;
         let recovery = authority
@@ -468,9 +469,9 @@ impl DurabilityRoot {
                         character_revision: fence.expected_character_revision,
                         level: INITIAL_CHARACTER_LEVEL,
                         total_experience: ExactI64::new(INITIAL_TOTAL_EXPERIENCE),
-                        context: request.context,
-                        policy_revision: request.policy_revision,
-                        reward_revision: request.reward_revision,
+                        context: request.context.clone(),
+                        policy_revision: request.policy_revision.clone(),
+                        reward_revision: request.reward_revision.clone(),
                     };
                     commit_semantic_transaction(tx, deadline).await?;
                     Ok(Ok(ProgressionInitializationOutcome::Initialized(state)))
@@ -706,12 +707,22 @@ async fn assert_gameplay_fence(
     }))
 }
 
-fn validate_initialization(
+fn validate_initialization<const N: usize>(
     fence: &CurrentCharacterGameplayFence,
-    request: &ProgressionInitializationRequest,
+    request: &ProgressionInitializationRequest<N>,
 ) -> Result<()> {
     let context = &request.context;
+    let policy = &request.policy;
+    let starts_at_level_one = policy.thresholds.first().is_some_and(|first| {
+        first.level == INITIAL_CHARACTER_LEVEL
+            && first.minimum_experience.get() == INITIAL_TOTAL_EXPERIENCE
+    });
     if fence.character_lease_generation == 0
+        || !starts_at_level_one
+        || policy.terminal_exclusive_experience.get() <= INITIAL_TOTAL_EXPERIENCE
+        || *context != policy.context
+        || request.policy_revision != policy.policy_revision
+        || request.reward_revision != policy.reward_revision
         || ![
             context.profile.as_str(),
             context.ruleset.as_str(),
@@ -721,6 +732,8 @@ fn validate_initialization(
             context.declaration.as_str(),
             request.policy_revision.as_str(),
             request.reward_revision.as_str(),
+            policy.death_policy_revision.as_str(),
+            policy.declared_difference_revision.as_str(),
         ]
         .into_iter()
         .all(valid_revision)
@@ -1077,6 +1090,38 @@ mod tests {
         award.context.content = "content-2".into();
         assert!(matches!(
             validate_request(&fence(), &award),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+    }
+
+    #[test]
+    fn initialization_requires_a_policy_mapping_level_one_to_zero_experience() {
+        let award = request();
+        let mut initialization = ProgressionInitializationRequest {
+            context: award.context,
+            policy_revision: award.policy_revision,
+            reward_revision: award.reward_revision,
+            policy: award.policy,
+        };
+        // The fixture policy starts at level 50 / 1000 experience.
+        assert!(matches!(
+            validate_initialization(&fence(), &initialization),
+            Err(CharacterProgressionError::InvalidInput)
+        ));
+        initialization.policy.thresholds = [
+            LevelThreshold {
+                level: 1,
+                minimum_experience: ExactI64::new(0),
+            },
+            LevelThreshold {
+                level: 2,
+                minimum_experience: ExactI64::new(100),
+            },
+        ];
+        validate_initialization(&fence(), &initialization).expect("level one policy");
+        initialization.policy.thresholds[0].minimum_experience = ExactI64::new(1);
+        assert!(matches!(
+            validate_initialization(&fence(), &initialization),
             Err(CharacterProgressionError::InvalidInput)
         ));
     }

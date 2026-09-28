@@ -47,9 +47,9 @@ mod character_progression_linkage {
         let _ = DurabilityRoot::commit_character_experience::<2>;
         let _ = DurabilityRoot::reconcile_character_experience;
         let _ = DurabilityRoot::read_character_progression;
-        let _ = std::mem::size_of::<ProgressionInitializationRequest>();
+        let _ = std::mem::size_of::<ProgressionInitializationRequest<2>>();
         let _ = std::mem::size_of::<ProgressionInitializationOutcome>();
-        let _ = DurabilityRoot::initialize_character_progression;
+        let _ = DurabilityRoot::initialize_character_progression::<2>;
     }
 }
 

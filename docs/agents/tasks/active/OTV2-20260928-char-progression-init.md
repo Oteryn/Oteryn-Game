@@ -101,6 +101,7 @@ finding_dispositions:
 - [x] A bootstrap Character becomes initialized at (1, 0) at revision one (PG).
 - [x] An exact repeat is an idempotent no-op (PG).
 - [x] An existing progressed row is never overwritten (PG, seeded 50/1000 and post-award 2/150).
+- [x] A policy that does not map level 1 to 0 experience is rejected up front (unit + PG).
 - [x] Stale connection, lease or scope generation, stale revision and root context substitution
       are rejected with no write (PG).
 - [x] After initialization, the existing XP writer awards XP (PG, 0 -> 150, level 1 -> 2).
@@ -111,6 +112,8 @@ finding_dispositions:
 XP formula, level curve, skip-tutorial level-2 starts, client/protocol, registries, Combat code,
 migrations. No production caller is added: the XP writer has none either, and the play-entry
 composition that supplies the progression policy binding belongs to the Combat D/E admission.
+Coordinator decision: Combat D composition calls the idempotent initializer immediately before
+the first XP award, with the same policy binding it passes to the XP writer.
 
 ## Validation
 

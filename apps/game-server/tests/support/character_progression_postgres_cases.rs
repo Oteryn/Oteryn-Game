@@ -940,12 +940,15 @@ fn distinct_occurrences_with_one_predecessor_cannot_both_commit() -> TestResult 
         })
 }
 
-fn initialization(policy: &str) -> ProgressionInitializationRequest {
-    ProgressionInitializationRequest {
-        context: context(),
+fn initialization(policy: &str) -> TestResult<ProgressionInitializationRequest<2>> {
+    let mut award = level_one_request(60, 1)?;
+    award.policy.policy_revision = policy.into();
+    Ok(ProgressionInitializationRequest {
+        context: award.context,
         policy_revision: policy.into(),
-        reward_revision: "reward-1".into(),
-    }
+        reward_revision: award.reward_revision,
+        policy: award.policy,
+    })
 }
 
 // A policy whose first threshold is the D84 start (level 1 at 0 experience).
@@ -1033,7 +1036,7 @@ fn bootstrap_character_initializes_once_under_the_xp_fence() -> TestResult {
                         &authority,
                         node,
                         stale,
-                        initialization("policy-1")
+                        initialization("policy-1")?
                     )
                     .await,
                     Err(CharacterProgressionError::AuthorityRejected)
@@ -1044,17 +1047,25 @@ fn bootstrap_character_initializes_once_under_the_xp_fence() -> TestResult {
                     &authority,
                     node,
                     fence(2)?,
-                    initialization("policy-1")
+                    initialization("policy-1")?
                 )
                 .await,
                 Err(CharacterProgressionError::CharacterRevisionMismatch)
             ));
-            let mut foreign_content = initialization("policy-1");
+            let mut foreign_content = initialization("policy-1")?;
+            foreign_content.policy.context.content = "content-2".into();
             foreign_content.context.content = "content-2".into();
             assert!(matches!(
                 root.initialize_character_progression(&authority, node, fence(1)?, foreign_content)
                     .await,
                 Err(CharacterProgressionError::ProgressionContextMismatch)
+            ));
+            let mut not_level_one = initialization("policy-1")?;
+            not_level_one.policy = request(60, 1)?.policy;
+            assert!(matches!(
+                root.initialize_character_progression(&authority, node, fence(1)?, not_level_one)
+                    .await,
+                Err(CharacterProgressionError::InvalidInput)
             ));
             assert_eq!(stored_progression(&harness.pool).await?, None);
 
@@ -1063,7 +1074,7 @@ fn bootstrap_character_initializes_once_under_the_xp_fence() -> TestResult {
                     &authority,
                     node,
                     fence(1)?,
-                    initialization("policy-1"),
+                    initialization("policy-1")?,
                 )
                 .await
                 .map_err(|error| format!("{error:?}"))?;
@@ -1082,7 +1093,7 @@ fn bootstrap_character_initializes_once_under_the_xp_fence() -> TestResult {
                     &authority,
                     node,
                     fence(1)?,
-                    initialization("policy-1"),
+                    initialization("policy-1")?,
                 )
                 .await
                 .map_err(|error| format!("{error:?}"))?;
@@ -1095,7 +1106,7 @@ fn bootstrap_character_initializes_once_under_the_xp_fence() -> TestResult {
                     &authority,
                     node,
                     fence(1)?,
-                    initialization("policy-2")
+                    initialization("policy-2")?
                 )
                 .await,
                 Err(CharacterProgressionError::ProgressionContextMismatch)
@@ -1126,7 +1137,7 @@ fn bootstrap_character_initializes_once_under_the_xp_fence() -> TestResult {
                     &authority,
                     node,
                     fence(2)?,
-                    initialization("policy-1"),
+                    initialization("policy-1")?,
                 )
                 .await
                 .map_err(|error| format!("{error:?}"))?;
@@ -1175,7 +1186,7 @@ fn existing_progressed_row_is_never_overwritten() -> TestResult {
                     &authority,
                     &harness.node,
                     fence(1)?,
-                    initialization("policy-1"),
+                    initialization("policy-1")?,
                 )
                 .await
                 .map_err(|error| format!("{error:?}"))?;
