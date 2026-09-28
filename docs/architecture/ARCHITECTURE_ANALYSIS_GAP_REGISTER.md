@@ -590,9 +590,9 @@ Still unresolved:
 
 No monetization choice is implied.
 
-Partially resolved (2026-09-28): Store catalog authorship and purchase-delivery
-ownership — see `docs/architecture/OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md`.
-Coin balance, payment, entitlement lifecycle, refunds and fraud remain open here.
+Partially resolved (2026-09-28): Store catalog authorship only — see `docs/architecture/OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md`.
+Coin balance, payment, purchase delivery, entitlement lifecycle, refunds and fraud
+remain open here.
 
 ## 33. Business and sustainability model
 

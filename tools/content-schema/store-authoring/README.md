@@ -2,8 +2,9 @@
 
 Ownership decision: [`docs/architecture/OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md`](../../../docs/architecture/OTERYN_STORE_CATALOG_OWNER_DECISION_2026-09-28.md).
 
-The in-game Tibia Store catalog (categories, offers, prices, product references) and
-delivery of a purchase to the character (store inbox). Modeled on
+The in-game Tibia Store catalog (categories, offers, prices, product references).
+Purchase delivery is not modeled here; its ownership stays open under gap register §32.
+Modeled on
 `../spell-authoring/` as the lean authoring-package template. The player's Tibia Coin
 balance, payment and purchase ledger are Platform's, not modeled here.
 
