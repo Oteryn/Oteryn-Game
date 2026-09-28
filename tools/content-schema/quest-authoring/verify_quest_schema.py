@@ -4,7 +4,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-from validate_quest_content import BLOCKED, validate, validate_gates, validate_interactions, validate_storylines
+from validate_quest_content import BLOCKED, BLOCKED_SCHEDULED_REVERT_DELAY, validate, validate_gates, validate_interactions, validate_storylines
 import ots_interactions as oi
 
 
@@ -636,6 +636,33 @@ converter_case(
     ['item:transform(2773)', 'addEvent(Position.revertItem, 5000, toPosition + Position(1, 2, 7), 2772)'],
     lambda c, a: (len([x for x in c if x.get('operation') == 'TRANSFORM' and 'revert_after_ms' in x]) == 0
                  and len([x for x in c if x.get('status') == 'blocked']) == 1, c))
+
+# Round 4, Finding 1 (P2): a scheduled (addEvent) revert with a non-literal delay fails closed -- a
+# blocked WorldObject child with its own explicit reason -- rather than merging silently with no
+# revert_after_ms; only an inherently undelayed revert (:decay()/:revertItem(...)/direct
+# Position.revertItem(...)) may merge without one.
+converter_case(
+    'a scheduled revert with a non-literal delay stays blocked with its own explicit reason, not silent',
+    ['Game.createItem(2793, Position(100, 200, 7))',
+     'addEvent(Position.revertItem, someDelay, Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and 'revert_after_ms' not in c[0]
+                 and c[1].get('status') == 'blocked' and c[1]['reason'] == BLOCKED_SCHEDULED_REVERT_DELAY, c))
+converter_case(
+    'an unscheduled decay still merges silently with no revert_after_ms (unaffected by the fail-closed rule)',
+    ['item:transform(2773)', 'item:decay()'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'TRANSFORM' and 'revert_after_ms' not in c[0], c))
+
+# Round 4, Finding 2 (P2): a direct Position.revertItem(Position(x,y,z), ...) call must be parsed for
+# its own literal position argument, not consumed by the generic REVERT_METHOD receiver match (which
+# would otherwise see it as a method call with the useless receiver "Position" and never look inside).
+converter_case(
+    'the exact Codex example: Position.revertItem(Position(x,y,z), ...) associates by its own literal position',
+    ['Game.createItem(2793, Position(100, 200, 7))', 'Position.revertItem(Position(100, 200, 7), 2772)'],
+    lambda c, a: (len(c) == 1 and c[0]['operation'] == 'CREATE' and c[0].get('anchor') == 'p1', c))
+converter_case(
+    'Position.revertItem(Position(x,y,z), ...) at a different position does not associate',
+    ['Game.createItem(2793, Position(100, 200, 7))', 'Position.revertItem(Position(1, 1, 7), 2772)'],
+    lambda c, a: (len(c) == 2 and c[0]['operation'] == 'CREATE' and c[1].get('status') == 'blocked', c))
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:

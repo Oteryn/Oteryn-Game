@@ -39,7 +39,7 @@ import lua_tables
 from lua_writers import REGISTRATION, argument, expand_aliases, storage_aliases, strip_code
 from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, ref, slug, unused_decisions
 from ots_questlog import norm, script_of, track_of
-from validate_quest_content import BLOCKED
+from validate_quest_content import BLOCKED, BLOCKED_SCHEDULED_REVERT_DELAY
 
 CALLBACK = re.compile(r'^\s*function\s+(\w+)[.:](onStepIn|onStepOut|onAddItem|onUse|onDeath|onKill|onPrepareDeath)\s*\(')
 OBJECT_LINE = re.compile(r'^\s*local\s+\w+\s*=\s*(MoveEvent|Action|CreatureEvent)\s*\(')
@@ -100,37 +100,43 @@ ASSIGNED_LOCAL = re.compile(r'^local\s+(\w+)\s*=')
 # a bare `X:revertItem(...)`/`X:decay()` method call names its own receiver; `addEvent`/`stopEvent`
 # scheduling `Position.revertItem` and a direct `Position.revertItem(...)` call have no receiver at all
 # (revertItem is not a method call there), so only a literal position in their own argument list --
-# never a variable's name -- can prove they target the same object as a candidate operation.
+# never a variable's name -- can prove they target the same object as a candidate operation. Checked
+# before REVERT_METHOD: `Position.revertItem(` itself syntactically matches `(\w+)[:.]revertItem\(`
+# with receiver "Position", which would consume it before its own literal position ever gets parsed.
+POSITION_REVERT_ITEM = re.compile(r'\bPosition\.revertItem\(')
 REVERT_METHOD = re.compile(r'(\w+)[:.](revertItem|decay)\(')
 ADD_STOP_EVENT = re.compile(r'\b(?:add|stop)Event\(')
-POSITION_REVERT_ITEM = re.compile(r'\bPosition\.revertItem\(')
 
 
 def parse_revert(raw):
     """Whether `raw` is a revert call, and what it provably reverts: (is_revert, receiver, literal
-    position groups, literal delay in ms). Each call's own argument list is split with `split_args`
-    (bracket-nesting aware) and only the specific position argument itself -- never the argument list
-    searched as a whole, which would also match a look-alike literal buried in an unrelated expression
-    such as `toPosition + Position(1,2,7)` -- is checked for a complete literal match."""
+    position groups, literal delay in ms, scheduled). Each call's own argument list is split with
+    `split_args` (bracket-nesting aware) and only the specific position argument itself -- never the
+    argument list searched as a whole, which would also match a look-alike literal buried in an
+    unrelated expression such as `toPosition + Position(1,2,7)` -- is checked for a complete literal
+    match. `scheduled` is true only for the addEvent/stopEvent form, the one form whose revert is timed
+    by a delay argument rather than being immediate: a non-literal delay there must fail closed (D38
+    §4's `revert_after_ms` is never recorded without a literal duration), never merge silently without
+    one the way an inherently undelayed `:decay()`/`:revertItem(...)` call is allowed to."""
+    if (m := POSITION_REVERT_ITEM.search(raw)):
+        args = split_args(argument(raw, m.end()))
+        target = args[0] if args else None
+        pos = POSITION.fullmatch(target) if target else None
+        return True, None, (pos.groups() if pos else None), None, False
     if (m := REVERT_METHOD.search(raw)):
-        return True, m.group(1), None, None
+        return True, m.group(1), None, None, False
     if (m := ADD_STOP_EVENT.search(raw)):
         args = split_args(argument(raw, m.end()))
         if not args or args[0] != 'Position.revertItem':
-            return False, None, None, None
+            return False, None, None, None, False
         # addEvent(Position.revertItem, delay, position, ...): the scheduler's own two fixed arguments,
         # then whatever Position.revertItem itself is invoked with; a position is conventionally its
         # first argument (the third argument to addEvent overall).
         delay = int(args[1]) if len(args) > 1 and re.fullmatch(r'\d+', args[1]) else None
         target = args[2] if len(args) > 2 else None
         pos = POSITION.fullmatch(target) if target else None
-        return True, None, (pos.groups() if pos else None), delay
-    if (m := POSITION_REVERT_ITEM.search(raw)):
-        args = split_args(argument(raw, m.end()))
-        target = args[0] if args else None
-        pos = POSITION.fullmatch(target) if target else None
-        return True, None, (pos.groups() if pos else None), None
-    return False, None, None, None
+        return True, None, (pos.groups() if pos else None), delay, True
+    return False, None, None, None, False
 
 
 def split_args(text):
@@ -437,13 +443,15 @@ class Script:
             found.append({'owner': 'WorldObject', 'operation': 'RETAG', 'value_source_line': number,
                          '_identity': m.group(1)})
         else:
-            is_revert, receiver, pos, delay = parse_revert(raw)
+            is_revert, receiver, pos, delay, scheduled = parse_revert(raw)
             if is_revert:
                 # never its own child (D38 §4): `convert()` attaches it to the operation it provably
                 # reverts (the preceding typed operation in this same statement list with the same
-                # receiver/anchor identity), or leaves it blocked when none matches deterministically.
+                # receiver/anchor identity), or leaves it blocked when none matches deterministically,
+                # or when it is scheduled (addEvent) with no literal delay to record (fail closed).
                 found.append({'owner': 'WorldObject', '_revert': True, '_revert_receiver': receiver,
-                              '_revert_position': pos, '_revert_delay_ms': delay, '_source_line': number})
+                              '_revert_position': pos, '_revert_delay_ms': delay, '_revert_scheduled': scheduled,
+                              '_source_line': number})
         if (m := CONTAINER_FILL.match(raw)) and m.group(1) in self.containers:
             # a plain item added to a reward container built earlier in this same callback (DUR-03): its contents
             self.containers[m.group(1)].setdefault('contents', []).append(
@@ -539,12 +547,16 @@ class Script:
         name) or pre-authored anchor the revert's own receiver/literal position matches (D38 §4: the
         revert is the same object's own later operation, so it is transcribed as a field on that
         operation, never its own child). List position is never itself the match: a revert with no
-        matching candidate, or with more than one equally plausible candidate, stays blocked instead."""
+        matching candidate, or with more than one equally plausible candidate, stays blocked instead --
+        as does a scheduled (addEvent) revert with no literal delay, which fails closed rather than
+        merging silently with no `revert_after_ms` (only an inherently undelayed revert may do that)."""
         receiver, pos = child['_revert_receiver'], child['_revert_position']
         candidates = [c for c in out if c.get('owner') == 'WorldObject' and 'operation' in c
                      and self.same_target(c, receiver, pos)]
-        if len(candidates) != 1:
-            blocked = {'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT,
+        unresolved_delay = child['_revert_scheduled'] and child['_revert_delay_ms'] is None
+        if len(candidates) != 1 or unresolved_delay:
+            reason = BLOCKED_SCHEDULED_REVERT_DELAY if len(candidates) == 1 and unresolved_delay else BLOCKED_WORLD_OBJECT
+            blocked = {'owner': 'WorldObject', 'status': 'blocked', 'reason': reason,
                       'source_line': child['_source_line']}
             if child.get('repeated'):
                 blocked['repeated'] = True

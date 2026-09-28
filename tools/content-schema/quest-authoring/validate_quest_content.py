@@ -23,6 +23,11 @@ MANIFEST_STATUS = ('mapped', 'conflict', 'approved_omission', 'unresolved_semant
 # WorldObject child whose source call the converter has not yet classified into a D38 operation kind.
 BLOCKED = {'Movement': 'computed relocation target: no anchor named (GAME-INTERACTION-01 §19.3; D37 owner accepted)',
            'WorldObject': 'world-object operation kind not yet classified from source (D38 owner accepted; re-transcription pending)'}
+# a scheduled revert (addEvent(Position.revertItem, delay, ...)) whose delay is not itself a literal
+# fails closed: it never merges silently into the operation it would revert without a recorded
+# revert_after_ms, so it stays its own blocked WorldObject child with this distinct reason.
+BLOCKED_SCHEDULED_REVERT_DELAY = 'scheduled revert (addEvent) has a non-literal delay; revert_after_ms cannot be recorded without one'
+BLOCKED_REASONS = {'Movement': {BLOCKED['Movement']}, 'WorldObject': {BLOCKED['WorldObject'], BLOCKED_SCHEDULED_REVERT_DELAY}}
 
 
 def refs(value):
@@ -275,7 +280,7 @@ def validate_interactions(interactions_doc, manifest, quests_doc, progress_doc):
         # source position kept for the re-run that binds it), and a child that once referenced one can
         # be reclassified as blocked under a stricter typing rule without that evidence being deleted.
         for child in children:
-            if child.get('status') == 'blocked' and child['owner'] in BLOCKED and child['reason'] != BLOCKED[child['owner']]:
+            if child.get('status') == 'blocked' and child['owner'] in BLOCKED_REASONS and child['reason'] not in BLOCKED_REASONS[child['owner']]:
                 errors.append(f'{key}: {child["owner"]} child is blocked for an unknown reason')
             if child['owner'] == 'Quest' and child['request'] == 'set_progress':
                 if child['progress'] not in tracks:
