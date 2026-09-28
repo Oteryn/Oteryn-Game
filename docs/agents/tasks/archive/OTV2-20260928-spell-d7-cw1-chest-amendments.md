@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-spell-d7-cw1-chest-amendments
 title: "Record SPELL-D7 (D89), CW1 D90/D91 and reward chest D92 amendments"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1151
 base_sha: 75e502a8e90020afacbf37a8791e5eec54ea1b41
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: faffe7d4bd44f1847cb67c560b0cced44499852a
+final_head_sha: faffe7d4bd44f1847cb67c560b0cced44499852a
+final_head_frozen_at: 2026-09-28T19:04Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -61,9 +61,9 @@ child (P3b step 1, #1144, `CHEST-1`) carries its own qualification.
 
 ## Acceptance criteria
 
-- [ ] The amendments are on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The amendments are on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review, one repair generation; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`9961e4d4`).
 
 ## Excluded scope
 
@@ -89,14 +89,26 @@ Codex review of `40cef29`: five P1, all ACCEPTED in repair generation 1 of 1 (#1
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1151 merged through the Merge Queue on 2026-09-28 as `9961e4d4`.
+- Review: one Codex review of `40cef29` (five P1s), repaired in the single repair generation
+  `faffe7d`; the owner decided to merge after green CI.
+- Protected-main readback: all seven changed files on `9961e4d4` are byte-identical to the frozen
+  head `faffe7d`.
+- The PR body predates the repair (composition §3.1, typed transition origin, C→B edge, the
+  CHEST-1 supersession); the documents are authoritative.
+- Archived under `OTV2-20260928-wo0-world-object-terrain-format-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1151 open
-status: validating
+last_progress: protected-integrated as 9961e4d4; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: faffe7d4bd44f1847cb67c560b0cced44499852a
 pr: 1151
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1151
+next_action: null
 ```
