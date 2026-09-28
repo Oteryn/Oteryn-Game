@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-game-ai-action-integration-decision
 title: "GAME-AI-01 AI Action Integration, first creature slice (D53-D57)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1110
 base_sha: 356673fed04758e92fc0dae430238c0e41078b0b
 head_sha: null
 final_head_sha: null
@@ -137,17 +137,17 @@ finding_dispositions:
 
 ## Validation
 
-- `python3 tools/agents/validate_governance.py`: pending.
-- `python3 tools/repository/validate_repository_policy.py`: pending.
+- `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
+- `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: decision drafted from owner decisions D53-D57
-status: implementing
+last_progress: authored; PR #1110 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1110
 owner_action_required: null
 blocker: null
-next_action: validate, commit, open PR, freeze, one exact-head review
+next_action: exact-head review and Merge Queue integration of #1110
 ```
