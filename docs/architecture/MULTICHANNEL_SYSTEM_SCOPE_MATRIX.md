@@ -66,6 +66,10 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | Depot | Character/world persistence | Character + World | Strong durable | Same contents on all channels | Shared |
 | Mail/parcels | World service/domain | World | Idempotent transactional | Cross-channel delivery | Shared |
 | Quest progress | Character persistence | Character | Strong durable | Same progress on all channels | Shared |
+| Account quest completion (D45) | Quest domain through Game-owned DUR persistence | Account + profile family | Strong durable, write-once, inserted only inside a fenced character completion | Honoured by conditions on every channel and world of the profile family | Shared |
+| Account cosmetic unlocks: outfits, addons, mounts, Store unlocks (D47) | Character appearance owner | Account | Strong durable, write-once | All worlds and profiles; gameplay effects stay per world ruleset | Shared |
+| Account achievements (D48) | Achievement owner | Account | Strong durable, write-once; progress counters stay Character | All worlds and profiles | Shared |
+| Store delivery inbox (D47, D49) | Game delivery of Platform entitlement lines | Account + profile family | Idempotent per line and unit; claim is a DUR-03 MINT | Claimable on any world of the profile family | Shared |
 | NPC runtime/conversation | `ChannelRuntime` | Channel/Instance | Authoritative immediate | Independent NPC state unless explicitly global | Local by default |
 | Daily/account rewards | Reward service/domain | Character or Account | Strong durable | Cannot repeat through channel hopping | Shared eligibility |
 | Boss runtime | `ChannelRuntime` or explicit world event owner | Channel/World | Explicit per event | Must declare scope | No implicit default |
