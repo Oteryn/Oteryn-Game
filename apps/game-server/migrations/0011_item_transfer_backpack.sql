@@ -166,7 +166,7 @@ $$;
 -- table needs no write grant to the runtime role: nothing but this trigger,
 -- reading the genuine OLD row, can ever populate it.
 CREATE FUNCTION game_item_instance_guard() RETURNS trigger
-LANGUAGE plpgsql SECURITY DEFINER AS $$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = pg_catalog, public, pg_temp AS $$
 BEGIN
     IF TG_OP = 'UPDATE' AND OLD.lifecycle = 1
        AND NEW.last_transaction_id IS NOT NULL
