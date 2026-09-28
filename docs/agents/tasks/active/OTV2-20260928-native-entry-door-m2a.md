@@ -12,12 +12,12 @@ base_branch: main
 branch: claude/native-entry-door-m2a
 pr: 1075
 base_sha: 13576c4463f51184c8a96f1bde6d536fe2f16c12
-head_sha: 0d4db70f7dcf95af64368de280f27ca5846d31a4
+head_sha: bad4b3f96411e501d8dd7798e8fc7344955f92fd
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: content world runtime" (Claude Code)
 created_at: 2026-09-28T08:00:00Z
-updated_at: 2026-09-28T11:10:00Z
+updated_at: 2026-09-28T11:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/content/project/native_entry.rs
@@ -90,6 +90,26 @@ against a placement it constructs itself from `door()` + `source()`.
    `doors[0].definition.key` both changed to the same new key — still refused).
 
 Replied once on each of the three review threads before pushing this fix.
+
+## Codex round 3 (PR #1075) — two more findings, both addressed
+
+1. **r4120672731 (P1)**: a closed door must not be walkable before M2b composes the runtime
+   blocker. Fixed: `movement_cells()` now filters the door cell out of the claims it builds by key
+   (`accepted::DOOR_CELL.0`), so the active `NativeEntryMovementCells` index is exactly the three
+   room Terrain cells; the door cell stays `Walkable` in `source().cells` (needed for the
+   accepted-bindings bijection) but is absent from active movement until M2b lands the runtime
+   blocker and adds it atomically. Verified `content/activation.rs`/`movement.rs` need no change
+   (opaque `movement_cells` carry, generic `EngineeringStaticCellIndex` consumer; no
+   `SHARED_LEASE_REQUIRED`). New test `movement_cells_exclude_the_door_cell`, inside
+   `native_entry.rs`'s own `#[cfg(test)] mod tests` since `NativeEntryMovementCells::index()`/
+   `::scope()` and `static_cell_engine` are `pub(crate)`, unreachable from integration tests.
+2. **r4120672740 (P2)**: door-adjacency distance arithmetic could overflow `i32` for a malformed
+   project's extreme coordinates. Fixed: widened to `i64` before subtracting/summing. New test
+   `door_adjacency_near_i32_extremes_refuses_without_panicking` (door near `i32::MAX`, a room cell
+   near `i32::MIN`, World bounds widened to admit both) — confirmed it reproduces the original
+   overflow panic against the pre-fix arithmetic, then passes cleanly with the fix.
+
+Replied once on each of these two threads before pushing this fix.
 
 ## Architecture and source of truth
 
@@ -180,11 +200,11 @@ reason: >
 ## Context checkpoint
 
 ```yaml
-last_progress: Codex round 2 (r4120444668, r4120444680 DECISION_REQUIRED, r4120444694) addressed;
-  replied on all three threads; full focused-validation suite green; pushed 0d4db70 (no force).
+last_progress: Codex round 3 (r4120672731, r4120672740) addressed; replied on both threads; full
+  focused-validation suite green; pushed bad4b3f (no force).
 status: validating
 branch: claude/native-entry-door-m2a
-head_sha: 0d4db70f7dcf95af64368de280f27ca5846d31a4
+head_sha: bad4b3f96411e501d8dd7798e8fc7344955f92fd
 pr: 1075
 final_head_sha: null
 final_head_frozen_at: null
