@@ -9,6 +9,9 @@ on:
       - imports/tibiawiki/bindings/items.json
       - imports/crystalserver/bindings/items.json
       - imports/tibiawiki/facts/items-family-fallback.json
+      - imports/tibiawiki/batches.json
+      - imports/tibiawiki/sources.json
+      - tools/content-census/item_wiki_family_capture.py
       - .github/workflows/item-authoring-schema.yml
   workflow_dispatch:
 

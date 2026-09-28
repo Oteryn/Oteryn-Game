@@ -7,8 +7,12 @@
       },
       "label": "Halls of hope",
       "section": "Key 3008 (Draconia Quest)",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/forgotten_knowledge_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -50,8 +54,12 @@
       },
       "label": null,
       "section": "Key 3008 (Draconia Quest)",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/forgotten_knowledge_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -93,8 +101,12 @@
       },
       "label": null,
       "section": "Key 3008 (Draconia Quest)",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/forgotten_knowledge_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -136,8 +148,12 @@
       },
       "label": null,
       "section": "Key 3008 (Draconia Quest)",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/forgotten_knowledge_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -179,8 +195,12 @@
       },
       "label": null,
       "section": "Key 3008 (Draconia Quest)",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/forgotten_knowledge_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -363,13 +383,13 @@
       },
       "label": "Banana free account area",
       "section": "Studded shield quest (rookgaard)",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/studded_shield_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -410,13 +430,13 @@
       },
       "label": "Banana premium account area",
       "section": "Studded shield quest (rookgaard)",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/studded_shield_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -635,13 +655,13 @@
       },
       "label": null,
       "section": "Bear Room quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/bear_room_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -682,13 +702,13 @@
       },
       "label": null,
       "section": "Bear Room quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/bear_room_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -729,13 +749,13 @@
       },
       "label": "Bag",
       "section": "Behemoth quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/behemoth_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -860,13 +880,13 @@
       },
       "label": null,
       "section": "Behemoth quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/behemoth_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -907,13 +927,13 @@
       },
       "label": null,
       "section": "Behemoth quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/behemoth_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -2017,8 +2037,12 @@
       },
       "label": "Desert Quest",
       "section": "Desert Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/the_desert_dungeon_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -2060,8 +2084,12 @@
       },
       "label": null,
       "section": "Desert Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/the_desert_dungeon_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -2179,13 +2207,13 @@
       },
       "label": null,
       "section": "Devil helmet Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/devil_helmet_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -2226,13 +2254,13 @@
       },
       "label": null,
       "section": "Devil helmet Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/devil_helmet_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -3344,13 +3372,13 @@
       },
       "label": null,
       "section": "Shadows of Yalahar Quest Mision 12",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/shadows_of_yalahar_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -3579,8 +3607,12 @@
       },
       "label": "Honey Flower Quest",
       "section": "Honey Flower Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "crystalserver:quest/studded_legs_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -3622,13 +3654,13 @@
       },
       "label": null,
       "section": "Forgotten Knowledge Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/forgotten_knowledge_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -3949,13 +3981,13 @@
       },
       "label": null,
       "section": "Katana Quest (rookgaard)",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/katana_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -3996,8 +4028,12 @@
       },
       "label": "Legion helmet quest (dawnport)",
       "section": "Legion helmet quest (dawnport)",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/newhaven_legion_helmet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -4099,13 +4135,13 @@
       },
       "label": "Battle hammer",
       "section": "Thais lighthouse quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/thais_lighthouse_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -4146,13 +4182,13 @@
       },
       "label": "Dark shield",
       "section": "Thais lighthouse quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/thais_lighthouse_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -4551,13 +4587,13 @@
       },
       "label": null,
       "section": "Minotaur Hell Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/minotaur_hell_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -4611,13 +4647,13 @@
       },
       "label": null,
       "section": "Minotaur Hell Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/minotaur_hell_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -5280,13 +5316,13 @@
       },
       "label": null,
       "section": "Forgotten Knowledge Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/forgotten_knowledge_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -5549,8 +5585,12 @@
       },
       "label": "Power Bolt Quest",
       "section": "Power Bolt Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/power_bolts_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -6022,13 +6062,13 @@
       },
       "label": null,
       "section": "Ring Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/ring_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -6267,13 +6307,13 @@
       },
       "label": "Book",
       "section": "Short sword quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/short_sword_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -6441,8 +6481,12 @@
       },
       "label": "Simon The Beggar's Favorite Staff",
       "section": "Witch House Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/beggar_outfits_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -6672,13 +6716,13 @@
       },
       "label": null,
       "section": "Stealth Ring Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/stealth_ring_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -7709,8 +7753,12 @@
       },
       "label": "Silver key 3002 (draconia quest), in a wooden coffin",
       "section": "Silver key 3002 (draconia quest), in a wooden coffin",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/draconia_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -7753,8 +7801,12 @@
       },
       "label": "Key 3008 (Draconia Quest)",
       "section": "Key 3008 (Draconia Quest)",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/draconia_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -7797,13 +7849,13 @@
       },
       "label": "Key 3301 (outlaw camp key 1)",
       "section": "Katana Quest (rookgaard) key 4603",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/katana_quest",
+        "key": "canary:quest/the_outlaw_camp_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -7845,13 +7897,13 @@
       },
       "label": "Key 3302 (outlaw camp key 2)",
       "section": "Katana Quest (rookgaard) key 4603",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/katana_quest",
+        "key": "canary:quest/the_outlaw_camp_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -7893,13 +7945,13 @@
       },
       "label": "Key 3303 (outlaw camp key 3)",
       "section": "Katana Quest (rookgaard) key 4603",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/katana_quest",
+        "key": "canary:quest/the_outlaw_camp_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -7941,13 +7993,13 @@
       },
       "label": "Key 3304 (outlaw camp key 4)",
       "section": "Katana Quest (rookgaard) key 4603",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/katana_quest",
+        "key": "canary:quest/the_outlaw_camp_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -7989,13 +8041,13 @@
       },
       "label": "Key 3520",
       "section": "Katana Quest (rookgaard) key 4603",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/katana_quest",
+        "key": "canary:quest/fanfare_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -8037,13 +8089,13 @@
       },
       "label": "Key 3600",
       "section": "Katana Quest (rookgaard) key 4603",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/katana_quest",
+        "key": "canary:quest/ghoul_room_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -8085,13 +8137,13 @@
       },
       "label": "Key 3610",
       "section": "Katana Quest (rookgaard) key 4603",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/katana_quest",
+        "key": "canary:quest/devil_helmet_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -8181,13 +8233,13 @@
       },
       "label": "Key 3667",
       "section": "Katana Quest (rookgaard) key 4603",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/katana_quest",
+        "key": "canary:quest/devil_helmet_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -8277,13 +8329,13 @@
       },
       "label": "key 3800",
       "section": "Emperor's cookies quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/emperor_s_cookies_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -8325,13 +8377,13 @@
       },
       "label": "key 3802",
       "section": "Emperor's cookies quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/emperor_s_cookies_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -8373,13 +8425,13 @@
       },
       "label": null,
       "section": "Black knight quest key 5010",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/black_knight_quest",
+        "key": "canary:quest/the_paradox_tower_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -8517,13 +8569,13 @@
       },
       "label": null,
       "section": "Black knight quest key 5010",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
-        "key": "canary:quest/black_knight_quest",
+        "key": "canary:quest/alawar_s_vault_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {
@@ -11724,8 +11776,12 @@
       },
       "label": "Family brooch quest",
       "section": "Family brooch quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/the_white_raven_monastery_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -12146,8 +12202,12 @@
       },
       "label": "The Medusa Quest",
       "section": "The Medusa Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/medusa_shield_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -14776,8 +14836,12 @@
       },
       "label": null,
       "section": "Shards of Ancient Winters Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/lion_trophy_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -14840,8 +14904,12 @@
       },
       "label": null,
       "section": "Shards of Ancient Winters Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "crystalserver:quest/berserk_potion_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -14912,8 +14980,12 @@
       },
       "label": "Shards of Ancient Winters Quest",
       "section": "Shards of Ancient Winters Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "canary:quest/inukaya_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -14976,8 +15048,12 @@
       },
       "label": null,
       "section": "Shards of Ancient Winters Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "crystalserver:quest/frost_dragon_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -15040,8 +15116,12 @@
       },
       "label": null,
       "section": "Shards of Ancient Winters Quest",
-      "quest": null,
-      "quest_link_basis": null,
+      "quest": {
+        "family": "Quest",
+        "key": "crystalserver:quest/skeleton_decoration_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "quest_link_basis": "curated",
       "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
@@ -16439,13 +16519,13 @@
       },
       "label": null,
       "section": "What a Foolish Quest",
-      "quest": null,
-      "quest_link_basis": null,
-      "quest_candidate_from_section": {
+      "quest": {
         "family": "Quest",
         "key": "canary:quest/what_a_foolish_quest",
         "revision": "canary-47dfd51f+crystalserver-ff7ede59"
       },
+      "quest_link_basis": "curated",
+      "quest_candidate_from_section": null,
       "claim": {
         "per": "character",
         "repeat": {

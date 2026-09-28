@@ -1492,7 +1492,7 @@ def test_committed_wiki_fallback_snapshot_loads_fail_closed():
     resolved = engine_items.load_wiki_family_fallback(
         engine_items.WIKI_FAMILY_FALLBACK_PATH, engine_items.build_identity_index()
     )
-    check(len(resolved) == 946, len(resolved))
+    check(len(resolved) == 948, len(resolved))
     check(
         all(
             entry["profile"] in engine_items.PROFILE_ITEM_CLASS
@@ -1500,6 +1500,30 @@ def test_committed_wiki_fallback_snapshot_loads_fail_closed():
         ),
         "every committed record resolves to a known profile",
     )
+
+
+def test_wiki_fallback_snapshot_is_registered():
+    """The committed snapshot and its capture tool stay registered in imports/tibiawiki."""
+    root = engine_items.WIKI_FAMILY_FALLBACK_PATH.parents[3]
+    snapshot = json.loads(
+        engine_items.WIKI_FAMILY_FALLBACK_PATH.read_text(encoding="utf-8")
+    )
+    digest = snapshot["snapshot_sha256"]
+    tool = root / "tools/content-census/item_wiki_family_capture.py"
+    tool_digest = hashlib.sha256(tool.read_bytes()).hexdigest()
+    batch_id = "g5-item-family-fallback-tibiawiki-r1"
+    batches = json.loads(
+        (root / "imports/tibiawiki/batches.json").read_text(encoding="utf-8")
+    )
+    sources = json.loads(
+        (root / "imports/tibiawiki/sources.json").read_text(encoding="utf-8")
+    )
+    batch = [row for row in batches["batches"] if row["batch_id"] == batch_id]
+    source = [row for row in sources["sources"] if row["import_batch_id"] == batch_id]
+    check(len(batch) == 1 and len(source) == 1, (len(batch), len(source)))
+    check(batch[0]["source_artifact_sha256"] == digest, batch[0])
+    check(batch[0]["mapper_sha256"] == tool_digest, batch[0])
+    check(source[0]["sha256"] == digest, source[0])
 
 
 def test_family_profile_evidence_shapes_are_mutually_exclusive():
@@ -1692,7 +1716,7 @@ def test_resolve_wiki_family_value_admitted_mapping():
     # `objectclass` bucket it is one of Fandom's broad groupings, unlike the engine's
     # own unrelated `primarytype` "utilities" -> tool entry, which is correct and
     # pre-existing) never resolve as `objectclass` either.
-    for value in ("others", "fireworks", "blessing charms", "clothing accessories", ""):
+    for value in ("others", "fireworks", ""):
         check(
             engine_items.resolve_wiki_family_value("primarytype", value) is None,
             f"primarytype={value!r} must never resolve",
@@ -1701,6 +1725,28 @@ def test_resolve_wiki_family_value_admitted_mapping():
             engine_items.resolve_wiki_family_value("objectclass", value) is None,
             f"objectclass={value!r} must never resolve",
         )
+    # Owner decision 2026-09-28: blessing charms are progression material.
+    check(
+        engine_items.resolve_wiki_family_value("primarytype", "Blessing Charms")
+        == "progression_material",
+        "blessing charms resolve to progression_material",
+    )
+    check(
+        engine_items.resolve_wiki_family_value("objectclass", "blessing charms")
+        is None,
+        "blessing charms is a primarytype value, never an objectclass",
+    )
+    # Owner decision 2026-09-28: clothing accessories are creature products.
+    check(
+        engine_items.resolve_wiki_family_value("primarytype", "Clothing Accessories")
+        == "material_valuable",
+        "clothing accessories resolve to material_valuable",
+    )
+    check(
+        engine_items.resolve_wiki_family_value("objectclass", "clothing accessories")
+        is None,
+        "clothing accessories is a primarytype value, never an objectclass",
+    )
     for value in (
         "other items",
         "household items",
@@ -2269,6 +2315,7 @@ def main():
         test_wiki_fallback_loader_rejects_duplicate_json_key,
         test_resolve_wiki_family_value_admitted_mapping,
         test_committed_wiki_fallback_snapshot_loads_fail_closed,
+        test_wiki_fallback_snapshot_is_registered,
         test_family_profile_evidence_shapes_are_mutually_exclusive,
         test_crystal_item_bindings_reject_duplicate_target_key,
     ]

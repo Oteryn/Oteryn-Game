@@ -7,6 +7,7 @@ pub(crate) mod fresh_evidence;
 mod qualification;
 mod resume;
 mod tcp_tls;
+pub(crate) mod world_object;
 pub(crate) mod world_spatial;
 
 use crate::content::NativeEntryMovementCells;

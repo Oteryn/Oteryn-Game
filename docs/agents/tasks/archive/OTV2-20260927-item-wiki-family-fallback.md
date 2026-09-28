@@ -4,15 +4,15 @@
 task_id: OTV2-20260927-item-wiki-family-fallback
 title: Classify unresolved engine Items from pinned English TibiaWiki evidence
 mode: MIGRATE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 1040
 base_sha: bab42d5c
-head_sha: null
-final_head_sha: null
+head_sha: 5dbc81e6e88d475c0df727f8de8ba6901c11dcf5
+final_head_sha: 5dbc81e6e88d475c0df727f8de8ba6901c11dcf5
 final_head_frozen_at: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-27T00:00:00Z
@@ -32,7 +32,7 @@ owned_paths:
   - tools/content-schema/item-authoring/samples/population-canary-47dfd51f.json
   - docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md
   - .github/workflows/item-authoring-schema.yml
-  - docs/agents/tasks/active/OTV2-20260927-item-wiki-family-fallback.md
+  - docs/agents/tasks/archive/OTV2-20260927-item-wiki-family-fallback.md
 public_contracts: []
 depends_on:
   - "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md"
@@ -203,11 +203,11 @@ All of the following PASS:
 
 ```yaml
 last_progress: fallback implemented, tools (objects) alias removed, rebased on main bab42d5c, all local checks pass
-status: implementing
+status: completed
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
+head_sha: 5dbc81e6e88d475c0df727f8de8ba6901c11dcf5
 pr: 1040
-final_head_sha: null
+final_head_sha: 5dbc81e6e88d475c0df727f8de8ba6901c11dcf5
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -222,7 +222,13 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: decide Blessing Charms and Clothing Accessories families (optional)
+owner_action_required: null
 blocker: null
-next_action: finish read-only review, publish PR, drive CI to green
+next_action: null
 ```
+
+## Completion
+
+Merged as PR #1040 (`26497f27`) from final head `5dbc81e6e88d475c0df727f8de8ba6901c11dcf5`
+on 2026-09-27 (merge-queue head `3e5c3bb8`). Ownership released. The owner's Blessing
+Charms decision (2026-09-28) is handled by `OTV2-20260928-item-blessing-charms`.
