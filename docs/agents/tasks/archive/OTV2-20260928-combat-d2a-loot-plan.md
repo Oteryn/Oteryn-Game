@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-combat-d2a-loot-plan
 title: Combat D2a, pure deterministic loot plan for one creature death
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/combat-d2a-loot-plan
@@ -12,9 +12,9 @@ issue: 162
 pr: 1161
 allocation: "#162 comment 5876068445 (Combat D2a, VSL-COMBAT-01 child of D2)"
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
-head_sha: pending (frozen at push)
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 937f4d7d5682eb0e18eb7eeeb7a7fc501cd4e1b5
+final_head_sha: 937f4d7d5682eb0e18eb7eeeb7a7fc501cd4e1b5
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: impl combat (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -23,7 +23,7 @@ owned_paths:
   - apps/game-server/src/combat.rs                                   # add `mod loot_plan;` + re-exports only
   - apps/game-server/src/combat/loot_plan.rs                         # new
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json                     # COMBAT01-LOOT-* rows only
-  - docs/agents/tasks/active/OTV2-20260928-combat-d2a-loot-plan.md
+  - docs/agents/tasks/archive/OTV2-20260928-combat-d2a-loot-plan.md
 public_contracts:
   - VSL-COMBAT-01
   - DUR-03
@@ -201,24 +201,19 @@ migrations, `content/` data. No production caller, real death key, content loadi
   pushes `claude/combat-d2a-loot-plan` and stops. Control plane owns freeze, review
   dispatch and integration.
 
+## Terminal evidence
+
+- final head `937f4d7`: protected Merge Queue integration as `58279ed`. A readback of every owned file is byte-identical to the frozen head.
+- review: Codex rounds on exact heads; every P1 was fixed and each remaining P2 was fixed or recorded as a binding item. All threads are resolved.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation complete; all listed validation green; pushed, not yet reviewed
-status: waiting
-branch: claude/combat-d2a-loot-plan
-head_sha: pending (see push result)
+last_progress: PR #1161 merged via Merge Queue as 58279ed; protected-main readback matched 937f4d7; record archived
+status: completed
 pr: 1161
-final_head_sha: null
-final_head_frozen_at: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-runner_assignment_state: not_started
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-stall_warnings: 0
-owner_action_required: null
+head_sha: 937f4d7d5682eb0e18eb7eeeb7a7fc501cd4e1b5
+final_head_sha: 937f4d7d5682eb0e18eb7eeeb7a7fc501cd4e1b5
 blocker: null
-next_action: control plane freezes the pushed head and dispatches required review; D2b (production wiring) depends on this
+next_action: none
 ```
