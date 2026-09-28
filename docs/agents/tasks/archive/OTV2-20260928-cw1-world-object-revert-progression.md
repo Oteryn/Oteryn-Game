@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw1-world-object-revert-progression
 title: World-object revert_after progression owner and D38 follow-up model deltas
 mode: CONTRACT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-world-object-revert-progression
 pr: 1045
 base_sha: ac8395b885e82d564d70968d6cae066fbc276e13
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 687d42d2859bad8254abe3c51cc2d81743340f04
+final_head_sha: 687d42d2859bad8254abe3c51cc2d81743340f04
+final_head_frozen_at: 2026-09-28T09:44:00Z
 owner: Oteryn: content world architecture (CW1)
 created_at: 2026-09-28T00:00:00Z
-updated_at: 2026-09-28T00:00:00Z
+updated_at: 2026-09-28T09:44:00Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
@@ -169,69 +169,99 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: `687d42d2859bad8254abe3c51cc2d81743340f04` (frozen final head)
+- trigger source: protected-`main` merge of PR #1045
+- workflow/run/job: `game-gate` and repository protected-branch checks
+- runner assignment: complete
+- classification: PASS
+- result: PASS — merged as `ebacc5b8` on protected `main`; protected-main readback passed (see
+  Terminal integration)
 
 ## Self-review
 
-- exact head: pending
+- exact head: `687d42d2859bad8254abe3c51cc2d81743340f04` (frozen final head)
 - method/reviewer: implementing agent (CW1), mandatory, not delegated
-- material findings: pending
-- verdict: pending
+- material findings: 20 Codex review rounds against PR #1045 (see Implementation/findings above),
+  each verified directly against code/docs and fixed minimally or handed to "Open decisions for the
+  owning lane"; the owner stop rule applied at round 20 (no open P1)
+- verdict: PASS
 
 ## Independent review
 
 - required: YES.
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- exact head reviewed: `687d42d2859bad8254abe3c51cc2d81743340f04` (round 20, last review before
+  merge)
+- method/auditor: Codex review across PR #1045 (rounds 11-20 covered in this record's
+  Implementation/findings; earlier rounds covered in prior context) plus protected-main readback for
+  the frozen final head
+- material findings: P0/P1 none open at merge; every P1 raised across rounds 11-20 was fixed in the
+  round it was raised; P2s handed to "Open decisions for the owning lane" (§7, items 1-6) rather than
+  redesigned. See Terminal integration for Open decision 7, raised after freeze.
+- verdict: PASS; protected `main` admitted the frozen final head
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: complete (see Terminal integration)
+- unresolved review threads: none blocking at merge (Open decision 7, Codex 4120777222, raised on the
+  PR thread after freeze — see Terminal integration)
 - related/superseded PRs: none known
 - protected auto-merge: not requested by this task
-- merge commit/result: pending
-- ownership release: pending
+- merge commit/result: `ebacc5b8` on protected `main`
+- ownership release: complete; owned paths released at archive
 
 ## Context checkpoint
 
 ```yaml
-last_progress: >
-  PR #1045 pre-freeze round 20 (Codex 4120634397/4120634418/4120634408 on frozen head 3827d885):
-  P1 -- record creation gated on the original operation's own prepare result being
-  DISPOSITION_COMMITTED/Publish; unchanged dispositions register no record, release capacity;
-  expected state/revision sourced from Publish's own fields. Fixed staging bullet, field list,
-  Must-decide-now; added a test obligation. P2: fixed a plain contradiction (interaction
-  disqualification wrongly still called undecided). P2 (no redesign): accept_input can return
-  GenerationError::Exhausted; qualified ordering text, added Open decision 6. Merged origin/main
-  (13dadcaa, unrelated); no drift. Validators pass.
-status: ready
+last_progress: terminal integration recorded; PR #1045 merged on protected main as ebacc5b8; record archived
+status: completed
 branch: claude/cw1-world-object-revert-progression
-head_sha: null
+head_sha: 687d42d2859bad8254abe3c51cc2d81743340f04
 pr: 1045
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+final_head_sha: 687d42d2859bad8254abe3c51cc2d81743340f04
+final_head_frozen_at: 2026-09-28T09:44:00Z
+ci_trigger_source: protected_main_merge
+ci_check_generation: final
+ci_checks_for_current_head: 1
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 20
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: coordinator freeze at the reported head + independent review
+next_action: none; task closed. Open follow-up: Open decision 7 (Codex 4120777222, PR-thread only) must be carried into §7 by the owning lane (see Terminal integration)
 ```
+
+## Terminal integration
+
+This section supersedes the historical `ready`/pending metadata and checkpoint above with the
+frozen terminal outcome; the complete implementation record above remains verbatim as historical
+evidence. This closeout performs no architecture, code or schema mutation of its own; it only moves
+this record from `docs/agents/tasks/active/` to `docs/agents/tasks/archive/` and binds terminal
+lifecycle fields. Coordination: issue #162 (control plane).
+
+The owner stop rule was applied at round 20: PR #1045 merged with no open P1. Candidate head
+`687d42d2859bad8254abe3c51cc2d81743340f04` (round 20: gated lifecycle-record creation on `prepare`'s
+`DISPOSITION_COMMITTED`/`Publish` outcome, fixed a plain contradiction in the `interaction`
+disqualification test obligation, qualified the ordinal-issuance-exhaustion ordering text and added
+Open decision 6 — see Implementation/findings above) was frozen at 2026-09-28T09:44Z (issue #162
+FREEZE comment for round 20). PR #1045 merged on protected `main` as commit `ebacc5b8`. Protected-main
+readback passed: §7 is present with `DecisionStatus: CANDIDATE`, and the "Open decisions for the
+owning lane" section (items 1-6) is present, matching the frozen head `687d42d2`.
+
+**Open decision 7, carried forward — not yet reflected in §7 (Codex finding 4120777222).** After the
+round-20 freeze and merge, Codex raised one further finding on the PR thread only, not incorporated
+into a further round under the owner stop rule: lifecycle-record capacity should be reserved only
+after the original operation's own `prepare` result is known to be `DISPOSITION_COMMITTED`/`Publish`,
+rather than reserved before `prepare` runs and released on an `unchanged` outcome (round 20's own
+shape — see the staging bullet near Open decision 6 in §7). This closeout does not edit §7 itself; it
+records Open decision 7 here as a pointer so the owning lane carries it into §7 (alongside items 1-6)
+in a follow-up edit before implementation.
+
+Task status: `completed`. Aggregate issue #162 remains open for further work, including the owning
+lane's implementation of §7's decision and the carry-forward of Open decision 7 into the document.
