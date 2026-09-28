@@ -847,6 +847,8 @@ fn door_placement_is_refused_by_the_real_linker_path() {
         local_object_initial_state: Some(
             ProductionKey::new("oteryn:reference.state.closed").expect("state key"),
         ),
+        local_object_state_attributes: BTreeMap::new(),
+        local_object_revert_after_ms: BTreeMap::new(),
     };
     let source = ReferencePlayableContentSource {
         profile_revision: door.profile_revision,

@@ -1498,30 +1498,39 @@ architecture decision.
   carrying transition with *two or more* bound transitions matching the swapped-states-plus-
   matching-family inverse rule (Exact delta above) must also fail the whole `bind` call with
   `InvalidBinding` — an ambiguous inverse is not resolved by picking one arbitrarily.
-- **An attribute-changing `map_item` action is rejected at authoring/lowering, a state-only one passes
-  (P1, Round 17, corrects round 16's "rejected at bind").** An authored `map_item` action carrying
+- **An attribute-changing `map_item` action outside §9's admitted shape is rejected at
+  authoring/lowering, a state-only one passes (P1, Round 17, corrects round 16's "rejected at bind";
+  narrowed by §9, owner-accepted 2026-09-28).** An authored `map_item` action carrying
   `revert_after_ms` together with `destination`, `revert_destination`, or any other non-state
   attribute must be rejected fail-closed, with a named error, at the authoring/lowering boundary that
-  reads the action (evidence above) — it must never reach `bind` as a revert-bearing operation at all,
-  so a test asserting `bind` itself is what performs this check must fail (`bind` structurally cannot:
+  reads the action (evidence above) — **except** exactly §9's admitted shape: a `map_item transform`
+  at a pre-authored `anchor` carrying `destination` and optionally `revert_destination` (plus the
+  presentational `effect`), which lowers into §9's per-placement attributes, per-action
+  `revert_after_ms` and (for `revert_destination`) dedicated post-revert state and inverse (§9
+  design points 3/4). Everything else stays rejected: `interaction` or any other attribute,
+  `at: death_position` (open decision 8), and `create` carrying `destination` (open decision 9). A
+  rejected action must never reach `bind` as a revert-bearing operation at all, so a test asserting
+  `bind` itself is what performs this check must fail (`bind` structurally cannot:
   `TransitionBinding` carries no attribute payload, evidence above). Conversely, an authored
   `map_item` action carrying `revert_after_ms` with *no* `destination`/`revert_destination` and no
   other non-state attribute (a genuinely state-only transform — the synthetic fixture below, since no
   authored sample under `encounter-authoring/samples/**` qualifies today, evidence above;
   `DepthWarzoneBossDeath` itself does not, Round 18) must pass lowering and reach `bind` normally. A
-  test asserting a binding for an attribute-changing transition reaches `bind` at
-  all and later fires `DISPOSITION_COMMITTED` with the object's attributes left unrestored (stale
-  `destination`) must fail — `revert_after_ms` covers only what `LocalObjectStateDefinition`/
-  `PreparedMutation::Publish` model today (evidence above), never a silent partial revert.
+  test asserting a binding for an attribute-changing transition outside §9's admitted shape reaches
+  `bind` at all and later fires `DISPOSITION_COMMITTED` with the object's attributes left unrestored
+  (stale `destination`) must fail — outside §9, `revert_after_ms` covers only what
+  `LocalObjectStateDefinition`/`PreparedMutation::Publish` model (evidence above), never a silent
+  partial revert.
 - **An interaction-bearing timed create is rejected at lowering (P1, Round 19).** An authored
   `map_item` `create` action carrying `revert_after_ms` together with an `interaction` binding —
   concretely, `mazzinor`/`gaz_haragoth`/`cult_soul_remains`'s shape (evidence above) — must be
-  rejected fail-closed at authoring/lowering, the same as a `destination`-carrying `transform`; a
-  test asserting it reaches `bind` because it lacks `destination`/`revert_destination` must fail.
-  Combined with the previous obligation and the Depth-trio finding above, a test suite exercising
-  *every* authored sample under `encounter-authoring/samples/**` for `revert_after_ms` admissibility
-  must observe zero passes — only the synthetic fixture is expected to pass until "Open decisions"
-  item 3 is resolved.
+  rejected fail-closed at authoring/lowering; a test asserting it reaches `bind` because it lacks
+  `destination`/`revert_destination` must fail. Combined with the previous obligation, a test suite
+  exercising the authored samples under `encounter-authoring/samples/**` for `revert_after_ms`
+  admissibility must observe passes only for §9's admitted `transform` shape (and the synthetic
+  state-only fixture); every open decision 8 sample (`mazzinor`/`gaz_haragoth`/`cult_soul_remains`/
+  `azerus`) and open decision 9 sample (`death_priest_shargon`/`the_ravager`) must still be rejected
+  fail-closed until that decision is resolved.
 - **An original operation that does not commit registers no revert, and reserves no capacity for one
   (P1, Round 20/21, Codex findings 4120634397/4120777222).** Bind a `revert_after_ms`-carrying
   transition and drive an operation against it whose
@@ -1688,11 +1697,12 @@ architecture decision.
 
 ## 9. Attribute-bearing object state: teleporter destination — CANDIDATE
 
-- DecisionStatus: CANDIDATE. The owner decided §7's open decision 3 `YES` (issue #162, 2026-09-28):
-  supporting attribute-bearing object state is needed for the playable path. This section is the
-  minimal design that makes it admissible; it is not itself owner-accepted, and the owning lane
-  (CW3 Content-model linker for the authoring-side shape, CW4/scope-runtime for `bind`/`prepare`)
-  still implements and may refine the exact mechanics against real code. **Round 2 correction**
+- DecisionStatus: ACCEPTED by owner 2026-09-28 (issue #162, issuecomment-5873353684). The owner
+  decided §7's open decision 3 `YES` (issue #162, 2026-09-28): supporting attribute-bearing object
+  state is needed for the playable path. This section is the minimal design that makes it
+  admissible; the owning lane (CW3 Content-model linker for the authoring-side shape,
+  CW4/scope-runtime for `bind`/`prepare`) implements it and may refine the exact mechanics against
+  real code. **Round 2 correction**
   (Codex findings 4121918211/4121918220/4121918234 on head `db49049d`, all accepted, owner stop rule
   applies): (1) `revert_destination` no longer bakes into the placement's natural source state —
   lowering creates a distinct post-revert state instead (design point 3). (2) Narrowed to the

@@ -1,5 +1,6 @@
 use oteryn_game_server::content::*;
 use oteryn_game_server::foundation::WorldId;
+use std::collections::BTreeMap;
 
 fn world_id() -> Result<WorldId, ContentError> {
     let bytes = [
@@ -85,10 +86,12 @@ fn source() -> Result<ReferencePlayableContentSource, ContentError> {
                     LocalObjectStateDefinition {
                         key: closed.clone(),
                         collision: LocalObjectCollisionPresence::Present,
+                        attribute_variant_of: None,
                     },
                     LocalObjectStateDefinition {
                         key: open.clone(),
                         collision: LocalObjectCollisionPresence::Absent,
+                        attribute_variant_of: None,
                     },
                 ]),
                 client_projection: ClientProjectionClass::ClientSafe,
@@ -444,6 +447,8 @@ fn source_with_target_claim(
             evidence.clone(),
         ),
         local_object_initial_state: Some(ProductionKey::new("oteryn:reference.state.closed")?),
+        local_object_state_attributes: BTreeMap::new(),
+        local_object_revert_after_ms: BTreeMap::new(),
     };
     candidate.placements.push(placement);
     Ok(candidate)
@@ -475,6 +480,7 @@ fn source_with_extra_local_object_state(
     states.push(LocalObjectStateDefinition {
         key: ProductionKey::new(key)?,
         collision,
+        attribute_variant_of: None,
     });
     Ok(candidate)
 }
@@ -1282,10 +1288,12 @@ fn local_object_definition_rejects_duplicate_state_key_regardless_of_collision()
         LocalObjectStateDefinition {
             key: ProductionKey::new("oteryn:reference.state.closed")?,
             collision: LocalObjectCollisionPresence::Present,
+            attribute_variant_of: None,
         },
         LocalObjectStateDefinition {
             key: ProductionKey::new("oteryn:reference.state.closed")?,
             collision: LocalObjectCollisionPresence::Absent,
+            attribute_variant_of: None,
         },
     ]);
     assert!(matches!(
@@ -1640,5 +1648,134 @@ fn client_safe_effect_projection_exposes_only_the_effect_family() -> Result<(), 
         definition.definition.family(),
         DefinitionFamily::Ability | DefinitionFamily::Formula
     )));
+    Ok(())
+}
+
+fn source_with_variant_state(
+    variant_of: &str,
+    collision: LocalObjectCollisionPresence,
+) -> Result<ReferencePlayableContentSource, ContentError> {
+    let mut candidate = source()?;
+    let ReferenceDefinitionKind::LocalObjectStates(states) = &mut candidate.definitions[0].kind
+    else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable local object probe changed kind",
+        ));
+    };
+    states.push(LocalObjectStateDefinition {
+        key: ProductionKey::new("oteryn:reference.state.closed-variant")?,
+        collision,
+        attribute_variant_of: Some(ProductionKey::new(variant_of)?),
+    });
+    Ok(candidate)
+}
+
+#[test]
+fn local_object_attribute_variant_requires_a_declared_base_with_the_same_collision()
+-> Result<(), ContentError> {
+    // #162 §9: `closed` is collision-Present, so a Present variant of it links.
+    assert!(
+        link_reference_playable(source_with_variant_state(
+            "oteryn:reference.state.closed",
+            LocalObjectCollisionPresence::Present,
+        )?)
+        .is_ok()
+    );
+    assert!(matches!(
+        link_reference_playable(source_with_variant_state(
+            "oteryn:reference.state.undeclared",
+            LocalObjectCollisionPresence::Present,
+        )?),
+        Err(ContentError::MissingReference { .. })
+    ));
+    assert!(matches!(
+        link_reference_playable(source_with_variant_state(
+            "oteryn:reference.state.closed",
+            LocalObjectCollisionPresence::Absent,
+        )?),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable local object attribute variant must share its base state's collision presence"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn local_object_placement_attributes_fail_closed_before_evidence_promotion()
+-> Result<(), ContentError> {
+    let open = ProductionKey::new("oteryn:reference.state.open")?;
+    let self_key = PlacementKey::new("oteryn:reference.placement.local-door")?;
+    let revert_key = |transition: &str| -> Result<(TransitionKey, LoweredActionId), ContentError> {
+        Ok((
+            TransitionKey::new(transition)?,
+            LoweredActionId::new("oteryn:encounter/door/rule/0")?,
+        ))
+    };
+
+    // Well-formed §9 tables clear this gate and stop only at the pre-existing evidence boundary.
+    let mut valid = source_with_target_claim(accepted_case_binding()?)?;
+    valid.placements[0].local_object_state_attributes.insert(
+        open.clone(),
+        LocalObjectStateAttributes {
+            destination: Some(self_key.clone()),
+        },
+    );
+    valid.placements[0]
+        .local_object_revert_after_ms
+        .insert(revert_key("oteryn:reference.transition.open")?, 60_000);
+    assert!(matches!(
+        link_reference_playable(valid),
+        Err(ContentError::InvalidArtifact(
+            "target-sensitive Reference claim lacks promotable evidence"
+        ))
+    ));
+
+    let mut undeclared_state = source_with_target_claim(accepted_case_binding()?)?;
+    undeclared_state.placements[0]
+        .local_object_state_attributes
+        .insert(
+            ProductionKey::new("oteryn:reference.state.undeclared")?,
+            LocalObjectStateAttributes { destination: None },
+        );
+    assert!(matches!(
+        link_reference_playable(undeclared_state),
+        Err(ContentError::MissingReference { .. })
+    ));
+
+    let mut dangling_destination = source_with_target_claim(accepted_case_binding()?)?;
+    dangling_destination.placements[0]
+        .local_object_state_attributes
+        .insert(
+            open,
+            LocalObjectStateAttributes {
+                destination: Some(PlacementKey::new("oteryn:reference.placement.nowhere")?),
+            },
+        );
+    assert!(matches!(
+        link_reference_playable(dangling_destination),
+        Err(ContentError::MissingReference { .. })
+    ));
+
+    let mut unknown_transition = source_with_target_claim(accepted_case_binding()?)?;
+    unknown_transition.placements[0]
+        .local_object_revert_after_ms
+        .insert(revert_key("oteryn:reference.transition.unknown")?, 60_000);
+    assert!(matches!(
+        link_reference_playable(unknown_transition),
+        Err(ContentError::MissingReference { .. })
+    ));
+
+    let mut non_local_object = source_with_target_claim(accepted_case_binding()?)?;
+    non_local_object.placements[0].definition = non_local_object.definitions[1].definition.clone();
+    non_local_object.placements[0].local_object_initial_state = None;
+    non_local_object.placements[0]
+        .local_object_revert_after_ms
+        .insert(revert_key("oteryn:reference.transition.open")?, 60_000);
+    assert!(matches!(
+        link_reference_playable(non_local_object),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable placement declares local object attributes for a non-local-object definition"
+        ))
+    ));
     Ok(())
 }
