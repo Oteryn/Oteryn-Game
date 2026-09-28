@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-vlarkorth-wiki-capture
 title: Count Vlarkorth and Dark Merudri from the 2026-09-27 wiki
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1047
 jira: KAN-16
 base_sha: 6fc6868ff8e5c8840c03d253049a6dc106c151e7
-head_sha: null
-final_head_sha: null
+head_sha: 1a6fc16aec8e2abf411568a51143c452857fd1e1
+final_head_sha: 1a6fc16aec8e2abf411568a51143c452857fd1e1
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -56,3 +56,10 @@ Authority: owner answers in this session. Runtime behaviour stays unallocated. T
 - `wiki_br_capture.py self-test` passes.
 - The workflow uploads the BR capture artifact.
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1047 (`716e23ba0c3585dcb0d52a5aa5300d124eaac94b`) from final head `1a6fc16`; required checks passed on that head. The capture artifact
+`monster-wiki-br-1a6fc16…` holds the Grave Danger pages; Dark Merudri has health, abilities and resistances on
+TibiaWiki BR, but no speed, armour, defence, look or attack intervals.
+Owner released.

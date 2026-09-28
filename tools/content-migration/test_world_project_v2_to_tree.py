@@ -15,10 +15,10 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 38157, "Mount": 252,
-    "Creature": 1316, "Presentation": 2299, "Behavior": 2299, "Loot": 977, "Ability": 5245, "Effect": 3913, "Formula": 4216,
-    "NPC": 983, "Service.Trade": 289, "Service.Travel": 53,
+    "Creature": 1318, "Presentation": 2411, "Behavior": 2411, "Loot": 978, "Ability": 5254, "Effect": 3926, "Formula": 4224,
+    "NPC": 1093, "Service.Trade": 308, "Service.Travel": 55,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1316, "NPC": 2035}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1318, "NPC": 2281}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
@@ -32,9 +32,9 @@ assert any(path.startswith("content/services/travel/travel-") for path in paths)
 assert "imports/canary/bindings/creatures.json" in paths
 assert all(not path.startswith("content/world/") for path in paths)
 
-assert manifest["families"]["NPC"] == {"records": 983, "index": "content/npcs/definitions/index.json"}
-assert manifest["families"]["Service.Trade"] == {"records": 289, "index": "content/services/trade/index.json"}
-assert manifest["families"]["Service.Travel"] == {"records": 53, "index": "content/services/travel/index.json"}
+assert manifest["families"]["NPC"] == {"records": 1093, "index": "content/npcs/definitions/index.json"}
+assert manifest["families"]["Service.Trade"] == {"records": 308, "index": "content/services/trade/index.json"}
+assert manifest["families"]["Service.Travel"] == {"records": 55, "index": "content/services/travel/index.json"}
 assert "NPC" in project["migrated_families"] and "Service" in project["migrated_families"]
 assert "NPC" not in project["next_population_families"] and "Service" not in project["next_population_families"]
 

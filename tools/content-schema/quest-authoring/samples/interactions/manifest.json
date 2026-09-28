@@ -12,11 +12,14 @@
     },
     "children_by_owner": {
       "Ability": 208,
-      "Achievement": 30,
+      "Achievement": 36,
+      "Experience": 9,
       "Item": 343,
+      "Mount": 5,
       "Movement": 800,
-      "Presentation": 2668,
-      "Quest": 944,
+      "Outfit": 14,
+      "Presentation": 2679,
+      "Quest": 947,
       "WorldObject": 891
     },
     "blocked_children": {
@@ -24,14 +27,16 @@
       "WorldObject": 891
     },
     "quest_children_naming_a_transition": 215,
-    "unresolved_lines": 2059,
-    "unresolved_conditions": 1963,
+    "unresolved_lines": 1908,
+    "unresolved_conditions": 1916,
     "by_status": {
-      "mapped": 236,
-      "unresolved_semantics": 985
+      "mapped": 256,
+      "unresolved_semantics": 965
     }
   },
-  "undeclared_progress_tracks": [],
+  "undeclared_progress_tracks": [
+    "canary:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience"
+  ],
   "entries": [
     {
       "destination": "crystalserver:interaction/25_years_of_tibia_quest/actions_lion_statue",
@@ -1326,7 +1331,7 @@
     },
     {
       "destination": "crystalserver:interaction/blood_brothers_quest/actions_blood_crystal",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -1501,7 +1506,7 @@
     },
     {
       "destination": "canary:interaction/chayenne_realm/actions_reward",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -1520,7 +1525,7 @@
     },
     {
       "destination": "canary:interaction/chayenne_realm/movements_enter_realm",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -3104,7 +3109,7 @@
     },
     {
       "destination": "canary:interaction/dark_trails/movements_necrometer_tile_access",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -4035,7 +4040,7 @@
     },
     {
       "destination": "canary:interaction/dreamers_challenge_quest/movement_sacrifice_teleport",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -4998,7 +5003,7 @@
     },
     {
       "destination": "canary:interaction/ferumbras_ascension/actions_mysterious_scroll",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -6931,7 +6936,7 @@
     },
     {
       "destination": "crystalserver:interaction/grimvale/conch_shell_horn_quest_conch_shell",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -6957,7 +6962,7 @@
     },
     {
       "destination": "crystalserver:interaction/grimvale/conch_shell_horn_quest_woodenmouthpiece",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -7103,7 +7108,7 @@
     },
     {
       "destination": "canary:interaction/heart_of_destruction/actions_reward",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -7578,7 +7583,7 @@
     },
     {
       "destination": "canary:interaction/hero_of_rathleton/actions_reward",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -10417,7 +10422,7 @@
     },
     {
       "destination": "crystalserver:interaction/rookgaard_quests/quiver",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -10582,7 +10587,7 @@
     },
     {
       "destination": "canary:interaction/roshamuul_quest/movements_lower_roshamuul_lower_roshamuul1500",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -15743,7 +15748,7 @@
     },
     {
       "destination": "canary:interaction/the_inquisition_quest/actions_rewards",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -16081,7 +16086,7 @@
     },
     {
       "destination": "canary:interaction/the_new_frontier/action_outfit",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -16290,7 +16295,7 @@
     },
     {
       "destination": "canary:interaction/the_order_of_lion/action_bounac_entrance",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -16381,7 +16386,7 @@
     },
     {
       "destination": "crystalserver:interaction/the_order_of_lion_quest/action_bounac_entrance",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -17209,7 +17214,7 @@
     },
     {
       "destination": "canary:interaction/the_pits_of_inferno_quest/movements_holy_tible_tile",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -20068,7 +20073,7 @@
     },
     {
       "destination": "crystalserver:interaction/threatened_dreams_quest/action_map",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -20757,7 +20762,7 @@
     },
     {
       "destination": "canary:interaction/wrath_of_the_emperor/actions_mission04_sacrament_of_the_snake_sceptre",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -20871,7 +20876,7 @@
     },
     {
       "destination": "canary:interaction/wrath_of_the_emperor/actions_mission12_just_rewards",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {

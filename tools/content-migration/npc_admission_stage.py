@@ -172,6 +172,9 @@ def stage(report: dict, registered: set[str], pilot_only: bool) -> dict:
         candidates = pilot(candidates)
     records, declarations, profiles, bindings = [], [], [], []
     wiki_pages = 0
+    # D8: Day/Night and stage variants share one wiki page; a page binds only the NPC it names alone.
+    wiki_bound = [c['wiki']['pageid'] for c in candidates if wiki_decided(c)]
+    shared_pages = {page for page in wiki_bound if wiki_bound.count(page) > 1}
     for candidate in candidates:
         key = candidate['identity']['key']
         slug = slug_of(key, 'oteryn:npc.')
@@ -202,8 +205,7 @@ def stage(report: dict, registered: set[str], pilot_only: bool) -> dict:
                 namespace = 'canary/npc-file' if source == 'canary' else 'crystalserver/npc-file'
                 bindings.append({'source_key': source_key, 'source_revision': revision, 'identity_namespace': namespace,
                                  'external_id': stem, 'target': ref('NPC', key), 'disposition': 'EXACT'})
-        # D6: the wiki page is bound where the wiki decided a fact or confirmed a single-source NPC.
-        if candidate['wiki'] and (candidate['arbitration'] or len(candidate['provenance']) == 1):
+        if wiki_decided(candidate) and candidate['wiki']['pageid'] not in shared_pages:
             wiki_pages += 1
             bindings.append({'source_key': 'oteryn:source.tibiawiki', 'source_revision': wiki_revision(report),
                              'identity_namespace': 'mediawiki/page_id', 'external_id': str(candidate['wiki']['pageid']),
@@ -232,6 +234,11 @@ def stage(report: dict, registered: set[str], pilot_only: bool) -> dict:
         'source_identity_bindings': bindings,
         'deferred': [] if pilot_only else deferred,
     }
+
+
+def wiki_decided(candidate: dict) -> bool:
+    """D6: the wiki decided a fact or confirmed a single-source NPC."""
+    return bool(candidate['wiki']) and (bool(candidate['arbitration']) or len(candidate['provenance']) == 1)
 
 
 def wiki_revision(report: dict) -> str:

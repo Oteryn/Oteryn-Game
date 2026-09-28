@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - tools/content-schema/monster-authoring/wiki_br_capture.py
+      - tools/content-schema/monster-authoring/samples/wiki-population-2026-09-27.json
       - .github/workflows/monster-wiki-capture.yml
   workflow_dispatch:
 
@@ -20,7 +21,7 @@ jobs:
     # runner. The artifact keeps infobox fields cut to 300 characters and revision ids, never raw pages.
     name: Monster authoring / TibiaWiki BR capture
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash
@@ -48,10 +49,18 @@ jobs:
             "Dark Merudri" "Dark Knight" "Dark Druid" "Dark Paladin" "Dark Sorcerer" "Count Vlarkorth" \
             "Good Remains of a Merudri" "Good Remains of a Knight"
 
+      - name: Capture every population creature page at the target date
+        run: |
+          set -euo pipefail
+          python wiki_br_capture.py --out "$RUNNER_TEMP/out/wiki-br-population.json" \
+            --titles-from samples/wiki-population-2026-09-27.json
+
       - name: Upload BR infobox facts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: monster-wiki-br-${{ github.event.pull_request.head.sha || github.sha }}
-          path: ${{ runner.temp }}/out/wiki-br-grave-danger.json
+          path: |
+            ${{ runner.temp }}/out/wiki-br-grave-danger.json
+            ${{ runner.temp }}/out/wiki-br-population.json
           if-no-files-found: error
           retention-days: 14

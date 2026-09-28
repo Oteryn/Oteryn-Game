@@ -1,5 +1,5 @@
 {
- "bundle_digest": "3362091c56f96232e6e69d571100a0e2ef7e38e062f0534e058df497f89eed48",
+ "bundle_digest": "4663f86c2254b990d827b8019f34b65e19fe865483c2b8373009ffeda781536b",
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "rows": [
   {
@@ -1928,10 +1928,17 @@
    "status": "RESOLVED"
   },
   {
-   "error": "[string \"<python>\"]:375: attempt to index a nil value",
    "key": "canary:npc/captain_dreadnought",
-   "readiness": "LOAD_ERROR",
-   "status": "LOAD_ERROR"
+   "name": "Captain Dreadnought",
+   "placements": 1,
+   "readiness": "STATIC_SERVICES",
+   "services": {},
+   "status": "PARTIAL",
+   "unresolved": {
+    "LUA_CALLBACK": 153,
+    "LUA_PREDICATE": 1,
+    "UNMAPPED_CONFIG_FIELD": 1
+   }
   },
   {
    "key": "canary:npc/captain_fearless",
@@ -3496,16 +3503,33 @@
    }
   },
   {
-   "error": "[string \"<python>\"]:60: bad argument #2 to 'max' (number expected, got table)",
    "key": "canary:npc/enpa-deia_pema",
-   "readiness": "LOAD_ERROR",
-   "status": "LOAD_ERROR"
+   "name": "Enpa-Deia Pema",
+   "placements": 0,
+   "readiness": "UNPLACED",
+   "services": {
+    "trade_offers": 11
+   },
+   "status": "PARTIAL",
+   "unresolved": {
+    "LUA_CALLBACK": 2,
+    "NO_PLACEMENT": 1
+   }
   },
   {
-   "error": "[string \"<python>\"]:30: bad argument #2 to 'max' (number expected, got table)",
    "key": "canary:npc/enpa_rudra",
-   "readiness": "LOAD_ERROR",
-   "status": "LOAD_ERROR"
+   "name": "Enpa Rudra",
+   "placements": 0,
+   "readiness": "UNPLACED",
+   "services": {
+    "promotion": 1,
+    "spells": 32
+   },
+   "status": "PARTIAL",
+   "unresolved": {
+    "LUA_CALLBACK": 2,
+    "NO_PLACEMENT": 1
+   }
   },
   {
    "key": "canary:npc/eranth",
@@ -10265,10 +10289,12 @@
    "status": "RESOLVED"
   },
   {
-   "error": "[string \"<python>\"]:45: attempt to compare number with table",
    "key": "canary:npc/towncryer",
-   "readiness": "LOAD_ERROR",
-   "status": "LOAD_ERROR"
+   "name": "Towncryer",
+   "placements": 1,
+   "readiness": "STATIC_COMPLETE",
+   "services": {},
+   "status": "RESOLVED"
   },
   {
    "key": "canary:npc/trimegis",
@@ -11256,63 +11282,60 @@
   "bundles": 1036,
   "npcs_by_unresolved_reason": {
    "LUA_ACTION": 54,
-   "LUA_CALLBACK": 545,
-   "LUA_PREDICATE": 82,
+   "LUA_CALLBACK": 548,
+   "LUA_PREDICATE": 83,
    "MULTIPLE_KEYWORD_HANDLERS": 1,
    "NON_SEQUENTIAL_SHOP_TABLE": 1,
    "NON_STATIC_DESTINATION": 10,
    "NON_STATIC_SHOP_ROW": 1,
    "NON_STATIC_TEXT": 1,
-   "NO_PLACEMENT": 65,
+   "NO_PLACEMENT": 67,
    "PLAYER_STORAGE_GATE": 7,
-   "UNMAPPED_CONFIG_FIELD": 1
+   "UNMAPPED_CONFIG_FIELD": 2
   },
-  "orphan_placement_names": [
-   "Captain Dreadnought",
-   "Towncryer"
-  ],
+  "orphan_placement_names": [],
   "placements_in_spawn_files": 1030,
   "readiness": {
-   "LOAD_ERROR": 5,
+   "LOAD_ERROR": 1,
    "NOT_AN_NPC": 2,
    "SCRIPTED": 35,
-   "STATIC_COMPLETE": 383,
-   "STATIC_SERVICES": 546,
-   "UNPLACED": 65
+   "STATIC_COMPLETE": 384,
+   "STATIC_SERVICES": 547,
+   "UNPLACED": 67
   },
   "services": {
    "blessings_npcs": 27,
    "blessings_rows": 32,
    "kick_npcs": 24,
    "kick_rows": 24,
-   "placements": 1029,
-   "promotion_npcs": 5,
-   "promotion_rows": 5,
-   "spells_npcs": 50,
-   "spells_rows": 1809,
-   "trade_npcs": 301,
-   "trade_offers": 10055,
+   "placements": 1031,
+   "promotion_npcs": 6,
+   "promotion_rows": 6,
+   "spells_npcs": 51,
+   "spells_rows": 1841,
+   "trade_npcs": 302,
+   "trade_offers": 10066,
    "travel_npcs": 71,
    "travel_rows": 363
   },
   "status": {
-   "LOAD_ERROR": 5,
+   "LOAD_ERROR": 1,
    "NOT_AN_NPC": 2,
-   "PARTIAL": 646,
-   "RESOLVED": 383
+   "PARTIAL": 649,
+   "RESOLVED": 384
   },
   "unresolved_rows_by_reason": {
    "LUA_ACTION": 298,
-   "LUA_CALLBACK": 877,
-   "LUA_PREDICATE": 841,
+   "LUA_CALLBACK": 1034,
+   "LUA_PREDICATE": 842,
    "MULTIPLE_KEYWORD_HANDLERS": 1,
    "NON_SEQUENTIAL_SHOP_TABLE": 1,
    "NON_STATIC_DESTINATION": 45,
    "NON_STATIC_SHOP_ROW": 1,
    "NON_STATIC_TEXT": 1,
-   "NO_PLACEMENT": 65,
+   "NO_PLACEMENT": 67,
    "PLAYER_STORAGE_GATE": 125,
-   "UNMAPPED_CONFIG_FIELD": 3
+   "UNMAPPED_CONFIG_FIELD": 4
   }
  }
 }

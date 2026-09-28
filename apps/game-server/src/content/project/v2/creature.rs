@@ -479,6 +479,16 @@ pub struct ProjectV2Chain {
     pub backtracking: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub chain_asset_binding: Option<String>,
+    /// Which creatures the chain may jump to; absent means every creature the caster may hit.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_filter: Option<ProjectV2ChainTargetFilter>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ProjectV2ChainTargetFilter {
+    /// Only players (Canary's players-only chain picker).
+    Players,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -656,6 +666,8 @@ pub enum ProjectV2AffectsKind {
     MasterlessMonsters,
     NonPlayerSide,
     PlayerSide,
+    /// Players only, not their summons (a tile callback that checks `isPlayer`).
+    Players,
     NamedCreatures,
 }
 
