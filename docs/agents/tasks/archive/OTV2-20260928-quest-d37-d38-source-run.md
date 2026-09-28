@@ -4,22 +4,22 @@
 task_id: OTV2-20260928-quest-d37-d38-source-run
 title: Quest format - merge #1053 with main and run its D37/D38 converter on the pinned sources
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/zealous-edison-3ttg1s
 issue: 162
 pr: 1071
 base_sha: 00691b5bdc4b96fe41954e0b62b99353e0b03bf0
-head_sha: null
-final_head_sha: null
+head_sha: a9b00913d51d6f36020919bad414e0b05379e680
+final_head_sha: a9b00913d51d6f36020919bad414e0b05379e680
 final_head_frozen_at: null
 owner: claude-code-session-01AVd6BKKTRbeW1Pub9bg9Jk
 created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260928-quest-d37-d38-source-run.md
+  - docs/agents/tasks/archive/OTV2-20260928-quest-d37-d38-source-run.md
   - docs/agents/tasks/active/OTV2-20260928-quest-relocation-worldobject-transcription.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - tools/content-schema/quest-authoring/**

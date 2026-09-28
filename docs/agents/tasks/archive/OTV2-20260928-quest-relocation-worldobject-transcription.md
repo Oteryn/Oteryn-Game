@@ -4,15 +4,15 @@
 task_id: OTV2-20260928-quest-relocation-worldobject-transcription
 title: D37 relocation and D38 world-object overlay transcription (Queen of the Banshees worked example)
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/quest-relocation-worldobject-transcription
 issue: 162
 pr: 1053
 base_sha: e91cafdd95c165668126e1dccaf93422af29d55c
-head_sha: null
-final_head_sha: null
+head_sha: a799e3a4230dd865d3cf865f3c6e85f6f23fd9e0
+final_head_sha: a799e3a4230dd865d3cf865f3c6e85f6f23fd9e0
 final_head_frozen_at: null
 owner: Oteryn: content world import (worker session)
 created_at: 2026-09-28T00:41:00Z
@@ -21,7 +21,7 @@ execution_policy: continuous_progress
 owned_paths:
   - tools/content-schema/quest-authoring/**
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
-  - docs/agents/tasks/active/OTV2-20260928-quest-relocation-worldobject-transcription.md
+  - docs/agents/tasks/archive/OTV2-20260928-quest-relocation-worldobject-transcription.md
 public_contracts: []
 depends_on: []
 blocks: []
@@ -194,11 +194,11 @@ last_progress: round 4 (owner-authorized, final): fixed a silent non-literal-del
   closed now) and a receiver-match bug shadowing direct Position.revertItem(...)'s own position;
   re-grepped the revert path (no further shadowing). Schema/converter/tests complete and correct;
   real D37/D38 data on the committed corpus stays excluded scope, not a blocker (owner-accepted).
-status: ready
+status: completed
 branch: claude/quest-relocation-worldobject-transcription
-head_sha: null
+head_sha: a799e3a4230dd865d3cf865f3c6e85f6f23fd9e0
 pr: 1053
-final_head_sha: null
+final_head_sha: a799e3a4230dd865d3cf865f3c6e85f6f23fd9e0
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -218,3 +218,7 @@ owner_action_required: none for this PR; a future checkout-capable session runs 
 blocker: null (real-corpus classification is excluded scope, not a blocker here)
 next_action: push round 4, report READY_FOR_INTEGRATION with the new head SHA
 ```
+
+## Closeout
+
+Delivered through #1071 (merged 2026-09-28), which carried this branch head `a799e3a4` unchanged, merged `main` and ran the converter on the pinned sources. #1053 is superseded.
