@@ -4,19 +4,19 @@
 task_id: OTV2-20260928-cw1-timed-revert-runtime
 title: §7 timed revert runtime - lifecycle records, scope driver, apply_scope_operation (task B of 2)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-timed-revert-runtime
 pr: 1144
 base_sha: f11058ecdb82e3256ae3d8857fe650ca2bd1943d
-head_sha: null
-final_head_sha: null
+head_sha: 7a1519b15973fd0cf6d5fa01bfe0db0bec56d395
+final_head_sha: 7a1519b15973fd0cf6d5fa01bfe0db0bec56d395
 final_head_frozen_at: null
 owner: Oteryn: content world runtime
 created_at: 2026-09-28T17:53:51Z
-updated_at: 2026-09-28T17:53:51Z
+updated_at: 2026-09-28T19:38:20Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/world_object_revert.rs
@@ -26,7 +26,7 @@ owned_paths:
   - apps/game-server/src/content/encounter_map_item.rs (round-2 amendment on #162: only the test duke_lowered_content_binds_under_the_widened_rule_and_exposes_attributes_by_state)
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
-  - docs/agents/tasks/active/OTV2-20260928-cw1-timed-revert-runtime.md
+  - docs/agents/tasks/archive/OTV2-20260928-cw1-timed-revert-runtime.md
   - docs/agents/tasks/archive/OTV2-20260928-cw1-object-state-attributes-impl.md
 public_contracts: []
 depends_on:
@@ -133,9 +133,10 @@ Deferred, with reasons:
   (creature death) and any teleport consumer of `attributes()`. These need a separate owner
   decision. `ScopeRuntimeFence` cannot be built outside Foundation, so the tests use a stand-in
   issuer with the same contract.
-- Docs gap: after a revert lands on the §9 post-revert variant, the forward transition (whose source
-  is the natural state) cannot fire again from it. A timed teleporter therefore opens once per scope
-  generation. §9 does not cover re-arming.
+- Docs gap (resolved by owner decision D90, see Terminal integration): after a revert lands on the
+  §9 post-revert variant, the forward transition (whose source is the natural state) cannot fire
+  again from it. A timed teleporter therefore opens once per scope generation. §9 does not cover
+  re-arming.
 - Owner gap 2 (USE could open the teleporter from its natural state) is resolved by the fix for
   P1 4125535249: a transition carrying `revert_after_ms` at the placement is neither USE-selectable
   nor session-invocable (`apply`/`resume_pending` refuse it exactly like an unbound transition), so
@@ -170,3 +171,22 @@ Deferred, with reasons:
 
 last_progress: round 3 (Codex P1 4125881398, P2 4125881422) repaired and validated; pushed for CI and review
 jira: pending (no mapped Story resolved in this worker session)
+
+## Terminal integration
+
+This section supersedes the `validating` metadata and checkpoint above; the record above stays as
+historical evidence. The closeout makes no code, schema or architecture change. It moves this record
+to `docs/agents/tasks/archive/` and binds the terminal lifecycle fields. Coordination: issue #162.
+
+PR #1144 merged on protected `main` as squash commit
+`ad7a94ca148a1967410520df6b981960a610d092` (2026-09-28T19:38:20Z). The final head was
+`7a1519b15973fd0cf6d5fa01bfe0db0bec56d395`. Ownership of the owned paths is released.
+
+Open points after merge:
+
+- Re-arm docs gap: resolved. Owner decision D90 (§9 of the proposal, #162 comment 5875958040)
+  lowers a re-arm forward from the post-revert variant back to the open state. It is implemented by
+  `OTV2-20260928-cw1-teleporter-rearm`.
+- Owner gap 2 is covered by D91 (event-owned transitions); its typed-origin enforcement is not part
+  of this task or of the re-arm task.
+- Live scope-owner wiring, the encounter trigger and any teleport consumer stay out of scope.
