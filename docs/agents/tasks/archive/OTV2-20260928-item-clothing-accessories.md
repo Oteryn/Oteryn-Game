@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-item-clothing-accessories
 title: Old rag/ivory comb via wiki status=event + exact-id join (match_basis) for the wiki fallback
 mode: MIGRATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 1073
 base_sha: 4add578a
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 3a11e3f8df392af6901986afd48e887b1405a489
+final_head_sha: 3a11e3f8df392af6901986afd48e887b1405a489
+final_head_frozen_at: 2026-09-28T08:44:50Z
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -33,7 +33,7 @@ owned_paths:
   - imports/tibiawiki/facts/items-family-fallback.json
   - docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md
   - docs/agents/tasks/archive/OTV2-20260928-item-blessing-charms.md
-  - docs/agents/tasks/active/OTV2-20260928-item-clothing-accessories.md
+  - docs/agents/tasks/archive/OTV2-20260928-item-clothing-accessories.md
 public_contracts: []
 depends_on:
   - "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md"
@@ -116,7 +116,7 @@ Two owner decisions landed on this branch, in sequence:
 - [x] Tests: ItemList parsing, id-match precedence, id-matched disagreement/failure with
   no name fallback, loader rejecting a missing/unknown `match_basis` -- all added and
   passing.
-- [ ] Required checks pass on the frozen PR head.
+- [x] Required checks passed on the frozen PR head; PR #1073 merged via Merge Queue.
 
 ## Excluded scope
 
@@ -185,23 +185,24 @@ behaviour of exact id evidence overriding a same-page name match. Kraken Buoy La
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: completed on PR #1073 before merge
+- unresolved review threads: none outstanding at merge
 - related/superseded PRs: #1063, #1068 (alias reverted here)
-- protected auto-merge: SQUASH via Merge Queue, enabled on PR #1073
-- merge commit/result: pending
-- ownership release: pending
+- protected auto-merge: SQUASH via Merge Queue, enabled and completed on PR #1073
+- merge commit/result: squash-merged via Merge Queue as `57a0fc76` (PR #1073)
+- ownership release: this record archived; owned paths released to the successor task
+  `OTV2-20260928-item-wrap-target-corpses`
 
 ## Context checkpoint
 
 ```yaml
-last_progress: itemid join + status=event published as PR #1073
-status: validating
+last_progress: PR #1073 (itemid join + status=event) merged via Merge Queue; record archived
+status: completed
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
+head_sha: 3a11e3f8df392af6901986afd48e887b1405a489
 pr: 1073
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: 3a11e3f8df392af6901986afd48e887b1405a489
+final_head_frozen_at: 2026-09-28T08:44:50Z
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -217,5 +218,6 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: required checks, Merge Queue, archive record
+next_action: NONE (task complete; see OTV2-20260928-item-wrap-target-corpses for the
+  follow-on wrap-target/corpse owner decisions)
 ```

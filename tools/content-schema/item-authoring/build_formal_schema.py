@@ -1104,6 +1104,19 @@ def build_item_schema():
         },
         ("field", "value", "wiki_source"),
     )
+    wiki_fields = (
+        {"required": ["resolution"]},
+        {"required": ["match_basis"]},
+        {"required": ["field"]},
+        {"required": ["value"]},
+        {"required": ["wiki_source"]},
+        {"required": ["candidates"]},
+    )
+    wrap_fields = (
+        {"required": ["wrap_target_id"]},
+        {"required": ["wrap_target_primarytype"]},
+    )
+    owner_name_fields = ({"required": ["rule"]}, {"required": ["name"]})
     d["familyProfileEvidence"] = obj(
         {
             "resolution": enum("direct", "disambiguation"),
@@ -1112,42 +1125,85 @@ def build_item_schema():
             "value": text(),
             "wiki_source": use("wikiEvidenceSource"),
             "candidates": array(use("wikiEvidenceCandidate"), 2, unique=True),
+            "wrap_target_id": integer(1),
+            "wrap_target_primarytype": text(),
+            "rule": enum("take_able_dead_creature"),
+            "name": text(),
         },
-        ("resolution", "match_basis"),
+        (),
         description=(
-            "Present only when family_profile_basis is wiki_evidence_fallback: the "
-            "admitted-mapping fact that resolved family_profile when no engine "
-            "attribute did. 'direct' cites the one matched page's field/value; "
-            "'disambiguation' cites 2+ candidate pages that all resolved to the same "
-            "profile (the family invariant across candidates). 'match_basis' is an "
-            "audit field: 'itemid' when the pages were joined by the item's own exact "
-            "numeric TibiaWiki 'itemid', which takes precedence and is authoritative "
-            "over 'title' (the engine name matched against the wiki title index)."
+            "The admitted-mapping fact that resolved family_profile when no direct "
+            "engine attribute did; the shape carried is exactly one of three mutually "
+            "exclusive families, keyed by family_profile_basis. 'wiki_evidence_fallback' "
+            "(resolution/match_basis/...): 'direct' cites the one matched TibiaWiki "
+            "page's field/value; 'disambiguation' cites 2+ candidate pages that all "
+            "resolved to the same profile (the family invariant across candidates). "
+            "'match_basis' is an audit field: 'itemid' when the pages were joined by the "
+            "item's own exact numeric TibiaWiki 'itemid', which takes precedence and is "
+            "authoritative over 'title' (the engine name matched against the wiki title "
+            "index). 'engine_wrap_target' (wrap_target_id/wrap_target_primarytype): this "
+            "item's own items.xml 'wrapableto' names another items.xml id whose own "
+            "engine primarytype resolved the family (one hop only, never chained, never "
+            "through that id's own wiki fallback). 'owner_name_rule' "
+            "(rule/name): the item's exact lower-cased engine name matched an explicit, "
+            "reviewed owner table keyed by 'rule'."
         ),
-        **{
-            "if": {"properties": {"resolution": {"const": "direct"}}},
-            "then": {
-                "required": ["field", "value", "wiki_source"],
-                "not": {"required": ["candidates"]},
-            },
-            "else": {
-                "required": ["candidates"],
-                "not": {
-                    "anyOf": [
-                        {"required": ["field"]},
-                        {"required": ["value"]},
-                        {"required": ["wiki_source"]},
-                    ]
+        allOf=[
+            {
+                "if": {"required": ["resolution"]},
+                "then": {
+                    "required": ["resolution", "match_basis"],
+                    "if": {"properties": {"resolution": {"const": "direct"}}},
+                    "then": {
+                        "required": ["field", "value", "wiki_source"],
+                        "not": {"required": ["candidates"]},
+                    },
+                    "else": {
+                        "required": ["candidates"],
+                        "not": {
+                            "anyOf": [
+                                {"required": ["field"]},
+                                {"required": ["value"]},
+                                {"required": ["wiki_source"]},
+                            ]
+                        },
+                    },
                 },
+                "else": {"not": {"anyOf": list(wiki_fields)}},
             },
-        },
+            {
+                "if": {"required": ["wrap_target_id"]},
+                "then": {
+                    "required": ["wrap_target_id", "wrap_target_primarytype"],
+                    "not": {"anyOf": [*wiki_fields, *owner_name_fields]},
+                },
+                "else": {"not": {"anyOf": list(wrap_fields)}},
+            },
+            {
+                "if": {"required": ["rule"]},
+                "then": {
+                    "required": ["rule", "name"],
+                    "not": {"anyOf": [*wiki_fields, *wrap_fields]},
+                },
+                "else": {"not": {"anyOf": list(owner_name_fields)}},
+            },
+            {
+                "anyOf": [
+                    {"required": ["resolution"]},
+                    {"required": ["wrap_target_id"]},
+                    {"required": ["rule"]},
+                ]
+            },
+        ],
     )
     properties = {
         "identity": use("identity"),
         "display_name": text(),
         "aliases": array(text(), unique=True),
         "family_profile": enum(*PROFILES),
-        "family_profile_basis": enum("wiki_evidence_fallback"),
+        "family_profile_basis": enum(
+            "wiki_evidence_fallback", "engine_wrap_target", "owner_name_rule"
+        ),
         "family_profile_evidence": use("familyProfileEvidence"),
         "delivery_task_eligible": use("bool"),
         "presentation": use("presentation"),

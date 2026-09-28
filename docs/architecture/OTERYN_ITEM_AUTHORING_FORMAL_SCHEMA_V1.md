@@ -392,17 +392,19 @@ TibiaWiki BR binding also exists it must agree.
 |---|---|---|
 | entries | 38,157 | 37,527 |
 | validator errors | 0 | 0 |
-| valid, only the sprite atlas pending | 11,119 | 10,782 |
+| valid, only the sprite atlas pending | 11,216 | 10,879 |
 | valid, other blockers | 902 | 877 |
-| routed to a non-Item owner | 25,656 | 25,193 |
-| not converted (no family, or no identity binding) | 480 | 675 |
+| routed to a non-Item owner | 25,670 | 25,207 |
+| not converted (no family, or no identity binding) | 369 | 564 |
 | Delivery Task eligible | 433 | 401 |
 
 Entries that are not portable Items are counted as `routed_non_item` with an owner and
 reason, not as failures (Crystal counts): WorldObject `immovable_unclassified` 8,450,
-`appearance_placeholder_slot` 4,300, `corpse` 3,344, `primarytype_world_object` 981;
-Terrain `primarytype_world_object` 5,138, `ground_or_border` 3,443. An immovable entry
-that resolves an Item family stays an Item with `physical.movable = false`.
+`appearance_placeholder_slot` 4,300, `corpse` 3,344, `corpse_decoration` 14,
+`primarytype_world_object` 981; Terrain `primarytype_world_object` 5,138,
+`ground_or_border` 3,443. An immovable entry that resolves an Item family stays an Item
+with `physical.movable = false`. `corpse_decoration` (owner decision 2026-09-28, §5c) is
+identical on Canary (14).
 
 `PRIMARYTYPE_PROFILE` also admits two case-fold/plural aliases of existing entries
 (`decorations`, `lamps`); neither occurs in either engine's `items.xml`, so they change no
@@ -419,20 +421,23 @@ identical in both engines) and mantra damage types (energy, fire, earth, ice). A
 with proficiency `238` cites both engines' admitted crosswalks.
 
 Remaining blockers (Crystal): `sprite_atlas_not_admitted` on every converted Item (no
-admitted sprite atlas yet); `family_profile_unresolved` 480 (no structural signal and no
-admitted wiki evidence either; editorial backlog); other proficiency ids 642, `augments`
-83 and `runespellname` 36 (need an Ability identity crosswalk); `flags.forceuse` 34
-(loaded but unused by both engines); and small data-quality residuals such as
-`stopduration` without decay or a container without `containersize`. Canary's own
-`family_profile_unresolved` is 439, plus 236 `identity_not_in_b1_catalog` (no Crystal
-allocator key at all, so the wiki fallback below is never consulted for those).
+admitted sprite atlas yet); `family_profile_unresolved` 369 (no structural signal and no
+admitted wiki evidence, engine wrap-target or owner name-rule evidence either; editorial
+backlog); other proficiency ids 642, `augments` 83 and `runespellname` 36 (need an Ability
+identity crosswalk); `flags.forceuse` 34 (loaded but unused by both engines); and small
+data-quality residuals such as `stopduration` without decay or a container without
+`containersize`. Canary's own `family_profile_unresolved` is 328, plus 236
+`identity_not_in_b1_catalog` (no Crystal allocator key at all, so the wiki fallback below
+is never consulted for those).
 
 `family_profile_basis` distinguishes how each converted Item's `family_profile` was
 decided: `engine_attribute` (the engine's own `primarytype`/`weapontype`/slot/etc., as
-`classify_family_profile` always decides first) or `wiki_evidence_fallback` (§5b below,
-applied only when the engine carried no such signal at all). Crystal: 10,679
-`engine_attribute`, 1,342 `wiki_evidence_fallback`. Canary: 10,357 `engine_attribute`,
-1,302 `wiki_evidence_fallback`. `clothing accessories` is never an admitted
+`classify_family_profile` always decides first), `wiki_evidence_fallback` (§5b below,
+applied only when the engine carried no such signal at all), `engine_wrap_target` or
+`owner_name_rule` (§5c below, both lower-priority than the wiki fallback). Crystal: 10,679
+`engine_attribute`, 1,342 `wiki_evidence_fallback`, 85 `engine_wrap_target`, 12
+`owner_name_rule`. Canary: 10,357 `engine_attribute`, 1,302 `wiki_evidence_fallback`, 85
+`engine_wrap_target`, 12 `owner_name_rule`. `clothing accessories` is never an admitted
 engine-attribute `primarytype` value (old rag and ivory comb both carry it natively but
 it names no one real family on its own; see §5b), so both fall to the wiki fallback
 instead of `engine_attribute`.
@@ -552,6 +557,54 @@ Creature Products` -> `material_valuable` evidence as before (§5a).
 The title index itself is not pinned in the schema (it is provenance, not correctness --
 every record's own wiki page/revision identity is what the loader verifies); its count and
 digest are recorded in the capture tool's uncommitted report only.
+
+## 5c. Engine wrap-target inheritance and corpse-like "dead ..." items
+
+Two further owner decisions (2026-09-28), both applied only once every existing
+classifier, `immovable_non_item_route` and the §5b wiki-evidence fallback have already
+failed to resolve a family -- lowest priority, so no already-resolved item is ever
+affected -- and in this order:
+
+**Engine wrap-target inheritance** (`family_profile_basis: "engine_wrap_target"`). Many
+`family_profile_unresolved` items are house furniture (chairs, a forge, a workbench,
+lamps) whose own `items.xml` carries `wrapableto="T"`, almost always the generic
+decoration-kit id `23398` (`primarytype = furniture` -> `decoration`). When the
+unresolved item's own `wrapableto` names an id `T` whose own `primarytype` resolves
+through the existing `PRIMARYTYPE_PROFILE` -- exactly one hop: never chained through T's
+own `wrapableto`, and never through T's own wiki fallback -- the item takes that profile,
+recorded with evidence `{wrap_target_id, wrap_target_primarytype}`. When T is absent from
+`items.xml`, or T's own `primarytype` does not resolve, the item stays unresolved. This
+resolves 85 Items identically in both engines (all -> `decoration`; wrap targets `23398`
+and, for the "dragon pinata" pair, `23473`, both `primarytype = furniture`): chairs
+(ornate, dwarven stone, heart, artist, sculptor, kitchen), lamps (little big flower,
+turquoise/purple flower, sea-devil wall, scales wall, opulent floor), a forge, workbench,
+wooden stool, grinding wheel, pair of bellows, water bucket/seafood bucket, artist shelf,
+wallcupboard, glowworms, luminescent fungi, supreme mana cask/keg, light/torch of change,
+and dragon pinata.
+
+**Corpse-like "dead ..." items.** An appearance-flagged corpse
+(`flags.corpse`/`flags.player_corpse`) is already routed to WorldObject/corpse by
+`non_item_route`, before family classification even starts. An engine name starting with
+`"dead "` (case-folded) that carries neither flag and still resolves no family is either a
+non-take-able map/quest decoration corpse or a take-able carcass. Without `flags.take` it
+is routed non-Item: owner `WorldObject`, reason `corpse_decoration` (14 items, identical
+in both engines: dead dragon/bear/cyclops/goblin x2 each, dead lava, and five named quest
+corpses -- dead Doctor Perhaps, dead Dirtbeard, dead Evil Mastermind, dead Monstor, dead
+Mephiles). With `flags.take`, the exact lower-cased name is looked up in the small,
+explicit `DEAD_CREATURE_PROFILE` owner table
+(`family_profile_basis: "owner_name_rule"`, evidence
+`{rule: "take_able_dead_creature", name}`); every take-able "dead ..." name found in
+either pinned engine is an ordinary animal/creature carcass, so the table maps all 7 of
+them (dead troll/rat/snake/spider/wolf/rabbit/frog, 12 items total) to
+`material_valuable` -- none is a unique/named quest character, since every named corpse in
+either engine is one of the five `corpse_decoration` entries above (no `flags.take`). A
+take-able `"dead ..."` name absent from the table stays `family_profile_unresolved` (fail
+closed) rather than guessed.
+
+Both rules recover the exact same 111 items (85 + 14 + 12) in Crystal and Canary alike:
+`family_profile_unresolved` 480 -> 369 (Crystal), 439 -> 328 (Canary); `routed_non_item`
+25,656 -> 25,670 (Crystal), 25,193 -> 25,207 (Canary); no other outcome or blocker count
+changes.
 
 ## 6. Validation and non-claims
 

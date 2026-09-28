@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-store-catalog-authoring
 title: Add the Store offer content-schema authoring package (categories, offers, product refs)
 mode: MIGRATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 1080
 base_sha: 57a0fc76
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: b1d56a90e4f9b1aacda9881fefe072214c9fc38b
+final_head_sha: b1d56a90e4f9b1aacda9881fefe072214c9fc38b
+final_head_frozen_at: 2026-09-28T09:15:23Z
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -83,7 +83,7 @@ trust.
       `item-authoring-schema.yml`; census/converter-against-real-checkouts is local-only
       (documented in the workflow and README), matching the Item package.
 - [x] Owner decision doc + one-line gap-register (§32) update.
-- [ ] The required checks pass on a frozen PR head (not opened from this local worktree).
+- [x] The required checks passed on the frozen PR head `b1d56a90`; PR #1080 merged via Merge Queue.
 
 ## Excluded scope
 
@@ -125,10 +125,10 @@ in `samples/store-census-canary-47dfd51f.json` / `samples/store-census-crystal-f
 
 ## Self-review
 
-- exact head: pending (local worktree, not yet committed to a reviewable branch head)
+- exact head: `b1d56a90e4f9b1aacda9881fefe072214c9fc38b`
 - method/reviewer: implementing session
 - material findings: none beyond what is recorded above
-- verdict: pending
+- verdict: PASS (owner-decision doc narrowed to catalog authorship on review; CI ruff-install fix `b1d56a90`)
 
 ## Independent review
 
@@ -140,23 +140,23 @@ in `samples/store-census-canary-47dfd51f.json` / `samples/store-census-crystal-f
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: done
+- unresolved review threads: none
 - related/superseded PRs: none
 - protected auto-merge: SQUASH via Merge Queue, enabled on PR #1080
-- merge commit/result: pending
-- ownership release: pending
+- merge commit/result: squash-merged via Merge Queue as `df4fd18f` (PR #1080)
+- ownership release: released
 
 ## Context checkpoint
 
 ```yaml
-last_progress: published as PR #1080; owner-decision doc scoped to catalog authorship on review
-status: validating
+last_progress: PR #1080 merged as df4fd18f
+status: completed
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
+head_sha: b1d56a90e4f9b1aacda9881fefe072214c9fc38b
 pr: 1080
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: b1d56a90e4f9b1aacda9881fefe072214c9fc38b
+final_head_frozen_at: 2026-09-28T09:15:23Z
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -172,5 +172,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: "not pushed / no PR opened from this session, per instructions"
-next_action: required checks, Merge Queue, archive record
+next_action: none
 ```
