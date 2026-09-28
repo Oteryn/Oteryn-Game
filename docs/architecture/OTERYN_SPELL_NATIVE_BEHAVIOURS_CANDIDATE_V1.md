@@ -12,6 +12,8 @@
   - Canary `opentibiabr/canary@99902524` and Crystal `zimbadev/crystalserver@ff7ede5` (hypothesis only);
   - TibiaWiki Fandom at the target date, with the revision ids given in each part;
   - the TibiaWiki BR capture of 2026-09-27;
+  - the official tibia.com spell list captured 2026-09-28
+    (`tools/content-schema/spell-authoring/samples/tibiacom-spell-list-2026-09-28.json`; words, level, mana and premium only);
   - official tibia.com news through the TibiaData API (ids given as N<id>), dated on or before 2026-09-27;
   - the current TibiaData spell library, used as a check only.
 - Source rule (S24): an official announcement dated on or before 2026-09-27 wins, then the wiki at that date, then
@@ -20,7 +22,9 @@
 
 ## 1. Outcome
 
-88 spells are blocked. For nearly all of them the reason is a behaviour the data alone cannot express. This
+88 spells are blocked. For nearly all of them the reason is a behaviour the data alone cannot express; six are
+removed instead (S24: Expose Weakness, Sap Strength; S25: Practise Fire Wave, Practise Healing, the conjuring spells of
+Lightest Missile Rune and Light Stone Shower Rune) and need no behaviour. This
 document specifies those behaviours by pattern, one shared behaviour per pattern (S7). Each section gives:
 - the spells;
 - the engine steps;
@@ -43,7 +47,7 @@ S26 (this change) authors the monk Harmony role (`harmony_role: builder|spender`
 13 spells. The game core rejects them until the Harmony resource of part A has an owner. Before this change, eight
 builders were authored as ready without the role and would never have built Harmony.
 
-## Part A. Native behaviour specification A: Wheel of Destiny gate and monk Harmony
+## Part A. Wheel of Destiny gates and monk Harmony
 
 Date 2026-09-28, target date 2026-09-27. Source order S24: tibia.com news <= 2026-09-27 (via TibiaData) > Fandom / BR at the
 target date > Canary 99902524 (15.30 branch) and Crystal (hypothesis; Canary wins a Canary/Crystal conflict, S21). The
@@ -54,7 +58,7 @@ source states it.
 
 ### A.1 wheel_of_destiny: gate, revelation stages, augment hooks
 
-- Spells (21 in the family), by role:
+- Spells (21 in the family, 20 to author), by role:
   - **A. Revelation spells (11, `wheel_unlock`, level 0 per S22):** Avatar of Steel (knight), Avatar of Light (paladin),
     Avatar of Nature (druid), Avatar of Storm (sorcerer), Avatar of Balance (monk), Executioner's Throw (knight), Divine
     Grenade (paladin), Divine Empowerment (paladin), Ice Burst and Terra Burst (druid, one perk "Twin Bursts"), Spiritual
@@ -63,9 +67,10 @@ source states it.
     (druid), Front Sweep (knight), Flurry of Blows (monk). Base behaviour is a plain combat; the augment is Wheel state.
   - **C. Beam Mastery (Revelation passive) targets (2, plus Great Death Beam outside the list):** Energy Beam, Great Energy
     Beam (sorcerer).
-  - **D. Wheel dependency gone at the target date (3):** Magic Shield, Swift Foot, Sap Strength. Details in Behaviour step 9.
+  - **D. Wheel dependency gone at the target date (2, plus one removed spell):** Magic Shield, Swift Foot; Sap Strength is
+    removed (S24) and is not authored. Details in Behaviour step 9.
 
-### Behaviour (what the engine implements)
+#### Behaviour (what the engine implements)
 1. **Wheel state is an input, not spell data.** The Wheel owner supplies, per character: `revelation_stage(perk)` in 0..3 and
    `augment_stage(augment)` in 0..2. Stage 1/2/3 of a Revelation perk need 250/500/1000 points in its domain (F r1204680);
    augment stage 1 comes first, stage 2 only after both slices of the augment are filled (F r1206174). Until a Wheel owner
@@ -92,8 +97,7 @@ source states it.
    at explosion. Stage damage: +0/+16/+32% (reading of "+16% base damage per additional stage", Q1).
 8. **Divine Empowerment.** Creates a 3x3 field of holy energy centred on the caster's tile for 5 s (tiles that block or change
    floor get none). While the caster stands on a field tile that he created, on the same floor (13.10.12858), all damage he
-   deals is +8/10/12% (Canary adds it as damage-multiplier percentage points, evaluated at most once per second). Casting
-   forces an immediate evaluation. Other players' fields give nothing.
+   deals is +8/10/12% (Canary adds it as damage-multiplier percentage points, evaluated at most once per second and on cast; F says "as long as you stand in this field", so the proposal is to evaluate per damage event, Q5). Other players' fields give nothing.
 9. **Wheel dependency removed (role D).** `8833` replaced the Magic Shield augments by Special Spells, the Swift Foot augments by
    Divine Barrage, and turned Sap Strength into a stance; `15.25.3a4a52` confirms. Author the spells without any Wheel branch:
    Magic Shield has no 1.25x capacity branch (Canary's `upgradeSpellsWOD` line is dead code after the release; F r1182867 still
@@ -115,7 +119,7 @@ source states it.
     (8833; F r1204680 says 25.5 for stage 2, a typo); Gift of Life 20/25/30% of max health and max mana (Canary; mana part 8833);
     flat +4/9/20 damage and healing per perk stage (F r1204680).
 
-### Parameters
+#### Parameters
 Revelation spells (mana and level from lib, all `premium`, group `support`/`attack` 2 s; level 0 by S22):
 
 | Spell | Mana | Cooldown stage 1/2/3 | Stage effects | Sources | Superseded |
@@ -129,36 +133,37 @@ Revelation spells (mana and level from lib, all `premium`, group `support`/`atta
 | Divine Grenade | 160 | 26/20/14 s | damage +0/16/32%; delay 3 s; base power 190 | F r1190610, F r1204680, BR, lib | Canary 1.3/1.6/2.0 in Lua plus +30/60/100 in engine (both applied) |
 | Divine Empowerment | 500 | 32/28/24 s | field 3x3, 5 s; damage +8/10/12% | F r1182659, F r1204680, lib | |
 | Ice Burst / Terra Burst | 230 | 22/18/14 s | +20/40/60% above 60% health; base power 115 | F r1182741 / r1195147, F r1204680, BR, lib | |
-| Spiritual Outburst | 425 | 24/20/16 s | recast 37.5/50/62.5% (family 2); chain 7 further, jump 4 (chain doc) | F r1182899, F r1204680, BR ("8 enemies"), lib | |
+| Spiritual Outburst | 425 | 24/20/16 s | recast 37.5/50/62.5% (part D section 1.3); chain 7 further, jump 4 (chain doc) | F r1182899, F r1204680, BR ("8 enemies"), lib | |
 
 Augments and Beam Mastery values are in `tools/content-schema/spell-authoring/wheel-augments.json` (official 8833/8872/8944,
 Fandom r1206174) and are used unchanged. Areas: Canary `AREA_*` tables (Strong Ice Wave enlarged = `AREA_WAVE7`, Energy Wave I
-= `AREA_WAVE7`, Mass Healing radius 3 -> 4, Flurry of Blows -> `AREA_GREATER_FLURRY_OF_BLOWS`, Front Sweep II = five squares
+= `AREA_WAVE7`, Mass Healing radius: F/BR state 4 (Canary: 3 base, 4 augmented, Q9), Flurry of Blows -> `AREA_GREATER_FLURRY_OF_BLOWS`, Front Sweep II = five squares
 in a row, 8833). Base powers: Front Sweep 80, Strong Ice Wave 140, Energy Wave 150, Energy Beam 60, Great Energy Beam 155,
 Mass Healing 200, Flurry of Blows 55 (F/BR, 8833/8872). Formula shape is S5; Canary's legacy formulas for Divine Grenade, the
 Bursts, Executioner's Throw, Energy Beam and Energy Wave are superseded by the wiki base power.
 
-Data check against the evidence file: the avatar rows in `wheel-augments.json` are marked Canary-only, but Fandom (revisions
-above) and BR state the same values, so they can be upgraded to wiki sources. Its Combat Mastery 14/12/10, Beam Mastery
+Data check against the evidence file: the avatar rows in `wheel-augments.json` currently cite Canary only (hypothesis), while Fandom
+(revisions above) and BR state the same values; the file does not yet cite the wiki sources. Its Combat Mastery 14/12/10, Beam Mastery
 25/40/70 and Lord of Destruction values agree with 8872 / 8833.
 
-### Proposed authoring shape
+#### Proposed authoring shape
 - Keep `requirements.wheel_unlock` (exists). Add one optional Spell field `wheel_stages`: `{perk, stages: [{stage, cooldown_ms,
   values: {name: number}}]}`, plus one formula function `wheel_stage_value(name)` for `player_expression`. The same table may
   instead be a `ProjectV2AugmentBinding` with `rank_values` 1..3 on the Ability (S6); the owner picks one route.
 - New optional Effect field `target_health_bonus`: `{compare: at_or_below | above, threshold_pct, bonus_pct_by_stage: [..]}`
   (Executioner's Throw, Bursts). A per-target modifier is needed; `player_expression` has no per-target input.
-- `native_behavior.key = "timed_avatar"`: `outfit_asset_binding`, `duration_ms`, `damage_reduction_pct_by_stage`,
-  `crit_chance_pct`, `crit_extra_damage_pct_by_stage`. One key for the five avatars.
-- `native_behavior.key = "owner_field_buff"`: `area` (3x3), `duration_ms`, `damage_bonus_pct_by_stage`, `same_floor_only`.
-- Executioner's Throw and Spiritual Outburst use the S23 chain; Divine Grenade uses the delayed-strike behaviour of
-  `delayed_or_repeated` with `delay_ms` 3000 (this document adds only its stage table and the PZ rule).
+- Avatars: no native key. Each is a plain `Ability` with a timed `condition` Effect (`outfit_binding`, `duration_ms` 15000,
+  damage reduction, crit chance 100, crit extra damage by stage), as specified in part D section 1.5.
+- `native_behavior.key = "owned_field_buff"` (part D section 1.5): `field_item`, `radius_tiles` 1 (3x3), `duration_ms`,
+  `bonus_damage_percent_by_stage`, `owner_only`, `evaluate`.
+- Executioner's Throw and Spiritual Outburst use the S23 chain; Divine Grenade uses `native_behavior.key = "delayed_strike"`
+  (part D section 1.5) with `delay_ms` 3000 (this document adds only its stage table and the PZ rule).
 - Role B, C, D spells: plain `Ability`, no native key; the `wheel_of_destiny` tag is dropped. Left over: Energy Wave (stance),
-  Flurry of Blows (equipment, Harmony builder), Mass Healing (area heal rule, section 3), Swift Foot (familiar), Magic Shield
+  Flurry of Blows (equipment, Harmony builder), Mass Healing (area heal rule, section A.3), Swift Foot (familiar), Magic Shield
   (a manashield condition: Fandom capacity `7*ML + 7.6*L + max(300, 0.4*L)` rounded up against Canary's `300 + 7.6*L + 7*ML`
   capped at max mana; for the condition owner).
 
-### Engine tests
+#### Engine tests
 1. Stage 0: Executioner's Throw fails; mana, cooldown and group cooldown unchanged.
 2. Executioner's Throw stage 2: target A 100% health, B 30%, C 31%, D 10%, all in range 3 of the previous: 4 hits in nearest
    order, B and D get x2.25, A and C x1.0 (B at 30% follows Canary's <= 30, see Q3).
@@ -171,7 +176,7 @@ above) and BR state the same values, so they can be upgraded to wiki sources. It
 7. Beam Mastery stage 2, central beam hits 4 creatures: damage +36% (3 counted), cooldowns -3 s, adjacent squares at 40%.
 8. Front Sweep with augment I and II: +40% and five squares; augment II without stage 1 is impossible (Wheel state).
 
-### Open questions
+#### Open questions
 - **Q1** Divine Grenade stage damage: wiki "+16% base damage per additional stage" (reading 0/16/32); Canary 1.3/1.6/2.0 plus 30/60/100.
 - **Q2** Divine Grenade: is damage rolled at cast (F r1190610) or at explosion (Canary), and which modifiers are snapshotted?
 - **Q3** "Less than 30%" and "more than 60%": Canary rounds health to a whole percent and uses <= 30 and > 60.
@@ -186,12 +191,12 @@ above) and BR state the same values, so they can be upgraded to wiki sources. It
 
 - Spells: Focus Harmony, Focus Serenity, Virtue of Harmony, Virtue of Justice, Virtue of Sustain, Spiritual Outburst (Harmony
   recast), Flurry of Blows (builder) - all monk. Also the three blocked spenders: Tiger Clash, Greater Tiger Clash, Devastating
-  Knockout. Builders authored as ready but without a marker (they would cast without building Harmony, a silent wrong
-  result): Swift Jab, Double Jab, Flurry of Blows, Greater Flurry of Blows, Chained Penance, Mystic Repulse, Forceful
-  Uppercut, Thousand Fist Blows. Sweeping Takedown is a spender too (F r1182918, Canary; still in the library) and needs the
-  same role, but it is blocked on its own script (`equipment_dependent`, other), outside this scope.
+  Knockout. The eight builders carry `harmony_role: builder` since S26 (authored as ready without the marker they would have
+  cast without building Harmony, a silent wrong result): Swift Jab, Double Jab, Flurry of Blows, Greater Flurry of Blows, Chained Penance, Mystic Repulse, Forceful
+  Uppercut, Thousand Fist Blows. Sweeping Takedown is a spender too (F r1182918, Canary; still in the library) and carries the
+  same role (S26), but it is blocked on its own script (`equipment_dependent`, other), outside this scope.
 
-### Behaviour
+#### Behaviour
 1. **State.** Per monk: `harmony` 0..5 (emptied on death; kept across casts), `serene` flag, `virtue` in {none, harmony, justice,
    sustain}. Virtues are the `standard` stance slot (8833: stances persist across sessions, may be empty); the stance
    behaviour selects them, this section defines what each does.
@@ -224,10 +229,10 @@ above) and BR state the same values, so they can be upgraded to wiki sources. It
     charge (Canary); not renewed while active. It also gives +10% damage to adjacent enemies and +10% healing to adjacent
     allies (15.25.3a4a52). Values unchanged by 8944.
 11. **Spiritual Outburst.** Chain per S23 and the chain doc. A spender: it consumes Harmony. If Harmony was 5 at cast, a second
-    cast of the same chain runs 1000 ms later at 37.5/50/62.5% by Wheel stage (family 1). Wiki: "percentage of its original
+    cast of the same chain runs 1000 ms later at 37.5/50/62.5% by Wheel stage (part D section 1.3). Wiki: "percentage of its original
     damage" (Q4).
 
-### Parameters
+#### Parameters
 | Item | Value | Sources | Superseded |
 |---|---|---|---|
 | Harmony base bonus | 7% + 0.005% per level | 8944 | F r1136128: 7%; Canary 8% |
@@ -251,19 +256,19 @@ The formula shape is S5 (`bp * skill/100 * attack/10 + level_base_damage_healing
 multiplier applied to both bounds. Range 1 for Tiger Clash and Greater Tiger Clash (BR, lib, Canary). The damage type follows the
 equipped weapon's elemental bond (Canary, Crystal); that belongs to `equipment_dependent`.
 
-### Proposed authoring shape
+#### Proposed authoring shape
 - Formula function `monk_harmony_multiplier()` (no arguments; reads charges, virtue, Serene, level, Ascetic stage). The three
   spenders become plain `Ability` with `min/max = trunc(monk_harmony_multiplier() * bound)`; no native key.
-- New optional Spell field `harmony_role`: `builder` | `spender` (needed by the 8 builders above too). Not a native key, because
-  `execution` is exclusive and these spells keep their `ability`. The game core must reject a monk spell that reads Harmony
-  until the runtime exists (as it rejects `chain`).
+- Spell field `harmony_role`: `builder` | `spender` (decided, S26; on the 8 builders above and the 5 spenders). Not a native key,
+  because `execution` is exclusive and these spells keep their `ability`. The game core rejects a spell with a Harmony role
+  until the Harmony resource has an owner (as it rejects `chain`).
 - `native_behavior.key = "monk_focus"`: `fill_harmony` (bool), `serene_ms` (int or null), `reset_spender_cooldowns` (bool).
   Focus Harmony: `{true, null, false}`; Focus Serenity: `{true, 7000, true}`.
 - Virtue spells: the shared stance behaviour (slot `standard`, id) plus one ruleset record `monk_harmony_rules` holding the
   numbers of steps 2, 5, 6, 8 and 10 (not per-spell data). Spiritual Outburst: chain plus `harmony_role: spender` and
-  `recast: {delay_ms: 1000, requires_full_harmony: true, damage_pct_by_stage}`.
+  the `delayed_strike` of part D section 1.5 (`delay_ms` 1000, `requires_full_harmony` true, damage 37.5/50/62.5% by stage).
 
-### Engine tests
+#### Engine tests
 1. Multiplier, level 200, no virtue: charges 1..5 give 1.08, 1.16, 1.32, 1.64, 2.28; virtue + Serene: 1.16, 1.32, 1.64, 2.28,
    3.56; virtue without Serene, 5 charges: 2.92; level 700 virtue + Serene, 5 charges: 4.36; Ascetic 3 adds 3 points to B.
 2. Tiger Clash at 3 charges: both bounds x1.32 (level 200), then truncated; out of range: charges stay 3.
@@ -274,7 +279,7 @@ equipped weapon's elemental bond (Canary, Crystal); that belongs to `equipment_d
 7. Focus Serenity resets spender cooldowns only; builders keep theirs; Harmony 5.
 8. Spiritual Outburst at 5 Harmony recasts at +1000 ms with stage %; at 4 Harmony no recast.
 
-### Open questions
+#### Open questions
 - **Q1** Does Ascetic get scaled by Virtue of Harmony? 8944 says only that the level scaling is included.
 - **Q2** Virtue Healing formula: wiki says it depends on magic level, Canary uses level only. Unknown coefficients.
 - **Q3** 8944 "monk and its lowest health ally": two heals or one, split or full, absolute health (Canary) or percent (wiki)?
@@ -293,8 +298,8 @@ equipped weapon's elemental bond (Canary, Crystal); that belongs to `equipment_d
 Neither reads Harmony at the target date: `8833` says Mass Spirit Mend "is no longer a spender spell"; Balanced Brawl never was one.
 Both are blocked by per-target scripts (P4).
 
-### Behaviour
-1. **Mass Spirit Mend.** Area 11x11 rounded (Canary `AREA_MASS_SPIRIT_MEND`, centre on the caster). For each creature: players
+#### Behaviour
+1. **Mass Spirit Mend.** Area 11x11 rounded, centre on the caster (Canary `AREA_MASS_SPIRIT_MEND`, hypothesis; BR gives range 5 and mentions 4 sqm, Q2). For each creature: players
    and player-owned summons are healed; monsters that are not player-owned are skipped, except an allow-listed boss (Canary
    list of 8 names, Q1). The caster gets a lesser effect "similar in power to a regular Spirit Mend" (8833): the Spirit Mend
    formula (Canary). Others: `level_base_damage_healing + bp/25*ML + bp/4`, bounds x0.9, x1.1, `bp` 800. Paralysis is dispelled.
@@ -303,32 +308,34 @@ Both are blocked by per-target scripts (P4).
    in front of the caster (Canary `AREA_BALANCED_BRAWL`, 8 rows, up to 13 wide) prefers distance 1 for 16 s; a new cast sets
    the remaining time to 16 s. Players, NPCs, summons and reward bosses are unaffected and the cast does not fail (Canary).
 
-### Parameters
+#### Parameters
 | Spell | Values | Sources | Superseded |
 |---|---|---|---|
 | Mass Spirit Mend | level 150, mana 400, cooldown 12 s, healing group 1 s, base power 800, range 5 | BR, lib, Canary | F r1182871: mana 250, cooldown 8 s, base power 90 (pre-8833 page); Crystal: heal 5.7-10.43*ML |
 | Mass Spirit Mend augments | I +8% healing; II -4 s | 8833, F r1206174 | earlier: II enlarged the area |
 | Balanced Brawl | level 175, mana 80, cooldown 10 s, group 2 s, 16 s, half-circle in front | F r1182618, lib, Canary | BR: long range, around the target (S14a: Fandom and Canary agree) |
 
-### Proposed authoring shape
-- Balanced Brawl: `native_behavior.key = "force_melee"`: `duration_ms` 16000, `area` (matrix), `exclude` [`summon`, `reward_boss`]. It is
-  the per-creature effect the chain doc lists for Divine Dazzle and Chivalrous Challenge; one key serves all three.
+#### Proposed authoring shape
+- Balanced Brawl: `native_behavior.key = "monster_ai_override"`, `mode` `force_melee`: `duration_ms` 16000, `area` (matrix), `skip_summons`,
+  `skip_reward_bosses` (part D section 6.3). It is the per-creature effect the chain doc lists for Divine Dazzle and Chivalrous Challenge;
+  one key serves all three.
 - Mass Spirit Mend: plain `Ability` with an area and two heal effects. Needs an Effect field `applies_to` (`caster` |
-  `others`) and `monster_heal_allowlist` (creature refs) on the Ability; the same rule serves Mass Healing.
+  `others`) and `monster_heal_allowlist` (creature refs) on the Ability; the same rule serves Mass Healing. Part D section 6.4 expresses the same split with
+  `affects` (`player_side`, `named_creatures`); the owner picks one of the two shapes.
 
-### Engine tests
+#### Engine tests
 1. Mass Spirit Mend: caster gets the Spirit Mend roll, an ally the bp 800 roll, a hostile monster and a wild monster nothing, a
    player's summon the ally roll.
 2. Balanced Brawl: three monsters in the cone are melee for exactly 16 s; a summon and a reward boss are not; recast at 10 s
    restores 16 s.
 
-### Open questions
+#### Open questions
 - **Q1** Boss allow-list for area heals (Canary and Crystal lists differ; Canary misspells "ravenous hunger").
 - **Q2** Size of the caster's "lesser effect" beyond "similar to Spirit Mend"; BR says the radius for summons is 4, range 5.
 - **Q3** Balanced Brawl: BR mentions lever bosses; Canary only ignores reward bosses. Area shape (BR long range vs Fandom).
 
 
-## Part B. Native behaviour sections B: world_query, house, player_parameter, item_grant, caster_restriction
+## Part B. World queries, house spells, player parameters, item grants and caster restrictions
 
 Keys: `N<id>` official news (TibiaData); `F<rev>` Fandom revision; `BR<rev>` TibiaWiki BR; `Ca` Canary 99902524 (`data/scripts/spells|runes`, `src/`); `Cr` Crystal ff7ede5;
 `TD` current TibiaData library (check only). Rule: official > Fandom/BR > Canary (S24); Canary decides when nothing else states it (S21).
@@ -343,7 +350,7 @@ the Wheel owner; only the values these behaviours read are listed. Base fields (
   1e Animate Dead Rune (druid, sorcerer), Chameleon Rune (druid), Desintegrate Rune (official "Disintegrate Rune"; druid, monk, paladin, sorcerer), Destroy Field Rune (same four).
   Conjurer vocations per TD (Cr omits monk, older). House spells and House Kick are in §2 and §3.
 
-### Behaviour
+#### Behaviour
 
 1a. Ranged-monster support chain (Ca `chivalrous_challenge.lua`, `divine_dazzle.lua`, `Monster::changeTargetDistance`).
 1. Boss gate: if a reward-boss monster stands within 11 tiles in x and y of the caster on its floor (Ca default spectator box `MAP_MAX_VIEW_PORT` 11 x 11), the cast fails: cancel
@@ -395,7 +402,7 @@ the Wheel owner; only the values these behaviours read are listed. Base fields (
 5. Chameleon: target = the top item of a map tile, an item in an open container, or an equipped item; it must be movable, else cancel "not possible", failure. The caster gets the outfit
    "that item" for 200 s, red magic on the caster. F: not on creatures, NPCs, players or immovable objects.
 
-### Parameters
+#### Parameters
 
 | Spell | Parameter | Value | Sources / superseded |
 |---|---|---|---|
@@ -415,17 +422,17 @@ the Wheel owner; only the values these behaviours read are listed. Base fields (
 | Animate Dead, Chameleon Rune | blocking solid / creature | true / false | Ca `isBlocking(true)`; Chameleon is self-target: a container or slot target skips the tile checks |
 | Chameleon Rune | duration | 200000 ms | F1189759, Ca |
 
-### Proposed authoring shape
+#### Proposed authoring shape
 
-- 1a: `Ability.chain` with `target_filter: ranged_monsters` (chain document §5) plus one `native_behavior` `melee_lock`: `melee_lock_ms`, `challenge_ms` (absent = none),
-  `boss_gate {x_tiles: 11, y_tiles: 11}`, `no_target_message`. The chain step cannot express the target-distance override or the gate.
+- 1a: `Ability.chain` with `target_filter: ranged_monsters` (chain document §5) plus one `native_behavior` `monster_ai_override` (part D section 6.3; `force_melee` for `melee_lock_ms`, `target_caster` for `challenge_ms`, absent = none),
+  with `boss_gate {x_tiles: 11, y_tiles: 11}` and `no_target_message` as additions. The chain step cannot express the target-distance override or the gate.
 - 1b: `native_behavior` `vertical_move`, `mode: "rope_up"`, `destination_order`, `walkable_rule` (shared with Levitate, §3). 1c: `locate_message`, `source: "nearest_fiendish"` (shared with Find Person, §3).
-- 1d: Empowerment: `native_behavior` `owned_field {item, area: "3x3", duration_ms, stage_damage_percent: [8,10,12]}`. Grenade: the delayed area is the `delayed_or_repeated` family's behaviour;
+- 1d: Empowerment: `native_behavior` `owned_field_buff {field_item, radius_tiles: 1, duration_ms, bonus_damage_percent_by_stage: [8,10,12]}`. Grenade: the delayed area is the `delayed_strike` behaviour (part D section 1.5);
   this family adds `position_mode ["explicit","attacked_in_range","caster"]`, `snapshot_damage_at_cast: true`, `stage_cooldown_s`.
-- 1e: one `native_behavior` `rune_tile_action`: `action` in `remove_field | remove_movable | corpse_to_summon | copy_item_appearance`; parameters `field_items[]`, `max_items`,
+- 1e: one `native_behavior` `tile_item_operation` (part D section 2.3): `operation` in `remove_field | disintegrate | raise_corpse | mimic_item`; parameters `field_items[]`, `max_items`,
   `protected_item_rule`, `summon_creature`, `max_summons`, `duration_ms`, `allow_in_pz`. `remove_field` may instead use the Effect `remove_items` (`first_listed_per_tile`) plus a PZ precondition.
 
-### Engine tests
+#### Engine tests
 
 1. Chivalrous with a reward boss 10 tiles away fails with mana and cooldown unchanged; with the boss 12 tiles away it proceeds.
 2. Dazzle among 2 archers, 1 melee monster and 1 archer-type summon: only the 2 archers are hit, each melee for 8 s.
@@ -436,7 +443,7 @@ the Wheel owner; only the values these behaviours read are listed. Base fields (
 7. Disintegrate on a tile holding a movable item, a human corpse and an item with an action id removes only the first, and uses a charge (also on an empty tile).
 8. Destroy Field in a PZ fails and keeps the charge; on a fire field it removes the field and uses the charge.
 
-### Open questions
+#### Open questions
 
 - QW1. Boss gate: the room (F) or an 11 x 11 box (Ca)? In game: cast beside a Lever Boss room wall.
 - QW2. Creature totals (Dazzle 3, Chivalrous 4): N8833 gives only "+1" and range 7; totals are F/BR. Test with 5 archers.
@@ -458,7 +465,7 @@ the Wheel owner; only the values these behaviours read are listed. Base fields (
 - Spells: House Door List (`aleta grav`), House Guest List (`aleta sio`), House Subowner List (`aleta som`), House Kick (`alana sio`); all vocations (druid, sorcerer, knight, paladin, monk,
   promotions), level 8, mana 0, cooldown 2 s, group support 2 s. No Fandom, BR, TD or news source lists them; Ca and Cr are identical, so Ca decides (S21).
 
-### Behaviour
+#### Behaviour
 
 1. Access level of player P in house H: owner if P owns H (Ca can make the owning account count, QH1) or has the edit-houses flag; else subowner if in the subowner list; else guest if in the
    guest list; else not invited (owner > subowner > guest). P may edit list L: owner any list; subowner only the guest list; others none. A door list is edited by the owner only.
@@ -473,7 +480,7 @@ the Wheel owner; only the values these behaviours read are listed. Base fields (
    (Ca does not require H2 to be the caster's house, QH2); the caster's access level in H2 must be at least the target's, and the target must not have the edit-houses flag. Then teleport the
    target to H2's entry position, poof at the old tile, teleport effect at the entry (a failed teleport still counts as success). Any failure: cancel "not possible", poof on the caster, failure.
 
-### Parameters
+#### Parameters
 
 | Spell | Parameter | Value | Sources |
 |---|---|---|---|
@@ -481,12 +488,12 @@ the Wheel owner; only the values these behaviours read are listed. Base fields (
 | Door List | door lookup / flag `needCasterTargetOrDirection` | front tile, then own tile / true (variant unused) | Ca (QH3) |
 | House Kick | parameter kind / name length / destination | player name / 1-29 / house entry position (map data; `getExitPosition` returns the same) | Ca |
 
-### Proposed authoring shape
+#### Proposed authoring shape
 
 One `native_behavior` `house_access`: `action` `edit_list | kick`; `edit_list`: `list` `guest | subowner | door`, `door_lookup ["front","own_tile"]`; `kick`: `parameter "player_name"`,
 `self_kick true`, `require_same_house false` (Ca, QH2), `destination "house_entry"`. The house system supplies `access_level`, `can_edit_list`, `entry_position` and the editor session.
 
-### Engine tests
+#### Engine tests
 
 1. Owner on a house tile opens the guest list; a guest on the same tile is refused with "not possible" and the 2 s cooldown starts.
 2. Subowner opens the guest list (allowed) and the subowner list (refused).
@@ -494,7 +501,7 @@ One `native_behavior` `house_access`: `action` `edit_list | kick`; `edit_list`: 
 4. Owner kicks a guest to the entry position; a subowner kicking the owner fails. A guest's self kick teleports out; a self kick outside any house fails.
 5. Saving a guest list that omits a player standing inside teleports that player to the entry position.
 
-### Open questions
+#### Open questions
 
 - QH1. House ownership by account or by character in Oteryn (Ca config `HOUSE_OWNED_BY_ACCOUNT`; Platform owns identity).
 - QH2. Cross-house kick: Ca lets an owner in house A kick a player in house B when the caster's level in B is not below the target's. Test: kick a stranger standing in another house.
@@ -505,7 +512,7 @@ One `native_behavior` `house_access`: `action` `edit_list | kick`; `edit_list`: 
 
 - Spells: Creature Illusion (druid, sorcerer), Find Person (five vocations), House Kick (§2), Levitate (five vocations), Summon Creature (druid, sorcerer); promotions included.
 
-### Behaviour
+#### Behaviour
 
 - P1 Matching (Ca `getInstantSpell`): case-insensitive; the spell whose words are the longest prefix of the text (`utevo res ina` beats `utevo res`). A spell without a parameter must match exactly;
   one with a parameter needs a space and at least one more character after its words, else the text is chat.
@@ -532,7 +539,7 @@ One `native_behavior` `house_access`: `action` `edit_list | kick`; `edit_list`: 
   summons ("You cannot summon more creatures."). Cost = the type's `summoning.mana_cost` (BR "var."); not enough mana: "not enough mana". Create the monster as the caster's summon on the
   caster's tile or the nearest free one, else "not enough room". Then spend the cost (it trains magic level), blue magic on the caster, teleport effect on the summon.
 
-### Parameters
+#### Parameters
 
 | Spell | Parameter | Value | Sources |
 |---|---|---|---|
@@ -541,14 +548,14 @@ One `native_behavior` `house_access`: `action` `edit_list | kick`; `edit_list`: 
 | Levitate | mana / level / premium / boundary floors | 50 / 12 / no / 7 and 8 | F1182811, BR435420, TD (premium: F free since 14.00; Ca `isPremium(true)` superseded); floors Ca only |
 | Summon Creature | level / mana / summon cap | 25 / per monster / 2 | F1182911, BR435440, Ca |
 
-### Proposed authoring shape
+#### Proposed authoring shape
 
 Extend `targeting.parameter` (now `none | text | player_name`) with `creature_name` and `choice` + `choices` (`["up","down"]`). Shared behaviours: `locate_message` (`source`
 `named_player | nearest_fiendish`, `bands_tiles [5,101,251]`, `direction_tangents [0.4142,2.4142]`), `vertical_move` (`mode` `rope_up | levitate`, `blocked_floor_pairs [[7,8]]`),
 `creature_appearance` (`duration_ms 180000`, source = parameter, `require_flag illusionable`), `summon_named_creature` (`max_summons 2`, cost from the monster). Effect `appearance_transform`
 needs a parameter-bound creature or item instead of its fixed `creature`/`item`.
 
-### Engine tests
+#### Engine tests
 
 1. `utevo res ina "Rat"` selects Creature Illusion, `utevo res rat` Summon Creature, `utevo res` alone nothing.
 2. `exiva "Foo Bar" x` is chat; `exiva Foo~` with two online Foo names fails with an error, starts the cooldown and spends no mana.
@@ -557,7 +564,7 @@ needs a parameter-bound creature or item instead of its fixed `creature`/`item`.
 5. Creature Illusion on a non-illusionable monster fails with no cost; on an illusionable one replaces the outfit for 180 s.
 6. Summon Creature with 2 summons fails; with 1 summon and mana below the type's cost fails with no cost.
 
-### Open questions
+#### Open questions
 
 - QP1. Does Oteryn run Optional PvP and need the Exiva restriction dialog (F: Nov 2017; Ca applies it only on no-PvP worlds)?
 - QP2. Find Person: does a target 251-274 tiles away read "far" or "very far" (F vs Ca)?
@@ -569,7 +576,7 @@ needs a parameter-bound creature or item instead of its fixed `creature`/`item`.
 
 - Spells: Food (druid, elder druid); level 14, mana 120, soul 1, cooldown 2 s, group 2 s (F1182720, BR434673, TD, Ca).
 
-### Behaviour
+#### Behaviour
 
 1. Common checks first (level, vocation, mana, soul, cooldown). The script then always succeeds.
 2. Give the caster 1 item; with probability 50 % give a second. Each item is drawn independently and uniformly from meat (3577), ham (3582), grape (3592), apple (3585), bread (3600), roll (3601),
@@ -577,7 +584,7 @@ needs a parameter-bound creature or item instead of its fixed `creature`/`item`.
 3. Each item is added like a pickup: into inventory or open containers where it fits, else dropped on the caster's tile (Ca `addItem` with drop-on-map); the spell still succeeds.
 4. Green magic effect on the caster; spend mana and soul.
 
-### Parameters
+#### Parameters
 
 | Parameter | Value | Sources |
 |---|---|---|
@@ -585,19 +592,19 @@ needs a parameter-bound creature or item instead of its fixed `creature`/`item`.
 | count | 1 guaranteed + 1 at 50 % | Ca; F "one or two"; the 50 % and uniform draw are Ca only (QI1) |
 | history | mana 30 to 120 (7.6); druids only (8.70) | F |
 
-### Proposed authoring shape
+#### Proposed authoring shape
 
 `native_behavior` `random_item_grant`: `pool [ItemRef x7]`, `guaranteed 1`, `extra 1`, `extra_chance_percent 50`, `selection "uniform_independent"`, `overflow "drop_on_caster_tile"`, `effect`.
 The Effect `create_item` has one fixed `created_item` and cannot draw from a pool.
 
-### Engine tests
+#### Engine tests
 
 1. Random source that fails the 50 % check and picks index 0: exactly 1 item, meat.
 2. Source that passes the check, both draws index 6: 2 items, both cheese.
 3. Full backpack: items drop on the caster's tile, mana and soul are spent.
 4. 10000 seeded casts: count is 1 or 2 (about 50 % each) and each pool item is within 5 % of uniform.
 
-### Open questions
+#### Open questions
 
 - QI1. Weights and the 50 % second item: the Tibia-Stats study F cites is not captured; Ca is a hypothesis. Sample 200 casts in game.
 - QI2. With a full inventory, does the item drop or does the cast fail?
@@ -606,7 +613,7 @@ The Effect `create_item` has one fixed `created_item` and cannot draw from a poo
 
 - Spells: Nature's Embrace (druid, elder druid); Ultimate Healing Rune, the rune item (its conjuring spell: druid). Intense Healing Rune (family `other`) needs the same self-target rule.
 
-### Behaviour
+#### Behaviour
 
 1. Nature's Embrace: after target resolution (§3 P4, or the attacked creature), if the target is the caster: cancel "You can't cast this spell to yourself.", poof, failure, no cost, no cooldown.
    Otherwise heal the target (plain heal Ability; formula belongs to the healing family). BR436996: "Esta magia não pode ser usada em si mesmo"; F1190771 states no self rule.
@@ -617,7 +624,7 @@ The Effect `create_item` has one fixed `created_item` and cannot draw from a poo
    (summon or convinced); whose summon: QC2.
 4. A refusal spends no charge, mana, soul or cooldown. On success the normal heal applies (group cooldown 1 s; non-aggressive; dispels paralysis, Ca).
 
-### Parameters
+#### Parameters
 
 | Spell | Parameter | Value | Sources / superseded |
 |---|---|---|---|
@@ -627,26 +634,26 @@ The Effect `create_item` has one fixed `created_item` and cannot draw from a poo
 | Ultimate Healing Rune | `allowed_targets` | self, creatures with a master | N8833, F1189629; Ca and Cr self only |
 | Ultimate Healing Rune | level / magic level / charges / cooldown | 24 / 4 / 1 / 1 s | Ca, F, TD |
 
-### Proposed authoring shape
+#### Proposed authoring shape
 
 One `native_behavior` `cast_restriction` next to the ordinary heal Ability: `forbidden_vocations [..]`, `target_rule "not_self" | "self_or_summon" | "self_only"`, `refusal_message`. `target_default`
 (the rune targets the caster when unclear, Ca `TARGETCASTERORTOPMOST`) stays with the target family.
 
-### Engine tests
+#### Engine tests
 
 1. Druid casts Nature's Embrace with its own name: refused, mana and cooldown unchanged; with another player's name: healed.
 2. Monk and exalted monk using an Ultimate Healing Rune: refused, charge kept.
 3. Druid uses the rune on another player: refused; on itself: healed; on its own summon: healed.
 4. A refused rune use does not start the 1 s healing group cooldown.
 
-### Open questions
+#### Open questions
 
 - QC1. Does the Nature's Embrace self refusal exist officially (only BR and Ca say so)? Test on self by name.
 - QC2. Healing rune on another player's summon, on a master-less monster, or on a party member's summon.
 - QC3. Do unpromoted monks use the rune (F excludes "monks")? Test with a level-10 monk.
 
 
-## Part C. Native behaviour specification, part C: familiar, summon slots and speed, party, stance, self state
+## Part C. Familiars, summon slots and speed, party buffs, stances and self states
 
 Source key. N#### = official tibia.com news id (via TibiaData). F<rev> = Fandom revision at 2026-09-27 (extra pages fetched
 2026-09-28: Familiars F1108992, Summoned Creature F1177634, Convince F1177638, Stance Spells F1197856, Harmony F1136128,
@@ -661,7 +668,7 @@ Speed base: CA `110 + (level - 1)`, F Speed page `109 + L` (same value).
   sorcerer), Summon Druid Familiar (197, druid), Summon Monk Familiar (282, monk). Each exists twice in the bundles
   (`druid familiar` and `summon druid familiar`, same spell id): author one spell per id. The speed spells Haste, Strong
   Haste, Charge and Swift Foot carry the `familiar` tag only for the speed rule in section 2 (step A5).
-### Behaviour
+#### Behaviour
 1. Checks, in order (CA `CreateFamiliarSpell`): caster is premium; caster owns no summon of any kind; the vocation has a
    familiar; a free tile exists. Any failure spends no mana and starts no cooldown; POFF effect at the caster. The cancel
    texts are CA only ("You need a premium account.", "You can't have other summons.").
@@ -679,7 +686,7 @@ Speed base: CA `110 + (level - 1)`, F Speed page `109 + L` (same value).
 6. Follow: the familiar teleports to the owner when the owner is on another floor or more than 15 tiles away (CA; F: "if they
    get too far behind"). An ordinary summon is instead removed beyond 30 tiles or 2 floors (CA, F1177634 "too far").
 7. Refusal in Lever Boss fights (F1108992); which encounters count is Q4.
-### Parameters
+#### Parameters
 | Spell | Mana | Cooldown | Level | Premium | Duration | Sources / superseded |
 |---|---:|---:|---:|---|---:|---|
 | Knight | 1000 | 1800 s | 200 | yes | 900 s | F1182914, BR, LIB, CA. CA cooldown field 0, computed in script. |
@@ -688,21 +695,21 @@ Speed base: CA `110 + (level - 1)`, F Speed page `109 + L` (same value).
 | Druid | 3000 | 1800 s | 200 | yes | 900 s | F1182913, BR, LIB, CA |
 | Monk | 1500 | 1800 s | 200 | yes | 900 s | F1182915, BR, LIB, CA |
 
-### Proposed authoring shape
+#### Proposed authoring shape
 Ability effect `summon_creature` (D18) cannot express the refusals: it silently creates nothing when the cap is hit and has no
 duration. Needs `native_behavior` key `familiar_summon`, one for all five. Parameters: `familiar_creature` (CreatureRef of the
 vocation default), `duration_ms` 900000, `refuse_if_owner_summons_at_least` 1, `timer_paused_while` ["offline", "swimming"],
 `expiry_warning_ms` [60000, 10000], `return_to_owner` {`distance_tiles` 15, `on_floor_change` true}, `lever_boss_refusal` true.
 Level, premium, `costs.mana`, `cooldown_ms` 1800000 and the support group stay in the plain spell fields. D16 says the summon
 parameters move from the creature `summoning.familiar` block to the spell: keep one source (the spell).
-### Engine tests
+#### Engine tests
 1. Premium level-200 knight, 1000 mana, no summons: familiar next to the caster, mana -1000, cooldown 1800000 ms.
 2. Non-premium caster, or a caster with one Summon Creature summon: refused; mana, cooldown and summons unchanged.
 3. Familiar warnings at 840 s and 890 s, removal at 900 s; a recast at 899 s is refused by the cooldown.
 4. Familiar killed at 100 s: no new familiar until 1800 s after the cast.
 5. Owner 16 tiles away or one floor off: familiar teleports beside the owner; an ordinary summon at 31 tiles is removed.
 6. Owner offline for one hour at 300 s: familiar returns with 600 s left (F reading; CA gives 0).
-### Open questions
+#### Open questions
 - Q1. Does a familiar count toward the cap of 2 for Summon Creature, Animate Dead and Convince, and may it be cast with an
   ordinary summon out? CA: it counts, and casting is refused with any summon. F: silent.
 - Q2. Does the cooldown run while offline? (F: timer paused offline; cooldown offline not stated.)
@@ -716,7 +723,7 @@ parameters move from the creature `summoning.familiar` block to the spell: keep 
 - Spells: Haste (6; all vocations), Strong Haste (39; druid, sorcerer, monk), Charge (131; knight), Swift Foot (134; paladin),
   Summon Creature (9; druid, sorcerer), Animate Dead Rune (83; rune item 3203, conjured by the druid/sorcerer instant),
   Convince Creature Rune (12; rune item 3177, conjured by the druid instant).
-### Behaviour A: speed spells
+#### Behaviour A: speed spells
 1. Self cast, not aggressive. The caster gets a haste condition for the duration below. A later speed spell replaces the
    running value and duration (CA replaces, does not add; which one wins is Q9). N8862 (2026-06-23) fixed Haste and Swift Foot
    stacking.
@@ -729,7 +736,7 @@ parameters move from the creature `summoning.familiar` block to the spell: keep 
 5. Familiars: a familiar's speed follows its owner's (section 1 step 3), so the spell needs no per-spell sharing code. Ordinary
    summons never receive the speed (CA filters `familiar()`). CA copies the owner formula to each familiar with a different
    constant (table) and with 33 s for Haste against 30 s for the owner, an internal inconsistency.
-### Behaviour B: summon slots
+#### Behaviour B: summon slots
 1. At most 2 owned summons in total from Summon Creature, Animate Dead and Convince (F1177634, CA). Familiar: Q1.
 2. Summon Creature: the word `utevo res` plus a creature name. Refused (no mana, POFF) if the name is unknown or not summonable,
    if the caster has 2 summons ("You cannot summon more creatures."), if mana is below the creature's cost, or if no tile is free.
@@ -737,12 +744,12 @@ parameters move from the creature `summoning.familiar` block to the spell: keep 
    magic blue at the caster and teleport effect at the creature. The spell has no fixed cost (F "varies", LIB -1).
 3. Animate Dead Rune: use on a tile whose top item is a movable corpse. Refused if the caster has 2 summons or a black skull
    (CA). Success: the corpse is removed and a Skeleton is created there, owned by the caster; the rune loses a charge.
-   F1189758 adds: caster next to the corpse, corpse not too fresh (first 10 s the rune destroys it), not on non-decaying
+   F1189758 adds: caster next to the corpse, corpse not too fresh (behaviour in the first 10 s unclear, B-QW10), not on non-decaying
    corpses, works inside a protection zone.
 4. Convince Creature Rune: target must be a monster, convincible, and without a master (F1177638 "summoned creatures can never
    be convinced"; CA allows only a master named "a carved stone tile"). Refused at 2 summons or too little mana. Success: mana of
    the target creature is spent, the target becomes the caster's summon, a rune charge is used.
-### Parameters
+#### Parameters
 | Spell | Speed gain | CA player delta (b = base speed) | Duration | Mana | Cooldown / groups | Premium | Sources / superseded |
 |---|---|---|---|---:|---|---|---|
 | Haste | +30 % | 0.3 b - 12 (familiar: 0.3 x - 24) | F 30 s, BR 33 s, CA 30 s (familiar 33 s) | 60 | 2 s / support 2 s | no | F1182734, BR, LIB. F cites N8076 (2024-10-08, premium dropped); CA marks it premium (overridden). |
@@ -760,15 +767,16 @@ x = max(owner base, familiar base). Level: Haste 14, Strong Haste 20, Charge 25,
 
 Sampled F creature pages give equal summon and convince mana (Demon Skeleton 620, Stone Golem 590, Skeleton 300), so one field
 per creature is enough. Official text says only that the cost varies with the creature's strength.
-### Proposed authoring shape
+#### Proposed authoring shape
 - Haste, Strong Haste, Charge: plain Ability, effect `condition` {type haste, `fixed_duration`, `speed_formula`}, `duration_ms`.
   The formula is `percent of base speed` (F). Swift Foot adds a second condition with `attribute_modifiers`
   [{`damage_dealt`, `percent_of_base`, 70}]. No native key: the familiar rule lives in `familiar_summon` (section 1).
 - Summon slots: one key `acquire_summon`. Parameters: `source` ("named_creature" | "corpse_tile" | "target_creature"),
   `summon_cap` 2, `mana_source` ("creature_summoning_mana_cost" | "none"), `require_flag` ("summonable" | "convinceable" |
   none), `require_masterless_target` (true for convince), `created_creature` (Skeleton for `corpse_tile`), `refuse_black_skull`
-  (true, CA only). The name argument parsing belongs to the `player_parameter` pattern.
-### Engine tests
+  (true, CA only). The name argument parsing belongs to the `player_parameter` pattern. Animate Dead (corpse to Skeleton) is the
+  `tile_item_operation` `raise_corpse` of part D section 2.3; `corpse_tile` here names the same source.
+#### Engine tests
 1. Haste on a caster with a familiar: caster +30 % of base for the duration; familiar speed equals the owner's; a Summon Creature
    summon is unchanged.
 2. Strong Haste, then Haste 5 s later: no addition of the two; per CA only the Haste value and a fresh duration remain (Q9).
@@ -778,7 +786,7 @@ per creature is enough. Official text says only that the cost varies with the cr
 6. Animate Dead on a corpse: Skeleton, corpse gone, one charge used; on an empty tile: refused, charge kept.
 7. Convince on another player's summon: refused. On a convincible wild monster: mana = its cost, it becomes the caster's; with one
    Summon Creature summon and one skeleton already out, refused.
-### Open questions
+#### Open questions
 - Q7. Duration of Haste (F 30 s / BR 33 s) and Strong Haste (F 21 s / BR 22 s). Provisional: F, matched by CA for Haste only.
 - Q8. Speed gain: plain percentage of base (F) against CA's flat offsets (-12, -28, -36, 0).
 - Q9. Which spell wins when a second speed spell is cast while one runs (CA: the newer one, even if weaker).
@@ -790,7 +798,7 @@ per creature is enough. Official text says only that the cost varies with the cr
 
 - Spells: Train Party (126, knight), Protect Party (127, paladin), Heal Party (128, druid), Enchant Party (129, sorcerer),
   Enlighten Party (278, monk).
-### Behaviour
+#### Behaviour
 1. The caster must be in a party. Otherwise the cast fails ("No party members in range.") with no mana, no cooldown (CA;
    N8866 2026-06-30 fixed Enlighten Party taking mana in this case).
 2. Affected creatures: party members (leader and members) standing in the spell area around the caster, the caster included.
@@ -808,7 +816,7 @@ per creature is enough. Official text says only that the cost varies with the cr
 6. Each affected member gets the condition below. A recast replaces the same condition and restarts its full duration; it does not
    stack (CA keys by type and sub id). CA gives Heal Party and Enlighten Party the same regeneration key: keep them separate.
 7. Cooldown 2 s own and 2 s support group; Enlighten Party 300 s own and 2 s support. `party` is not an official cooldown group.
-### Parameters
+#### Parameters
 | Spell | Base mana (X = 1) | Condition on each member | Duration | Sources / superseded |
 |---|---:|---|---:|---|
 | Train Party | 60 (CA only) | sword, axe, club, distance +3 | 120 s | F1182927, BR, CA. F also lists fist; BR and CA do not (Q15). |
@@ -819,13 +827,13 @@ per creature is enough. Official text says only that the cost varies with the cr
 
 All: level 32, premium (F, LIB detail, CA). Formula check for Heal Party, F table X = 2..10: 216, 291, 350, 394, 426, 447, 460,
 465, 465; with round-up all rows match except X = 3 (formula 291.6, F says 291, CA rounds up to 292).
-### Proposed authoring shape
+#### Proposed authoring shape
 `native_behavior` key `party_buff`, one for all five. Parameters: `area` (areaMatrix, radius-3 circle, 37 tiles), `same_floor` true,
 `min_affected` 2, `requires_party` true, `mana` {`mode` "scaled" | "fixed", `base`, `falloff` 0.9, `rounding` "up"}, `effect` (EffectRef applying the
 member condition). Member conditions use existing pieces: `regeneration` {`health_gain` 20, `health_interval_ms` 2000} for Heal
 Party, `attribute_modifiers` (`add`) for Enchant, Protect and Train, `buff_spell` true, `fixed_duration` 120000. `costs.mana`
 is 0 for the scaled spells. Enlighten Party stays blocked until Q14 is settled.
-### Engine tests
+#### Engine tests
 1. Caster not in a party, or alone in the area: refused; mana and cooldown unchanged.
 2. Heal Party with 3 members in the area: mana 292 by the formula (291.6 rounded up); each member receives 20 HP per 2 s for 120 s.
 3. 10 members: 465 mana; the cost per member (46.5) is below the 2-member cost per member (108).
@@ -833,7 +841,7 @@ is 0 for the scaled spells. Enlighten Party stays blocked until Q14 is settled.
 5. Recast at 60 s: the condition runs 120 s again, not 180 s, and the gain is not doubled.
 6. Mana just below the computed cost: refused, no member affected.
 7. Enlighten Party: 75 mana with 2 or 6 members; a second cast within 300 s is refused.
-### Open questions
+#### Open questions
 - Q13. Exact area shape and floors (37 tiles is a count; the shape is Canary's); the BR field `spellrange 4` is unexplained.
 - Q14. Enlighten Party: total mana, tick interval and duration (BR 160 / 2 min; CA 5000 / 5 min); fixed 75 or scaled.
 - Q15. Does Train Party include fist fighting (F yes; BR and CA no)?
@@ -845,7 +853,7 @@ is 0 for the scaled spells. Enlighten Party stays blocked until Q14 is settled.
 
 - Spells: Blood Rage (133, knight), Protector (132, knight), Sharpshooter (135 in F and the bundle, 313 in CA; paladin), Energy Wave
   (13, sorcerer). Virtue of Harmony, Justice and Sustain use the same slot mechanism (section 5).
-### Behaviour
+#### Behaviour
 1. State: each character has one `standard` slot holding at most one of Blood Rage, Protector, Sharpshooter (monk: one virtue).
    The slot may be empty (N8833). Sorcerers also have one elemental and one crippling slot (N8833, F1197856; not in this part).
 2. Casting is a normal instant cast (level, promotion, mana, cooldowns). On success: if the cast stance is active it is switched off,
@@ -865,7 +873,7 @@ is 0 for the scaled spells. Enlighten Party stays blocked until Q14 is settled.
    turns into energy damage (including its damage-over-time condition) with the same bonus, and the arming clears. Both happen only
    after a successful cast (N8833, CA `commitElementalSpellCast`). With Master of Flames or Decay armed, Energy Wave itself is
    converted. Wheel augments (area, +10 %) are the Wheel owner's.
-### Parameters
+#### Parameters
 | Spell | Skill effect | Damage effect | Mana | Level | Cooldown | Sources / superseded |
 |---|---|---|---:|---:|---|---|
 | Blood Rage | sword, axe, club +25 % of final skill | taken +15 % | 20 | 20 | 2 s / 2 / 2 | N8872 and N8887 (25 %); superseded 30 % (N8783, N8833); F1199964, CA 125; CR 130, level 60, mana 290 |
@@ -874,13 +882,13 @@ is 0 for the scaled spells. Enlighten Party stays blocked until Q14 is settled.
 | Energy Wave | none | energy area, base power 150; Master of Thunder +4 crit points | 170 | 38 | 8 s / attack 2 | F1182675, BR, LIB, CA; N8833 (stance); not premium |
 
 All except Energy Wave: premium (F, LIB, CA).
-### Proposed authoring shape
+#### Proposed authoring shape
 `native_behavior` key `stance_toggle` for the three knight and paladin stances (and the virtues). Parameters: `slot` "standard",
 `modifiers` (array of {`kind`: "skill_percent_of_final" with `skills` and `percent` | "damage_taken_percent" | "damage_dealt_percent"}),
 `persist_across_sessions` true, `keep_on_death` true, `toggle_off_costs_mana` true (CA, Q19). The stance is not a timed condition, so
 the condition schema (`fixed_duration` only) cannot hold it. Energy Wave needs no key: a plain Ability with `damage_type` energy;
 the elemental stance behaviour reads that type.
-### Engine tests
+#### Engine tests
 1. Blood Rage cast: slot = Blood Rage; sword 100 becomes 125, shielding unchanged; incoming 100 becomes 115.
 2. Protector cast while Blood Rage is active: Blood Rage ends; shielding x1.3; outgoing 100 becomes 85; incoming 100 becomes 85.
 3. Protector cast again: slot empty, all values back to base.
@@ -889,7 +897,7 @@ the elemental stance behaviour reads that type.
 6. A knight without promotion cannot cast Blood Rage.
 7. Protector on: a heal the knight casts is not reduced.
 8. Energy Wave under Master of Thunder: crit chance +4 points; a following fire spell deals energy damage once, the next is normal.
-### Open questions
+#### Open questions
 - Q19. Does switching a stance off cost mana and start cooldowns? CA does; N and F are silent.
 - Q20. Bundles list `knight`, `paladin`, `monk` for these stances; N and F say promotion only. Needs the requirements owner.
 - Q21. Rounding, and which damage counts (mana drain, agony, damage by summons, reflected damage).
@@ -899,7 +907,7 @@ the elemental stance behaviour reads that type.
 
 - Spells: Cancel Magic Shield (245; druid, sorcerer), Virtue of Harmony (274), Virtue of Justice (275), Virtue of Sustain (276)
   (monk). Blood Rage, Protector and Sharpshooter are in section 4.
-### Behaviour
+#### Behaviour
 1. Cancel Magic Shield: self cast; ends the caster's Magic Shield condition; magic blue effect. Mana 50, level 14, premium,
    2 s / support 2 s (F1182630, BR, LIB, CA). The cast also succeeds without a shield in CA (Q23). Mana already absorbed is not
    refunded.
@@ -919,19 +927,19 @@ the elemental stance behaviour reads that type.
    +8 % auto attack damage, sorcerer +8 % spell and rune damage, druid +16 % healing by spells and runes (N8944; earlier -3, +6, +6,
    +12 in N8833, CA still uses -3). Monks get the same while serene when that vocation is in the party. Guiding Presence adds +33 %
    (N8944, Wheel).
-### Parameters
+#### Parameters
 | Spell | Effect | Values | Sources / superseded |
 |---|---|---|---|
 | Cancel Magic Shield | end Magic Shield | none | F1182630, BR, CA |
 | Virtue of Harmony | Harmony base bonus | x1.5, serene x2 | N8944; superseded above |
 | Virtue of Justice | fist fighting | +8 %, serene +16 % | F1197258, BR, CA; earlier 10 / 20 % until N8408 (2025-06-11, via F) |
 | Virtue of Sustain | healing done | +35 %, serene +70 % | F1197259, BR, CA |
-### Proposed authoring shape
+#### Proposed authoring shape
 - Cancel Magic Shield: no native key. Ability effect `remove_condition` (`removed_condition` magic_shield) on the caster.
 - Virtues: `stance_toggle` (section 4) with modifiers `fist_bonus_percent` {`percent` 8, `serene_percent` 16, `basis` "final" | "base"},
   `healing_done_percent` {35, serene 70}, `harmony_base_bonus_scale` {50, serene 100}, and `party_bonus` [{`vocation`, `kind`, `percent`}].
   The virtue's effect on Harmony and the Serene state are read from the monk owner.
-### Engine tests
+#### Engine tests
 1. Cancel Magic Shield with a shield: shield gone, mana -50, later damage hits hit points; cooldown 2 s.
 2. Cancel Magic Shield without a shield: result per Q23 (CA: cast succeeds, mana spent).
 3. Monk casts Justice, then Sustain: only Sustain is active; casting Sustain again empties the slot; recast within 10 s refused.
@@ -939,7 +947,7 @@ the elemental stance behaviour reads that type.
 5. Level-200 serene monk with Virtue of Harmony: Harmony base bonus 16 %; not serene 12 %; without the virtue 8 %.
 6. Knight in the monk's party with any virtue active: damage taken x0.96; virtue off: x1.
 7. Virtue stays after relog and death.
-### Open questions
+#### Open questions
 - Q23. Cancel Magic Shield with no active shield: fails or succeeds and spends mana?
 - Q24. Justice: percentage of base or of final fist skill?
 - Q25. Party bonuses from every virtue (N, CA) or only Justice (BR text)?
@@ -947,7 +955,7 @@ the elemental stance behaviour reads that type.
 - Q27. Does Sustain multiply the passive Virtue Healing (F yes, CA no)?
 
 
-## Part D. Native behaviour specification, part D
+## Part D. Delayed strikes, positions, default targets, equipment, presentation-only extras and other scripts
 Families: `delayed_or_repeated`, `target_position`, `target_default`, `equipment_dependent`, `extra_presentation_only`, `other`.
 
 Source keys used in the tables:
@@ -976,7 +984,7 @@ Stage 1/2/3 values come from the Wheel of Destiny. All Wheel-gated spells stay b
   - B. owned field with a standing bonus: Divine Empowerment;
   - C. a strike that fires after a delay: Death Echo, Divine Grenade, and the Spiritual Outburst recast.
 
-### 1.1 Behaviour, pattern A (Avatars)
+#### D.1.1 Behaviour, pattern A (Avatars)
 1. The cast is refused when the caster has Wheel stage 0 of that Avatar: cancel message, no cost, no cooldown (C, all five scripts).
 2. A successful cast:
    - changes the caster's outfit for 15 s;
@@ -1000,14 +1008,14 @@ Parameters (identical for the five spells apart from the row values):
 
 Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); crit chance 100 (F, C); crit extra damage 5/10/15 (F, C; BR text is cut at "5% / 10%"). No superseded value.
 
-### 1.2 Behaviour, pattern B (Divine Empowerment)
+#### D.1.2 Behaviour, pattern B (Divine Empowerment)
 1. Refused at Wheel stage 0.
 2. The cast puts an item (Canary id 40450, a client-side effect item), owned by the caster, on every tile of the 3x3 around the caster. It skips tiles that do not exist, that block movement as an immovable solid, or that change floor (C).
 3. The items disappear after 5 s (F, C). Canary removes every such item in the 3x3 around the cast position, whoever owns it. That is a defect for two overlapping casters; the fix is to remove only the caster's own items.
 4. While the caster stands on a tile that holds one of their own items, the damage they deal is increased by 8 / 10 / 12% (F, C). Canary re-evaluates once per second and on cast, so leaving the field keeps the bonus for up to 1 s.
 5. Cooldown 32 / 28 / 24 s (F, C). Mana 500, self-target, no group besides support 2 s.
 
-### 1.3 Behaviour, pattern C (delayed strikes)
+#### D.1.3 Behaviour, pattern C (delayed strikes)
 **Death Echo** (sorcerer, base power 75):
 1. The cast resolves its position (section 2, three modes) and hits a 5x5 area with the corners cut, 21 tiles (C `AREA_CIRCLE2X2`; the wiki says "5x5"), with death damage.
 2. The cast is refused when the position is on another floor, out of range 7 or out of sight (C). Range 7 and line of sight are Canary values.
@@ -1027,7 +1035,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
    - F: on cast, magic level and flat damage give the raw damage. On explosion, critical chance, extra critical damage, Divine Empowerment, elemental pierce, prey and bounty talisman apply.
    - "Not affected by damage buffs received after the grenade has been planted."
    - C computes the whole formula at explosion time.
-5. The spell's own cooldown is 1 s; the real cooldown is set on cast: 26 / 20 / 14 s by stage (F, C).
+5. The spell's own registered cooldown is 1 s (C only); the real cooldown is set on cast: 26 / 20 / 14 s by stage (F, C).
 6. The grenade fires even if the caster changes position; it is dropped if the caster is offline (C looks the player up by id).
 **Spiritual Outburst** (monk, Wheel spell): the chain is specified in `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md` §4.1. The repeat:
 1. Refused at Wheel stage 0.
@@ -1035,7 +1043,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 3. The first cast consumes Harmony (F, "consumes your Harmony"). Whether the repeat still gets a Harmony bonus is Q3 (`monk_harmony_virtue`).
 4. Cooldown 24 / 20 / 16 s (F, W, C). Mana 425.
 
-### 1.4 Parameters
+#### D.1.4 Parameters
 
 | Spell | Parameter | Value | Sources and superseded values |
 |---|---|---|---|
@@ -1048,11 +1056,11 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 | Divine Grenade | delay | 3000 ms | F, BR, C |
 | Divine Grenade | base power | 190 | F, BR; C uses `level/5 + magic*4..6` |
 | Divine Grenade | cooldown by stage | 26 / 20 / 14 s | F, C |
-| Divine Grenade | damage by stage | unknown | C: x1.3 / x1.6 / x2.0 in the script and a further +30 / 60 / 100% in `game.cpp`; W cites F "+16% per stage". Q5 |
+| Divine Grenade | damage by stage | +0 / +16 / +32% (reading of F "+16% base damage per additional stage", as in parts A and B; Q5) | F, W; superseded C: x1.3 / x1.6 / x2.0 in the script and a further +30 / 60 / 100% in `game.cpp` |
 | Divine Empowerment | bonus / cooldown by stage | 8, 10, 12% / 32, 28, 24 s | F, C |
 | Spiritual Outburst | repeat / cooldown by stage | 37.5, 50, 62.5% / 24, 20, 16 s | F, W, C |
 
-### 1.5 Proposed authoring shape
+#### D.1.5 Proposed authoring shape
 - Avatars, no `native_behavior`:
   - an Ability (self, no target) with a `condition` Effect: fixed duration 15 s and attribute modifiers, and a `presentation_only` Effect;
   - condition attribute keys to register: `damage_taken_reduction_percent`, `critical_chance_override_percent`, `critical_extra_damage_percent`;
@@ -1066,7 +1074,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
   - `marker_asset_binding` and `marker_ms` (Grenade), `requires_full_harmony` (Outburst repeat).
   - The strikes themselves are ordinary Abilities (area, damage Effect); the echo Ability carries the 50% factor in its Formula.
 
-### 1.6 Engine tests
+#### D.1.6 Engine tests
 1. Death Echo cast at a target: hit at t=0 and at t=1000 ms on the same tiles; a creature that moved away between the two hits is hit only at t=0.
 2. The caster logs out at t=500 ms: no echo. Divine Grenade: no damage before 3000 ms; a buff gained at t=1000 ms does not change the damage (per F).
 3. Avatar of Steel at stage 2: 100 incoming damage becomes 90 and all hits are critical for 15 s, then normal. Divine Empowerment at stage 1: +8% inside the 3x3, 0 outside and after 5 s.
@@ -1074,9 +1082,9 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 5. Any Wheel spell at stage 0: refused, mana and cooldown unchanged.
 
 ### D.2 target_position: casting at a position or at a tile item
-- Spells: Death Echo (sorcerer), Divine Grenade (paladin), Animate Dead Rune (druid, sorcerer), Chameleon Rune (all vocations), Desintegrate Rune (druid, sorcerer, paladin, monk).
+- Spells: Death Echo (sorcerer), Divine Grenade (paladin), Animate Dead Rune (druid, sorcerer), Chameleon Rune (conjured by druids, part B section 1e; the rune item is used by all vocations, F item page), Desintegrate Rune (druid, sorcerer, paladin, monk).
 
-### 2.1 Behaviour
+#### D.2.1 Behaviour
 **Instants with a chosen position (Death Echo, Divine Grenade).** Official N8833: three modes: with crosshair, at the cursor position, or below the target (below the caster when there is no target).
 1. Crosshair or cursor: the position is the one the client sends. The spell must allow it (C `optionalTarget`), or the cast is refused.
 2. No position sent: the position is the attacked creature's tile if that creature exists, is not removed and has health above 0. Otherwise it is the caster's tile.
@@ -1096,7 +1104,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
    - On success the caster's appearance becomes that item for 200 s (F, BR, C) and a red magic effect shows on the caster.
    - F and BR: it cannot be used on creatures, NPCs, players or immovable objects.
 
-### 2.2 Parameters
+#### D.2.2 Parameters
 
 | Spell | Parameter | Value | Sources |
 |---|---|---|---|
@@ -1110,7 +1118,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 | Chameleon Rune | level / magic level / charges | 27 / 4 / 1 | C, F |
 | all three runes | cooldown / group | 2 s / support 2 s | C, F |
 
-### 2.3 Proposed authoring shape
+#### D.2.3 Proposed authoring shape
 - Death Echo and Divine Grenade: the existing `targeting.cast_at_position: true` (S20) already names the three modes. It needs no new key. The runtime rejects it today (game core).
 - The three runes, one key `tile_item_operation` with `operation` in `raise_corpse`, `disintegrate`, `mimic_item`:
   - common parameters: `source` (`tile_top_item`, `container_slot`, `equipment_slot`), `require_movable` (true);
@@ -1119,7 +1127,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
   - `mimic_item`: `duration_ms` (200000).
 - The existing `remove_items` and `summon_creature` Effects do not fit: `summon_creature` spawns at the caster and does not consume an item, and `remove_items` has no cap or tag rules.
 
-### 2.4 Engine tests
+#### D.2.4 Engine tests
 1. Death Echo with no position and no target: centre = caster tile. With an attacked, living target: centre = target tile.
 2. Death Echo cast at a position on another floor or behind a wall: refused, mana unchanged.
 3. Divine Grenade with a target 6 tiles away: per F, planted at the caster's tile (if Q6 is accepted).
@@ -1128,17 +1136,17 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 6. Chameleon on a movable item under the cursor: outfit is that item for 200 s. On an immovable item or a creature: refused.
 
 ### D.3 target_default: who a spell hits when no explicit target is given
-- Spells: Expose Weakness (sorcerer), Sap Strength (sorcerer), Intense Healing Rune (druid, knight, paladin, sorcerer users), Ultimate Healing Rune (druid, knight, paladin, sorcerer users).
+- Spells: Intense Healing Rune (druid, knight, paladin, sorcerer users), Ultimate Healing Rune (druid, knight, paladin, sorcerer users).
 
-### 3.1 Behaviour
-**Expose Weakness and Sap Strength.** They were removed by the 15.25 update and turned into the Aura of Exposed Weakness and Aura of Sapped Strength stances (N8833, N8849; F:1190738 and F:1190736 give `status = deprecated`; BR "Removida"; `official-changes.json` has `removed`). Crystal still has them, Canary 15.30 does not. Recommended: do not author them. Legacy behaviour, for the record only (C/X): the centre was the target creature, or the caster with no target; area 3x3 (Expose) or 5x5 with the Wheel (Sap); 16 s; players and summons were not affected. The stance behaviour belongs to the stance family.
+#### D.3.1 Behaviour
+**Expose Weakness and Sap Strength (removed, S24; not authored).** They were removed by the 15.25 update and turned into the Aura of Exposed Weakness and Aura of Sapped Strength stances (N8833, N8849; F:1190738 and F:1190736 give `status = deprecated`; BR "Removida"; `official-changes.json` has `removed`). Crystal still has them, Canary 15.30 does not. Legacy behaviour, for the record only (C/X): the centre was the target creature, or the caster with no target; area 3x3 (Expose) or 5x5 with the Wheel (Sap); 16 s; players and summons were not affected. The stance behaviour belongs to the stance family.
 **Healing runes.** The rune is used on a creature.
 1. The target must be the caster or, per F, one of the caster's summoned or convinced creatures. Official N8833 (released 2026-06-16, N8849): the runes "can no longer be used on other characters". C accepts only the caster and answers "You can only use this rune on yourself." for anything else. F overrides C (S3/S21). Q7.
 2. Only the top creature on the target tile is healed; on the caster's own tile only the caster (C `TARGETCASTERORTOPMOST`).
 3. The heal is non-aggressive, cures paralysis, shows a blue magic effect. Rune cooldown 1 s in the healing group (1 s).
-4. Ultimate Healing Rune is refused for the exalted monk: cancel "Your vocation cannot use this rune." (C). The item pages list no monk vocation. Q8.
+4. Ultimate Healing Rune is refused for the monk and the exalted monk: cancel "Your vocation cannot use this rune." (C names only the exalted monk; the F item page lists no monk vocation, so both are refused, as in part B section 5). Q8.
 
-### 3.2 Parameters
+#### D.3.2 Parameters
 
 | Rune | Parameter | Value | Sources |
 |---|---|---|---|
@@ -1148,24 +1156,24 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 | both | cooldown / group | 1 s / healing 1 s | C |
 | both | formula | unknown; S4 keeps the source form | C: intense `level/5 + magic*3.2..5.4 + 20..40`, ultimate `level/5 + magic*7.3..12.4 + 42..90` |
 
-### 3.3 Proposed authoring shape
+#### D.3.3 Proposed authoring shape
 - An Ability with a `heal` Effect and a `remove_condition` Effect (`paralyze`), both existing.
 - Two additions:
   - `targeting.allowed_targets`: `any`, `self_only`, `self_or_own_summons`. Here: `self_or_own_summons`.
   - `Effect.affects.top_creature_only` must also be usable without `kind` (today `affects` requires `kind`). See section 6.2.
 - No `native_behavior`.
 
-### 3.4 Engine tests
+#### D.3.4 Engine tests
 1. Ultimate Healing Rune on self: heal and paralysis removed.
 2. On another player: refused, rune charge kept.
 3. On the caster's own summon: healed (if Q7 is accepted per F).
 4. Used on a tile without a creature: refused.
-5. Exalted monk uses Ultimate Healing Rune: refused.
+5. Monk and exalted monk use Ultimate Healing Rune: refused.
 
 ### D.4 equipment_dependent: weapon, shield and slot
 - Spells: Flurry of Blows (monk), Sweeping Takedown (monk), Spiritual Outburst (monk), Shield Bash (knight), Shield Slam (knight), Chameleon Rune (section 2).
 
-### 4.1 Behaviour
+#### D.4.1 Behaviour
 **Weapon-skill formula (Flurry of Blows, Sweeping Takedown, Spiritual Outburst).**
 1. The formula takes `attack_skill`, `attack_value` and `attack_factor` from the item in the caster's hands (the existing `skill` input: "the engine fills attack_* from the wielded weapon").
 2. Canary picks the weapon from the left hand, then the right hand. Shields, ammunition and non-weapons do not count (C `Player::getWeapon`).
@@ -1183,7 +1191,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
    - Wheel Shield Slam II adds +25 points (75% in total) (N8833, W).
    - Canary does not filter players.
 
-### 4.2 Parameters
+#### D.4.2 Parameters
 
 | Spell | Parameter | Value | Sources and superseded values |
 |---|---|---|---|
@@ -1192,18 +1200,18 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 | both | debuff | 50% next auto-attack, 10 s | N8833, F, BR, C; superseded "miss" (N8783) |
 | Shield Slam | Wheel I / II | +15% life leech / +25% damage reduction | N8833 |
 | Flurry of Blows | base power / mana / cooldown / level | 55 / 110 / 4 s / 35 | F:1182715, BR, C |
-| Sweeping Takedown | base power / mana / cooldown / level | 48 / 195 (F) or 210 (C) / 8 s / 60 | F:1182918, BR, C; mana Q11 |
+| Sweeping Takedown | base power / mana / cooldown / level | 48 / 195 / 8 s / 60 | tibia.com spell list 2026-09-28 (mana 195, level 60), F:1182918, BR, C; Canary mana 210 superseded (S24) |
 | Sweeping Takedown | outer area factor | 75% | F, C |
 | Spiritual Outburst | base power | 42 | F, BR, C |
 
-### 4.3 Proposed authoring shape
+#### D.4.3 Proposed authoring shape
 - Weapon-skill spells: the existing `player_expression` Formula with `inputs: skill` and, when needed, `needs_weapon`. Unarmed handling is a world rule (Q9). No `native_behavior`. Sweeping Takedown's outer area is a second Effect whose Formula is the first one times 0.75.
 - Shield spells, no `native_behavior`, three additions:
   - spell field `needs_shield` (boolean, like `needs_weapon`), with the cancel message as data;
   - a Formula variable `shield_defense`;
   - a new condition type `next_auto_attack_reduction` (fixed 10 s, `attribute_modifiers` on `auto_attack_damage`, `percent_of_base` 50) with a boolean `consumed_on_use`. The Wheel adds 25 to the percentage.
 
-### 4.4 Engine tests
+#### D.4.4 Engine tests
 1. Shield Bash without a shield: refused, mana and cooldown unchanged.
 2. Shield Bash with a shield of defense 20 and shielding 100, base power 55, flat 0: average 110 before armor.
 3. Shield Slam with 3 adjacent monsters and 1 monster 2 tiles away: 3 are hit.
@@ -1214,7 +1222,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 ### D.5 extra_presentation_only: an extra effect on the caster
 - Spells: Heal Friend (druid), Paralyze Rune (druid; the wikis write "Paralyse").
 
-### 5.1 Behaviour
+#### D.5.1 Behaviour
 1. Heal Friend: on every cast a blue magic effect shows on the caster's tile, in addition to the green effect on the healed player (C). It also cures paralysis (C dispel).
    - The target is a player chosen by name; `allow_on_self` is false (F: "not able to heal the caster themselves").
    - Base power 260 (F, BR, C). Mana 120, level 18, cooldown 1 s, healing group 1 s, range 7 (BR, C).
@@ -1222,14 +1230,14 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
    - The druid stance (N8783, N8833: Shared Conservation, Channeled Preservation) belongs to the stance family.
 2. Paralyze Rune: after a successful cast a green magic effect shows on the caster's tile, in addition to the red impact on the target (C).
    - The target is paralysed for 6 s (C). The paralysis is a speed condition with the formula (-1, 0, -1, 0). Any healing on the target cancels it (F).
-   - Cost: the rune costs 1400 mana each use (F, BR, C). Cooldown 6 s (F item history, C), group support 2 s. Druids only, magic level 18, level 54 (F, TibiaData).
+   - Cost: the conjuring spell costs 1400 mana (tibia.com spell list, F, BR, C). Cooldown 6 s (F item history, C), group support 2 s. Druids only, magic level 18, level 54 (F, TibiaData).
    - Aggressive, and it locks the caster in a PvP world (C `setPzLocked`).
 
-### 5.2 Proposed authoring shape
+#### D.5.2 Proposed authoring shape
 - Both are ordinary Abilities. The only gap is the caster-position effect: add an optional `presentation.caster_effect_asset_binding` on `Effect` (shown at the caster's tile once per cast). No `native_behavior`.
 - Paralyze Rune's condition: `condition` type `paralyze`, `fixed_duration` 6000 ms, with a `speed_formula`. The formula constants above are Canary's.
 
-### 5.3 Engine tests
+#### D.5.3 Engine tests
 1. Heal Friend on a named player in range: heal plus a caster-tile effect event.
 2. Heal Friend on the caster: refused.
 3. Paralyze Rune: target's speed is reduced for 6 s; a heal on the target ends it at once.
@@ -1237,7 +1245,7 @@ Common values: duration 15 s (F, BR, C); damage reduction 5/10/15 (F, BR, C); cr
 
 ### D.6 other
 
-### 6.1 Magic Wall Rune and Wild Growth Rune (P4 scripts)
+#### D.6.1 Magic Wall Rune and Wild Growth Rune (P4 scripts)
 Behaviour:
 1. The rune is used on a tile (`allow_far_use` true). The projectile is an energy missile.
 2. The cast is refused when the tile changes floor, or holds a creature other than a player (C script). The rune spell check also refuses when any creature visible to the caster stands on the tile (C `blocking` creature). In practice any creature blocks. Q12.
@@ -1257,7 +1265,7 @@ Proposed shape: no `native_behavior`. Extend the existing `create_item` Effect w
 
 Tests: (a) a wall on an empty tile lasts between 16 and 24 s; (b) a cast on a tile holding a monster is refused with the charge kept; (c) a cast on a stairs tile is refused; (d) a Wild Growth tile lets a spell pass through and blocks a walk.
 
-### 6.2 Inflict Wound (knight, monk)
+#### D.6.2 Inflict Wound (knight, monk)
 1. Range 1, needs a target, aggressive. The spell hits only the top creature on the target tile; on the caster's own tile only the caster (C `TARGETCASTERORTOPMOST`, the blocker).
 2. It applies a bleeding condition: 15 ticks, one every 2 s, 50 damage each (750 in all), the first tick delayed (C, X). Weapon-type missile effect, blood effect.
 3. F says it uses level and melee skill and deals one quarter to players. Official news 8389 (2025-05-20, as quoted in F history) says it now "also accounts for Fist Fighting". Neither matches the fixed 50 of C and X. Q14.
@@ -1265,7 +1273,7 @@ Tests: (a) a wall on an empty tile lasts between 16 and 24 s; (b) a cast on a ti
 - Shape: Ability with a `condition` Effect (`bleeding`, `damage_schedule`, `fixed_ticks` [{count 15, interval_ms 2000, amount 50}]). Missing piece: an ability-level `top_creature_only` (boolean), usable on any Effect, not only under `affects`. No `native_behavior`.
 - Tests: two creatures on one tile: only the top one bleeds; 15 ticks of 50 over 30 s; recast during the bleed follows the condition rules of the engine.
 
-### 6.3 Challenge (elite knight) and related
+#### D.6.3 Challenge (elite knight) and related
 1. Every monster in the 3x3 around the caster (C `AREA_SQUARE1X1`) that is not a summon is forced to target the caster. Players are not affected (F).
 2. For each monster: it must be able to target the caster (a normal targeting check; login-protected players cannot be selected). If it can, it attacks and follows the caster, its normal target changes are blocked, and its flee-at-low-health behaviour is disabled for 6 s (C default `targetChangeCooldown` 6000; F "at least 6 seconds").
 3. The cast is non-aggressive and succeeds even if no monster is affected.
@@ -1275,18 +1283,18 @@ Tests: (a) a wall on an empty tile lasts between 16 and 24 s; (b) a cast on a ti
 - Shape: `native_behavior` key `monster_ai_override`, parameters `mode` (`target_caster`, `force_melee`), `duration_ms` (6000, 16000), `skip_summons` (true), `skip_reward_bosses` (true for `force_melee`); the area is the Ability's `area`. It is shared by Challenge, Balanced Brawl and Chivalrous Challenge.
 - Tests: Challenge with a fleeing monster at low health: it turns and attacks the caster for 6 s; a summon is unaffected; a player in the area is unaffected.
 
-### 6.4 Mass Spirit Mend (monk, P4)
-1. The area is a circle of radius 4 around the caster (C, BR "up to 4 sqm").
+#### D.6.4 Mass Spirit Mend (monk, P4)
+1. The area is a circle around the caster. Canary's table is 11x11 rounded (hypothesis); BR mentions "up to 4 sqm" and range 5. The radius is unresolved (A.3-Q2, Q16).
 2. For each creature: the caster gets the lesser self formula (`level*0.2 + magic*7.22..12.79 + 44..79`); every other target gets the mass formula (base power 800).
 3. Monsters without a master, and summons of monsters, are skipped unless their name is one of 8 listed bosses (C: leiden, ravennous hunger, dorokoll the mystic, eshtaba the conjurer, eliz the unyielding, mezlon the defiler, malkhar deathbringer, containment crystal). Players, player summons and NPCs are healed. Paralysis is cured.
 4. Official N8833: no longer a spender spell; cooldown and base power adjusted, no numbers (known, not quantified). BR and C agree on mana 400, cooldown 12 s, base power 800, healing group 1 s. F:1182871 is stale (spender text). Q16.
 - Shape: an Ability with two `heal` Effects: one with `affects` `player_side` (mass formula), one for the caster, and one with `affects` `named_creatures` for the bosses. This needs converter support for `doTargetCombatHealth` inside a callback. No `native_behavior`.
 
-### 6.5 Monk Harmony formulas and absent spells (pointers only)
+#### D.6.5 Monk Harmony formulas and absent spells (pointers only)
 - Tiger Clash, Greater Tiger Clash and Devastating Knockout are blocked by a Harmony input in the formula, not by a native behaviour. They belong to `monk_harmony_virtue`. F: base powers 15 / 44 / 62. Devastating Knockout: cooldown 24 to 8 s and range 1 to 7 (N8944).
-- Light Stone Shower Rune, Lightest Missile Rune, Practise Fire Wave and Practise Healing are absent from the official library (S25). They need no behaviour.
+- The conjuring spells of Light Stone Shower Rune and Lightest Missile Rune, Practise Fire Wave and Practise Healing are absent from the official library and removed (S25; the rune items stay). They need no behaviour.
 
-### Open questions (candidates for the owner's in-game test)
+### D.7 Open questions (candidates for the owner's in-game test)
 - Q1. Death Echo echo damage: 50% of the first roll, or a new roll of the formula at 50% (C). Do buffs gained during the 1 s count?
 - Q2. What exactly N8875 fixed for Death Echo through doors (does a closed door block the area, the cast, or both)?
 - Q3. Spiritual Outburst repeat: does it get a Harmony bonus after the first cast consumed Harmony?
@@ -1294,15 +1302,15 @@ Tests: (a) a wall on an empty tile lasts between 16 and 24 s; (b) a cast on a ti
 - Q5. Divine Grenade damage by stage: C multiplies twice (x1.3/1.6/2.0 and +30/60/100%); F cites "+16% per stage". Also the formula shape (level/5 + magic*4..6 against base power 190).
 - Q6. Divine Grenade with a target more than 4 tiles away: planted at the caster's tile (F) or refused (C).
 - Q7. Healing runes: may they target the caster's own summons and convinced creatures (F) or only the caster (C, BR)?
-- Q8. Ultimate Healing Rune: is the base monk excluded as well as the exalted monk (C names only the exalted monk)?
+- Q8. Ultimate Healing Rune: both monk vocations are refused (F item page; C names only the exalted monk). Is the unpromoted monk really excluded (B-QC3)?
 - Q9. Weapon-skill spells for an unarmed monk: which skill and attack value (C gives skill 0)?
 - Q10. Areas of Flurry of Blows and Sweeping Takedown: F, BR and C disagree (section 4.1 step 7).
-- Q11. Sweeping Takedown mana: 195 (F, BR) or 210 (C).
+- Q11. (settled) Sweeping Takedown mana is 195: the tibia.com spell list of 2026-09-28, F and BR agree; Canary 210 is superseded (S24).
 - Q12. Magic Wall and Wild Growth: does an invisible or hidden player on the tile block the cast?
 - Q13. Wild Growth duration: 30 to 60 s (F) or 30 s (C); is the random draw uniform (also Magic Wall 16 to 24 s)?
 - Q14. Inflict Wound bleeding: fixed 15 x 50 (C, X) or skill-based (F, news 8389)? One quarter against players?
 - Q15. Balanced Brawl area: half-circle in front (F, C) or around the target (BR).
-- Q16. Mass Spirit Mend values after the 15.25 adjustment (official gives no numbers).
+- Q16. Mass Spirit Mend values after the 15.25 adjustment (official gives no numbers) and the radius of the area (A.3-Q2).
 - Q17. Animate Dead: must the caster stand next to the corpse (F) or may it be used from range (C `allow_far_use`)? Are the corpse age rules (10 s, human first stage) in force?
 - Q18. Desintegrate: mapping of Canary's "unique id above 65535" and the human corpse ids to Oteryn's item family; the extra "not possible" message in C is not reproduced.
 - Q19. Avatars: does the 100% critical chance apply to heals and to runes and auto-attacks? Does the damage reduction stack with other reductions in the order C uses?
