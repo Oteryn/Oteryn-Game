@@ -92,7 +92,7 @@ RULES = {
 WIKI_API = 'https://tibia.fandom.com/api.php'
 WIKI_REFERENCE = 'wiki-2026-09-27.json'
 BEHAVIOUR_PATTERNS = 'p4-behaviour-patterns-canary-47dfd51f.json'
-PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile')
+PROBED_PATTERNS = ('conditional_summon', 'heal_allies_in_area', 'remove_magic_walls', 'path_trail_missile', 'area_damage_named_target')
 PATH_TRAIL = (r'local target = Creature\(var\.number\) if not target then return false end local creaturePos = creature:getPosition\(\) '
               r'local path = creaturePos:getPathTo\(target:getPosition\(\), 0, 0, true, (true|false), (\d+)\) if not path or #path == 0 '
               r'then return false end for i = 1, #path do creaturePos:getNextPosition\(path\[i\], 1\) '
@@ -102,6 +102,10 @@ WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-09-27) wiki
                  'difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain '
                  '(? or ~) or unparsed wiki value')
 LOW_CONFIDENCE_DROPS = 10
+BR_API = 'https://www.tibiawiki.com.br/api.php'
+BR_ADOPTION = ('Owner decision D43: the owner\'s source order puts TibiaWiki BR after Fandom, so a BR health or experience '
+               'value fills the field only where the reference-date (2026-09-27) Fandom page is missing or gives no certain '
+               'value; BR element modifiers and speed are not used')
 LOOT_RATE_RULE = ('D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; '
                   'adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence')
 LOOT_AMOUNT_RULE = ('D32 loot amount: with an adopted wiki estimate (>= 10 drops) the Loot Statistics amount is the '
@@ -344,6 +348,7 @@ class Converter:
     def __init__(self, canary, objects, items, names, index):
         self.canary, self.objects, self.items, self.names, self.index = canary, objects, items, names, index
         self.wiki = {}
+        self.br = {}
         self.spell_scripts = None
         self.magic_effects, self.missiles = load_effect_constants(canary / EFFECT_CONSTANTS)
         self.magic_effect_names = {v: k for k, v in self.magic_effects.items()}
@@ -807,11 +812,51 @@ class Converter:
 
         sources = [{'repository': REPOSITORY, 'revision': REVISION}]
         self.adopt_wiki(s, monster, rows, sources, definitions, line_of)
+        self.adopt_br(s, monster, rows, sources, line_of)
         definitions.discard(('Creature', creature['identity']['key']))
         catalog = {'definitions': [ref(f, k) for f, k in sorted(definitions)], 'assets': sorted(assets)}
         manifest = {'sources': sources, 'entries': rows}
         source = {'file': source_file, 'git_blob': blob_id(path.read_bytes())}
         return s, monster, deps, catalog, manifest, source
+
+    def adopt_br(self, s, monster, rows, sources, line_of):
+        """Fill health and experience from TibiaWiki BR where Fandom gives no certain value (D43, wiki_br_fill.py)."""
+        record = self.br.get(s)
+        if not record:
+            return
+        creature, behavior = monster['creature'], monster['behavior']
+        targets = {'max_health': ('/monster/creature/stats/max_health', 'maxHealth', r'^monster\.maxHealth', 'hp'),
+                   'experience': ('/monster/creature/stats/experience', 'experience', r'^monster\.experience', 'exp')}
+        index = None
+        for field, fact in sorted(record['fields'].items()):
+            value = fact['br']
+            if creature['stats'][field] == value or (field == 'max_health' and value <= 0):
+                continue
+            if index is None:
+                sources.append({'kind': 'mediawiki', 'api': BR_API, 'title': record['br_title'], 'page_id': record['page_id'],
+                                'revision_id': record['revision_id'], 'content_sha256': record['content_sha256']})
+                index = len(sources) - 1
+            destination, canary_field, pattern, label = targets[field]
+            text = (f'Canary value {creature["stats"][field]} superseded by the TibiaWiki BR value {fact["br_raw"]} '
+                    f'(Fandom: {fact["fandom_raw"] if fact["fandom_raw"] is not None else "no page"}; {BR_ADOPTION}).')
+            fields = [canary_field] + (['health'] if field == 'max_health' else [])
+            patterns = [pattern] + ([r'^monster\.health'] if field == 'max_health' else [])
+            for name, regex in zip(fields, patterns):
+                entry = next((e for e in rows if e['source_index'] == 0 and e['source_field'] == name and e['status'] == 'mapped'), None)
+                if entry:
+                    entry.update(status='approved_omission', resolution=text)
+                    entry.pop('destination', None)
+                else:
+                    rows.append({'source_index': 0, 'source_file': rows[0]['source_file'], 'source_line': line_of(regex),
+                                 'source_field': name, 'kind': 'field', 'status': 'approved_omission', 'resolution': text})
+            if field == 'max_health':
+                creature['stats']['max_health'] = creature['stats']['initial_health'] = value
+                behavior['targeting']['flee_health'] = min(behavior['targeting']['flee_health'], value)
+            else:
+                creature['stats']['experience'] = value
+            rows.append({'source_index': index, 'source_file': record['br_title'], 'source_line': fact['br_line'],
+                         'source_field': f'Infobox_Criatura.{label}', 'kind': 'field', 'status': 'mapped',
+                         'destination': destination, 'resolution': f'TibiaWiki BR {label} "{fact["br_raw"]}" ({BR_ADOPTION}).'})
 
     def adopt_wiki(self, s, monster, rows, sources, definitions, line_of):
         """Apply the owner-approved reference-date wiki values recorded by wiki_compare.py (D15)."""
@@ -1201,6 +1246,8 @@ class Converter:
                     self.path_trail(probe, key, geometry, range_tiles, scratch, asset, notes)
                 elif pattern == 'heal_allies_in_area':
                     self.probe_callbacks(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes)
+                elif pattern == 'area_damage_named_target':
+                    self.probe_callbacks(probe, lua_spell, key, geometry, range_tiles, scratch, asset, notes, tile_damage=True)
                 else:
                     self.probe_remove_items(probe, lua_spell, key, scratch, asset, notes)
             except SpellUnresolved as exc:
@@ -1293,7 +1340,7 @@ class Converter:
             raise SpellUnresolved('the executed combat has Lua callbacks')
         self.combat_ability(key, combat, geometry, range_tiles, deps, asset, notes, extra=[('-summon', body)])
 
-    def probe_callbacks(self, probe, lua_spell, key, geometry, range_tiles, deps, asset, notes):
+    def probe_callbacks(self, probe, lua_spell, key, geometry, range_tiles, deps, asset, notes, tile_damage=False):
         runs = self.cast_runs(probe, lua_spell)
         if any(log for log, _ in runs.values()):
             raise SpellUnresolved('onCastSpell does more than execute its combat')
@@ -1307,6 +1354,8 @@ class Converter:
             function = probe.lua.globals()[function_name]
             if callback == 'CALLBACK_PARAM_TARGETCREATURE':
                 extra += self.probe_target_creature(probe, function, key, len(extra), aggressive, deps)
+            elif callback == 'CALLBACK_PARAM_TARGETTILE' and tile_damage:
+                extra += self.probe_tile_damage(probe, function, key, len(extra), deps)
             elif callback == 'CALLBACK_PARAM_TARGETTILE':
                 extra += self.probe_target_tile(probe, function, key, len(extra), deps)
             else:
@@ -1390,6 +1439,70 @@ class Converter:
             affects['creatures'].append(ref('Creature', creature))
         return [(f'-callback-{offset + 1}', self.health_body('COMBAT_HEALING', min(low, high), max(low, high), affects,
                                                             f'{key}/formula-callback-{offset + 1}', deps))]
+
+    def probe_tile_damage(self, probe, function, key, offset, deps):
+        """D18 `area_damage_named_target`: on each tile of the ability area the top creature, when it is a player or a monster
+        named in the script, loses a fixed or rolled amount of health through Creature:addHealth (untyped: no resistance,
+        mitigation or element applies). One untyped damage effect per distinct target group and amount."""
+        text = probe.source
+        names = sorted({s.lower() for s in re.findall(r'"([^"\n]+)"', text)})
+        position = probe.lua.eval('Position(1001, 1000, 7)')
+        caster = probe.make('monster', 'caster')
+        probe.creatures['caster'] = caster
+
+        def amounts(top, me=None):
+            per_mode = {}
+            for mode in ('low', 'high'):
+                probe.world['top'] = top
+                ok, log = probe.run(function, me or caster, position, random=mode)
+                if not ok or any(e[0] not in ('tile', 'random', 'addHealth') for e in log):
+                    raise SpellUnresolved('the tile callback does more than change health')
+                changes = [e[2] for e in log if e[0] == 'addHealth']
+                if len(changes) > 1 or any(c > 0 for c in changes):
+                    raise SpellUnresolved('the tile callback heals or changes health more than once')
+                per_mode[mode] = -changes[0] if changes else None
+            if (per_mode['low'] is None) != (per_mode['high'] is None):
+                raise SpellUnresolved('whether the tile callback hits depends on a random roll')
+            return None if per_mode['low'] is None else (min(per_mode.values()), max(per_mode.values()))
+
+        if amounts(probe.make('monster', 'zz unnamed monster')) is not None:
+            raise SpellUnresolved('the tile callback also hits unnamed monsters')
+        owner = probe.make('player', 'player')
+        if amounts(probe.make('monster', 'zz player summon', owner)) is not None:
+            raise SpellUnresolved('the tile callback also hits player summons, which no players-only effect covers')
+        groups = {}
+        player = amounts(owner)
+        if player is not None:
+            groups.setdefault(player, {'players': True, 'names': []})
+        for name in names:
+            hit = amounts(probe.make('monster', name))
+            if hit is not None:
+                groups.setdefault(hit, {'players': False, 'names': []})['names'].append(name)
+        if not groups:
+            raise SpellUnresolved('the tile callback hits nothing')
+        extra = []
+        for (low, high), group in sorted(groups.items()):
+            for kind, members in (('players', ['player'] if group['players'] else []), ('named_creatures', group['names'])):
+                if not members:
+                    continue
+                n = offset + len(extra) + 1
+                affects = {'kind': kind, 'top_creature_only': True, 'excludes_caster_name': False, 'includes_caster': False}
+                if kind == 'named_creatures':
+                    me = probe.make('monster', members[0])
+                    probe.creatures['caster'] = me
+                    affects['includes_caster'] = amounts(me, me) is not None
+                    affects['excludes_caster_name'] = amounts(probe.make('monster', members[0]), me) is None
+                    probe.creatures['caster'] = caster
+                    affects['creatures'] = []
+                    for name in members:
+                        creature = f'canary:creature/{slug(name)}'
+                        self.pending_definitions.add(('Creature', creature))
+                        affects['creatures'].append(ref('Creature', creature))
+                formula_key = f'{key}/formula-callback-{n}'
+                deps['formulas'].append({'identity': ident(formula_key), 'kind': 'range', 'magnitude': {'minimum': low, 'maximum': high}})
+                extra.append((f'-callback-{n}', {'operation': 'damage', 'damage_type': 'untyped', 'formula': ref('Formula', formula_key),
+                                                 'affects': affects}))
+        return extra
 
     def path_trail(self, probe, key, geometry, range_tiles, deps, asset, notes):
         """The Canary single-target 'chain' template: a path trail effect, then one combat on the target."""
@@ -1607,6 +1720,10 @@ class Converter:
         for callback in combat['callbacks']:
             if callback in ('CALLBACK_PARAM_LEVELMAGICVALUE', 'CALLBACK_PARAM_SKILLVALUE'):
                 notes.append(f'{callback} is the player formula; a monster caster uses its own values instead.')
+            elif callback == 'CALLBACK_PARAM_CHAINPICKER' and combat.get('chain_target_filter') == 'players':
+                notes.append('The chain picker keeps only players outside a protection zone; a monster caster already '
+                             'cannot hit a player in one (combat.cpp canDoCombat), so the chain skips other creatures such '
+                             'as player summons (target_filter players).')
             elif callback != 'CALLBACK_PARAM_CHAINVALUE':
                 raise SpellUnresolved(f'Lua combat callback {callback}.')
         if 'COMBAT_PARAM_USECHARGES' in params:
@@ -1677,6 +1794,8 @@ class Converter:
         if 'chain' in combat:
             count, distance, backtracking = combat['chain']
             ability['chain'] = {'max_targets': int(count), 'range_tiles': int(distance), 'backtracking': bool(backtracking)}
+            if combat.get('chain_target_filter'):
+                ability['chain']['target_filter'] = combat['chain_target_filter']
             if params.get('COMBAT_PARAM_CHAIN_EFFECT'):
                 ability['chain']['chain_asset_binding'] = asset(self.visual('@' + params['COMBAT_PARAM_CHAIN_EFFECT'], 'effect')[0])
         deps['abilities'].append(ability)

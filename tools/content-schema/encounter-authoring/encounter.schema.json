@@ -809,6 +809,27 @@
           "additionalProperties": false,
           "properties": {
             "kind": {
+              "const": "item_used"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "item": {
+              "$ref": "#/$defs/ItemRef"
+            }
+          },
+          "required": [
+            "kind",
+            "role",
+            "item"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
               "const": "encounter_started"
             }
           },
@@ -1734,8 +1755,13 @@
             "operation": {
               "enum": [
                 "start",
-                "stop"
+                "stop",
+                "add"
               ]
+            },
+            "ms": {
+              "type": "integer",
+              "minimum": 1
             }
           },
           "required": [
@@ -1780,6 +1806,58 @@
             "kind",
             "role",
             "locked"
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "attribute"
+            },
+            "role": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_]*$"
+            },
+            "attribute": {
+              "enum": [
+                "outgoing_damage_percent",
+                "defense"
+              ]
+            },
+            "operation": {
+              "enum": [
+                "add",
+                "reset"
+              ]
+            },
+            "value": {
+              "oneOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "properties": {
+                    "counter": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9_]*$"
+                    }
+                  },
+                  "required": [
+                    "counter"
+                  ]
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "role",
+            "attribute",
+            "operation"
           ]
         },
         {

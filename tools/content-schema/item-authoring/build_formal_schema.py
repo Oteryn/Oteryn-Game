@@ -1068,11 +1068,83 @@ def build_item_schema():
         },
         description="Editor metadata only; not economy or durable value truth.",
     )
+    d["wikiEvidenceSource"] = obj(
+        {
+            "source_id": {"const": "fandom"},
+            "page_id": integer(1),
+            "title": text(),
+            "url": text(pattern=r"^https?://"),
+            "revision": text(pattern=r"^[1-9][0-9]*$"),
+            "revision_timestamp": text(format="date-time"),
+            "captured_at": text(format="date-time"),
+            "revision_sha1": text(pattern=r"^[0-9a-f]{40}$"),
+            "content_sha256": text(pattern=r"^[0-9a-f]{64}$"),
+        },
+        (
+            "source_id",
+            "page_id",
+            "title",
+            "url",
+            "revision",
+            "revision_timestamp",
+            "captured_at",
+            "revision_sha1",
+            "content_sha256",
+        ),
+        description=(
+            "One captured English TibiaWiki (tibia.fandom.com) page revision cited as "
+            "family_profile evidence; see items-family-fallback.json."
+        ),
+    )
+    d["wikiEvidenceCandidate"] = obj(
+        {
+            "field": enum("primarytype", "objectclass"),
+            "value": text(),
+            "wiki_source": use("wikiEvidenceSource"),
+        },
+        ("field", "value", "wiki_source"),
+    )
+    d["familyProfileEvidence"] = obj(
+        {
+            "resolution": enum("direct", "disambiguation"),
+            "field": enum("primarytype", "objectclass"),
+            "value": text(),
+            "wiki_source": use("wikiEvidenceSource"),
+            "candidates": array(use("wikiEvidenceCandidate"), 2, unique=True),
+        },
+        ("resolution",),
+        description=(
+            "Present only when family_profile_basis is wiki_evidence_fallback: the "
+            "admitted-mapping fact that resolved family_profile when no engine "
+            "attribute did. 'direct' cites the one matched page's field/value; "
+            "'disambiguation' cites 2+ candidate pages that all resolved to the same "
+            "profile (the family invariant across candidates)."
+        ),
+        **{
+            "if": {"properties": {"resolution": {"const": "direct"}}},
+            "then": {
+                "required": ["field", "value", "wiki_source"],
+                "not": {"required": ["candidates"]},
+            },
+            "else": {
+                "required": ["candidates"],
+                "not": {
+                    "anyOf": [
+                        {"required": ["field"]},
+                        {"required": ["value"]},
+                        {"required": ["wiki_source"]},
+                    ]
+                },
+            },
+        },
+    )
     properties = {
         "identity": use("identity"),
         "display_name": text(),
         "aliases": array(text(), unique=True),
         "family_profile": enum(*PROFILES),
+        "family_profile_basis": enum("wiki_evidence_fallback"),
+        "family_profile_evidence": use("familyProfileEvidence"),
         "delivery_task_eligible": use("bool"),
         "presentation": use("presentation"),
         "taxonomy": use("taxonomy"),
@@ -1113,6 +1185,10 @@ def build_item_schema():
                 "delivery_task_eligible",
                 "taxonomy",
             ),
+            dependentRequired={
+                "family_profile_basis": ["family_profile_evidence"],
+                "family_profile_evidence": ["family_profile_basis"],
+            },
         ),
         "$defs": d,
     }

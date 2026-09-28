@@ -1,0 +1,2421 @@
+{
+ "source": "https://www.tibiawiki.com.br/api.php",
+ "target_cut": "2026-09-27",
+ "cut_timestamp": "2026-09-28T00:00:00Z",
+ "rule": "Owner decision D43: a TibiaWiki BR hp or exp fills the value only where the Fandom page at the target cut is missing or its value is empty, uncertain or unparsed; the BR value must be a plain number.",
+ "capture": {
+  "workflow": ".github/workflows/monster-wiki-capture.yml",
+  "sha256": "f0f8bdfe78c77a31c85ec130dd98b898997f5b9ea4076627f9d92244b6dab99f",
+  "pages": 1650,
+  "found": 1494
+ },
+ "fandom_sample": "wiki-population-2026-09-27.json",
+ "counts": {
+  "max_health": 92,
+  "experience": 81
+ },
+ "monsters": [
+  {
+   "monster": "brain_parasite",
+   "br_title": "Brain Parasite",
+   "page_id": 51910,
+   "revision_id": 398988,
+   "revision_timestamp": "2023-07-21T01:41:47Z",
+   "content_sha256": "1430c35449766e4c19c5cef0b1db122c8882e2d51ccd5a706a91a6fd726371da",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "7500",
+     "br": 7500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "doctor_marrow",
+   "br_title": "Doctor Marrow",
+   "page_id": 58360,
+   "revision_id": 437841,
+   "revision_timestamp": "2026-06-25T19:32:02Z",
+   "content_sha256": "57144c79a8625d5d64bf51739c5c4a4245543ba6e4036481cb5719ea8a59a6a5",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "izcandar_champion_of_summer",
+   "br_title": "Izcandar Champion of Summer",
+   "page_id": 46239,
+   "revision_id": 399633,
+   "revision_timestamp": "2023-07-21T01:48:27Z",
+   "content_sha256": "f1f4bbbeee5d1aa359482b7c61572e178fa70eb713eca5437dc8d73983aae875",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "320000",
+     "br": 320000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "55000",
+     "br": 55000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "izcandar_champion_of_winter",
+   "br_title": "Izcandar Champion of Winter",
+   "page_id": 46240,
+   "revision_id": 399634,
+   "revision_timestamp": "2023-07-21T01:48:28Z",
+   "content_sha256": "a4ba868f6d65d31b5cfb4d677c6ec9a9a7d4edbb041fe87230efaabd07febeb9",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "320000",
+     "br": 320000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_astral_source",
+   "br_title": "The Astral Source",
+   "page_id": 39958,
+   "revision_id": 400370,
+   "revision_timestamp": "2023-07-21T01:55:58Z",
+   "content_sha256": "dae3d6a3e3e3af7c5995f503310cb5b8163bcde33b0ce68ebd5b091375a8a63a",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "95000",
+     "br": 95000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_brainstealer",
+   "br_title": "The Brainstealer",
+   "page_id": 51902,
+   "revision_id": 424045,
+   "revision_timestamp": "2025-04-12T18:26:59Z",
+   "content_sha256": "b47f404ffce7c71d5ef8dc98fb9898e2fd3e9776a025d8f0cebe6b672339793c",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "300000",
+     "br": 300000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "nomad",
+   "br_title": "Nomad",
+   "page_id": 4096,
+   "revision_id": 441383,
+   "revision_timestamp": "2026-07-25T13:02:05Z",
+   "content_sha256": "758acbef85e049863246531480711be74e0e3a3a4e6908dce6cdd5f14f6086c4",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "160",
+     "br": 160,
+     "br_line": 3,
+     "fandom_raw": ""
+    },
+    "experience": {
+     "br_raw": "60",
+     "br": 60,
+     "br_line": 4,
+     "fandom_raw": ""
+    }
+   }
+  },
+  {
+   "monster": "giant_beaver",
+   "br_title": "Giant Beaver",
+   "page_id": 55702,
+   "revision_id": 399442,
+   "revision_timestamp": "2023-07-21T01:46:30Z",
+   "content_sha256": "0f92e9f0178f7600c18559e03ede29768479909000319a825802882f5e42d1ae",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "ratmiral_blackwhiskers",
+   "br_title": "Ratmiral Blackwhiskers",
+   "page_id": 50572,
+   "revision_id": 428889,
+   "revision_timestamp": "2025-09-26T17:08:18Z",
+   "content_sha256": "ba454843789e41b0e2bc23d8303467f3eeef974a01dc6f757cb0bd8902d20e6d",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "220000",
+     "br": 220000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "minion_of_versperoth",
+   "br_title": "Minion of Versperoth",
+   "page_id": 26282,
+   "revision_id": 413379,
+   "revision_timestamp": "2024-05-14T14:08:33Z",
+   "content_sha256": "f05954a99e37f2d7430e34ca9243dccd98fd544b3a08106aa5a8645fc10f3ad0",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "9000",
+     "br": 9000,
+     "br_line": 3,
+     "fandom_raw": "9000?"
+    }
+   }
+  },
+  {
+   "monster": "animated_skunk",
+   "br_title": "Animated Skunk",
+   "page_id": 42097,
+   "revision_id": 398866,
+   "revision_timestamp": "2023-07-21T01:40:34Z",
+   "content_sha256": "f069a1417f2c19ba1a16cefe94f6074940f7db7b2dbfa61a7aa96512540eae00",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "20",
+     "br": 20,
+     "br_line": 3,
+     "fandom_raw": "20?"
+    },
+    "experience": {
+     "br_raw": "3",
+     "br": 3,
+     "br_line": 4,
+     "fandom_raw": "3?"
+    }
+   }
+  },
+  {
+   "monster": "last_planegazer",
+   "br_title": "Last Planegazer",
+   "page_id": 43351,
+   "revision_id": 442118,
+   "revision_timestamp": "2026-08-04T18:36:47Z",
+   "content_sha256": "c0515bf97510949a003697ee03856640ca24d1bb42575f52620ee7d7ba0281f8",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "10000",
+     "br": 10000,
+     "br_line": 4,
+     "fandom_raw": "10000?"
+    }
+   }
+  },
+  {
+   "monster": "leiden",
+   "br_title": "Leiden",
+   "page_id": 41183,
+   "revision_id": 399688,
+   "revision_timestamp": "2023-07-21T01:49:02Z",
+   "content_sha256": "eeffe7dd85df3e1d525c7c3a96d1a4c2aed8b5dfc3ee90dba392845212002d2b",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "380000",
+     "br": 380000,
+     "br_line": 3,
+     "fandom_raw": "30000+?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "0?"
+    }
+   }
+  },
+  {
+   "monster": "containment_crystal",
+   "br_title": "Containment Crystal",
+   "page_id": 43580,
+   "revision_id": 405095,
+   "revision_timestamp": "2023-09-04T03:48:36Z",
+   "content_sha256": "f9e628bfad9d9a9764010a874aa895bf146c8e723972e134c1de853a7f9f3819",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "7000",
+     "br": 7000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "ravenous_hunger",
+   "br_title": "Ravenous Hunger",
+   "page_id": 41178,
+   "revision_id": 429099,
+   "revision_timestamp": "2025-10-20T21:50:32Z",
+   "content_sha256": "f0156eee3cf14fa6cde87ece24ba89d6fec5c456aeea1745926214f5de131355",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "190000",
+     "br": 190000,
+     "br_line": 3,
+     "fandom_raw": ""
+    },
+    "experience": {
+     "br_raw": "615",
+     "br": 615,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dark_soul",
+   "br_title": "Dark Soul",
+   "page_id": 41690,
+   "revision_id": 399143,
+   "revision_timestamp": "2023-07-21T01:43:25Z",
+   "content_sha256": "8aa1b23fe5d2159fd57df0bb4a74b063158ff1589d01d519544e690661a00dd6",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "2900",
+     "br": 2900,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "soul_reaper",
+   "br_title": "Soul Reaper",
+   "page_id": 41420,
+   "revision_id": 400255,
+   "revision_timestamp": "2023-07-21T01:54:50Z",
+   "content_sha256": "9f9f9776a64973d6532651f003c9631ed1f661c5f394a3e2c3302cce615a5c9a",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "11000",
+     "br": 11000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "stolen_soul",
+   "br_title": "Stolen Soul",
+   "page_id": 41418,
+   "revision_id": 400312,
+   "revision_timestamp": "2023-07-21T01:55:24Z",
+   "content_sha256": "094de2162660b253ba208e34d32f239bb154ce75a9b810a21d929a5383229454",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "4500",
+     "br": 4500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_armored_voidborn",
+   "br_title": "The Armored Voidborn",
+   "page_id": 40986,
+   "revision_id": 400369,
+   "revision_timestamp": "2023-07-21T01:55:58Z",
+   "content_sha256": "0b0af58de62552766423c9206aa40bdf812e379a05430b9b19b2735aabf79f0c",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_sinister_hermit",
+   "br_title": "The Sinister Hermit",
+   "page_id": 41726,
+   "revision_id": 400453,
+   "revision_timestamp": "2023-07-21T01:56:47Z",
+   "content_sha256": "e075d4dc2475aa8d1a85ac854fc462981533d6da19c66dde20abd8f360a4dc9d",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "80000",
+     "br": 80000,
+     "br_line": 3,
+     "fandom_raw": ""
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": ""
+    }
+   }
+  },
+  {
+   "monster": "ancient_spawn_of_morgathla",
+   "br_title": "Ancient Spawn of Morgathla",
+   "page_id": 43016,
+   "revision_id": 442061,
+   "revision_timestamp": "2026-08-04T17:30:23Z",
+   "content_sha256": "5494977224d2bc46fba2f2aa25e807c456ef938570f6e97ffacac2b94947e6c8",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "900000",
+     "br": 900000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "70000",
+     "br": 70000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_baron_from_below",
+   "br_title": "The Baron from Below",
+   "page_id": 43011,
+   "revision_id": 442115,
+   "revision_timestamp": "2026-08-04T18:35:17Z",
+   "content_sha256": "7091dfc989104fda22e1421b869f48123b2f9d6654422a6520bd9983a06f7939",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "350000",
+     "br": 350000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "gnome_pack_crawler",
+   "br_title": "Gnome Pack Crawler",
+   "page_id": 42926,
+   "revision_id": 399467,
+   "revision_timestamp": "2023-07-21T01:46:45Z",
+   "content_sha256": "1d1e65f2c7cb5534850524a484ee953ea506a43c8dd88eeb0fb826a7529a9657",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "lava_lurker_attendant",
+   "br_title": "Lava Lurker Attendant",
+   "page_id": 44499,
+   "revision_id": 399680,
+   "revision_timestamp": "2023-07-21T01:48:58Z",
+   "content_sha256": "b63a453e8c762e3f0ee458eebce26a1dbfaa0ff9eb35249650102a01189af7fa",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3000",
+     "br": 3000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "organic_matter",
+   "br_title": "Organic Matter",
+   "page_id": 43549,
+   "revision_id": 399983,
+   "revision_timestamp": "2023-07-21T01:52:08Z",
+   "content_sha256": "b5a6a995eb6bf133fd8d42e4910173ab05c08941045a456e21bfe05ae1a940c2",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "33500",
+     "br": 33500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "death_priest_shargon",
+   "br_title": "Death Priest Shargon",
+   "page_id": 33672,
+   "revision_id": 399157,
+   "revision_timestamp": "2023-07-21T01:43:32Z",
+   "content_sha256": "11bd809577dad71b05aa57cc0706ba2f37bc6132f1d2d780db2d178ad8d6ae35",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "9000",
+     "br": 9000,
+     "br_line": 4,
+     "fandom_raw": "~20000"
+    }
+   }
+  },
+  {
+   "monster": "tremor_worm",
+   "br_title": "Tremor Worm",
+   "page_id": 35103,
+   "revision_id": 400496,
+   "revision_timestamp": "2023-07-21T01:57:12Z",
+   "content_sha256": "1ece515435a92ff032c101f8195dc6a07a3a87d69f7d9746699144550cd3d780",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "12000",
+     "br": 12000,
+     "br_line": 4,
+     "fandom_raw": "80000?"
+    }
+   }
+  },
+  {
+   "monster": "destabilized_ferumbras",
+   "br_title": "Destabilized Ferumbras",
+   "page_id": 37813,
+   "revision_id": 399196,
+   "revision_timestamp": "2023-07-21T01:43:56Z",
+   "content_sha256": "2fe42d9ce8265d3da2018dd2051d6f55da60ad178b4646c51488a2f6ff384981",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "125000",
+     "br": 125000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "35000",
+     "br": 35000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "ferumbras_soul_splinter",
+   "br_title": "Ferumbras Soul Splinter",
+   "page_id": 37668,
+   "revision_id": 399355,
+   "revision_timestamp": "2023-07-21T01:45:37Z",
+   "content_sha256": "1779ec4f8b687c3bc96d9bb8d617b47a331b8b10f1960a47bec3ece34f1d9c30",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "35000",
+     "br": 35000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "tarbaz",
+   "br_title": "Tarbaz",
+   "page_id": 37450,
+   "revision_id": 442111,
+   "revision_timestamp": "2026-08-04T18:32:22Z",
+   "content_sha256": "820c826342355a4d9ebf184780bad274fb1cb90745f6fa856f9b89c38e183464",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "290000",
+     "br": 290000,
+     "br_line": 3,
+     "fandom_raw": "290000?"
+    }
+   }
+  },
+  {
+   "monster": "zamulosh",
+   "br_title": "Zamulosh",
+   "page_id": 37584,
+   "revision_id": 442112,
+   "revision_timestamp": "2026-08-04T18:32:39Z",
+   "content_sha256": "7dc337d5adacdd91655ef4432bfd511fd696492f17305721ef51acce283aba0d",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "290000",
+     "br": 290000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "enthralled_demon",
+   "br_title": "Enthralled Demon",
+   "page_id": 37670,
+   "revision_id": 399313,
+   "revision_timestamp": "2023-07-21T01:45:13Z",
+   "content_sha256": "5b59b605e100095c850db623894002684f3c154ddb12dd1f49dc0b6a56d825ae",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "100",
+     "br": 100,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "rift_invader",
+   "br_title": "Rift Invader",
+   "page_id": 37672,
+   "revision_id": 400136,
+   "revision_timestamp": "2023-07-21T01:53:39Z",
+   "content_sha256": "b8c6a0b0ac736810ef61639b519a734993748bc0c6e6368b0f82ca3ee1b96934",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "100",
+     "br": 100,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "bone_capsule",
+   "br_title": "Bone Capsule",
+   "page_id": 37792,
+   "revision_id": 398971,
+   "revision_timestamp": "2023-07-21T01:41:36Z",
+   "content_sha256": "7ab3420bece95fd9e94e1dea914cb9da00295671b4f1d69060f88c4f35edd0f8",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "70000",
+     "br": 70000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "animated_sword",
+   "br_title": "Animated Sword",
+   "page_id": 39783,
+   "revision_id": 398868,
+   "revision_timestamp": "2023-07-21T01:40:35Z",
+   "content_sha256": "547bc756656a6089dda6858687c4d05892dbc87a22f88be56346353536eee65d",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "7500",
+     "br": 7500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "melting_frozen_horror",
+   "br_title": "Melting Frozen Horror",
+   "page_id": 39676,
+   "revision_id": 432874,
+   "revision_timestamp": "2026-02-25T21:53:49Z",
+   "content_sha256": "56871d4d967a387d0e1f1923e2d2fd62ae480a0193e4e8b2a81d9f8705c5f4bb",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "70000",
+     "br": 70000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "65000",
+     "br": 65000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "mounted_thorn_knight",
+   "br_title": "Mounted Thorn Knight",
+   "page_id": 39530,
+   "revision_id": 399896,
+   "revision_timestamp": "2023-07-21T01:51:14Z",
+   "content_sha256": "a0b21e0a1310c725d19ee7308eef003cfbccfd826051586869a1ae9ffbf105cf",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "90000",
+     "br": 90000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_enraged_thorn_knight",
+   "br_title": "The Enraged Thorn Knight",
+   "page_id": 39594,
+   "revision_id": 440211,
+   "revision_timestamp": "2026-07-12T01:12:00Z",
+   "content_sha256": "0a04eb1935844bcb080cdbf77e4aa283d3ebcf2a8eddb3a01e309d0787605175",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "90000",
+     "br": 90000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_last_lore_keeper",
+   "br_title": "The Last Lore Keeper",
+   "page_id": 39784,
+   "revision_id": 442058,
+   "revision_timestamp": "2026-08-04T17:28:13Z",
+   "content_sha256": "1836aaa81c6fbf7f812cf876869f1b4e59ea68f66813cbd4f8d4b7bfab21fb3f",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "500000",
+     "br": 500000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "thorn_steed",
+   "br_title": "Thorn Steed",
+   "page_id": 39831,
+   "revision_id": 400468,
+   "revision_timestamp": "2023-07-21T01:56:56Z",
+   "content_sha256": "6392b31f7165fe3bbda5bed17da84bd4ca4e96971a0095283a7e6e9b61668414",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "90000",
+     "br": 90000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "bound_astral_power",
+   "br_title": "Bound Astral Power",
+   "page_id": 39786,
+   "revision_id": 398983,
+   "revision_timestamp": "2023-07-21T01:41:44Z",
+   "content_sha256": "4008fa39fed65bf61eab29837407d79b7b788e7f21e52e369a62bc280d12996c",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "70000",
+     "br": 70000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dragon_servant",
+   "br_title": "Dragon Servant",
+   "page_id": 40719,
+   "revision_id": 399230,
+   "revision_timestamp": "2023-07-21T01:44:18Z",
+   "content_sha256": "7b32a75caca8f879671cbbd4de4f44a9795a5c12fef16963085f1fbf9b5686dc",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3200",
+     "br": 3200,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "frozen_minion",
+   "br_title": "Frozen Minion",
+   "page_id": 39520,
+   "revision_id": 399409,
+   "revision_timestamp": "2023-07-21T01:46:09Z",
+   "content_sha256": "9f692d5e6ad36aeff6fa9267080fe2c1d4255ef01d09705c62a4a0045b896f3c",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3725",
+     "br": 3725,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "shadow_fiend",
+   "br_title": "Shadow Fiend",
+   "page_id": 39651,
+   "revision_id": 400192,
+   "revision_timestamp": "2023-07-21T01:54:13Z",
+   "content_sha256": "e1c3fca551a65141d3bff2d2d76fea6ee5e8aa80b82654c56d728b29ce010a0c",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3200",
+     "br": 3200,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "shadow_tentacle",
+   "br_title": "Shadow Tentacle",
+   "page_id": 39671,
+   "revision_id": 400197,
+   "revision_timestamp": "2023-07-21T01:54:16Z",
+   "content_sha256": "fa374f4f9d2a32337e7940698f0c8d1f9f5c84b24bf9084818482184cd4f8035",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "120000",
+     "br": 120000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "thorn_minion",
+   "br_title": "Thorn Minion",
+   "page_id": 39526,
+   "revision_id": 400467,
+   "revision_timestamp": "2023-07-21T01:56:56Z",
+   "content_sha256": "338ab397bb756845ecf789845e362d7362938fc8c34eee378cc33a50babb0514",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3600",
+     "br": 3600,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "time_keeper",
+   "br_title": "Time Keeper",
+   "page_id": 39694,
+   "revision_id": 400475,
+   "revision_timestamp": "2023-07-21T01:57:00Z",
+   "content_sha256": "7d1f73a260db731a888737b981b6c77cb27749fe0145dd4e12ef12c1cedbc40e",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "unbound_blightwalker",
+   "br_title": "Unbound Blightwalker",
+   "page_id": 39531,
+   "revision_id": 400520,
+   "revision_timestamp": "2023-07-21T01:57:27Z",
+   "content_sha256": "651f574ae43074a29c2dc8dbd1578bb05ab06f76bb3d01c127d53641d40de447",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "8900",
+     "br": 8900,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "unbound_defiler",
+   "br_title": "Unbound Defiler",
+   "page_id": 39595,
+   "revision_id": 400521,
+   "revision_timestamp": "2023-07-21T01:57:27Z",
+   "content_sha256": "0fd8da236f942d407a9090c0ba0951603faf5fd8ec54ac94166874cfe677f5c4",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3650",
+     "br": 3650,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "unbound_demon",
+   "br_title": "Unbound Demon",
+   "page_id": 39533,
+   "revision_id": 400523,
+   "revision_timestamp": "2023-07-21T01:57:28Z",
+   "content_sha256": "d844dbecda944ffb39941355b282ea75c16892843f85e9b8eba5432838beccba",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "8200",
+     "br": 8200,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "unbound_demon_outcast",
+   "br_title": "Unbound Demon Outcast",
+   "page_id": 39535,
+   "revision_id": 400522,
+   "revision_timestamp": "2023-07-21T01:57:28Z",
+   "content_sha256": "d98cc25cb1175283d5ed091e12bb7340df3f44dc8e0a351a593e42d46beb83c2",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "6900",
+     "br": 6900,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "azaram_s_soul",
+   "br_title": "Azaram's Soul",
+   "page_id": 47552,
+   "revision_id": 402887,
+   "revision_timestamp": "2023-08-12T18:28:10Z",
+   "content_sha256": "0572937720b3aa40944797530b4fe15bfe1b6a660d7db1963062070b2950e2cd",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "50000",
+     "br": 50000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "earl_osam",
+   "br_title": "Earl Osam",
+   "page_id": 46826,
+   "revision_id": 424044,
+   "revision_timestamp": "2025-04-12T18:26:29Z",
+   "content_sha256": "bb28335ad7138697b119212de1f085119bf313170a92c892f51cd06f99ea1e7d",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "300000",
+     "br": 300000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "sir_nictros",
+   "br_title": "Sir Nictros",
+   "page_id": 47121,
+   "revision_id": 423962,
+   "revision_timestamp": "2025-04-09T08:14:02Z",
+   "content_sha256": "015bc6a9025aa7237023b5205747747acacfa24a4169c2b482c228aa83cdf033",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "150000",
+     "br": 150000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "condensed_sin",
+   "br_title": "Condensed Sin",
+   "page_id": 46935,
+   "revision_id": 399071,
+   "revision_timestamp": "2023-07-21T01:42:38Z",
+   "content_sha256": "80eb73299f95cc07e10a27d79bfa94e1ccf1d54b7439fd5c541e14fe2c9ae4ea",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3800",
+     "br": 3800,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dark_druid",
+   "br_title": "Dark Druid",
+   "page_id": 46754,
+   "revision_id": 399135,
+   "revision_timestamp": "2023-07-21T01:43:20Z",
+   "content_sha256": "c68e73819d894dc434f960ddc5140140d72bf154db4cb6a69077c8f21b85b092",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "6000",
+     "br": 6000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dark_knight",
+   "br_title": "Dark Knight",
+   "page_id": 46753,
+   "revision_id": 399137,
+   "revision_timestamp": "2023-07-21T01:43:21Z",
+   "content_sha256": "d776f5b60589aabf77f71bac321353a2f31ad525deaa0df2986429d0470ddca1",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "7900",
+     "br": 7900,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dark_paladin",
+   "br_title": "Dark Paladin",
+   "page_id": 46756,
+   "revision_id": 423298,
+   "revision_timestamp": "2025-03-26T03:39:40Z",
+   "content_sha256": "2f59b193eea93a3df8e429bfb2778ffd9f8bb09df74070043b1bcc2ef71e0aa2",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "6500",
+     "br": 6500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dark_sorcerer",
+   "br_title": "Dark Sorcerer",
+   "page_id": 46755,
+   "revision_id": 423295,
+   "revision_timestamp": "2025-03-26T03:10:49Z",
+   "content_sha256": "23917ca91bcd7cd2c6c918d60956c8c5ac6b34dc8265b894f4bf80ebc783d514",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "6500",
+     "br": 6500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "magical_sphere",
+   "br_title": "Magical Sphere",
+   "page_id": 46939,
+   "revision_id": 399754,
+   "revision_timestamp": "2023-07-21T01:49:44Z",
+   "content_sha256": "4a5fbc9f624c8057f11970728dfb41d627d5721c2e1bc15e18c1c94cc53d4cd1",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "9000",
+     "br": 9000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "nargol_the_impaler",
+   "br_title": "Nargol The Impaler",
+   "page_id": 47473,
+   "revision_id": 399922,
+   "revision_timestamp": "2023-07-21T01:51:29Z",
+   "content_sha256": "888232b75ae8a498a7c10aa39cfd392339c40099276825f0d58da18fd384c9c0",
+   "fandom_status": "WIKI_PAGE_MISSING",
+   "fields": {
+    "max_health": {
+     "br_raw": "250000",
+     "br": 250000,
+     "br_line": 3,
+     "fandom_raw": null
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": null
+    }
+   }
+  },
+  {
+   "monster": "rewar_the_bloody",
+   "br_title": "Rewar The Bloody",
+   "page_id": 47117,
+   "revision_id": 400129,
+   "revision_timestamp": "2023-07-21T01:53:35Z",
+   "content_sha256": "c6ed2c537207f3d75994e22e7a034a9bc1d2438d8079453e7224a85cfc7dac55",
+   "fandom_status": "WIKI_PAGE_MISSING",
+   "fields": {
+    "max_health": {
+     "br_raw": "250000",
+     "br": 250000,
+     "br_line": 3,
+     "fandom_raw": null
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": null
+    }
+   }
+  },
+  {
+   "monster": "soulless_minion",
+   "br_title": "Soulless Minion",
+   "page_id": 46751,
+   "revision_id": 400262,
+   "revision_timestamp": "2023-07-21T01:54:54Z",
+   "content_sha256": "c29e1dd1341aafa8417c6ebbe37da687b8106667b8e30aaa264efd86d113878f",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "10000",
+     "br": 10000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "tainted_soul_splinter",
+   "br_title": "Tainted Soul Splinter",
+   "page_id": 47632,
+   "revision_id": 400344,
+   "revision_timestamp": "2023-07-21T01:55:43Z",
+   "content_sha256": "02b66a30e0078ed25e819aba83c1da29f50b0f467da84aeaeab5996f883b18f8",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3500",
+     "br": 3500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "charged_anomaly",
+   "br_title": "Charged Anomaly",
+   "page_id": 38555,
+   "revision_id": 402880,
+   "revision_timestamp": "2023-08-12T18:19:09Z",
+   "content_sha256": "55838bb20cdb8fc2910d2c528d6e9af4bfe483317abd4a91b4fdce82eb51bb4b",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "damage_resonance",
+   "br_title": "Damage Resonance",
+   "page_id": 38552,
+   "revision_id": 399127,
+   "revision_timestamp": "2023-07-21T01:43:15Z",
+   "content_sha256": "eb144ebddacf80aa892d0fd0dc47236d37d3e8f67fa837d4fb03b58c196c4f28",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "250",
+     "br": 250,
+     "br_line": 4,
+     "fandom_raw": "~560"
+    }
+   }
+  },
+  {
+   "monster": "depolarized_crackler",
+   "br_title": "Depolarized Crackler",
+   "page_id": 38922,
+   "revision_id": 399191,
+   "revision_timestamp": "2023-07-21T01:43:54Z",
+   "content_sha256": "ceedfe2dc6ac6854efdd33ce0b2f70c5bb9eaf3f71dd5e231dd1fd27e7ec7006",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "30000",
+     "br": 30000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "disruption",
+   "br_title": "Disruption",
+   "page_id": 39005,
+   "revision_id": 399214,
+   "revision_timestamp": "2023-07-21T01:44:09Z",
+   "content_sha256": "f66393853024dd11a8991bd7fe720a242a85e420e7bcb67792f063756185cbf1",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "398",
+     "br": 398,
+     "br_line": 4,
+     "fandom_raw": "~398"
+    }
+   }
+  },
+  {
+   "monster": "foreshock",
+   "br_title": "Foreshock",
+   "page_id": 38396,
+   "revision_id": 399391,
+   "revision_timestamp": "2023-07-21T01:45:58Z",
+   "content_sha256": "f854fb70afe63f4278410099b5da14abb8b3622bcda04ab42c6a838bc7327739",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "frenzy",
+   "br_title": "Frenzy",
+   "page_id": 39001,
+   "revision_id": 399399,
+   "revision_timestamp": "2023-07-21T01:46:03Z",
+   "content_sha256": "3226054f723596098f90a16c74209cc576cd48205ce1271c86d35d7cf912f4ef",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "1350",
+     "br": 1350,
+     "br_line": 4,
+     "fandom_raw": "~1313"
+    }
+   }
+  },
+  {
+   "monster": "rupture",
+   "br_title": "Rupture",
+   "page_id": 38404,
+   "revision_id": 405683,
+   "revision_timestamp": "2023-10-03T23:08:40Z",
+   "content_sha256": "9105f9e76476b62afadfe5e6b4956099ecc7831508f0dc2c4627819d5a022a0a",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "50000",
+     "br": 50000,
+     "br_line": 4,
+     "fandom_raw": "~112000"
+    }
+   }
+  },
+  {
+   "monster": "spark_of_destruction",
+   "br_title": "Spark of Destruction",
+   "page_id": 38539,
+   "revision_id": 400265,
+   "revision_timestamp": "2023-07-21T01:54:55Z",
+   "content_sha256": "0d39cbc7a8773d00ed1ad75ca4efd424c2c7d0f56e9a79dc864a66e24b1b1d5e",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "85",
+     "br": 85,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "world_devourer",
+   "br_title": "World Devourer",
+   "page_id": 38769,
+   "revision_id": 442060,
+   "revision_timestamp": "2026-08-04T17:28:55Z",
+   "content_sha256": "23843004316393e69bf0f04a98944c2154aa4a09c392b040554ad32c24d57f5d",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "500000",
+     "br": 500000,
+     "br_line": 3,
+     "fandom_raw": "25000?"
+    },
+    "experience": {
+     "br_raw": "50000",
+     "br": 50000,
+     "br_line": 4,
+     "fandom_raw": "~77700"
+    }
+   }
+  },
+  {
+   "monster": "empowered_glooth_horror",
+   "br_title": "Empowered Glooth Horror",
+   "page_id": 34965,
+   "revision_id": 399295,
+   "revision_timestamp": "2023-07-21T01:44:59Z",
+   "content_sha256": "da36d7cfc464dfa44f58943a20dae3f6e3f8356e8790566d117681554ef5d2d8",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "3200",
+     "br": 3200,
+     "br_line": 4,
+     "fandom_raw": "2150?"
+    }
+   }
+  },
+  {
+   "monster": "feeble_glooth_horror",
+   "br_title": "Feeble Glooth Horror",
+   "page_id": 34969,
+   "revision_id": 399346,
+   "revision_timestamp": "2023-07-21T01:45:32Z",
+   "content_sha256": "c9ab94a22bf1915ef149584eca7adc9b87cfe443c9e6ce3537d80c4ae95cce99",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "200",
+     "br": 200,
+     "br_line": 4,
+     "fandom_raw": "245?"
+    }
+   }
+  },
+  {
+   "monster": "glooth_horror",
+   "br_title": "Glooth Horror",
+   "page_id": 34970,
+   "revision_id": 399459,
+   "revision_timestamp": "2023-07-21T01:46:41Z",
+   "content_sha256": "5e9419701b5c6893fe719b3cce5a06c45539db40ef1a4c47557bff66af6983f5",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "800",
+     "br": 800,
+     "br_line": 4,
+     "fandom_raw": "900?"
+    }
+   }
+  },
+  {
+   "monster": "glooth_masher",
+   "br_title": "Glooth Masher",
+   "page_id": 34973,
+   "revision_id": 399460,
+   "revision_timestamp": "2023-07-21T01:46:41Z",
+   "content_sha256": "a5cbf5c1341901f9b4d3f5be8880f86802a5e0c1d4e755381b7fdef484f6759c",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "25000",
+     "br": 25000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "1650",
+     "br": 1650,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "glooth_slasher",
+   "br_title": "Glooth Slasher",
+   "page_id": 34975,
+   "revision_id": 399462,
+   "revision_timestamp": "2023-07-21T01:46:42Z",
+   "content_sha256": "b05258ef2cdfc872e5f15bcf87a9ffc60ef50516bcea41425c5adaf4d573ada6",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "25000",
+     "br": 25000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "1650",
+     "br": 1650,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "glooth_trasher",
+   "br_title": "Glooth Trasher",
+   "page_id": 34974,
+   "revision_id": 416664,
+   "revision_timestamp": "2024-08-24T17:34:41Z",
+   "content_sha256": "c0334299e5c327f84ad04bfb2dda0078c1ca47b1ac1218ec2098fd543c632e6b",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "25000",
+     "br": 25000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "1650",
+     "br": 1650,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "strong_glooth_horror",
+   "br_title": "Strong Glooth Horror",
+   "page_id": 34968,
+   "revision_id": 400322,
+   "revision_timestamp": "2023-07-21T01:55:32Z",
+   "content_sha256": "2312f6678dcef42f1edc0a96a301d53bcf6bd2819548be651260a39e64850ca8",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "1600",
+     "br": 1600,
+     "br_line": 4,
+     "fandom_raw": "1500?"
+    }
+   }
+  },
+  {
+   "monster": "tentacle_of_the_deep_terror",
+   "br_title": "Tentacle of the Deep Terror",
+   "page_id": 34962,
+   "revision_id": 400355,
+   "revision_timestamp": "2023-07-21T01:55:49Z",
+   "content_sha256": "3c26c396baf1e7ab55e87a9b257697acd2895d6cbc6c84ade3921e56891635f2",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "25000",
+     "br": 25000,
+     "br_line": 3,
+     "fandom_raw": "~25500"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "0?"
+    }
+   }
+  },
+  {
+   "monster": "an_astral_glyph",
+   "br_title": "An Astral Glyph",
+   "page_id": 39992,
+   "revision_id": 398844,
+   "revision_timestamp": "2023-07-21T01:40:21Z",
+   "content_sha256": "b6b75d165d2046df195326a37e4274dd2aafd47e83b289e24977140b5f88e97b",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "300000",
+     "br": 300000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "overcharged_demon",
+   "br_title": "Overcharged Demon",
+   "page_id": 63508,
+   "revision_id": 436858,
+   "revision_timestamp": "2026-06-16T20:41:52Z",
+   "content_sha256": "7a51af08b471162b906429cdf5b9eed63235eeada77bc874f3c03d917717df71",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "21500",
+     "br": 21500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "magma_crystal",
+   "br_title": "Magma Crystal",
+   "page_id": 57788,
+   "revision_id": 399758,
+   "revision_timestamp": "2023-07-21T01:49:47Z",
+   "content_sha256": "94f3ae00f09a5cf1dbb9c3d0539c953f0ef926da3606d923739dcec2352f067d",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "gaz_haragoth",
+   "br_title": "Gaz'Haragoth",
+   "page_id": 31850,
+   "revision_id": 420666,
+   "revision_timestamp": "2025-02-25T14:50:42Z",
+   "content_sha256": "6ef9a44b71c121aa7600dd532721432f1b59b314ed53b2be116daf45e6529341",
+   "fandom_status": "WIKI_PAGE_MISSING",
+   "fields": {
+    "max_health": {
+     "br_raw": "350000",
+     "br": 350000,
+     "br_line": 3,
+     "fandom_raw": null
+    },
+    "experience": {
+     "br_raw": "1000000",
+     "br": 1000000,
+     "br_line": 4,
+     "fandom_raw": null
+    }
+   }
+  },
+  {
+   "monster": "echo_of_chagorz",
+   "br_title": "Echo Of Chagorz",
+   "page_id": 60185,
+   "revision_id": 399271,
+   "revision_timestamp": "2023-07-21T01:44:43Z",
+   "content_sha256": "1287c1a85ec396f0612a2131386ccd8d68e8fa48051f40fdff4aac48099504ff",
+   "fandom_status": "WIKI_PAGE_MISSING",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": null
+    }
+   }
+  },
+  {
+   "monster": "echo_of_ichgahal",
+   "br_title": "Echo Of Ichgahal",
+   "page_id": 60189,
+   "revision_id": 399272,
+   "revision_timestamp": "2023-07-21T01:44:44Z",
+   "content_sha256": "9c7d45f874e373c50f95b8f684405da5995a7a2dbd594bc2bffc572960b8b00e",
+   "fandom_status": "WIKI_PAGE_MISSING",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": null
+    }
+   }
+  },
+  {
+   "monster": "echo_of_murcion",
+   "br_title": "Echo Of Murcion",
+   "page_id": 60191,
+   "revision_id": 399273,
+   "revision_timestamp": "2023-07-21T01:44:45Z",
+   "content_sha256": "9b158cdef478e28641d2b68957aa4cc79eba586486e08e9cc8ab239d2bf0214d",
+   "fandom_status": "WIKI_PAGE_MISSING",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": null
+    }
+   }
+  },
+  {
+   "monster": "echo_of_vemiath",
+   "br_title": "Echo Of Vemiath",
+   "page_id": 60187,
+   "revision_id": 399274,
+   "revision_timestamp": "2023-07-21T01:44:45Z",
+   "content_sha256": "36e653acd9036aaf1b3c21d83d6930526d557974ae43032b4adb05791dff6356",
+   "fandom_status": "WIKI_PAGE_MISSING",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": null
+    }
+   }
+  },
+  {
+   "monster": "dreadful_disruptor",
+   "br_title": "Dreadful Disruptor",
+   "page_id": 42508,
+   "revision_id": 423019,
+   "revision_timestamp": "2025-03-18T16:52:54Z",
+   "content_sha256": "dae25660162c426af4c579d20ee0a2fe2946531b994662e972e2552c7a38ff4a",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "27000",
+     "br": 27000,
+     "br_line": 3,
+     "fandom_raw": "10000?"
+    }
+   }
+  },
+  {
+   "monster": "dreadful_harvester",
+   "br_title": "Dreadful Harvester",
+   "page_id": 49419,
+   "revision_id": 408739,
+   "revision_timestamp": "2023-11-22T23:33:38Z",
+   "content_sha256": "5e054585c00b01697f7efe56a044d0dd0594d3190576bfb71eee01e67d1c557f",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "12500",
+     "br": 12500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "goshnar_s_greed",
+   "br_title": "Goshnar's Greed",
+   "page_id": 49156,
+   "revision_id": 443992,
+   "revision_timestamp": "2026-09-24T08:22:24Z",
+   "content_sha256": "b1858aac879aae586871319ec115ebef9494d1730c4c5f0a5f798b7d1c1e7696",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "550000",
+     "br": 550000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "goshnar_s_hatred",
+   "br_title": "Goshnar's Hatred",
+   "page_id": 49163,
+   "revision_id": 443988,
+   "revision_timestamp": "2026-09-24T07:59:52Z",
+   "content_sha256": "8666f3f1c6061a7aa65af9537d0b144ff03c1bebddd9c0e63fc104584f2637c5",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "550000",
+     "br": 550000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "goshnar_s_spite",
+   "br_title": "Goshnar's Spite",
+   "page_id": 49160,
+   "revision_id": 443989,
+   "revision_timestamp": "2026-09-24T08:00:00Z",
+   "content_sha256": "86d9c402654d114825bb5c41f9cf944f17a5b4645fb6e4e687988256cf35c087",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "550000",
+     "br": 550000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "plagueroot",
+   "br_title": "Plagueroot",
+   "page_id": 45064,
+   "revision_id": 400047,
+   "revision_timestamp": "2023-07-21T01:52:46Z",
+   "content_sha256": "245269b38b353854a22c6aa2c1b831650706392327b0cabf9fd4542f9674f243",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "320000",
+     "br": 320000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "generator",
+   "br_title": "Generator",
+   "page_id": 45761,
+   "revision_id": 399430,
+   "revision_timestamp": "2023-07-21T01:46:22Z",
+   "content_sha256": "a652c2346ce87b2a7a0e2a6852dad8b58a6d1f963ab4f5f68f61cce105bc870f",
+   "fandom_status": "WIKI_PAGE_MISSING",
+   "fields": {
+    "max_health": {
+     "br_raw": "6500",
+     "br": 6500,
+     "br_line": 3,
+     "fandom_raw": null
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": null
+    }
+   }
+  },
+  {
+   "monster": "horrible_dream",
+   "br_title": "Horrible Dream",
+   "page_id": 45293,
+   "revision_id": 399576,
+   "revision_timestamp": "2023-07-21T01:47:52Z",
+   "content_sha256": "06ee6d025328d5eb46ce6fdc73452b085da567ac366eecb0391b292b0951cb84",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3800",
+     "br": 3800,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "nightmare_tendril",
+   "br_title": "Nightmare Tendril",
+   "page_id": 45106,
+   "revision_id": 399934,
+   "revision_timestamp": "2023-07-21T01:51:37Z",
+   "content_sha256": "3af798d97a3cb82cfa3c0fde7972017fe5b42093c689d4c1fccbf2597242ff17",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "8000",
+     "br": 8000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "nightmarish_dream",
+   "br_title": "Nightmarish Dream",
+   "page_id": 45292,
+   "revision_id": 399936,
+   "revision_timestamp": "2023-07-21T01:51:38Z",
+   "content_sha256": "56c45932dfeed36defa2545e405417cb11e15d4249737bb7bb3a7a6c3033d1e2",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3800",
+     "br": 3800,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "plant_attendant",
+   "br_title": "Plant Attendant",
+   "page_id": 45100,
+   "revision_id": 400053,
+   "revision_timestamp": "2023-07-21T01:52:50Z",
+   "content_sha256": "ece1885032b162c38283e1e4726e0de4938c0804b9bfce3d3bcce07e76af7199",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3900",
+     "br": 3900,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "unpleasant_dream",
+   "br_title": "Unpleasant Dream",
+   "page_id": 45291,
+   "revision_id": 400540,
+   "revision_timestamp": "2023-07-21T01:57:38Z",
+   "content_sha256": "121ab0214d27bec6bcb7f4a27e904c7fa4d8f6c9e4c034a7a2cc16ac4c981340",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "7600",
+     "br": 7600,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dragon_essence",
+   "br_title": "Dragon Essence",
+   "page_id": 40144,
+   "revision_id": 399226,
+   "revision_timestamp": "2023-07-21T01:44:15Z",
+   "content_sha256": "477125a20ffb2f197fca0dc55a62cbd83e2412d137e87bc37ca309a1a00d093f",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dragon_wrath",
+   "br_title": "Dragon Wrath",
+   "page_id": 40878,
+   "revision_id": 399232,
+   "revision_timestamp": "2023-07-21T01:44:19Z",
+   "content_sha256": "58db7689a049729c27ba9d3e0cb1ecea12438180a4537d139588a9deb2ded63a",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "7800",
+     "br": 7800,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "preceptor_lazare",
+   "br_title": "Preceptor Lazare",
+   "page_id": 44177,
+   "revision_id": 400065,
+   "revision_timestamp": "2023-07-21T01:52:57Z",
+   "content_sha256": "93b5ac83611e15878ad226aa7e5b2b145da250c6c4d5fb6abe6cba87dd3c7810",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "15000",
+     "br": 15000,
+     "br_line": 3,
+     "fandom_raw": "16000?"
+    }
+   }
+  },
+  {
+   "monster": "the_scourge_of_oblivion",
+   "br_title": "The Scourge of Oblivion",
+   "page_id": 45775,
+   "revision_id": 442096,
+   "revision_timestamp": "2026-08-04T17:59:12Z",
+   "content_sha256": "2f3463e94d9584d0ab4ad7ed76c525d80fda7a16f38d5afd86fbc9e0f6a098fe",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "650000",
+     "br": 650000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "brother_chill",
+   "br_title": "Brother Chill",
+   "page_id": 46021,
+   "revision_id": 398999,
+   "revision_timestamp": "2023-07-21T01:41:54Z",
+   "content_sha256": "0059cc820865f56e10c95b34488e2f34a6661f15a824a9c195be6d604e220fa3",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "190000",
+     "br": 190000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "3500",
+     "br": 3500,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "brother_freeze",
+   "br_title": "Brother Freeze",
+   "page_id": 46023,
+   "revision_id": 399000,
+   "revision_timestamp": "2023-07-21T01:41:55Z",
+   "content_sha256": "eb9fe6d20876c3ac8f5dc4519da25e85da44fa7442dd5de8cb450d3489573e90",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "190000",
+     "br": 190000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "3500",
+     "br": 3500,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "concentrated_death",
+   "br_title": "Concentrated Death",
+   "page_id": 44221,
+   "revision_id": 399070,
+   "revision_timestamp": "2023-07-21T01:42:38Z",
+   "content_sha256": "489976332b6b1328ac920520901b4fc2a9213b525ead6b9759e58c7f2a31ad86",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "2000",
+     "br": 2000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "demon_blood",
+   "br_title": "Demon Blood",
+   "page_id": 44531,
+   "revision_id": 399184,
+   "revision_timestamp": "2023-07-21T01:43:49Z",
+   "content_sha256": "fa08b74956bec3876a6c211b8b543b1c21064b132b4b20559efc52c056ae2982",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3000",
+     "br": 3000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "demon_slave",
+   "br_title": "Demon Slave",
+   "page_id": 44309,
+   "revision_id": 399188,
+   "revision_timestamp": "2023-07-21T01:43:52Z",
+   "content_sha256": "4299586703669600a122b7c3e3d7670141d817932bcdd355b501027d6c8a58db",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "8000",
+     "br": 8000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "imp_intruder",
+   "br_title": "Imp Intruder",
+   "page_id": 46286,
+   "revision_id": 399606,
+   "revision_timestamp": "2023-07-21T01:48:10Z",
+   "content_sha256": "a2f59b26f539acbf8a1debb4e8f19583e41589c9bf7cf1e883080046e81d33c5",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3000",
+     "br": 3000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "invading_demon",
+   "br_title": "Invading Demon",
+   "page_id": 46025,
+   "revision_id": 399626,
+   "revision_timestamp": "2023-07-21T01:48:23Z",
+   "content_sha256": "8ba8f9e96d67a05fbb846afbb654f4b8d2b81e9ed267a0361b956612145d9af2",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "8000",
+     "br": 8000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "ravenous_beyondling",
+   "br_title": "Ravenous Beyondling",
+   "page_id": 44307,
+   "revision_id": 400101,
+   "revision_timestamp": "2023-07-21T01:53:19Z",
+   "content_sha256": "ac5097eb6586e26483d3457adbc52b37e9f64aabeafad1c3e5942047d7744a9e",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "8000",
+     "br": 8000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "rift_breacher",
+   "br_title": "Rift Breacher",
+   "page_id": 44308,
+   "revision_id": 400133,
+   "revision_timestamp": "2023-07-21T01:53:37Z",
+   "content_sha256": "6d278625b9be3bd6c0ad6f5bd0caf21aae538addb77a1d0055a4c5836341e571",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "16500",
+     "br": 16500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "rift_minion",
+   "br_title": "Rift Minion",
+   "page_id": 44305,
+   "revision_id": 400138,
+   "revision_timestamp": "2023-07-21T01:53:40Z",
+   "content_sha256": "b407753ca91c32ec012ba1a232259d1e56f649c39006cd8045a2cb8d33ad6b26",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "3000",
+     "br": 3000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "rift_spawn",
+   "br_title": "Rift Spawn",
+   "page_id": 46285,
+   "revision_id": 400141,
+   "revision_timestamp": "2023-07-21T01:53:41Z",
+   "content_sha256": "5727eed02845dfe96c37c5497568d8eb7451897fcf59b30afa31c33aa040b98f",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "16500",
+     "br": 16500,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_blazing_rose",
+   "br_title": "The Blazing Rose",
+   "page_id": 44059,
+   "revision_id": 400374,
+   "revision_timestamp": "2023-07-21T01:56:01Z",
+   "content_sha256": "cd1d1fe36e071fc0264ea08aacedaa6c6574609006ebe64ada923b892256a266",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "18000",
+     "br": 18000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_devourer_of_secrets",
+   "br_title": "The Devourer of Secrets",
+   "page_id": 46302,
+   "revision_id": 400390,
+   "revision_timestamp": "2023-07-21T01:56:10Z",
+   "content_sha256": "733a560e284de96d1ab3af4ad2bb1d4af25601bbc71fc9fab69d7e011b139827",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "290000",
+     "br": 290000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "7000",
+     "br": 7000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_scion_of_havoc",
+   "br_title": "The Scion of Havoc",
+   "page_id": 46287,
+   "revision_id": 400448,
+   "revision_timestamp": "2023-07-21T01:56:45Z",
+   "content_sha256": "d82d87dd9f748d7fb37450b27d8ee9aeb98e2d1fcf9a47f3ccef08bdfe2f8acc",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "290000",
+     "br": 290000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "7000",
+     "br": 7000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "the_spellstealer",
+   "br_title": "The Spellstealer",
+   "page_id": 44304,
+   "revision_id": 400457,
+   "revision_timestamp": "2023-07-21T01:56:50Z",
+   "content_sha256": "3c536261472d44107eda654d2787955b45b28eaa43f5b6ba5bf6c9b48922b72b",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "280000",
+     "br": 280000,
+     "br_line": 3,
+     "fandom_raw": "?"
+    },
+    "experience": {
+     "br_raw": "7000",
+     "br": 7000,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "yalahari_despoiler",
+   "br_title": "Yalahari Despoiler",
+   "page_id": 44306,
+   "revision_id": 400662,
+   "revision_timestamp": "2023-07-21T01:58:52Z",
+   "content_sha256": "c5e4a69c8c2fbeb6e394e20d8fd56a2d27e1fe96ec0bb58ffbaee479c8b01919",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "max_health": {
+     "br_raw": "8150",
+     "br": 8150,
+     "br_line": 3,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "spawn_of_the_welter",
+   "br_title": "Spawn of the Welter",
+   "page_id": 31056,
+   "revision_id": 400271,
+   "revision_timestamp": "2023-07-21T01:55:00Z",
+   "content_sha256": "3a297c6a3587200be41e3243874d824251bac3ac5d866a61ab10113575d54b63",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  },
+  {
+   "monster": "dreadmaw",
+   "br_title": "Dreadmaw",
+   "page_id": 5589,
+   "revision_id": 399246,
+   "revision_timestamp": "2023-07-21T01:44:27Z",
+   "content_sha256": "9c0654d95bab28c6338396e0d784e5b3ad7ba0350dd300ed5e1b112dcac08016",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "2700",
+     "br": 2700,
+     "br_line": 4,
+     "fandom_raw": "1500?"
+    }
+   }
+  },
+  {
+   "monster": "burrowing_beetle",
+   "br_title": "Burrowing Beetle",
+   "page_id": 43021,
+   "revision_id": 399009,
+   "revision_timestamp": "2023-07-21T01:42:00Z",
+   "content_sha256": "cf42333eda1708136d31f106fe0b56f6661110b2eb4fb851736720869d5d20e5",
+   "fandom_status": "COMPARED",
+   "fields": {
+    "experience": {
+     "br_raw": "0",
+     "br": 0,
+     "br_line": 4,
+     "fandom_raw": "?"
+    }
+   }
+  }
+ ]
+}

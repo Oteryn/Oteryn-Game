@@ -7,7 +7,7 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | File | Purpose |
 |---|---|
 | `lua_tables.py` | Reads Lua table constructors (and their comments) without a Lua interpreter. |
-| `ots_doors.py` | Transcribes the quest, key and level doors of both servers (`door_quest.lua`, `door_key.lua`, `door_level.lua`), joined by map position, into gates linked to the chest claims and keys. |
+| `ots_doors.py` | Transcribes the quest, key and level doors of both servers (`door_quest.lua`, `door_key.lua`, `door_level.lua`), joined by map position, into gates linked to the chest claims and keys, plus the `QuestDoorUnique` doors each opened by their own dedicated script (the Katana Quest lever door). |
 | `ots_questlog.py` | Transcribes the quest logs of both servers into storyline quests with staged missions (D34) and their transitions (D35), joined by quest and mission name; writes the whole quest catalogue and the progress tracks with per-server transition sources. |
 | `lua_writers.py` | Finds every storage write in the Lua sources and reads it as a candidate transition (D35): owner, callback, effect, `from` stage through its if-block, script registrations. |
 | `lua_blocks.py` | Splits a Lua callback body into if/elseif/else branches, loops and statements (early `return` makes the rest an implicit `else`). |
@@ -16,7 +16,10 @@ these files, and every source-derived output is `OTS_HYPOTHESIS_ONLY`.
 | `quest_content.schema.json` | JSON Schema of reward claims, door gates, reward-only and storyline quests. |
 | `conflict_decisions.json` | D25 decisions for every Canary/CrystalServer conflict of the chest, door, quest-log and interaction transcriptions: chosen server, basis, the difference in our own words and the wiki revision when it decides; the converters apply it and fail on a stale decision. |
 | `track_owners.json` | Owning quest of the progress tracks quest scripts write outside missions, where no mission-track prefix or script directory names it; the quest-log converter fails on a missing or stale record. |
+| `script_quests.json` | Wiki quests confidently matched to a script directory and/or the `wiki_quest` of an auxiliary progress track, added to the catalogue as `kind: script_only` (a quest the servers implement in scripts with no quest-log entry); each entry gives its basis. |
 | `interaction.schema.json` | JSON Schema of interaction definitions (D36). |
+| `ots_map_check.py` | Checks chest, door and interaction positions against Canary's `otservbr.otbm` and CrystalServer's `world.otbm` (not committed; sha256 pinned), reading Canary's startup id tables; writes `samples/map-check/report.json`. |
+| `ots_readiness.py` | Per quest, the engine features it needs and its data gaps, and the unlock order; reads only the committed samples. |
 | `validate_quest_content.py` | Schema plus semantic checks: unique keys and positions, non-empty rewards, text on a handed-out item, claim/quest links in both directions, gate conditions against the claims (progress marker, key source), one identity per quest, mission ranges and stages against the progress tracks, catalog and manifest coverage; for interactions: anchors, blocked reasons, named transitions against the missions, undeclared progress tracks, manifest status. |
 | `verify_quest_schema.py` | Focused positive/negative cases on synthetic fixtures (`--verbose` prints each case's first error). |
 | `samples/quest-coverage-2026-09-27.json` | The 373 wiki quests (facts only) with their status in each server. |
@@ -32,6 +35,8 @@ python ots_chests.py --canary <opentibiabr/canary at 47dfd51f> --crystal <zimbad
 python ots_doors.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_questlog.py --canary <canary checkout> --crystal <crystalserver checkout>
 python ots_interactions.py --canary <canary checkout> --crystal <crystalserver checkout>
+python ots_readiness.py
+python ots_map_check.py <otservbr.otbm> --crystalserver <decompressed world.otbm> --canary <canary checkout>
 python validate_quest_content.py samples/chests/claims.json samples/questlog/quests.json \
   --catalog samples/chests/catalog.json --manifest samples/chests/manifest.json \
   --gates samples/doors/gates.json --gates-manifest samples/doors/manifest.json \
