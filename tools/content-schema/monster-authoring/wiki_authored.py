@@ -144,16 +144,21 @@ FIELDS = {
     'defenses.armor': ([], 'armor 40'),
     'defenses.defense': ([], 'defense 40'),
     'flags': ([('fandom.monster', 'pushable'), ('fandom.monster', 'pushobjects'), ('fandom.monster', 'illusionable'),
-               ('br.monster', 'ignoresfields')], 'pushing creatures, targeting distance and static attack chance are the '
-                                                  'Dark Knight template'),
+               ('fandom.monster', 'summon'), ('fandom.monster', 'convince'), ('fandom.monster', 'isboss'),
+               ('br.monster', 'ignoresfields')], 'attackable, hostile, pushing creatures, targeting distance and static attack '
+                                                  'chance are the Dark Knight template'),
     'flags.pass_through': ([], 'movement flags are the Dark Knight template'),
     'flags.canWalk/canTarget': ([], 'movement flags are the Dark Knight template'),
     'changeTarget': ([], 'target changes'),
     'strategiesTarget': ([], 'targeting strategy'),
     'light': ([], 'no light'),
-    'elements': ([('br.monster', 'physicalDmgMod'), ('br.monster', 'energyDmgMod'), ('br.monster', 'earthDmgMod')],
-                 'Fandom marks every element 100%? (uncertain); TibiaWiki BR gives 100% for each'),
-    'immunities': ([('fandom.monster', 'paraimmune'), ('fandom.monster', 'senseinvis'), ('br.monster', 'immunities')], None),
+    'elements': ([('br.monster', f'{element}DmgMod') for element in ('physical', 'earth', 'fire', 'death', 'energy', 'holy', 'ice')]
+                 + [('fandom.monster', 'hpDrainDmgMod'), ('fandom.monster', 'drownDmgMod'),
+                    ('br.monster', 'healDmgMod'), ('fandom.monster', 'healMod')],
+                 'Fandom marks every element 100%? (uncertain); life drain and drowning are only on Fandom, as 100%?, and mana '
+                 'drain is on neither wiki; all take the template 0% reduction, and healing 100% is the default with no modifier'),
+    'immunities': ([('fandom.monster', 'paraimmune'), ('fandom.monster', 'senseinvis'), ('br.monster', 'immunities')],
+                   'the outfit and bleed condition entries (not immune)'),
     'attacks[1]': ([('br.monster', 'hab_physical')], 'the 2000 ms interval'),
     'attacks[2]': ([('br.monster', 'hab_energy')], 'the 3x3 area is modelled as radius 1 around the caster; the interval, '
                                                   'chance and energy-area effect'),
@@ -318,6 +323,12 @@ def self_test():
     assert all(e['resolution'].startswith('NEEDS VERIFICATION') for e in manifest['entries'] if e['source_index'] == template)
     assert any(e['source_field'] == 'infobox.name' and e['destination'] == '/monster/creature/display_name'
                for e in manifest['entries'])
+    cited = {(manifest['sources'][e['source_index']]['title'], e['source_line']) for e in manifest['entries']
+             if e['source_index'] != template}
+    br = sample['sources']['br.monster']
+    for fact, value in br['facts'].items():
+        if fact.endswith('DmgMod'):
+            assert (br['title'], value['line']) in cited, f'BR {fact} is not cited'
     for name, source in sample['sources'].items():
         assert source['revision_timestamp'] <= wc.CUT_TIMESTAMP, name
     print('wiki_authored self-test: PASS')
