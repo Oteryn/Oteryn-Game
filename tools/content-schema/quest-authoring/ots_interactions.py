@@ -12,8 +12,12 @@ item used, a creature killed), read-only conditions, and children that each go t
 - `player:addItem` -> Item hand-out (DUR-03 item transaction); `addAchievement` -> Achievement grant;
 - `sendMagicEffect` (method or procedural `doSendMagicEffect`) and player messages -> presentation only (a message
   keeps its source line, never its text); debug/telemetry logging (`logger.*`) is dropped, never an effect;
-- teleports -> Movement, blocked until a movement owner contract exists (GAME-INTERACTION-01 §19.3);
-- map item create/remove/transform -> world object state, blocked until an owner contract exists.
+- teleports -> Movement, a D37 relocation to a named anchor or the previous tile (in-scope only; a
+  computed target that cannot yet name an anchor stays blocked, GAME-INTERACTION-01 §19.3);
+- map item transform/create/remove/action-id change -> a D38 world-object overlay operation
+  (TRANSFORM/CREATE/REMOVE/RETAG) at the interaction's own target, with `revert_after_ms` when the
+  source schedules a decay or timed revert of the same object; a call the converter cannot classify
+  by kind stays blocked.
 Storage aliases (`local X = Storage.…`) are expanded; a track resolves to the catalogue's track whichever server
 declared it (D33). A function literal passed to a call (`addEvent(function() … end)`) runs later and stays one
 unresolved entry. Conditions read quest stages, world state, whether the actor is a player, its level, its item
@@ -75,7 +79,15 @@ CONTAINER_FILL = re.compile(r'^(\w+):addItem\(\s*(\d+)\s*(?:,\s*(\d+)\s*)?\)$')
 CONTAINER_FILL_EX = re.compile(r'^(\w+):addItemEx\(\s*(\w+)\s*\)$')
 CREATE_ITEM = re.compile(r'^local\s+(\w+)\s*=\s*Game\.createItem\(\s*(\d+)\s*\)$')
 TEXTED_ITEM = re.compile(r'(\w+):setAttribute\(\s*ITEM_ATTRIBUTE_TEXT\b')
-BLOCKED_MOVEMENT, BLOCKED_WORLD_OBJECT = BLOCKED['Movement'], BLOCKED['WorldObject']
+BLOCKED_MOVEMENT = BLOCKED['Movement']
+# D38 world-object overlay operations: a call matched by one regex names its operation kind directly; a
+# bare `revertItem`/`decay`/`addEvent(Position.revertItem, ...)` schedules the same object's own later
+# transform (the proposal's "timed revert"), so it is transcribed as a TRANSFORM too (D38 §4, "revert_after
+# covers decay and revertItem/addEvent reverts").
+TRANSFORM_CALL = re.compile(r'[:.](transform|transformItem)\(')
+CREATE_CALL = re.compile(r'[:.]createItem\(\s*(\d+)?')
+RETAG_CALL = re.compile(r'[:.]setActionId\(')
+REVERT_CALL = re.compile(r'[:.](revertItem|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(')
 # a `Name = {` anywhere in the file, used to discover which names are worth asking lua_tables to parse.
 NAME_TABLE = re.compile(r'(\w+)\s*=\s*\{')
 # a literal `Storage.…` path, an array step kept only when its index is a literal digit (never a variable).
@@ -261,9 +273,19 @@ class Script:
                           **({'anchor': self.anchor(pos.groups())} if pos else {'anchor_source_line': number})})
         if 'teleportTo(' in code:
             pos = POSITION.search(raw)
-            found.append({'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED_MOVEMENT,
-                          **({'to_anchor': self.anchor(pos.groups())} if pos else
-                             {'to': 'previous_position'} if 'fromPosition' in raw else {'to_source_line': number})})
+            if pos:
+                # D37: a relocation to a named anchor, in the current scope (VSL-MOVE-01/ChannelRuntime);
+                # cross-Channel/Instance relocation (SCOPE_HANDOFF) has no source signal here and stays
+                # out of scope until that contract exists (proposal §3).
+                found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
+                              'target': {'kind': 'anchor', 'anchor': self.anchor(pos.groups())}})
+            elif 'fromPosition' in raw:
+                found.append({'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
+                              'target': {'kind': 'previous_position'}})
+            else:
+                # a computed target (a table lookup, an offset from another position): stays blocked
+                # until its definition can name an anchor, or a DUR-04 component proposes the target.
+                found.append({'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED_MOVEMENT, 'to_source_line': number})
         removal = re.search(r'([\w.]+(?:\([^()]*\))?):(remove|removeItem)\(([^()]*)\)', raw)
         consumed = removal and self.consumed(removal, number)
         if consumed:
@@ -271,8 +293,24 @@ class Script:
         elif removal and self.creature(removal.group(1)):
             self.unresolved.append({'line': number, 'reason': 'creature removal without an accepted owner'})
             return found
-        elif re.search(r'[:.](transform|transformItem|createItem|removeItem|revertItem|remove|setActionId|decay)\(|\b(add|stop)Event\(\s*Position\.revertItem|\bPosition\.revertItem\(', raw):
-            found.append({'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED_WORLD_OBJECT, 'source_line': number})
+        elif removal:
+            # D38: removing a non-value-bearing map object (a wall, a stone, a barrier), never a carried
+            # item (that stayed DUR-03 consumption above) or a creature (that stays unresolved, C4).
+            found.append({'owner': 'WorldObject', 'operation': 'REMOVE', 'value_source_line': number})
+        elif TRANSFORM_CALL.search(raw):
+            # from/to are rarely both literal in one call (the current id is usually implicit, read from
+            # the object the script already holds), so this stays with its source line rather than guessed.
+            found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number})
+        elif (m := CREATE_CALL.search(raw)):
+            found.append({'owner': 'WorldObject', 'operation': 'CREATE',
+                         **({'def': ref('Item', f'{self.namespace}:item/{m.group(1)}')} if m.group(1)
+                            else {'value_source_line': number})})
+        elif RETAG_CALL.search(raw):
+            # D38/coordinator decision 1c: a transition between two states of the same collision class;
+            # the action id itself is not modeled as data.
+            found.append({'owner': 'WorldObject', 'operation': 'RETAG', 'value_source_line': number})
+        elif REVERT_CALL.search(raw):
+            found.append({'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': number})
         if (m := CONTAINER_FILL.match(raw)) and m.group(1) in self.containers:
             # a plain item added to a reward container built earlier in this same callback (DUR-03): its contents
             self.containers[m.group(1)].setdefault('contents', []).append(
@@ -519,6 +557,15 @@ def build(repos, scripts, questlog_dir):
             'edges': dict(sorted(Counter(i['source']['edge'] for i in interactions).items())),
             'children_by_owner': dict(sorted(Counter(c['owner'] for c in children).items())),
             'blocked_children': dict(sorted(Counter(c['owner'] for c in children if c.get('status') == 'blocked').items())),
+            # D37: relocation children by their target kind (anchor or the previous tile); a computed
+            # target is not one of these, it stays counted under blocked_children.
+            'relocation_children': dict(sorted(Counter(
+                c['target']['kind'] for c in children if c.get('owner') == 'Movement' and c.get('request') == 'relocate').items())),
+            # D38: world-object overlay operations by kind, and how many of those carry a revert_after_ms
+            'overlay_operations': dict(sorted(Counter(
+                c['operation'] for c in children if c.get('owner') == 'WorldObject' and 'operation' in c).items())),
+            'overlay_operations_with_revert_after': sum(
+                1 for c in children if c.get('owner') == 'WorldObject' and 'revert_after_ms' in c),
             'quest_children_naming_a_transition': sum(1 for c in children if c.get('transition')),
             'unresolved_lines': sum(len(i['unresolved']) for i in interactions),
             'unresolved_conditions': sum(unresolved_conditions(i) for i in interactions),

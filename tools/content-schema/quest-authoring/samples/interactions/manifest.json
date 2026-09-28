@@ -23,7 +23,7 @@
       "WorldObject": 891
     },
     "blocked_children": {
-      "Movement": 800,
+      "Movement": 372,
       "WorldObject": 891
     },
     "quest_children_naming_a_transition": 215,
@@ -32,7 +32,13 @@
     "by_status": {
       "mapped": 256,
       "unresolved_semantics": 965
-    }
+    },
+    "relocation_children": {
+      "anchor": 219,
+      "previous_position": 209
+    },
+    "overlay_operations": {},
+    "overlay_operations_with_revert_after": 0
   },
   "undeclared_progress_tracks": [
     "canary:quest-progress/quest/u10_37/tinder_box_quest_chyllfroest/obedience"

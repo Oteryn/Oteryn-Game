@@ -263,9 +263,12 @@ def interaction_fixture():
              'transition': 'oteryn:quest/banshees#the_hidden_seal:movement_1'},
             {'owner': 'Ability', 'effect': 'summon', 'creature': ref('Creature', 'creature/banshee'), 'anchor': 'p1'},
             {'owner': 'Presentation', 'effect': 'magic_effect', 'authoritative': False}]},
-            {'when': lever, 'then': [{'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED['WorldObject'],
-                                      'source_line': 12}]}],
-            'otherwise': [{'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED['Movement'], 'to_anchor': 'p2'}]}],
+            {'when': lever, 'then': [{'owner': 'WorldObject', 'operation': 'TRANSFORM', 'value_source_line': 12},
+                                     {'owner': 'WorldObject', 'status': 'blocked', 'reason': BLOCKED['WorldObject'],
+                                      'source_line': 13}]}],
+            'otherwise': [{'owner': 'Movement', 'request': 'relocate', 'scope': 'in_scope',
+                           'target': {'kind': 'anchor', 'anchor': 'p2'}},
+                          {'owner': 'Movement', 'status': 'blocked', 'reason': BLOCKED['Movement'], 'to_source_line': 20}]}],
         'anchors': [{'key': 'p1', 'source_position': {'x': 1, 'y': 2, 'z': 7}},
                     {'key': 'p2', 'source_position': {'x': 3, 'y': 4, 'z': 7}}],
         'unresolved': []}
@@ -363,10 +366,70 @@ interaction_case('a message keeps its source line',
 interaction_case('edge is closed', lambda i, c, m: i['source'].update(edge='ON_WHISPER'))
 interaction_case('child owner is closed', lambda i, c, m: c[2].update(owner='Script'))
 interaction_case('no committed text in presentation', lambda i, c, m: c[2].update(text='The seal breaks.'))
-interaction_case('movement is blocked', lambda i, c, m: i['rules'][0]['otherwise'][0].update(status='ready'))
-interaction_case('blocked for the known reason', lambda i, c, m: i['rules'][0]['otherwise'][0].update(reason='later'))
-interaction_case('world object needs its source line', lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].pop('source_line'))
 interaction_case('presentation is not authoritative', lambda i, c, m: c[2].update(authoritative=True))
+
+# D37: relocation children (the scope runtime owns them; VSL-MOVE-01/proposal §3)
+interaction_case('relocation to the previous tile accepted',
+                 lambda i, c, m: (i['rules'][0]['otherwise'][0].update(target={'kind': 'previous_position'}),
+                                  i['anchors'].pop(1)) and None, expected=True)
+interaction_case('relocation is in scope only', lambda i, c, m: i['rules'][0]['otherwise'][0].update(scope='cross_scope'))
+interaction_case('relocation target kind is closed',
+                 lambda i, c, m: i['rules'][0]['otherwise'][0].update(target={'kind': 'scope_handoff'}))
+interaction_case('a computed relocation target has no anchor',
+                 lambda i, c, m: i['rules'][0]['otherwise'][1].update(to_anchor='p2'))
+interaction_case('movement is blocked', lambda i, c, m: i['rules'][0]['otherwise'][1].update(status='ready'))
+interaction_case('blocked for the known reason', lambda i, c, m: i['rules'][0]['otherwise'][1].update(reason='later'))
+interaction_case('a relocation child is not also blocked',
+                 lambda i, c, m: i['rules'][0]['otherwise'][0].update(status='blocked'))
+
+# D38: world-object overlay operations (TRANSFORM/CREATE/REMOVE/RETAG; revert_after_ms is authored only)
+def literal(i, **fields):
+    """Replace the fixture's TRANSFORM op's evidence-only value with a literal-resolved one."""
+    op = i['rules'][0]['branch'][1]['then'][0]
+    op.pop('value_source_line')
+    op.update(fields)
+
+
+interaction_case('a transform with a literal from/to accepted',
+                 lambda i, c, m: literal(i, **{'from': ref('Item', 'item/2772'), 'to': ref('Item', 'item/2773')},
+                                        revert_after_ms=5000),
+                 expected=True)
+interaction_case('a transform needs a resolved from/to or evidence line',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].pop('value_source_line'))
+interaction_case('a transform has one or the other, not both',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].update(
+                     **{'from': ref('Item', 'item/2772'), 'to': ref('Item', 'item/2773')}))
+interaction_case('a create names its def or keeps its source line',
+                 lambda i, c, m: literal(i, operation='CREATE', anchor='p1', **{'def': ref('Item', 'item/2793')}),
+                 expected=True)
+interaction_case('a create is not empty',
+                 lambda i, c, m: (i['rules'][0]['branch'][1]['then'][0].update(operation='CREATE'),
+                                  i['rules'][0]['branch'][1]['then'][0].pop('value_source_line')) and None)
+interaction_case('a remove keeps its source line',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].update(operation='REMOVE'), expected=True)
+interaction_case('a remove names its def or keeps its source line',
+                 lambda i, c, m: literal(i, operation='REMOVE', **{'def': ref('Item', 'item/2793')}), expected=True)
+interaction_case('a retag needs no action-id field',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].update(
+                     operation='RETAG', **{'from': ref('Item', 'item/2772')}))
+interaction_case('a retag needs its source line',
+                 lambda i, c, m: (i['rules'][0]['branch'][1]['then'][0].update(operation='RETAG'),
+                                  i['rules'][0]['branch'][1]['then'][0].pop('value_source_line')) and None)
+interaction_case('a retag by itself accepted',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].update(operation='RETAG'), expected=True)
+interaction_case('overlay operation kind is closed', lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].update(operation='ROTATE'))
+interaction_case('revert_after_ms is a positive duration',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['then'][0].update(revert_after_ms=0))
+interaction_case('an overlay anchor is used',
+                 lambda i, c, m: literal(i, operation='CREATE', anchor='p9', **{'def': ref('Item', 'item/2793')}))
+interaction_case('an overlay anchor exists',
+                 lambda i, c, m: literal(i, operation='CREATE', anchor='p1', **{'def': ref('Item', 'item/2793')}),
+                 expected=True)
+interaction_case('world object needs its source line', lambda i, c, m: i['rules'][0]['branch'][1]['then'][1].pop('source_line'))
+interaction_case('a world object child is not also typed',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['then'][1].update(operation='TRANSFORM'))
+interaction_case('world object blocked for the known reason',
+                 lambda i, c, m: i['rules'][0]['branch'][1]['then'][1].update(reason='later'))
 interaction_case('item condition names an item', lambda i, c, m: i['rules'][0]['branch'][1]['when']['object'].update(value=5))
 interaction_case('item condition item is an Item',
                  lambda i, c, m: i['rules'][0]['branch'][1]['when']['object'].update(item=ref('Creature', 'creature/x')))
