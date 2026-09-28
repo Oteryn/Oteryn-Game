@@ -1,7 +1,9 @@
 # Player Spell Cast Wire and Own-Actor Vitals — Contract Candidate V1 (spell plan P3b)
 
 - Date: 2026-09-27
-- DecisionStatus: `CANDIDATE` (needs owner acceptance; nothing here is accepted)
+- DecisionStatus: `ACCEPTED WITH CHANGES` for SPELL-D1 to SPELL-D6 (owner, 2026-09-28; architect
+  verdicts in #162 comment 5867161696; §8). Each delivery child still needs its own allocation and
+  independent review.
 - Scope: the first connected player spell cast. It covers the client cast intent, the cast
   result, observation of own-actor vitals, and where cast inputs come from on the server.
 - Authority: none. This document changes no protocol or resource registry, proto file, schema, DDL,
@@ -55,8 +57,10 @@ magic level exists at runtime. Visibility carries the own actor only (`MOVE-RL-1
 
 ## 3. Proposed wire (for the protocol owner)
 
-Proposed IDs are the next free ones on the current registry: command type 2, and state domain 2
-with delta type 1 and snapshot type 1. The owner may pick others.
+The protocol owner (VSL-COMBAT-01 child E) assigns the IDs. Command type 2 and state domain 2 are
+already taken by USE-WIRE-V1 (#1066). On `main@0f80b8c` the next free ones are command type 3, and
+state domain 3 with delta type 1 and snapshot type 1 (SPELL-D1, SPELL-D2). The names below use
+those numbers only as proposals.
 
 ```proto
 // Proposed file: docs/contracts/protocol-oteryn/v1/actor_spell_v1.proto (not created).
@@ -66,7 +70,7 @@ enum SpellTargetIntent {
   SPELL_TARGET_INTENT_ATTACK_TARGET = 2; // the actor's current attack target, as the server holds it
 }
 
-// ClientCommand.payload of the proposed command type 2 WORLD_ACTOR_SPELL_CAST_INTENT. At most 8 bytes.
+// ClientCommand.payload of the proposed command type 3 WORLD_ACTOR_SPELL_CAST_INTENT. At most 8 bytes.
 message WorldActorSpellCastIntentV1 {
   // 1-based index into the spell book of the loaded content generation. The index, not the words:
   // no free text in the first child, and the server looks the spell up in O(1).
@@ -89,12 +93,12 @@ enum SpellCastDisposition {
   SPELL_CAST_DISPOSITION_REJECTED = 10;
 }
 
-// CommandResult.payload of command type 2: outcome only. At most 4 bytes.
+// CommandResult.payload of command type 3: outcome only. At most 4 bytes.
 message WorldActorSpellCastResultV1 {
   SpellCastDisposition disposition = 1;
 }
 
-// StateDelta.payload of the proposed domain 2 ACTOR_VITALS, delta type 1, and
+// StateDelta.payload of the proposed domain 3 ACTOR_VITALS, delta type 1, and
 // StateDomainSnapshot.payload of snapshot type 1. Own actor only. At most 32 bytes.
 message ActorVitalsV1 {
   uint32 health = 1;
@@ -124,6 +128,10 @@ Why these choices:
 - **An index, not spoken words.** The reference servers cast through talk, which Oteryn has no
   command for. The spoken-word lookup stays on the server for a later talk command. A typed index
   keeps the payload bounded and parse-free.
+- **The index is revision-local (SPELL-D1).** It is resolved only against the admitted session's
+  content generation; a stale or unknown index is `REJECTED`. It is never persisted or logged as
+  spell identity: audit and logs use the spell's `ProductionKey`. Zero or unknown enum values and
+  unknown fields fail closed.
 - **No parameter field in V1.** Parameter spells (`exura sio "name"`, `utevo res "creature"`)
   need a player-name or creature-name resolver. A later `optional` field can add it.
 - **Cooldowns are not in V1 state.** `COOLING_DOWN` is enough to play. A cooldown state domain
@@ -136,7 +144,7 @@ Why these choices:
 | Vocation, level | GAME-CHAR (R7 P03 progression) | Read from the admitted Character; never from the client. |
 | Magic level, skills | GAME-CHAR progression | Needs the same Character-owned initialization/readiness gate as VSL-COMBAT-01 §24.1. Until it passes, casting stays gated. |
 | Learned spells, premium | GAME-CHAR and Platform entitlements | V1 serves spells without `learning_required`; premium follows PROD-ENTITLEMENTS-01. |
-| HP, mana, soul (current and max) | Current ChannelRuntime (runtime actor owner, as VSL-COMBAT-01 §6 for creatures) | Session-local and non-surviving, stated explicitly as the cooldown baseline allows. Durable vitals come later through DUR-02. Max values per vocation and level are **PRODUCT inputs**; candidate values come from Canary/Crystal `vocations.xml` with provenance. |
+| HP, mana, soul (current and max) | Current ChannelRuntime (runtime actor owner, as VSL-COMBAT-01 §6 for creatures) | Session-local and non-surviving, stated explicitly as the cooldown baseline allows (SPELL-D2). On admission the vitals start at the current maximum; a same-GameSession reconnect (FND-04B) keeps the live value, and a fresh admission restarts at the maximum. Durable vitals through DUR-02 are required before any external or production evaluation. Max values per vocation and level follow SPELL-D5: the official tibia.com library, then the wikis decide where they state the per-vocation base and per-level gains (S15, S3, S11, S13, S14), Canary/Crystal fill only what they do not state (S4), every value keeps its provenance, and a remaining conflict goes to the owner. |
 | Cooldowns | Current ChannelRuntime, keyed by (actor, spell) and (actor, group) | Session-local; `SemanticTimeMicros` from the owner clock. |
 | Damage and heal draw | SIM determinism: RNG stream bound to the occurrence | `uniform_draw` over the owner stream; retry never redraws. |
 
@@ -179,21 +187,28 @@ Same row format as `MOVE-RL-02` and `MOVE-RL-11`:
 | `SPELL-RL-01` | Spell cast inputs applied per actor per Channel owner work cycle | 1 | Further inputs stay outstanding FND-02 commands (`FND02-OUTSTANDING-COMMANDS`) |
 | `SPELL-RL-02` | Ability effects in one cast Effect Plan | 2 (the current `EffectPlan` bound) | `CAPACITY_EXCEEDED` before commit |
 | `SPELL-RL-03` | Actors in one `ACTOR_VITALS` snapshot or delta | 1 (own actor) | Not encodable |
-| `SPELL-RL-04` | Spells in one content-generation spell book | measured when proposed; the census has 252 | Admission fails closed |
+| `SPELL-RL-04` | Spells in one content-generation spell book | a finite measured value, set by the resource owner at registration with max+1 tests (the census has 252) (SPELL-D6) | Admission fails closed |
 
-## 8. Owner decisions requested
+## 8. Owner decisions (2026-09-28)
 
-1. **D1.** Accept a typed spell-index intent (command type 2) with the target-intent enum, instead
-   of a free-text talk command, for V1.
-2. **D2.** Accept the `ACTOR_VITALS` own-actor state domain, with runtime HP, mana and soul as
-   session-local and non-surviving in V1.
-3. **D3.** Accept the commit anchor in §5: costs and cooldowns are paid at PRIMARY COMMIT, and
-   nothing is paid on failure.
-4. **D4.** Accept self heal as the first connected spell child. Targeted, rune and conjure spells
-   wait on the blockers named in §6.
-5. **D5.** Select the product source for max HP, mana and soul per vocation and level. The
-   candidate is Canary/Crystal `vocations.xml` with provenance, as VSL-COMBAT-01 §24.5 requires.
-6. **D6.** Route the proposed `SPELL-RL-*` rows to the resource owner.
+The owner accepted the architect verdicts in #162 comment 5867161696. The candidate's D1-D6 are recorded as
+SPELL-D1 to SPELL-D6, because D1-D52 are already used in the owner-decision register.
+
+| # | Decision | Verdict and change |
+|---|---|---|
+| SPELL-D1 | Typed spell-index intent with the target-intent enum, not a free-text talk command, for V1. | **Accepted with change.** The protocol owner assigns the command type (type 2 is `USE_INTENT`; next free is 3). The index is revision-local, resolved against the admitted session's content generation, `REJECTED` when stale or unknown, and never persisted or logged as identity (`ProductionKey` is). Unknown enum values and fields fail closed. |
+| SPELL-D2 | `ACTOR_VITALS` own-actor state domain; runtime HP, mana and soul session-local and non-surviving in V1. | **Accepted with change.** The protocol owner assigns the domain (domain 2 is `WORLD_OBJECT_OVERLAY`; next free is 3). Vitals start at the maximum on admission; a same-GameSession reconnect keeps them; a fresh admission restarts at the maximum (declared V1 limitation). Durable vitals under DUR-02 are required before external or production evaluation. |
+| SPELL-D3 | Costs and cooldowns paid at PRIMARY COMMIT in the same owner mutation as the Effect Plan; nothing paid on failure (§5). | **Accepted.** A retry with the same FND-02 CommandId returns the original result with no second payment. |
+| SPELL-D4 | Self heal is the first connected spell child (§6). | **Accepted.** Composition (§9 step 2) stays behind the Character progression initialization/readiness gate (VSL-COMBAT-01 §24.1); registries and codecs (§9 step 1) do not. |
+| SPELL-D5 | Product source for max HP, mana and soul per vocation and level. | **Accepted with change.** The same source rule as spells: the official tibia.com library, then the wikis decide where they state the values (S15, S3, S11, S13, S14); Canary/Crystal `vocations.xml` fills only what they do not state (S4); provenance is kept; a conflict goes to the owner. These become the V1 product input for vitals only (VSL-COMBAT-01 §24.5). |
+| SPELL-D6 | Route the `SPELL-RL-*` rows to the resource owner (§7). | **Accepted with change.** RL-01 = 1, RL-02 = 2, RL-03 = 1. RL-04 must be a finite measured value at registration. The rows go into `RESOURCE_LIMITS_REGISTRY.json` under its single-writer lease, serialized with B4 (#513). |
+
+**Protocol IDs.** They are assigned by the protocol owner lane (VSL-COMBAT-01 §24.3 child E, Server
+Seam/protocol composition), which #162 allocates with the single-writer lease on
+`PROTOCOL_OTERYN_V1_REGISTRY.json` (precedent: USE-WIRE-V1 M1, #1066).
+
+**Independent review.** Required for step 1 (protocol and security; independent exact-byte fixtures)
+and step 2 (authority and state, with the high-risk authority/recovery qualification).
 
 ## 9. Delivery after acceptance (each child with its own allocation)
 
