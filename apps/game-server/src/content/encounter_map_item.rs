@@ -1077,8 +1077,10 @@ mod tests {
         assert_eq!(ingress.outstanding(), 0);
         assert_eq!(runtime.revision(), 0);
 
-        // It commits only through the scope-origin path the §7 driver uses.
+        // #1144 P1 4125881398: a scope operation without the driver's scheduling capability is
+        // refused too, before mutation.
         let (_, _, scope) = authority(10)?;
+        let generation = ScopeOwnershipGeneration::new(1).map_err(fixture)?;
         let forward = crate::world_runtime::ScopeLocalObjectOperation::new(
             runtime.placement_key().clone(),
             runtime.incarnation(),
@@ -1086,14 +1088,50 @@ mod tests {
             LocalObjectOperation::new(TransitionKey::new(FORWARD)?),
             runtime.revision(),
         );
-        let committed = runtime.apply_scope_operation(
+        assert!(matches!(
+            runtime.apply_scope_operation(
+                scope,
+                generation,
+                &forward,
+                &BTreeSet::new(),
+                None,
+                |_| Ok::<(), std::convert::Infallible>(()),
+            ),
+            Err(WorldRuntimeError::InvalidBinding(
+                "timed transition commits only through the revert scheduler"
+            ))
+        ));
+        assert_eq!(runtime.revision(), 0);
+
+        // It commits only through the §7 revert driver, which records its revert.
+        let clock = oteryn_foundation::ManualClock::new(oteryn_foundation::Moment::ZERO);
+        let mut driver = crate::world_object_revert::ScopeRevertDriver::new(
             scope,
-            ScopeOwnershipGeneration::new(1).map_err(fixture)?,
+            crate::world_object_revert::TestIssuer::new(generation),
+            std::sync::Arc::new(clock),
+            crate::world_object_revert::RevertDriverLimits::registered(),
+        );
+        let revisions =
+            crate::interaction::SemanticRevisionContext::new("content:r1", "ruleset:r1", "sim:v1")?;
+        let death = crate::interaction::ChildOccurrenceRef::for_root(
+            &crate::interaction::RootSourceOccurrenceRef::new("encounter:duke-death/1")?,
+            "encounter:map_item",
+            "encounter:anchor",
+            "transform",
+            None,
+            &revisions,
+        )?;
+        let committed = driver.apply_forward(
+            &mut runtime,
+            &death,
+            &revisions,
+            &action,
             &forward,
             &BTreeSet::new(),
-            |_| Ok::<(), std::convert::Infallible>(()),
         )?;
-        assert!(matches!(&committed, Ok(outcome) if outcome.disposition() == "COMMITTED"));
+        assert_eq!(committed.outcome.disposition(), "COMMITTED");
+        assert!(committed.scheduled.is_some());
+        assert_eq!(driver.record_count(), 1);
         assert_eq!(
             destination_of(&runtime),
             Some(anchor_placement_key(DUKE_KEY, "reward_destination")?.as_str())

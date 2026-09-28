@@ -39,9 +39,20 @@ use std::sync::Arc;
 use std::time::Duration;
 
 /// `WOBJ-RL-04`: lifecycle records one scope generation may hold, in any state.
-pub(crate) const MAX_REVERT_RECORDS_PER_SCOPE_GENERATION: usize = 4_096;
+pub(crate) const MAX_REVERT_RECORDS_PER_SCOPE_GENERATION: usize = 1_024;
 /// `WOBJ-RL-05`: due records one driver wake admits; the remainder waits for a later wake.
 pub(crate) const MAX_DUE_REVERTS_PER_WAKE: usize = 32;
+/// `WOBJ-RL-06`: nesting depth of a revert child occurrence (its forward is one less).
+pub(crate) const MAX_REVERT_OCCURRENCE_DEPTH: usize = 4;
+/// `WOBJ-RL-07`: bytes of an occurrence identity's `Debug` rendering, which contains every one
+/// of its semantic-key bytes at least once, so it bounds the total key bytes the record retains.
+pub(crate) const MAX_REVERT_OCCURRENCE_RENDERED_BYTES: usize = 4_096;
+
+/// Unforgeable proof that the caller is the §7 revert driver: its field is private to this
+/// module, so no other code can build one. `apply_scope_operation` refuses a timed transition
+/// without it, so a timed transition never commits without its lifecycle record.
+#[derive(Debug)]
+pub(crate) struct RevertSchedulingCapability(());
 
 const DISPOSITION_COMMITTED: &str = "COMMITTED";
 
@@ -65,6 +76,39 @@ pub(crate) fn revert_child_occurrence(
         None,
         revisions,
     )
+}
+
+/// Counts rendered bytes and stops, without allocating, once `limit` is exceeded.
+struct BoundedRendering {
+    limit: usize,
+    written: usize,
+}
+
+impl fmt::Write for BoundedRendering {
+    fn write_str(&mut self, text: &str) -> fmt::Result {
+        self.written = self.written.saturating_add(text.len());
+        if self.written > self.limit {
+            return Err(fmt::Error);
+        }
+        Ok(())
+    }
+}
+
+/// `WOBJ-RL-06`/`WOBJ-RL-07`: fail closed on an occurrence identity that is nested deeper than
+/// `max_depth` or whose rendering exceeds `MAX_REVERT_OCCURRENCE_RENDERED_BYTES`.
+fn check_occurrence_bounds(
+    occurrence: &ChildOccurrenceRef,
+    max_depth: usize,
+) -> Result<(), RevertError> {
+    if occurrence.ancestry_depth() > max_depth {
+        return Err(RevertError::OccurrenceTooDeep);
+    }
+    let mut rendering = BoundedRendering {
+        limit: MAX_REVERT_OCCURRENCE_RENDERED_BYTES,
+        written: 0,
+    };
+    fmt::write(&mut rendering, format_args!("{occurrence:?}"))
+        .map_err(|_| RevertError::OccurrenceTooLarge)
 }
 
 /// §7's complete `PENDING` field list, captured once from the forward operation's own commit.
@@ -158,6 +202,10 @@ pub(crate) enum RevertError {
     CapacityExceeded,
     /// The forward occurrence already scheduled this revert; the forward committed nothing.
     DuplicateOccurrence,
+    /// `WOBJ-RL-06`: the forward or revert occurrence is nested too deep; nothing committed.
+    OccurrenceTooDeep,
+    /// `WOBJ-RL-07`: the forward or revert occurrence is too large; nothing committed.
+    OccurrenceTooLarge,
     UnknownOccurrence,
     InvalidLimits(&'static str),
     /// Ordinal space exhausted or another fatal step error: no work until a new generation.
@@ -173,6 +221,8 @@ impl Display for RevertError {
         match self {
             Self::CapacityExceeded => formatter.write_str("CAPACITY_EXCEEDED: revert records"),
             Self::DuplicateOccurrence => formatter.write_str("revert occurrence already scheduled"),
+            Self::OccurrenceTooDeep => formatter.write_str("revert occurrence exceeds WOBJ-RL-06"),
+            Self::OccurrenceTooLarge => formatter.write_str("revert occurrence exceeds WOBJ-RL-07"),
             Self::UnknownOccurrence => formatter.write_str("unknown revert occurrence"),
             Self::InvalidLimits(reason) => write!(formatter, "invalid revert limits: {reason}"),
             Self::ScopeTerminal => formatter.write_str("revert driver is scope-terminal"),
@@ -267,6 +317,7 @@ pub(crate) struct ScopeRevertDriver<I> {
     records: BTreeMap<ChildOccurrenceRef, RevertLifecycle>,
     due: BTreeSet<DueKey>,
     scope_terminal: bool,
+    capability: RevertSchedulingCapability,
 }
 
 impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
@@ -285,6 +336,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
             records: BTreeMap::new(),
             due: BTreeSet::new(),
             scope_terminal: false,
+            capability: RevertSchedulingCapability(()),
         }
     }
 
@@ -337,8 +389,6 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
         if self.scope_terminal {
             return Err(RevertError::ScopeTerminal);
         }
-        let generation = self.issuer.generation();
-        let scheduling_ordinal = self.accept(generation)?;
         let transition = operation.transition_key();
         let placement = runtime.placement_key().clone();
         let timed = match runtime.revert_after_ms(transition, action) {
@@ -351,20 +401,26 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
                         .ok_or(RevertError::Runtime(WorldRuntimeError::InvalidBinding(
                             "timed transition has no bound inverse",
                         )))?;
+                // Bounded before anything is minted or committed (WOBJ-RL-06/07).
+                check_occurrence_bounds(occurrence, MAX_REVERT_OCCURRENCE_DEPTH - 1)?;
                 let id =
                     revert_child_occurrence(occurrence, action, &placement, &inverse, revisions)
                         .map_err(RevertError::Interaction)?;
+                check_occurrence_bounds(&id, MAX_REVERT_OCCURRENCE_DEPTH)?;
                 Some((ms, inverse, id))
             }
         };
+        let generation = self.issuer.generation();
+        let scheduling_ordinal = self.accept(generation)?;
         let incarnation = runtime.incarnation();
         let content_generation = runtime.content_generation().clone();
         let scope = self.scope;
-        let (records, due, clock, capacity) = (
+        let (records, due, clock, capacity, capability) = (
             &mut self.records,
             &mut self.due,
             &self.clock,
             self.limits.record_capacity,
+            &self.capability,
         );
         let mut scheduled = None;
         let staged = runtime.apply_scope_operation(
@@ -372,6 +428,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
             generation,
             operation,
             occupied_cells,
+            Some(capability),
             |publish| {
                 let Some((ms, inverse, id)) = timed else {
                     return Ok(());
@@ -508,6 +565,7 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
             pending.scope_generation,
             &operation,
             occupied_cells,
+            Some(&self.capability),
             |_| Ok::<(), Infallible>(()),
         );
         match result {
@@ -548,6 +606,48 @@ impl<I: ScopeOrdinalIssuer> ScopeRevertDriver<I> {
     #[cfg(test)]
     fn issuer_mut_for_test(&mut self) -> &mut I {
         &mut self.issuer
+    }
+}
+
+/// Test-only stand-in for the scope's one `ScopeRuntimeFence` (constructible only inside
+/// Foundation): the same `accept_input` contract, plus a count of minted ordinals.
+#[cfg(test)]
+#[derive(Debug)]
+pub(crate) struct TestIssuer {
+    generation: ScopeOwnershipGeneration,
+    next: Option<u64>,
+    minted: u64,
+}
+
+#[cfg(test)]
+impl TestIssuer {
+    #[must_use]
+    pub(crate) const fn new(generation: ScopeOwnershipGeneration) -> Self {
+        Self {
+            generation,
+            next: Some(1),
+            minted: 0,
+        }
+    }
+}
+
+#[cfg(test)]
+impl ScopeOrdinalIssuer for TestIssuer {
+    fn generation(&self) -> ScopeOwnershipGeneration {
+        self.generation
+    }
+
+    fn accept_input(
+        &mut self,
+        generation: ScopeOwnershipGeneration,
+    ) -> Result<RuntimeExecutionOrdinal, GenerationError> {
+        if generation != self.generation {
+            return Err(GenerationError::StaleGeneration);
+        }
+        let raw = self.next.ok_or(GenerationError::Exhausted)?;
+        self.next = raw.checked_add(1);
+        self.minted += 1;
+        RuntimeExecutionOrdinal::new(raw)
     }
 }
 
@@ -933,45 +1033,13 @@ mod tests {
         Ok(runtimes)
     }
 
-    /// Test-only stand-in for the scope's one `ScopeRuntimeFence` (constructible only inside
-    /// Foundation): the same `accept_input` contract, plus a count of minted ordinals.
-    #[derive(Debug)]
-    struct TestIssuer {
-        generation: ScopeOwnershipGeneration,
-        next: Option<u64>,
-        minted: u64,
-    }
-
-    impl ScopeOrdinalIssuer for TestIssuer {
-        fn generation(&self) -> ScopeOwnershipGeneration {
-            self.generation
-        }
-
-        fn accept_input(
-            &mut self,
-            generation: ScopeOwnershipGeneration,
-        ) -> Result<RuntimeExecutionOrdinal, GenerationError> {
-            if generation != self.generation {
-                return Err(GenerationError::StaleGeneration);
-            }
-            let raw = self.next.ok_or(GenerationError::Exhausted)?;
-            self.next = raw.checked_add(1);
-            self.minted += 1;
-            RuntimeExecutionOrdinal::new(raw)
-        }
-    }
-
     fn driver(
         clock: &ManualClock,
         limits: RevertDriverLimits,
     ) -> TestResult<ScopeRevertDriver<TestIssuer>> {
         Ok(ScopeRevertDriver::new(
             scope()?,
-            TestIssuer {
-                generation: generation(1)?,
-                next: Some(1),
-                minted: 0,
-            },
+            TestIssuer::new(generation(1)?),
             Arc::new(clock.clone()),
             limits,
         ))
@@ -1045,6 +1113,7 @@ mod tests {
             generation(1)?,
             &operation,
             &BTreeSet::new(),
+            None,
             |_| Ok::<(), Infallible>(()),
         )?;
         let outcome = match staged {
@@ -1504,6 +1573,139 @@ mod tests {
             "COMMITTED"
         );
         assert_eq!(state_of(&runtimes, WALL_B)?, at(WALL_CRACKED, 1));
+        Ok(())
+    }
+
+    #[test]
+    fn a_scope_operation_without_the_scheduling_capability_refuses_a_timed_transition() -> TestResult
+    {
+        // #1144 P1 4125881398: only the driver holds the capability, so no other crate caller
+        // can commit a timed transition without its lifecycle record.
+        let content = wall_content(&[(CRACK, WALL_ACTION, 1_000)], &[(WALL_A, 100)], "lock:r1")?;
+        let mut runtimes = walls(&content, &[WALL_A])?;
+        let wall = PlacementKey::new(WALL_A)?;
+        let runtime = runtimes.get_mut(&wall).ok_or(fixture("runtime"))?;
+        let refused = apply_plain(runtime, CRACK)
+            .err()
+            .and_then(|error| error.downcast::<WorldRuntimeError>().ok());
+        assert!(matches!(
+            refused.as_deref(),
+            Some(WorldRuntimeError::InvalidBinding(
+                "timed transition commits only through the revert scheduler"
+            ))
+        ));
+        assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 0));
+
+        // The driver commits it (with its record); an untimed operation needs no capability.
+        let clock = ManualClock::new(Moment::ZERO);
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        scheduled(forward(
+            &mut driver,
+            &mut runtimes,
+            WALL_A,
+            "oteryn:occurrence/wall/1",
+            WALL_ACTION,
+            CRACK,
+        )?)?;
+        let runtime = runtimes.get_mut(&wall).ok_or(fixture("runtime"))?;
+        assert_eq!(apply_plain(runtime, MEND)?, "COMMITTED");
+        assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 2));
+        Ok(())
+    }
+
+    fn nested_forward(depth: usize) -> Result<ChildOccurrenceRef, InteractionError> {
+        let mut occurrence = forward_child("oteryn:occurrence/nested", None)?;
+        for _ in 1..depth {
+            occurrence = ChildOccurrenceRef::for_child(
+                &occurrence,
+                "encounter:cascade",
+                "encounter:anchor",
+                "transform",
+                None,
+                &revisions()?,
+            )?;
+        }
+        Ok(occurrence)
+    }
+
+    fn forward_with(
+        driver: &mut ScopeRevertDriver<TestIssuer>,
+        runtimes: &mut BTreeMap<PlacementKey, LocalObjectRuntime>,
+        occurrence: &ChildOccurrenceRef,
+        revisions: &SemanticRevisionContext,
+    ) -> TestResult<Result<ForwardOutcome, RevertError>> {
+        let runtime = runtimes
+            .get_mut(&PlacementKey::new(WALL_A)?)
+            .ok_or(fixture("runtime"))?;
+        let crack = operation(runtime, CRACK, runtime.revision())?;
+        Ok(driver.apply_forward(
+            runtime,
+            occurrence,
+            revisions,
+            &LoweredActionId::new(WALL_ACTION)?,
+            &crack,
+            &BTreeSet::new(),
+        ))
+    }
+
+    #[test]
+    fn over_deep_or_over_large_occurrences_are_refused_before_commit() -> TestResult {
+        // #1144 P2 4125881422: WOBJ-RL-06/07 bound what one record retains.
+        let content = wall_content(&[(CRACK, WALL_ACTION, 1_000)], &[(WALL_A, 100)], "lock:r1")?;
+        let clock = ManualClock::new(Moment::ZERO);
+        let long = format!(
+            "encounter:{}",
+            "x".repeat(MAX_REVERT_OCCURRENCE_RENDERED_BYTES)
+        );
+        let too_large_forward = ChildOccurrenceRef::for_root(
+            &RootSourceOccurrenceRef::new("oteryn:occurrence/large")?,
+            "encounter:map_item",
+            &long,
+            "transform",
+            None,
+            &revisions()?,
+        )?;
+        let too_large_revisions = SemanticRevisionContext::new(&long, "ruleset:r1", "sim:v1")?;
+        let cases = [
+            (
+                nested_forward(MAX_REVERT_OCCURRENCE_DEPTH)?,
+                revisions()?,
+                "OccurrenceTooDeep",
+            ),
+            (too_large_forward, revisions()?, "OccurrenceTooLarge"),
+            (
+                forward_child("oteryn:occurrence/wall/1", None)?,
+                too_large_revisions,
+                "OccurrenceTooLarge",
+            ),
+        ];
+        for (occurrence, context, expected) in cases {
+            let mut runtimes = walls(&content, &[WALL_A])?;
+            let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+            let refused = forward_with(&mut driver, &mut runtimes, &occurrence, &context)?;
+            assert!(
+                matches!(
+                    (&refused, expected),
+                    (Err(RevertError::OccurrenceTooDeep), "OccurrenceTooDeep")
+                        | (Err(RevertError::OccurrenceTooLarge), "OccurrenceTooLarge")
+                ),
+                "{expected}: {refused:?}"
+            );
+            // Nothing minted, committed or recorded.
+            assert_eq!(driver.issuer().minted, 0);
+            assert_eq!(driver.record_count(), 0);
+            assert_eq!(state_of(&runtimes, WALL_A)?, at(WALL_SEALED, 0));
+        }
+
+        // The deepest admitted forward (one below the revert bound) still schedules.
+        let mut runtimes = walls(&content, &[WALL_A])?;
+        let mut driver = driver(&clock, RevertDriverLimits::registered())?;
+        let deepest = nested_forward(MAX_REVERT_OCCURRENCE_DEPTH - 1)?;
+        let admitted = forward_with(&mut driver, &mut runtimes, &deepest, &revisions()?)??;
+        assert_eq!(
+            scheduled(admitted)?.ancestry_depth(),
+            MAX_REVERT_OCCURRENCE_DEPTH
+        );
         Ok(())
     }
 

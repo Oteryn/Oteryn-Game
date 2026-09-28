@@ -62,8 +62,9 @@ smallest runtime slice, and closes out task A:
   at that point. `wake` fires a bounded batch of due records in (deadline, scheduling ordinal,
   sequence) order through `apply_scope_operation` with the bound inverse. `present` follows §7's
   fixed order, so a duplicate presentation returns its `TERMINAL` outcome. Nothing is persisted.
-- `RESOURCE_LIMITS_REGISTRY.json`: `WOBJ-RL-04` (4,096 records per scope generation) and
-  `WOBJ-RL-05` (32 due records per wake).
+- `RESOURCE_LIMITS_REGISTRY.json`: `WOBJ-RL-04` (1,024 records per scope generation, lowered from
+  4,096 in round 3), `WOBJ-RL-05` (32 due records per wake), `WOBJ-RL-06` (revert occurrence depth
+  4) and `WOBJ-RL-07` (4,096 rendered bytes per occurrence identity).
 - §7 open decisions 1, 2, 5 and 6: the lane's resolutions are recorded at each entry.
 - Task A's record is archived with its terminal fields and carry-overs.
 
@@ -145,17 +146,27 @@ Deferred, with reasons:
   committed the timed forward through session `apply`, which P1 4125535249 now refuses. Under the
   #162 amendment it now asserts that refusal, commits the forward through `apply_scope_operation`,
   and keeps the attribute assertions by state; the timed entry is kept.
+- Round 3, P1 4125881398: `apply_scope_operation` refuses a timed transition, before mutation,
+  unless the caller presents a `RevertSchedulingCapability`. Its field is private to
+  `world_object_revert`, so only `ScopeRevertDriver` holds one; it passes it for `apply_forward`
+  and for inverse firing. Untimed scope operations need none. The duke test now commits the timed
+  forward through `ScopeRevertDriver::apply_forward` and asserts the capability-less refusal.
+- Round 3, P2 4125881422: `apply_forward` bounds the supplied forward occurrence (depth at most 3)
+  and the derived revert child (depth at most 4, `WOBJ-RL-06`), and both renderings at 4,096 bytes
+  (`WOBJ-RL-07`, measured without allocating). Violations fail closed before any ordinal, commit or
+  record, as `OccurrenceTooDeep` / `OccurrenceTooLarge`. `WOBJ-RL-04` drops to 1,024 so its stated
+  bound (at most 14 KiB per record, 14 MiB per scope generation) holds. `interaction/` is unchanged.
 
 ## Validation
 
 - `cargo +1.94.0 fmt --all --check`: pass.
 - `cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings`: pass.
 - Round 1 (`dbbe9e38`): full `oteryn-game-server` package tests pass.
-- Round 2: fmt, clippy `-D warnings`, the full `oteryn-game-server` package tests, the
+- Rounds 2 and 3: fmt, clippy `-D warnings`, the full `oteryn-game-server` package tests, the
   architecture check and both Python validators pass; `content/` diff empty.
 - `git diff origin/main -- content/`: empty.
 
 ## Context checkpoint
 
-last_progress: round 2 (Codex P1 4125535254, 4125535249) repaired and validated; pushed for CI and review
+last_progress: round 3 (Codex P1 4125881398, P2 4125881422) repaired and validated; pushed for CI and review
 jira: pending (no mapped Story resolved in this worker session)

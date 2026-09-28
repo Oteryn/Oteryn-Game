@@ -14,6 +14,7 @@ use crate::foundation::{
     NormalizedSemanticIntentIdentity, RetainedBindingIdentity, RuntimeScopeRefV1,
     ScopeOwnershipGeneration, TerminalSemanticOutcome,
 };
+use crate::world_object_revert::RevertSchedulingCapability;
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
@@ -1163,8 +1164,8 @@ impl LocalObjectRuntime {
     }
 
     /// #162 §7: whether this placement authors a `revert_after_ms` for `transition` under any
-    /// action. Such a transition commits only through `apply_scope_operation`, whose caller
-    /// schedules its revert; the session and USE paths never schedule, so they refuse it.
+    /// action. Such a transition commits only through `apply_scope_operation` with the revert
+    /// driver's capability; the session and USE paths never schedule, so they refuse it.
     fn carries_revert(&self, transition: &TransitionKey) -> bool {
         self.transition_revert_after_ms
             .keys()
@@ -1367,12 +1368,17 @@ impl LocalObjectRuntime {
     /// `stage_publish` runs only when `prepare` returned `Publish`, before `commit`; an error
     /// from it fails the whole operation with nothing committed (§7 Round 21: capacity is
     /// reserved only after `Publish`, in the same staged commit).
+    ///
+    /// A transition carrying `revert_after_ms` at this placement is refused, before any
+    /// mutation, unless `capability` is presented (#1144 review). Only the §7 revert driver can
+    /// construct one, so a timed transition never commits without its lifecycle record.
     pub(crate) fn apply_scope_operation<E>(
         &mut self,
         scope: RuntimeScopeRefV1,
         scope_generation: ScopeOwnershipGeneration,
         operation: &ScopeLocalObjectOperation,
         occupied_cells: &BTreeSet<LogicalCell>,
+        capability: Option<&RevertSchedulingCapability>,
         stage_publish: impl FnOnce(&ScopePublish<'_>) -> Result<(), E>,
     ) -> Result<Result<TerminalSemanticOutcome, E>, WorldRuntimeError> {
         if scope != self.scope {
@@ -1380,6 +1386,11 @@ impl LocalObjectRuntime {
         }
         if scope_generation != self.scope_generation {
             return Err(WorldRuntimeError::StaleScopeOwnershipGeneration);
+        }
+        if capability.is_none() && self.carries_revert(operation.transition_key()) {
+            return Err(WorldRuntimeError::InvalidBinding(
+                "timed transition commits only through the revert scheduler",
+            ));
         }
         let prepared = self.prepare(
             &operation.placement,
