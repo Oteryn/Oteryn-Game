@@ -3,7 +3,7 @@
     {
       "identity": {
         "key": "candidate:ability/spell/cure_poison",
-        "revision": "spell-p2-r11"
+        "revision": "spell-p2-r12"
       },
       "kind": "spell",
       "range_tiles": 0,
@@ -13,7 +13,7 @@
         {
           "family": "Effect",
           "key": "candidate:ability/spell/cure_poison/effect-dispel",
-          "revision": "spell-p2-r11"
+          "revision": "spell-p2-r12"
         }
       ]
     }
@@ -22,7 +22,7 @@
     {
       "identity": {
         "key": "candidate:ability/spell/cure_poison/effect-dispel",
-        "revision": "spell-p2-r11"
+        "revision": "spell-p2-r12"
       },
       "operation": "remove_condition",
       "removed_condition": "poison"
