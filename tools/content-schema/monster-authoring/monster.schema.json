@@ -1935,6 +1935,11 @@
           "required": [
             "encounter"
           ],
+          "properties": {
+            "kind": {
+              "const": "spell"
+            }
+          },
           "not": {
             "anyOf": [
               {

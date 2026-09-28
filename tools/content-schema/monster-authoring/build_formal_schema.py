@@ -159,7 +159,7 @@ d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range
         'of this Encounter, which owns the fight state the script reads (summon counts, counters, arena tiles).'}},
     ('identity','kind','range_tiles','needs_target','needs_direction'),
     oneOf=[{'required':['effects'],**forbid('variants','encounter')},{'required':['variants'],**forbid('effects','area','chain','encounter')},
-           {'required':['encounter'],**forbid('effects','variants','area','chain')}],
+           {'required':['encounter'],'properties':{'kind':{'const':'spell'}},**forbid('effects','variants','area','chain')}],
     description='For area casts, center precedence is required target position, facing-adjacent position when needs_direction, then caster position. Native execution and no-area target selection require separate qualification.')
 d['initialTick']=obj({'mode':enum('automatic','fixed'),'amount':integer(1)},('mode',),allOf=[
     {'if':{'properties':{'mode':{'const':'fixed'}},'required':['mode']},'then':{'required':['amount']},'else':forbid('amount')}])
