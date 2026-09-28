@@ -2,7 +2,8 @@
 //! server (same pattern as `tools/dev-client`'s tests). No GPU, no window.
 
 use super::cli::{
-    GrantSource, LineCommand, events_for, parse_args, parse_character_id, parse_line,
+    GrantSource, LineCommand, events_for, grant_material, parse_args, parse_character_id,
+    parse_line,
 };
 use super::controller::LiveController;
 use super::input::LiveInput;
@@ -678,4 +679,12 @@ fn live_controller_joins_steps_and_opens_the_door_on_click() -> Result<(), BoxEr
             server.await??;
             Ok::<(), BoxError>(())
         })
+}
+
+#[test]
+fn grant_material_strips_trailing_line_endings_only() {
+    assert_eq!(grant_material(b"a.b.c\n".to_vec()), b"a.b.c".to_vec());
+    assert_eq!(grant_material(b"a.b.c\r\n".to_vec()), b"a.b.c".to_vec());
+    assert_eq!(grant_material(b"a.b.c".to_vec()), b"a.b.c".to_vec());
+    assert_eq!(grant_material(b" a.b.c ".to_vec()), b" a.b.c ".to_vec());
 }

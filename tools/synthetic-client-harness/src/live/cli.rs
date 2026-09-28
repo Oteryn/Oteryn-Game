@@ -227,6 +227,15 @@ pub fn events_for(
     }
 }
 
+/// The admission material as the server expects it: a compact JWS never ends in a line break, so
+/// the trailing `\n`/`\r\n` an editor or `echo` leaves in a grant file (or an env value) is removed.
+pub fn grant_material(mut raw: Vec<u8>) -> Vec<u8> {
+    while matches!(raw.last(), Some(b'\n' | b'\r')) {
+        raw.pop();
+    }
+    raw
+}
+
 /// Connects, then runs the terminal loop until `quit` or end of input.
 ///
 /// # Errors
@@ -235,11 +244,11 @@ pub fn events_for(
 pub fn run(args: &[String]) -> Result<(), Box<dyn Error>> {
     let parsed = parse_args(args, &|name| std::env::var(name).ok())?;
     let root = load_root_certificate(&parsed.ca_path)?;
-    let grant = match &parsed.grant {
+    let grant = grant_material(match &parsed.grant {
         GrantSource::File(path) => std::fs::read(path)
             .map_err(|error| format!("read grant {}: {error}", path.display()))?,
         GrantSource::Inline(text) => text.clone().into_bytes(),
-    };
+    });
     let character_id = parse_character_id(&parsed.character_id)?;
     let view = Viewport::configure(parsed.surface.0, parsed.surface.1)?;
     let input = LiveInput::new()?;
