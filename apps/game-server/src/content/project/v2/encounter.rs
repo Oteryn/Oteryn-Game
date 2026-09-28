@@ -980,14 +980,17 @@ impl Names<'_> {
     }
 }
 
-fn spawned_roles<'a>(actions: &'a [ProjectV2EncounterAction], roles: &mut BTreeSet<&'a str>) {
+fn spawned_roles<'a>(
+    actions: &'a [ProjectV2EncounterAction],
+    roles: &mut Vec<(&'a str, &'a ProjectV2DefinitionRef)>,
+) {
     for action in actions {
         match action {
             ProjectV2EncounterAction::Spawn {
-                role: Some(role), ..
-            } => {
-                roles.insert(role);
-            }
+                role: Some(role),
+                creature,
+                ..
+            } => roles.push((role, creature)),
             ProjectV2EncounterAction::OneOf { branches } => {
                 for branch in branches {
                     spawned_roles(&branch.actions, roles);
@@ -995,6 +998,27 @@ fn spawned_roles<'a>(actions: &'a [ProjectV2EncounterAction], roles: &mut BTreeS
             }
             _ => {}
         }
+    }
+}
+
+impl ProjectV2EncounterDetails {
+    /// The creatures a role can be: its participant creatures and every creature spawned into it.
+    pub(super) fn role_creatures(&self, role: &str) -> BTreeSet<&ProjectV2DefinitionRef> {
+        let mut spawned = Vec::new();
+        for rule in &self.rules {
+            spawned_roles(&rule.actions, &mut spawned);
+        }
+        self.participants
+            .iter()
+            .filter(|value| value.role == role)
+            .flat_map(|value| value.creatures.iter())
+            .chain(
+                spawned
+                    .into_iter()
+                    .filter(|(name, _)| *name == role)
+                    .map(|(_, creature)| creature),
+            )
+            .collect()
     }
 }
 
@@ -1102,9 +1126,11 @@ pub(super) fn validate_encounter_details(
         details.participants.iter().map(|value| value.role.as_str()),
         "v2 encounter roles are not unique",
     )?;
+    let mut spawned = Vec::new();
     for rule in &details.rules {
-        spawned_roles(&rule.actions, &mut roles);
+        spawned_roles(&rule.actions, &mut spawned);
     }
+    roles.extend(spawned.into_iter().map(|(role, _)| role));
     for role in &roles {
         name(role)?;
     }

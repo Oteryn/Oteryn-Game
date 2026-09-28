@@ -2195,6 +2195,20 @@ fn validate_v2_encounter_bindings(
             "v2 Creature encounters differ from the creatures their encounters cover",
         ));
     }
+    // An `ability_cast` rule can only fire when its role can be a creature that owns the ability.
+    let owned = profiles
+        .iter()
+        .filter_map(|profile| match &profile.data {
+            ProjectV2AuthoringProfileData::Creature(creature) => Some(
+                creature
+                    .abilities
+                    .iter()
+                    .map(move |ability| (&profile.target, ability)),
+            ),
+            _ => None,
+        })
+        .flatten()
+        .collect::<std::collections::BTreeSet<_>>();
     // D45: an encounter-backed Ability has its effect only through an `ability_cast` rule of its encounter.
     let mut cast = std::collections::BTreeSet::new();
     for profile in profiles {
@@ -2204,7 +2218,16 @@ fn validate_v2_encounter_bindings(
         }) = &profile.data
         {
             for rule in &details.rules {
-                if let ProjectV2EncounterTrigger::AbilityCast { ability, .. } = &rule.trigger {
+                if let ProjectV2EncounterTrigger::AbilityCast { role, ability } = &rule.trigger {
+                    if !details
+                        .role_creatures(role)
+                        .into_iter()
+                        .any(|creature| owned.contains(&(creature, ability)))
+                    {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 encounter ability_cast role has no creature that owns the ability",
+                        ));
+                    }
                     cast.insert((&profile.target, ability));
                 }
             }

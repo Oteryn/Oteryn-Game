@@ -207,6 +207,7 @@ fn profiles() -> Vec<ProjectV2AuthoringProfile> {
             target: reference(ProjectV2Family::Creature, BOSS),
             data: ProjectV2AuthoringProfileData::Creature(ProjectV2CreatureAuthoring {
                 health: Some(300_000),
+                abilities: vec![reference(ProjectV2Family::Ability, SUMMON)],
                 encounters: vec![reference(ProjectV2Family::Encounter, ENCOUNTER)],
                 ..ProjectV2CreatureAuthoring::default()
             }),
@@ -335,7 +336,7 @@ fn admitted_encounter_round_trips_and_stays_declarative() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 24] = [
+    let cases: [(&str, &str, Mutation); 25] = [
         (
             "an encounter-backed ability without its ability_cast rule",
             "v2 encounter-backed Ability has no ability_cast rule in its encounter",
@@ -343,6 +344,17 @@ fn each_broken_invariant_is_rejected() {
                 encounter_mut(draft).rules[0].trigger = ProjectV2EncounterTrigger::CreatureDied {
                     role: "the_hunger".into(),
                 };
+            },
+        ),
+        (
+            "an ability_cast rule on a role whose creatures do not own the ability",
+            "v2 encounter ability_cast role has no creature that owns the ability",
+            |draft| {
+                if let ProjectV2EncounterTrigger::AbilityCast { role, .. } =
+                    &mut encounter_mut(draft).rules[0].trigger
+                {
+                    *role = "greed".into();
+                }
             },
         ),
         (
