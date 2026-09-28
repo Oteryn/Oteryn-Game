@@ -4,10 +4,10 @@
 //! snapshot's state domains.
 //!
 //! Every wire codec used here is `oteryn-protocol-oteryn`'s own (`encode_client_bootstrap`,
-//! `decode_wire_envelope`/`decode_framed_envelope`, `decode_server_accepted`,
-//! `decode_snapshot_chunk`, and the `world_spatial`/`world_object` domain codecs): this crate
-//! holds no codec of its own, only the TLS transport and the glue that ties one admission to its
-//! join-snapshot decode.
+//! `decode_wire_envelope`/`decode_framed_envelope`, `WireEnvelopeView::validate`,
+//! `decode_server_accepted`, `decode_snapshot_chunk_framing`, `decode_snapshot_body`, and the
+//! `world_spatial`/`world_object` domain codecs): this crate holds no codec of its own, only the
+//! TLS transport and the glue that ties one admission to its join-snapshot decode.
 //!
 //! Not a production client entry. The shipped native client stays fail-closed behind
 //! `PreNativeProtocol` (ADR-0011 §3/§5); this dev harness is the explicit exception ADR-0011 §6
@@ -17,9 +17,9 @@
 use oteryn_protocol_oteryn::world_object::{self, WorldObjectOverlayEntry};
 use oteryn_protocol_oteryn::world_spatial::{self, WorldSpatialObservation};
 use oteryn_protocol_oteryn::{
-    ALPN_OTERYN_GAME_V1, CharacterId, ClientBootstrapValue, FoundationProtocolError, FrameLength,
-    GameSessionId, MessageType, decode_server_accepted, decode_snapshot_begin,
-    decode_snapshot_chunk, decode_snapshot_chunk_framing, decode_snapshot_id, decode_wire_envelope,
+    ALPN_OTERYN_GAME_V1, CharacterId, ClientBootstrapValue, Direction, FoundationProtocolError,
+    FrameLength, GameSessionId, MessageType, decode_server_accepted, decode_snapshot_begin,
+    decode_snapshot_body, decode_snapshot_chunk_framing, decode_snapshot_id, decode_wire_envelope,
     encode_client_bootstrap,
 };
 use rustls::pki_types::{CertificateDer, ServerName};
@@ -210,14 +210,18 @@ impl From<world_object::WorldObjectError> for DevClientError {
 /// Connects to `request.address` over rustls TLS 1.3 with ALPN `oteryn-game/1` (rejecting any
 /// other or absent negotiated ALPN before sending anything), sends a `ClientBootstrap` built
 /// from `request`, and decodes the join snapshot the server sends right after `ServerAccepted`
-/// (`SnapshotBegin`, `SnapshotChunk`, `SnapshotCommit` — FND-02 §16). Every frame of that
-/// transfer is correlated to `SnapshotBegin`'s full declaration and the admitted session before
-/// being trusted: `SnapshotBegin`/`SnapshotChunk`/`SnapshotCommit` must each carry the admitted
+/// (`SnapshotBegin`, `SnapshotChunk`, `SnapshotCommit` — FND-02 §16). Every inbound frame is
+/// checked with `WireEnvelopeView::validate` (direction, phase, sequencing and — pre- vs
+/// post-admission — the envelope `connection_generation` presence rule) before its payload is
+/// consumed at all, then correlated to `SnapshotBegin`'s full declaration and the admitted
+/// session: `SnapshotBegin`/`SnapshotChunk`/`SnapshotCommit` must each carry the admitted
 /// `connection_generation`; `SnapshotChunk`'s and `SnapshotCommit`'s `snapshot_id` must equal
 /// `SnapshotBegin`'s; exactly `SnapshotBegin`'s declared `chunk_count` chunks are read, each with
-/// the expected `chunk_index` in order; and their summed `data` bytes must equal `SnapshotBegin`'s
-/// declared `total_encoded_bytes`. The TCP connect, the TLS handshake, and every frame read are
-/// bounded by `request.deadline`.
+/// the expected `chunk_index` in order; and their concatenated `data` bytes must equal
+/// `SnapshotBegin`'s declared `total_encoded_bytes`. The assembled `SnapshotBody` is protobuf-
+/// decoded exactly once, only after every chunk and the matching `SnapshotCommit` have validated
+/// — never per chunk, since a multi-chunk transfer may split a body field at any byte offset. The
+/// TCP connect, the TLS handshake, and every frame read are bounded by `request.deadline`.
 pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, DevClientError> {
     let connector = tls_connector(request.root_certificate)?;
     let tcp = bounded(
@@ -252,6 +256,10 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
 
     let accepted = bounded(request.deadline, "ServerAccepted", read_frame(&mut stream)).await?;
     let accepted_envelope = decode_wire_envelope(&accepted)?;
+    // Pre-admission server traffic: direction, phase (Bootstrap), sequencing (unsequenced) and a
+    // zero envelope `connection_generation` (FND-02 §8/§11/§12/§14) are checked before this
+    // frame's payload is consumed at all.
+    accepted_envelope.validate(Direction::ServerToClient, false)?;
     if accepted_envelope.message_type() != MessageType::ServerAccepted {
         return Err(DevClientError::NotAdmitted(
             accepted_envelope.message_type(),
@@ -264,6 +272,10 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
     // them, is checked against it before being trusted.
     let begin_frame = bounded(request.deadline, "SnapshotBegin", read_frame(&mut stream)).await?;
     let begin_envelope = decode_wire_envelope(&begin_frame)?;
+    // Post-admission server traffic: direction, phase, sequencing (unsequenced — FND-02 §14
+    // snapshot transfer-control frames carry no `server_sequence`) and a nonzero envelope
+    // `connection_generation` are checked before this frame's payload is consumed.
+    begin_envelope.validate(Direction::ServerToClient, true)?;
     if begin_envelope.message_type() != MessageType::SnapshotBegin {
         return Err(DevClientError::UnexpectedMessage {
             expected: MessageType::SnapshotBegin,
@@ -281,16 +293,21 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
     // Exactly `begin.chunk_count` `SnapshotChunk` frames, strictly in order: a short transfer
     // (the server stops early) surfaces here as `UnexpectedMessage` (the next frame is
     // `SnapshotCommit` instead) or as a bounded `Timeout`/`Io` (the connection stalls or closes).
-    // Each chunk's decoded `DomainSnapshot` entries borrow its own frame buffer, which does not
-    // outlive the loop body, so they are dispatched into the owned `world_spatial`/
-    // `world_object` structures immediately rather than accumulated across chunks.
-    let mut world_spatial_observation = None;
-    let mut world_object_overlay = None;
+    // A multi-chunk transfer may split a `SnapshotBody` protobuf field at any byte offset, not
+    // necessarily a field boundary (FND-02 §16), so every chunk's raw `data` is only ever
+    // concatenated here, in `chunk_index` order, into one owned buffer — never decoded on its
+    // own. `assembled_bytes` is checked against `SnapshotBegin`'s declared
+    // `total_encoded_bytes` with checked arithmetic, and rejected, *before* the chunk's bytes are
+    // appended (before growing the assembly), so an over-declaring or over-sending peer cannot
+    // grow the buffer past the declared bound first and get rejected only afterwards.
+    let mut assembled_body: Vec<u8> = Vec::new();
     let mut assembled_bytes: u64 = 0;
     for expected_index in 0..begin.chunk_count {
         let chunk_frame =
             bounded(request.deadline, "SnapshotChunk", read_frame(&mut stream)).await?;
         let chunk_envelope = decode_wire_envelope(&chunk_frame)?;
+        // Post-admission server traffic, same as `SnapshotBegin` above.
+        chunk_envelope.validate(Direction::ServerToClient, true)?;
         if chunk_envelope.message_type() != MessageType::SnapshotChunk {
             return Err(DevClientError::UnexpectedMessage {
                 expected: MessageType::SnapshotChunk,
@@ -303,55 +320,29 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
                 actual: chunk_envelope.connection_generation(),
             });
         }
-        let (chunk_index, chunk_data_len) =
-            decode_snapshot_chunk_framing(chunk_envelope.payload())?;
-        if chunk_index != expected_index {
-            return Err(DevClientError::ChunkIndexMismatch {
-                expected: expected_index,
-                actual: chunk_index,
-            });
-        }
-        let (chunk_snapshot_id, chunk_domains) = decode_snapshot_chunk(chunk_envelope.payload())?;
+        let chunk_snapshot_id = decode_snapshot_id(chunk_envelope.payload())?;
         if chunk_snapshot_id != begin.snapshot_id {
             return Err(DevClientError::SnapshotIdMismatch {
                 expected: begin.snapshot_id,
                 actual: chunk_snapshot_id,
             });
         }
-        assembled_bytes += chunk_data_len;
-        for domain in &chunk_domains {
-            match (domain.domain_id, domain.snapshot_type) {
-                (
-                    world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
-                ) => {
-                    world_spatial_observation =
-                        Some(world_spatial::decode_world_spatial(domain.payload)?);
-                }
-                (
-                    world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
-                    world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
-                ) => {
-                    world_object_overlay = Some(
-                        world_object::decode_world_object_overlay_snapshot(domain.payload)?,
-                    );
-                }
-                // PROTOCOL_OTERYN_V1_REGISTRY.json registers exactly one snapshot_type (1) for
-                // domains 1 and 2; anything else naming one of those domains is a registry
-                // violation, not a domain this client merely doesn't need.
-                (
-                    domain_id @ world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
-                    snapshot_type,
-                )
-                | (domain_id @ world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, snapshot_type) => {
-                    return Err(DevClientError::UnregisteredSnapshotType {
-                        domain_id,
-                        snapshot_type,
-                    });
-                }
-                _ => {}
-            }
+        let (chunk_index, chunk_data) = decode_snapshot_chunk_framing(chunk_envelope.payload())?;
+        if chunk_index != expected_index {
+            return Err(DevClientError::ChunkIndexMismatch {
+                expected: expected_index,
+                actual: chunk_index,
+            });
         }
+        let chunk_len = u64::try_from(chunk_data.len()).unwrap_or(u64::MAX);
+        assembled_bytes = assembled_bytes
+            .checked_add(chunk_len)
+            .filter(|total| *total <= begin.total_encoded_bytes)
+            .ok_or(DevClientError::AssembledLengthMismatch {
+                expected: begin.total_encoded_bytes,
+                actual: assembled_bytes.saturating_add(chunk_len),
+            })?;
+        assembled_body.extend_from_slice(chunk_data);
     }
     if assembled_bytes != begin.total_encoded_bytes {
         return Err(DevClientError::AssembledLengthMismatch {
@@ -377,6 +368,43 @@ pub async fn connect_and_join(request: JoinRequest<'_>) -> Result<JoinSnapshot, 
         });
     }
 
+    // Only now — every declared chunk arrived in order, the assembled length matched, and the
+    // matching `SnapshotCommit` validated — is the assembled `SnapshotBody` decoded, exactly
+    // once (FND-02 §16: "protobuf decode occurs only after a full bounded body is assembled" and
+    // "apply is atomic only after all chunks and matching SnapshotCommit validate").
+    let mut world_spatial_observation = None;
+    let mut world_object_overlay = None;
+    for domain in decode_snapshot_body(&assembled_body)? {
+        match (domain.domain_id, domain.snapshot_type) {
+            (
+                world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                world_spatial::SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+            ) => {
+                world_spatial_observation =
+                    Some(world_spatial::decode_world_spatial(domain.payload)?);
+            }
+            (
+                world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                world_object::SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+            ) => {
+                world_object_overlay = Some(world_object::decode_world_object_overlay_snapshot(
+                    domain.payload,
+                )?);
+            }
+            // PROTOCOL_OTERYN_V1_REGISTRY.json registers exactly one snapshot_type (1) for
+            // domains 1 and 2; anything else naming one of those domains is a registry
+            // violation, not a domain this client merely doesn't need.
+            (domain_id @ world_spatial::STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY, snapshot_type)
+            | (domain_id @ world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY, snapshot_type) => {
+                return Err(DevClientError::UnregisteredSnapshotType {
+                    domain_id,
+                    snapshot_type,
+                });
+            }
+            _ => {}
+        }
+    }
+
     Ok(JoinSnapshot {
         game_session_id: accepted_fields.game_session_id,
         world_spatial: world_spatial_observation.ok_or(DevClientError::MissingDomain(
@@ -400,6 +428,8 @@ async fn read_snapshot_marker(
 ) -> Result<u64, DevClientError> {
     let frame = bounded(deadline, label, read_frame(stream)).await?;
     let envelope = decode_wire_envelope(&frame)?;
+    // Post-admission server traffic, same rules as `SnapshotBegin`/`SnapshotChunk`.
+    envelope.validate(Direction::ServerToClient, true)?;
     if envelope.message_type() != expected {
         return Err(DevClientError::UnexpectedMessage {
             expected,
@@ -1008,9 +1038,22 @@ mod tests {
         connection_generation: u64,
         payload: &[u8],
     ) -> Vec<u8> {
+        test_server_frame_with_sequence(message_type, connection_generation, 0, payload)
+    }
+
+    /// Like `test_server_frame`, but also sets the envelope's `server_sequence` (field 3) —
+    /// needed only by the fixture proving `WireEnvelopeView::validate` rejects a nonzero one on
+    /// an unsequenced (`Sequencing::None`) message type such as `SnapshotBegin`.
+    fn test_server_frame_with_sequence(
+        message_type: MessageType,
+        connection_generation: u64,
+        server_sequence: u64,
+        payload: &[u8],
+    ) -> Vec<u8> {
         let mut output = Vec::new();
         push_test_scalar(&mut output, 1, message_type as u64);
         push_test_scalar(&mut output, 2, connection_generation);
+        push_test_scalar(&mut output, 3, server_sequence);
         push_test_bytes_field(&mut output, 4, payload);
         output
     }
@@ -1141,6 +1184,177 @@ mod tests {
                         expected: 100,
                         actual: 0
                     }
+                )
+            },
+        ))?
+    }
+
+    /// C1b fix round 3 finding 1 (#1147 review): a valid 2-chunk transfer whose assembled
+    /// `SnapshotBody` protobuf bytes are split across the chunk boundary at an arbitrary byte
+    /// offset — not necessarily a field boundary (FND-02 §16) — must still succeed. Proves every
+    /// chunk's raw `data` is concatenated, in `chunk_index` order, before the body is decoded
+    /// once, rather than each chunk's `data` being decoded on its own.
+    #[test]
+    fn connect_and_join_assembles_a_two_chunk_snapshot_split_mid_field()
+    -> Result<(), Box<dyn StdError + Send + Sync>> {
+        block_on(run_two_chunk_split_case())?
+    }
+
+    async fn run_two_chunk_split_case() -> Result<(), Box<dyn StdError + Send + Sync>> {
+        let content_generation = [0x22_u8; 32];
+        let spatial_payload = encode_world_spatial(&WireSpatialObservation {
+            content_generation,
+            actor_position: ActorPosition {
+                x: 7,
+                y: 9,
+                floor: 1,
+            },
+        });
+        let overlay_payload = encode_world_object_overlay_snapshot(&[WireOverlayEntry {
+            content_generation,
+            placement: DOOR_PLACEMENT.as_bytes().to_vec(),
+            state: DOOR_STATE.as_bytes().to_vec(),
+            revision: 3,
+        }])
+        .map_err(|error| format!("encode_world_object_overlay_snapshot: {error:?}"))?;
+        let domains = [
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_SPATIAL_VISIBILITY,
+                revision: 1,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_SPATIAL_V1,
+                payload: &spatial_payload,
+            },
+            DomainSnapshot {
+                domain_id: STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                revision: 3,
+                snapshot_type: SNAPSHOT_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                payload: &overlay_payload,
+            },
+        ];
+        // A single-chunk transfer's one chunk's `data` *is* the complete, validly-encoded
+        // `SnapshotBody` (`encode_single_chunk_snapshot`'s own contract) — reused here only to
+        // obtain real assembled-body bytes to split in two, never sent as a single chunk.
+        let single = encode_single_chunk_snapshot(1, 7, 0, &domains)?;
+        let single_chunk_envelope = decode_wire_envelope(&single[1])?;
+        let (_, whole_body) = decode_snapshot_chunk_framing(single_chunk_envelope.payload())?;
+        let body_len = whole_body.len() as u64;
+        let split_at = whole_body.len() / 2;
+        assert!(
+            split_at > 0 && split_at < whole_body.len(),
+            "fixture body too small to split"
+        );
+        let first_half = whole_body[..split_at].to_vec();
+        let second_half = whole_body[split_at..].to_vec();
+
+        let (certificate, acceptor, listener, address) = tls_test_listener().await?;
+        let server = tokio::spawn(async move {
+            let (tcp, _) = listener.accept().await?;
+            let mut stream = acceptor.accept(tcp).await?;
+            read_and_discard_bootstrap(&mut stream).await?;
+            write_frame(&mut stream, &fake_accepted_frame()?).await?;
+            write_frame(&mut stream, &test_snapshot_begin(7, 2, body_len)).await?;
+            write_frame(&mut stream, &test_snapshot_chunk(7, 0, &first_half)).await?;
+            write_frame(&mut stream, &test_snapshot_chunk(7, 1, &second_half)).await?;
+            write_frame(&mut stream, &test_snapshot_commit(7)).await?;
+            stream.flush().await?;
+            Ok::<(), Box<dyn StdError + Send + Sync>>(())
+        });
+
+        let character_id = CharacterId::decode(&test_uuid_v7(4))?;
+        let snapshot = connect_and_join(JoinRequest {
+            address,
+            server_name: "localhost",
+            root_certificate: &certificate,
+            schema_revision: 1,
+            character_id,
+            admission_material: b"fixture-grant",
+            client_build_id: CLIENT_BUILD_ID,
+            deadline: TEST_DEADLINE,
+        })
+        .await
+        .map_err(|error| format!("connect_and_join: {error}"))?;
+        server.await??;
+
+        assert_eq!(
+            snapshot.world_spatial.actor_position,
+            ActorPosition {
+                x: 7,
+                y: 9,
+                floor: 1
+            }
+        );
+        assert_eq!(snapshot.world_object_overlay.len(), 1);
+        assert_eq!(snapshot.world_object_overlay[0].revision, 3);
+        Ok(())
+    }
+
+    /// C1b fix round 3 finding 2 (#1147 review): `ServerAccepted`'s own envelope
+    /// `connection_generation` must be absent (0) pre-admission (FND-02 §8/§11) — a server that
+    /// sends a nonzero one is rejected by `WireEnvelopeView::validate` before the payload
+    /// (which carries the *session's* new generation in a different field) is even decoded.
+    #[test]
+    fn connect_and_join_rejects_a_server_accepted_with_a_nonzero_envelope_generation()
+    -> Result<(), Box<dyn StdError + Send + Sync>> {
+        block_on(run_server_accepted_nonzero_generation_case())?
+    }
+
+    async fn run_server_accepted_nonzero_generation_case()
+    -> Result<(), Box<dyn StdError + Send + Sync>> {
+        let accepted_payload = decode_wire_envelope(&fake_accepted_frame()?)?
+            .payload()
+            .to_vec();
+        let tampered = test_server_frame(MessageType::ServerAccepted, 5, &accepted_payload);
+
+        let (certificate, acceptor, listener, address) = tls_test_listener().await?;
+        let server = tokio::spawn(async move {
+            let (tcp, _) = listener.accept().await?;
+            let mut stream = acceptor.accept(tcp).await?;
+            read_and_discard_bootstrap(&mut stream).await?;
+            write_frame(&mut stream, &tampered).await?;
+            stream.flush().await?;
+            Ok::<(), Box<dyn StdError + Send + Sync>>(())
+        });
+
+        let character_id = CharacterId::decode(&test_uuid_v7(4))?;
+        let result = connect_and_join(JoinRequest {
+            address,
+            server_name: "localhost",
+            root_certificate: &certificate,
+            schema_revision: 1,
+            character_id,
+            admission_material: b"fixture-grant",
+            client_build_id: CLIENT_BUILD_ID,
+            deadline: TEST_DEADLINE,
+        })
+        .await;
+        assert!(matches!(
+            result,
+            Err(DevClientError::Protocol(
+                FoundationProtocolError::MalformedEnvelope
+            ))
+        ));
+        server.await??;
+        Ok(())
+    }
+
+    /// C1b fix round 3 finding 2: `SnapshotBegin` (and every other snapshot-transfer frame) is
+    /// `Sequencing::None` (FND-02 §14: transfer-control frames carry no `server_sequence`); a
+    /// server that sets a nonzero one is rejected by `WireEnvelopeView::validate`.
+    #[test]
+    fn connect_and_join_rejects_a_snapshot_begin_with_a_nonzero_server_sequence()
+    -> Result<(), Box<dyn StdError + Send + Sync>> {
+        block_on(assert_join_fails_with(
+            vec![{
+                let mut payload = Vec::new();
+                push_test_scalar(&mut payload, 1, 1);
+                push_test_scalar(&mut payload, 2, 1);
+                push_test_scalar(&mut payload, 3, 0);
+                test_server_frame_with_sequence(MessageType::SnapshotBegin, 1, 7, &payload)
+            }],
+            |error| {
+                matches!(
+                    error,
+                    DevClientError::Protocol(FoundationProtocolError::MalformedEnvelope)
                 )
             },
         ))?

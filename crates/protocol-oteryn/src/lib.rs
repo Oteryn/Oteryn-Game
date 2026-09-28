@@ -830,7 +830,12 @@ pub fn decode_snapshot_id(payload: &[u8]) -> Result<u64, FoundationProtocolError
             skip_field(payload, &mut cursor, wire)?;
         }
     }
-    snapshot_id.ok_or(FoundationProtocolError::MalformedEnvelope)
+    // Zero is invalid (`foundation.proto`: "Zero is invalid"); a standard proto3 encoder omits
+    // a zero value, so an absent field and an explicit zero are indistinguishable on the wire
+    // and both are refused the same way (FND-02 §7 semantic-presence validation).
+    snapshot_id
+        .filter(|id| *id != 0)
+        .ok_or(FoundationProtocolError::MalformedEnvelope)
 }
 
 /// Decoded `SnapshotBegin` (FND-02 §16, `foundation.proto` `SnapshotBegin`): a transfer's full
@@ -876,7 +881,9 @@ pub fn decode_snapshot_begin(
     Ok(SnapshotBeginFields {
         // Zero is invalid for snapshot_id (foundation.proto); an omitted field defaults to 0 on
         // the wire either way, so absence is refused exactly like an explicit zero would be.
-        snapshot_id: snapshot_id.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        snapshot_id: snapshot_id
+            .filter(|id| *id != 0)
+            .ok_or(FoundationProtocolError::MalformedEnvelope)?,
         // chunk_count and total_encoded_bytes are ordinary proto3 scalars: a standard encoder
         // omits a zero value, so both default on omission (FND-02 §7); the caller judges whether
         // a declared zero is semantically usable.
@@ -887,14 +894,16 @@ pub fn decode_snapshot_begin(
 
 /// A `SnapshotChunk` message payload's `chunk_index` (field 2, zero-based, proto3-omitted-as-0 —
 /// `encode_single_chunk_snapshot` never emits it since its one chunk is always index 0) and its
-/// raw `data` field length in bytes (field 3, the same body `decode_snapshot_chunk` parses). A
-/// client checks `chunk_index` against the index it expected next and sums `data_len` across
-/// every chunk of a transfer to compare against `SnapshotBegin`'s `total_encoded_bytes`.
+/// raw `data` field (field 3): the exact byte slice `SnapshotBegin`'s `total_encoded_bytes`
+/// counts and every chunk's `data` concatenates (in `chunk_index` order) into the assembled
+/// `SnapshotBody` — a multi-chunk transfer may split a `SnapshotBody` field at any byte offset,
+/// not necessarily a field boundary, so a client must concatenate every chunk's `data` before
+/// decoding any of it (`decode_snapshot_body`), never decode one chunk's `data` on its own.
 pub fn decode_snapshot_chunk_framing(
     payload: &[u8],
-) -> Result<(u32, u64), FoundationProtocolError> {
+) -> Result<(u32, &[u8]), FoundationProtocolError> {
     let mut cursor = 0usize;
-    let (mut chunk_index, mut data_len) = (None, None);
+    let (mut chunk_index, mut data) = (None, None);
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -906,41 +915,8 @@ pub fn decode_snapshot_chunk_framing(
                         .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
                 );
             }
-            3 if wire == 2 && data_len.is_none() => {
-                let data = bounded_length_delimited(
-                    payload,
-                    &mut cursor,
-                    MAX_SNAPSHOT_CHUNK_BYTES,
-                    FoundationProtocolError::SnapshotLimitExceeded,
-                )?;
-                data_len = Some(data.len() as u64);
-            }
-            _ => skip_field(payload, &mut cursor, wire)?,
-        }
-    }
-    Ok((chunk_index.unwrap_or(0), data_len.unwrap_or(0)))
-}
-
-/// Decodes one `SnapshotChunk` message payload (FND-02 §16) into its `snapshot_id` and the
-/// `DomainSnapshot` entries `encode_single_chunk_snapshot` packed into the chunk body — the
-/// client-direction counterpart of that encoder, for the join/resync snapshot a client receives.
-/// `decode_wire_envelope` already checks the chunk body is well-formed and within
-/// `MAX_SNAPSHOT_CHUNK_BYTES` (`validate_snapshot_chunk_ingress`); this walks it to recover the
-/// typed entries.
-pub fn decode_snapshot_chunk(
-    payload: &[u8],
-) -> Result<(u64, Vec<DomainSnapshot<'_>>), FoundationProtocolError> {
-    let mut cursor = 0usize;
-    let mut snapshot_id = None;
-    let mut body = None;
-    while cursor < payload.len() {
-        let key = read_varint(payload, &mut cursor)?;
-        let field = decode_field_number(key)?;
-        let wire = (key & 7) as u8;
-        match field {
-            1 => snapshot_id = Some(read_varint(payload, &mut cursor)?),
-            3 => {
-                body = Some(bounded_length_delimited(
+            3 if wire == 2 && data.is_none() => {
+                data = Some(bounded_length_delimited(
                     payload,
                     &mut cursor,
                     MAX_SNAPSHOT_CHUNK_BYTES,
@@ -950,7 +926,18 @@ pub fn decode_snapshot_chunk(
             _ => skip_field(payload, &mut cursor, wire)?,
         }
     }
-    let body = body.unwrap_or(&[]);
+    Ok((chunk_index.unwrap_or(0), data.unwrap_or(&[])))
+}
+
+/// Decodes an assembled `SnapshotBody` (FND-02 §16: the concatenation, in `chunk_index` order, of
+/// every `SnapshotChunk.data` in one transfer — for a single-chunk transfer, that one chunk's
+/// `data` unchanged) into its `DomainSnapshot` entries. `FND02-STATE-DOMAINS-PER-SYNC`
+/// (`RESOURCE_LIMITS_REGISTRY.json`) is enforced here, against the assembled body: at most
+/// `MAX_STATE_DOMAINS_PER_SYNC` entries and no repeated `domain_id`, the same two checks
+/// `encode_single_chunk_snapshot` enforces on the encode side.
+pub fn decode_snapshot_body(
+    body: &[u8],
+) -> Result<Vec<DomainSnapshot<'_>>, FoundationProtocolError> {
     let mut domains = Vec::new();
     let mut body_cursor = 0usize;
     while body_cursor < body.len() {
@@ -968,9 +955,6 @@ pub fn decode_snapshot_chunk(
             FoundationProtocolError::MalformedEnvelope,
         )?;
         let decoded = decode_domain_snapshot_entry(entry)?;
-        // FND02-STATE-DOMAINS-PER-SYNC (RESOURCE_LIMITS_REGISTRY.json): bound the domain vector
-        // before it grows past the registered maximum, and refuse a repeated `domain_id` — the
-        // same two checks `encode_single_chunk_snapshot` enforces on the encode side.
         if domains.len() >= MAX_STATE_DOMAINS_PER_SYNC {
             return Err(FoundationProtocolError::PayloadLimitExceeded);
         }
@@ -982,10 +966,21 @@ pub fn decode_snapshot_chunk(
         }
         domains.push(decoded);
     }
-    Ok((
-        snapshot_id.ok_or(FoundationProtocolError::MalformedEnvelope)?,
-        domains,
-    ))
+    Ok(domains)
+}
+
+/// Decodes one `SnapshotChunk` message payload (FND-02 §16) into its `snapshot_id` and the
+/// `DomainSnapshot` entries `encode_single_chunk_snapshot` packed into the chunk body — the
+/// client-direction counterpart of that encoder, for a single-chunk transfer (`chunk_count: 1`,
+/// where the one chunk's `data` already is the complete `SnapshotBody`, so decoding it alone is
+/// exact). A multi-chunk transfer must not decode any one chunk's `data` on its own: read every
+/// chunk's `data` via `decode_snapshot_chunk_framing`, concatenate them in `chunk_index` order,
+/// then decode the assembled result with `decode_snapshot_body`.
+pub fn decode_snapshot_chunk(
+    payload: &[u8],
+) -> Result<(u64, Vec<DomainSnapshot<'_>>), FoundationProtocolError> {
+    let (_chunk_index, body) = decode_snapshot_chunk_framing(payload)?;
+    Ok((decode_snapshot_id(payload)?, decode_snapshot_body(body)?))
 }
 
 fn decode_domain_snapshot_entry(
@@ -2321,10 +2316,34 @@ mod tests {
         assert!(begin.total_encoded_bytes > 0);
 
         let chunk_envelope = decode_wire_envelope(&frames[1])?;
-        let (chunk_index, data_len) = decode_snapshot_chunk_framing(chunk_envelope.payload())?;
+        let (chunk_index, data) = decode_snapshot_chunk_framing(chunk_envelope.payload())?;
         assert_eq!(chunk_index, 0);
-        assert_eq!(data_len, begin.total_encoded_bytes);
+        assert_eq!(data.len() as u64, begin.total_encoded_bytes);
+        assert_eq!(decode_snapshot_body(data)?.len(), 1);
         Ok(())
+    }
+
+    /// FND-02 (`foundation.proto`: "Zero is invalid" for `snapshot_id`): an explicit `snapshot_id`
+    /// of 0 is refused exactly like an absent one, everywhere it is decoded.
+    #[test]
+    fn snapshot_id_zero_is_rejected_everywhere_it_is_decoded() {
+        // Field 1, wire type 0 (varint), explicit value 0 — a standard proto3 encoder never
+        // emits this (this crate's own `push_scalar` skips a zero value), but an adversarial
+        // peer could.
+        let explicit_zero: &[u8] = &[0x08, 0x00];
+        assert_eq!(
+            decode_snapshot_id(explicit_zero),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        assert_eq!(
+            decode_snapshot_begin(explicit_zero),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        // decode_snapshot_chunk reuses decode_snapshot_id for its own snapshot_id.
+        assert_eq!(
+            decode_snapshot_chunk(explicit_zero),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
     }
 
     #[test]
