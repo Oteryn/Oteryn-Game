@@ -127,6 +127,55 @@ New/renamed tests (owner_timer.rs, all passing): `family_cap_is_fixed_at_constru
 were renamed to `..._a_fence_that_never_matched_this_lane` and kept as the simple
 never-matched-fence case alongside the new real-handoff test.
 
+### Repair generation 2 (Codex findings on `f335b73`, review 5343444021)
+
+Four Codex findings repaired in `owner_timer.rs` + a minimal `mod.rs` addition (no forbidden
+path touched):
+
+- **P1** (`OwnerTimerLane`/`ScopeRuntimeFence` carried only a generation, so Channel A's fence at
+  generation 1 could authorize Channel B's lane): `ScopeRuntimeFence` gained an additive
+  `scope: Option<RuntimeScopeRefV1>` field (`None` for every existing caller — `from_external_grant`
+  is unchanged, so `admission.rs`/`admission_recovery_inner.rs` are unaffected) and a
+  module-visible `with_scope` builder. `OwnerTimerLane` now takes `scope: RuntimeScopeRefV1` at
+  `for_generation` and stores it. `is_current` (used only by `owner_timer.rs`, confirmed by
+  repo-wide grep) was replaced by `ScopeRuntimeFence::is_current_for_scope(scope, generation)`,
+  which `schedule`/`drain_due` both call instead: a fence bound to a different `RuntimeScopeRefV1`
+  is refused even at a matching generation number. New tests:
+  `schedule_rejects_a_fence_bound_to_a_different_scope_at_the_same_generation`,
+  `drain_due_fires_nothing_for_a_fence_bound_to_a_different_scope`.
+- **P2** (the raw `RuntimeExecutionOrdinal` passed to `schedule` was caller-supplied and not
+  generation-bound): `schedule` now takes `scheduling_stamp: RuntimeWorkStamp` (already defined
+  in `mod.rs`, issued via the caller's own `owner_fence.accept_input` + `.stamp()`, "the same
+  fence issuance already uses" per this module's doc) and validates it with
+  `owner_fence.accepts_stamp(scheduling_stamp)` alongside the scope/generation check; a raw,
+  caller-fabricated ordinal can no longer stand in for a fence-issued one. All existing tests
+  were converted from synthetic `ordinal(N)` values to real stamps issued from a live fence
+  (`issue_stamp` test helper); the deliberately out-of-order tie-break test
+  (`equal_deadline_orders_by_scheduling_ordinal_then_sequence`) now pre-issues two stamps from
+  the same fence and applies them out of issuance order, which the fence's contract permits
+  (`accepts_stamp` checks liveness/generation, not usage order).
+- **P3** (`for_generation` accepted any per-family cap, so `[(AiThink, 2)]` bypassed the
+  registered `AI01_PENDING_TIMERS_PER_ACTOR` = 1 maximum): `for_generation` now takes
+  `(Family, FamilyPolicy, usize)` triples — the trailing `usize` is the registered hard maximum
+  for that family — and returns `Result<Self, OwnerTimerError>`, rejecting with the new
+  `FamilyCapExceedsRegisteredMaximum` variant when `policy.max_pending` exceeds it. New test:
+  `construction_rejects_a_family_cap_above_its_registered_maximum`.
+- **P4** (no catch-up policy was encoded): added `CatchUpPolicy` (`SkipToLatest` for AI think,
+  `DeadlineState` for respawn, matching §4.9's table exactly) as part of the new `FamilyPolicy`
+  struct, fixed at construction. `drain_due` now enforces it: for a `SkipToLatest` family it
+  collapses every (family, target) key with more than one due entry down to the single latest
+  one (earlier missed occurrences are dropped without being returned or mutated) and reports
+  `clock.now()` as the fired timer's `due` instead of the stale original deadline, so a caller
+  rescheduling relative to `due` cannot be driven to replay every missed interval.
+  `DeadlineState` (respawn) fires every due entry unchanged, matching "at most the spawn's
+  population pending". New tests:
+  `skip_to_latest_reports_now_instead_of_the_stale_deadline_after_a_long_delay`,
+  `skip_to_latest_collapses_multiple_due_occurrences_for_the_same_key_into_one_fire`.
+
+`mod.rs` change: `ScopeRuntimeFence` gained the `scope` field, `with_scope`, and
+`is_current_for_scope` (replacing `is_current`) as described above — additive/renamed, and the
+only two pre-existing callers of the renamed method were both in `owner_timer.rs`.
+
 ### Spec gap / forbidden-path need
 
 §4.2 is delivered as a standalone, fully tested lane. Wiring `OwnerTimerLane` into
@@ -142,10 +191,12 @@ add a `ChannelRuntimeV1`-held `OwnerTimerLane<AiTimerFamily, AiOccurrence>` fiel
 
 - `cargo fmt --all --check`: clean.
 - `cargo clippy -p oteryn-game-server --all-targets -- -D warnings`: clean.
-- `cargo test -p oteryn-game-server --lib foundation`: 362 passed, 0 failed (15 of those are
+- `cargo test -p oteryn-game-server --lib foundation`: 367 passed, 0 failed (20 of those are
   `foundation::owner_timer::tests::*`, covering ordering, determinism, the fixed per-family
-  cap, fence-based current-owner authority including a real in-place handoff, and eager
-  not-yet-due stale-target purging).
+  cap and its registered-maximum ceiling, scope- and generation-bound fence authority (including
+  a real in-place handoff and a same-generation cross-scope refusal), fence-issued
+  `RuntimeWorkStamp` validation, eager not-yet-due stale-target purging, and the
+  `SkipToLatest`/`DeadlineState` catch-up policies).
 - `python3 tools/agents/validate_governance.py`: passed (22 policy documents, 9 project lanes).
 - `python3 tools/repository/validate_repository_policy.py`: passed (23 files, 50 workflows).
 - `git diff --check`: clean.
@@ -173,12 +224,14 @@ add a `ChannelRuntimeV1`-held `OwnerTimerLane<AiTimerFamily, AiOccurrence>` fiel
 ## Context checkpoint
 
 ```yaml
-last_progress: repair generation 1 on top of 0d296c0 - fixed 3 Codex findings in owner_timer.rs
-  (P1 fence-proven current owner authority via ScopeRuntimeFence.is_current, P2 per-family cap
-  fixed at lane construction with no per-call override, P3 eager not-yet-due stale-target purge
-  in drain_due); owner_timer.rs unit tests 15/15, foundation lib suite green (362/362),
-  fmt/clippy/governance/repository-policy validators pass; pushing new commit to
-  claude/ai1-owner-timer-lane
+last_progress: repair generation 2 on top of f335b73 (review 5343444021) - fixed 4 Codex
+  findings in owner_timer.rs + a minimal additive mod.rs change (P1 scope-bound
+  ScopeRuntimeFence.is_current_for_scope replacing generation-only is_current, P2
+  fence-issued RuntimeWorkStamp replacing a raw caller-supplied ordinal, P3 per-family caps
+  validated against a caller-supplied registered maximum at construction, P4 typed
+  SkipToLatest/DeadlineState catch-up policy enforced in drain_due); owner_timer.rs unit tests
+  20/20, foundation lib suite green (367/367), fmt/clippy/governance/repository-policy
+  validators pass; pushing new commit to claude/ai1-owner-timer-lane
 status: waiting
 branch: claude/ai1-owner-timer-lane
 head_sha: pending_push

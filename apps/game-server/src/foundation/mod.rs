@@ -907,6 +907,14 @@ impl RuntimeWorkStamp {
 #[derive(Debug, PartialEq, Eq)]
 pub struct ScopeRuntimeFence {
     generation: ScopeOwnershipGeneration,
+    /// The exact Channel/Instance scope this granted authority is bound to (owner_timer.rs P1:
+    /// FND-03 §10.3 current-owner authority must be scope-bound, not a bare generation number —
+    /// two different Channels can reach the same generation number independently). `None` for a
+    /// fence nobody has bound to a scope yet; such a fence never satisfies
+    /// `is_current_for_scope`. Only `owner_timer::OwnerTimerLane` construction uses `with_scope`
+    /// today; other fence owners (admission, reconnect) keep the unscoped grant and never call
+    /// `is_current_for_scope`.
+    scope: Option<RuntimeScopeRefV1>,
     next_ordinal: Option<u64>,
 }
 
@@ -915,8 +923,20 @@ impl ScopeRuntimeFence {
     const fn from_external_grant(generation: ScopeOwnershipGeneration) -> Self {
         Self {
             generation,
+            scope: None,
             next_ordinal: Some(1),
         }
+    }
+
+    /// Binds this granted fence to one exact scope identity, so a caller-supplied scope claim
+    /// can be checked against the fence itself instead of trusted on its own. Only
+    /// `owner_timer`'s tests construct a scope-bound fence today (production wiring is AI-2's
+    /// `ChannelRuntimeV1` integration), so this is dead code outside `cfg(test)` for now.
+    #[must_use]
+    #[allow(dead_code)]
+    const fn with_scope(mut self, scope: RuntimeScopeRefV1) -> Self {
+        self.scope = Some(scope);
+        self
     }
 
     #[must_use]
@@ -949,16 +969,23 @@ impl ScopeRuntimeFence {
         self.next_ordinal.is_some() && stamp.generation == self.generation
     }
 
-    /// Whether `generation` is this fence's *current* live ownership generation. This fence is
-    /// the single mutated-in-place owner-cycle authority for one Channel scope: a handoff
-    /// advances it via `apply_external_grant` (or clears it via `invalidate`), so any holder
-    /// consulting it — including one still holding a superseded copy of `generation` elsewhere —
-    /// observes the move, unlike comparing two values that were both fixed at some earlier
-    /// point and never change afterward (for example `OwnerTimerLane::schedule`/`drain_due`,
-    /// FND-03 §10.3 current-owner authority).
+    /// Whether `scope`/`generation` are this fence's *current* live owner authority for that
+    /// exact scope. This fence is the single mutated-in-place owner-cycle authority for one
+    /// Channel: a handoff advances it via `apply_external_grant` (or clears it via
+    /// `invalidate`), so any holder consulting it — including one still holding a superseded
+    /// copy of `generation` elsewhere — observes the move, unlike comparing two values that
+    /// were both fixed at some earlier point and never change afterward (for example
+    /// `OwnerTimerLane::schedule`/`drain_due`, FND-03 §10.3 current-owner authority). The scope
+    /// check is independent of the generation number: Channel A reaching the same generation
+    /// number as Channel B never authorizes Channel B's lane, because the fence must have been
+    /// bound (via `with_scope`) to that exact scope, not merely to a matching number.
     #[must_use]
-    pub fn is_current(&self, generation: ScopeOwnershipGeneration) -> bool {
-        self.next_ordinal.is_some() && self.generation == generation
+    pub fn is_current_for_scope(
+        &self,
+        scope: RuntimeScopeRefV1,
+        generation: ScopeOwnershipGeneration,
+    ) -> bool {
+        self.next_ordinal.is_some() && self.generation == generation && self.scope == Some(scope)
     }
 
     fn invalidate(&mut self) {
