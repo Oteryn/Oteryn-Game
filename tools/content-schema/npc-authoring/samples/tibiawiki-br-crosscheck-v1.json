@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "90fad4acb2a97bc33d26421d0793cfb69cb8bf57c4dad9fad1828cb927f56a21",
+  "facts_sha256": "c5c0b2c1cc0e3d50bfd123ec2f97f03e90321828df353f964dd9f82c67808181",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -1259,8 +1259,8 @@
    },
    "dialogue": {
     "br_lines": 66,
-    "matched": 59,
-    "near": 2,
+    "matched": 60,
+    "near": 1,
     "texts": 72
    },
    "name": "Al Dee",
@@ -1539,7 +1539,7 @@
    },
    "dialogue": {
     "br_lines": 9,
-    "matched": 3,
+    "matched": 4,
     "near": 1,
     "texts": 14
    },
@@ -5032,7 +5032,7 @@
    },
    "dialogue": {
     "br_lines": 35,
-    "matched": 4,
+    "matched": 6,
     "near": 0,
     "texts": 11
    },
@@ -6332,7 +6332,7 @@
    },
    "dialogue": {
     "br_lines": 105,
-    "matched": 71,
+    "matched": 72,
     "near": 1,
     "texts": 74
    },
@@ -6594,7 +6594,7 @@
    },
    "dialogue": {
     "br_lines": 25,
-    "matched": 0,
+    "matched": 2,
     "near": 0,
     "texts": 9
    },
@@ -7478,7 +7478,7 @@
    },
    "dialogue": {
     "br_lines": 88,
-    "matched": 56,
+    "matched": 57,
     "near": 1,
     "texts": 64
    },
@@ -10204,7 +10204,7 @@
    },
    "dialogue": {
     "br_lines": 79,
-    "matched": 50,
+    "matched": 51,
     "near": 2,
     "texts": 63
    },
@@ -11794,7 +11794,7 @@
    },
    "dialogue": {
     "br_lines": 23,
-    "matched": 24,
+    "matched": 25,
     "near": 0,
     "texts": 41
    },
@@ -13214,7 +13214,7 @@
    },
    "dialogue": {
     "br_lines": 38,
-    "matched": 9,
+    "matched": 10,
     "near": 0,
     "texts": 17
    },
@@ -13870,8 +13870,8 @@
    },
    "dialogue": {
     "br_lines": 45,
-    "matched": 3,
-    "near": 3,
+    "matched": 4,
+    "near": 2,
     "texts": 9
    },
    "name": "Iptar-Sin",
@@ -16611,7 +16611,7 @@
    },
    "dialogue": {
     "br_lines": 8,
-    "matched": 0,
+    "matched": 3,
     "near": 0,
     "texts": 10
    },
@@ -19300,7 +19300,7 @@
    },
    "dialogue": {
     "br_lines": 25,
-    "matched": 23,
+    "matched": 24,
     "near": 0,
     "texts": 57
    },
@@ -19408,7 +19408,7 @@
    },
    "dialogue": {
     "br_lines": 4,
-    "matched": 2,
+    "matched": 3,
     "near": 0,
     "texts": 5
    },
@@ -19535,7 +19535,7 @@
    },
    "dialogue": {
     "br_lines": 91,
-    "matched": 59,
+    "matched": 60,
     "near": 1,
     "texts": 65
    },
@@ -20875,8 +20875,8 @@
     "title": "Phillip"
    },
    "dialogue": {
-    "br_lines": 23,
-    "matched": 25,
+    "br_lines": 29,
+    "matched": 28,
     "near": 0,
     "texts": 28
    },
@@ -20916,8 +20916,8 @@
    },
    "dialogue": {
     "br_lines": 15,
-    "matched": 4,
-    "near": 0,
+    "matched": 10,
+    "near": 2,
     "texts": 23
    },
    "name": "Pino",
@@ -25897,7 +25897,7 @@
    },
    "dialogue": {
     "br_lines": 42,
-    "matched": 34,
+    "matched": 35,
     "near": 2,
     "texts": 37
    },
@@ -29352,9 +29352,9 @@
  "totals": {
   "dialogue:br_only": 179,
   "dialogue:checked": 368,
-  "dialogue:matched": 2837,
+  "dialogue:matched": 2865,
   "dialogue:near": 343,
-  "dialogue:no_text_matched": 67,
+  "dialogue:no_text_matched": 65,
   "dialogue:texts": 5851,
   "matched_by_position_alias": 7,
   "no_br_page": 14,

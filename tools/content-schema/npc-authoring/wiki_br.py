@@ -233,7 +233,15 @@ def read_turn(raw_segment, speakers):
         text = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(bold.group(2)))).strip()
         return fold(LINK.sub(r'\1', bold.group(1))), text
     match = SPEAKER.match(re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(raw_segment))).strip())
-    return (fold(match.group(1)), match.group(2).strip()) if match else None
+    if not match:
+        return None
+    label, text = fold(match.group(1)), match.group(2).strip()
+    # a condition before the label (`''Inferior ao nível 25:'' '''Phillip:''' Hello`) is not the speaker
+    inner = SPEAKER.match(text)
+    while label not in speakers and inner and fold(inner.group(1)) in speakers:
+        label, text = fold(inner.group(1)), inner.group(2).strip()
+        inner = SPEAKER.match(text)
+    return label, text
 
 
 def edit_distance(a, b):
@@ -378,6 +386,7 @@ def cmd_self_test(_args):
             "<!--\nGoldro: Hidden comment.\n-->\n'''Goldro''' No colon.\n'''Other''' not a label.\n"
             "1 Goldro: Numbered.\n'''Goldro:''' Take this! (burning effect, 5 turnos de 10 hitpoints)\n"
             "'''Goldro:''' Shh. (whispers)\n03:07 Goldro: Timestamped.\n"
+            "''Inferior ao nível 25:'' '''Goldro:''' Conditioned.\n"
             "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
             "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye, and\nsee you soon.\n"
             ":''Jogador:'' Trade?\n:'''Goldro:''' Indented.\n:Respostas:\nNot Goldro any more.\n\n"
@@ -390,7 +399,7 @@ def cmd_self_test(_args):
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.',
                                   # a bold label of another name opens no turn, so it continues Goldro's
-                                  'No colon. Other not a label.', 'Numbered.', 'Take this!', 'Shh. (whispers)', 'Timestamped.',
+                                  'No colon. Other not a label.', 'Numbered.', 'Take this!', 'Shh. (whispers)', 'Timestamped.', 'Conditioned.',
                                   'One.', 'Two. still two.',
                                   'Repeated label.', 'Typo label.', 'Bye, and see you soon.', 'Indented.'], facts
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [

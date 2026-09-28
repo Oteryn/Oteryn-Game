@@ -20,7 +20,8 @@ of an admitted placement on the same floor; the row then records `match: POSITIO
   price when it is the item's usual price). BR_ONLY is an NPC whose BR trade list has no admitted
   offers at all;
 - dialogue: how many admitted Dialogue texts (messages, keyword replies and voices) appear, as a full line, among the lines the NPC speaks in
-  its BR transcript, with the same normalization and |PLAYERNAME| wildcard as rule D10 and the in-game
+  its BR transcript, with the same normalization as rule D10, every runtime placeholder (|PLAYERNAME|,
+  |TIME|, |TRAVELCOST|, ...) as a wildcard, and the in-game
   `{keyword}` highlight braces removed (transcripts show plain text). A text that does not match but is
   at least NEAR_RATIO similar to a transcript line is counted as near (a small wording difference).
 
@@ -121,14 +122,17 @@ def plain(text):
     return normalize(text.replace('{', '').replace('}', ''))
 
 
+RUNTIME_PLACEHOLDER = re.compile(r'\|[a-z_]+\|')  # |PLAYERNAME|, |TIME|, |TRAVELCOST|, ... after folding
+
+
 def text_matches(text, lines):
-    pattern = '.+?'.join(re.escape(part) for part in plain(text).split('|playername|'))
+    pattern = '.+?'.join(re.escape(part) for part in RUNTIME_PLACEHOLDER.split(plain(text)))
     regex = re.compile(pattern)
     return any(regex.fullmatch(line) for line in lines)
 
 
 def text_near(text, lines):
-    ours = plain(text).replace('|playername|', '')
+    ours = RUNTIME_PLACEHOLDER.sub('', plain(text))
     return any(SequenceMatcher(None, ours, line, autojunk=False).ratio() >= NEAR_RATIO for line in lines)
 
 
