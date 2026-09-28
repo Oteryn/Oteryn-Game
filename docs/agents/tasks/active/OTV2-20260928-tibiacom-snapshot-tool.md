@@ -42,25 +42,21 @@ forever after without any network access:
 
 - `fetch --out <dir>`: fetches the six tibia.com manual sections (`controls`, `characters`,
   `combat`, `world`, `controls_trading`, `starting`) from
-  `https://www.tibia.com/gameguides/?subtopic=manual&section=<name>`, one request at a time with a
-  2-second delay and an honest `User-Agent`. Writes `<dir>/manifest.json` (per page: `url`,
-  `fetched_at` UTC, `http_status`, `sha256` of the raw body, plus a top-level `spells` status) and
-  `<dir>/facts.json` (deterministic `{section, anchor, key, value}` facts extracted from headings
-  and the block text under them with `html.parser`, each value capped at 300 characters). Raw page
-  text is never written to disk. If a response is a Cloudflare challenge (HTTP 403/503 or a known
-  challenge marker in the body), `fetch` stops immediately, prints a clear message, and writes
-  nothing.
+  `https://www.tibia.com/gameguides/?subtopic=manual&section=<name>`, one request at a time, a
+  2-second delay, an honest `User-Agent`, only an HTTP 200 accepted. Writes `<dir>/manifest.json`
+  (per page: `url`, `fetched_at` UTC, `http_status`, `sha256`, `visible_text_chars`, plus a
+  top-level `spells` status) and `<dir>/facts.json` (bounded, deterministic
+  `{section, anchor, key, value}` facts with a factual signal, extracted with `html.parser`, each
+  value ≤300 chars, ≤`FACTS_PER_SECTION_CAP` per section). Raw page text is never written. A
+  non-200 status or a Cloudflare challenge stops `fetch` immediately and writes nothing.
 - Spell library (S15, #1077): if `tools/content-schema/spell-authoring/tibiacom_spells.py` exists
-  on the checkout, `fetch` imports it and calls its `parse_spell_library()`/`parse()` entry point
-  on the fetched `https://www.tibia.com/library/?subtopic=spells` page instead of parsing it
-  itself. It does not exist on `main` yet (only in the open #1077 PR), so this run sets
-  `manifest.json["spells"] = "PENDING_1077"` and makes no spell-library request.
-- `verify <dir>...`: offline. Checks both files' schema, that every `sha256` is a 64-hex-digest
-  string, that every fact `value` is at most 300 characters and the file's total fact-value bytes
-  stay under a fixed cap (the no-full-text rule), and that every fact's `section` names a page in
-  that snapshot's `manifest.json`.
-- `self-test`: offline, against an embedded tiny HTML fixture; also exercises `verify` against
-  passing and deliberately broken snapshots in a temp directory.
+  on the checkout, `fetch` calls its `parse_spell_library()`/`parse()` instead of parsing itself.
+  Absent on `main` (only on the open #1077 PR), so this sets `manifest.json["spells"] =
+  "PENDING_1077"` and makes no spell-library request.
+- `verify <dir>...`: offline. Schema, sha256 format, per-value/per-section/total-size caps, the
+  fact-to-visible-text ratio, exact six-section completeness (URL, HTTP 200, ≥1 fact), and the
+  `spells` enum/page-consistency.
+- `self-test`: offline, embedded HTML fixture plus passing/broken `verify` snapshots.
 
 `.github/workflows/tibiacom-snapshot-verify.yml` runs `self-test` plus `verify` on every
 `imports/official/tibia-com/*/` directory on PRs touching `tools/official-capture/**` or
@@ -71,19 +67,17 @@ command.
 
 ## Architecture and source of truth
 
-- `PROVEN`: PR #1077 (open) — tibia.com blocks both the build container and GitHub-hosted runners
-  with a Cloudflare challenge; the fix is to run `fetch` once from an owner machine and never
-  attempt to bypass the challenge. `tools/content-schema/spell-authoring/tibiacom_spells.py` exists
-  only in that PR's branch, not on `main`, confirmed by listing `tools/content-schema/spell-authoring/`
-  at this task's base commit.
-- `PROVEN`: `tools/content-schema/monster-authoring/wiki_br_capture.py` is the modelled style: a
-  single stdlib file, an honest descriptive `User-Agent`, raw text never leaving the machine that
-  fetched it, and an embedded-fixture `self-test` subcommand.
-- `PROVEN`: `.github/workflows/monster-wiki-capture.yml` and `spell-wiki-capture.yml` are the
-  capture-workflow conventions followed here (pinned `actions/checkout`/`actions/setup-python` SHAs,
-  `permissions: contents: read`, a path-scoped `pull_request` trigger plus `workflow_dispatch`,
-  `concurrency` group) — this workflow differs from them by design in having **no** fetch/network
-  step, since it only runs the offline `self-test`/`verify` subcommands.
+- `PROVEN`: PR #1077 (open) — tibia.com blocks the build container and GitHub-hosted runners with
+  a Cloudflare challenge; `fetch` runs once from an owner machine, never bypassing the challenge.
+  `tools/content-schema/spell-authoring/tibiacom_spells.py` exists only on that PR's branch, not on
+  `main` (confirmed at this task's base commit).
+- `PROVEN`: `tools/content-schema/monster-authoring/wiki_br_capture.py` is the modelled style —
+  single stdlib file, honest `User-Agent`, raw text never leaves the fetching machine, embedded
+  `self-test`.
+- `PROVEN`: `.github/workflows/monster-wiki-capture.yml`/`spell-wiki-capture.yml` set the
+  capture-workflow conventions followed here (pinned action SHAs, `permissions: contents: read`,
+  path-scoped `pull_request` + `workflow_dispatch`, `concurrency`); this workflow differs by design
+  in having no fetch/network step.
 
 ## High-risk authority/recovery qualification
 
@@ -98,47 +92,57 @@ reason: >
 
 ## Acceptance criteria
 
-- [x] `tibiacom_capture.py fetch` covers the six named manual sections and the spell-library
-      delegation/`PENDING_1077` fallback, writes only `manifest.json`/`facts.json` (never raw page
-      text), and stops cleanly on a detected Cloudflare challenge.
-- [x] `tibiacom_capture.py verify` checks schema, sha256 format, the 300-char per-value cap, a
-      total-size cap (no-full-text rule), and that every fact references a manifest page.
-- [x] `tibiacom_capture.py self-test` passes offline with an embedded fixture.
-- [x] `.github/workflows/tibiacom-snapshot-verify.yml` runs `self-test` + `verify` on PRs touching
-      the owned tool/snapshot paths, with no network step.
-- [x] `imports/official/index.json` documents the `tibia-com/<YYYY-MM-DD>/` convention; keeps the
-      file's existing schema (`OTERYN_GAME_TREE_DIRECTORY/v1`).
-- [x] `imports/official/tibia-com/README.md` gives the exact 2-3 line owner command.
+- [x] `fetch` covers the six named manual sections and the spell-library delegation/`PENDING_1077`
+      fallback, writes only `manifest.json`/`facts.json`, only HTTP 200 accepted, stops cleanly on
+      a Cloudflare challenge.
+- [x] `verify` checks schema, sha256 format, per-value/per-section/ratio/total-size caps, six-section
+      completeness, and `spells` consistency.
+- [x] `self-test` passes offline with an embedded fixture.
+- [x] `.github/workflows/tibiacom-snapshot-verify.yml` runs `self-test` + `verify` (no network) and
+      rejects edits to already-committed dated snapshot directories.
+- [x] `imports/official/index.json` documents the `tibia-com/<YYYY-MM-DD>/` convention (schema
+      unchanged); `imports/official/tibia-com/README.md` gives the owner command.
 - [x] `tools/content-schema/spell-authoring/**` and `spell-wiki-capture.yml` (owned by #1077)
       untouched.
 
 ## Excluded scope
 
-- No tibia.com data is captured by this task; no `imports/official/tibia-com/<date>/` snapshot
-  directory is committed here (that is the owner's separate `fetch` run).
-- No change to `tools/content-schema/spell-authoring/**`, `tibiacom_spells.py` itself, or
-  `.github/workflows/spell-wiki-capture.yml` — those belong to #1077.
-- No bypass, retry, UA spoofing or challenge-solving against tibia.com's Cloudflare block, in this
-  tool or anywhere else.
+- No tibia.com data captured here; no `imports/official/tibia-com/<date>/` snapshot committed
+  (owner's separate `fetch` run).
+- No change to `tools/content-schema/spell-authoring/**` or `spell-wiki-capture.yml` (#1077).
+- No bypass, retry, UA spoofing or challenge-solving against tibia.com's Cloudflare block.
 - No runtime, protocol or persistence change.
 
 ## Implementation / findings
 
-- Confirmed at authoring time that `tools/content-schema/spell-authoring/tibiacom_spells.py` is
-  absent from `main` (present only on the open #1077 PR branch); `fetch` therefore takes the
-  `PENDING_1077` branch and makes no request to the spell-library URL in this environment. The
-  dynamic-import branch (calling `parse_spell_library()`/`parse()` when the module exists) is
-  written defensively — it never copies #1077's parsing logic, only calls into it — but is
-  exercised only once that module lands on `main`.
-- `verify`'s no-full-text rule is two checks: a hard 300-character cap per fact value (matching
-  `wiki_br_capture.py`'s field cap convention, this tool's cap is fixed rather than configurable),
-  and a 200,000-byte cap on the sum of all fact-value bytes in one snapshot, which a genuine
-  six-section-manual-plus-spell-library fact set stays far under, but a full page dump would not.
-- The extractor (`ManualSectionParser`, stdlib `html.parser`) is deliberately generic: it reads
-  h1-h4 headings (using the tag's `id` attribute when present, else a slug of its text, as the
-  anchor) and the plain text of every `p`/`li`/`td`/`th`/`dd` under each heading, with no
-  CSS-class-based guess at tibia.com's real page structure (which this environment cannot fetch to
-  inspect, since it is itself blocked by the same Cloudflare challenge).
+- `tools/content-schema/spell-authoring/tibiacom_spells.py` is absent from `main` (only on the
+  open #1077 PR branch), so `fetch` takes the `PENDING_1077` branch; the dynamic-import branch
+  calling its `parse_spell_library()`/`parse()` never copies #1077's code, only calls into it.
+- Extractor: `ManualSectionParser` (stdlib `html.parser`) reads h1-h4 headings (anchor = `id` attr
+  or a slug of the text) and the text of `p`/`li`/`td`/`th`/`dd` blocks under each, with no
+  CSS-class guess at tibia.com's real structure (unreachable here — same Cloudflare block).
+
+## Repair: Codex review findings (PR #1083, return to AUTHORING)
+
+Four findings on head `1a82643`, all accepted and repaired in this commit (all four threads
+replied to before push):
+
+- **P1** r4120578784 (no page copy): `extract_facts` now keeps only headings plus fragments with a
+  factual signal (digit, `key: value`/`key = value`, or a named control key), capped at
+  `FACTS_PER_SECTION_CAP` (40) per section. `manifest.json` pages record `visible_text_chars`
+  (new `VisibleTextParser`); `verify` rejects a page whose fact chars exceed 25% of that page's
+  `visible_text_chars`, or whose section exceeds the cap. New self-test: an ordinary paragraph
+  isn't copied; a 50-item page is capped at 40; a shrunk `visible_text_chars` fails the ratio.
+- **P2** r4120578795 (bad HTTP status): `fetch_page_or_abort` accepts only HTTP 200; anything else
+  aborts the whole run before writing output; `verify` requires `http_status == 200`.
+- **P2** r4120578800 (completeness): `verify` requires exactly the six manual sections at their
+  exact URL with ≥1 fact each, plus `spells` = `PENDING_1077` or `captured` (with a matching page
+  and ≥1 fact).
+- **P2** r4120578808 (immutability): the workflow now fetches the PR base commit
+  (`git fetch --depth=1`) and diffs base→head under `imports/official/tibia-com/`
+  (`git diff --name-status -M`), failing on any `M`/`D`/`R` whose dated directory already existed
+  at the base; only new dated directories are allowed. `permissions: contents: read` unchanged;
+  verified locally against add/edit/delete/rename scenarios before pushing.
 
 ## Validation
 
@@ -176,26 +180,28 @@ reason: >
 
 - exact head: see PR
 - method/reviewer: implementing agent (this session)
-- material findings: none found in self-review; `self-test` exercises both the happy-path
-  extraction/verification and several deliberately-broken `verify` cases (oversized value,
-  fact-references-unknown-section, malformed sha256, missing directory).
+- material findings: none in self-review beyond the four Codex findings above, all repaired;
+  `self-test` covers the happy path plus many deliberately-broken `verify` cases.
 - verdict: ready for independent review
 
 ## Independent review
 
-- required: NO — evidence/tooling-only change, no public contract, protocol, persistence or
-  authority surface touched; owned paths are new files plus a documentation-only edit to
-  `imports/official/index.json`'s `notes` field (schema/path/kind/owner unchanged).
-- exact head: `NOT_APPLICABLE`
-- method/auditor: `NOT_APPLICABLE`
-- material findings: `NOT_APPLICABLE`
-- verdict: `NOT_APPLICABLE`
+- required: it happened regardless of the `NO` self-assessment above (evidence/tooling-only, no
+  public contract/protocol/persistence/authority surface): automated PR review is unconditional in
+  this repository.
+- exact head: `1a82643a36a99d6d3b6e56f3bf05946a37a0de52`
+- method/auditor: Codex, automated PR review (not triggered by this worker)
+- material findings: P1 r4120578784, P2 r4120578795, P2 r4120578800, P2 r4120578808 — all four
+  accepted and repaired (see Repair section above)
+- verdict: findings addressed; a fresh review of the repaired head is for the control plane to
+  request, not this worker (no `@codex` trigger from this task)
 
 ## PR and closeout
 
 - changed-file review: all changed files fall within `owned_paths` above; `tools/content-schema/spell-authoring/**`
   and `.github/workflows/spell-wiki-capture.yml` untouched.
-- unresolved review threads: none at open.
+- unresolved review threads: none — see Repair and Independent review sections above; a fresh
+  review of the repaired head is for the control plane to request.
 - related/superseded PRs: none superseded; this task's PR is #1083, which references #1077 (the
   tibia.com block report and the S15 spell library, which this task's `PENDING_1077` fallback
   defers to).

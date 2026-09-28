@@ -23,14 +23,11 @@ jobs:
     name: tibia.com capture / self-test and snapshot verify
     runs-on: ubuntu-24.04
     timeout-minutes: 15
-    defaults:
-      run:
-        shell: bash
-        working-directory: tools/official-capture
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 1
           persist-credentials: false
 
@@ -39,10 +36,72 @@ jobs:
         with:
           python-version: '3.12'
 
+      - name: Fetch PR base commit
+        if: github.event_name == 'pull_request'
+        run: git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+
+      - name: Reject edits to already-committed snapshot directories
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+          import sys
+
+          base = os.environ["BASE_SHA"]
+          head = os.environ["HEAD_SHA"]
+          prefix = "imports/official/tibia-com/"
+
+          diff = subprocess.run(
+              ["git", "diff", "--name-status", "-M", base, head, "--", prefix],
+              capture_output=True, text=True, check=True,
+          ).stdout
+
+          failures = []
+          for line in diff.splitlines():
+              if not line.strip():
+                  continue
+              fields = line.split("\t")
+              status = fields[0]
+              if status.startswith("A"):
+                  continue  # a brand-new path is always allowed
+              if status[0] not in ("M", "D", "R"):
+                  continue
+              # For M/D the changed path is fields[1]; for a rename (R###) it's the old path,
+              # fields[1] -- that is the dated directory being edited out from under.
+              path = fields[1]
+              match = re.match(re.escape(prefix) + r"([^/]+)/", path)
+              if not match:
+                  continue
+              dated_dir = f"{prefix}{match.group(1)}"
+              exists_at_base = subprocess.run(
+                  ["git", "cat-file", "-e", f"{base}:{dated_dir}"],
+                  capture_output=True,
+              ).returncode == 0
+              if exists_at_base:
+                  failures.append(f"{status}\t{path} (dated directory {dated_dir}/ exists at the PR base)")
+
+          if failures:
+              print("tibia-com snapshot immutability check FAILED: dated snapshot directories are "
+                    "immutable once committed -- only new dated directories may be added.",
+                    file=sys.stderr)
+              for failure in failures:
+                  print(f"  - {failure}", file=sys.stderr)
+              sys.exit(1)
+          print("tibia-com snapshot immutability check: OK (no edits to already-committed dated directories)")
+          PY
+
       - name: Self-test
+        working-directory: tools/official-capture
         run: python3 tibiacom_capture.py self-test
 
       - name: Verify every committed snapshot directory
+        working-directory: tools/official-capture
         run: |
           set -euo pipefail
           shopt -s nullglob
