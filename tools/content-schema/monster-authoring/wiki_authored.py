@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -139,6 +140,8 @@ FIELDS = {
     'outfit': ([('fandom.outfit', 'male_id')], 'the Monk looktype is the Fandom male Monk outfit; the colours (95) are those of '
                                              'the Dark Knight template'),
     'outfit.lookAddons': ([], 'no addons are assumed'),
+    'outfit.lookMount': ([], 'no mount is assumed'),
+    'manaCost': ([('fandom.monster', 'summon'), ('fandom.monster', 'convince')], None),
     'race': ([('br.monster', 'creatureclass')], 'blood follows the Humans class and the Dark Knight template'),
     'speed': ([], 'speed 125'),
     'defenses.armor': ([], 'armor 40'),
@@ -246,7 +249,22 @@ def lua_text(sources):
 IMPLICIT = {
     'outfit.lookAddons': {'kind': 'field', 'status': 'mapped', 'destination': '/monster/presentation/appearance/attachment_bindings',
                           'resolution': 'lookAddons 0: the outfit is shown with no addon attachment.'},
+    'outfit.lookMount': {'kind': 'field', 'status': 'mapped', 'destination': '/monster/presentation/appearance/attachment_bindings',
+                         'resolution': 'lookMount 0: the creature is shown without a mount.'},
+    'manaCost': {'kind': 'field', 'status': 'approved_omission',
+                 'resolution': 'manaCost 0: the creature can be neither summoned nor convinced, so no summoning mana cost is stored.'},
 }
+# Authored keys whose provenance is an OMITTED row instead of a converted one.
+OMITTED_KEYS = {'loot'}
+# Outfit keys the converter maps in rows of their own; the other outfit keys are part of the `outfit` row.
+OUTFIT_OWN_ROWS = ('lookAddons', 'lookMount')
+
+
+def uncovered_keys(text, fields):
+    """Keys of the authored Lua with no converted or implicit row: top-level monster.<key> and the outfit keys with own rows."""
+    keys = set(re.findall(r'^monster\.(\w+)\s*=', text, re.M))
+    keys |= {f'outfit.{key}' for key in OUTFIT_OWN_ROWS if re.search(rf'^\s*{key}\s*=', text, re.M)}
+    return sorted(key for key in keys if not any(f == key or f.startswith((key + '.', key + '[')) for f in fields))
 
 
 def manifest_for(sources, rows, template_lines):
@@ -315,7 +333,11 @@ def bundles(converter):
     if slug != 'dark_merudri':
         raise ValueError(slug)
     result = manifest_for(sources, [dict(r) for r in manifest['entries']], template_rows)
-    missing = set(FIELDS) - {row['source_field'] for row in manifest['entries']} - set(IMPLICIT)
+    emitted = {row['source_field'] for row in manifest['entries']}
+    missing = set(FIELDS) - emitted - set(IMPLICIT)
+    uncovered = uncovered_keys(text, emitted | set(IMPLICIT) | OMITTED_KEYS)
+    if uncovered:
+        raise ValueError(f'authored keys with no manifest row: {uncovered}')
     if missing:
         raise ValueError(f'mapped fields with no converted row: {sorted(missing)}')
     binding = {'source_key': 'oteryn:source.tibiawiki', 'identity_namespace': 'mediawiki/page_id',
@@ -337,9 +359,16 @@ def self_test():
     manifest = manifest_for(sample['sources'], rows, {})
     template = len(manifest['sources']) - 1
     assert all(e['resolution'].startswith('NEEDS VERIFICATION') for e in manifest['entries'] if e['source_index'] == template)
-    for field in IMPLICIT:
-        assert [e for e in manifest['entries'] if e['source_field'] == field
-                and e['resolution'].startswith(VERIFY)], f'{field} has no verification entry'
+    assert uncovered_keys(text, set(FIELDS) | OMITTED_KEYS) == [], uncovered_keys(text, set(FIELDS) | OMITTED_KEYS)
+    assert uncovered_keys(text, (set(FIELDS) | OMITTED_KEYS) - {'outfit.lookMount'}) == ['outfit.lookMount']
+    for field, implicit in IMPLICIT.items():
+        cites, verify = FIELDS[field]
+        if verify or not cites:
+            assert [e for e in manifest['entries'] if e['source_field'] == field
+                    and e['resolution'].startswith(VERIFY)], f'{field} has no verification entry'
+        for source_name, fact in cites:
+            assert [e for e in manifest['entries'] if e['source_field'] == f'infobox.{fact}'
+                    and e['resolution'].endswith(implicit['resolution'])], f'{field} does not cite {source_name} {fact}'
     assert any(e['source_field'] == 'infobox.name' and e['destination'] == '/monster/creature/display_name'
                for e in manifest['entries'])
     cited = {(manifest['sources'][e['source_index']]['title'], e['source_line']) for e in manifest['entries']

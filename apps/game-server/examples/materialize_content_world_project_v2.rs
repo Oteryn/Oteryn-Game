@@ -63,7 +63,7 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "e7e458555f984fa43c1b5e45c0efe0b06b6ece0a25529c6e0031b87b9ef7dcd6";
+    "2667bbc315ace79c4b5c3e97105c6efa1ffb742af69581e572136ea7f175879d";
 const CREATURE_STAGE_TOOL_SHA256: &str =
     "f784abf15353a22372fa293bb96b47195e0cc7b1efbed882a4f2186818be9605";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
@@ -75,7 +75,7 @@ const CREATURE_WIKI_COUNT: usize = 1;
 const CREATURE_WIKI_BINDINGS: [(&str, &str); CREATURE_WIKI_COUNT] =
     [("108320", "oteryn:creature.dark_merudri")];
 const CANARY_BUNDLE_INDEX_SHA256: &str =
-    "1d32943b5ea490268720271368a7a9139ac25099fbe605bd70e9e81d871e14af";
+    "f252c1cd5e4097ad4250da58588c9ca302d7340f640a484daab3fb541bb89a2d";
 const ITEM_ALLOCATION_SHA256: &str =
     "ee9219ccf9d8b2350911abca321507ff924ccd4cb83196efd08b91fbdf098966";
 const NPC_STAGED: &[u8] =
