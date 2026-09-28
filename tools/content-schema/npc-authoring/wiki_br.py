@@ -180,6 +180,7 @@ LINK = re.compile(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]')
 # after links and bold/italic markup are removed, a transcript line is `Speaker: text`; the speaker may be
 # written plain, bold, italic or as a link, before or around the colon, and may contain an apostrophe
 SPEAKER = re.compile(r"\s*([^:<>{}|]{1,60}?)\s*:\s*(.*)$")
+TRANSCRIPT_BOUNDARY = ('|', '{{', '}}', '==', '----', '*', '#', '[[Categoria', '[[Arquivo', '[[File', '[[Imagem')
 BREAK = re.compile(r'<\s*/?\s*br\s*/?\s*>', re.I)
 # structural wiki/HTML markup that is never part of what the NPC says (a closing infobox, spoiler, paragraph ...)
 STRUCTURE = re.compile(r'</?\s*(?:spoiler|p|div|span|small|big|center|noinclude|includeonly|onlyinclude|nowiki|ref|s|u|b|i)\b[^>]*>'
@@ -242,10 +243,14 @@ def page_facts(page):
     speakers |= {label for label in labels if len(label) >= 4
                  and any(edit_distance(label, speaker) == 1 for speaker in speakers)}
     lines = []
+    speaker = None
     for raw in wikitext.split('\n'):
-        # one physical line can hold several turns separated by <br>; a segment without a speaker
-        # continues the turn before it on the same line
-        speaker = None
+        # one physical line can hold several turns separated by <br>; a segment without a speaker continues the
+        # turn before it, also across physical lines, until a transcript boundary (a blank line, an infobox
+        # field, a template, a heading, a rule or a list item) ends it
+        if not raw.strip() or raw.lstrip().startswith(TRANSCRIPT_BOUNDARY) or '----' in raw:
+            speaker = None
+            continue
         for segment in BREAK.split(unmarked(raw)):
             segment = re.sub(r'\s+', ' ', STRUCTURE.sub('', segment)).strip()
             match = SPEAKER.match(segment)
@@ -327,7 +332,8 @@ def cmd_self_test(_args):
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
             "[[Goldro]]: Link form.</br>\nGoldro: Plain form.</br>\n''Goldro:'' Italic form.</br>\n"
             "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
-            "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye.</spoiler></p></noinclude>}}")
+            "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye, and\nsee you soon.\n\n"
+            "Wiki prose after a blank line.\n}}")
     facts = page_facts({**page_record({'pageid': 7, 'title': 'Goldro', 'revisions': [
         {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
     assert facts['positions'] == [(34055, 32503, 7)], facts
@@ -335,7 +341,7 @@ def cmd_self_test(_args):
         'Bread': 4, 'Cheese': None, 'Cot': 200, 'Fire Sword': 1000, 'Vial of Blood': None, 'Mug of Beer': 3}}, facts
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.', 'One.', 'Two. still two.',
-                                  'Repeated label.', 'Typo label.', 'Bye.'], facts
+                                  'Repeated label.', 'Typo label.', 'Bye, and see you soon.'], facts
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
         {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "'''Lee'Delle:''' Welcome."}}}]}), 'role': 'npc'})
     assert apostrophe['npc_lines'] == ['Welcome.'], apostrophe

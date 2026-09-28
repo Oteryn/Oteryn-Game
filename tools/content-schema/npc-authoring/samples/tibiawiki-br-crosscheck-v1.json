@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "9b7d8c0c0a958d6639e26b9afc50e405f51e28147999b4392fe6d4fafada1a3c",
+  "facts_sha256": "e15580a11cf6b285c6cf4e777193ef8e687f4f160179e3bdaedc440eb3b719d9",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -19,9 +19,9 @@
    },
    "dialogue": {
     "br_lines": 47,
-    "matched": 12,
+    "matched": 18,
     "near": 27,
-    "texts": 39
+    "texts": 46
    },
    "name": "A Bearded Woman",
    "npc": "oteryn:npc.a_bearded_woman",
@@ -161,7 +161,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 2,
-    "texts": 2
+    "texts": 4
    },
    "name": "A Dead Bureaucrat (1)",
    "npc": "oteryn:npc.a_dead_bureaucrat_1",
@@ -189,7 +189,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 2,
-    "texts": 2
+    "texts": 4
    },
    "name": "A Dead Bureaucrat (2)",
    "npc": "oteryn:npc.a_dead_bureaucrat_2",
@@ -217,7 +217,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 2,
-    "texts": 2
+    "texts": 4
    },
    "name": "A Dead Bureaucrat (3)",
    "npc": "oteryn:npc.a_dead_bureaucrat_3",
@@ -245,7 +245,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 2,
-    "texts": 2
+    "texts": 4
    },
    "name": "A Dead Bureaucrat (4)",
    "npc": "oteryn:npc.a_dead_bureaucrat_4",
@@ -373,7 +373,7 @@
     "br_lines": 4,
     "matched": 5,
     "near": 0,
-    "texts": 6
+    "texts": 7
    },
    "name": "A Fluffy Squirrel",
    "npc": "oteryn:npc.a_fluffy_squirrel",
@@ -759,7 +759,7 @@
     "br_lines": 4,
     "matched": 2,
     "near": 0,
-    "texts": 3
+    "texts": 5
    },
    "name": "A Seagull",
    "npc": "oteryn:npc.a_seagull",
@@ -899,7 +899,7 @@
     "br_lines": 40,
     "matched": 16,
     "near": 7,
-    "texts": 27
+    "texts": 29
    },
    "name": "A Sweaty Cyclops",
    "npc": "oteryn:npc.a_sweaty_cyclops",
@@ -987,7 +987,7 @@
     "br_lines": 3,
     "matched": 1,
     "near": 0,
-    "texts": 3
+    "texts": 5
    },
    "name": "A Wandering Soul",
    "npc": "oteryn:npc.a_wandering_soul",
@@ -1044,7 +1044,7 @@
     "br_lines": 54,
     "matched": 20,
     "near": 0,
-    "texts": 23
+    "texts": 25
    },
    "name": "A Wrinkled Bonelord",
    "npc": "oteryn:npc.a_wrinkled_bonelord",
@@ -1150,7 +1150,7 @@
     "br_lines": 5,
     "matched": 3,
     "near": 1,
-    "texts": 14
+    "texts": 16
    },
    "name": "Adrian",
    "npc": "oteryn:npc.adrian",
@@ -1261,7 +1261,7 @@
     "br_lines": 66,
     "matched": 59,
     "near": 2,
-    "texts": 68
+    "texts": 72
    },
    "name": "Al Dee",
    "npc": "oteryn:npc.al_dee",
@@ -1431,8 +1431,8 @@
    "dialogue": {
     "br_lines": 16,
     "matched": 4,
-    "near": 0,
-    "texts": 5
+    "near": 1,
+    "texts": 6
    },
    "name": "Alexander",
    "npc": "oteryn:npc.alexander",
@@ -1541,7 +1541,7 @@
     "br_lines": 9,
     "matched": 3,
     "near": 1,
-    "texts": 13
+    "texts": 14
    },
    "name": "Allen",
    "npc": "oteryn:npc.allen",
@@ -1711,9 +1711,9 @@
    },
    "dialogue": {
     "br_lines": 23,
-    "matched": 0,
+    "matched": 1,
     "near": 0,
-    "texts": 0
+    "texts": 1
    },
    "name": "Amarie",
    "npc": "oteryn:npc.amarie",
@@ -1741,7 +1741,7 @@
     "br_lines": 20,
     "matched": 0,
     "near": 0,
-    "texts": 2
+    "texts": 5
    },
    "name": "Ambassador Of Rathleton",
    "npc": "oteryn:npc.ambassador_of_rathleton",
@@ -1769,7 +1769,7 @@
     "br_lines": 63,
     "matched": 60,
     "near": 4,
-    "texts": 68
+    "texts": 73
    },
    "name": "Amber",
    "npc": "oteryn:npc.amber",
@@ -1881,7 +1881,7 @@
     "br_lines": 7,
     "matched": 0,
     "near": 0,
-    "texts": 0
+    "texts": 1
    },
    "name": "An Old Dragonlord",
    "npc": "oteryn:npc.an_old_dragonlord",
@@ -2225,7 +2225,7 @@
     "br_lines": 10,
     "matched": 5,
     "near": 0,
-    "texts": 19
+    "texts": 21
    },
    "name": "Anna",
    "npc": "oteryn:npc.anna",
@@ -2389,9 +2389,9 @@
    },
    "dialogue": {
     "br_lines": 20,
-    "matched": 4,
+    "matched": 10,
     "near": 0,
-    "texts": 8
+    "texts": 14
    },
    "name": "Arkulius",
    "npc": "oteryn:npc.arkulius",
@@ -2541,7 +2541,7 @@
     "br_lines": 21,
     "matched": 0,
     "near": 0,
-    "texts": 0
+    "texts": 1
    },
    "name": "Ashtamor",
    "npc": "oteryn:npc.ashtamor",
@@ -3240,9 +3240,9 @@
    },
    "dialogue": {
     "br_lines": 26,
-    "matched": 0,
+    "matched": 1,
     "near": 0,
-    "texts": 4
+    "texts": 5
    },
    "name": "Bashira",
    "npc": "oteryn:npc.bashira",
@@ -3318,7 +3318,7 @@
     "br_lines": 34,
     "matched": 9,
     "near": 13,
-    "texts": 40
+    "texts": 42
    },
    "name": "Baxter",
    "npc": "oteryn:npc.baxter",
@@ -3354,9 +3354,9 @@
    },
    "dialogue": {
     "br_lines": 16,
-    "matched": 2,
+    "matched": 3,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Beatrice",
    "npc": "oteryn:npc.beatrice",
@@ -3398,7 +3398,7 @@
     "br_lines": 17,
     "matched": 7,
     "near": 1,
-    "texts": 15
+    "texts": 18
    },
    "name": "Benevola",
    "npc": "oteryn:npc.benevola",
@@ -3426,7 +3426,7 @@
     "br_lines": 36,
     "matched": 27,
     "near": 4,
-    "texts": 40
+    "texts": 43
    },
    "name": "Benjamin",
    "npc": "oteryn:npc.benjamin",
@@ -3506,7 +3506,7 @@
     "br_lines": 41,
     "matched": 0,
     "near": 0,
-    "texts": 5
+    "texts": 6
    },
    "name": "Bertha",
    "npc": "oteryn:npc.bertha",
@@ -3711,7 +3711,7 @@
     "br_lines": 24,
     "matched": 2,
     "near": 3,
-    "texts": 63
+    "texts": 70
    },
    "name": "Billy",
    "npc": "oteryn:npc.billy",
@@ -4187,7 +4187,7 @@
     "br_lines": 61,
     "matched": 22,
     "near": 9,
-    "texts": 60
+    "texts": 64
    },
    "name": "Bozo",
    "npc": "oteryn:npc.bozo",
@@ -4420,9 +4420,9 @@
    },
    "dialogue": {
     "br_lines": 29,
-    "matched": 0,
+    "matched": 1,
     "near": 0,
-    "texts": 0
+    "texts": 1
    },
    "name": "Briasol",
    "npc": "oteryn:npc.briasol",
@@ -4488,7 +4488,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 0,
-    "texts": 6
+    "texts": 7
    },
    "name": "Brodrosch",
    "npc": "oteryn:npc.brodrosch",
@@ -4868,7 +4868,7 @@
     "br_lines": 42,
     "matched": 3,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Busty Bonecrusher",
    "npc": "oteryn:npc.busty_bonecrusher",
@@ -5184,7 +5184,7 @@
     "br_lines": 4,
     "matched": 5,
     "near": 0,
-    "texts": 9
+    "texts": 10
    },
    "name": "Captain Indigo",
    "npc": "oteryn:npc.captain_indigo",
@@ -5350,7 +5350,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
-    "texts": 25
+    "texts": 26
    },
    "name": "Captain Pelagia",
    "npc": "oteryn:npc.captain_pelagia",
@@ -5568,7 +5568,7 @@
     "br_lines": 1,
     "matched": 0,
     "near": 0,
-    "texts": 3
+    "texts": 8
    },
    "name": "Carlos",
    "npc": "oteryn:npc.carlos",
@@ -6047,7 +6047,7 @@
     "br_lines": 45,
     "matched": 18,
     "near": 13,
-    "texts": 71
+    "texts": 76
    },
    "name": "Chester Kahs",
    "npc": "oteryn:npc.chester_kahs",
@@ -6073,9 +6073,9 @@
    },
    "dialogue": {
     "br_lines": 26,
-    "matched": 28,
+    "matched": 31,
     "near": 3,
-    "texts": 31
+    "texts": 34
    },
    "name": "Chief Grarkharok",
    "npc": "oteryn:npc.chief_grarkharok",
@@ -6326,9 +6326,9 @@
    },
    "dialogue": {
     "br_lines": 105,
-    "matched": 67,
+    "matched": 71,
     "near": 1,
-    "texts": 70
+    "texts": 74
    },
    "name": "Cipfried",
    "npc": "oteryn:npc.cipfried",
@@ -6376,9 +6376,9 @@
    },
    "dialogue": {
     "br_lines": 17,
-    "matched": 1,
+    "matched": 4,
     "near": 0,
-    "texts": 7
+    "texts": 10
    },
    "name": "Cledwyn",
    "npc": "oteryn:npc.cledwyn",
@@ -6491,7 +6491,7 @@
     "br_lines": 20,
     "matched": 14,
     "near": 2,
-    "texts": 18
+    "texts": 23
    },
    "name": "Coltrayne",
    "npc": "oteryn:npc.coltrayne",
@@ -6556,9 +6556,9 @@
    },
    "dialogue": {
     "br_lines": 14,
-    "matched": 3,
+    "matched": 4,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Cornelia",
    "npc": "oteryn:npc.cornelia",
@@ -6590,7 +6590,7 @@
     "br_lines": 25,
     "matched": 0,
     "near": 0,
-    "texts": 8
+    "texts": 9
    },
    "name": "Cornell",
    "npc": "oteryn:npc.cornell",
@@ -6888,9 +6888,9 @@
    },
    "dialogue": {
     "br_lines": 20,
-    "matched": 0,
+    "matched": 3,
     "near": 0,
-    "texts": 0
+    "texts": 3
    },
    "name": "Cruleo",
    "npc": "oteryn:npc.cruleo",
@@ -7472,9 +7472,9 @@
    },
    "dialogue": {
     "br_lines": 88,
-    "matched": 51,
+    "matched": 56,
     "near": 1,
-    "texts": 59
+    "texts": 64
    },
    "name": "Dixi",
    "npc": "oteryn:npc.dixi",
@@ -7957,7 +7957,7 @@
    },
    "dialogue": {
     "br_lines": 10,
-    "matched": 5,
+    "matched": 4,
     "near": 3,
     "texts": 22
    },
@@ -8030,8 +8030,8 @@
    "dialogue": {
     "br_lines": 16,
     "matched": 3,
-    "near": 0,
-    "texts": 3
+    "near": 1,
+    "texts": 4
    },
    "name": "Ebenizer",
    "npc": "oteryn:npc.ebenizer",
@@ -8111,9 +8111,9 @@
    },
    "dialogue": {
     "br_lines": 8,
-    "matched": 3,
+    "matched": 4,
     "near": 0,
-    "texts": 8
+    "texts": 9
    },
    "name": "Eddy",
    "npc": "oteryn:npc.eddy",
@@ -8186,9 +8186,9 @@
    },
    "dialogue": {
     "br_lines": 9,
-    "matched": 6,
+    "matched": 8,
     "near": 1,
-    "texts": 7
+    "texts": 27
    },
    "name": "Edgar-Ellen",
    "npc": "oteryn:npc.edgar_ellen",
@@ -8304,7 +8304,7 @@
     "br_lines": 89,
     "matched": 70,
     "near": 24,
-    "texts": 131
+    "texts": 132
    },
    "name": "Edowir",
    "npc": "oteryn:npc.edowir",
@@ -8352,9 +8352,9 @@
    },
    "dialogue": {
     "br_lines": 8,
-    "matched": 2,
+    "matched": 3,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Edvard",
    "npc": "oteryn:npc.edvard",
@@ -8437,7 +8437,7 @@
     "br_lines": 4,
     "matched": 0,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Eighty",
    "npc": "oteryn:npc.eighty",
@@ -8567,7 +8567,7 @@
     "br_lines": 27,
     "matched": 24,
     "near": 0,
-    "texts": 26
+    "texts": 28
    },
    "name": "Eldoran the Ambitious",
    "npc": "oteryn:npc.eldoran_the_ambitious",
@@ -8754,9 +8754,9 @@
    },
    "dialogue": {
     "br_lines": 19,
-    "matched": 0,
+    "matched": 3,
     "near": 0,
-    "texts": 1
+    "texts": 4
    },
    "name": "Elyen Ravenlock",
    "npc": "oteryn:npc.elyen_ravenlock",
@@ -8772,9 +8772,9 @@
    },
    "dialogue": {
     "br_lines": 7,
-    "matched": 5,
+    "matched": 6,
     "near": 0,
-    "texts": 6
+    "texts": 7
    },
    "name": "Emael",
    "npc": "oteryn:npc.emael",
@@ -9816,9 +9816,9 @@
    },
    "dialogue": {
     "br_lines": 14,
-    "matched": 5,
+    "matched": 6,
     "near": 0,
-    "texts": 5
+    "texts": 6
    },
    "name": "Fiona",
    "npc": "oteryn:npc.fiona",
@@ -9878,9 +9878,9 @@
    },
    "dialogue": {
     "br_lines": 19,
-    "matched": 4,
+    "matched": 5,
     "near": 0,
-    "texts": 22
+    "texts": 24
    },
    "name": "Flavius",
    "npc": "oteryn:npc.flavius",
@@ -10198,9 +10198,9 @@
    },
    "dialogue": {
     "br_lines": 71,
-    "matched": 47,
+    "matched": 46,
     "near": 2,
-    "texts": 62
+    "texts": 63
    },
    "name": "Frodo",
    "npc": "oteryn:npc.frodo",
@@ -10394,7 +10394,7 @@
     "br_lines": 15,
     "matched": 18,
     "near": 0,
-    "texts": 21
+    "texts": 22
    },
    "name": "Galuna",
    "npc": "oteryn:npc.galuna",
@@ -10430,7 +10430,7 @@
     "br_lines": 6,
     "matched": 5,
     "near": 0,
-    "texts": 8
+    "texts": 9
    },
    "name": "Gamel",
    "npc": "oteryn:npc.gamel",
@@ -10485,8 +10485,8 @@
    "dialogue": {
     "br_lines": 33,
     "matched": 29,
-    "near": 3,
-    "texts": 39
+    "near": 4,
+    "texts": 40
    },
    "name": "Gamon",
    "npc": "oteryn:npc.gamon",
@@ -11738,9 +11738,9 @@
    },
    "dialogue": {
     "br_lines": 9,
-    "matched": 0,
+    "matched": 1,
     "near": 0,
-    "texts": 2
+    "texts": 3
    },
    "name": "Golem Servant",
    "npc": "oteryn:npc.golem_servant",
@@ -11790,7 +11790,7 @@
     "br_lines": 23,
     "matched": 24,
     "near": 0,
-    "texts": 40
+    "texts": 41
    },
    "name": "Gorn",
    "npc": "oteryn:npc.gorn",
@@ -11954,7 +11954,7 @@
     "br_lines": 24,
     "matched": 23,
     "near": 0,
-    "texts": 53
+    "texts": 54
    },
    "name": "Gregor",
    "npc": "oteryn:npc.gregor",
@@ -12120,7 +12120,7 @@
     "br_lines": 15,
     "matched": 12,
     "near": 0,
-    "texts": 14
+    "texts": 16
    },
    "name": "Guard Captain Hartford",
    "npc": "oteryn:npc.guard_captain_hartford",
@@ -12302,9 +12302,9 @@
    },
    "dialogue": {
     "br_lines": 53,
-    "matched": 7,
+    "matched": 8,
     "near": 2,
-    "texts": 11
+    "texts": 12
    },
    "name": "Guide Edna",
    "npc": "oteryn:npc.guide_edna",
@@ -12550,9 +12550,9 @@
    },
    "dialogue": {
     "br_lines": 16,
-    "matched": 9,
+    "matched": 12,
     "near": 0,
-    "texts": 22
+    "texts": 25
    },
    "name": "Gustavo, The Guard",
    "npc": "oteryn:npc.gustavo_the_guard",
@@ -12893,7 +12893,7 @@
     "br_lines": 26,
     "matched": 15,
     "near": 0,
-    "texts": 23
+    "texts": 33
    },
    "name": "Hamish",
    "npc": "oteryn:npc.hamish",
@@ -12973,7 +12973,7 @@
     "br_lines": 5,
     "matched": 5,
     "near": 0,
-    "texts": 7
+    "texts": 8
    },
    "name": "Hardek",
    "npc": "oteryn:npc.hardek",
@@ -13210,7 +13210,7 @@
     "br_lines": 38,
     "matched": 9,
     "near": 0,
-    "texts": 16
+    "texts": 17
    },
    "name": "Hector The Mentor",
    "npc": "oteryn:npc.hector_the_mentor",
@@ -13470,7 +13470,7 @@
     "br_lines": 13,
     "matched": 12,
     "near": 0,
-    "texts": 20
+    "texts": 21
    },
    "name": "Hoggle",
    "npc": "oteryn:npc.hoggle",
@@ -13758,7 +13758,7 @@
     "br_lines": 155,
     "matched": 18,
     "near": 0,
-    "texts": 21
+    "texts": 29
    },
    "name": "Inigo",
    "npc": "oteryn:npc.inigo",
@@ -14220,9 +14220,9 @@
    },
    "dialogue": {
     "br_lines": 18,
-    "matched": 2,
+    "matched": 3,
     "near": 0,
-    "texts": 4
+    "texts": 5
    },
    "name": "Iwan",
    "npc": "oteryn:npc.iwan",
@@ -14401,9 +14401,9 @@
    },
    "dialogue": {
     "br_lines": 20,
-    "matched": 0,
+    "matched": 3,
     "near": 0,
-    "texts": 0
+    "texts": 4
    },
    "name": "Jack",
    "npc": "oteryn:npc.jack",
@@ -14475,7 +14475,7 @@
     "br_lines": 37,
     "matched": 32,
     "near": 1,
-    "texts": 38
+    "texts": 40
    },
    "name": "Jack Springer",
    "npc": "oteryn:npc.jack_springer",
@@ -14885,7 +14885,7 @@
     "br_lines": 36,
     "matched": 0,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Jessica",
    "npc": "oteryn:npc.jessica",
@@ -15340,9 +15340,9 @@
    },
    "dialogue": {
     "br_lines": 35,
-    "matched": 3,
+    "matched": 4,
     "near": 0,
-    "texts": 6
+    "texts": 7
    },
    "name": "Karith",
    "npc": "oteryn:npc.karith",
@@ -15502,7 +15502,7 @@
     "br_lines": 8,
     "matched": 3,
     "near": 0,
-    "texts": 31
+    "texts": 32
    },
    "name": "Kendra",
    "npc": "oteryn:npc.kendra",
@@ -15530,7 +15530,7 @@
     "br_lines": 8,
     "matched": 0,
     "near": 0,
-    "texts": 11
+    "texts": 12
    },
    "name": "Kendra (Thais)",
    "npc": "oteryn:npc.kendra_thais",
@@ -15558,7 +15558,7 @@
     "br_lines": 12,
     "matched": 0,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Kepar",
    "npc": "oteryn:npc.kepar",
@@ -15830,7 +15830,7 @@
     "br_lines": 28,
     "matched": 12,
     "near": 0,
-    "texts": 13
+    "texts": 17
    },
    "name": "Klom Stonecutter",
    "npc": "oteryn:npc.klom_stonecutter",
@@ -16176,7 +16176,7 @@
     "br_lines": 21,
     "matched": 4,
     "near": 2,
-    "texts": 62
+    "texts": 66
    },
    "name": "Lee'Delle",
    "npc": "oteryn:npc.lee_delle",
@@ -16372,7 +16372,7 @@
     "br_lines": 12,
     "matched": 10,
     "near": 1,
-    "texts": 75
+    "texts": 81
    },
    "name": "Lily",
    "npc": "oteryn:npc.lily",
@@ -16713,9 +16713,9 @@
    },
    "dialogue": {
     "br_lines": 41,
-    "matched": 40,
+    "matched": 41,
     "near": 3,
-    "texts": 44
+    "texts": 47
    },
    "name": "Loui",
    "npc": "oteryn:npc.loui",
@@ -16743,7 +16743,7 @@
     "br_lines": 14,
     "matched": 6,
     "near": 1,
-    "texts": 17
+    "texts": 18
    },
    "name": "Lubo",
    "npc": "oteryn:npc.lubo",
@@ -16868,9 +16868,9 @@
    },
    "dialogue": {
     "br_lines": 14,
-    "matched": 3,
+    "matched": 4,
     "near": 0,
-    "texts": 5
+    "texts": 6
    },
    "name": "Luna",
    "npc": "oteryn:npc.luna",
@@ -17082,7 +17082,7 @@
     "br_lines": 26,
     "matched": 0,
     "near": 0,
-    "texts": 1
+    "texts": 4
    },
    "name": "Maeryn",
    "npc": "oteryn:npc.maeryn",
@@ -17964,9 +17964,9 @@
    },
    "dialogue": {
     "br_lines": 40,
-    "matched": 1,
+    "matched": 2,
     "near": 0,
-    "texts": 1
+    "texts": 2
    },
    "name": "Milos",
    "npc": "oteryn:npc.milos",
@@ -17992,9 +17992,9 @@
    },
    "dialogue": {
     "br_lines": 19,
-    "matched": 6,
+    "matched": 7,
     "near": 0,
-    "texts": 6
+    "texts": 7
    },
    "name": "Mirabell",
    "npc": "oteryn:npc.mirabell",
@@ -18268,9 +18268,9 @@
    },
    "dialogue": {
     "br_lines": 18,
-    "matched": 1,
-    "near": 0,
-    "texts": 1
+    "matched": 4,
+    "near": 1,
+    "texts": 5
    },
    "name": "Mother Of Jack",
    "npc": "oteryn:npc.mother_of_jack",
@@ -18320,7 +18320,7 @@
     "br_lines": 28,
     "matched": 18,
     "near": 1,
-    "texts": 25
+    "texts": 33
    },
    "name": "Mr Morris",
    "npc": "oteryn:npc.mr_morris",
@@ -18479,7 +18479,7 @@
     "br_lines": 13,
     "matched": 0,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Murim",
    "npc": "oteryn:npc.murim",
@@ -18567,7 +18567,7 @@
     "br_lines": 11,
     "matched": 1,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Myzzi",
    "npc": "oteryn:npc.myzzi",
@@ -18737,7 +18737,7 @@
     "br_lines": 39,
     "matched": 2,
     "near": 0,
-    "texts": 4
+    "texts": 6
    },
    "name": "Nelly",
    "npc": "oteryn:npc.nelly",
@@ -19091,7 +19091,7 @@
     "br_lines": 9,
     "matched": 0,
     "near": 0,
-    "texts": 2
+    "texts": 5
    },
    "name": "Ninos",
    "npc": "oteryn:npc.ninos",
@@ -19296,7 +19296,7 @@
     "br_lines": 25,
     "matched": 23,
     "near": 0,
-    "texts": 52
+    "texts": 57
    },
    "name": "Norma",
    "npc": "oteryn:npc.norma",
@@ -19529,9 +19529,9 @@
    },
    "dialogue": {
     "br_lines": 91,
-    "matched": 56,
+    "matched": 59,
     "near": 1,
-    "texts": 61
+    "texts": 65
    },
    "name": "Obi",
    "npc": "oteryn:npc.obi",
@@ -19561,9 +19561,9 @@
    },
    "dialogue": {
     "br_lines": 21,
-    "matched": 0,
+    "matched": 4,
     "near": 0,
-    "texts": 1
+    "texts": 5
    },
    "name": "Oblivion",
    "npc": "oteryn:npc.oblivion",
@@ -19904,7 +19904,7 @@
     "br_lines": 18,
     "matched": 0,
     "near": 0,
-    "texts": 0
+    "texts": 1
    },
    "name": "One-Eyed Joe",
    "npc": "oteryn:npc.one_eyed_joe",
@@ -20068,7 +20068,7 @@
     "br_lines": 25,
     "matched": 0,
     "near": 0,
-    "texts": 1
+    "texts": 3
    },
    "name": "Ongulf",
    "npc": "oteryn:npc.ongulf",
@@ -20118,7 +20118,7 @@
     "br_lines": 44,
     "matched": 11,
     "near": 3,
-    "texts": 16
+    "texts": 23
    },
    "name": "Oressa",
    "npc": "oteryn:npc.oressa",
@@ -20486,7 +20486,7 @@
     "br_lines": 40,
     "matched": 0,
     "near": 0,
-    "texts": 2
+    "texts": 3
    },
    "name": "Paulie",
    "npc": "oteryn:npc.paulie",
@@ -20910,9 +20910,9 @@
    },
    "dialogue": {
     "br_lines": 15,
-    "matched": 3,
+    "matched": 4,
     "near": 0,
-    "texts": 22
+    "texts": 23
    },
    "name": "Pino",
    "npc": "oteryn:npc.pino",
@@ -20940,7 +20940,7 @@
     "br_lines": 31,
     "matched": 19,
     "near": 4,
-    "texts": 27
+    "texts": 30
    },
    "name": "Plunderpurse",
    "npc": "oteryn:npc.plunderpurse",
@@ -21080,9 +21080,9 @@
    },
    "dialogue": {
     "br_lines": 7,
-    "matched": 0,
+    "matched": 7,
     "near": 0,
-    "texts": 0
+    "texts": 7
    },
    "name": "Prisoner",
    "npc": "oteryn:npc.prisoner",
@@ -21314,7 +21314,7 @@
    "dialogue": {
     "br_lines": 36,
     "matched": 39,
-    "near": 8,
+    "near": 7,
     "texts": 63
    },
    "name": "Queen Eloise",
@@ -22050,7 +22050,7 @@
     "br_lines": 21,
     "matched": 10,
     "near": 3,
-    "texts": 18
+    "texts": 24
    },
    "name": "Richard",
    "npc": "oteryn:npc.richard",
@@ -22197,7 +22197,7 @@
     "br_lines": 22,
     "matched": 5,
     "near": 0,
-    "texts": 9
+    "texts": 11
    },
    "name": "Robson",
    "npc": "oteryn:npc.robson",
@@ -22371,7 +22371,7 @@
     "br_lines": 15,
     "matched": 13,
     "near": 0,
-    "texts": 13
+    "texts": 14
    },
    "name": "Romella",
    "npc": "oteryn:npc.romella",
@@ -22471,7 +22471,7 @@
     "br_lines": 26,
     "matched": 25,
     "near": 1,
-    "texts": 27
+    "texts": 29
    },
    "name": "Rosemarie",
    "npc": "oteryn:npc.rosemarie",
@@ -22556,9 +22556,9 @@
    },
    "dialogue": {
     "br_lines": 61,
-    "matched": 7,
+    "matched": 8,
     "near": 1,
-    "texts": 23
+    "texts": 24
    },
    "name": "Rotem Valos",
    "npc": "oteryn:npc.rotem_valos",
@@ -22888,9 +22888,9 @@
    },
    "dialogue": {
     "br_lines": 16,
-    "matched": 4,
+    "matched": 6,
     "near": 0,
-    "texts": 5
+    "texts": 7
    },
    "name": "Sandra",
    "npc": "oteryn:npc.sandra",
@@ -23033,7 +23033,7 @@
     "br_lines": 85,
     "matched": 0,
     "near": 0,
-    "texts": 2
+    "texts": 6
    },
    "name": "Santiago",
    "npc": "oteryn:npc.santiago",
@@ -23061,7 +23061,7 @@
     "br_lines": 4,
     "matched": 3,
     "near": 0,
-    "texts": 4
+    "texts": 5
    },
    "name": "Sarina",
    "npc": "oteryn:npc.sarina",
@@ -23281,7 +23281,7 @@
     "br_lines": 10,
     "matched": 10,
     "near": 0,
-    "texts": 12
+    "texts": 14
    },
    "name": "Second in Command Demeron",
    "npc": "oteryn:npc.second_in_command_demeron",
@@ -23435,7 +23435,7 @@
     "br_lines": 40,
     "matched": 5,
     "near": 2,
-    "texts": 83
+    "texts": 87
    },
    "name": "Seymour",
    "npc": "oteryn:npc.seymour",
@@ -23721,7 +23721,7 @@
     "br_lines": 16,
     "matched": 2,
     "near": 0,
-    "texts": 4
+    "texts": 5
    },
    "name": "Shiantis",
    "npc": "oteryn:npc.shiantis",
@@ -23897,7 +23897,7 @@
     "br_lines": 10,
     "matched": 3,
     "near": 0,
-    "texts": 3
+    "texts": 7
    },
    "name": "Shoddy Beggar",
    "npc": "oteryn:npc.shoddy_beggar",
@@ -23959,7 +23959,7 @@
     "br_lines": 17,
     "matched": 0,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Siestaar",
    "npc": "oteryn:npc.siestaar",
@@ -24108,9 +24108,9 @@
    },
    "dialogue": {
     "br_lines": 26,
-    "matched": 20,
+    "matched": 23,
     "near": 1,
-    "texts": 25
+    "texts": 28
    },
    "name": "Simon The Beggar",
    "npc": "oteryn:npc.simon_the_beggar",
@@ -24171,9 +24171,9 @@
    },
    "dialogue": {
     "br_lines": 39,
-    "matched": 3,
+    "matched": 7,
     "near": 0,
-    "texts": 3
+    "texts": 7
    },
    "name": "Sinclair",
    "npc": "oteryn:npc.sinclair",
@@ -24233,9 +24233,9 @@
    },
    "dialogue": {
     "br_lines": 18,
-    "matched": 1,
-    "near": 0,
-    "texts": 1
+    "matched": 4,
+    "near": 1,
+    "texts": 5
    },
    "name": "Sister Of Jack",
    "npc": "oteryn:npc.sister_of_jack",
@@ -25242,9 +25242,9 @@
    },
    "dialogue": {
     "br_lines": 62,
-    "matched": 3,
+    "matched": 4,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Telas Golem",
    "npc": "oteryn:npc.telas_golem",
@@ -25510,7 +25510,7 @@
     "br_lines": 6,
     "matched": 1,
     "near": 0,
-    "texts": 1
+    "texts": 2
    },
    "name": "The Crone",
    "npc": "oteryn:npc.the_crone",
@@ -26003,9 +26003,9 @@
    },
    "dialogue": {
     "br_lines": 15,
-    "matched": 14,
+    "matched": 16,
     "near": 0,
-    "texts": 18
+    "texts": 20
    },
    "name": "Timur",
    "npc": "oteryn:npc.timur",
@@ -26169,9 +26169,9 @@
    },
    "dialogue": {
     "br_lines": 28,
-    "matched": 0,
+    "matched": 4,
     "near": 0,
-    "texts": 1
+    "texts": 5
    },
    "name": "Tomruk The Ruddy",
    "npc": "oteryn:npc.tomruk_the_ruddy",
@@ -26197,9 +26197,9 @@
    },
    "dialogue": {
     "br_lines": 15,
-    "matched": 1,
+    "matched": 2,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Tonar",
    "npc": "oteryn:npc.tonar",
@@ -26227,7 +26227,7 @@
     "br_lines": 15,
     "matched": 0,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "match": "POSITION_ALIAS",
    "name": "Tonar Oskayaat",
@@ -27019,7 +27019,7 @@
     "br_lines": 12,
     "matched": 13,
     "near": 4,
-    "texts": 38
+    "texts": 39
    },
    "name": "Uzon",
    "npc": "oteryn:npc.uzon",
@@ -27047,7 +27047,7 @@
     "br_lines": 12,
     "matched": 3,
     "near": 3,
-    "texts": 10
+    "texts": 11
    },
    "name": "Uzon Back",
    "npc": "oteryn:npc.uzon_back",
@@ -27964,9 +27964,9 @@
    },
    "dialogue": {
     "br_lines": 17,
-    "matched": 3,
+    "matched": 4,
     "near": 0,
-    "texts": 4
+    "texts": 5
    },
    "name": "Willard",
    "npc": "oteryn:npc.willard",
@@ -28069,7 +28069,7 @@
     "br_lines": 28,
     "matched": 7,
     "near": 9,
-    "texts": 51
+    "texts": 55
    },
    "name": "Willie",
    "npc": "oteryn:npc.willie",
@@ -28130,7 +28130,7 @@
     "br_lines": 6,
     "matched": 5,
     "near": 1,
-    "texts": 12
+    "texts": 14
    },
    "name": "Woblin",
    "npc": "oteryn:npc.woblin",
@@ -28212,9 +28212,9 @@
    },
    "dialogue": {
     "br_lines": 17,
-    "matched": 1,
-    "near": 0,
-    "texts": 2
+    "matched": 4,
+    "near": 1,
+    "texts": 6
    },
    "name": "Wyrdin",
    "npc": "oteryn:npc.wyrdin",
@@ -28412,9 +28412,9 @@
    },
    "dialogue": {
     "br_lines": 18,
-    "matched": 4,
+    "matched": 5,
     "near": 0,
-    "texts": 5
+    "texts": 6
    },
    "name": "Yana",
    "npc": "oteryn:npc.yana",
@@ -28689,7 +28689,7 @@
     "br_lines": 10,
     "matched": 1,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Yoem",
    "npc": "oteryn:npc.yoem",
@@ -28886,9 +28886,9 @@
    },
    "dialogue": {
     "br_lines": 24,
-    "matched": 0,
+    "matched": 4,
     "near": 0,
-    "texts": 2
+    "texts": 6
    },
    "name": "Zarifan",
    "npc": "oteryn:npc.zarifan",
@@ -28916,7 +28916,7 @@
     "br_lines": 20,
     "matched": 2,
     "near": 1,
-    "texts": 3
+    "texts": 4
    },
    "name": "Zebron",
    "npc": "oteryn:npc.zebron",
@@ -28972,7 +28972,7 @@
     "br_lines": 42,
     "matched": 6,
     "near": 5,
-    "texts": 69
+    "texts": 74
    },
    "name": "Zerbrus",
    "npc": "oteryn:npc.zerbrus",
@@ -29020,9 +29020,9 @@
    },
    "dialogue": {
     "br_lines": 10,
-    "matched": 4,
+    "matched": 5,
     "near": 0,
-    "texts": 4
+    "texts": 5
    },
    "name": "Zethra",
    "npc": "oteryn:npc.zethra",
@@ -29054,7 +29054,7 @@
     "br_lines": 71,
     "matched": 0,
     "near": 0,
-    "texts": 2
+    "texts": 5
    },
    "name": "Zirella",
    "npc": "oteryn:npc.zirella",
@@ -29160,7 +29160,7 @@
     "br_lines": 23,
     "matched": 0,
     "near": 0,
-    "texts": 3
+    "texts": 4
    },
    "name": "Znozel",
    "npc": "oteryn:npc.znozel",
@@ -29346,10 +29346,10 @@
  "totals": {
   "dialogue:br_only": 179,
   "dialogue:checked": 367,
-  "dialogue:matched": 2710,
-  "dialogue:near": 335,
-  "dialogue:no_text_matched": 70,
-  "dialogue:texts": 5495,
+  "dialogue:matched": 2816,
+  "dialogue:near": 340,
+  "dialogue:no_text_matched": 67,
+  "dialogue:texts": 5848,
   "matched_by_position_alias": 7,
   "no_br_page": 14,
   "npcs": 1093,

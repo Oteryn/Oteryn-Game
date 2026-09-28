@@ -19,7 +19,7 @@ of an admitted placement on the same floor; the row then records `match: POSITIO
   the container), with the explicit BR price when BR gives one (BR omits the
   price when it is the item's usual price). BR_ONLY is an NPC whose BR trade list has no admitted
   offers at all;
-- dialogue: how many admitted Dialogue texts appear, as a full line, among the lines the NPC speaks in
+- dialogue: how many admitted Dialogue texts (messages, keyword replies and voices) appear, as a full line, among the lines the NPC speaks in
   its BR transcript, with the same normalization and |PLAYERNAME| wildcard as rule D10 and the in-game
   `{keyword}` highlight braces removed (transcripts show plain text). A text that does not match but is
   at least NEAR_RATIO similar to a transcript line is counted as near (a small wording difference).
@@ -143,6 +143,7 @@ def dialogue_texts(declaration):
             walk(node.get('children') or [])
 
     walk(declaration.get('keywords') or [])
+    texts.extend(entry['text'] for entry in (declaration.get('voices') or {}).get('entries', []))
     return texts
 
 
