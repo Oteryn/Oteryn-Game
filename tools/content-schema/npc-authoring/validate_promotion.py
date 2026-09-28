@@ -256,6 +256,8 @@ def candidate_errors(candidate, index):
             count = offer.get('count')
             if count is not None and (not _is_int(count) or count < 1):
                 errs.append(f'{olabel}: count {count!r} is not None or an int >= 1')
+            if offer.get('origin', None) not in (None, 'wiki'):
+                errs.append(f"{olabel}: origin {offer.get('origin')!r} is neither absent nor 'wiki'")
             sub_type = offer.get('sub_type')
             if sub_type is not None and not _is_int(sub_type):
                 errs.append(f'{olabel}: sub_type {sub_type!r} is not None or an int')
@@ -345,6 +347,13 @@ def candidate_errors(candidate, index):
                          f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_CONFIRMED', 'WIKI_MAJORITY_PRICE', "
                          f"'WIKI_POSITION', 'WIKI_PRICE', 'WIKI_SPELLING']")
 
+    # D13 offers: a wiki-origin offer and its WIKI_OFFER row come together, one row per offer
+    wiki_offer_facts = sorted(f"trade.{offer.get('source_item_id')}.{offer.get('direction')}"
+                              for offer in (candidate.get('trade_service') or {}).get('offers') or []
+                              if offer.get('origin') == 'wiki')
+    offer_rows = sorted(row.get('fact') for row in arbitration_rows if row.get('rule') == 'WIKI_OFFER')
+    if wiki_offer_facts != offer_rows:
+        errs.append(f'{label}: wiki-origin offers {wiki_offer_facts} do not match the WIKI_OFFER rows {offer_rows}')
     if wiki_placements and not any(row.get('rule') == 'WIKI_POSITION' for row in arbitration_rows):
         errs.append(f'{label}: wiki-origin placement present without a WIKI_POSITION arbitration row')
 
@@ -522,10 +531,7 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names, ti
         if tibiopedia_bytes and item_map_bytes is not None and trade.get('currency') is None \
                 and name not in promotion_candidates.WIKI_SHOP_HELD:
             stated_rows = [row for row in candidate.get('arbitration') or [] if row.get('rule') == 'WIKI_OFFER']
-            facts = {row.get('fact') for row in stated_rows}
-            base = [offer for offer in trade.get('offers') or []
-                    if f"trade.{offer.get('source_item_id')}.{offer.get('direction')}" not in facts
-                    or offer.get('count') is not None or offer.get('sub_type') is not None]
+            base = [offer for offer in trade.get('offers') or [] if offer.get('origin') != 'wiki']
             derived = []
             builder.wiki_offers(name, base, candidate.get('left_out') or [], derived)
             if sorted(json.dumps(row, sort_keys=True) for row in derived) != sorted(json.dumps(row, sort_keys=True) for row in stated_rows):

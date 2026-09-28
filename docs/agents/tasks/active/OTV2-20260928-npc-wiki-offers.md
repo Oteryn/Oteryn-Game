@@ -56,17 +56,18 @@ external_repositories: []
 The second half of D13. With the Tibiopedia facts, an admitted gold shop gets every plain offer that two of the
 three wikis (Fandom, TibiaWiki BR, Tibiopedia) list for that NPC and direction with the same price. Three
 conditions apply: the wiki item name is exactly one registered Item's name; the sources have no offer of that
-Item and direction; and the sources do not gate it. An admitted NPC with no source trade gets a gold trade
+Item and direction; and the sources do not offer that Item in a left-out offer (gated, unconfirmed or
+conflicting). An admitted NPC with no source trade gets a gold trade
 Service from such offers alone. Each added offer carries a `WIKI_OFFER` row with its agreeing wikis. Given the
 pinned item map, the validator re-derives every candidate's rows, so an omitted or invented wiki offer fails.
 A fixed `WIKI_SHOP_HELD` table keeps quest, event and token shops out: Cillia, Grizzly Adams, Gnomux, Walter
 Jaeger and Ruprecht.
 
-- 934 offers at 95 NPCs. The largest are Shanar, Yasir, Brengus, Robert and Cedrik.
-- 16 new gold trade Services: Albinius, Ashtamor, Blind Orc, Captain Haba, Dal the Huntress, Fral the Butcher,
+- 894 offers at 91 NPCs. The largest are at Rock In A Hard Place, Shanar, Yasir, Raffael and Brengus.
+- 15 new gold trade Services: Ashtamor, Blind Orc, Captain Haba, Dal the Huntress, Fral the Butcher,
   Hjaern, Humgolf, Iyad, Jehan the Baker, Lucius, Partos, Raffael, Rock In A Hard Place, Tefrit and Vigintius.
-- Wave A: 1,088 NPCs, 2,167 NPC-side declarations, 323 trade and 55 travel Services, 12,666 offer rows and
-  2,330 bindings. Dialogues are unchanged. The BR cross-check's BR-only shops drop from 64 to 51.
+- Wave A: 1,088 NPCs, 2,166 NPC-side declarations, 322 trade and 55 travel Services, 12,626 offer rows and
+  2,330 bindings. Dialogues are unchanged. The BR cross-check's BR-only shops drop from 64 to 52.
 
 Authority: owner decision in this session ("tak" on D13, which includes new offers backed by two wikis).
 
@@ -75,6 +76,6 @@ Authority: owner decision in this session ("tak" on D13, which includes new offe
 - `test_promotion` (58 tests) passes. `validate_promotion` passes (1,089/1,089) with the three pinned wikis and
   the item map.
 - The dialogue and admission stages re-run; `materialize_content_world_project_v2` verifies 1,088 NPCs and
-  2,167 declarations.
+  2,166 declarations.
 - The tree generator, its validator and tests, and `validate_materialized_game_tree` pass.
   `content_world_project_repository` passes with new pins.

@@ -60,8 +60,8 @@ Merge rules:
   D13. The source price stays whenever no two wikis agree;
 - D13 offers: with the Tibiopedia facts, an admitted gold (or source-less) shop also gets every plain offer two of the
   three wikis list for that NPC and direction with the same price, when the item name is exactly one registered
-  Item's name, the sources have no offer of that Item and direction, and the sources do not gate that Item
-  (GATED_OFFER). The row records `{"fact": "trade.<item>.<direction>", "rule": "WIKI_OFFER", "chosen": "wiki",
+  Item's name and the sources neither admit an offer of that Item and direction nor offer that Item at all in a
+  left-out offer (gated, unconfirmed, conflicting). The offer carries `"origin": "wiki"`; the row records `{"fact": "trade.<item>.<direction>", "rule": "WIKI_OFFER", "chosen": "wiki",
   "item_name": ..., "price": ..., "wikis": [...]}`; the offer has no count or sub type. An NPC with no source trade
   gets a gold trade Service from these offers alone. A fixed `WIKI_SHOP_HELD` table keeps quest, event and
   token shops (whose wiki prices are not plain gold sales) out of this rule;
@@ -454,8 +454,9 @@ class Builder:
         admitted offers lack, each with its WIKI_OFFER row, sorted by (item name, direction)."""
         fandom = {row['item'].lower(): row for row in self.wiki_trade.get(normalize_name(name), [])}
         have = {(offer['direction'], offer['item']['key']) for offer in offers}
-        gated = {int(match.group(1)) for row in left_out if row['reason'] == 'GATED_OFFER'
-                 for match in [re.match(r'trade\.(\d+)', row['fact'])] if match}
+        # an Item the sources offer in a left-out offer (gated, unconfirmed, conflicting) is theirs to settle
+        source_left_out = {int(match.group(1)) for row in left_out
+                           for match in [re.match(r'trade\.(\d+)', row['fact'])] if match}
         listed = set()
         for trade in (self.br_trade.get(fold(name), {}), self.tibiopedia_trade.get(fold(name), {})):
             for direction, items in trade.items():
@@ -467,7 +468,7 @@ class Builder:
         added = []
         for item_name, direction in sorted(listed):
             key = self.registry_keys.get(item_name)
-            if key is None or (direction, key) in have or self.source_ids.get(key) in gated:
+            if key is None or (direction, key) in have or self.source_ids.get(key) in source_left_out:
                 continue
             price, wikis = self.majority_price(name, direction, item_name, fandom)
             if price is None:
@@ -476,7 +477,7 @@ class Builder:
             arbitration.append({'fact': f'trade.{source_item_id}.{direction}', 'rule': 'WIKI_OFFER', 'chosen': 'wiki',
                                 'item_name': item_name, 'price': price, 'wikis': wikis})
             added.append({'item': self.item_ref(source_item_id), 'source_item_id': source_item_id, 'direction': direction,
-                          'unit_price': price, 'count': None, 'sub_type': None})
+                          'unit_price': price, 'count': None, 'sub_type': None, 'origin': 'wiki'})
         return added
 
     def currency(self, bundles, left_out):

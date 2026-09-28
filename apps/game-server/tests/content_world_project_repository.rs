@@ -17,12 +17,12 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "content.lock.json",
         364,
-        "b0477b9619637907d1ceae511c2ec23260220217eb2b340e97249a5f8ac498bd",
+        "2e166b8b00d8cf065adf6ad4012fe840f2d9dc1b8aef9241426a4c37e520dc1c",
     ),
     (
         "definitions/declarations.json",
-        14_881_240,
-        "d4868f62d52de118a7bc3a9111a0a39aaa0b047eca62647a1a07b0100f77e695",
+        14_875_551,
+        "36e70ed06836128d443527c1f70ce75c4a9f8d7a96c8fa1ec0f046e174f04a4b",
     ),
     (
         "definitions/reference.json",
@@ -37,7 +37,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "manifest.json",
         1937,
-        "fa0432386be8f5d82786da1528da8690831b11344dc3a5e871cca144856d8611",
+        "7b9df621a1bd1fef6717ec849cf49f8d795226c15aa5f7044e01bd90dee75133",
     ),
     (
         "presentations/bindings.json",
@@ -47,7 +47,7 @@ const DOCUMENTS: [(&str, usize, &str); 11] = [
     (
         "project.json",
         390,
-        "a37fd9755c92f63591aea9408f2b6a410aa1e77c751f9e4452b3dbb9ef832353",
+        "4378da499a1355e1feb036514fc5f7a18fb4d487552d3cf00401287ef107be13",
     ),
     (
         "provenance/imports.json",
@@ -84,7 +84,7 @@ const SUCCESSOR_TREE_MARKERS: [&str; 10] = [
 const TREE_CONTRACT: &str =
     "docs/agents/evidence/OTV2-20260925-full-game-content-ruleset-tree-v1.json";
 const TREE_DIRECTORY_NODES: usize = 97;
-const TREE_SHA256: &str = "3c56e02dd421b56d084094aebdda423b5f9f624f331e5ed354d38fc7ee25a1a9";
+const TREE_SHA256: &str = "90b85df9dbb671bddf620de06600fcee3e33c0b13dc804f9fa5e61d890fb6399";
 const FULL_FAMILY_MAX_DECODED_FIELDS: usize = 2_120_000;
 const FULL_FAMILY_MAX_STRING_BYTES: usize = 43_000_000;
 /// Canary creature admission pilot (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1 §7 slice 3).
@@ -94,7 +94,7 @@ const CREATURE_PROFILES: usize = 19435;
 /// NPC admission wave A (OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1 §7 slice 4).
 const NPCS: usize = 1088;
 const NPC_RECORDS: usize = 2176;
-const NPC_DECLARATIONS: usize = 2167;
+const NPC_DECLARATIONS: usize = 2166;
 const NPC_DIALOGUES: usize = 701;
 const NPC_BINDINGS: usize = 2330;
 /// Encounter admission (OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1 §5 slice 4).

@@ -643,7 +643,7 @@ class PromotionValidatorTests(unittest.TestCase):
         offers, rows = self.offer_builder(50, [50])
         self.assertEqual(offers, [{'item': {'family': 'Item', 'key': 'oteryn:item.registry.i2', 'revision': 'r1'},
                                    'source_item_id': 3003, 'direction': 'SellToPlayer', 'unit_price': 50,
-                                   'count': None, 'sub_type': None}])
+                                   'count': None, 'sub_type': None, 'origin': 'wiki'}])
         self.assertEqual(rows, [{'fact': 'trade.3003.SellToPlayer', 'rule': 'WIKI_OFFER', 'chosen': 'wiki',
                                  'item_name': 'rope', 'price': 50, 'wikis': ['fandom', 'tibiopedia']}])
         for fandom, tibiopedia in ((50, [60]), (None, [50]), (50, [])):
@@ -651,16 +651,27 @@ class PromotionValidatorTests(unittest.TestCase):
         # two registered Items with the name "rope": the wiki name settles neither
         ambiguous = {'oteryn:item.registry.i1': 'rope', 'oteryn:item.registry.i2': 'rope'}
         self.assertEqual(self.offer_builder(50, [50], names=ambiguous), ([], []))
-        # the sources gate the Item: the wikis do not open it
-        self.assertEqual(self.offer_builder(50, [50], left_out=[{'fact': 'trade.3003', 'reason': 'GATED_OFFER'}]),
-                         ([], []))
+        # the sources offer the Item in a left-out offer (gated, unconfirmed, conflicting): the wikis do not add it
+        for reason in ('GATED_OFFER', 'OFFER_UNCONFIRMED', 'OFFER_CONFLICT_WIKI_UNDECIDED'):
+            self.assertEqual(self.offer_builder(50, [50], left_out=[{'fact': 'trade.3003x2', 'reason': reason}]),
+                             ([], []))
 
     def test_wiki_offer_rows(self):
         report = self.majority_report(150)
         ahmet = find_candidate(report, 'Ahmet')
         row = ahmet['arbitration'].pop()
         ahmet['arbitration'].append({**row, 'rule': 'WIKI_OFFER', 'wikis': ['br', 'fandom']})
+        # the row without a wiki-origin offer, then with it
+        self.assertTrue(any('do not match the WIKI_OFFER rows' in e for e in validate_promotion.errors(report)))
+        source_item_id, direction = row['fact'].split('.')[1], row['fact'].split('.')[2]
+        offer = next(o for o in ahmet['trade_service']['offers']
+                     if o['source_item_id'] == int(source_item_id) and o['direction'] == direction)
+        offer['origin'] = 'wiki'
         self.assertEqual(validate_promotion.errors(report), [])
+        # a wiki-origin offer whose provenance row is dropped
+        ahmet['arbitration'].pop()
+        self.assertTrue(any('do not match the WIKI_OFFER rows' in e for e in validate_promotion.errors(report)))
+        ahmet['arbitration'].append({**row, 'rule': 'WIKI_OFFER', 'wikis': ['br', 'fandom']})
         ahmet['arbitration'][-1]['wikis'] = ['fandom']
         self.assertTrue(any('are not 2-3 sorted wikis' in e for e in validate_promotion.errors(report)))
         ahmet['arbitration'][-1]['wikis'] = ['br', 'fandom']
@@ -687,7 +698,7 @@ class PromotionValidatorTests(unittest.TestCase):
                     'candidates': [{'name': 'Ahmet', 'arbitration': rows, 'left_out': [],
                                     'trade_service': {'currency': None, 'offers': offers} if offers else None}]}
         rope = {'item': {'key': 'oteryn:item.test.rope'}, 'source_item_id': 3003, 'count': None, 'sub_type': None,
-                'direction': 'SellToPlayer', 'unit_price': 50}
+                'direction': 'SellToPlayer', 'unit_price': 50, 'origin': 'wiki'}
         check = validate_promotion.wiki_price_errors
         self.assertEqual(check(report([row], [rope]), snapshot, br_facts, names, tibiopedia, item_map), [])
         # an omitted wiki offer, and an invented one

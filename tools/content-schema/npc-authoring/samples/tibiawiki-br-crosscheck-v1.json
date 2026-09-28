@@ -2,9 +2,9 @@
  "close_tiles": 10,
  "evidence": "REFERENCE_CROSSCHECK_ONLY",
  "inputs": {
-  "admission_sha256": "ff0464ba0f7902ec22ba51b1488c3a648996df4cf31bd627a7ea116d9dd38aca",
-  "candidates_sha256": "93344df2ef2c8efe2a19924ba3b48567bf4b63785ae4fba21c6447a8d67f24e3",
-  "dialogues_sha256": "f9ba552b2995b5040954d389df0f71b8501233411c624efed452f30011db1b92",
+  "admission_sha256": "ba0420e31d7ca2224bde87d0bb862905dbcb0c7607990ae9a1d33ccf6fb74599",
+  "candidates_sha256": "56ec168437adfb6644fe15cf711edfd259f6d8f038b2f44a162860ea4e006191",
+  "dialogues_sha256": "74eabaacff26ed25894e8156d642aa99746f153e7b1e1c0df8d3a68a8cb791f6",
   "facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
@@ -1377,11 +1377,8 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 2,
-    "only_br": [
-     "BuyFromPlayer:heavy old tome"
-    ],
-    "status": "DIFFER"
+    "br_offers": 3,
+    "status": "BR_ONLY"
    }
   },
   {
@@ -3197,8 +3194,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 135,
+    "matched": 133,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:sword",
@@ -4416,8 +4415,10 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 170,
+    "matched": 168,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:soldier helmet",
@@ -5800,8 +5801,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 152,
+    "matched": 150,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:soldier helmet",
@@ -9437,9 +9440,11 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 136,
+    "matched": 134,
     "only_br": [
      "SellToPlayer:lizard weapon rack",
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:bone shoulderplate",
      "BuyFromPlayer:broken draken mail",
      "BuyFromPlayer:broken halberd",
@@ -10292,8 +10297,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 151,
+    "matched": 149,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:sword"
@@ -10865,8 +10872,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 84,
+    "matched": 82,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "SellToPlayer:sword",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
@@ -13222,8 +13231,10 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 71,
+    "matched": 69,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:sword"
@@ -13515,8 +13526,10 @@
     "status": "MISMATCH"
    },
    "trade": {
-    "matched": 132,
+    "matched": 130,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:sword"
@@ -18474,9 +18487,11 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 133,
+    "matched": 131,
     "only_br": [
      "SellToPlayer:dwarven shield",
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:sword"
@@ -18920,8 +18935,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 137,
+    "matched": 135,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:sword"
@@ -23023,8 +23040,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 155,
+    "matched": 153,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:soldier helmet",
@@ -23330,8 +23349,10 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 71,
+    "matched": 69,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai"
     ],
@@ -23558,8 +23579,10 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 69,
+    "matched": 67,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "SellToPlayer:sword",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
@@ -23730,8 +23753,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 133,
+    "matched": 131,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai"
     ],
@@ -24419,9 +24444,11 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 133,
+    "matched": 131,
     "only_br": [
      "SellToPlayer:iron helmet",
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "SellToPlayer:soldier helmet",
      "SellToPlayer:sword",
      "SellToPlayer:viking helmet",
@@ -27595,8 +27622,10 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 132,
+    "matched": 130,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:sword"
@@ -27819,8 +27848,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 120,
+    "matched": 118,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
      "BuyFromPlayer:sword",
@@ -28028,8 +28059,10 @@
     "status": "MATCH"
    },
    "trade": {
-    "matched": 76,
+    "matched": 74,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:excalibug",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai",
@@ -29047,8 +29080,10 @@
     "status": "NEAR"
    },
    "trade": {
-    "matched": 162,
+    "matched": 160,
     "only_br": [
+     "SellToPlayer:nunchaku",
+     "SellToPlayer:sai",
      "BuyFromPlayer:nunchaku",
      "BuyFromPlayer:sai"
     ],
@@ -30465,8 +30500,8 @@
   "position:NO_PLACEMENT": 2,
   "position:OTHER_FLOOR": 27,
   "trade:AGREE": 105,
-  "trade:BR_ONLY": 51,
-  "trade:DIFFER": 205,
+  "trade:BR_ONLY": 52,
+  "trade:DIFFER": 204,
   "trade:NO_BR_TRADE": 8
  }
 }

@@ -40,7 +40,7 @@ protected Item identity map for Item references.
 | NPCs removed from Tibia Global | 5 held later (§7 slice 4d) |
 | Offer prices from both wikis | 21 later (§7 slice 4d) |
 | Offer prices from two of three wikis | 236 later (§7 slice 4e) |
-| Offers two of three wikis list | 934 later, 16 new trade Services (§7 slice 4f) |
+| Offers two of three wikis list | 894 later, 15 new trade Services (§7 slice 4f) |
 
 Held back and reported in the candidates: 145 NPCs (91 unplaced in both sources, 32 single-source
 NPCs the wiki does not know, 7 outfit/movement conflicts, 6 placement conflicts the wiki cannot
@@ -206,10 +206,10 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    701 Dialogues; bindings become 2,296, because the wiki now decides a fact for 14 more NPCs.
 4f. Offers two of three wikis list (D13): `OTV2-20260928-npc-wiki-offers`. Gold shops gain the plain offers two
    of the three wikis list with the same price, for a uniquely named registered Item the sources neither offer
-   nor gate (`WIKI_OFFER`): 934 offers at 95 NPCs. 16 admitted NPCs with no source trade get a gold trade
+   nor leave out (`WIKI_OFFER`): 894 offers at 91 NPCs. 15 admitted NPCs with no source trade get a gold trade
    Service from these offers alone, among them Rock In A Hard Place, Raffael, Tefrit and Blind Orc. Quest, event
-   and token shops stay out (`WIKI_SHOP_HELD`). Wave A keeps 1,088 NPCs and 701 Dialogues, with 323 trade and
-   55 travel Services, 12,666 offer rows and 2,330 bindings.
+   and token shops stay out (`WIKI_SHOP_HELD`). Wave A keeps 1,088 NPCs and 701 Dialogues, with 322 trade and
+   55 travel Services, 12,626 offer rows and 2,330 bindings.
 5. Later:
    - placements after World admission;
    - conditional dialogue and dialogue conflicts;
