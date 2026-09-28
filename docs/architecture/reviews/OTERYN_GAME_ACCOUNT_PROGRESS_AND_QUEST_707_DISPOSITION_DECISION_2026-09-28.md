@@ -171,8 +171,10 @@ implementation it applies to.
 
 ### 4.4 Achievements (D48, D49)
 
-- An achievement is an `AccountAchievement(account_id, achievement_key)` fact: write-once, with
-  the first earning character and time.
+- An achievement is an `AccountAchievement(account_id, achievement_key)` fact: write-once. It
+  records the character and earning time of the grant request it was derived from. Because
+  requests may be consumed out of order, that is not guaranteed to be the account's earliest
+  earner, and no ranking or reward may depend on it.
 - The character event that earns it records a durable achievement grant request in its own fenced
   transaction. This keeps the handoff that the reward chest slice already uses
   (`OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md` §6). The Achievement owner turns a committed
@@ -231,7 +233,8 @@ idempotent delivery across a boundary failure stay open under gap register §32,
   No such fact is written without a committed character event. Store delivery is outside this rule
   and waits for §32 (§4.5).
 - The facts are append-only sets with a unique key. A duplicate insert changes nothing, so a replay
-  or two concurrent inserts leave one row, and the first commit records the earner.
+  or two concurrent inserts leave one row, and the first committed insert keeps its provenance
+  (for achievements, the request it was derived from, §4.4).
 - In the current topology the account guard allows one present character per account
   (migration 0002), so cross-character races do not occur; the unique key makes them harmless if
   topology changes.
@@ -289,7 +292,7 @@ follow_up_owners:
   - "Gap register §32 delivery decision: Game/Platform ownership of Store inbox lines and cosmetic unlocks, their refund, revocation and expiry, and cross-boundary idempotency, then an explicit product activation decision under PROD-ENTITLEMENTS-01"
   - "Reference parity manifest: record the D45, D47, D48 declared differences"
 required_revalidation:
-  - "the first account-fact migration proves: a fact is inserted only inside a fenced character event, or for achievements derived only from a grant request committed in one; duplicate insert leaves one row and keeps the first earner; a stale character fence writes no fact; a condition reads character-or-account completion; level and item requirements are still checked per character; an exclusive-choice quest cannot grant account completion; an existing fact does not satisfy a condition when the quest now declares none or the world disables the policy; a character with the quest active is evaluated against its pinned revision until migrated"
+  - "the first account-fact migration proves: a fact is inserted only inside a fenced character event, or for achievements derived only from a grant request committed in one; duplicate insert leaves one row and keeps the first committed insert's provenance; a stale character fence writes no fact; a condition reads character-or-account completion; level and item requirements are still checked per character; an exclusive-choice quest cannot grant account completion; an existing fact does not satisfy a condition when the quest now declares none or the world disables the policy; a character with the quest active is evaluated against its pinned revision until migrated"
 remaining_unknowns:
   - Reference-target cosmetic gameplay effects
   - Achievement domain owner
