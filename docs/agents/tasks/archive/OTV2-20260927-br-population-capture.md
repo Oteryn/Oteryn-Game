@@ -4,7 +4,7 @@
 task_id: OTV2-20260927-br-population-capture
 title: Capture every population creature page from TibiaWiki BR at the target date
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1049
 jira: KAN-16
 base_sha: 716e23ba0c3585dcb0d52a5aa5300d124eaac94b
-head_sha: null
-final_head_sha: null
+head_sha: d72a5f7ac7bc8ba58d379bb90f829c2fb2cb1f0f
+final_head_sha: d72a5f7ac7bc8ba58d379bb90f829c2fb2cb1f0f
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-27
@@ -51,3 +51,10 @@ adopted until the owner decides how BR fills gaps left by Fandom.
 - `wiki_br_capture.py self-test` passes.
 - The workflow uploads the population capture artifact.
 - The governance and policy validators pass.
+
+## Completion
+
+Merged as PR #1049 (`c5f59954689426954674333412d7487597ba631b`) from final head `d72a5f7`; required checks passed on that head. The capture found
+1,494 of 1,650 population titles on TibiaWiki BR. Where Fandom gives no certain value, BR fills health for 92 and
+experience for 81 monsters; the owner chose to adopt only those two fields (D43).
+Owner released.

@@ -102,6 +102,10 @@ WIKI_ADOPTION = ('Owner decision D15: where the reference-date (2026-09-27) wiki
                  'difficulty/occurrence (and the Bestiary class when Canary names no valid race), loot items missing in Canary and loot probabilities; never to an uncertain '
                  '(? or ~) or unparsed wiki value')
 LOW_CONFIDENCE_DROPS = 10
+BR_API = 'https://www.tibiawiki.com.br/api.php'
+BR_ADOPTION = ('Owner decision D43: the owner\'s source order puts TibiaWiki BR after Fandom, so a BR health or experience '
+               'value fills the field only where the reference-date (2026-09-27) Fandom page is missing or gives no certain '
+               'value; BR element modifiers and speed are not used')
 LOOT_RATE_RULE = ('D15 loot rate: highest-version Loot Statistics block at the cut, estimate = drops / kills; '
                   'adopted at >= 10 drops, otherwise the Canary probability is kept as low confidence')
 LOOT_AMOUNT_RULE = ('D32 loot amount: with an adopted wiki estimate (>= 10 drops) the Loot Statistics amount is the '
@@ -344,6 +348,7 @@ class Converter:
     def __init__(self, canary, objects, items, names, index):
         self.canary, self.objects, self.items, self.names, self.index = canary, objects, items, names, index
         self.wiki = {}
+        self.br = {}
         self.spell_scripts = None
         self.magic_effects, self.missiles = load_effect_constants(canary / EFFECT_CONSTANTS)
         self.magic_effect_names = {v: k for k, v in self.magic_effects.items()}
@@ -807,11 +812,51 @@ class Converter:
 
         sources = [{'repository': REPOSITORY, 'revision': REVISION}]
         self.adopt_wiki(s, monster, rows, sources, definitions, line_of)
+        self.adopt_br(s, monster, rows, sources, line_of)
         definitions.discard(('Creature', creature['identity']['key']))
         catalog = {'definitions': [ref(f, k) for f, k in sorted(definitions)], 'assets': sorted(assets)}
         manifest = {'sources': sources, 'entries': rows}
         source = {'file': source_file, 'git_blob': blob_id(path.read_bytes())}
         return s, monster, deps, catalog, manifest, source
+
+    def adopt_br(self, s, monster, rows, sources, line_of):
+        """Fill health and experience from TibiaWiki BR where Fandom gives no certain value (D43, wiki_br_fill.py)."""
+        record = self.br.get(s)
+        if not record:
+            return
+        creature, behavior = monster['creature'], monster['behavior']
+        targets = {'max_health': ('/monster/creature/stats/max_health', 'maxHealth', r'^monster\.maxHealth', 'hp'),
+                   'experience': ('/monster/creature/stats/experience', 'experience', r'^monster\.experience', 'exp')}
+        index = None
+        for field, fact in sorted(record['fields'].items()):
+            value = fact['br']
+            if creature['stats'][field] == value or (field == 'max_health' and value <= 0):
+                continue
+            if index is None:
+                sources.append({'kind': 'mediawiki', 'api': BR_API, 'title': record['br_title'], 'page_id': record['page_id'],
+                                'revision_id': record['revision_id'], 'content_sha256': record['content_sha256']})
+                index = len(sources) - 1
+            destination, canary_field, pattern, label = targets[field]
+            text = (f'Canary value {creature["stats"][field]} superseded by the TibiaWiki BR value {fact["br_raw"]} '
+                    f'(Fandom: {fact["fandom_raw"] if fact["fandom_raw"] is not None else "no page"}; {BR_ADOPTION}).')
+            fields = [canary_field] + (['health'] if field == 'max_health' else [])
+            patterns = [pattern] + ([r'^monster\.health'] if field == 'max_health' else [])
+            for name, regex in zip(fields, patterns):
+                entry = next((e for e in rows if e['source_index'] == 0 and e['source_field'] == name and e['status'] == 'mapped'), None)
+                if entry:
+                    entry.update(status='approved_omission', resolution=text)
+                    entry.pop('destination', None)
+                else:
+                    rows.append({'source_index': 0, 'source_file': rows[0]['source_file'], 'source_line': line_of(regex),
+                                 'source_field': name, 'kind': 'field', 'status': 'approved_omission', 'resolution': text})
+            if field == 'max_health':
+                creature['stats']['max_health'] = creature['stats']['initial_health'] = value
+                behavior['targeting']['flee_health'] = min(behavior['targeting']['flee_health'], value)
+            else:
+                creature['stats']['experience'] = value
+            rows.append({'source_index': index, 'source_file': record['br_title'], 'source_line': fact['br_line'],
+                         'source_field': f'Infobox_Criatura.{label}', 'kind': 'field', 'status': 'mapped',
+                         'destination': destination, 'resolution': f'TibiaWiki BR {label} "{fact["br_raw"]}" ({BR_ADOPTION}).'})
 
     def adopt_wiki(self, s, monster, rows, sources, definitions, line_of):
         """Apply the owner-approved reference-date wiki values recorded by wiki_compare.py (D15)."""
