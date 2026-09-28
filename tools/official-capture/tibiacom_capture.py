@@ -52,6 +52,7 @@ MANUAL_SECTIONS = (
     'achievements', 'houses', 'guilds', 'store', 'products', 'accounts', 'support',
     'forum',
 )
+MANUAL_SECTIONS_V1 = ('controls', 'characters', 'combat', 'world', 'controls_trading', 'starting')
 SPELL_LIBRARY_URL = 'https://www.tibia.com/library/?subtopic=spells'
 SPELL_MODULE_PATH = Path(__file__).resolve().parents[2] / 'tools/content-schema/spell-authoring/tibiacom_spells.py'
 SPELL_PENDING = 'PENDING_1077'
@@ -60,8 +61,10 @@ USER_AGENT = 'OterynContentResearch/1.0 (+https://github.com/Oteryn/Oteryn-Game)
 REQUEST_DELAY_SECONDS = 2
 REQUEST_TIMEOUT_SECONDS = 30
 
-MANIFEST_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_MANIFEST/v1'
-FACTS_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_FACTS/v1'
+MANIFEST_SCHEMA_V1 = 'OTERYN_TIBIACOM_CAPTURE_MANIFEST/v1'
+FACTS_SCHEMA_V1 = 'OTERYN_TIBIACOM_CAPTURE_FACTS/v1'
+MANIFEST_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_MANIFEST/v2'
+FACTS_SCHEMA = 'OTERYN_TIBIACOM_CAPTURE_FACTS/v2'
 MANIFEST_KEYS = {'schema', 'captured_at', 'pages', 'spells'}
 MANIFEST_PAGE_KEYS = {'section', 'url', 'fetched_at', 'http_status', 'sha256', 'visible_text_chars'}
 FACTS_DOC_KEYS = {'schema', 'captured_at', 'facts'}
@@ -554,8 +557,16 @@ def verify_snapshot(directory):
     if extra_facts_doc_keys:
         errors.append(f'{directory}: facts.json has unexpected top-level key(s) {sorted(extra_facts_doc_keys)}')
 
-    if manifest.get('schema') != MANIFEST_SCHEMA:
-        errors.append(f'{directory}: manifest.json schema must be {MANIFEST_SCHEMA!r}')
+    manifest_schema = manifest.get('schema')
+    if manifest_schema == MANIFEST_SCHEMA_V1:
+        required_sections = MANUAL_SECTIONS_V1
+        expected_facts_schema = FACTS_SCHEMA_V1
+    else:
+        required_sections = MANUAL_SECTIONS
+        expected_facts_schema = FACTS_SCHEMA
+        if manifest_schema != MANIFEST_SCHEMA:
+            errors.append(f'{directory}: manifest.json schema must be {MANIFEST_SCHEMA_V1!r} '
+                          f'or {MANIFEST_SCHEMA!r}')
     spells = manifest.get('spells')
     if spells not in (SPELL_PENDING, 'captured'):
         errors.append(f'{directory}: manifest.json "spells" must be {SPELL_PENDING!r} or "captured", got {spells!r}')
@@ -632,7 +643,7 @@ def verify_snapshot(directory):
         seen_urls.add(page.get('url'))
 
     # Completeness (P2 r4120578800): every required manual section, at its exact URL, HTTP 200.
-    for section in MANUAL_SECTIONS:
+    for section in required_sections:
         page = pages_by_section.get(section)
         if page is None:
             errors.append(f'{directory}: manifest.json is missing required manual section {section!r}')
@@ -640,7 +651,7 @@ def verify_snapshot(directory):
         expected_url = MANUAL_URL.format(section=section)
         if page.get('url') != expected_url:
             errors.append(f'{directory}: manifest page {section!r} url is {page.get("url")!r}, expected {expected_url!r}')
-    extra_manual_like = set(pages_by_section) - set(MANUAL_SECTIONS) - {'spells'}
+    extra_manual_like = set(pages_by_section) - set(required_sections) - {'spells'}
     if extra_manual_like:
         errors.append(f'{directory}: manifest.json has unexpected page section(s) {sorted(extra_manual_like)}')
     if spells == 'captured':
@@ -653,8 +664,8 @@ def verify_snapshot(directory):
     elif 'spells' in pages_by_section:
         errors.append(f'{directory}: manifest.json has a "spells" page but "spells" is {spells!r}, not "captured"')
 
-    if facts_doc.get('schema') != FACTS_SCHEMA:
-        errors.append(f'{directory}: facts.json schema must be {FACTS_SCHEMA!r}')
+    if facts_doc.get('schema') != expected_facts_schema:
+        errors.append(f'{directory}: facts.json schema must be {expected_facts_schema!r}')
     facts = facts_doc.get('facts')
     if not isinstance(facts, list):
         errors.append(f'{directory}: facts.json "facts" must be a list')
@@ -721,7 +732,7 @@ def verify_snapshot(directory):
 
     # Every required manual section (and a "captured" spell library) needs at least one fact
     # (P2 r4120578800).
-    for section in MANUAL_SECTIONS:
+    for section in required_sections:
         if section in pages_by_section and fact_count_by_section.get(section, 0) < 1:
             errors.append(f'{directory}: manual section {section!r} has zero facts')
     if spells == 'captured' and fact_count_by_section.get('spells', 0) < 1:
@@ -779,7 +790,7 @@ def verify_snapshot(directory):
     # on visible_text_chars or any other number the snapshot itself asserts, so inflating that
     # claim cannot widen it. Sized off the real fact caps (FACTS_PER_SECTION_CAP/SPELL_RECORDS_CAP)
     # and a realistic per-fact JSON size, not off anything self-reported.
-    absolute_budget_bytes = ABSOLUTE_MANUAL_FACTS_BUDGET_BYTES
+    absolute_budget_bytes = len(required_sections) * FACTS_PER_SECTION_CAP * ABSOLUTE_FACT_SIZE_ESTIMATE_BYTES
     if spells == 'captured':
         absolute_budget_bytes += ABSOLUTE_SPELL_FACTS_BUDGET_BYTES
     if raw_facts_bytes > absolute_budget_bytes:

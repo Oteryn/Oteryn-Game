@@ -14,3 +14,6 @@ The capture covers all 19 sections linked from the manual's Contents page. It st
 fetch times, HTTP status, SHA-256 digests and bounded factual excerpts. It does not mirror the
 manual's full text or artwork. The spell library is captured separately when its parser is
 available.
+
+The original six-section snapshot uses schema v1. The complete 19-section capture uses schema
+v2; the verifier accepts both and checks each against its own required section set.
