@@ -8125,12 +8125,9 @@
                       "branch": [
                         {
                           "when": {
-                            "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u8_4/blood_brothers/mirror_counter",
-                              "op": "<",
-                              "value": 0
-                            },
-                            "negate": false
+                            "unresolved": {
+                              "line": 42
+                            }
                           },
                           "then": []
                         }
@@ -8165,12 +8162,9 @@
                       "branch": [
                         {
                           "when": {
-                            "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u8_4/blood_brothers/mirror_counter",
-                              "op": "==",
-                              "value": 1
-                            },
-                            "negate": false
+                            "unresolved": {
+                              "line": 55
+                            }
                           },
                           "then": [
                             {
@@ -8187,12 +8181,9 @@
                       "branch": [
                         {
                           "when": {
-                            "quest_stage": {
-                              "progress": "crystalserver:quest-progress/quest/u8_4/blood_brothers/mirror_counter",
-                              "op": ">=",
-                              "value": 2
-                            },
-                            "negate": false
+                            "unresolved": {
+                              "line": 59
+                            }
                           },
                           "then": [
                             {
@@ -63195,12 +63186,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "crystalserver:quest-progress/quest/u13_20/rotten_blood/putrefactory_task",
-                      "op": "<",
-                      "value": 0
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 50
+                    }
                   },
                   "then": []
                 }
@@ -70532,12 +70520,9 @@
                           "branch": [
                             {
                               "when": {
-                                "quest_stage": {
-                                  "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
-                                  "op": "==",
-                                  "value": -1
-                                },
-                                "negate": false
+                                "unresolved": {
+                                  "line": 30
+                                }
                               },
                               "then": []
                             }
@@ -70553,12 +70538,9 @@
                           "branch": [
                             {
                               "when": {
-                                "quest_stage": {
-                                  "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
-                                  "op": "==",
-                                  "value": 3
-                                },
-                                "negate": false
+                                "unresolved": {
+                                  "line": 37
+                                }
                               },
                               "then": [
                                 {
@@ -74196,12 +74178,9 @@
               "branch": [
                 {
                   "when": {
-                    "quest_stage": {
-                      "progress": "canary:quest-progress/quest/u7_4/the_ancient_tombs/vashresamun_instruments",
-                      "op": "==",
-                      "value": -1
-                    },
-                    "negate": false
+                    "unresolved": {
+                      "line": 22
+                    }
                   },
                   "then": []
                 }
@@ -89973,12 +89952,9 @@
                   "branch": [
                     {
                       "when": {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u10_80/the_great_dragon_hunt/achievement",
-                          "op": "<",
-                          "value": 0
-                        },
-                        "negate": false
+                        "unresolved": {
+                          "line": 30
+                        }
                       },
                       "then": []
                     }
@@ -89994,12 +89970,9 @@
                   "branch": [
                     {
                       "when": {
-                        "quest_stage": {
-                          "progress": "canary:quest-progress/quest/u10_80/the_great_dragon_hunt/achievement",
-                          "op": "==",
-                          "value": 10
-                        },
-                        "negate": false
+                        "unresolved": {
+                          "line": 36
+                        }
                       },
                       "then": [
                         {

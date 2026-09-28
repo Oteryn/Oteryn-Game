@@ -28,10 +28,10 @@
     },
     "quest_children_naming_a_transition": 215,
     "unresolved_lines": 1908,
-    "unresolved_conditions": 1777,
+    "unresolved_conditions": 1786,
     "by_status": {
-      "mapped": 269,
-      "unresolved_semantics": 952
+      "mapped": 268,
+      "unresolved_semantics": 953
     }
   },
   "undeclared_progress_tracks": [
@@ -15216,7 +15216,7 @@
     },
     {
       "destination": "canary:interaction/the_great_dragon_hunt_quest/actions_treasure",
-      "status": "mapped",
+      "status": "unresolved_semantics",
       "resolution": "identical in both servers",
       "sources": [
         {

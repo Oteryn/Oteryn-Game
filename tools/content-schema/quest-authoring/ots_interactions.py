@@ -121,8 +121,14 @@ class Script:
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
         self.containers = {}
-        self.value_aliases = {m.group(1): m.group(2) for n in lua_blocks.function_body(self.lines, number)
-                              if (m := VALUE_ALIAS.match(self.raw(n)))}
+        body = [self.raw(n) for n in lua_blocks.function_body(self.lines, number)]
+        declared = [m for text in body if (m := VALUE_ALIAS.match(text))]
+        # an alias counts only when declared once and never assigned again in the callback, so every later
+        # read sees the storage value it was declared with
+        self.value_aliases = {m.group(1): m.group(2) for m in declared
+                              if sum(1 for d in declared if d.group(1) == m.group(1)) == 1
+                              and not any(re.match(rf'^(local\s+)?{re.escape(m.group(1))}\s*=(?!=)', text)
+                                          for text in body if not VALUE_ALIAS.match(text))}
         for line in self.lines[number:]:
             if actor and (m := re.match(rf'\s*local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', line)):
                 self.players.add(m.group(1))
