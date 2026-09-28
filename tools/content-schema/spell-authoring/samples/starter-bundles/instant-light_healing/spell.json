@@ -2,12 +2,13 @@
   "spell": {
     "identity": {
       "key": "candidate:spell/light_healing",
-      "revision": "spell-p2-r6"
+      "revision": "spell-p2-r7"
     },
     "name": "Light Healing",
     "carrier": "instant",
     "words": "exura",
     "reference_spell_id": 1,
+    "library_text": "This spell is awarded free to all newly chosen paladins, druids, sorcerers and monks. Although its salutary effect is limited, its development represented a major breakthrough in spell research. For the first time, adventurers could quickly heal their own wounds and injuries, significantly increasing their chances to survive the dangers they are daily confronted with. Even today, Light Healing is still a very popular spell because of its reasonable mana cost.",
     "requirements": {
       "vocations": [
         "druid",
@@ -55,7 +56,7 @@
       "ability": {
         "family": "Ability",
         "key": "candidate:ability/spell/light_healing",
-        "revision": "spell-p2-r6"
+        "revision": "spell-p2-r7"
       }
     }
   }

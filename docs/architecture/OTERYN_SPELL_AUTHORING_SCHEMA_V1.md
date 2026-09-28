@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - Status: CANDIDATE / authoring schema with executable validation and source evidence; S1–S5, S11 and S12
-  decided by the owner on 2026-09-27, S13–S18 and S6–S10 on 2026-09-28 (S6–S10: #162 comment 5867161696); no runtime, WorldProject storage or `content/` change
+  decided by the owner on 2026-09-27, S13–S19 and S6–S10 on 2026-09-28 (S6–S10: #162 comment 5867161696); no runtime, WorldProject storage or `content/` change
 - Request: owner request of 2026-09-27 (schema and implementation plan for player spells, as for monsters);
   programme story KAN-16; no GitHub task allocation yet
 - Machine artifacts: `tools/content-schema/spell-authoring/`
@@ -37,7 +37,7 @@ The server does not read this format. Executable adoption extends WorldProject/v
 
 ```text
 spell bundle (spell.schema.json)
-└── spell   identity, name, carrier (instant | rune), words, reference_spell_id,
+└── spell   identity, name, carrier (instant | rune), words, reference_spell_id, library_text,
             requirements (vocations, level, premium, learning_required, acquisition_interactions),
             costs (mana | mana_percent, soul), cooldown_ms, groups[1..2] (group, cooldown_ms),
             targeting (aggressive, self_target, needs_target, needs_direction, target_or_direction,
@@ -337,6 +337,7 @@ with the converted bundles:
 | S16 | **DECIDED (owner, 2026-09-28).** Since patch 15.22 (27 January 2026) spells unlock automatically and free at their level and trainers no longer teach them, so `learning_required` is false for every spell. A Wheel of Destiny revelation spell carries `requirements.wheel_unlock` (S6): stated by the wiki (Fandom `wheelspell`, BR `wheelSpellType` Revelação; Convicção is a perk on a level-unlocked spell), else by the Canary 15.30 `needLearn`, the only source that implements the 15.22 unlock. The Game core rejects a `wheel_unlock` spell until a Wheel owner exists. S9 is applied as a declared closed catalogue, `cooldown-groups.json`. | https://tibiopedia.pl/updates/15.22.c93366; §4.4 |
 | S17 | **DECIDED (owner, 2026-09-28).** The shared `condition` (monster schema) gains `light` (`level` 1–255, `color` 0–255), `regeneration` (`health_gain`/`health_interval_ms` and/or `mana_gain`/`mana_interval_ms`) and `buff_spell`. `light` and `regeneration` are allowed only on their own condition type; none of the three is allowed on a damage schedule. `buff_spell` (Canary `CONDITION_PARAM_BUFF_SPELL`) may mark any fixed-duration condition, as Canary also sets it on attribute conditions. Canary and Crystal agree on all five spells it unblocks: Light, Great Light, Ultimate Light, Recovery and Intense Recovery. The Game core still treats a condition effect as unsupported. | `condition:setParameter(CONDITION_PARAM_LIGHT_*, CONDITION_PARAM_HEALTHGAIN/HEALTHTICKS, CONDITION_PARAM_BUFF_SPELL)` in both sources. |
 | S18 | **DECIDED (owner, 2026-09-28).** Presentation is complete and has one naming. Every effect/missile asset key is named by the Canary 15.30 enum for its client id (`canary.appearance:effect/<name>`, as in `content/`), whichever source converted the spell; Canary and Crystal name 47 of the same effect ids differently. `castSound`/`impactSound` become `presentation.cast_cue`/`impact_cue` = `canary.sound:<SoundEffect_t member>`; a constant that `lua_enums.cpp` does not register is nil in Lua, i.e. silence, and is kept as an `approved_omission`. A conjure records the effect `Player:conjureItem` shows on success (`magic_red` for a rune, else its effect argument) as `conjure.effect_asset_binding`. Revision `spell-p2-r4`. | `SoundEffect_t` and the registered constants are identical in both sources (512 members); after that resolution no spell has a sound conflict. |
+| S19 | **DECIDED (owner, 2026-09-28).** A spell carries the official library text that the Cyclopedia Magical Archive and the tibia.com spell library show, verbatim, as the optional `spell.library_text`; the owner has settled the rights question for this text. It comes from the Fandom `librarytext` field at the pinned revision (the wiki quotes the official text; BR has no such field), with only wiki markup removed and never cut. Rune use shares the entry of its conjuring spell, found through the rune page's words. Revision `spell-p2-r7`: 231 of 252 bundles carry it; the other 21 have no library text on Fandom (the four house list spells, Blank Rune, six ammunition conjures from Conjure Bolt to Conjure Royal Star, Enchant Staff, the Practise and Lightest Magic Missile training spells and the two Dawnport runes). | Owner in-game check of 2026-09-28: Enlighten Party in the Magical Archive matches the Fandom text word for word. |
 
 ## 6. Mapping to WorldProject/v2
 
@@ -365,8 +366,9 @@ GAP rows are added to v2 only when a spell in the current playable slice needs t
 
 This candidate does not change WorldProject/v2, the compiler, the runtime ability engine, protocol or
 persistence; does not populate `content/abilities/**` or mint native Spell keys; does not admit Lua;
-records the owner decisions S1–S17 (§5) but is not their implementation; does not establish Tibia Global parity or asset/licensing rights. The wiki files
-keep only allowlisted short infobox values with page and revision ids, never article prose.
+records the owner decisions S1–S19 (§5) but is not their implementation; does not establish Tibia Global parity or asset/licensing rights. The wiki files
+keep only allowlisted short infobox values with page and revision ids, never article prose; the one exception is
+the official spell library text (`librarytext`), kept whole under S19.
 
 ## 8. Validation
 

@@ -2,8 +2,9 @@
 
 Evidence tooling only. TibiaWiki is a player-observed reference source (CC BY-SA); the committed
 facts file keeps only short allowlisted infobox values plus page id, immutable revision id and the
-SHA-256 of that revision's wikitext, never article prose. Nothing here becomes Game truth by
-comparison alone; adoption is an owner decision (monster D15/D25 precedent).
+SHA-256 of that revision's wikitext, never article prose; the one exception is `librarytext`, the official
+spell library text the wiki quotes verbatim, kept whole under owner decision S19 (2026-09-28). Nothing here
+becomes Game truth by comparison alone; adoption is an owner decision (monster D15/D25 precedent).
 
 Owner rule (2026-09-27): the wiki is read as of the fetch day, not at a historical cut, because the
 wikis carry the most current Reference data. `fetch --cut YYYY-MM-DD` (default: today, UTC) pins the
@@ -43,7 +44,8 @@ WIKIS = {
 API = WIKIS['fandom']['api']
 USER_AGENT = 'OterynSpellAuthoring/1.0 (+https://github.com/Oteryn/Oteryn-Game)'
 LICENSE_NOTE = ('TibiaWiki (Fandom), CC BY-SA; only short allowlisted infobox facts with page and revision ids '
-                'are recorded, never article prose.')
+                'are recorded, never article prose; librarytext (the official spell library text) is kept whole '
+                'under owner decision S19.')
 FORMULAE_PAGE = WIKIS['fandom']['formulae']
 MAX_ALL_FIELD_LENGTH = 200
 THROTTLE_SECONDS = 0.5
@@ -51,10 +53,11 @@ RETRIES = 4
 SPELL_FIELDS = ('name', 'spellid', 'type', 'subclass', 'secondarygroup', 'runegroup', 'damagetype', 'words',
                 'premium', 'mana', 'soul', 'amount', 'levelrequired', 'cooldown', 'cooldown2', 'cooldown3',
                 'cooldowngroup', 'cooldowngroup2', 'voc', 'basepower', 'promotion', 'partyspell',
-                'passivespell', 'wheelspell', 'implemented', 'status', 'learnfrom', 'spellcost')
+                'passivespell', 'wheelspell', 'implemented', 'status', 'learnfrom', 'spellcost', 'librarytext')
 RUNE_FIELDS = ('name', 'actualname', 'itemid', 'objectclass', 'primarytype', 'words', 'levelrequired',
                'mlrequired', 'vocrequired', 'damagetype', 'basepower', 'implemented', 'status')
 MAX_FIELD_LENGTH = 400
+FIELD_LENGTH = {'librarytext': 4000}  # S19: the official library text is kept whole, never cut
 BASE_VOCATION = {'druid': 'druid', 'elder druid': 'druid', 'sorcerer': 'sorcerer', 'master sorcerer': 'sorcerer',
                  'knight': 'knight', 'elite knight': 'knight', 'paladin': 'paladin', 'royal paladin': 'paladin',
                  'monk': 'monk', 'exalted monk': 'monk'}
@@ -242,7 +245,7 @@ def facts(snapshot, all_fields=False):
         rune = infobox(page['content'], 'Infobox Object')
         if spell:
             row['template'] = 'Infobox Spell'
-            row['fields'] = {k: spell[k][:MAX_FIELD_LENGTH] for k in SPELL_FIELDS if spell.get(k)}
+            row['fields'] = {k: spell[k][:FIELD_LENGTH.get(k, MAX_FIELD_LENGTH)] for k in SPELL_FIELDS if spell.get(k)}
         elif rune and title in snapshot['rune_titles']:
             row['template'] = 'Infobox Object'
             row['fields'] = {k: rune[k][:MAX_FIELD_LENGTH] for k in RUNE_FIELDS if rune.get(k)}
@@ -537,6 +540,8 @@ CROSSWALK_RUNE_FIELDS = ('levelrequired', 'mlrequired', 'basepower', 'damagetype
 def crosswalk_value(field, value):
     if value is None:
         return None
+    if field == 'librarytext':  # S19: verbatim text, only wiki markup removed
+        return plain(value) or None
     if field in ('voc', 'vocrequired'):
         return wiki_vocations(value) or None
     if field in ('cooldown', 'cooldowngroup', 'cooldowngroup2'):
