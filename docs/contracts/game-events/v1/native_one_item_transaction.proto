@@ -1,98 +1,111 @@
 syntax = "proto3";
 
-package oteryn.events.candidate.native_one_item.v1;
+package oteryn.events.v1;
 
-// UNREGISTERED OFFLINE representation candidate for DUR-03 §39.3.
-// This is an additive file; historical game-events/v1/item_transaction.proto
-// and game-events/v2/item_transaction.proto remain unchanged.
-// No event ID, registry entry, privacy/resource profile, runtime or SQL authority.
-// The envelope carries exactly one transaction member (ordinal=1,count=1).
-// P90D is an accepted logical input fixture only, not a registry binding.
-message OneItemTransactionCandidate {
-  uint32 interpretation_revision = 1; // exactly 1 for this private grammar
+// DUR-03 §39.3 native one-item transaction durable-audit payload.
+// Registered as GAME_EVENT_FOUNDATION_REGISTRY.json event type 2
+// (DUR03_NATIVE_ONE_ITEM_TRANSACTION), payload message OneItemTransactionV1,
+// retention profile DUR03_ONE_ITEM_DURABLE_AUDIT_RETENTION_V1 (P90D).
+// The payload is carried as EventEnvelope.payload (foundation.proto); event,
+// transaction, session and command identities stay owned by EventEnvelope.
+//
+// Resource maxima (RESOURCE_LIMITS_REGISTRY.json DUR03-RL-01..DUR03-RL-08;
+// decision OTERYN_GAME_DUR03_RESOURCE_MAXIMA_AND_CREATURE_DEATH_IDENTITY_DECISION_2026-09-28, D50/D51):
+// one event per logical transaction; payload <= 7,936 B; EventEnvelope <= 9,216 B;
+// content keys and revisions <= 512 B; technical fields <= 128 B; UUID fields
+// exactly 16 B. Oversize input is rejected before allocation, never truncated.
+//
+// Excluded fail-closed (no field exists; an unknown field rejects by canonical
+// round trip): item free text, value lines, transform inputs/outputs,
+// container expansion and the inventory typed_position. TRANSFER stays closed
+// (not admitted) until the typed_position owner defines it.
+// Historical game-events/v1/item_transaction.proto and
+// game-events/v2/item_transaction.proto remain unchanged.
+
+message OneItemTransactionV1 {
+  uint32 interpretation_revision = 1; // exactly 1
   oneof operation {
-    OneItemMint mint = 2;
-    OneItemTransfer transfer = 3;
+    OneItemMintV1 mint = 2;
+    OneItemTransferV1 transfer = 3; // closed: not admitted
   }
 }
 
-// Typed identity is carried in full: no numeric fixture key substitutes for it.
-message TypedDefinitionRevision {
-  string family = 1;
-  string production_key = 2;
-  string revision_ref = 3;
+// Typed identity is carried in full; no numeric key substitutes for it.
+message OneItemTypedDefinitionRevisionV1 {
+  string family = 1;         // closed family name, <= 128 B
+  string production_key = 2; // <= 512 B
+  string revision_ref = 3;   // <= 512 B
 }
 
-message CandidateItemState {
-  bytes item_instance_id = 1; // fixed-width private fixture, non-authoritative
-  bytes world_id = 2;
-  TypedDefinitionRevision definition = 3;
-  uint32 quantity = 4; // fixture input only; no gameplay limit implied
-  uint32 lifecycle = 5; // exactly 1 = LIVE in this grammar
+message OneItemStateV1 {
+  bytes item_instance_id = 1; // exactly 16-byte non-nil UUIDv7
+  bytes world_id = 2;         // exactly 16-byte non-nil UUIDv7
+  OneItemTypedDefinitionRevisionV1 definition = 3;
+  uint32 quantity = 4;
+  uint32 lifecycle = 5; // exactly 1 = LIVE
 }
 
-message CandidateGround {
-  bytes world_id = 1;
-  bytes channel_id = 2;
-  bytes spatial_position_fixture = 3;
-  bytes corpse_occurrence_id_fixture = 4; // provenance, not location authority
-  string map_revision_fixture = 5;
-  string content_revision_fixture = 6;
-  bytes native_room_placement_context_fixture = 7;
-  uint64 runtime_scope_ownership_generation_fixture = 8;
+message OneItemGroundV1 {
+  bytes world_id = 1;                      // exactly 16-byte non-nil UUIDv7
+  bytes channel_id = 2;                    // exactly 16-byte non-nil UUIDv7
+  bytes spatial_position = 3;              // <= 128 B
+  bytes corpse_ref = 4;                    // <= 128 B; provenance, not location authority
+  string map_revision = 5;                 // <= 512 B
+  string content_revision = 6;             // <= 512 B
+  bytes native_room_placement_context = 7; // <= 128 B
+  uint64 runtime_scope_ownership_generation = 8; // non-zero
 }
 
-message CandidateInventory {
-  bytes character_id = 1;
-  bytes typed_position_fixture = 2;
-  uint64 expected_session_generation = 3; // expected binding, not live authority
-  bytes expected_game_session_id_fixture = 4;
-  uint64 expected_character_lease_generation_fixture = 5; // expected binding only
+message OneItemInventoryV1 {
+  bytes character_id = 1; // exactly 16-byte non-nil UUIDv7
+  // typed_position is excluded fail-closed until its owner defines it.
+  reserved 2;
+  reserved "typed_position";
+  uint64 expected_session_generation = 3;      // expected binding, not live authority
+  bytes expected_game_session_id = 4;          // exactly 16-byte non-nil UUIDv7
+  uint64 expected_character_lease_generation = 5; // expected binding only
 }
 
-message CandidateCommandRef {
-  bytes game_session_id_fixture = 1;
-  uint64 command_id_fixture = 2;
+message OneItemCommandRefV1 {
+  bytes game_session_id = 1; // exactly 16-byte non-nil UUIDv7
+  uint64 command_id = 2;     // non-zero
 }
 
-message CandidateProvenance {
-  string typed_cause = 1;
-  bytes output_occurrence_id_fixture = 2;
-  bytes committed_death_occurrence_id_fixture = 3;
-  string loot_definition_revision_fixture = 4;
-  string content_revision_fixture = 5;
-  string ruleset_revision_fixture = 6;
-  string sim_revision_fixture = 7;
-  CandidateCommandRef command_ref_fixture = 8; // TRANSFER only; expected binding
+// CREATURE-DEATH-OCCURRENCE-IDENTITY-V1 durable, restart-stable death key.
+message CreatureDeathOccurrenceRefV1 {
+  bytes world_id = 1;   // exactly 16-byte non-nil UUIDv7
+  bytes channel_id = 2; // exactly 16-byte non-nil UUIDv7
+  uint64 scope_ownership_generation = 3;
+  uint32 actor_local_id = 4;
+  uint64 actor_local_generation = 5;
 }
 
-message OneItemMint {
-  CandidateItemState after = 1;
-  CandidateGround destination = 2;
-  CandidateProvenance source = 3;
+// The loot output cause (death key, LootTableDefinitionRef, purpose key,
+// deterministic draw ordinal) is stored in full; there is no hash-only equality.
+message OneItemProvenanceV1 {
+  string typed_cause = 1; // <= 128 B
+  CreatureDeathOccurrenceRefV1 death_occurrence = 2;
+  OneItemTypedDefinitionRevisionV1 loot_table = 3; // LootTableDefinitionRef
+  string loot_purpose_key = 4; // <= 512 B
+  uint32 draw_ordinal = 5;
+  string content_revision = 6; // <= 512 B
+  string ruleset_revision = 7; // <= 512 B
+  string sim_revision = 8;     // <= 512 B
+  OneItemCommandRefV1 command_ref = 9; // TRANSFER only; expected binding
+}
+
+message OneItemMintV1 {
+  OneItemStateV1 after = 1;
+  OneItemGroundV1 destination = 2;
+  OneItemProvenanceV1 source = 3;
   // Explicit semantic absence of a prior item; not a nil or zero identifier.
   bool before_semantically_absent = 4;
 }
 
-message OneItemTransfer {
-  CandidateItemState before = 1;
-  CandidateItemState after = 2;
-  CandidateGround source = 3;
-  CandidateInventory destination = 4;
-  CandidateProvenance cause = 5;
-}
-
-// Deliberately bounded evidence wrapper mirroring the common envelope's
-// transaction membership and payload digest. P90D remains a logical fixture.
-message OfflineCandidateEnvelope {
-  uint32 envelope_revision = 1; // fixture value 1
-  bytes event_id_fixture = 2;
-  uint32 event_type_id_fixture = 3; // zero means unselected
-  uint32 schema_revision_fixture = 4; // private candidate grammar revision
-  string retention_profile_input = 5; // P90D input, not registry acceptance
-  bytes transaction_id_fixture = 6;
-  uint32 ordinal = 7; // exactly 1
-  uint32 count = 8; // exactly 1
-  bytes payload = 9;
-  bytes payload_sha256 = 10;
+message OneItemTransferV1 {
+  OneItemStateV1 before = 1;
+  OneItemStateV1 after = 2;
+  OneItemGroundV1 source = 3;
+  OneItemInventoryV1 destination = 4;
+  OneItemProvenanceV1 cause = 5;
 }
