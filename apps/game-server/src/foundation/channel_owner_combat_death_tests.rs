@@ -612,3 +612,141 @@ fn maximum_commit_binding_projects_and_max_plus_one_rejects_before_write() {
     assert_eq!(carrier.slots, before);
     assert!(carrier.corpse_projection.is_none());
 }
+
+fn key_fields(
+    key: CreatureDeathOccurrenceKey,
+) -> (WorldId, ChannelId, ScopeOwnershipGeneration, u32, u64) {
+    (
+        key.world_id(),
+        key.channel_id(),
+        key.scope_ownership_generation(),
+        key.actor_local_id(),
+        key.actor_local_generation(),
+    )
+}
+
+fn d1_fixture(seed: u64) -> CombatDeathFixture {
+    let scope = grant(seed, 1);
+    CombatDeathFixture::new(scope.world_id, scope.channel_id, scope.scope_generation)
+        .expect("fixture creature")
+}
+
+#[test]
+fn committed_lethal_death_key_is_the_exact_owner_actor_ref_and_replay_stable() {
+    let (owner, mut carrier, actor) = fixture(110, true);
+    let cast = occurrence("cast:death-key", "rules:1");
+    let resolved = resolve(&carrier, &owner, actor, &cast, ProposalSource::Client);
+    let lethal_plan = plan(cast, ProposalSource::Client, 20);
+    let lethal = commit_exact_owner_damage(
+        &mut carrier.current_owner_exact_commit(&owner),
+        &resolved,
+        &lethal_plan,
+    )
+    .expect("lethal owner commit");
+    assert!(lethal.applied);
+    let first =
+        project_fixed_one_creature_death(&mut carrier.current_owner_combat_death(&owner), actor)
+            .expect("projection")
+            .occurrence()
+            .death_key();
+    assert_eq!(
+        key_fields(first),
+        (
+            actor.0.world_id,
+            actor.0.channel_id,
+            actor.0.scope_generation,
+            actor.0.actor_local_id.0,
+            actor.0.actor_local_generation.0,
+        )
+    );
+
+    let replay = commit_exact_owner_damage(
+        &mut carrier.current_owner_exact_commit(&owner),
+        &resolved,
+        &lethal_plan,
+    )
+    .expect("exact Ability replay");
+    assert!(!replay.applied);
+    let replayed =
+        project_fixed_one_creature_death(&mut carrier.current_owner_combat_death(&owner), actor)
+            .expect("idempotent projection")
+            .occurrence()
+            .death_key();
+    assert_eq!(replayed, first);
+
+    // The runtime MINT cause is the full typed tuple of that key (§4.2).
+    use crate::durability::item_mint::{ItemMintCause, TypedDefinitionRef};
+    let loot = TypedDefinitionRef {
+        family: "LootTable".into(),
+        production_key: "fixture:vsl-combat.loot.single".into(),
+        revision_ref: "VSL_COMBAT_FIXTURE_PROFILE/v1".into(),
+    };
+    let (world_id, channel_id, generation, local_id, local_generation) = key_fields(first);
+    assert_eq!(
+        ItemMintCause::from_creature_death(first, loot.clone(), "fixture:drop".into(), 0),
+        ItemMintCause::for_test(
+            world_id,
+            channel_id,
+            generation,
+            local_id,
+            local_generation,
+            loot,
+            "fixture:drop".into(),
+            0,
+        )
+    );
+}
+
+#[test]
+fn only_a_committed_projected_lethal_occurrence_yields_a_death_key() {
+    // Non-lethal damage: no death.
+    let mut grazed = d1_fixture(120);
+    let graze = grazed.strike("strike:graze", 5).expect("nonlethal commit");
+    assert_eq!((graze.health_before, graze.health_after), (20, 15));
+    assert_eq!(
+        grazed.project_death(),
+        Err(CarrierError::CommittedLethalUnavailable)
+    );
+
+    // Administrative despawn, alive or after the lethal commit: no death.
+    let mut living = d1_fixture(122);
+    living.despawn().expect("despawn");
+    assert!(living.project_death().is_err());
+    let mut struck = d1_fixture(124);
+    struck
+        .strike("strike:lethal", CombatDeathFixture::HEALTH)
+        .expect("lethal commit");
+    struck.despawn().expect("despawn");
+    assert!(struck.project_death().is_err());
+
+    // A stale owner after the scope moved cannot derive the death.
+    let mut moved = d1_fixture(126);
+    moved
+        .strike("strike:lethal", CombatDeathFixture::HEALTH)
+        .expect("lethal commit");
+    moved
+        .advance_owner(ScopeOwnershipGeneration::new(2).expect("generation"))
+        .expect("scope moved");
+    assert_eq!(moved.project_death(), Err(CarrierError::WrongScope));
+}
+
+#[test]
+fn two_fixture_creature_deaths_have_distinct_death_keys() {
+    let mut first = d1_fixture(130);
+    let mut second = d1_fixture(132);
+    let mut keys = Vec::new();
+    for creature in [&mut first, &mut second] {
+        let lethal = creature
+            .strike("strike:lethal", CombatDeathFixture::HEALTH)
+            .expect("lethal commit");
+        assert!(lethal.applied);
+        let (key, _) = creature.project_death().expect("death");
+        assert_eq!(
+            key_fields(key).4,
+            creature.actor().0.actor_local_generation.0
+        );
+        keys.push(key);
+    }
+    assert_ne!(keys[0], keys[1]);
+    assert_ne!(keys[0].channel_id(), keys[1].channel_id());
+}

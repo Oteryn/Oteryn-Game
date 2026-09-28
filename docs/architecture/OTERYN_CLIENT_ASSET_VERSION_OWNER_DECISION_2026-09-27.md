@@ -26,6 +26,11 @@ repository's authority and scope.
 
 ## 2. Server-side Item data stays pinned at 15.25
 
+Superseded 2026-09-28: the game version is 15.30 for server-side data too, and a family may re-pin to a
+15.30-capable Canary or Crystal revision on a branch without waiting for upstream `main`. See
+`docs/agents/programs/OTERYN_GAME_VERSION_1530_AND_OTS_BRANCHES_DECISION_20260928.md`. The text below is kept
+as recorded.
+
 Server-side Item data remains on the currently pinned engines — Canary
 `47dfd51f45280a59a1d3e50ba7edd573d7234446` and Crystal
 `ff7ede593c69d4c658b382c97443e8155926924a`, both `CLIENT_VERSION` 1525 (client

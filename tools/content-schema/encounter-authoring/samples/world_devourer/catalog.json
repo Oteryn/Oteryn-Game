@@ -69,6 +69,21 @@
       "family": "Creature",
       "key": "canary:creature/greed",
       "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Ability",
+      "key": "canary:ability/spell/hunger_summon",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23469",
+      "revision": "canary-47dfd51f"
+    },
+    {
+      "family": "Item",
+      "key": "canary:item/23470",
+      "revision": "canary-47dfd51f"
     }
   ]
 }

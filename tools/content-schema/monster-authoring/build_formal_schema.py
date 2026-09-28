@@ -308,7 +308,12 @@ manifest={'$schema':DIALECT,'$id':MANIFEST_ID,'title':'Monster import dispositio
                  'revision_id':integer(1),'content_sha256':text(pattern=r'^[a-f0-9]{64}$')},
                 ('kind','api','title','page_id','revision_id','content_sha256'),
                 description='MediaWiki page pinned to one immutable revision id and the SHA-256 of that revision wikitext (D15). '
-                            'source_file is the page title and source_line the wikitext line.')]},1),
+                            'source_file is the page title and source_line the wikitext line.'),
+            obj({'kind':{'const':'official_capture'},'url':text(pattern=r'^https://'),'title':text(),
+                 'captured':text(pattern=r'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'),'content_sha256':text(pattern=r'^[a-f0-9]{64}$')},
+                ('kind','url','title','captured','content_sha256'),
+                description='Spell S15: a dated capture of an official game-publisher page (tibia.com) that has no revision id; '
+                            'content_sha256 is that of the captured facts. source_file is the entry title.')]},1),
         'entries':array(obj({'source_index':integer(),'source_file':text(),'source_line':integer(1),'source_field':text(),
             'kind':enum('field','dependency','script','original_text'),
             'status':enum('mapped','metadata_only','resolved_native_behavior','approved_omission','unsupported_source_field','unresolved_semantics','unresolved_dependency','partial_text'),

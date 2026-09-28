@@ -397,6 +397,44 @@ impl CreatureDeathOccurrenceRef {
     pub(crate) const fn health_before(&self) -> i64 {
         self.health_before
     }
+
+    /// The durable, restart-stable death key of this committed lethal
+    /// occurrence (`CREATURE-DEATH-OCCURRENCE-IDENTITY-V1`, DUR-03 decision
+    /// §4.1): exactly the owner-issued actor reference. The commit binding,
+    /// damage and HP facts stay bound attributes, never key material.
+    pub(crate) const fn death_key(&self) -> CreatureDeathOccurrenceKey {
+        CreatureDeathOccurrenceKey(self.actor.0)
+    }
+}
+
+/// `(WorldId, ChannelId, ScopeOwnershipGeneration, ActorLocalId,
+/// ActorLocalGeneration)` of one committed creature death. The only
+/// constructor is [`CreatureDeathOccurrenceRef::death_key`]: there is no
+/// raw-byte, field or caller constructor, so a key always names a lethal
+/// occurrence the physical Channel owner committed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct CreatureDeathOccurrenceKey(ActorRef);
+
+impl CreatureDeathOccurrenceKey {
+    pub(crate) const fn world_id(self) -> WorldId {
+        self.0.world_id
+    }
+
+    pub(crate) const fn channel_id(self) -> ChannelId {
+        self.0.channel_id
+    }
+
+    pub(crate) const fn scope_ownership_generation(self) -> ScopeOwnershipGeneration {
+        self.0.scope_generation
+    }
+
+    pub(crate) const fn actor_local_id(self) -> u32 {
+        self.0.actor_local_id.0
+    }
+
+    pub(crate) const fn actor_local_generation(self) -> u64 {
+        self.0.actor_local_generation.0
+    }
 }
 
 /// One runtime-owned, non-persistent corpse projection. The position is the
@@ -2217,6 +2255,116 @@ impl MovementActorFixture {
         } else {
             Err(CarrierError::MovementCreatureUnavailable)
         }
+    }
+}
+
+/// Test-only D1 death source (`VSL_COMBAT_FIXTURE_PROFILE`): one positioned
+/// fixture creature in a pre-production Channel carrier of the given scope
+/// generation. A death exists only through the owner's committed lethal path
+/// and Combat's projection; the fixture returns the death key that projection
+/// names and never constructs one. Nothing here exists outside `cfg(test)`.
+#[cfg(test)]
+pub(crate) struct CombatDeathFixture {
+    owner: NamespaceContinuityGuard,
+    carrier: ChannelActorCarrier,
+    actor: ExactActorRef,
+}
+
+#[cfg(test)]
+impl CombatDeathFixture {
+    /// Fixture creature health: test/evidence only, not Reference behavior.
+    pub(crate) const HEALTH: i64 = 20;
+    const TARGET: &'static str = "fixture:vsl-combat.creature";
+    const POSITION: LocalPosition = LocalPosition {
+        x: 100,
+        y: 100,
+        floor: 7,
+    };
+
+    pub(crate) fn new(
+        world_id: WorldId,
+        channel_id: ChannelId,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<Self, CarrierError> {
+        let mut owner =
+            NamespaceContinuityGuard::from_pre_production_grant(PreProductionContinuityGrant {
+                world_id,
+                channel_id,
+                scope_generation,
+            });
+        let mut carrier = ChannelActorCarrier::bootstrap_pre_production(&mut owner, 1)?;
+        let actor = carrier.admit_creature(&owner, ActorState(1), Self::TARGET, Self::HEALTH)?;
+        let context = PreProductionPositionContext {
+            world_id,
+            channel_id,
+            scope_generation,
+            coordinate_frame_marker: 41,
+            map_revision_marker: 42,
+            content_generation_marker: 43,
+        };
+        carrier.initialize_position(&owner, actor, context, Self::POSITION)?;
+        Ok(Self {
+            owner,
+            carrier,
+            actor: ExactActorRef(actor),
+        })
+    }
+
+    pub(crate) const fn actor(&self) -> ExactActorRef {
+        self.actor
+    }
+
+    /// One owner-committed damage occurrence. An identical replay returns the
+    /// recorded transition without a second write.
+    pub(crate) fn strike(
+        &mut self,
+        occurrence: &str,
+        damage: i64,
+    ) -> Result<OwnerDamageResult, CarrierError> {
+        let mut binding = occurrence.as_bytes().to_vec();
+        binding.extend_from_slice(b"\0fixture:vsl-combat.strike.v1");
+        self.carrier
+            .current_owner_exact_commit(&self.owner)
+            .commit_damage(
+                self.actor,
+                OwnerDamageCommand {
+                    target: Self::TARGET.as_bytes(),
+                    occurrence: occurrence.as_bytes(),
+                    binding: &binding,
+                    damage,
+                },
+            )
+    }
+
+    /// Combat's idempotent projection of the committed lethal occurrence and
+    /// the durable death key it names, with the corpse position.
+    pub(crate) fn project_death(
+        &mut self,
+    ) -> Result<(CreatureDeathOccurrenceKey, MovementLocalPosition), CarrierError> {
+        let mut combat = self.carrier.current_owner_combat_death(&self.owner);
+        let projection = super::exact_actor_test_combat::project_fixed_one_creature_death(
+            &mut combat,
+            self.actor,
+        )?;
+        Ok((projection.occurrence().death_key(), projection.position()))
+    }
+
+    /// Administrative despawn: the creature leaves without a semantic death.
+    pub(crate) fn despawn(&mut self) -> Result<(), CarrierError> {
+        self.carrier.remove(&self.owner, self.actor.0).map(|_| ())
+    }
+
+    /// The scope moved: owner continuity advances to `next`, while this
+    /// carrier still serves its original generation.
+    pub(crate) fn advance_owner(
+        &mut self,
+        next: ScopeOwnershipGeneration,
+    ) -> Result<(), CarrierError> {
+        self.owner.advance(PreProductionContinuityGrant {
+            world_id: self.owner.world_id,
+            channel_id: self.owner.channel_id,
+            scope_generation: next,
+        })
     }
 }
 

@@ -220,20 +220,39 @@ case('item use by one base vocation accepted', rule(trigger={'kind': 'item_used'
                                                           'base_vocation': 'monk'}), True)
 case('item use vocation must be a base vocation', rule(trigger={'kind': 'item_used', 'role': 'boss', 'item': ref('Item', 'vortex'),
                                                              'base_vocation': 'elite_knight'}))
+HIT = {'kind': 'damage_taken', 'role': 'boss', 'source': 'any'}
 PER_PLAYER = {'kind': 'spawn_per_player', 'players_in': 'arena', 'by_base_vocation': {'knight': ref('Creature', 'add')},
               'at': {'offset_tiles': 1}, 'owner': 'none', 'health': 'full', 'counter': 'adds_killed'}
-case('per-player spawn accepted', rule([PER_PLAYER]), True)
-case('spawn at the closest free tile accepted', rule([{**PER_PLAYER, 'at': 'closest_free_tile'}]), True)
+case('per-player spawn accepted', rule([PER_PLAYER], trigger=HIT), True)
+case('spawn at the closest free tile accepted', rule([{**PER_PLAYER, 'at': 'closest_free_tile'}], trigger=HIT), True)
+case('stepped-on trigger accepted (D46)', rule(trigger={'kind': 'stepped_on', 'role': 'boss', 'item': ref('Item', 'vortex')}), True)
+case('stepped-on needs a catalogued item', rule(trigger={'kind': 'stepped_on', 'role': 'boss', 'item': ref('Item', 'stranger')}))
+case('stepped-on needs a known role', rule(trigger={'kind': 'stepped_on', 'role': 'ghost', 'item': ref('Item', 'vortex')}))
+case('stepped-on remove triggering accepted', rule([{'kind': 'remove', 'triggering': True}],
+                                                   trigger={'kind': 'stepped_on', 'role': 'boss', 'item': ref('Item', 'vortex')}), True)
+case('has_condition accepted (D46)', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                          conditions=[{'kind': 'has_condition', 'role': 'boss', 'conditions': ['poison', 'bleeding'],
+                                                       'present': True}]), True)
+case('has_condition needs a known role', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                              conditions=[{'kind': 'has_condition', 'role': 'ghost', 'conditions': ['poison'],
+                                                           'present': True}]))
+case('has_condition takes known conditions', rule(trigger={'kind': 'creature_died', 'role': 'boss'},
+                                                  conditions=[{'kind': 'has_condition', 'role': 'boss', 'conditions': ['sleepy'],
+                                                               'present': True}]))
+case('relative position accepted (D46)', rule([{**PER_PLAYER, 'at': {'relative': {'x': 0, 'y': -1}}}], trigger=HIT), True)
+case('relative position needs a creature trigger', rule([{**PER_PLAYER, 'at': {'relative': {'x': 0, 'y': -1}}}]))
+case('closest free tile needs a creature trigger', rule([{**PER_PLAYER, 'at': 'closest_free_tile'}]))
+case('relative position needs both offsets', rule([{**PER_PLAYER, 'at': {'relative': {'y': -1}}}], trigger=HIT))
 case('damage accumulated as a percent of maximum health accepted',
      rule(trigger={'kind': 'damage_accumulated', 'role': 'boss', 'percent': 15}), True)
 case('damage accumulated takes an amount or a percent, not both',
      rule(trigger={'kind': 'damage_accumulated', 'role': 'boss', 'amount': 100, 'percent': 15}))
 case('damage accumulated needs an amount or a percent', rule(trigger={'kind': 'damage_accumulated', 'role': 'boss'}))
-case('per-player spawn needs an area', rule([{**PER_PLAYER, 'players_in': 'exit'}]))
-case('per-player spawn needs a declared counter', rule([{**PER_PLAYER, 'counter': 'nothing'}]))
-case('per-player spawn needs a vocation entry', rule([{**PER_PLAYER, 'by_base_vocation': {}}]))
-case('per-player spawn creatures are catalogued', rule([{**PER_PLAYER, 'by_base_vocation': {'monk': ref('Creature', 'stranger')}}]))
-case('per-player spawn takes base vocations', rule([{**PER_PLAYER, 'by_base_vocation': {'royal_paladin': ref('Creature', 'add')}}]))
+case('per-player spawn needs an area', rule([{**PER_PLAYER, 'players_in': 'exit'}], trigger=HIT))
+case('per-player spawn needs a declared counter', rule([{**PER_PLAYER, 'counter': 'nothing'}], trigger=HIT))
+case('per-player spawn needs a vocation entry', rule([{**PER_PLAYER, 'by_base_vocation': {}}], trigger=HIT))
+case('per-player spawn creatures are catalogued', rule([{**PER_PLAYER, 'by_base_vocation': {'monk': ref('Creature', 'stranger')}}], trigger=HIT))
+case('per-player spawn takes base vocations', rule([{**PER_PLAYER, 'by_base_vocation': {'royal_paladin': ref('Creature', 'add')}}], trigger=HIT))
 case('timer add accepted', rule([{'kind': 'timer', 'timer': 'enrage', 'operation': 'add', 'ms': 10000}]), True)
 case('timer add needs its ms', rule([{'kind': 'timer', 'timer': 'enrage', 'operation': 'add'}]))
 case('timer start takes no ms', rule([{'kind': 'timer', 'timer': 'enrage', 'operation': 'start', 'ms': 10000}]))

@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-vsl-combat-resource-rows-decision
 title: "VSL-COMBAT-01 §19 Combat resource rows (D77-D79)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1123
 base_sha: 943e17b07ba42c95a91f6a431990905846a69968
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: c39b22db6094429ef4ea70e48f0b7083c8d01f02
+final_head_sha: c39b22db6094429ef4ea70e48f0b7083c8d01f02
+final_head_frozen_at: 2026-09-28T15:44Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -59,9 +59,9 @@ Boundary tests bind the Combat D registration.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review, one repair generation; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`0a3d7959`).
 
 ## Excluded scope
 
@@ -80,14 +80,28 @@ Boundary tests bind the Combat D registration.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1123 merged through the Merge Queue on 2026-09-28 as `0a3d7959`.
+- Review: one Codex review of `f26f0ff` (one P1, loot plan bytes undersized), repaired in the single
+  repair generation `c39b22d` (30,720 B, decision §4.1.1); the owner decided to merge after green CI
+  (#162 comment 5873986334).
+- Protected-main readback: the decision, this record and the archived #1118 record on `0a3d7959` are
+  byte-identical to the frozen head `c39b22d`.
+- The PR body still states the pre-repair 12,288 B; the decision document is authoritative.
+- Next allocations: D1 (D79); Combat D registers the rows; `MOVE-RL-11` goes to the Movement or
+  visibility owner.
+- Archived under `OTV2-20260928-reference-first-player-death-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1123 open
-status: validating
+last_progress: protected-integrated as 0a3d7959; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: c39b22db6094429ef4ea70e48f0b7083c8d01f02
 pr: 1123
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1123
+next_action: null
 ```

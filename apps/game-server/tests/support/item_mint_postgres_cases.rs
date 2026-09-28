@@ -2,6 +2,7 @@
 // same path-loaded crate root.
 
 use crate::character_recovery_fence::CharacterRecoveryStore;
+use crate::durability::character_authority::ReconciledCharacterAuthority;
 use crate::durability::item_mint::{
     CommittedItemMint, GroundPlacement, ItemMintCandidate, ItemMintCause, ItemMintError,
     ItemMintOutcome, ItemMintRequest, TypedDefinitionRef,
@@ -12,7 +13,10 @@ use crate::durability::runtime_scope_assignment::{
     ControlActor, LaunchBinding, NodeIncarnationProof, OperationKey, RuntimeScopeAssignmentWriter,
 };
 use crate::durability::{DurabilityError, DurabilityRoot};
-use crate::foundation::{ChannelId, RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId};
+use crate::foundation::{
+    CarrierError, ChannelId, CombatDeathFixture, CreatureDeathOccurrenceKey, MovementLocalPosition,
+    RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+};
 use sqlx::{Connection, Executor, Row};
 use std::future::Future;
 use std::task::Poll;
@@ -1550,6 +1554,465 @@ fn concurrent_same_cause_on_two_roots_mints_exactly_once() -> TestResult {
         harness.assert_minted(1).await?;
         drop(second_authority);
         drop(second_root);
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+// ---------------------------------------------------------------------------
+// Stage D1 (test-only): committed creature death -> one MINT.
+//
+// The death comes only from the Foundation carrier's committed lethal path and
+// Combat's projection (`CombatDeathFixture`); its typed death key is the sole
+// death input of `ItemMintCause::from_creature_death`. The loot table is the
+// `VSL_COMBAT_FIXTURE_PROFILE` single deterministic entry at draw ordinal 0:
+// no probability, quantity rule or production content is decided here, and
+// nothing below is reachable from production code.
+// ---------------------------------------------------------------------------
+
+const D1_SECOND_CHANNEL: u8 = 44;
+const D1_FIXTURE_REVISION: &str = "VSL_COMBAT_FIXTURE_PROFILE/v1";
+const D1_LETHAL_OCCURRENCE: &str = "fixture:vsl-combat.strike.lethal";
+
+fn d1_fixture(channel: u8) -> TestResult<CombatDeathFixture> {
+    CombatDeathFixture::new(
+        WorldId::decode(&id(WORLD)).map_err(debug)?,
+        ChannelId::decode(&id(channel)).map_err(debug)?,
+        ScopeOwnershipGeneration::new(1).map_err(debug)?,
+    )
+    .map_err(|error| debug(error).into())
+}
+
+/// The one fixture loot entry of a committed death, drawn at ordinal 0. The
+/// Ground placement is the corpse position and a fixture encoding of the death
+/// key; both are test evidence, not a production placement rule.
+fn d1_loot_request(
+    death: CreatureDeathOccurrenceKey,
+    corpse: MovementLocalPosition,
+) -> ItemMintRequest {
+    let mut spatial_position = Vec::new();
+    spatial_position.extend_from_slice(&corpse.x.to_be_bytes());
+    spatial_position.extend_from_slice(&corpse.y.to_be_bytes());
+    spatial_position.extend_from_slice(&corpse.floor.to_be_bytes());
+    let mut corpse_ref = Vec::new();
+    corpse_ref.extend_from_slice(death.world_id().as_bytes());
+    corpse_ref.extend_from_slice(death.channel_id().as_bytes());
+    corpse_ref.extend_from_slice(&death.scope_ownership_generation().get().to_be_bytes());
+    corpse_ref.extend_from_slice(&death.actor_local_id().to_be_bytes());
+    corpse_ref.extend_from_slice(&death.actor_local_generation().to_be_bytes());
+    ItemMintRequest {
+        cause: ItemMintCause::from_creature_death(
+            death,
+            definition(
+                "LootTable",
+                "fixture:vsl-combat.loot.single",
+                D1_FIXTURE_REVISION,
+            ),
+            "fixture:vsl-combat.drop".into(),
+            0,
+        ),
+        item: definition("ItemType", "fixture:vsl-combat.item", D1_FIXTURE_REVISION),
+        quantity: 1,
+        ground: GroundPlacement {
+            spatial_position,
+            corpse_ref,
+            map_revision: "fixture:vsl-combat.map.r1".into(),
+            content_revision: D1_FIXTURE_REVISION.into(),
+            native_room_placement_context: b"fixture:vsl-combat.room".to_vec(),
+        },
+        content_revision: D1_FIXTURE_REVISION.into(),
+        ruleset_revision: "fixture:vsl-combat.ruleset.r1".into(),
+        sim_revision: "fixture:vsl-combat.sim.r1".into(),
+    }
+}
+
+/// Commits (or identically replays) the fixture's lethal occurrence, projects
+/// the death and derives its loot request. Returns the death key with it.
+fn d1_kill(
+    fixture: &mut CombatDeathFixture,
+) -> TestResult<(CreatureDeathOccurrenceKey, ItemMintRequest)> {
+    let lethal = fixture
+        .strike(D1_LETHAL_OCCURRENCE, CombatDeathFixture::HEALTH)
+        .map_err(debug)?;
+    assert_eq!(
+        (lethal.health_before, lethal.health_after),
+        (CombatDeathFixture::HEALTH, 0)
+    );
+    let (death, corpse) = fixture.project_death().map_err(debug)?;
+    Ok((death, d1_loot_request(death, corpse)))
+}
+
+/// D1 wire-up: death -> fixture loot entry -> freeze -> commit under the
+/// live fence of `node`.
+async fn d1_mint_death(
+    harness: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    node: &NodeIncarnationProof,
+    fixture: &mut CombatDeathFixture,
+) -> TestResult<(ItemMintCandidate, ItemMintOutcome)> {
+    let (_, request) = d1_kill(fixture)?;
+    let mut candidate = harness
+        .root
+        .freeze_item_mint(authority, node, request)
+        .await
+        .map_err(debug)?;
+    let outcome = harness
+        .root
+        .commit_item_mint(authority, node, &mut candidate)
+        .await
+        .map_err(debug)?;
+    Ok((candidate, outcome))
+}
+
+async fn d1_reservations_for(
+    harness: &Harness,
+    death: CreatureDeathOccurrenceKey,
+) -> TestResult<i64> {
+    Ok(sqlx::query_scalar(
+        "SELECT count(*) FROM game_item_mint_reservations \
+          WHERE death_world_id = encode($1,'hex')::uuid \
+            AND death_channel_id = encode($2,'hex')::uuid \
+            AND death_scope_ownership_generation = $3::text::numeric(20,0) \
+            AND death_actor_local_id = $4 \
+            AND death_actor_local_generation = $5::text::numeric(20,0) \
+            AND loot_table_family = 'LootTable' \
+            AND loot_table_production_key = 'fixture:vsl-combat.loot.single' \
+            AND loot_table_revision_ref = $6 \
+            AND loot_purpose_key = 'fixture:vsl-combat.drop' \
+            AND draw_ordinal = 0",
+    )
+    .bind(death.world_id().as_bytes().as_slice())
+    .bind(death.channel_id().as_bytes().as_slice())
+    .bind(death.scope_ownership_generation().get().to_string())
+    .bind(i64::from(death.actor_local_id()))
+    .bind(death.actor_local_generation().to_string())
+    .bind(D1_FIXTURE_REVISION)
+    .fetch_one(&harness.pool)
+    .await?)
+}
+
+async fn d1_assert_ground_item(
+    harness: &Harness,
+    authority: &ReconciledCharacterAuthority<'_, '_>,
+    result: &CommittedItemMint,
+    channel: u8,
+) -> TestResult {
+    let item = harness
+        .root
+        .read_item_instance(authority, result.item_instance_id)
+        .await
+        .map_err(debug)?
+        .ok_or("minted item must be readable")?;
+    assert_eq!(item.world_id, WorldId::decode(&id(WORLD)).map_err(debug)?);
+    assert_eq!(
+        item.channel_id,
+        ChannelId::decode(&id(channel)).map_err(debug)?
+    );
+    assert_eq!(item.runtime_scope_ownership_generation, 1);
+    assert_eq!(
+        item.definition,
+        definition("ItemType", "fixture:vsl-combat.item", D1_FIXTURE_REVISION)
+    );
+    assert_eq!(item.quantity, 1);
+    assert_eq!(item.minted_transaction_id, result.transaction_id);
+    Ok(())
+}
+
+#[test]
+fn d1_one_creature_death_mints_exactly_one_item() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "d1_once").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let mut fixture = d1_fixture(CHANNEL)?;
+        let (death, request) = d1_kill(&mut fixture)?;
+        assert_eq!(
+            death.world_id(),
+            WorldId::decode(&id(WORLD)).map_err(debug)?
+        );
+        assert_eq!(
+            death.channel_id(),
+            ChannelId::decode(&id(CHANNEL)).map_err(debug)?
+        );
+        assert_eq!(death.scope_ownership_generation().get(), 1);
+        let mut candidate = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, request)
+            .await
+            .map_err(debug)?;
+        // The reservation stores the full typed cause tuple of this death.
+        assert_eq!(d1_reservations_for(&harness, death).await?, 1);
+        let result = committed(
+            harness
+                .root
+                .commit_item_mint(&authority, &harness.node, &mut candidate)
+                .await
+                .map_err(debug)?,
+        )?;
+        assert_candidate_result(&candidate, &result);
+        harness.assert_minted(1).await?;
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 1);
+        d1_assert_ground_item(&harness, &authority, &result, CHANNEL).await?;
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn d1_replayed_or_refrozen_death_resolves_to_the_same_item() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "d1_replay").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let mut fixture = d1_fixture(CHANNEL)?;
+        let (death, request) = d1_kill(&mut fixture)?;
+        let mut first = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, request.clone())
+            .await
+            .map_err(debug)?;
+
+        // The owner replays the identical lethal occurrence and Combat
+        // re-projects: the same death key and the same loot request.
+        let (replayed_death, replayed_request) = d1_kill(&mut fixture)?;
+        assert_eq!(replayed_death, death);
+        assert_eq!(replayed_request, request);
+        let mut refrozen = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, replayed_request)
+            .await
+            .map_err(debug)?;
+        assert_eq!(refrozen.transaction_id(), first.transaction_id());
+        assert_eq!(refrozen.event_id(), first.event_id());
+        assert_eq!(refrozen.item_instance_id(), first.item_instance_id());
+        assert_eq!(refrozen.envelope(), first.envelope());
+
+        let result = committed(
+            harness
+                .root
+                .commit_item_mint(&authority, &harness.node, &mut first)
+                .await
+                .map_err(debug)?,
+        )?;
+        assert_eq!(
+            already(
+                harness
+                    .root
+                    .commit_item_mint(&authority, &harness.node, &mut refrozen)
+                    .await
+                    .map_err(debug)?
+            )?,
+            result
+        );
+        assert_eq!(
+            harness
+                .root
+                .reconcile_item_mint(&authority, &mut refrozen)
+                .await
+                .map_err(debug)?,
+            Some(result.clone())
+        );
+        assert_eq!(d1_reservations_for(&harness, death).await?, 1);
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 1);
+        harness.assert_minted(1).await?;
+        d1_assert_ground_item(&harness, &authority, &result, CHANNEL).await?;
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn d1_stale_generation_death_is_refused_after_the_scope_moves() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "d1_stale").await?;
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+
+        let mut fixture = d1_fixture(CHANNEL)?;
+        let (death, request) = d1_kill(&mut fixture)?;
+        let mut pending = harness
+            .root
+            .freeze_item_mint(&authority, &harness.node, request.clone())
+            .await
+            .map_err(debug)?;
+
+        // The scope moves to another node: generation 1 ends before commit.
+        let node2 = register(&harness.root, 2).await?;
+        let moved = harness
+            .writer
+            .submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([8_u8; 32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                command: AssignmentCommand::Replace {
+                    scope: scope()?,
+                    predecessor: harness.assignment.predecessor(),
+                    target: node2.fact(),
+                },
+            })
+            .await
+            .map_err(debug)?;
+        let AssignmentOutcome::Committed(moved) = moved else {
+            return Err(format!("unexpected replacement outcome: {moved:?}").into());
+        };
+        assert_eq!(moved.assignment.ownership_generation, 2);
+
+        // D52: the generation-1 death's pending MINT is refused on the former
+        // and the new holder, from the held candidate and from a re-freeze.
+        for holder in [&harness.node, &node2] {
+            assert!(matches!(
+                harness
+                    .root
+                    .commit_item_mint(&authority, holder, &mut pending)
+                    .await,
+                Err(ItemMintError::AuthorityRejected)
+            ));
+            assert!(matches!(
+                harness
+                    .root
+                    .freeze_item_mint(&authority, holder, request.clone())
+                    .await,
+                Err(ItemMintError::AuthorityRejected)
+            ));
+        }
+        // The moved owner cannot re-derive the death from its stale carrier.
+        fixture
+            .advance_owner(ScopeOwnershipGeneration::new(2).map_err(debug)?)
+            .map_err(debug)?;
+        assert_eq!(fixture.project_death(), Err(CarrierError::WrongScope));
+
+        assert_eq!(d1_reservations_for(&harness, death).await?, 1);
+        harness.assert_minted(0).await?;
+        drop(authority);
+        drop(seal);
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn d1_administrative_despawn_produces_no_death_and_no_mint() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "d1_despawn").await?;
+
+        // Despawn of a living creature, and despawn after a committed lethal
+        // hit but before the death is projected: neither yields a death key,
+        // so the wire-up has no cause to freeze.
+        let mut living = d1_fixture(CHANNEL)?;
+        living.despawn().map_err(debug)?;
+        assert!(living.project_death().is_err());
+
+        let mut struck = d1_fixture(CHANNEL)?;
+        struck
+            .strike(D1_LETHAL_OCCURRENCE, CombatDeathFixture::HEALTH)
+            .map_err(debug)?;
+        struck.despawn().map_err(debug)?;
+        assert!(struck.project_death().is_err());
+        assert!(d1_kill(&mut struck).is_err());
+
+        assert_eq!(harness.count("game_item_mint_reservations").await?, 0);
+        harness.assert_minted(0).await?;
+        harness.cleanup().await
+    })
+}
+
+#[test]
+fn d1_two_creature_deaths_have_distinct_keys_and_items() -> TestResult {
+    let Some(admin) = configured_admin() else {
+        return Ok(());
+    };
+    runtime()?.block_on(async move {
+        let harness = Harness::create(admin, "d1_two").await?;
+        // One fixture creature per Channel carrier: assign a second Channel of
+        // the same World to the same node.
+        sqlx::query(
+            "INSERT INTO game_control_scope_grants \
+             (control_role, world_id, channel_id, operation) \
+             SELECT session_user, encode($1,'hex')::uuid, encode($2,'hex')::uuid, operation \
+               FROM unnest(ARRAY[1, 2, 3]::SMALLINT[]) AS operation",
+        )
+        .bind(id(WORLD).as_slice())
+        .bind(id(D1_SECOND_CHANNEL).as_slice())
+        .execute(&harness.pool)
+        .await?;
+        let second = harness
+            .writer
+            .submit(&AssignmentRequest {
+                operation_key: OperationKey::from_bytes([9_u8; 32]),
+                actor: ControlActor::new("oteryn_test_admin").map_err(debug)?,
+                command: AssignmentCommand::Assign {
+                    scope: RuntimeScopeRefV1::channel(
+                        WorldId::decode(&id(WORLD)).map_err(debug)?,
+                        ChannelId::decode(&id(D1_SECOND_CHANNEL)).map_err(debug)?,
+                    ),
+                    target: harness.node.fact(),
+                },
+            })
+            .await
+            .map_err(debug)?;
+        let AssignmentOutcome::Committed(second) = second else {
+            return Err(format!("unexpected assignment outcome: {second:?}").into());
+        };
+        assert_eq!(second.assignment.ownership_generation, 1);
+
+        let seal = harness.recovery.seal_current().map_err(debug)?;
+        let authority = harness
+            .root
+            .open_character_authority(&seal)
+            .await
+            .map_err(debug)?;
+        let mut first_creature = d1_fixture(CHANNEL)?;
+        let mut second_creature = d1_fixture(D1_SECOND_CHANNEL)?;
+        let first_death = d1_kill(&mut first_creature)?.0;
+        let second_death = d1_kill(&mut second_creature)?.0;
+        assert_ne!(first_death, second_death);
+
+        let (first_candidate, first_outcome) =
+            d1_mint_death(&harness, &authority, &harness.node, &mut first_creature).await?;
+        let (second_candidate, second_outcome) =
+            d1_mint_death(&harness, &authority, &harness.node, &mut second_creature).await?;
+        let first_result = committed(first_outcome)?;
+        let second_result = committed(second_outcome)?;
+        assert_candidate_result(&first_candidate, &first_result);
+        assert_candidate_result(&second_candidate, &second_result);
+        assert_ne!(first_result.transaction_id, second_result.transaction_id);
+        assert_ne!(first_result.event_id, second_result.event_id);
+        assert_ne!(
+            first_result.item_instance_id,
+            second_result.item_instance_id
+        );
+        assert_eq!(d1_reservations_for(&harness, first_death).await?, 1);
+        assert_eq!(d1_reservations_for(&harness, second_death).await?, 1);
+        harness.assert_minted(2).await?;
+        d1_assert_ground_item(&harness, &authority, &first_result, CHANNEL).await?;
+        d1_assert_ground_item(&harness, &authority, &second_result, D1_SECOND_CHANNEL).await?;
         drop(authority);
         drop(seal);
         harness.cleanup().await
