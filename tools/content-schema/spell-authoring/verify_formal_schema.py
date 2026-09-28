@@ -174,6 +174,9 @@ NEGATIVE = {
     'unreached extra formula': case('light_healing', 'deps', ('formulas', 1), {**LIGHT_HEALING_DEPS['formulas'][0], 'identity': identity('oteryn:formula.other')}, 'is not reached'),
     'unknown targeting parameter': case('light_healing', 'spell', ('targeting', 'parameter'), 'number', 'is not one of'),
     'extra spell field': case('light_healing', 'spell', ('price',), 170, 'Additional properties'),
+    'undeclared cooldown group': case('light_healing', 'spell', ('groups', 0, 'group'), 'mystery', 'not a declared primary cooldown group'),
+    'secondary group as primary': case('light_healing', 'spell', ('groups', 0, 'group'), 'ultimatestrikes', 'not a declared primary cooldown group'),
+    'wheel_unlock not boolean': case('light_healing', 'spell', ('requirements', 'wheel_unlock'), 'yes', 'is not of type'),
 }
 
 
