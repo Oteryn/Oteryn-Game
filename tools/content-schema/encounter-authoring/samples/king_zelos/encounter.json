@@ -448,7 +448,7 @@
       "trigger": {
         "kind": "damage_accumulated",
         "role": "rewar_the_bloody",
-        "amount": 12500
+        "percent": 5
       },
       "conditions": [],
       "actions": [

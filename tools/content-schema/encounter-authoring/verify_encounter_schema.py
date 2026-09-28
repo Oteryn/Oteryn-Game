@@ -223,6 +223,11 @@ case('item use vocation must be a base vocation', rule(trigger={'kind': 'item_us
 PER_PLAYER = {'kind': 'spawn_per_player', 'players_in': 'arena', 'by_base_vocation': {'knight': ref('Creature', 'add')},
               'at': {'offset_tiles': 1}, 'owner': 'none', 'health': 'full', 'counter': 'adds_killed'}
 case('per-player spawn accepted', rule([PER_PLAYER]), True)
+case('damage accumulated as a percent of maximum health accepted',
+     rule(trigger={'kind': 'damage_accumulated', 'role': 'boss', 'percent': 15}), True)
+case('damage accumulated takes an amount or a percent, not both',
+     rule(trigger={'kind': 'damage_accumulated', 'role': 'boss', 'amount': 100, 'percent': 15}))
+case('damage accumulated needs an amount or a percent', rule(trigger={'kind': 'damage_accumulated', 'role': 'boss'}))
 case('per-player spawn needs an area', rule([{**PER_PLAYER, 'players_in': 'exit'}]))
 case('per-player spawn needs a declared counter', rule([{**PER_PLAYER, 'counter': 'nothing'}]))
 case('per-player spawn needs a vocation entry', rule([{**PER_PLAYER, 'by_base_vocation': {}}]))

@@ -104,7 +104,7 @@ Encounter
 | `ability_cast(role, AbilityRef)` | a monster spell script with fight effects (D29); a spell whose script only summons is converted as an ability that points to its encounter, and the encounter does the summon (D45) |
 | `damage_taken(role, source: player/any)` | `onHealthChange` per hit |
 | `heal_received(role, source: player/any)` | `onHealthChange` per heal (Canary runs the handler for heals too) (D31) |
-| `damage_accumulated(role, amount)` | `onHealthChange` damage counters: fires each time one creature of the role has taken `amount` damage since it appeared or since it last fired; the count then restarts at 0 and heals do not count (D34) |
+| `damage_accumulated(role, amount or percent)` | `onHealthChange` damage counters: fires each time one creature of the role has taken `amount` damage, or `percent` of its maximum health (the resolved creature definition's, after wiki adoption), since it appeared or since it last fired; the count then restarts at 0 and heals do not count (D34) |
 | `timer_elapsed(timer)` | `addEvent` delays, `onThink` countdowns |
 | `counter_reached(counter, value)` | global kill/stage counters |
 | `area_entered(anchor, role or player)` / `area_left` | zone crossing (`izcandarThink`) |
@@ -459,7 +459,7 @@ A seventeenth slice uses the last D34 addition, the per-vocation summon:
 
 | Event | Encounter | Covered monsters | Notes |
 |---|---|---:|---|
-| `count_vlarkorth_transform`, the Good Remains actions | `count_vlarkorth` | 1 | Every 11,250 damage (15% of the boss's health) each player in the room gets one dark creature of its base vocation, raising a shield; each good remains used on the boss by that vocation lowers it. The reference-date wiki (Fandom rev 1140872) decides where Canary differs (D25): two waves, no damage while the shield holds (Canary only stops counting), and a Dark Merudri with its remains (item 50311) for a Monk, which Canary lacks (D44). |
+| `count_vlarkorth_transform`, the Good Remains actions | `count_vlarkorth` | 1 | Every 15% of the boss's maximum health taken as damage each player in the room gets one dark creature of its base vocation, raising a shield; each good remains used on the boss by that vocation lowers it. The reference-date wiki (Fandom rev 1140872) decides where Canary differs (D25): two waves, no damage while the shield holds (Canary only stops counting), and a Dark Merudri with its remains (item 50311) for a Monk, which Canary lacks (D44). |
 
-83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 124/124; the census rises from 1,552 to
+83 encounters validate, 78 manifests resolve fully, `verify_encounter_schema.py` 127/127; the census rises from 1,552 to
 1,553. Count Vlarkorth waits in the creature staging like the other encounter-covered monsters.

@@ -80,7 +80,9 @@ d['trigger'] = {'oneOf': [
     kinded('ability_cast', {'role': NAME, 'ability': use('AbilityRef')}, ('role', 'ability')),
     kinded('damage_taken', {'role': NAME, 'source': enum('player', 'non_player', 'any')}, ('role', 'source')),
     kinded('heal_received', {'role': NAME, 'source': enum('player', 'non_player', 'any')}, ('role', 'source')),
-    kinded('damage_accumulated', {'role': NAME, 'amount': integer(1)}, ('role', 'amount')),
+    # D34: a fixed amount, or a percent of the creature's maximum health (the resolved definition's, after wiki adoption).
+    {**kinded('damage_accumulated', {'role': NAME, 'amount': integer(1), 'percent': PERCENT}, ('role',)),
+     'oneOf': [{'required': ['amount']}, {'required': ['percent']}]},
     kinded('timer_elapsed', {'timer': NAME}, ('timer',)),
     kinded('counter_reached', {'counter': NAME, 'value': {'type': 'integer'}}, ('counter', 'value')),
     kinded('area_entered', {'anchor': NAME, 'who': enum('player', 'role'), 'role': NAME}, ('anchor', 'who')),

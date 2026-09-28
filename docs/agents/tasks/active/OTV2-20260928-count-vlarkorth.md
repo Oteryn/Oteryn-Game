@@ -53,7 +53,7 @@ external_repositories: []
 Owner decision D34 ("Wszystkie 7") includes the per-vocation summon; this is its event. Count Vlarkorth
 (`count_vlarkorth_transform` and the Good Remains actions) becomes the `count_vlarkorth` encounter:
 
-- Every 11,250 damage (15% of 75,000 health) each player in the room gets one dark creature of its base vocation
+- Every 15% of the boss's maximum health taken as damage (the wiki-adopted 300,000, `percent` of `damage_accumulated`) each player in the room gets one dark creature of its base vocation
   (`spawn_per_player`), which raises a shield; the good remains of that vocation used on the boss lowers it
   (`item_used` with `base_vocation`).
 - Where Canary and the reference-date wiki (Fandom Count Vlarkorth rev 1140872) differ, the wiki decides (D25): two
@@ -64,7 +64,7 @@ Owner decision D34 ("Wszystkie 7") includes the per-vocation summon; this is its
 
 ## Acceptance and evidence
 
-- `verify_encounter_schema.py` 124/124; 83 encounters validate and 78 manifests resolve fully.
+- `verify_encounter_schema.py` 127/127; 83 encounters validate and 78 manifests resolve fully.
 - The census, the staging, the tree regeneration and its validators pass.
 - The Rust tests pass.
 - Exact-head review before the Merge Queue because staged creature evidence changes.

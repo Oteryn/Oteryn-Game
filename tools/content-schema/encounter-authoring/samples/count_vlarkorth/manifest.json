@@ -85,7 +85,7 @@
         85
       ],
       "status": "mapped",
-      "resolution": "onHealthChange adds each hit to a damage store; at 15% of the maximum health (75000, so 11250) the store restarts and every player within 10 tiles of the room centre gets one dark creature of their base vocation on the closest free tile, each raising the shield. The reference-date wiki (Fandom Count Vlarkorth rev 1140872) says this happens twice in the fight, one Dark <vocation> for each player in the room, so the waves counter stops it after two (D25); Canary has no limit. Canary has no Monk entry: the wiki-authored Dark Merudri (D44) answers a Monk.",
+      "resolution": "onHealthChange adds each hit to a damage store; at 15% of the maximum health (getMaxHealth() * 0.15) the store restarts and every player within 10 tiles of the room centre gets one dark creature of their base vocation on the closest free tile, each raising the shield. The reference-date wiki (Fandom Count Vlarkorth rev 1140872) says this happens twice in the fight, one Dark <vocation> for each player in the room, so the waves counter stops it after two (D25); Canary has no limit. Canary has no Monk entry: the wiki-authored Dark Merudri (D44) answers a Monk.",
       "destination": "/encounter/rules/0"
     },
     {

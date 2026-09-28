@@ -45,7 +45,7 @@
       "trigger": {
         "kind": "damage_accumulated",
         "role": "count_vlarkorth",
-        "amount": 11250
+        "percent": 15
       },
       "conditions": [
         {

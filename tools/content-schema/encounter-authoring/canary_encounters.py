@@ -1772,14 +1772,14 @@ def king_zelos(build):
                 'Each dying shard explodes: every player on the radius-2 circle around it (the top creature of each tile) takes '
                 '2,000-2,500 life drain damage, with the red magic effect.')
 
-    path = build.rule(item, {'key': 'rewar_calls_fetters', 'trigger': {'kind': 'damage_accumulated', 'role': 'rewar_the_bloody', 'amount': 12500},
+    path = build.rule(item, {'key': 'rewar_calls_fetters', 'trigger': {'kind': 'damage_accumulated', 'role': 'rewar_the_bloody', 'percent': 5},
                              'conditions': [],
                              'actions': [{'kind': 'spawn', 'creature': creature('Fetter'), 'role': 'fetter', 'count': {'min': 1, 'max': 3},
                                           'at': {'random_in': 'rewar_room'}, 'owner': 'none', 'health': 'full'},
                                          {'kind': 'transform', 'role': 'rewar_the_bloody', 'into': creature('Rewar The Bloody Inv'),
                                           'health': 'keep_absolute'}]})
     build.entry(item, path_, list(range(230, 264)), 'mapped', path,
-                'Every 5% of its 250,000 health taken as damage, Rewar calls one to three fetters at random tiles of its room and '
+                'Every 5% of its maximum health (getMaxHealth() * 0.05) taken as damage, Rewar calls one to three fetters at random tiles of its room and '
                 'becomes Rewar The Bloody Inv, which is immune to every element. Heals are not counted.')
     path = build.rule(item, {'key': 'rewar_unfettered', 'trigger': {'kind': 'creature_died', 'role': 'fetter'},
                              'conditions': [not_summoned('fetter'),
@@ -2792,7 +2792,7 @@ def count_vlarkorth(build):
     for dark in darks.values():
         build.define(item, dark)
     path = build.rule(item, {'key': 'count_vlarkorth_calls_the_darks',
-                             'trigger': {'kind': 'damage_accumulated', 'role': 'count_vlarkorth', 'amount': 11250},
+                             'trigger': {'kind': 'damage_accumulated', 'role': 'count_vlarkorth', 'percent': 15},
                              'conditions': [{'kind': 'counter_compare', 'counter': 'shield', 'op': '==', 'value': 0},
                                             {'kind': 'counter_compare', 'counter': 'waves', 'op': '<', 'value': 2}],
                              'actions': [{'kind': 'spawn_per_player', 'players_in': 'vlarkorth_room', 'by_base_vocation': darks,
@@ -2802,7 +2802,7 @@ def count_vlarkorth(build):
                                           'mode': 'say'}]})
     build.entry(item, script, [7, 8, 9, 10, 11, 12, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36,
                                37, 38, 39, 68, 69, 70, 71, 72, 73, 80, 81, 82, 83, 84, 85], 'mapped', path,
-                'onHealthChange adds each hit to a damage store; at 15% of the maximum health (75000, so 11250) the store '
+                'onHealthChange adds each hit to a damage store; at 15% of the maximum health (getMaxHealth() * 0.15) the store '
                 'restarts and every player within 10 tiles of the room centre gets one dark creature of their base vocation on '
                 'the closest free tile, each raising the shield. The reference-date wiki (Fandom Count Vlarkorth rev 1140872) says '
                 'this happens twice in the fight, one Dark <vocation> for each player in the room, so the waves counter stops it '

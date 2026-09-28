@@ -694,12 +694,28 @@
             "amount": {
               "type": "integer",
               "minimum": 1
+            },
+            "percent": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 100
             }
           },
           "required": [
             "kind",
-            "role",
-            "amount"
+            "role"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "amount"
+              ]
+            },
+            {
+              "required": [
+                "percent"
+              ]
+            }
           ]
         },
         {
