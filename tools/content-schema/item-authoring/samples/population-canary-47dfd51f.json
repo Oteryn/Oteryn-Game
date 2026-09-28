@@ -9,7 +9,7 @@
         "oteryn:item.registry.i00000038",
         "oteryn:item.registry.i00000039"
       ],
-      "items": 10992
+      "items": 10993
     },
     {
       "blocker": "family_profile_unresolved",
@@ -20,7 +20,7 @@
         "oteryn:item.registry.i00000004",
         "oteryn:item.registry.i00000005"
       ],
-      "items": 905
+      "items": 904
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -3069,7 +3069,7 @@
       "items": 1
     }
   ],
-  "bundle_digest": "d825f47895c65408531ccbb08f44a878f86b2c1d50380d76e2144342c1ccf19c",
+  "bundle_digest": "6c41b11853d10587297e2c4831ae61477ccf327cc05fe7564318be8f5b3f1729",
   "by_profile": {
     "container": 276,
     "container_equipment": 8,
@@ -3082,7 +3082,7 @@
     "food": 188,
     "key": 12,
     "light_source": 168,
-    "material_valuable": 2862,
+    "material_valuable": 2863,
     "plant": 859,
     "progression_material": 7,
     "quest_item": 1032,
@@ -3090,7 +3090,7 @@
     "tool": 325,
     "transformation_item": 23,
     "trash": 196,
-    "unresolved": 26334,
+    "unresolved": 26333,
     "weapon_distance": 141,
     "weapon_magic": 86,
     "weapon_melee": 562
@@ -3136,20 +3136,20 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 10792,
+      "eligible_false": 10793,
       "eligible_true": 401,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 9,
-      "not_member": 11184,
+      "not_member": 11185,
       "source": "canary_task_board_weekly_items"
     }
   },
   "family_profile_basis": {
-    "engine_attribute": 10357,
-    "wiki_evidence_fallback": 836
+    "engine_attribute": 10359,
+    "wiki_evidence_fallback": 835
   },
   "field_coverage": {
     "absorbpercentall": {
@@ -4444,9 +4444,9 @@
   },
   "outcome": {
     "blocked": 877,
-    "fully_resolved": 10316,
+    "fully_resolved": 10317,
     "items": 37527,
-    "not_converted": 1141,
+    "not_converted": 1140,
     "routed_non_item": 25193
   },
   "routed_non_item": [

@@ -1716,7 +1716,7 @@ def test_resolve_wiki_family_value_admitted_mapping():
     # `objectclass` bucket it is one of Fandom's broad groupings, unlike the engine's
     # own unrelated `primarytype` "utilities" -> tool entry, which is correct and
     # pre-existing) never resolve as `objectclass` either.
-    for value in ("others", "fireworks", "clothing accessories", ""):
+    for value in ("others", "fireworks", ""):
         check(
             engine_items.resolve_wiki_family_value("primarytype", value) is None,
             f"primarytype={value!r} must never resolve",
@@ -1735,6 +1735,17 @@ def test_resolve_wiki_family_value_admitted_mapping():
         engine_items.resolve_wiki_family_value("objectclass", "blessing charms")
         is None,
         "blessing charms is a primarytype value, never an objectclass",
+    )
+    # Owner decision 2026-09-28: clothing accessories are creature products.
+    check(
+        engine_items.resolve_wiki_family_value("primarytype", "Clothing Accessories")
+        == "material_valuable",
+        "clothing accessories resolve to material_valuable",
+    )
+    check(
+        engine_items.resolve_wiki_family_value("objectclass", "clothing accessories")
+        is None,
+        "clothing accessories is a primarytype value, never an objectclass",
     )
     for value in (
         "other items",
