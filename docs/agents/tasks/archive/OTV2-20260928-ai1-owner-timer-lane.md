@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-ai1-owner-timer-lane
 title: GAME-AI-01 child AI-1, Channel owner timer lane and injectable clock (FND-03 §10)
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ai1-owner-timer-lane
@@ -12,9 +12,9 @@ issue: 162
 pr: 1150
 allocation: "#162 comment 5876068445 (GAME-AI-01 child AI-1)"
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
-head_sha: pending_push
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 5f30d34289c31b1e3d6546e8901f7bd36ebbcd9a
+final_head_sha: 5f30d34289c31b1e3d6546e8901f7bd36ebbcd9a
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: impl ai (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -23,7 +23,7 @@ owned_paths:
   - apps/game-server/src/foundation/owner_timer.rs   # new module, exclusive
   - apps/game-server/src/foundation/mod.rs            # short lease: one `mod` declaration
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json      # AI-1's row only (AI01-PENDING-TIMERS-PER-ACTOR)
-  - docs/agents/tasks/active/OTV2-20260928-ai1-owner-timer-lane.md
+  - docs/agents/tasks/archive/OTV2-20260928-ai1-owner-timer-lane.md
 public_contracts:
   - FND-03
 depends_on: []
@@ -140,38 +140,19 @@ adoption, `ai/**` compilation, Ability wiring (all AI-2/AI-3/AI-4). No wiring of
 - The coordinator opens the PR from `claude/ai1-owner-timer-lane`; this worker does not open
   PRs, comment on GitHub, or request review.
 
+## Terminal evidence
+
+- final head `5f30d34`: protected Merge Queue integration as `df3d21a`. A readback of every owned file is byte-identical to the frozen head.
+- review: Codex rounds on exact heads; every P1 was fixed and each remaining P2 was fixed or recorded as a binding item. All threads are resolved.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: repair generation 2 on top of f335b73 (review 5343444021) - fixed 4 Codex
-  findings in owner_timer.rs + a minimal additive mod.rs change (P1 scope-bound
-  ScopeRuntimeFence.is_current_for_scope replacing generation-only is_current, P2
-  fence-issued RuntimeWorkStamp replacing a raw caller-supplied ordinal, P3 per-family caps
-  validated against a caller-supplied registered maximum at construction, P4 typed
-  SkipToLatest/DeadlineState catch-up policy enforced in drain_due); owner_timer.rs unit tests
-  20/20, foundation lib suite green (367/367), fmt/clippy/governance/repository-policy
-  validators pass; pushing new commit to claude/ai1-owner-timer-lane
-status: waiting
-branch: claude/ai1-owner-timer-lane
-head_sha: pending_push
+last_progress: PR #1150 merged via Merge Queue as df3d21a; protected-main readback matched 5f30d34; record archived
+status: completed
 pr: 1150
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: not_started
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
-stall_warnings: 0
-owner_action_required: null
+head_sha: 5f30d34289c31b1e3d6546e8901f7bd36ebbcd9a
+final_head_sha: 5f30d34289c31b1e3d6546e8901f7bd36ebbcd9a
 blocker: null
-next_action: "control plane freezes the pushed head, opens the PR, and allocates AI-2 (which
-  will wire OwnerTimerLane into ChannelRuntimeV1's owner cycle from runtime_actor_carrier.rs)"
+next_action: none
 ```
