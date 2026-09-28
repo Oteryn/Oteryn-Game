@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
-pr: null
+pr: 1063
 base_sha: 13efb4fc
 head_sha: null
 final_head_sha: null
@@ -138,7 +138,7 @@ last_progress: blessing charms admitted, snapshot recaptured, registration resto
 status: implementing
 branch: claude/compassionate-albattani-s29syw
 head_sha: null
-pr: null
+pr: 1063
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
