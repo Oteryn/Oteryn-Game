@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-b3-1-transfer
 title: B3-1 DUR-03 TRANSFER from Ground into the container slot and main backpack entries
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/b3-1-transfer
@@ -12,9 +12,9 @@ issue: 162
 pr: 1152
 allocation: "#162 comments 5875188437 and 5875903216"
 base_sha: 7d1134f
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 720e89a5cc883dafb0b016f2c5fac18049e0adf7
+final_head_sha: 720e89a5cc883dafb0b016f2c5fac18049e0adf7
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: B3-1 implementation worker under the #162 control plane (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -197,11 +197,16 @@ mismatch, capacity race, Ground reinsertion (validation below).
 ## Context checkpoint
 
 ```yaml
-last_progress: local implementation committed on wip/b3-1-transfer; awaiting control-plane publication
-status: implementing
+last_progress: PR #1152 merged via Merge Queue as 3dcf3c8; protected-main readback of owned code files matched 720e89a; record archived
+status: completed
 branch: claude/b3-1-transfer
 pr: 1152
 owner_action_required: null
 blocker: null
-next_action: "#162 control plane publishes, freezes and routes exact-head CI and independent review"
+next_action: none for this task; follow-ups are routed on #162
 ```
+
+## Closeout
+
+- merge commit/result: `3dcf3c8` on protected `main` (#1152); readback of owned code files byte-identical to `720e89a`
+- ownership release: all leases released at merge

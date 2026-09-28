@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-combat-d2b-death-reward-wiring
 title: Combat D2b, creature death composed into loot MINT + R7 P03 XP
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/combat-d2b-death-reward
 issue: 162
 allocation: "#162 (Combat D2b, VSL-COMBAT-01 child of D2 row D: generic death/loot/reward orchestration)"
 base_sha: 9f98b06
-head_sha: pending (frozen at push)
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: e76d46f16b210a3352ba63c8f7beaee88b370b81
+final_head_sha: e76d46f16b210a3352ba63c8f7beaee88b370b81
+final_head_frozen_at: 2026-09-28
 owner: "Oteryn: impl combat (claude-code-session-01U1WRHgL9X8RbuiG1pwczrF)"
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -193,21 +193,26 @@ XP amount as input). `durability/**` itself is untouched (consumed only).
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation complete; all listed validation green; pushed, not yet reviewed
-status: waiting
+last_progress: PR #1177 merged via Merge Queue as bfd3474; protected-main readback of owned code files matched e76d46f; record archived
+status: completed
 branch: claude/combat-d2b-death-reward
-head_sha: pending (see push result)
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: e76d46f16b210a3352ba63c8f7beaee88b370b81
+pr: 1177
+final_head_sha: e76d46f16b210a3352ba63c8f7beaee88b370b81
+final_head_frozen_at: 2026-09-28
 ci_checks_for_current_head: 0
 ci_run_ids: []
-runner_assignment_state: not_started
+runner_assignment_state: completed
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: control plane freezes the pushed head and dispatches required review; a later admission stage supplies a real protocol caller and content-to-loot-plan mapping
+next_action: none for this task; follow-ups are routed on #162
 ```
+
+## Closeout
+
+- merge commit/result: `bfd3474` on protected `main` (#1177); readback of owned code files byte-identical to `e76d46f`
+- ownership release: all leases released at merge
