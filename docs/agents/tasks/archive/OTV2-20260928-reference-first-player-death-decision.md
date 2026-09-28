@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-reference-first-player-death-decision
 title: "Reference first player death decision (D58-D68)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1132
 base_sha: 0a3d795992a68f57c595baf3f5ced87d1224a60c
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 1765cd32a37d069922e63f2d307dce7ee5178bd3
+final_head_sha: 1765cd32a37d069922e63f2d307dce7ee5178bd3
+final_head_frozen_at: 2026-09-28T16:21Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -60,9 +60,9 @@ never duplicates or doubly loses an item.
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review, one repair generation; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`e6141b41`).
 
 ## Excluded scope
 
@@ -89,14 +89,28 @@ convergence rule 5869165340). No owner decision changed.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1132 merged through the Merge Queue on 2026-09-28 as `e6141b41`.
+- Review: one Codex review of `846788d` (three P1s), repaired in the single repair generation
+  `1765cd3`; the owner decided to merge after green CI (#162 comment 5874517804).
+- Protected-main readback: the decision, the baseline pointer, this record and the archived #1123
+  record on `e6141b41` are byte-identical to the frozen head `1765cd3`.
+- The PR body still describes the pre-repair restart rule; decision §4.4 is authoritative.
+- Follow-up: the fresh empty bag after a lost backpack (tibia.com manual §characters 5.1.11) is
+  carried to DEATH-3 through the B3 decision.
+- Next allocations: DEATH-0; DEATH-1 after DEATH-0 and progression readiness.
+- Archived under `OTV2-20260928-b3-inventory-destination-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1132 open
-status: validating
+last_progress: protected-integrated as e6141b41; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 1765cd32a37d069922e63f2d307dce7ee5178bd3
 pr: 1132
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1132
+next_action: null
 ```
