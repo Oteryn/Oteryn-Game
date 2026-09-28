@@ -1098,7 +1098,7 @@ def build_item_schema():
     )
     d["wikiEvidenceCandidate"] = obj(
         {
-            "field": enum("primarytype", "objectclass"),
+            "field": enum("primarytype", "objectclass", "status"),
             "value": text(),
             "wiki_source": use("wikiEvidenceSource"),
         },
@@ -1107,7 +1107,7 @@ def build_item_schema():
     d["familyProfileEvidence"] = obj(
         {
             "resolution": enum("direct", "disambiguation"),
-            "field": enum("primarytype", "objectclass"),
+            "field": enum("primarytype", "objectclass", "status"),
             "value": text(),
             "wiki_source": use("wikiEvidenceSource"),
             "candidates": array(use("wikiEvidenceCandidate"), 2, unique=True),

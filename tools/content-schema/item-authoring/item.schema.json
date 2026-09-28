@@ -2727,7 +2727,8 @@
         "field": {
           "enum": [
             "primarytype",
-            "objectclass"
+            "objectclass",
+            "status"
           ]
         },
         "value": {
@@ -2757,7 +2758,8 @@
         "field": {
           "enum": [
             "primarytype",
-            "objectclass"
+            "objectclass",
+            "status"
           ]
         },
         "value": {

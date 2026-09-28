@@ -6,7 +6,9 @@ Network tool, run manually; not part of repository CI. For every (engine, item_i
 `engine_items.convert_item` blocks on `family_profile_unresolved`, this looks up the
 engine's own item name on tibia.fandom.com through the MediaWiki API (`redirects=1`),
 fetches the current revision of whichever page resolves, and parses its `{{Infobox
-Object`/`{{Infobox Item` `primarytype`/`objectclass` fields. A disambiguation page
+Object`/`{{Infobox Item` `primarytype`/`objectclass`/`status` fields (in that admitted
+priority order; `status` is consulted only once neither `primarytype` nor `objectclass`
+has resolved). A disambiguation page
 (`{{Disambig}}`) has every linked candidate page fetched and classified in turn. Only
 `engine_items.resolve_wiki_family_value` (the checked-in admitted mapping) decides
 whether a value names one real family; nothing here fuzzy-matches or guesses. A record is
@@ -80,7 +82,7 @@ GENERIC_PLACEHOLDER_NAMES = {
 
 INFOBOX_RE = re.compile(r"\{\{\s*Infobox[ _](Object|Item)\b", re.IGNORECASE)
 FIELD_RE = re.compile(
-    r"^\|[ \t]*(primarytype|objectclass)[ \t]*=[ \t]*(.*?)[ \t]*$",
+    r"^\|[ \t]*(primarytype|objectclass|status)[ \t]*=[ \t]*(.*?)[ \t]*$",
     re.IGNORECASE | re.MULTILINE,
 )
 DISAMBIG_RE = re.compile(r"\{\{\s*Disambig\b", re.IGNORECASE)
@@ -312,11 +314,14 @@ def resolve_infobox_fields(fields):
     """Try `primarytype` then `objectclass` (in that admitted order) against
     already-parsed infobox `fields`. An admitted field present with an EMPTY value falls
     through to the next admitted field instead of failing outright, so a page with no
-    `primarytype` but an admitted `objectclass` (or vice versa) still resolves. Returns
-    `(profile, field, value)`; `profile` is `None` when nothing resolved, and `field`/
-    `value` then describe whichever admitted field was present (the first with a
-    non-empty, unresolved value, else the first with an empty value) for reporting --
-    both are `None` only when neither admitted field is present at all."""
+    `primarytype` but an admitted `objectclass` (or vice versa) still resolves. `status`
+    (admitting only `event` -> `event_collectible`) is the lowest-priority admitted field:
+    it is tried only once neither `primarytype` nor `objectclass` has resolved, and a
+    non-empty, unadmitted `primarytype`/`objectclass` value never blocks that `status`
+    attempt. Returns `(profile, field, value)`; `profile` is `None` when nothing
+    resolved, and `field`/`value` then describe whichever admitted field was present
+    (the first with a non-empty, unresolved value, else the first with an empty value)
+    for reporting -- both are `None` only when no admitted field is present at all."""
     empty = None
     for field in ("primarytype", "objectclass"):
         if field not in fields:
@@ -329,9 +334,19 @@ def resolve_infobox_fields(fields):
             if empty is None:
                 empty = (field, value)
             continue
-        return None, field, value
-    if empty is not None:
-        return None, empty[0], empty[1]
+        primarytype_or_objectclass_failure = (field, value)
+        break
+    else:
+        primarytype_or_objectclass_failure = empty
+    status_value = fields.get("status")
+    if status_value is not None:
+        status_profile = engine_items.resolve_wiki_family_value("status", status_value)
+        if status_profile is not None:
+            return status_profile, "status", status_value
+    if primarytype_or_objectclass_failure is not None:
+        return None, primarytype_or_objectclass_failure[0], (
+            primarytype_or_objectclass_failure[1]
+        )
     return None, None, None
 
 

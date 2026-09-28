@@ -430,9 +430,12 @@ allocator key at all, so the wiki fallback below is never consulted for those).
 `family_profile_basis` distinguishes how each converted Item's `family_profile` was
 decided: `engine_attribute` (the engine's own `primarytype`/`weapontype`/slot/etc., as
 `classify_family_profile` always decides first) or `wiki_evidence_fallback` (§5b below,
-applied only when the engine carried no such signal at all). Crystal: 10,681
-`engine_attribute`, 875 `wiki_evidence_fallback`. Canary: 10,359 `engine_attribute`, 835
-`wiki_evidence_fallback`.
+applied only when the engine carried no such signal at all). Crystal: 10,679
+`engine_attribute`, 877 `wiki_evidence_fallback`. Canary: 10,357 `engine_attribute`, 837
+`wiki_evidence_fallback`. `clothing accessories` is never an admitted engine-attribute
+`primarytype` value (old rag and ivory comb both carry it natively but it names no one
+real family on its own; see §5b), so both fall to the wiki fallback instead of
+`engine_attribute`.
 
 `delivery_task_eligible` follows the owner-approved authoring rule
 `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5`: an Item is eligible iff its Crystal id is on the
@@ -466,24 +469,36 @@ a `{{Disambig}}` page, resolved through every linked candidate page instead; a p
 neither is not evidence (e.g. an NPC page sharing an item's bare name) and is ignored. A
 match is only ever committed when `engine_items.resolve_wiki_family_value` — the admitted
 mapping, `PRIMARYTYPE_PROFILE` folded to lower case plus a small dedicated
-`WIKI_OBJECTCLASS_PROFILE` for the `objectclass` fallback — resolves it to exactly one
-profile; when a name's candidates include two or more pages carrying admitted evidence
-(directly, or through a disambiguation page's own linked candidates), every one must
-independently resolve and all must agree on the exact same profile, recorded with the
-existing disambiguation shape ("several wiki pages, all agree"). Broad buckets (`others`,
-`other items`, `household items`, `tools and other equipment`, `utilities`, `plants,
-animal products, food and drink`, `other objects`) and the owner-decision-pending values
-`fireworks` never resolve. By owner decision (2026-09-28) `clothing accessories` resolves to
-`material_valuable` (TibiaWiki files green piece of cloth and ivory comb as Creature
-Products with that secondary type; old rag is the look-alike Tibia Anniversary drop), and
-`blessing charms` resolves to
+`WIKI_OBJECTCLASS_PROFILE` for the `objectclass` fallback, plus `WIKI_STATUS_PROFILE` for
+the `status` fallback — resolves it to exactly one profile; when a name's candidates
+include two or more pages carrying admitted evidence (directly, or through a
+disambiguation page's own linked candidates), every one must independently resolve and
+all must agree on the exact same profile, recorded with the existing disambiguation shape
+("several wiki pages, all agree"). Broad buckets (`others`, `other items`, `household
+items`, `tools and other equipment`, `utilities`, `plants, animal products, food and
+drink`, `other objects`) and the owner-decision-pending values `fireworks` and `clothing
+accessories` never resolve as `primarytype`/`objectclass`. `blessing charms` resolves to
 `progression_material` by owner decision (2026-09-28): the charms are single-use items that
 grant one blessing (Crystal `data/libs/systems/blessing.lua` `Blessings.All[*].charm`:
-10341-10345, 25360, 25361); the blessing effect itself is runtime behaviour. The snapshot
-(`imports/tibiawiki/facts/items-family-fallback.json`, batch `g5-item-family-fallback-
-tibiawiki-r1`) holds only page/revision identity, digests and the one or two field
-observations each record needed — never wikitext bodies or images — and is strictly
-loaded and re-validated (`engine_items.load_wiki_family_fallback`, mirroring
+10341-10345, 25360, 25361); the blessing effect itself is runtime behaviour.
+
+An infobox `status` field is a third, lowest-priority admitted field: consulted only once
+neither `primarytype` nor `objectclass` has resolved (a non-empty, unadmitted value in
+either never blocks it), and admitting only `status = event` -> `event_collectible`. By
+owner decision (2026-09-28): TibiaWiki's own "Clothing Accessories" `primarytype` names no
+one real family (green piece of cloth and ivory comb are filed there only as a *secondary*
+type, their real family being the `primarytype = Creature Products` -> `material_valuable`
+each also carries; old rag carries no such secondary evidence and is instead TibiaWiki's
+own `status = event` 20th-anniversary drop, resolving to `event_collectible` through the
+new field instead). Both old rag (Crystal/Canary `24415`) and ivory comb (`32773`) carry
+`primarytype = clothing accessories` as their only native engine attribute, so neither
+resolves from `engine_attribute` at all; each depends entirely on its own wiki fallback
+record.
+
+The snapshot (`imports/tibiawiki/facts/items-family-fallback.json`, batch
+`g5-item-family-fallback-tibiawiki-r1`) holds only page/revision identity, digests and the
+one or two field observations each record needed — never wikitext bodies or images — and
+is strictly loaded and re-validated (`engine_items.load_wiki_family_fallback`, mirroring
 `load_delivery_overrides`'s fail-closed style: duplicate-key rejection, unknown-key
 rejection, a recomputed-and-compared `snapshot_sha256`, every `registry_key` required in
 the identity index, every mapped value required to resolve through the admitted mapping)
@@ -495,11 +510,12 @@ other appearance-less rows are not physical Items and stay unresolved);
 engine-attribute classification always wins. A hit sets `family_profile_basis:
 "wiki_evidence_fallback"` and a `family_profile_evidence` citation (matched field/value,
 wiki title/page id/revision id/content digest, or the full candidate list for a
-disambiguation) on the converted Item. Of 3,573 previously-unresolved (engine, id) pairs
-(1,827 Crystal + 1,746 Canary) across 1,065 unique engine names, the snapshot holds 948
-registry-key records resolved to one admitted profile (887 direct, 61 disambiguation),
-recovering 875 Crystal and 835 Canary Items (1,710 total; ivory comb now resolves from
-its engine `primarytype` instead); the remainder stays `family_profile_unresolved`, still fail-closed.
+disambiguation) on the converted Item. Of 3,563 previously-unresolved (engine, id) pairs
+(1,822 Crystal + 1,741 Canary) across 1,060 unique engine names, the snapshot holds 949
+registry-key records resolved to one admitted profile (888 direct, 61 disambiguation, one
+of the direct records resolved through `status`: old rag), recovering 877 Crystal and 837
+Canary Items (1,714 total); the remainder stays `family_profile_unresolved`, still
+fail-closed.
 The title index itself is not pinned in the schema (it is provenance, not correctness --
 every record's own wiki page/revision identity is what the loader verifies); its count and
 digest are recorded in the capture tool's uncommitted report only.

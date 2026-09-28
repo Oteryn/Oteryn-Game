@@ -3069,7 +3069,7 @@
       "items": 1
     }
   ],
-  "bundle_digest": "6c41b11853d10587297e2c4831ae61477ccf327cc05fe7564318be8f5b3f1729",
+  "bundle_digest": "8ee83a741559971bff907be6da2ed4aafe38a03de4067f5e7c35e92071d592ec",
   "by_profile": {
     "container": 276,
     "container_equipment": 8,
@@ -3077,12 +3077,12 @@
     "document": 417,
     "equipment_armor": 459,
     "equipment_offhand": 439,
-    "event_collectible": 179,
+    "event_collectible": 180,
     "fluid": 88,
     "food": 188,
     "key": 12,
     "light_source": 168,
-    "material_valuable": 2863,
+    "material_valuable": 2862,
     "plant": 859,
     "progression_material": 7,
     "quest_item": 1032,
@@ -3148,8 +3148,8 @@
     }
   },
   "family_profile_basis": {
-    "engine_attribute": 10359,
-    "wiki_evidence_fallback": 835
+    "engine_attribute": 10357,
+    "wiki_evidence_fallback": 837
   },
   "field_coverage": {
     "absorbpercentall": {
