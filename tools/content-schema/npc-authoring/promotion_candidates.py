@@ -42,6 +42,12 @@ Merge rules:
     source-only NPCs that exist only in that OT server, not in Tibia (`canary:npc/canary` "Canary",
     `crystal:npc/loot_buyer` "Loot Buyer"), before any wiki matching, so they are never promoted
     by any rule above;
+- D11: a fixed, explicit `REMOVED_FROM_GAME` table holds NPCs that both wikis record as removed from
+  Tibia Global (TibiaWiki BR `removed`, TibiaWiki Fandom `status = deprecated`), the same way;
+- D12 (`--br-facts`): an admitted offer's price is replaced by the wiki price when TibiaWiki Fandom and
+  TibiaWiki BR state the same explicit price for that NPC, item name and direction and it differs from the
+  source price; the row records `{"fact": "trade.<item>.<direction>", "rule": "WIKI_PRICE", "chosen": "wiki"}`.
+  One wiki alone, or two wikis that disagree, never change a price;
 - key: `oteryn:npc.<slug>` where the slug is derived once from the registered name (ASCII fold,
   lower case, non-alphanumerics to `_`). After promotion the key is frozen: a later rename keeps it.
   Two NPCs with the same slug are both held (D4); a name with no alphanumerics is held (EMPTY_SLUG).
@@ -65,7 +71,7 @@ POSITION_RANK = {'MATCH': 0, 'NEAR': 1, 'MISMATCH': 2}
 LOADABLE = ('RESOLVED', 'PARTIAL')
 PLACEMENT_FACTS = ('position', 'direction', 'spawn_interval_s', 'spawn_radius')
 WIKI_ARBITRATION_RULES = ('WIKI_ARBITER', 'WIKI_POSITION', 'WIKI_BASE_NAME', 'WIKI_SPELLING',
-                           'WIKI_CONFIRMED')  # kept in the output
+                           'WIKI_CONFIRMED', 'WIKI_PRICE')  # kept in the output
 DAY_NIGHT_RE = re.compile(r'^(.*)\s+\((day|night)\)$', re.IGNORECASE)
 VARIANT_NAME_SUFFIXES = (' Init', ' Vampires Lair', ' Back')
 SPELLING_MIN_LENGTH = 10
@@ -75,6 +81,17 @@ OWNER_REJECTED = {
     'canary:npc/canary': 'server-only NPC, owner decision 2026-09-27',
     'crystal:npc/loot_buyer': 'server-only NPC, owner decision 2026-09-27',
 }
+# D11: removed from Tibia Global in 13.12 with the Duelling Arena; TibiaWiki BR `removed = 13.12.13018`
+# (imports/tibiawiki/npc-br/2026-09-28) and TibiaWiki Fandom `status = deprecated` agree.
+DUELLING_ARENA_REMOVED = 'Duelling Arena supervisor, removed in 13.12 (TibiaWiki BR removed, Fandom deprecated)'
+REMOVED_FROM_GAME = {
+    f'{source}:npc/{stem}': DUELLING_ARENA_REMOVED
+    for stem in ('brom', 'brutus', 'roughington', 'shadowpunch', 'victor') for source in ('canary', 'crystal')
+}
+
+
+def fold(text):
+    return re.sub(r'\s+', ' ', text).strip().casefold()
 
 
 def slug(name):
@@ -191,7 +208,17 @@ def source_offers(bundle):
 
 
 class Builder:
-    def __init__(self, snapshot, item_map):
+    def __init__(self, snapshot, item_map, br_facts=None):
+        # D12: TibiaWiki BR trade lists by folded NPC title/name, then direction, then folded item name
+        self.br_trade = {}
+        for page in (br_facts or {}).get('pages', []):
+            trades = {}
+            for direction, items in page['trades'].items():
+                trades[direction] = {}
+                for item, prices in items.items():  # every BR row of the offer, each with its own price
+                    trades[direction].setdefault(fold(item), []).extend(prices)
+            for label in (page['title'], page['name']):
+                self.br_trade.setdefault(fold(label), trades)
         self.wiki_npcs = snapshot['npcs']
         self.wiki = build_wiki_index(self.wiki_npcs)
         self.wiki_trade = snapshot.get('trade', {})
@@ -315,10 +342,25 @@ class Builder:
                 continue
             # Canary `buy` is what the player pays the NPC; `sell` is what the NPC pays the player
             for direction, price in (('SellToPlayer', offer['buy_price']), ('BuyFromPlayer', offer['sell_price'])):
+                wiki_price = self.wiki_price(name, direction, offer['item_name'], wiki)
+                if price is not None and wiki_price is not None and wiki_price != price:
+                    arbitration.append({'fact': f'{label}.{direction}', 'rule': 'WIKI_PRICE', 'chosen': 'wiki'})
+                    price = wiki_price
                 if price is not None:
                     offers.append({'item': item, 'source_item_id': key[0], 'direction': direction, 'unit_price': price,
                                    'count': offer['count'], 'sub_type': offer['sub_type']})
         return offers
+
+    def wiki_price(self, npc_name, direction, item_name, fandom):
+        """D12: the price both wikis state for this offer, or None when either is silent or they disagree."""
+        if not isinstance(item_name, str):
+            return None
+        row = fandom.get(item_name.lower())
+        fandom_price = row and row['buy_price' if direction == 'SellToPlayer' else 'sell_price']
+        br_prices = set(self.br_trade.get(fold(npc_name), {}).get(direction, {}).get(fold(item_name), []))
+        # BR states one price for the offer only when every row of it gives the same explicit price
+        br_price = br_prices.pop() if len(br_prices) == 1 else None
+        return fandom_price if fandom_price is not None and fandom_price == br_price else None
 
     def currency(self, bundles, left_out):
         values = {json.dumps(b['services']['trade']['currency'], sort_keys=True) for b in bundles.values()
@@ -341,6 +383,9 @@ class Builder:
         rejected = next((OWNER_REJECTED[b['key']] for b in bundles.values() if b['key'] in OWNER_REJECTED), None)
         if rejected is not None:
             return self.hold(name, sources, 'OWNER_REJECTED', rejected)
+        removed = next((REMOVED_FROM_GAME[b['key']] for b in bundles.values() if b['key'] in REMOVED_FROM_GAME), None)
+        if removed is not None:
+            return self.hold(name, sources, 'REMOVED_FROM_GAME', removed)
         name_norm = normalize_name(name)
         wiki = self.wiki.get(name_norm)
         arbitration, left_out = [], []
@@ -419,6 +464,7 @@ def main():
     parser.add_argument('--crystal', required=True)
     parser.add_argument('--snapshot', required=True)
     parser.add_argument('--item-map', required=True, help='export_reference_item_identity_map output')
+    parser.add_argument('--br-facts', help='committed TibiaWiki BR NPC facts (D12 wiki prices)')
     parser.add_argument('--out', required=True)
     args = parser.parse_args()
     snapshot_bytes = Path(args.snapshot).read_bytes()
@@ -426,7 +472,8 @@ def main():
     item_map = json.loads(item_map_bytes)
     if item_map['schema'] != 'OTERYN_PROTECTED_ITEM_IDENTITY_MAP_EXPORT/v1':
         raise SystemExit('unexpected item map schema')
-    builder = Builder(json.loads(snapshot_bytes), item_map)
+    br_facts_bytes = Path(args.br_facts).read_bytes() if args.br_facts else None
+    builder = Builder(json.loads(snapshot_bytes), item_map, json.loads(br_facts_bytes) if br_facts_bytes else None)
     canary, crystal = source_diff.load(args.canary), source_diff.load(args.crystal)
     records = []
     for left, right in source_diff.pair(canary, crystal):
@@ -456,9 +503,11 @@ def main():
         for row in record['left_out']:
             builder.stats['left_out_offers' if row['fact'].startswith('trade.') else 'left_out_routes'] += 1
     report = {
-        'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY', 'decisions': ['D4', 'D5', 'D6', 'D7', 'D8'],
+        'schema': SCHEMA, 'evidence': 'OTS_HYPOTHESIS_ONLY',
+        'decisions': ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'] + (['D12'] if br_facts_bytes else []),
         'snapshot_sha256': hashlib.sha256(snapshot_bytes).hexdigest(),
         'item_map_sha256': hashlib.sha256(item_map_bytes).hexdigest(),
+        **({'br_facts_sha256': hashlib.sha256(br_facts_bytes).hexdigest()} if br_facts_bytes else {}),
         'totals': {'candidates': len(promoted), 'with_travel': sum(1 for r in promoted if r['travel_service']),
                    'with_trade': sum(1 for r in promoted if r['trade_service']),
                    **dict(sorted(builder.stats.items()))},

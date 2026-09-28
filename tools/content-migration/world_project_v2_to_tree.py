@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 LEGACY = ROOT / "content" / "world"
 ITEM_SHARD_SIZE = 500
 ADMISSION_MAIN = "ec0e12a7927dcd4d98f7d1151f6b8ee100c1b65c"
-REVISION = "tree-npc-dialogue-wave-a-r1"
+REVISION = "tree-npc-removed-r1"
 FIELD_CENSUS = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-tibiawiki-item-master-field-census-v1.json"
 WAVE1_STAGED = ROOT / "docs" / "agents" / "evidence" / "OTV2-20260925-item-enrichment-wave1-staged.json"
 # Creature admission families (OTERYN_WORLD_PROJECT_V2_CREATURE_ADMISSION_V1): family -> (tree node, shard stem).
@@ -283,7 +283,7 @@ def main() -> int:
     })
 
     npc_declarations = [row for row in declarations["records"] if row.get("kind") == "NPC"]
-    if len(npc_declarations) != 1093:
+    if len(npc_declarations) != 1088:
         raise RuntimeError(f"NPC_SOURCE_COUNT_MISMATCH:{len(npc_declarations)}")
 
     npc_rows = []
@@ -356,7 +356,7 @@ def main() -> int:
     })
 
     service_records = [row for row in declarations["records"] if row.get("kind") == "Service"]
-    if len(service_records) != 363:
+    if len(service_records) != 362:
         raise RuntimeError(f"SERVICE_SOURCE_COUNT_MISMATCH:{len(service_records)}")
 
     service_shards: dict[str, list[str]] = {}

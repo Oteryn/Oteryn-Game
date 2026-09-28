@@ -3,7 +3,8 @@ schema doc (OTERYN_NPC_AUTHORING_SCHEMA_V1.md §3 D4-D8, §8).
 
 Semantic rules:
 - schema == 'OTERYN_NPC_PROMOTION_CANDIDATES/v1', evidence == 'OTS_HYPOTHESIS_ONLY',
-  decisions == ['D4', 'D5', 'D6', 'D7', 'D8'], snapshot_sha256 and item_map_sha256 are 64 hex chars;
+  decisions == ['D4', 'D5', 'D6', 'D7', 'D8', 'D11'], plus 'D12' exactly when br_facts_sha256 is
+  present; snapshot_sha256, item_map_sha256 and br_facts_sha256 are 64 hex chars;
 - each candidate identity is family NPC, key `oteryn:npc.<slug>` (D4) and revision 'definition-r1';
   the key suffix equals the slug of `name` (same slug() as promotion_candidates.py);
 - candidate keys are unique and the candidates list is sorted by key;
@@ -32,7 +33,8 @@ Semantic rules:
   with `origin` == 'wiki' (and, conversely, any such placement requires this row); or rule
   'WIKI_CONFIRMED' with `chosen` == 'wiki', `fact` == 'placements', an empty `placements` list
   (and, conversely, an empty `placements` list requires either this row or the candidate is
-  otherwise invalid) and a non-null `wiki`; or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
+  otherwise invalid) and a non-null `wiki`; or rule 'WIKI_PRICE' (D12) with `chosen` == 'wiki', a
+  `trade.<item>.<direction>` fact and a non-null `wiki`; or rule 'WIKI_BASE_NAME'/'WIKI_SPELLING' with
   `chosen` == 'wiki', `fact` == 'identity', a single-source candidate and a non-null `wiki`;
 - left_out rows have reason in GATED_ROUTE / ROUTE_CONFLICT_WIKI_UNDECIDED / ROUTE_UNCONFIRMED /
   GATED_OFFER / OFFER_UNCONFIRMED / OFFER_CONFLICT_WIKI_UNDECIDED / ITEM_NOT_REGISTERED /
@@ -57,7 +59,7 @@ from promotion_candidates import slug
 
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 EVIDENCE = 'OTS_HYPOTHESIS_ONLY'
-DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8']
+DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8', 'D11']
 KEY_RE = re.compile(r'^oteryn:npc\.[a-z0-9]+(_[a-z0-9]+)*$')
 ITEM_KEY_RE = re.compile(r'^oteryn:item\.[a-z0-9_.]+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
@@ -276,10 +278,17 @@ def candidate_errors(candidate, index):
                              f"provenance has {sorted(provenance)}")
             if candidate.get('wiki') is None:
                 errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
+        elif rule == 'WIKI_PRICE':
+            if chosen != 'wiki':
+                errs.append(f"{alabel}: chosen {chosen!r} != 'wiki' for rule {rule!r}")
+            if not isinstance(fact, str) or not fact.startswith('trade.') or not fact.endswith(('.SellToPlayer', '.BuyFromPlayer')):
+                errs.append(f"{alabel}: fact {fact!r} is not a trade offer direction for rule {rule!r}")
+            if candidate.get('wiki') is None:
+                errs.append(f"{alabel}: rule {rule!r} requires a wiki page, candidate.wiki is null")
         else:
             errs.append(f"{alabel}: rule {rule!r} not in "
                          f"['WIKI_ARBITER', 'WIKI_BASE_NAME', 'WIKI_CONFIRMED', 'WIKI_POSITION', "
-                         f"'WIKI_SPELLING']")
+                         f"'WIKI_PRICE', 'WIKI_SPELLING']")
 
     if wiki_placements and not any(row.get('rule') == 'WIKI_POSITION' for row in arbitration_rows):
         errs.append(f'{label}: wiki-origin placement present without a WIKI_POSITION arbitration row')
@@ -319,8 +328,11 @@ def errors(report):
         errs.append(f"schema {report.get('schema')!r} != {SCHEMA!r}")
     if report.get('evidence') != EVIDENCE:
         errs.append(f"evidence {report.get('evidence')!r} != {EVIDENCE!r}")
-    if report.get('decisions') != DECISIONS:
-        errs.append(f"decisions {report.get('decisions')!r} != {DECISIONS!r}")
+    expected = DECISIONS + (['D12'] if 'br_facts_sha256' in report else [])
+    if report.get('decisions') != expected:
+        errs.append(f"decisions {report.get('decisions')!r} != {expected!r}")
+    if 'br_facts_sha256' in report and not re.fullmatch(r'[0-9a-f]{64}', str(report['br_facts_sha256'])):
+        errs.append('br_facts_sha256 is not 64 hex chars')
     snapshot_sha = report.get('snapshot_sha256')
     if not isinstance(snapshot_sha, str) or not SHA256_RE.match(snapshot_sha):
         errs.append(f'snapshot_sha256 {snapshot_sha!r} is not 64 hex chars')

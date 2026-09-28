@@ -2,9 +2,9 @@
  "close_tiles": 10,
  "evidence": "REFERENCE_CROSSCHECK_ONLY",
  "inputs": {
-  "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
-  "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
-  "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
+  "admission_sha256": "1439ebdb28dcae53f5b3fd9ef0254e2865628d55f8e17bae79006bec2ab7ebd9",
+  "candidates_sha256": "90f68eeb689ea7907cdf24ec943e28ce0c9856f636aaead2917c17909687d765",
+  "dialogues_sha256": "ee8240aed619a74f0bbd4bf3f0f3d979310be82e5ead72780bf95518d1b1c574",
   "facts_sha256": "0773232ddd356be273474be7b3aea645ed5dbbf93e5832a94d565ad9e579657a",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
@@ -1238,26 +1238,6 @@
      "SellToPlayer:vial",
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
-    ],
-    "price_mismatch": [
-     {
-      "br": [
-       150
-      ],
-      "offer": "SellToPlayer:fishing rod",
-      "ours": [
-       40
-      ]
-     },
-     {
-      "br": [
-       50
-      ],
-      "offer": "SellToPlayer:shovel",
-      "ours": [
-       10
-      ]
-     }
     ],
     "status": "DIFFER",
     "uncomparable": [
@@ -2553,27 +2533,7 @@
    },
    "trade": {
     "matched": 9,
-    "price_mismatch": [
-     {
-      "br": [
-       4
-      ],
-      "offer": "SellToPlayer:bread",
-      "ours": [
-       3
-      ]
-     },
-     {
-      "br": [
-       6
-      ],
-      "offer": "SellToPlayer:cheese",
-      "ours": [
-       5
-      ]
-     }
-    ],
-    "status": "DIFFER"
+    "status": "AGREE"
    }
   },
   {
@@ -3798,26 +3758,6 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "price_mismatch": [
-     {
-      "br": [
-       150
-      ],
-      "offer": "SellToPlayer:fishing rod",
-      "ours": [
-       40
-      ]
-     },
-     {
-      "br": [
-       50
-      ],
-      "offer": "SellToPlayer:shovel",
-      "ours": [
-       10
-      ]
-     }
-    ],
     "status": "DIFFER",
     "uncomparable": [
      "SellToPlayer:oteryn:item.registry.i00036234"
@@ -4200,18 +4140,7 @@
    },
    "trade": {
     "matched": 5,
-    "price_mismatch": [
-     {
-      "br": [
-       6
-      ],
-      "offer": "SellToPlayer:cheese",
-      "ours": [
-       4
-      ]
-     }
-    ],
-    "status": "DIFFER"
+    "status": "AGREE"
    }
   },
   {
@@ -4761,29 +4690,6 @@
   },
   {
    "br": {
-    "pageid": 37661,
-    "revid": 421347,
-    "title": "Brom"
-   },
-   "name": "Brom",
-   "npc": "oteryn:npc.brom",
-   "position": {
-    "br": [
-     32603,
-     31913,
-     8
-    ],
-    "ours": [
-     32703,
-     31832,
-     12
-    ],
-    "status": "MISMATCH"
-   },
-   "removed": "13.12.13018"
-  },
-  {
-   "br": {
     "pageid": 11643,
     "revid": 416514,
     "title": "Bron"
@@ -4862,29 +4768,6 @@
     "br_offers": 1,
     "status": "BR_ONLY"
    }
-  },
-  {
-   "br": {
-    "pageid": 37641,
-    "revid": 421349,
-    "title": "Brutus"
-   },
-   "name": "Brutus",
-   "npc": "oteryn:npc.brutus",
-   "position": {
-    "br": [
-     33131,
-     32859,
-     7
-    ],
-    "ours": [
-     33153,
-     32984,
-     8
-    ],
-    "status": "MISMATCH"
-   },
-   "removed": "13.12.13018"
   },
   {
    "br": {
@@ -6792,26 +6675,6 @@
      "SellToPlayer:mug",
      "SellToPlayer:mug",
      "SellToPlayer:mug"
-    ],
-    "price_mismatch": [
-     {
-      "br": [
-       4
-      ],
-      "offer": "SellToPlayer:bread",
-      "ours": [
-       3
-      ]
-     },
-     {
-      "br": [
-       6
-      ],
-      "offer": "SellToPlayer:cheese",
-      "ours": [
-       5
-      ]
-     }
     ],
     "status": "DIFFER"
    }
@@ -12644,26 +12507,6 @@
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
     ],
-    "price_mismatch": [
-     {
-      "br": [
-       150
-      ],
-      "offer": "SellToPlayer:fishing rod",
-      "ours": [
-       40
-      ]
-     },
-     {
-      "br": [
-       50
-      ],
-      "offer": "SellToPlayer:shovel",
-      "ours": [
-       10
-      ]
-     }
-    ],
     "status": "DIFFER",
     "uncomparable": [
      "SellToPlayer:oteryn:item.registry.i00036234"
@@ -13599,26 +13442,6 @@
      "SellToPlayer:vial",
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
-    ],
-    "price_mismatch": [
-     {
-      "br": [
-       150
-      ],
-      "offer": "SellToPlayer:fishing rod",
-      "ours": [
-       40
-      ]
-     },
-     {
-      "br": [
-       50
-      ],
-      "offer": "SellToPlayer:shovel",
-      "ours": [
-       10
-      ]
-     }
     ],
     "status": "DIFFER",
     "uncomparable": [
@@ -14782,18 +14605,7 @@
    },
    "trade": {
     "matched": 4,
-    "price_mismatch": [
-     {
-      "br": [
-       5
-      ],
-      "offer": "SellToPlayer:bag",
-      "ours": [
-       4
-      ]
-     }
-    ],
-    "status": "DIFFER"
+    "status": "AGREE"
    }
   },
   {
@@ -17160,17 +16972,6 @@
      "BuyFromPlayer:sickle",
      "BuyFromPlayer:studded club"
     ],
-    "price_mismatch": [
-     {
-      "br": [
-       25
-      ],
-      "offer": "BuyFromPlayer:studded armor",
-      "ours": [
-       10
-      ]
-     }
-    ],
     "status": "DIFFER"
    }
   },
@@ -19465,27 +19266,7 @@
    },
    "trade": {
     "matched": 4,
-    "price_mismatch": [
-     {
-      "br": [
-       10
-      ],
-      "offer": "SellToPlayer:ham",
-      "ours": [
-       8
-      ]
-     },
-     {
-      "br": [
-       7
-      ],
-      "offer": "SellToPlayer:meat",
-      "ours": [
-       5
-      ]
-     }
-    ],
-    "status": "DIFFER"
+    "status": "AGREE"
    }
   },
   {
@@ -19927,26 +19708,6 @@
      "SellToPlayer:vial",
      "SellToPlayer:vial",
      "SellToPlayer:waterskin"
-    ],
-    "price_mismatch": [
-     {
-      "br": [
-       150
-      ],
-      "offer": "SellToPlayer:fishing rod",
-      "ours": [
-       40
-      ]
-     },
-     {
-      "br": [
-       50
-      ],
-      "offer": "SellToPlayer:shovel",
-      "ours": [
-       10
-      ]
-     }
     ],
     "status": "DIFFER",
     "uncomparable": [
@@ -21997,15 +21758,6 @@
       "ours": [
        500
       ]
-     },
-     {
-      "br": [
-       120
-      ],
-      "offer": "BuyFromPlayer:crossbow",
-      "ours": [
-       500
-      ]
      }
     ],
     "status": "DIFFER",
@@ -23912,29 +23664,6 @@
   },
   {
    "br": {
-    "pageid": 37660,
-    "revid": 388673,
-    "title": "Roughington"
-   },
-   "name": "Roughington",
-   "npc": "oteryn:npc.roughington",
-   "position": {
-    "br": [
-     33602,
-     31888,
-     6
-    ],
-    "ours": [
-     33535,
-     31832,
-     9
-    ],
-    "status": "MISMATCH"
-   },
-   "removed": "13.12.13018"
-  },
-  {
-   "br": {
     "pageid": 10479,
     "revid": 421826,
     "title": "Rowenna"
@@ -24797,29 +24526,6 @@
     "br_offers": 1,
     "status": "BR_ONLY"
    }
-  },
-  {
-   "br": {
-    "pageid": 37640,
-    "revid": 388672,
-    "title": "Shadowpunch"
-   },
-   "name": "Shadowpunch",
-   "npc": "oteryn:npc.shadowpunch",
-   "position": {
-    "br": [
-     33198,
-     31785,
-     7
-    ],
-    "ours": [
-     33377,
-     31832,
-     9
-    ],
-    "status": "MISMATCH"
-   },
-   "removed": "13.12.13018"
   },
   {
    "br": {
@@ -28957,33 +28663,6 @@
   },
   {
    "br": {
-    "pageid": 37312,
-    "revid": 388671,
-    "title": "Victor"
-   },
-   "name": "Victor",
-   "npc": "oteryn:npc.victor",
-   "position": {
-    "br": [
-     32353,
-     32223,
-     7
-    ],
-    "ours": [
-     32255,
-     32216,
-     8
-    ],
-    "status": "MISMATCH"
-   },
-   "removed": "13.12.13018",
-   "trade": {
-    "offers": 4,
-    "status": "NO_BR_TRADE"
-   }
-  },
-  {
-   "br": {
     "pageid": 40095,
     "revid": 355448,
     "title": "Vigintius"
@@ -29628,17 +29307,6 @@
      "SellToPlayer:quiver",
      "SellToPlayer:red quiver",
      "SellToPlayer:spectral bolt"
-    ],
-    "price_mismatch": [
-     {
-      "br": [
-       470
-      ],
-      "offer": "BuyFromPlayer:war hammer",
-      "ours": [
-       450
-      ]
-     }
     ],
     "status": "DIFFER"
    }
@@ -31033,7 +30701,7 @@
  "schema": "OTERYN_NPC_TIBIAWIKI_BR_CROSSCHECK/v1",
  "totals": {
   "dialogue:admitted": 701,
-  "dialogue:br_only": 179,
+  "dialogue:br_only": 178,
   "dialogue:checked": 368,
   "dialogue:matched": 2856,
   "dialogue:near": 348,
@@ -31045,18 +30713,17 @@
   "dialogue:texts": 5851,
   "matched_by_position_alias": 8,
   "no_br_page": 14,
-  "npcs": 1093,
+  "npcs": 1088,
   "position:CLOSE": 98,
   "position:MATCH": 230,
-  "position:MISMATCH": 41,
+  "position:MISMATCH": 36,
   "position:NEAR": 680,
   "position:NO_BR_POSITION": 1,
   "position:NO_PLACEMENT": 2,
   "position:OTHER_FLOOR": 27,
-  "removed_on_br": 5,
-  "trade:AGREE": 93,
+  "trade:AGREE": 97,
   "trade:BR_ONLY": 64,
-  "trade:DIFFER": 204,
-  "trade:NO_BR_TRADE": 6
+  "trade:DIFFER": 200,
+  "trade:NO_BR_TRADE": 5
  }
 }

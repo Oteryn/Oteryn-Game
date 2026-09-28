@@ -401,5 +401,51 @@ class PromotionValidatorTests(unittest.TestCase):
         self.assertEqual(held['detail'], 'server-only NPC, owner decision 2026-09-27')
 
 
+    # -- D11: NPCs removed from Tibia Global -----------------------------------------------------
+
+    def test_removed_from_game_npcs_stay_held(self):
+        report = load_sample()
+        names = ('Brom', 'Brutus', 'Roughington', 'Shadowpunch', 'Victor')
+        for name in names:
+            held = find_held(report, name)
+            self.assertEqual(held['reason'], 'REMOVED_FROM_GAME')
+        self.assertFalse(set(names) & {c['name'] for c in report['candidates']})
+
+    def test_removed_from_game_bypasses_wiki_matching(self):
+        builder = make_builder([{'pageid': 1, 'title': 'Brom', 'name': 'Brom', 'actualname': None,
+                                  'position': {'x': 1, 'y': 1, 'z': 1}}])
+        result = builder.candidate({'crystal': make_bundle('Brom', 'crystal')})
+        self.assertIsNone(result)
+        self.assertEqual(builder.held[-1]['reason'], 'REMOVED_FROM_GAME')
+
+
+    # -- D12: a price both wikis agree on replaces the source price -----------------------------
+
+    def price_builder(self, fandom_buy, br_prices):
+        builder = promotion_candidates.Builder(
+            {'npcs': [], 'trade': {'ahmet': [{'item': 'Fishing Rod', 'buy_price': fandom_buy, 'sell_price': None}]}},
+            {'records': [{'source_item_id': 3483, 'native_key': 'oteryn:item.registry.i1', 'native_revision': 'r1'}]},
+            {'pages': [{'title': 'Ahmet', 'name': 'Ahmet',
+                        'trades': {'SellToPlayer': {'Fishing Rod': br_prices}, 'BuyFromPlayer': {}}}]})
+        bundle = make_bundle('Ahmet')
+        bundle['services']['trade'] = {'currency': 'GOLD', 'offers': [
+            {'client_id': 3483, 'server_item_id': None, 'count': None, 'sub_type': None, 'item_name': 'fishing rod',
+             'buy_price': 40, 'sell_price': None, 'stock_gate': None}]}
+        arbitration = []
+        offers = builder.merge_offers({'crystal': bundle}, 'Ahmet', arbitration, [])
+        return offers, arbitration
+
+    def test_wiki_price_needs_both_wikis_to_agree(self):
+        for br in ([150], [150, 150]):
+            offers, arbitration = self.price_builder(150, br)
+            self.assertEqual(offers[0]['unit_price'], 150)
+            self.assertEqual(arbitration, [{'fact': 'trade.3483.SellToPlayer', 'rule': 'WIKI_PRICE', 'chosen': 'wiki'}])
+        # BR must state one explicit price in every row of the offer
+        for fandom, br in ((150, [120]), (150, [None]), (None, [150]), (150, [150, 120]), (150, [150, None]), (150, [])):
+            offers, arbitration = self.price_builder(fandom, br)
+            self.assertEqual(offers[0]['unit_price'], 40)
+            self.assertEqual(arbitration, [])
+
+
 if __name__ == '__main__':
     unittest.main()
