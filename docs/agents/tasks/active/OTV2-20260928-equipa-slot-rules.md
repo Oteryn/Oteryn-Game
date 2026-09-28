@@ -4,10 +4,10 @@
 task_id: OTV2-20260928-equipa-slot-rules
 title: EQUIP-a - pure Reference equipment-slot rules
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1176
 allocation_comment: "#162 5879250283 (notice), owner standing mode 12A in 5879169470"
 base_branch: main
 branch: claude/equipa-slot-rules
