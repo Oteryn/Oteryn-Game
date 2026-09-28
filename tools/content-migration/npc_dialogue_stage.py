@@ -58,7 +58,12 @@ def leaf_texts(textref: Any) -> list[str]:
         for part in textref['parts']:
             out.extend(leaf_texts(part))
         return out
-    return [textref.get('text') or '']
+    text = textref.get('text')
+    if not isinstance(text, str):
+        raise StageError('text reference carries no text: stage bundles converted with --include-text')
+    if hashlib.sha256(text.encode('utf-8')).hexdigest() != textref.get('sha256'):
+        raise StageError('text does not match its text-reference digest')
+    return [text]
 
 
 def text_parts_cleaned(textref: Any) -> list[str]:
@@ -327,6 +332,10 @@ def load_bundle(bundles_dir: Path, source: str, provenance: dict) -> dict | None
 def stage(report: dict, canary_dir: Path, crystal_dir: Path) -> dict:
     if report['schema'] != 'OTERYN_NPC_PROMOTION_CANDIDATES/v1':
         raise StageError('promotion candidate report drifted')
+    for bundles_dir in (canary_dir, crystal_dir):
+        index_path = bundles_dir.parent / 'index.json'
+        if not index_path.exists() or json.loads(index_path.read_text()).get('include_text') is not True:
+            raise StageError(f'{bundles_dir} is not a convert.py --include-text output (its index.json)')
     candidates = sorted(report['candidates'], key=lambda c: c['identity']['key'])
     stats = {
         'dropped_non_say_gated': 0, 'dropped_no_text': 0, 'dropped_no_triggers': 0, 'keyword_nodes': 0,
