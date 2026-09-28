@@ -5,28 +5,28 @@
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/startup/tables/chest.lua",
       "blob_sha1": "13efcb4d1294ec1ff1ee5e5da18e2eeb3c904c02"
     },
     {
       "kind": "git",
       "repository": "opentibiabr/canary",
-      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "revision": "04b83b512114bfd888000d6e1433ed8ecaec7c5b",
       "path": "data-otservbr-global/scripts/actions/system/quest_reward_common.lua",
       "blob_sha1": "ce647b85624eb97f2b4dfe9cccced96f4f881936"
     },
     {
       "kind": "git",
       "repository": "zimbadev/crystalserver",
-      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
       "path": "data-global/startup/tables/chest.lua",
       "blob_sha1": "ea2ef1963395a479ed927481bc3a14065b125a3f"
     },
     {
       "kind": "git",
       "repository": "zimbadev/crystalserver",
-      "revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "revision": "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d",
       "path": "data-global/scripts/actions/system/quest_reward_common.lua",
       "blob_sha1": "709a1d76512b284933a04d707a634d8c538309ce"
     }

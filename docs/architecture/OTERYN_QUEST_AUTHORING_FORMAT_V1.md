@@ -20,7 +20,7 @@
 TibiaWiki (Fandom) lists 373 quests with a quest infobox (`samples/quest-coverage-2026-09-27.json`).
 Checked against the Lua sources of both reference servers:
 
-| | Canary 47dfd51f | CrystalServer ff7ede59 | Either |
+| | Canary 47dfd51f (earlier pin) | CrystalServer ff7ede59 (earlier pin) | Either |
 |---|---:|---:|---:|
 | Implemented | 324 | 328 | 332 |
 | Partial (a storage stub, an outfit item, one reward line) | 9 | 13 | 12 |
@@ -255,6 +255,16 @@ resolves source ids. The CW2 B3 loot binding evidence has every row still `UNRES
    `empty_containers.json`.
 7. A quest keeps one identity across slices and servers: the Canary namespace when Canary
    implements it at all (the coverage sample), otherwise the CrystalServer namespace.
+
+**Pinned revisions.** The transcriptions read Canary `04b83b51` and CrystalServer `9f5a72c6`, both the
+`main` heads on 2026-09-28. Re-pinning from `47dfd51f`/`ff7ede59` brought in only two merged fixes
+that touch quest content, both in CrystalServer:
+- the Summer Court NPC storage key;
+- a guard in the Wrath of the Emperor mission 2 teleport repair.
+
+The only effect on the samples is the new revision identity and shifted source lines. The coverage
+table in §1 is dated evidence at the earlier pins. Unmerged upstream branches (for example a Dream
+Courts teleport fix in Canary, or a fuller Feaster of Souls in CrystalServer) are not sources.
 
 ## 6. First transcription
 

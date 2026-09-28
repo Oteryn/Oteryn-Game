@@ -44,12 +44,12 @@ REPORT_PATH = REPORT_DIR / "report.json"
 CANARY_MAP_URL = "https://github.com/opentibiabr/canary/releases/download/v3.6.1/otservbr.otbm"
 # Canary's Map Attributes Loader stamps action/unique ids onto placed items at startup from these tables
 # (data-otservbr-global/startup/tables at the pinned revision); `*Action` tables key action ids, `*Unique` unique ids.
-CANARY_REVISION_PREFIX = "47dfd51f"
+CANARY_REVISION_PREFIX = "04b83b51"
 STARTUP_TABLES = "data-otservbr-global/startup/tables"
 # CrystalServer checkout revision the runtime-assignment grep (resolve_not_found_interactions,
 # --crystalserver-source) is evidenced against; the same zimbadev/crystalserver commit
 # CRYSTALSERVER_MAP_SHA256 below is pinned to.
-CRYSTALSERVER_SOURCE_REVISION = "ff7ede593c69d4c658b382c97443e8155926924a"
+CRYSTALSERVER_SOURCE_REVISION = "9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d"
 
 
 def startup_assignments(canary: Path) -> dict[tuple[str, int], list[dict[str, Any]]]:
@@ -83,9 +83,9 @@ CANARY_MAP_SHA256 = "a80de1dda6a9aca3956a9d5b7fb2e0caebb451570d26853fc21beb40d5f
 # CrystalServer ships its own world map inside its repository (not downloaded): a gzip-compressed
 # OTBM at `data-global/world/world.otbm` (config.lua.dist: `mapName = "world"`,
 # `toggleCompressedMap = true`). Decompress with `gunzip` before passing it here; sha256 below is
-# of the decompressed bytes, from zimbadev/crystalserver@ff7ede59.
+# of the decompressed bytes, from zimbadev/crystalserver@9f5a72c6.
 CRYSTALSERVER_MAP_SOURCE = (
-    "zimbadev/crystalserver@ff7ede593c69d4c658b382c97443e8155926924a :: "
+    "zimbadev/crystalserver@9f5a72c64b87b222a0c8f7c130dadf8e2f125c6d :: "
     "data-global/world/world.otbm (gzip-compressed in the repository; decompressed before use)"
 )
 CRYSTALSERVER_MAP_SHA256 = "f1080fbefdea904f1b7465b7479beb98080e74f5d27dfdfd8e38e69be2399726"

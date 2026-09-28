@@ -20747,8 +20747,8 @@
         {
           "source": "crystalserver",
           "path": "data-global/scripts/quests/wrath_of_the_emperor/actions_mission02_firstcontact_repair_teleport.lua",
-          "callback_line": 18,
-          "blob_sha1": "ab5b28f81505edca3dfba64f04d9d82bb1b313e0"
+          "callback_line": 19,
+          "blob_sha1": "c4a913112187b41538d0174be476a1caf402f7b5"
         }
       ]
     },
