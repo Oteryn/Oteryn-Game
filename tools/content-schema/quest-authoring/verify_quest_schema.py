@@ -2,6 +2,7 @@
 import json
 import sys
 
+import ots_interactions as oi
 from validate_quest_content import BLOCKED, validate, validate_gates, validate_interactions, validate_storylines
 
 
@@ -387,6 +388,54 @@ interaction_case('conflict needs two sources',
 interaction_case('every interaction has a manifest entry', lambda i, c, m: m['entries'].clear())
 interaction_case('manifest lists an interaction once', lambda i, c, m: m['entries'].append(dict(m['entries'][0])))
 interaction_case('interaction keys are unique', lambda i, c, m: i.update(twin=True))
+
+# ots_interactions.py's curated interaction_overrides.json mechanism (D36 exception), on synthetic rule trees so
+# it never needs the real Canary/CrystalServer checkouts.
+def override_result(name, ok):
+    results.append({'name': name, 'expected_valid': True, 'passed': ok, 'first_error': None if ok else 'mismatch'})
+
+
+_saved_overrides = oi.OVERRIDES
+try:
+    oi.OVERRIDES = {'canary:interaction/x/y': {'5': {'condition': {'actor_is_player': True, 'negate': False},
+                                                      'basis': 'test fixture'}}}
+    rules = [{'branch': [{'when': {'unresolved': {'line': 5}}, 'then': []}]}]
+    used = set()
+    oi.apply_overrides(rules, 'canary:interaction/x/y', used)
+    override_result('override replaces its named unresolved line',
+                    rules[0]['branch'][0]['when'] == {'actor_is_player': True, 'negate': False}
+                    and used == {('canary:interaction/x/y', '5')})
+
+    rules = [{'branch': [{'when': {'unresolved': {'line': 9}}, 'then': []}]}]
+    used = set()
+    oi.apply_overrides(rules, 'canary:interaction/x/y', used)
+    override_result('override leaves an unresolved line it does not name alone',
+                    rules[0]['branch'][0]['when'] == {'unresolved': {'line': 9}} and not used)
+
+    rules = [{'branch': [{'when': {'all': [{'unresolved': {'line': 5}}, {'actor_is_player': True, 'negate': False}]},
+                         'then': []}]}]
+    used = set()
+    oi.apply_overrides(rules, 'canary:interaction/x/y', used)
+    override_result('override applies inside a compound (all/any) condition',
+                    rules[0]['branch'][0]['when'] == {'all': [{'actor_is_player': True, 'negate': False},
+                                                              {'actor_is_player': True, 'negate': False}]}
+                    and used == {('canary:interaction/x/y', '5')})
+
+    try:
+        oi.unused_overrides(set())
+        raised = False
+    except SystemExit:
+        raised = True
+    override_result('a stale override (no matching unresolved line was replaced) fails the run', raised)
+
+    try:
+        oi.unused_overrides({('canary:interaction/x/y', '5')})
+        raised = False
+    except SystemExit:
+        raised = True
+    override_result('a used override does not fail the run', not raised)
+finally:
+    oi.OVERRIDES = _saved_overrides
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:

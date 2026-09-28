@@ -37,6 +37,12 @@ from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checko
 from ots_questlog import norm, script_of, track_of
 from validate_quest_content import BLOCKED
 
+# Curated per-interaction, per-line replacements for a condition ots_interactions.py cannot read statically (a
+# sibling lib/quests/*.lua table indexed by a role field or a world state): interaction key -> source line -> the
+# resolved condition plus a basis citing the table/registration evidence. Applied by `apply_overrides`; a stale
+# entry (its line no longer unresolved) fails the run via `unused_overrides`.
+OVERRIDES = json.loads((ROOT / 'interaction_overrides.json').read_text())
+
 CALLBACK = re.compile(r'^\s*function\s+(\w+)[.:](onStepIn|onStepOut|onAddItem|onUse|onDeath|onKill|onPrepareDeath)\s*\(')
 OBJECT_LINE = re.compile(r'^\s*local\s+\w+\s*=\s*(MoveEvent|Action|CreatureEvent)\s*\(')
 EDGES = {'onStepIn': 'ON_ENTER', 'onStepOut': 'ON_LEAVE', 'onAddItem': 'ON_CONTACT', 'onUse': 'USE',
@@ -84,6 +90,10 @@ LITERAL_STORAGE = re.compile(r'Storage(?:\.\w+(?:\[\d+\])?)+$')
 # step is a runtime-selected entry (a loop counter or another variable), never resolved statically.
 CHAIN = re.compile(r'([A-Za-z_]\w*)((?:\.[A-Za-z_]\w*|\[\d+\]|\[[A-Za-z_]\w*\])*)$')
 CHAIN_STEP = re.compile(r'\.([A-Za-z_]\w*)|\[(\d+)\]|\[([A-Za-z_]\w*)\]')
+# `local X = player:getStorageValue(...)` / `local X = Game.getStorageValue(...)`: a value alias, scoped to the
+# callback it is read in (unlike the file-wide Storage.… path aliases), so a later bare `X <op> N` reads the same
+# storage/world-state comparison the direct call already resolves (D36 condition vocabulary, never guessed).
+VALUE_ALIAS = re.compile(r'^local\s+(\w+)\s*=\s*((?:\w+:getStorageValue|Game\.getStorageValue)\([^()]*\))$')
 
 
 class Script:
@@ -111,6 +121,8 @@ class Script:
         actor = next((n for n, r in self.roles.items() if r == 'actor'), None)
         self.players = {actor} if callback == 'onUse' else set()
         self.containers = {}
+        self.value_aliases = {m.group(1): m.group(2) for n in lua_blocks.function_body(self.lines, number)
+                              if (m := VALUE_ALIAS.match(self.raw(n)))}
         for line in self.lines[number:]:
             if actor and (m := re.match(rf'\s*local\s+(\w+)\s*=\s*{actor}:getPlayer\(\)', line)):
                 self.players.add(m.group(1))
@@ -193,6 +205,9 @@ class Script:
         return all(READ_ONLY.match(name) for name in re.findall(r'(\w+)\s*\(', code))
 
     def condition(self, text, number):
+        # never inside a string literal (e.g. the `"switchNum"` key of the very call an alias stands for)
+        for alias, expr in self.value_aliases.items():
+            text = re.sub(rf'(?<![\w.:"\']){re.escape(alias)}(?![\w"\'])', expr, text)
         parts = re.split(r'\s+(and|or)\s+', text)
         terms, joins = parts[0::2], set(parts[1::2])
         if len(joins) > 1:
@@ -469,6 +484,45 @@ def unresolved_conditions(interaction):
     return sum(1 for c in conditions(interaction['rules']) if 'unresolved' in c)
 
 
+def apply_overrides(rules, key, used):
+    """Replace an unresolved condition with a curated override's equivalent (`interaction_overrides.json`), for a
+    script-local table or loop `ots_interactions.py` cannot read statically (e.g. a sibling `lib/quests/*.lua`
+    table indexed by a role field or a world state). Every replacement is recorded in `used` so a stale override
+    (naming a line that is no longer unresolved) is caught by `unused_overrides` rather than silently ignored."""
+    overrides = OVERRIDES.get(key, {})
+    if not overrides:
+        return
+
+    def replace(cond):
+        if 'all' in cond or 'any' in cond:
+            combinator = 'all' if 'all' in cond else 'any'
+            cond[combinator] = [replace(c) for c in cond[combinator]]
+            return cond
+        line = cond.get('unresolved', {}).get('line')
+        override = overrides.get(str(line)) if line is not None else None
+        if override:
+            used.add((key, str(line)))
+            return json.loads(json.dumps(override['condition']))
+        return cond
+
+    def walk(nodes):
+        for rule in nodes:
+            if 'branch' in rule:
+                for arm in rule['branch']:
+                    arm['when'] = replace(arm['when'])
+                    walk(arm['then'])
+                walk(rule.get('otherwise', []))
+    walk(rules)
+
+
+def unused_overrides(used):
+    """Fail loudly when a recorded interaction override no longer matches an unresolved line."""
+    stale = sorted(f'{key}#{line}' for key, lines in OVERRIDES.items() for line in lines
+                  if (key, line) not in used)
+    if stale:
+        raise SystemExit(f'interaction overrides without a matching unresolved line: {stale}')
+
+
 def build(repos, scripts, questlog_dir):
     keys = transition_keys(questlog_dir)
     declared_by_path = {norm(t['key'].split('/', 1)[1]): t['key']
@@ -485,7 +539,7 @@ def build(repos, scripts, questlog_dir):
             script.declared = declared_by_path
             for interaction in script.interactions():
                 by_script.setdefault(interaction['identity']['key'].split(':', 1)[1], {})[name] = interaction
-    interactions, manifest_entries, used = [], [], set()
+    interactions, manifest_entries, used, used_overrides = [], [], set(), set()
     for _, pair in sorted(by_script.items()):
         primary = pair.get('canary') or pair['crystalserver']
         agree = len(pair) == 2 and comparable(pair['canary']) == comparable(pair['crystalserver'])
@@ -502,6 +556,10 @@ def build(repos, scripts, questlog_dir):
                     primary = dict(pair['crystalserver'], identity=primary['identity'])
                 status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
                 resolution = 'the servers differ; ' + decided(decision)
+        if primary['identity']['key'] in OVERRIDES:
+            primary = dict(primary, rules=json.loads(json.dumps(primary['rules'])))
+            apply_overrides(primary['rules'], primary['identity']['key'], used_overrides)
+            status = 'unresolved_semantics' if primary['unresolved'] or unresolved_conditions(primary) else 'mapped'
         interactions.append({k: v for k, v in primary.items() if k not in ('script', 'callback_line')})
         manifest_entries.append({'destination': primary['identity']['key'], 'status': status, 'resolution': resolution,
                                  'sources': [{'source': n, 'path': SOURCES[n]['datapack'] + '/' + i['script'],
@@ -509,6 +567,7 @@ def build(repos, scripts, questlog_dir):
                                               'blob_sha1': git_blob(repos[n], SOURCES[n]['datapack'] + '/' + i['script'])}
                                              for n, i in pair.items()]})
     unused_decisions('interactions', used)
+    unused_overrides(used_overrides)
     children = [c for i in interactions for c in walk(i['rules'])]
     declared = {t['key'] for t in json.loads((questlog_dir / 'progress.json').read_text())['progress']}
     manifest = {
