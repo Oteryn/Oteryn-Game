@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-vsl-combat-resource-rows-decision
 title: "VSL-COMBAT-01 §19 Combat resource rows (D77-D79)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1123
 base_sha: 943e17b07ba42c95a91f6a431990905846a69968
 head_sha: null
 final_head_sha: null
@@ -69,17 +69,17 @@ Boundary tests bind the Combat D registration.
 
 ## Validation
 
-- `python3 tools/agents/validate_governance.py`: pending.
-- `python3 tools/repository/validate_repository_policy.py`: pending.
+- `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
+- `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: decision drafted from owner decisions D77-D79
-status: implementing
+last_progress: authored; PR #1123 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1123
 owner_action_required: null
 blocker: null
-next_action: validate, commit, open PR, freeze, one exact-head review
+next_action: exact-head review and Merge Queue integration of #1123
 ```
