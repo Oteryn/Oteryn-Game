@@ -180,6 +180,10 @@ LINK = re.compile(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]')
 # after links and bold/italic markup are removed, a transcript line is `Speaker: text`; the speaker may be
 # written plain, bold, italic or as a link, before or around the colon, and may contain an apostrophe
 SPEAKER = re.compile(r"\s*([^:<>{}|]{1,60}?)\s*:\s*(.*)$")
+ORDERED = re.compile(r'^\s*\d+[.)]?\s+')  # `1 Edgar-Ellen: ...` numbers a turn
+# an editor's note in parentheses (Portuguese, or English conditions such as `(if you ...)`), not NPC speech
+ANNOTATION = re.compile(r'\s*\((?=[^()]*\b(?:se|você|voce|jogador|caso|para|ao|turnos?|abre|termina|perde|já|não|nao'
+                        r'|esteja|homens|mulheres|conversa|dirá|ou|que|está|hora|lhe|ele|atual|if you|burning effect)\b)[^()]*\)', re.I)
 COMMENT = re.compile(r'<!--.*?(?:-->|$)', re.S)
 BOLD_LABEL = re.compile(r"\s*'''\s*((?:\[\[[^\]]*\]\]|[^'\[\]:|])+?)\s*'''\s+(?!:)(\S.*)$")
 TRANSCRIPT_BOUNDARY = ('|', '{{', '}}', '==', '----', '[[Categoria', '[[Arquivo', '[[File', '[[Imagem')
@@ -210,9 +214,15 @@ def unmarked(text):
     return LINK.sub(r'\1', text).replace("'''", '').replace("''", '')
 
 
+def unmarked_prefix(raw_segment):
+    """Drop an ordered-list number that precedes the (possibly bold) label: `'''1 Name:'''`, `1 '''Name:'''`."""
+    return re.sub(r"^(\s*(?:''')?)\s*\d+[.)]?\s+", r'\1', raw_segment)
+
+
 def read_turn(raw_segment, speakers):
     """(folded speaker, text) when a raw segment opens a transcript turn, else None. A bold label without a
     colon (`'''Ceiron''' text`) opens a turn only for one of this page's own speakers."""
+    raw_segment = ORDERED.sub('', unmarked_prefix(raw_segment))
     bold = BOLD_LABEL.match(raw_segment)
     if bold and fold(LINK.sub(r'\1', bold.group(1))) in speakers:
         text = re.sub(r'\s+', ' ', STRUCTURE.sub('', unmarked(bold.group(2)))).strip()
@@ -278,10 +288,11 @@ def page_facts(page):
                 while repeated and fold(repeated.group(1)) == speaker:  # `Name: Name: text` repeats the label
                     text = repeated.group(2).strip()
                     repeated = SPEAKER.match(text)
+                text = re.sub(r'\s+', ' ', ANNOTATION.sub('', text)).strip()
                 if speaker in speakers and text:
                     lines.append(text)
             elif segment and speaker in speakers and lines:
-                lines[-1] = f'{lines[-1]} {segment}'
+                lines[-1] = re.sub(r'\s+', ' ', ANNOTATION.sub('', f'{lines[-1]} {segment}')).strip()
     return {'pageid': page['pageid'], 'revid': page['revid'], 'timestamp': page['timestamp'],
             'sha256': page['sha256'], 'title': page['title'], 'role': page['role'], 'name': name,
             'implemented': infobox_field(wikitext, 'implemented'), 'removed': infobox_field(wikitext, 'removed'),
@@ -350,6 +361,8 @@ def cmd_self_test(_args):
             "'''Goldro''': Bold name, colon outside.</br>\n'''[[Goldro]]:''' Linked name.</br>\n"
             "[[Goldro]]: Link form.</br>\nGoldro: Plain form.</br>\n''Goldro:'' Italic form.</br>\n"
             "<!--\nGoldro: Hidden comment.\n-->\n'''Goldro''' No colon.\n'''Other''' not a label.\n"
+            "1 Goldro: Numbered.\n'''Goldro:''' Take this! (burning effect, 5 turnos de 10 hitpoints)\n"
+            "'''Goldro:''' Shh. (whispers)\n"
             "[[Other]]: Not mine.\n'''Goldro:''' One.<br>Jogador: Accident<br>'''Goldro:''' Two.<br>still two.\n"
             "'''Goldro:''' Goldro: Repeated label.\nGoldrp: Typo label.<br\nGoldro: Bye, and\nsee you soon.\n"
             ":''Jogador:'' Trade?\n:'''Goldro:''' Indented.\n:Respostas:\nNot Goldro any more.\n\n"
@@ -362,7 +375,8 @@ def cmd_self_test(_args):
     assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.', 'Bold name, colon outside.',
                                   'Linked name.', 'Link form.', 'Plain form.', 'Italic form.',
                                   # a bold label of another name opens no turn, so it continues Goldro's
-                                  'No colon. Other not a label.', 'One.', 'Two. still two.',
+                                  'No colon. Other not a label.', 'Numbered.', 'Take this!', 'Shh. (whispers)',
+                                  'One.', 'Two. still two.',
                                   'Repeated label.', 'Typo label.', 'Bye, and see you soon.', 'Indented.'], facts
     apostrophe = page_facts({**page_record({'pageid': 8, 'title': "Lee'Delle", 'revisions': [
         {'revid': 1, 'timestamp': 'T', 'slots': {'main': {'content': "'''Lee'Delle:''' Welcome."}}}]}), 'role': 'npc'})

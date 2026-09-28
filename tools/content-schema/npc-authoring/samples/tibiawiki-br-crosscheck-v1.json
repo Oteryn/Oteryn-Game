@@ -5,7 +5,7 @@
   "admission_sha256": "b9681042f71684ff815c4a1d25308bb5502b436ce6addf72b1961b9030bca7cd",
   "candidates_sha256": "806ff67b9985868964f30588663b5bc6d666abce625c67061501d05cfa0004a2",
   "dialogues_sha256": "91d05c6325cade3d59b3e9169505f6506ffc56d5a14628a8b494b2228b73bf90",
-  "facts_sha256": "673ebfc7778385d4fa07c3107790d42609c44048870149eb3de23e43f67f5b19",
+  "facts_sha256": "34622bd230715a4d355c7fd347c55966ee730aba5e4c4b9894aad7d91afec179",
   "snapshot_pages_digest": "d9485ffeacb4ea17dba1a09087d2e15b06bb9baba6bcfee3d0f521aec0e61815"
  },
  "near_ratio": 0.9,
@@ -2388,7 +2388,7 @@
     "title": "Arkulius"
    },
    "dialogue": {
-    "br_lines": 20,
+    "br_lines": 23,
     "matched": 10,
     "near": 0,
     "texts": 14
@@ -7548,7 +7548,7 @@
    "dialogue": {
     "br_lines": 34,
     "matched": 24,
-    "near": 0,
+    "near": 1,
     "texts": 25
    },
    "name": "Donald McRonald",
@@ -8191,9 +8191,9 @@
     "title": "Edgar-Ellen"
    },
    "dialogue": {
-    "br_lines": 9,
-    "matched": 8,
-    "near": 1,
+    "br_lines": 21,
+    "matched": 19,
+    "near": 2,
     "texts": 27
    },
    "name": "Edgar-Ellen",
@@ -16639,7 +16639,7 @@
    },
    "dialogue": {
     "br_lines": 46,
-    "matched": 39,
+    "matched": 40,
     "near": 2,
     "texts": 49
    },
@@ -21320,7 +21320,7 @@
    "dialogue": {
     "br_lines": 36,
     "matched": 39,
-    "near": 7,
+    "near": 8,
     "texts": 63
    },
    "name": "Queen Eloise",
@@ -27572,7 +27572,7 @@
    },
    "dialogue": {
     "br_lines": 32,
-    "matched": 41,
+    "matched": 45,
     "near": 0,
     "texts": 51
    },
@@ -29352,8 +29352,8 @@
  "totals": {
   "dialogue:br_only": 179,
   "dialogue:checked": 368,
-  "dialogue:matched": 2821,
-  "dialogue:near": 340,
+  "dialogue:matched": 2837,
+  "dialogue:near": 343,
   "dialogue:no_text_matched": 67,
   "dialogue:texts": 5851,
   "matched_by_position_alias": 7,
