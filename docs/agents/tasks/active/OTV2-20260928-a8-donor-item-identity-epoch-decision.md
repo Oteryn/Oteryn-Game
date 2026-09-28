@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-a8-donor-item-identity-epoch-decision
 title: "A8 donor Item identity epoch decision (D96-D97)"
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1163
 base_sha: e19b19d63d5ad45a5e97f298051fb46afcaf6236
 head_sha: null
 final_head_sha: null
@@ -72,11 +72,11 @@ identity, requires independent identity review when allocated.
 ## Context checkpoint
 
 ```yaml
-last_progress: authored
-status: implementing
+last_progress: authored; PR #1163 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1163
 owner_action_required: null
 blocker: null
-next_action: open the PR, freeze the head, exact-head review and Merge Queue integration
+next_action: exact-head review and Merge Queue integration of #1163
 ```
