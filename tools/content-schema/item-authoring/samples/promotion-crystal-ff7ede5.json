@@ -7,7 +7,7 @@
     "per_field": {
       "charges.count": 124,
       "container.capacity": 453,
-      "presentation.name": 12118,
+      "presentation.name": 12180,
       "protection.armor": 432,
       "weapon.attack": 621,
       "weapon.defense": 636,
@@ -15,8 +15,8 @@
       "weapon.hit_chance": 56,
       "weapon.range_cells": 142
     },
-    "promoted_fields": 14742,
-    "promoted_items": 12118
+    "promoted_fields": 14804,
+    "promoted_items": 12180
   },
   "invariants": {
     "identity_reminted": false,
@@ -33424,6 +33424,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00006388",
+      "source_item_id": 6556,
+      "source_value": "tic-tac-toe token",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "tic-tac-toe token"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00006389",
+      "source_item_id": 6557,
+      "source_value": "tic-tac-toe token",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "tic-tac-toe token"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00006390",
       "source_item_id": 6558,
       "source_value": "flask of demonic blood",
@@ -53842,6 +53862,36 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011710",
+      "source_item_id": 12144,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011711",
+      "source_item_id": 12145,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011712",
+      "source_item_id": 12146,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00011713",
       "source_item_id": 12147,
       "source_value": "cake",
@@ -54362,6 +54412,26 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011813",
+      "source_item_id": 12247,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011814",
+      "source_item_id": 12248,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00011817",
       "source_item_id": 12251,
       "source_value": "shapechanger",
@@ -54398,6 +54468,106 @@
       "typed_value": {
         "kind": "TEXT",
         "value": "sugar"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011848",
+      "source_item_id": 12282,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011849",
+      "source_item_id": 12283,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011850",
+      "source_item_id": 12284,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011860",
+      "source_item_id": 12294,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011861",
+      "source_item_id": 12295,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011862",
+      "source_item_id": 12296,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011863",
+      "source_item_id": 12297,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011864",
+      "source_item_id": 12298,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011865",
+      "source_item_id": 12299,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00011866",
+      "source_item_id": 12300,
+      "source_value": "stone",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "stone"
       }
     },
     {
@@ -83954,6 +84124,36 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022768",
+      "source_item_id": 23580,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022769",
+      "source_item_id": 23581,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022770",
+      "source_item_id": 23582,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022771",
       "source_item_id": 23583,
       "source_value": "weapon of mayhem",
@@ -83976,6 +84176,36 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022773",
       "source_item_id": 23585,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022774",
+      "source_item_id": 23586,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022775",
+      "source_item_id": 23587,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022776",
+      "source_item_id": 23588,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84014,8 +84244,68 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022780",
+      "source_item_id": 23592,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022781",
+      "source_item_id": 23593,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022782",
+      "source_item_id": 23594,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022783",
+      "source_item_id": 23595,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022784",
       "source_item_id": 23596,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022785",
+      "source_item_id": 23597,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022786",
+      "source_item_id": 23598,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84036,6 +84326,36 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022788",
       "source_item_id": 23600,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022789",
+      "source_item_id": 23601,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022790",
+      "source_item_id": 23602,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022792",
+      "source_item_id": 23604,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84074,8 +84394,28 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022796",
+      "source_item_id": 23608,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022797",
       "source_item_id": 23609,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022798",
+      "source_item_id": 23610,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84094,8 +84434,68 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022800",
+      "source_item_id": 23612,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022801",
+      "source_item_id": 23613,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022802",
       "source_item_id": 23614,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022803",
+      "source_item_id": 23615,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022804",
+      "source_item_id": 23616,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022805",
+      "source_item_id": 23617,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022806",
+      "source_item_id": 23618,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84124,8 +84524,28 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022809",
+      "source_item_id": 23621,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022810",
       "source_item_id": 23622,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022811",
+      "source_item_id": 23623,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84144,6 +84564,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022813",
+      "source_item_id": 23625,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022814",
       "source_item_id": 23626,
       "source_value": "weapon of mayhem",
@@ -84154,8 +84584,108 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022815",
+      "source_item_id": 23627,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022816",
       "source_item_id": 23628,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022817",
+      "source_item_id": 23629,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022818",
+      "source_item_id": 23630,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022819",
+      "source_item_id": 23631,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022820",
+      "source_item_id": 23632,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022821",
+      "source_item_id": 23633,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022822",
+      "source_item_id": 23634,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022823",
+      "source_item_id": 23635,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022824",
+      "source_item_id": 23636,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022825",
+      "source_item_id": 23637,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -84246,6 +84776,96 @@
       "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00022834",
       "source_item_id": 23646,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022835",
+      "source_item_id": 23647,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022836",
+      "source_item_id": 23648,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022837",
+      "source_item_id": 23649,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022838",
+      "source_item_id": 23650,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022839",
+      "source_item_id": 23651,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022840",
+      "source_item_id": 23652,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022841",
+      "source_item_id": 23653,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022842",
+      "source_item_id": 23654,
+      "source_value": "weapon of mayhem",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "weapon of mayhem"
+      }
+    },
+    {
+      "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00022843",
+      "source_item_id": 23655,
       "source_value": "weapon of mayhem",
       "typed_value": {
         "kind": "TEXT",
@@ -147580,7 +148200,7 @@
       }
     },
     "source_engine": "crystal",
-    "source_population_bundle_digest": "37b6eb4582a12aa70b95c632218c4f332c1dff7d4dd20f945ab2ff54ed3bf4cc",
+    "source_population_bundle_digest": "c5a1faae6c3e809247d79b1db9f116c43c106f254c810e5adbc17502b25f9ab3",
     "source_profile": "crystal_ff7ede5_item_definition_v1",
     "source_repository": "zimbadev/crystalserver",
     "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a"
