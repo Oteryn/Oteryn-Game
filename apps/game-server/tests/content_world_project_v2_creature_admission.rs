@@ -411,7 +411,7 @@ fn draft() -> ProjectV2Draft {
             semantic_schema_version: "reference-schema-v1".into(),
             licensing_metadata: "license:project-owned-v1".into(),
             world_id: "0123456789ab70cd8ef0123456789abc".into(),
-            coordinate_frame: "global-target-2026-07-28".into(),
+            coordinate_frame: "global-target-2026-09-27".into(),
             records: records(),
             imports: vec![],
             metadata: vec![],
@@ -749,5 +749,64 @@ fn unknown_profile_fields_fail_closed() {
     assert!(
         serde_json::from_value::<ProjectV2AuthoringProfileData>(behavior).is_err(),
         "unknown movement field admitted"
+    );
+}
+
+#[test]
+fn players_only_chain_round_trips_and_other_filters_fail_closed() {
+    let chain: ProjectV2Chain = serde_json::from_value(json!({
+        "max_targets": 2,
+        "range_tiles": 3,
+        "backtracking": false,
+        "target_filter": "players",
+    }))
+    .expect("players-only chain");
+    assert_eq!(
+        chain.target_filter,
+        Some(ProjectV2ChainTargetFilter::Players)
+    );
+    assert_eq!(
+        serde_json::to_value(&chain).expect("chain")["target_filter"],
+        json!("players")
+    );
+    let unfiltered: ProjectV2Chain = serde_json::from_value(json!({
+        "max_targets": 2,
+        "range_tiles": 3,
+        "backtracking": false,
+    }))
+    .expect("unfiltered chain");
+    assert_eq!(unfiltered.target_filter, None);
+    assert!(
+        serde_json::to_value(&unfiltered)
+            .expect("chain")
+            .get("target_filter")
+            .is_none()
+    );
+    assert!(
+        serde_json::from_value::<ProjectV2Chain>(json!({
+            "max_targets": 2,
+            "range_tiles": 3,
+            "backtracking": false,
+            "target_filter": "monsters",
+        }))
+        .is_err(),
+        "unknown chain target filter admitted"
+    );
+}
+
+#[test]
+fn players_only_affects_round_trips_and_needs_no_creatures() {
+    let affects: ProjectV2EffectAffects = serde_json::from_value(json!({
+        "kind": "Players",
+        "top_creature_only": true,
+        "excludes_caster_name": false,
+        "includes_caster": false,
+    }))
+    .expect("players-only affects");
+    assert_eq!(affects.kind, ProjectV2AffectsKind::Players);
+    assert!(affects.creatures.is_empty());
+    assert_eq!(
+        serde_json::to_value(&affects).expect("affects")["kind"],
+        json!("Players")
     );
 }

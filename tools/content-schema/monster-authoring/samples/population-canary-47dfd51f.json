@@ -5,34 +5,40 @@
     "monster_dir": "data-otservbr-global/monster"
   },
   "wiki_reference": {
-    "file": "samples/wiki-population-2026-07-28.json",
-    "sha256": "eca8ae8c179b02a5b8a463b49ec9655f3f153e33df85b6bd0e647447b0d5e6c8"
+    "file": "samples/wiki-population-2026-09-27.json",
+    "sha256": "a31c2d5b143c388a6e9368436ff3b8e901efe91f0252095980cfe647c4d24daf"
   },
-  "scope": "In-memory conversion of every monster file with the D15 wiki values applied; structure validation plus open manifest rows. Not runtime qualification.",
+  "br_fill_reference": {
+    "file": "samples/wiki-br-fill-2026-09-27.json",
+    "sha256": "03c78a85ad1da5c31601bbadaa9255e16dcee9c5377adcdcf821a3ad9bfaff52"
+  },
+  "scope": "In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 127,
-    "fully_resolved": 1523,
+    "blocked": 102,
+    "fully_resolved": 1548,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1112
+    "wiki_adopted_monsters": 1181
   },
   "wiki_adopted_rows": {
-    "Loot2": 12862,
-    "Infobox Creature.mitigation": 739,
+    "Loot2": 12722,
+    "Infobox Creature.mitigation": 748,
     "Infobox Creature.runsat": 122,
     "Infobox Creature.exp": 110,
-    "Infobox Creature.paraimmune": 85,
+    "Infobox Creature.paraimmune": 86,
+    "Infobox Creature.fire modifier": 70,
     "Infobox Creature.pushobjects": 65,
-    "Infobox Creature.hp": 61,
-    "Infobox Creature.fire modifier": 60,
-    "Infobox Creature.energy modifier": 50,
-    "Infobox Creature.ice modifier": 49,
+    "Infobox_Criatura.hp": 65,
+    "Infobox Creature.hp": 64,
+    "Infobox Creature.ice modifier": 56,
+    "Infobox Creature.earth modifier": 55,
+    "Infobox Creature.energy modifier": 54,
     "Infobox Creature.armor": 48,
-    "Infobox Creature.earth modifier": 46,
     "Infobox Creature.senseinvis": 42,
-    "Infobox Creature.death modifier": 35,
-    "Infobox Creature.holy modifier": 34,
-    "Infobox Creature.physical modifier": 33,
+    "Infobox Creature.death modifier": 37,
+    "Infobox Creature.physical modifier": 37,
+    "Infobox_Criatura.exp": 37,
+    "Infobox Creature.holy modifier": 35,
     "Infobox Creature.occurrence": 30,
     "Infobox Creature.pushable": 26,
     "Infobox Creature.illusionable": 18,
@@ -44,13 +50,13 @@
   "blockers_by_monster_count": [
     {
       "blocker": "unresolved_semantics events",
-      "monsters": 55,
+      "monsters": 40,
       "examples": [
         "energized_raging_mage",
-        "gaffir",
-        "guard_captain_quaid",
         "izcandar_champion_of_summer",
-        "izcandar_champion_of_winter"
+        "izcandar_champion_of_winter",
+        "raging_mage",
+        "the_astral_source"
       ]
     },
     {
@@ -66,13 +72,13 @@
     },
     {
       "blocker": "unresolved_semantics mType.onSpawn",
-      "monsters": 11,
+      "monsters": 9,
       "examples": [
         "the_primal_menace",
         "goshnar_s_greed",
-        "goshnar_s_hatred",
-        "mighty_splinter_of_madness",
-        "powerful_soul"
+        "powerful_soul",
+        "soul_sphere",
+        "soulsnatcher"
       ]
     },
     {
@@ -98,17 +104,6 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics attacks[] -> area_damage_named_target",
-      "monsters": 6,
-      "examples": [
-        "ravenous_lava_lurker",
-        "freed_soul",
-        "the_corruptor_of_souls",
-        "the_remorseless_corruptor",
-        "the_source_of_corruption"
-      ]
-    },
-    {
       "blocker": "unresolved_semantics attacks[] -> conditional_summon",
       "monsters": 6,
       "examples": [
@@ -117,17 +112,6 @@
         "the_hunger",
         "the_rage",
         "world_devourer"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics attacks[] -> chain_bounce",
-      "monsters": 5,
-      "examples": [
-        "quara_looter",
-        "rootthing_amber_shaper",
-        "rootthing_bug_tracker",
-        "mould_phantom",
-        "rotten_golem"
       ]
     },
     {
@@ -229,11 +213,10 @@
       ]
     },
     {
-      "blocker": "unresolved_semantics mType.onDisappear",
-      "monsters": 2,
+      "blocker": "unresolved_semantics attacks[] -> area_damage_named_target",
+      "monsters": 1,
       "examples": [
-        "goshnar_s_greed",
-        "goshnar_s_hatred"
+        "a_greedy_eye"
       ]
     },
     {
@@ -276,6 +259,13 @@
       "monsters": 1,
       "examples": [
         "mazoran"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics mType.onDisappear",
+      "monsters": 1,
+      "examples": [
+        "goshnar_s_greed"
       ]
     },
     {
@@ -380,6 +370,7 @@
     "armadile",
     "armenius_creature",
     "ascending_ferumbras",
+    "ashes_of_burning_hatred",
     "ashmunrah",
     "askarak_demon",
     "askarak_lord",
@@ -425,6 +416,7 @@
     "black_sheep",
     "black_sphinx_acolyte",
     "black_vixen",
+    "blaze_of_burning_hatred",
     "blazing_fire_elemental",
     "blemished_spawn",
     "blightwalker",
@@ -796,6 +788,7 @@
     "ferumbras",
     "ferumbras_essence",
     "ferumbras_soul_splinter",
+    "fetter",
     "feverish_citizen",
     "feversleep",
     "fiery_blood",
@@ -806,6 +799,7 @@
     "fire_overlord",
     "firestarter",
     "fish",
+    "flame_of_burning_hatred",
     "flame_of_omrafir",
     "flameborn",
     "flamethrower",
@@ -826,6 +820,7 @@
     "fox",
     "frazzlemaw",
     "freakish_lost_soul",
+    "freed_soul",
     "freegoiz",
     "frenzy",
     "frost_dragon",
@@ -847,6 +842,7 @@
     "fury",
     "fury_of_the_emperor",
     "furyosa",
+    "gaffir",
     "gang_member",
     "gargoyle",
     "gazer",
@@ -900,6 +896,7 @@
     "gorger_inferniarch",
     "gorgo",
     "gorzindel",
+    "goshnar_s_hatred",
     "gozzler",
     "grand_canon_dominus",
     "grand_chaplain_gaunder",
@@ -924,6 +921,7 @@
     "grorlam",
     "grynch_clan_goblin",
     "gryphon",
+    "guard_captain_quaid",
     "guardian_of_tales",
     "guilt",
     "guzzlemaw",
@@ -1022,6 +1020,7 @@
     "kesar",
     "killer_caiman",
     "killer_rabbit",
+    "king_zelos",
     "knight_familiar",
     "knight_s_apparition",
     "knowledge_elemental",
@@ -1106,6 +1105,7 @@
     "magma_bubble",
     "magma_crawler",
     "magma_crystal",
+    "magnor_mournbringer",
     "mahrdis",
     "makara",
     "makeshift_home",
@@ -1175,6 +1175,7 @@
     "midnight_asura",
     "midnight_panther",
     "midnight_spawn",
+    "mighty_splinter_of_madness",
     "mimic",
     "mind_wrecking_dream",
     "minion_of_gaz_haragoth",
@@ -1215,6 +1216,7 @@
     "morik_the_gladiator",
     "mornenion",
     "morshabaal",
+    "mould_phantom",
     "mountain_troll",
     "mozradek",
     "mr_punish",
@@ -1236,6 +1238,7 @@
     "mycobiontic_beetle",
     "naga_archer",
     "naga_warrior",
+    "nargol_the_impaler",
     "necromancer",
     "necromancer_servant",
     "necropharus",
@@ -1373,6 +1376,7 @@
     "quara_constrictor_scout",
     "quara_hydromancer",
     "quara_hydromancer_scout",
+    "quara_looter",
     "quara_mantassin",
     "quara_mantassin_scout",
     "quara_pincher",
@@ -1390,6 +1394,7 @@
     "ratmiral_blackwhiskers",
     "ravenous_beyondling",
     "ravenous_hunger",
+    "ravenous_lava_lurker",
     "raxias",
     "reality_reaver",
     "realityquake",
@@ -1407,6 +1412,8 @@
     "renegade_quara_predator",
     "retainer_of_baeloc",
     "retching_horror",
+    "rewar_the_bloody",
+    "rewar_the_bloody_inv",
     "rhindeer",
     "ribstride",
     "rift_breacher",
@@ -1427,8 +1434,10 @@
     "rocky",
     "rogue_naga",
     "ron_the_ripper",
+    "rootthing_bug_tracker",
     "rorc",
     "rot_elemental",
+    "rotten_golem",
     "rotten_man_maggot",
     "rottie_the_rotworm",
     "rotworm",
@@ -1467,6 +1476,7 @@
     "shadowpelt",
     "shaper_matriarch",
     "shard_of_corruption",
+    "shard_of_magnor",
     "shardhead",
     "shark",
     "sharpclaw",
@@ -1482,6 +1492,7 @@
     "silver_rabbit",
     "sin_devourer",
     "sineater_inferniarch",
+    "sir_baeloc",
     "sir_nictros",
     "sir_valorcrest",
     "skeleton",
@@ -1509,6 +1520,7 @@
     "soul_scourge",
     "souleater",
     "soulless_minion",
+    "spark_of_burning_hatred",
     "spark_of_destruction",
     "sparkion",
     "spawn_of_havoc",
@@ -1609,6 +1621,7 @@
     "the_brainstealer",
     "the_cold_of_winter",
     "the_collector",
+    "the_corruptor_of_souls",
     "the_count",
     "the_count_of_the_core",
     "the_dark_dancer",
@@ -1652,6 +1665,7 @@
     "the_plasmother",
     "the_ravager",
     "the_red_knight",
+    "the_remorseless_corruptor",
     "the_rootkraken",
     "the_sandking_fake",
     "the_scion_of_havoc",
@@ -1662,6 +1676,7 @@
     "the_sinister_hermit_dirty",
     "the_snapper",
     "the_souldespoiler",
+    "the_source_of_corruption",
     "the_spellstealer",
     "the_unarmored_voidborn",
     "the_unwelcome",

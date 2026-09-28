@@ -8,8 +8,10 @@ Canary keeps one catalog file per quest (`lib/core/quests/catalog/*.lua`), Cryst
 (`lib/core/quests.lua`); both describe a quest as missions, each shown while one storage lies between a start and
 an end value, with a journal text per value. That is option A of CONTENT-QUEST-01: a mission is a progress
 track with named stages. Quests are joined by name, missions by name. The output is the whole quest catalogue:
-storyline quests plus the reward-only quests of the chest slice that no storyline quest absorbs. A writer index
-lists, per progress track, where each server's Lua sources set it; the transitions themselves are later work.
+storyline quests, the reward-only quests of the chest slice that no storyline quest absorbs, and the
+script_only quests of `script_quests.json` (a quest the servers implement in scripts with no quest-log
+entry, curated from the wiki coverage sample). A writer index lists, per progress track, where each
+server's Lua sources set it; the transitions themselves are later work.
 """
 import argparse
 import glob
@@ -160,6 +162,33 @@ def mission_transitions(found):
 
 
 TRACK_OWNERS = {norm(track): owner for track, owner in json.loads((ROOT / 'track_owners.json').read_text())['tracks'].items()}
+SCRIPT_QUESTS = json.loads((ROOT / 'script_quests.json').read_text())['quests']
+
+
+def script_only_quests(coverage):
+    """Quests the servers implement in scripts (chests, bosses, world state) with no quest-log entry (§6.2 gap):
+    curated matches of a wiki quest to a script directory and/or the wiki_quest of an auxiliary track
+    (`script_quests.json`), each with its own basis. The namespace follows coverage (D33); the identity slug
+    is the curated key when the wiki spelling and the script directory diverge, else `slug(title)`."""
+    by_title = {row['title']: row for row in coverage['quests']}
+    quests, seen_titles = [], set()
+    for entry in SCRIPT_QUESTS:
+        if entry['title'] in seen_titles:
+            raise SystemExit(f'script_quests.json: duplicate title {entry["title"]!r}')
+        seen_titles.add(entry['title'])
+        wiki = by_title.get(entry['title'])
+        if wiki is None:
+            raise SystemExit(f'script_quests.json: no coverage entry for {entry["title"]!r}')
+        namespace = 'canary' if wiki.get('canary') in ('IMPLEMENTED', 'PARTIAL') else 'crystalserver'
+        key = f'{namespace}:quest/{entry.get("key") or slug(entry["title"])}'
+        quest = {'identity': {'key': key, 'revision': REVISION}, 'display_name': wiki['title'],
+                 'kind': 'script_only', 'shown_in_quest_log': False,
+                 'wiki': {k: wiki[k] for k in ('title', 'pageid', 'revid')}, 'claims': []}
+        requirements = {f: wiki[f] for f in ('premium', 'lvl') if wiki.get(f)}
+        if requirements:
+            quest['requirements_from_wiki'] = requirements
+        quests.append(quest)
+    return quests
 
 
 def auxiliary_tracks(index, progress, catalogue, gates, repos):
@@ -328,6 +357,12 @@ def build(repos, chests_dir, doors_dir, coverage):
             absorbed.append(key)
         else:
             catalogue.append(quest)
+    script_only = script_only_quests(coverage)
+    for quest in script_only:
+        key = quest['identity']['key']
+        if key in storyline or key in reward_only:
+            raise SystemExit(f'script_quests.json: {key} collides with an existing quest')
+        catalogue.append(quest)
     catalogue.sort(key=lambda q: q['identity']['key'])
 
     progress = []
@@ -371,6 +406,7 @@ def build(repos, chests_dir, doors_dir, coverage):
             'transitions_in_both_servers': sum(1 for t in all_transitions if len(t['servers']) == 2),
             'storyline_quests_linked_to_wiki': sum(1 for q in storyline.values() if 'wiki' in q),
             'reward_only_quests_absorbed': len(absorbed),
+            'script_only_quests': len(script_only),
             'catalogue_quests': len(catalogue),
             'by_status': dict(sorted(counts.items())),
         },

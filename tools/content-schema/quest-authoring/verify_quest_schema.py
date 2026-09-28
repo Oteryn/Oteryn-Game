@@ -145,7 +145,7 @@ def gate_case(name, mutate=None, expected=False):
 
 
 gate_case('gate fixture accepted', expected=True)
-gate_case('condition kind is closed', lambda g, c, m: g[1]['condition'].update(kind='vocation'))
+gate_case('condition kind is closed', lambda g, c, m: g[1]['condition'].update(kind='wizard'))
 gate_case('level is positive', lambda g, c, m: g[1]['condition'].update(level=0))
 gate_case('only key doors share a lock', lambda g, c, m: g[1].update(state='shared_lock'))
 gate_case('key doors share a lock', lambda g, c, m: g[2].update(state='per_character_pass'))
@@ -155,6 +155,11 @@ gate_case('progress door names a known claim', lambda g, c, m: g[0]['condition']
 gate_case('key comes from a chest that hands it out', lambda g, c, m: g[2]['condition'].update(key_binding='oteryn:door-key/1'))
 gate_case('gate link basis without a quest', lambda g, c, m: g[0].update(quest=None))
 gate_case('every gate is mapped from a source', lambda g, c, m: m['entries'].pop())
+gate_case('lever gate accepted',
+          lambda g, c, m: g[2].update(condition={'kind': 'lever', 'lever_position': {'x': 1, 'y': 2, 'z': 7}}), expected=True)
+gate_case('lever needs a position', lambda g, c, m: g[2].update(condition={'kind': 'lever'}))
+gate_case('lever gate shares a lock',
+          lambda g, c, m: g[2].update(condition={'kind': 'lever', 'lever_position': {'x': 1, 'y': 2, 'z': 7}}, state='per_character_pass'))
 
 
 
@@ -205,6 +210,13 @@ storyline_case('storyline fixture accepted', expected=True)
 storyline_case('storyline without a start accepted', lambda q, t: (q.update(start=None), t[0].update(start_of=[])) and None, expected=True)
 storyline_case('storyline needs missions', lambda q, t: q.pop('missions'))
 storyline_case('reward-only quest has no missions', lambda q, t: q.update(kind='reward_only', claims=[ref('RewardClaim', 'x')]))
+storyline_case('script-only quest accepted',
+               lambda q, t: (q.update(kind='script_only', wiki={'title': 'X', 'pageid': 1, 'revid': 1}),
+                             q.pop('missions'), q.pop('start'), q.pop('gates')) and None, expected=True)
+storyline_case('script-only quest needs wiki',
+               lambda q, t: (q.update(kind='script_only'), q.pop('missions'), q.pop('start'), q.pop('gates')) and None)
+storyline_case('script-only quest has no missions',
+               lambda q, t: q.update(kind='script_only', wiki={'title': 'X', 'pageid': 1, 'revid': 1}))
 storyline_case('journal kind is closed', lambda q, t: q['missions'][0].update(journal={'kind': 'video'}))
 storyline_case('a stage has text or a template', lambda q, t: q['missions'][1]['journal']['stages'][0].pop('text_ref'))
 storyline_case('a stage has not both', lambda q, t: q['missions'][1]['journal']['stages'][0].update(template={'parts': [], 'reads': []}))
@@ -295,12 +307,54 @@ interaction_case('item, achievement and message children accepted',
 interaction_case('level condition accepted',
                  lambda i, c, m: i['rules'][0]['branch'][1].update(when={'actor_level': {'op': '>=', 'value': 100}, 'negate': False}),
                  expected=True)
+interaction_case('item count condition accepted',
+                 lambda i, c, m: i['rules'][0]['branch'][1].update(
+                     when={'actor_item_count': {'item': ref('Item', 'item/key'), 'op': '>=', 'value': 1}, 'negate': False}),
+                 expected=True)
+interaction_case('item count condition names an item',
+                 lambda i, c, m: i['rules'][0]['branch'][1].update(
+                     when={'actor_item_count': {'op': '>=', 'value': 1}, 'negate': False}))
+interaction_case('item count condition item is an Item',
+                 lambda i, c, m: i['rules'][0]['branch'][1].update(
+                     when={'actor_item_count': {'item': ref('Creature', 'creature/x'), 'op': '>=', 'value': 1}, 'negate': False}))
 interaction_case('consumption of the used item accepted',
                  lambda i, c, m: c.append({'owner': 'Item', 'request': 'consume', 'object': 'used_item'}), expected=True)
 interaction_case('a consumption names what it consumes', lambda i, c, m: c.append({'owner': 'Item', 'request': 'consume'}))
 interaction_case('a hand-out names an item', lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'count': 1}))
 interaction_case('a hand-out item is an Item',
                  lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Creature', 'creature/x'), 'count': 1}))
+interaction_case('a hand-out container may list its contents',
+                 lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Item', 'item/backpack'), 'count': 1,
+                                           'contents': [{'item': ref('Item', 'item/rope'), 'count': 1}]}),
+                 expected=True)
+interaction_case('contents name an item and a count',
+                 lambda i, c, m: c.append({'owner': 'Item', 'request': 'hand_out', 'item': ref('Item', 'item/backpack'), 'count': 1,
+                                           'contents': [{'count': 1}]}))
+interaction_case('an achievement grant names an achievement',
+                 lambda i, c, m: c.append({'owner': 'Achievement', 'request': 'grant', 'achievement': ref('Achievement', 'achievement/y')}),
+                 expected=True)
+interaction_case('a table-driven achievement id keeps its source line',
+                 lambda i, c, m: c.append({'owner': 'Achievement', 'request': 'grant', 'value_source_line': 9}), expected=True)
+interaction_case('an achievement grant is not empty', lambda i, c, m: c.append({'owner': 'Achievement', 'request': 'grant'}))
+interaction_case('an outfit grant names a looktype',
+                 lambda i, c, m: c.append({'owner': 'Outfit', 'request': 'grant', 'looktype': 128, 'addon': 3}), expected=True)
+interaction_case('an outfit grant may keep its source line instead',
+                 lambda i, c, m: c.append({'owner': 'Outfit', 'request': 'grant', 'value_source_line': 9}), expected=True)
+interaction_case('an outfit grant is not empty', lambda i, c, m: c.append({'owner': 'Outfit', 'request': 'grant'}))
+interaction_case('an outfit addon is in range', lambda i, c, m: c.append({'owner': 'Outfit', 'request': 'grant', 'looktype': 128, 'addon': 4}))
+interaction_case('a mount grant names a mount',
+                 lambda i, c, m: c.append({'owner': 'Mount', 'request': 'grant', 'mount': 42}), expected=True)
+interaction_case('a mount grant is not empty', lambda i, c, m: c.append({'owner': 'Mount', 'request': 'grant'}))
+interaction_case('an experience grant names an amount',
+                 lambda i, c, m: c.append({'owner': 'Experience', 'request': 'grant', 'amount': 100}), expected=True)
+interaction_case('an experience grant is not empty', lambda i, c, m: c.append({'owner': 'Experience', 'request': 'grant'}))
+interaction_case('a map mark keeps its source line',
+                 lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'map_mark', 'authoritative': False, 'source_line': 4}),
+                 expected=True)
+interaction_case('a map mark needs its source line',
+                 lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'map_mark', 'authoritative': False}))
+interaction_case('a map mark keeps no label', lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'map_mark',
+                                                                        'authoritative': False, 'source_line': 4, 'label': 'Shop'}))
 interaction_case('a message keeps no text',
                  lambda i, c, m: c.append({'owner': 'Presentation', 'effect': 'message', 'authoritative': False, 'source_line': 4,
                                            'text': 'Hello.'}))

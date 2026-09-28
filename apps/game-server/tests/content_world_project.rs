@@ -227,7 +227,7 @@ fn draft() -> ProjectDraft {
         semantic_schema_version: "reference-schema-v1".to_owned(),
         licensing_metadata: "license:project-owned-v1".to_owned(),
         world_id: "0123456789ab70cd8ef0123456789abc".to_owned(),
-        coordinate_frame: "global-target-2026-07-28".to_owned(),
+        coordinate_frame: "global-target-2026-09-27".to_owned(),
         records: project_records(),
         imports: vec![b4_batch()],
         metadata: vec![AuthorMetadataEntry {
@@ -353,8 +353,14 @@ fn project_keeps_terrain_world_objects_and_loot_typed_and_client_safe() {
             identity: identity("LocalObject", "oteryn:reference.object.project-door"),
             client_projection: ProjectionDocument::ClientSafe,
             states: vec![
-                "oteryn:reference.state.closed".to_owned(),
-                "oteryn:reference.state.open".to_owned(),
+                LocalObjectStateEntryDocument::Typed(LocalObjectStateDocument {
+                    key: "oteryn:reference.state.closed".to_owned(),
+                    collision: LocalObjectCollisionDocument::Present,
+                }),
+                LocalObjectStateEntryDocument::Typed(LocalObjectStateDocument {
+                    key: "oteryn:reference.state.open".to_owned(),
+                    collision: LocalObjectCollisionDocument::Absent,
+                }),
             ],
         },
         ProjectReferenceRecord::Loot {

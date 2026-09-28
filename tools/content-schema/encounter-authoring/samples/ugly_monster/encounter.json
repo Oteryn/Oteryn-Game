@@ -15,14 +15,53 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "gaffir",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/gaffir",
+          "revision": "canary-47dfd51f"
+        }
+      ]
+    },
+    {
+      "role": "guard_captain_quaid",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/guard_captain_quaid",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [],
   "phases": [],
   "state": {
     "counters": [],
-    "flags": [],
-    "timers": []
+    "flags": [
+      {
+        "name": "ugly_monster_present",
+        "initial": false
+      },
+      {
+        "name": "gaffir_called_ugly_monster",
+        "initial": false
+      },
+      {
+        "name": "guard_captain_quaid_called_ugly_monster",
+        "initial": false
+      }
+    ],
+    "timers": [
+      {
+        "name": "ugly_monster_leaves",
+        "duration_ms": 60000,
+        "repeat": false
+      }
+    ]
   },
   "rules": [
     {
@@ -372,6 +411,261 @@
               ]
             }
           ]
+        }
+      ]
+    },
+    {
+      "key": "gaffir_calls_ugly_monster_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "gaffir",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "gaffir_called_ugly_monster",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        },
+        {
+          "kind": "chance_from_amount",
+          "per": 1000000
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ugly_monster",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ugly_monster",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "gaffir_called_ugly_monster",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "gaffir_calls_ugly_monster_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "gaffir",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "gaffir_called_ugly_monster",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        },
+        {
+          "kind": "chance_from_amount",
+          "per": 1000000
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ugly_monster",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ugly_monster",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "gaffir_called_ugly_monster",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "guard_captain_quaid_calls_ugly_monster_on_damage_taken",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "guard_captain_quaid",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "guard_captain_quaid_called_ugly_monster",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        },
+        {
+          "kind": "chance_from_amount",
+          "per": 1000000
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ugly_monster",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ugly_monster",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "guard_captain_quaid_called_ugly_monster",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "guard_captain_quaid_calls_ugly_monster_on_heal_received",
+      "trigger": {
+        "kind": "heal_received",
+        "role": "guard_captain_quaid",
+        "source": "any"
+      },
+      "conditions": [
+        {
+          "kind": "flag",
+          "flag": "guard_captain_quaid_called_ugly_monster",
+          "value": false
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        },
+        {
+          "kind": "chance_from_amount",
+          "per": 1000000
+        }
+      ],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/ugly_monster",
+            "revision": "canary-47dfd51f"
+          },
+          "role": "ugly_monster",
+          "count": 1,
+          "at": "subject_position",
+          "owner": "none",
+          "health": "full"
+        },
+        {
+          "kind": "flag",
+          "flag": "guard_captain_quaid_called_ugly_monster",
+          "value": true
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": true
+        },
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "start"
+        }
+      ]
+    },
+    {
+      "key": "ugly_monster_leaves",
+      "trigger": {
+        "kind": "timer_elapsed",
+        "timer": "ugly_monster_leaves"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "remove",
+          "role": "ugly_monster"
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
+        }
+      ]
+    },
+    {
+      "key": "ugly_monster_death",
+      "trigger": {
+        "kind": "creature_died",
+        "role": "ugly_monster"
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "timer",
+          "timer": "ugly_monster_leaves",
+          "operation": "stop"
+        },
+        {
+          "kind": "flag",
+          "flag": "ugly_monster_present",
+          "value": false
         }
       ]
     }

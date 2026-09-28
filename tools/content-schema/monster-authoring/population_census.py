@@ -20,7 +20,8 @@ import canary_batch as cb
 import validate_monster as vm
 
 ROOT = Path(__file__).resolve().parent
-WIKI = ROOT / 'samples' / 'wiki-population-2026-07-28.json'
+WIKI = ROOT / 'samples' / 'wiki-population-2026-09-27.json'
+BR_FILL = ROOT / 'samples' / 'wiki-br-fill-2026-09-27.json'
 INDEX = ROOT / 'samples' / 'population-bundles-canary-47dfd51f.json'
 BUNDLE_FILES = ('monster.json', 'dependencies.json', 'catalog.json', 'manifest.json')
 OPEN = ('unsupported_source_field', 'unresolved_semantics', 'unresolved_dependency', 'partial_text')
@@ -57,6 +58,8 @@ def main():
     converter = cb.Converter(args.canary, objects, items, names, index)
     wiki_text = WIKI.read_text(encoding='utf-8')
     converter.wiki = {m['monster']: m for m in json.loads(wiki_text)['monsters']}
+    br_text = BR_FILL.read_text(encoding='utf-8')
+    converter.br = {m['monster']: m for m in json.loads(br_text)['monsters']}
 
     files = sorted((args.canary / cb.MONSTER_DIR).rglob('*.lua'))
     outcome = Counter()
@@ -106,7 +109,9 @@ def main():
 
     report = {'source': {'repository': cb.REPOSITORY, 'revision': cb.REVISION, 'monster_dir': cb.MONSTER_DIR},
               'wiki_reference': {'file': str(WIKI.relative_to(ROOT)), 'sha256': hashlib.sha256(wiki_text.encode('utf-8')).hexdigest()},
-              'scope': 'In-memory conversion of every monster file with the D15 wiki values applied; structure validation '
+              'br_fill_reference': {'file': str(BR_FILL.relative_to(ROOT)), 'sha256': hashlib.sha256(br_text.encode('utf-8')).hexdigest()},
+              'scope': 'In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills '
+                       'applied; structure validation '
                        'plus open manifest rows. Not runtime qualification.',
               'monster_files': len(files), 'outcome': dict(sorted(outcome.items())),
               'wiki_adopted_rows': dict(sorted(adopted.items(), key=lambda kv: (-kv[1], kv[0]))),

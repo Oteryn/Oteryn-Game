@@ -48,6 +48,14 @@
         "plant"
       ]
     },
+    "family_profile_basis": {
+      "enum": [
+        "wiki_evidence_fallback"
+      ]
+    },
+    "family_profile_evidence": {
+      "$ref": "#/$defs/familyProfileEvidence"
+    },
     "delivery_task_eligible": {
       "$ref": "#/$defs/bool"
     },
@@ -131,6 +139,14 @@
     "delivery_task_eligible",
     "taxonomy"
   ],
+  "dependentRequired": {
+    "family_profile_basis": [
+      "family_profile_evidence"
+    ],
+    "family_profile_evidence": [
+      "family_profile_basis"
+    ]
+  },
   "$defs": {
     "key": {
       "type": "string",
@@ -2644,6 +2660,169 @@
       },
       "required": [],
       "description": "Editor metadata only; not economy or durable value truth."
+    },
+    "wikiEvidenceSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "const": "fandom"
+        },
+        "page_id": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^https?://"
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[1-9][0-9]*$"
+        },
+        "revision_timestamp": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "captured_at": {
+          "type": "string",
+          "minLength": 1,
+          "format": "date-time"
+        },
+        "revision_sha1": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "content_sha256": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [
+        "source_id",
+        "page_id",
+        "title",
+        "url",
+        "revision",
+        "revision_timestamp",
+        "captured_at",
+        "revision_sha1",
+        "content_sha256"
+      ],
+      "description": "One captured English TibiaWiki (tibia.fandom.com) page revision cited as family_profile evidence; see items-family-fallback.json."
+    },
+    "wikiEvidenceCandidate": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "enum": [
+            "primarytype",
+            "objectclass"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "wiki_source": {
+          "$ref": "#/$defs/wikiEvidenceSource"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "wiki_source"
+      ]
+    },
+    "familyProfileEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "resolution": {
+          "enum": [
+            "direct",
+            "disambiguation"
+          ]
+        },
+        "field": {
+          "enum": [
+            "primarytype",
+            "objectclass"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "wiki_source": {
+          "$ref": "#/$defs/wikiEvidenceSource"
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/wikiEvidenceCandidate"
+          },
+          "minItems": 2,
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "resolution"
+      ],
+      "description": "Present only when family_profile_basis is wiki_evidence_fallback: the admitted-mapping fact that resolved family_profile when no engine attribute did. 'direct' cites the one matched page's field/value; 'disambiguation' cites 2+ candidate pages that all resolved to the same profile (the family invariant across candidates).",
+      "if": {
+        "properties": {
+          "resolution": {
+            "const": "direct"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "field",
+          "value",
+          "wiki_source"
+        ],
+        "not": {
+          "required": [
+            "candidates"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "candidates"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "field"
+              ]
+            },
+            {
+              "required": [
+                "value"
+              ]
+            },
+            {
+              "required": [
+                "wiki_source"
+              ]
+            }
+          ]
+        }
+      }
     }
   }
 }

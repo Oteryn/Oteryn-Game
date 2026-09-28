@@ -696,98 +696,144 @@ impl FreshAdmissionAuthority for ComposedFreshAdmission<'_, '_, '_> {
             channel_id: self.channel_id,
             signing_key_id,
         };
-        // D4: the five-second source-age bound requires evidence fetched for
-        // this attempt; S2 custody retains it and the composition decides.
-        self.evidence
-            .refresh_fresh_admission(
-                self.root,
-                self.holder,
-                &subject.account_id,
-                &subject.signing_key_id,
-            )
-            .await
-            .map_err(|_| Unavailable)?;
-        let now = unix_seconds().ok_or(Unavailable)?;
-        match self
-            .root
-            .publish_fresh_admission_sources(self.character, self.holder, &subject, now)
-            .await
-        {
-            Ok(GuardPublicationDisposition::Applied | GuardPublicationDisposition::Existing) => {}
-            Ok(GuardPublicationDisposition::Stale | GuardPublicationDisposition::Conflict)
-            | Err(_) => return Err(Unavailable),
-        }
-        let composition = self
-            .root
-            .compose_fresh_admission(self.character, self.holder, &subject)
-            .await
-            .map_err(|_| Unavailable)?;
-        let facts = verify_fresh_grant_durability_v1(
-            token,
-            now,
-            &FreshDurabilityTrustContext::from_owning_source(&composition),
-            &FreshDurabilityCurrentAuthorityV1::from_owning_source(&composition),
-        )
-        .map_err(|_| Rejected)?;
-        let authorization = FreshAdmissionCommitAuthorizationV1::new(
-            &facts,
-            attempt.game_session_id,
-            attempt.transport,
-            &composition,
-            now,
-        )
-        .map_err(|_| Rejected)?;
-        let transition =
-            FreshAdmissionClaimTransitionV1::prepare(&composition, &authorization, now)
-                .map_err(|_| Rejected)?;
-        let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
-            .map_err(|_| Rejected)?;
-        let mut prepared = PreparedRequest(None);
-        flow.submit(&mut prepared).map_err(|_| Rejected)?;
-        let request = prepared.0.ok_or(Unavailable)?;
-        // Capacity is reserved only after every semantic/authentication check,
-        // but before the durable GameSession mutation. M+1 therefore rejects
-        // without creating a playable/committed session.
-        let reservation = self.reserve_runtime_player(attempt.game_session_id).await?;
-        match self
-            .root
-            .commit_composed_fresh_admission(self.character, self.holder, &composition, &request)
-            .await
-        {
-            Ok(
-                FreshAdmissionDurableOutcomeV1::Committed(_)
-                | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
-            ) => {}
-            // The commit may have landed with its acknowledgement lost: keep
-            // the exact operation and reconcile it until the outcome is proven.
-            Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => {
-                match self
-                    .reconcile(&request, attempt.game_session_id, attempt.transport)
-                    .await
-                {
-                    ReconciliationDisposition::Committed => {}
-                    ReconciliationDisposition::DefinitelyNotCurrent(refusal) => {
-                        self.rollback_runtime_player(reservation).await?;
-                        return Err(refusal);
-                    }
-                    ReconciliationDisposition::DurableNotOwned => {
-                        // The GameSession is durable but no longer owned by
-                        // this socket; that does not prove it terminal. Keep
-                        // its slot reserved rather than free durable capacity.
-                        return Err(Rejected);
-                    }
-                    ReconciliationDisposition::Unknown => {
-                        // Fail closed. Do not fabricate actor authority and do not
-                        // free a slot whose GameSession may already be durable.
+        // A concurrent attempt for the same account (for example the same grant on a second
+        // socket) may refresh the owner evidence between this attempt's publication,
+        // composition and commit, leaving it stale. Such a round is retried from fresh
+        // evidence, bounded; the grant replay key still admits at most one GameSession.
+        let mut round = 0;
+        let (request, reservation) = loop {
+            round += 1;
+            let last = round >= FRESH_ADMISSION_ROUNDS;
+            let retry = || async {
+                tokio::time::sleep(RECONCILE_BACKOFF).await;
+            };
+            // D4: the five-second source-age bound requires evidence fetched for
+            // this attempt; S2 custody retains it and the composition decides.
+            if self
+                .evidence
+                .refresh_fresh_admission(
+                    self.root,
+                    self.holder,
+                    &subject.account_id,
+                    &subject.signing_key_id,
+                )
+                .await
+                .is_err()
+            {
+                if last {
+                    return Err(Unavailable);
+                }
+                retry().await;
+                continue;
+            }
+            let now = unix_seconds().ok_or(Unavailable)?;
+            match self
+                .root
+                .publish_fresh_admission_sources(self.character, self.holder, &subject, now)
+                .await
+            {
+                Ok(
+                    GuardPublicationDisposition::Applied | GuardPublicationDisposition::Existing,
+                ) => {}
+                Ok(GuardPublicationDisposition::Stale | GuardPublicationDisposition::Conflict)
+                | Err(_) => {
+                    if last {
                         return Err(Unavailable);
                     }
+                    retry().await;
+                    continue;
                 }
             }
-            Ok(_) => {
-                self.rollback_runtime_player(reservation).await?;
-                return Err(Rejected);
+            let Ok(composition) = self
+                .root
+                .compose_fresh_admission(self.character, self.holder, &subject)
+                .await
+            else {
+                if last {
+                    return Err(Unavailable);
+                }
+                retry().await;
+                continue;
+            };
+            let facts = verify_fresh_grant_durability_v1(
+                token,
+                now,
+                &FreshDurabilityTrustContext::from_owning_source(&composition),
+                &FreshDurabilityCurrentAuthorityV1::from_owning_source(&composition),
+            )
+            .map_err(|_| Rejected)?;
+            let authorization = FreshAdmissionCommitAuthorizationV1::new(
+                &facts,
+                attempt.game_session_id,
+                attempt.transport,
+                &composition,
+                now,
+            )
+            .map_err(|_| Rejected)?;
+            let transition =
+                FreshAdmissionClaimTransitionV1::prepare(&composition, &authorization, now)
+                    .map_err(|_| Rejected)?;
+            let mut flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
+                .map_err(|_| Rejected)?;
+            let mut prepared = PreparedRequest(None);
+            flow.submit(&mut prepared).map_err(|_| Rejected)?;
+            let request = prepared.0.ok_or(Unavailable)?;
+            // Capacity is reserved only after every semantic/authentication check,
+            // but before the durable GameSession mutation. M+1 therefore rejects
+            // without creating a playable/committed session.
+            let reservation = self.reserve_runtime_player(attempt.game_session_id).await?;
+            match self
+                .root
+                .commit_composed_fresh_admission(
+                    self.character,
+                    self.holder,
+                    &composition,
+                    &request,
+                )
+                .await
+            {
+                Ok(
+                    FreshAdmissionDurableOutcomeV1::Committed(_)
+                    | FreshAdmissionDurableOutcomeV1::ExistingCommitted(_),
+                ) => {}
+                // The owner evidence moved after composition: proven noncommit.
+                Ok(FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority) if !last => {
+                    self.rollback_runtime_player(reservation).await?;
+                    retry().await;
+                    continue;
+                }
+                // The commit may have landed with its acknowledgement lost: keep
+                // the exact operation and reconcile it until the outcome is proven.
+                Ok(FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable) | Err(_) => {
+                    match self
+                        .reconcile(&request, attempt.game_session_id, attempt.transport)
+                        .await
+                    {
+                        ReconciliationDisposition::Committed => {}
+                        ReconciliationDisposition::DefinitelyNotCurrent(refusal) => {
+                            self.rollback_runtime_player(reservation).await?;
+                            return Err(refusal);
+                        }
+                        ReconciliationDisposition::DurableNotOwned => {
+                            // The GameSession is durable but no longer owned by
+                            // this socket; that does not prove it terminal. Keep
+                            // its slot reserved rather than free durable capacity.
+                            return Err(Rejected);
+                        }
+                        ReconciliationDisposition::Unknown => {
+                            // Fail closed. Do not fabricate actor authority and do not
+                            // free a slot whose GameSession may already be durable.
+                            return Err(Unavailable);
+                        }
+                    }
+                }
+                Ok(_) => {
+                    self.rollback_runtime_player(reservation).await?;
+                    return Err(Rejected);
+                }
             }
-        }
+            break (request, reservation);
+        };
         let actor = self
             .runtime
             .lock()
@@ -839,6 +885,9 @@ impl ControlLossSourceV1 for ChannelOwnedLossSource {
     }
 }
 
+/// Bounded fresh-admission rounds when concurrent owner evidence refreshes leave a
+/// round stale (the first round plus two retries).
+const FRESH_ADMISSION_ROUNDS: u32 = 3;
 /// Bounded reconciliation of one possibly committed admission.
 const RECONCILE_ATTEMPTS: u32 = 5;
 const RECONCILE_BACKOFF: Duration = Duration::from_millis(200);

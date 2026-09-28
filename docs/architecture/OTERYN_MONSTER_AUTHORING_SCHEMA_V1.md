@@ -79,7 +79,7 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D12 | Spell schema extensions are added in census order, each with a batch monster that needs it: area matrix with explicit centre and directional rotation; constant-tick DoT (count, interval, per-tick amount); attribute-modifier condition (skill/stat, percent or absolute); `Ability.variants` with a uniform pick; chain targeting (count, range, backtracking). The damage distribution is a world combat rule, not a per-formula field. | Census frequencies in §8. Canary draws all monster damage with `normal_random`; whether Tibia Global does the same is unproven, so the rule is an OTS hypothesis until checked. |
 | D13 | A spell with custom logic becomes an `Ability` with a `native_behavior` key and its data parameters. Native behaviours are shared and parameterized by pattern (e.g. one path-chain behaviour with an element parameter), not one per source script. The content compiler rejects a key without an implementation. No Lua is admitted; an implementation is written only when a playable monster needs it, and until then the manifest row stays `unresolved_semantics`. | 44 custom-logic scripts cluster into recurring patterns (path chains, summon-N, cast-then-remove-self); §8. |
 | D14 | A spell reference that has no effect in Canary is recorded as `approved_omission`; when the reference-date wiki shows that attack, it is authored as an ordinary Ability from the wiki instead. | `energy beam` returns false for a non-player caster (4 monsters). |
-| D15 | Where the reference-date (2026-07-28) wiki differs from Canary, the wiki value replaces it. So far this is applied to mitigation, `pushable`, loot items missing in Canary and loot probabilities. Loot rate rule: use the highest-version `Loot Statistics` block at the cut (the largest-sample source; other sites such as Tibiopedia are cross-checks only); estimate = drops / kills rounded half-even to 1 ppm, with a 95% Wilson interval recorded. At 10 or more drops the estimate replaces the Canary probability; below 10 the Canary probability is kept and marked low confidence (an item missing in Canary is still added, marked low confidence). An item the infobox lists but the statistics block does not show keeps its Canary probability (probably added after that version). An ambiguous item name is resolved by the item page `itemid`. | The wiki tracks Tibia Global more closely than OTS sources. Batch 1 comparison: `samples/canary-47dfd51f/wiki-2026-07-28.json`. |
+| D15 | Where the reference-date (the programme target date, D33) wiki differs from Canary, the wiki value replaces it. So far this is applied to mitigation, `pushable`, loot items missing in Canary and loot probabilities. Loot rate rule: use the highest-version `Loot Statistics` block at the cut (the largest-sample source; other sites such as Tibiopedia are cross-checks only); estimate = drops / kills rounded half-even to 1 ppm, with a 95% Wilson interval recorded. At 10 or more drops the estimate replaces the Canary probability; below 10 the Canary probability is kept and marked low confidence (an item missing in Canary is still added, marked low confidence). An item the infobox lists but the statistics block does not show keeps its Canary probability (probably added after that version). An ambiguous item name is resolved by the item page `itemid`. | The wiki tracks Tibia Global more closely than OTS sources. Batch 1 comparison: `samples/canary-47dfd51f/wiki-2026-07-28.json`. |
 | D16 | A familiar is split three ways: the familiar creature (one per vocation) stays a monster with `is_familiar`; the summon parameters (vocation, level, mana, cooldown, duration) belong to the player summon `Ability`; the familiar looks are a character cosmetic catalogue with per-character unlocks and selection. The monster keeps `presentation.appearance.selection=owner_familiar_look` with the vocation default look as `asset_binding`. Moving the summon parameters out of the creature and the look catalogue are later admission work. | TibiaWiki: familiars of one vocation differ only by name and look, chosen in "Customize Character". Canary: `data/libs/systems/familiar.lua` `FAMILIAR_ID` default looks, set by `creaturescripts/familiar/on_login.lua`; per-character choice from `data/XML/familiars.xml`. |
 | D17 | Any Item can be a monster corpse; the validator no longer requires the Item capability `is_corpse`. | Canary drops whatever Item id the monster names (45 monster files use ashes, fish, remains and similar items without the corpse flag). |
 | D18 | Registered spell scripts with custom logic are expressed through the 19 shared, parameterized native behaviour patterns of §8.4; boss-specific logic (`boss_form_swap`, `boss_escape_utility`, `map_or_quest_specific`) belongs with the Encounter definitions (D9), not with monster behaviours. Wiki ability scenes stay review evidence (§9.2) and are not adopted for now. | Owner acceptance of the §8.4 grouping (93 blocking scripts, model-assisted with evidence lines). |
@@ -91,6 +91,8 @@ Recorded after the Canary test batches (`tools/content-schema/monster-authoring/
 | D24 | A creature without a visible appearance (Canary `lookType` 0, no `lookTypeEx`, not a familiar) is authored with `appearance.selection: invisible`. | Wild magic traps; the wiki lists them as Traps. |
 | D25 | A combat whose damage type is undefined in the source (`COMBAT_UNDEFINEDDAMAGE` from a missing or wrong constant) is a source data error; the reference-date wiki ability decides the element. More generally, wherever the source is uncertain, the reference-date wiki decides (extends D15). | Owner rule in this session. |
 | D32 | Loot counts follow the reference-date wiki too. When a Canary entry adopts the wiki probability (at least 10 drops), the count observed in Loot Statistics replaces the Canary min-max if it falls outside it; an observed range inside the Canary range is kept, since it is a sample. A Canary `minCount` of 0 (Canary draws the count from 0..max and drops nothing on 0) becomes count 1..max: the wiki estimate already counts only kills with a drop, and without wiki statistics the probability is scaled by max/(max+1), which is exactly what the engine does. Low-confidence entries and items split over several Canary entries keep the Canary counts. | Owner, 2026-09-27 ("używaj wiki do potwierdzania loota dla potworów i bossów"); extends D15. |
+| D33 | The reference date is the programme target date, which the owner moved from 2026-07-28 to 2026-09-27 ("na dzień dzisiejszy"); the owner may move it again. Every wiki value is read at that date and keeps its page revision. The population comparison, the batch comparison and the ability scenes are re-read at 2026-09-27. | Owner decision 2026-09-27, `docs/agents/programs/OTERYN_TARGET_DATE_20260927_DECISION.md`. |
+| D43 | TibiaWiki BR fills health and experience where the Fandom page at the target date is missing or gives no certain value (empty, `?`, `~` or unparsed). The owner's source order puts BR after Fandom, and BR is used for tables and cross-checks. The BR value must be a plain number. BR element modifiers are not used, because "100%" there is often the template default; BR speed and loot are not used either. `wiki_br_capture.py` reads the pages on a hosted runner (the build container gets a Cloudflare bot check). `wiki_br_fill.py` selects the fills into `samples/wiki-br-fill-2026-09-27.json`, and the converter applies them after the D15 values. | Owner answer 2026-09-27 ("Tylko HP i doświadczenie"), after BR gave Dark Knight 7,900 health where Fandom has "?" and Canary 1,800. |
 
 ## 4. Carried semantics
 
@@ -308,6 +310,31 @@ fails, the trail effect is sent on every path tile, then one combat hits the tar
 as a single-target Ability with `path_requirement` (search distance, clear sight) and the
 presentation `path_asset_binding`; the "chain" in the names hits only the target.
 
+The players-only chain picker (`poison chain`, `podzillaphyschain`) is one exact template too. A
+`CALLBACK_PARAM_CHAINPICKER` whose body keeps a target only when it is a player outside a protection
+zone is authored as `Ability.chain.target_filter: players`. A monster caster already cannot hit a
+player in a protection zone (`combat.cpp` `canDoCombat`), so the only effect of the filter is that the
+chain skips other creatures, such as player summons. Any other picker body stays unresolved. This
+resolves Quara Looter, Rootthing Bug Tracker, Mould Phantom and Rotten Golem.
+
+`area_damage_named_target` is probed like `heal_allies_in_area`. A `CALLBACK_PARAM_TARGETTILE` callback that, on each
+tile of the ability area, takes a fixed or rolled amount of health from the top creature through `Creature:addHealth`
+is authored as an extra `damage` effect of damage type `untyped`:
+- the damage bypasses every resistance, mitigation and element, as `addHealth` does in Canary;
+- it affects `players` (players only, not their summons) or `named_creatures` (the monsters the script names), with
+  `top_creature_only`;
+- there is one effect per target group and amount, next to the ability's own combat.
+
+A callback that heals, changes health more than once, hits unnamed monsters, or hits depending on a roll stays
+unresolved. This resolves:
+- Freed Soul;
+- Ravenous Lava Lurker;
+- The Corruptor of Souls;
+- The Remorseless Corruptor;
+- The Source of Corruption.
+
+For example, `remorseless wave` takes 0-600 health from players and 700-1,500 from a stolen soul.
+
 ### 8.7 Owner decisions D21-D25 in the converter
 
 - D21: the 393 random variants of `ghastly dragon curse` collapse into one `geometric` damage over
@@ -331,12 +358,12 @@ presentation `path_asset_binding`; the "chain" in the names hits only the target
 
 `population_census.py` converts every Canary `47dfd51f` monster file in memory, applies the D15
 wiki values of §9.1 and records the result in `samples/population-canary-47dfd51f.json`: of 1,656
-files, 1,523 convert, validate and resolve every manifest row (1,103 before registered spells were
+files, 1,548 convert, validate and resolve every manifest row (1,103 before registered spells were
 converted, 1,315 before wiki adoption, 1,298 before D19, 1,308 before the probed D18 patterns, 1,329
 before the two rules below, 1,345 before `path_requirement`, 1,350 before D21-D25, 1,377 before the first Encounter, 1,383 before the Dream Courts, Forgotten Knowledge and Ferumbras
 Ascension encounters, 1,389 before the Cults of Tibia, Wrath of the Emperor, Rathleton and other
-encounters, 1,427 before the fourth encounter slice, 1,442 before the callback rule below, 1,453 before the D29 encounter slice, 1,463 before the sixth encounter slice, 1,478 before the seventh, 1,486 before the eighth, 1,490 before the ninth, 1,498 before the tenth, 1,505 before the eleventh, 1,511 before the twelfth, 1,517 before the thirteenth);
-127 are blocked; 6 do not convert (five Soul War bosses
+encounters, 1,427 before the fourth encounter slice, 1,442 before the callback rule below, 1,453 before the D29 encounter slice, 1,463 before the sixth encounter slice, 1,478 before the seventh, 1,486 before the eighth, 1,490 before the ninth, 1,498 before the tenth, 1,505 before the eleventh, 1,511 before the twelfth, 1,517 before the thirteenth, 1,523 before the fourteenth, 1,533 before the fifteenth, 1,539 before the players-only chain picker below, 1,543 before the tile damage below);
+102 are blocked; 6 do not convert (five Soul War bosses
 need quest configuration at load and one file is a helper library, not a monster). No bundle fails
 structure validation.
 
@@ -384,17 +411,26 @@ reference, so a regenerated population is checked with `git diff --exit-code` on
 
 ### 9.1 Population wiki comparison
 
-`samples/wiki-population-2026-07-28.json` (`wiki_compare.py --population`) compares the plain
+`samples/wiki-population-2026-09-27.json` (`wiki_compare.py --population`) compares the plain
 Canary conversion of every convertible monster with its TibiaWiki (Fandom) page at the
-2026-07-28 cut: 1,569 monsters compared and 81 without a page under the Canary name. Over the
-infobox facts: 24,153 MATCH, 2,442 DIFF, 5,864 uncertain on the wiki (`?` or `~`, mostly
-`100%?` element modifiers), 61 unparsed and 7,844 unknown. The most frequent differences are
-mitigation (739 monsters), the loot item list (650), flee health (122), experience (110),
-paralysis immunity (85), `pushobjects` (65), health (62) and element modifiers (about 30-70 each).
-A Canary damage immunity counts as a 100% element modifier. Over 14,894 Canary loot entries: 7,136
-inside the 95% interval of the wiki estimate, 5,170 outside it, 2,092 not observed in the
+2026-09-27 target date (D33): 1,569 monsters compared and 81 without a page under the Canary name. Over the
+infobox facts: 24,162 MATCH, 2,491 DIFF, 5,819 uncertain on the wiki (`?` or `~`, mostly
+`100%?` element modifiers), 63 unparsed and 7,829 unknown. The most frequent differences are
+mitigation (748 monsters), the loot item list (649), flee health (122), experience (110),
+paralysis immunity (86), `pushobjects` (65), health (65) and element modifiers (about 30-80 each).
+A Canary damage immunity counts as a 100% element modifier. Over 14,894 Canary loot entries: 7,004
+inside the 95% interval of the wiki estimate, 5,182 outside it, 2,212 not observed in the
 highest-version statistics block, 490 split over several Canary entries and 6 with invalid wiki
-counts.
+counts. Against the 2026-07-28 cut, 932 of the 3,621 cached pages have a newer revision at 2026-09-27. In
+wave A this changes 599 Loot records, mostly probabilities, because the Loot Statistics pages keep growing.
+It also changes 14 Creature profiles, each following a page revision from 2026-08-16 to 2026-09-24:
+- the experience of the five apparitions;
+- mitigation or element modifiers of Lion Knight, Minotaur Idol, Tremor Worm, Betrayed Wraith, Elephant,
+  Nighthunter, Retching Horror and Timira the Many-Headed;
+- a condition immunity of Latrivan.
+
+The 2026-07-28 comparisons (`wiki-population-2026-07-28.json`, `wiki-scenes-2026-07-28.json` and the batch's
+`wiki-2026-07-28.json`) stay as the record of the earlier admission.
 
 The converter adopts only DIFF rows (D15): health, experience, armor, mitigation, element
 modifiers, `pushable`, `pushobjects`, `senseinvis`, paralysis immunity, `illusionable`, flee health
@@ -403,14 +439,16 @@ Bestiary class and summon/convince costs are not adopted. Every adopted value ke
 Canary row as an `approved_omission` and adds a MediaWiki-sourced row. Wiki loot missing in Canary
 is added only when its name resolves to one item: by name, by the item page `itemid`, or by
 dropping the equipped state of an `items.xml` `transformEquipTo` pair. Over all converted
-monsters 739 mitigations and 11,547 loot rows (probabilities and added items) are adopted; 988 of
-the fully resolved monsters carry at least one adopted value.
-Under D32, 740 loot counts of 325 fully resolved monsters take the observed wiki range, and
-Duke Krule's twelve `minCount` 0 entries become count 1..max.
+monsters 748 mitigations and 12,722 loot rows (probabilities, counts and added items) are adopted; 1,181 of
+the fully resolved monsters carry at least one adopted value. Under D43, TibiaWiki BR gives the health of 65
+and the experience of 37 fully resolved monsters whose Fandom value is missing or uncertain; 124 monsters have a BR
+fill in `wiki-br-fill-2026-09-27.json`; the other fills equal Canary or belong to monsters that are not fully resolved.
+Under D32, 971 loot count bounds (a minimum or a maximum) of 334 fully resolved monsters take the
+observed wiki range, and Duke Krule's twelve `minCount` 0 entries become count 1..max.
 
 ### 9.2 Wiki ability scenes
 
-`samples/wiki-scenes-2026-07-28.json` (`wiki_scenes.py`) compares the ability scenes of the
+`samples/wiki-scenes-2026-09-27.json` (`wiki_scenes.py`) compares the ability scenes of the
 creature pages at the cut with the plain Canary conversion; nothing is adopted. A scene names a
 shape of `Module:SceneBuilder/data` (2 caster, 3 target, 1 hit tile) and effect/missile pages whose
 `effectid`/`missileid` is the client id. Canary areas are rebuilt with the engine's `AreaCombat`
@@ -419,9 +457,9 @@ targeted one on its target, a combat without area always hits its target, and a 
 the damage type's default hit effect from `Game::combatGetTypeInfo`). Hit sets are compared relative
 to the anchor under the four rotations.
 
-Over 1,029 monsters with an ability list: 1,986 wiki abilities have no scene; of those with a scene,
-1,056 match a Canary Ability and 407 do not. Among matched abilities the shape is equal in 745 and
-differs in 292 (mostly beam/wave lengths and single-target versus area), the effect id is equal in
-659 (64 of them through the default hit effect; physical damage on a player shows blood) and
-differs in 275, and the missile id is equal in 293 and differs in 159. The scenes are drawings, so
+Over 1,031 monsters with an ability list: 1,990 wiki abilities have no scene; of those with a scene,
+1,065 match a Canary Ability and 411 do not. Among matched abilities the shape is equal in 749 and
+differs in 297 (mostly beam/wave lengths and single-target versus area), the effect id is equal in
+665 (64 of them through the default hit effect; physical damage on a player shows blood) and
+differs in 278, and the missile id is equal in 293 and differs in 160. The scenes are drawings, so
 they are review evidence for a later owner decision, not an automatic D15 adoption (D18).

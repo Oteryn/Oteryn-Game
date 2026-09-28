@@ -274,6 +274,8 @@ if __name__=='__main__':
     case('caster magnitude requires schedule magnitude',caster(None))
     case('schedule magnitude minimum must not exceed maximum',caster({'minimum':300,'maximum':210}))
     case('chain targeting accepted (D12)',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False}),True)
+    case('players-only chain accepted',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False,'target_filter':'players'}),True)
+    case('chain target filter is closed',lambda m,d,c:d['abilities'][0].update(kind='spell',chain={'max_targets':2,'range_tiles':3,'backtracking':False,'target_filter':'monsters'}))
     case('any local Item may be the corpse (D17)',set_value(['d','items',0,'classification','is_corpse'],False),True)
     case('change_target interval 0 disables timed changes',
         lambda m,d,c:m['behavior']['targeting'].__setitem__('change_target',{'interval_ms':0,'chance_percent':8}),True)

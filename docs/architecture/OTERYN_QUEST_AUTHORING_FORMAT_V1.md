@@ -13,7 +13,7 @@
 - Companion: `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` (encounters emit outcomes the quest domain consumes)
 - Machine artifacts: `tools/content-schema/quest-authoring/` (schemas, semantic validator, focused
   checks, Canary + CrystalServer chest, door, quest-log and interaction transcriptions, wiki coverage
-  evidence)
+  evidence, the map check and the readiness map)
 
 ## 1. Problem
 
@@ -144,14 +144,16 @@ point at these definitions.
 | Source behaviour | Oteryn rule (D36) |
 |---|---|
 | `onStepIn`, `onStepOut`, `onAddItem`, `onUse`, `onDeath`/`onKill` on a registered action id, unique id, item or position | `source.edge`: `ON_ENTER`, `ON_LEAVE`, `ON_CONTACT`, `USE`, `ON_DEATH`, `ON_KILL`; the registrations stay as evidence. |
-| `if` on a player storage, a global storage, whether the actor is a player, its level, or the item type, unique id, action id or subtype of the edge source, the object in contact or the use target | Read-only conditions: `quest_stage`, `world_state` (D29), `actor_is_player`, `actor_level`, `object`. `branch`/`otherwise` keep the if/elseif/else structure. |
+| `if` on a player storage, a global storage, whether the actor is a player, its level, how many of an item it carries, or the item type, unique id, action id or subtype of the edge source, the object in contact or the use target | Read-only conditions: `quest_stage`, `world_state` (D29), `actor_is_player`, `actor_level`, `actor_item_count`, `object`. `branch`/`otherwise` keep the if/elseif/else structure. |
 | `player:setStorageValue` | Quest child: a request of the named mission transition (D35), or of a progress track the quest domain still has to declare. |
 | `Game.setStorageValue` | Quest child: world state shared by all players (D29). |
 | `Game.createMonster` | Ability child: a summon effect (GAME-ABILITY-01) at a named anchor. |
-| `player:addItem` | Item child: a hand-out through the DUR-03 item transaction. |
+| `player:addItem` | Item child: a hand-out through the DUR-03 item transaction; items the script then puts into a handed-out container are its `contents`. |
 | `player:removeItem`; `remove` on the item used (`onUse`) or dropped onto the edge (`onAddItem`) | Item child: consumption through DUR-03 (D38), never map state. |
 | `addAchievement` | Achievement child: a grant by the Achievement domain. |
-| `sendMagicEffect`, `sendTextMessage`, `say`, `sendCancelMessage` | Presentation child, never authoritative; a message keeps its source line, never its text (LICENSE-ASSETS.md). |
+| `addOutfit`, `addOutfitAddon`, `addMount`, `addExperience` | Outfit, Mount and Experience children: grants requested from the owning Character domain. |
+| `kv:set`, `addCondition`, `setBossCooldown`, creature removal | Unresolved with a reason that names the missing owner, so the readiness map (§6.7) counts it as a needed feature. |
+| `sendMagicEffect`, `sendTextMessage`, `say`, `sendCancelMessage`, `addMapMark` | Presentation child, never authoritative; a message keeps its source line, never its text (LICENSE-ASSETS.md). |
 | `teleportTo` | Movement child, blocked: no movement owner contract yet (GAME-INTERACTION-01 §19.3). |
 | `transform`, `createItem`, `remove`, `revertItem`, `decay`, `setActionId` on map objects (walls, levers, flames) | WorldObject child, blocked: no world-object state owner contract yet. |
 | Encounter scripts | Stay encounters; they emit outcomes only (D27). |
@@ -192,6 +194,10 @@ Quest (kind reward_only)             content/quests/definitions/
   wiki                               title, pageid, revid (facts only)
   requirements_from_wiki             premium, level (as recorded; not yet typed)
   claims[]                           RewardClaim refs
+
+Quest (kind script_only)             content/quests/definitions/
+  identity, display_name, wiki,      as reward-only quests; no missions, start or gates
+  requirements_from_wiki, claims[]
 
 Quest (kind storyline)               content/quests/definitions/ + missions/
   identity, display_name, wiki,      as reward-only quests; claims[] may be empty
@@ -284,12 +290,12 @@ links):
 | | Count |
 |---|---:|
 | Door positions: in both / Canary only / CrystalServer only | 336 / 5 / 104 |
-| Gates: quest progress / key / level | 184 / 38 / 14 |
+| Gates: quest progress / key / level / lever | 184 / 38 / 14 / 1 |
 | Quest gates reading a reward claim (the Annihilator door) | 1 |
 | Key gates whose key comes from a chest | 24 |
 | Quest gates linked to a wiki quest | 176 |
 | Conflicts (decided, §6.4) | 10 |
-| Unresolved: dedicated-script doors / bare-number quest doors | 7 / 9 |
+| Unresolved: Dawnport vocation doors (an interaction) / doors no script opens / bare-number quest doors | 4 / 2 / 9 |
 
 The ten conflicts are storage names that the servers model differently. Canary gives each of the
 six Kilmaresh sixth-mission mask doors a storage per mask, while CrystalServer gates all six on one
@@ -298,11 +304,26 @@ six Kilmaresh sixth-mission mask doors a storage per mask, while CrystalServer g
 are renamed. The wiki gives each mask its own catacomb door, so the Canary storages are kept; the
 renamed doors are an implementation detail and keep Canary too (§6.4).
 
+Seven doors are opened by their own script, identical in both servers:
+- **Katana Quest door.** A `lever` gate: no player condition; a lever nearby opens and closes it
+  for everyone (`shared_lock`).
+- **Dawnport vocation doors (4).** They never open. A `USE` checks the vocation-choice track,
+  removes mainland items and relocates the player, so they are an interaction, not a gate.
+- **Secret Service door.** Its script only reads the door as the target of a mission item.
+- **One CrystalServer door.** It only restores a lost id; no script sets or reads it.
+
 ### 6.2 Quest log
 
 `samples/questlog/` (`ots_questlog.py`, deterministic, reads the chest and door samples):
-`quests.json` is the whole quest catalogue (storyline quests plus the reward-only quests no
-storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` the mission mapping.
+`quests.json` is the whole quest catalogue (storyline quests, the reward-only quests no storyline
+quest absorbs, and the script-only quests), `progress.json` the progress tracks, `manifest.json` the
+mission mapping.
+
+A **script-only** quest is one both servers implement in scripts (bosses, chests, world state) but
+neither lists in its quest log, for example Soul War, Kilmaresh and Heart of Destruction.
+`script_quests.json` names each one by its wiki title and gives the basis of the match. For 25 the
+wiki title and the script directory match once normalised. For 10 an explicit key covers an
+apostrophe, an article, a plural or a source spelling.
 
 | | Count |
 |---|---:|
@@ -311,7 +332,7 @@ storyline quest absorbs), `progress.json` the progress tracks, `manifest.json` t
 | Journals: per stage / fixed / template | 468 / 38 / 23 |
 | Progress tracks (mission and start / auxiliary, §6.5) / set by both servers' Lua / with no literal writer found | 1,001 (556 / 445) / 704 / 109 |
 | Storyline quests linked to a wiki quest | 52 |
-| Reward-only quests absorbed by a storyline quest / catalogue quests | 21 / 157 |
+| Reward-only quests absorbed by a storyline quest / script-only quests / catalogue quests | 21 / 35 / 192 |
 | Gates / reward claims attached to storyline quests | 138 / 98 |
 | Missions mapped / of which decided from a conflict (§6.4) | 529 / 35 |
 | Transitions / missions with at least one | 1,832 / 422 |
@@ -343,11 +364,12 @@ joined by that key; `interaction.schema.json` and
 |---|---:|
 | Interactions | 1,221 |
 | Edges: `USE` / `ON_ENTER` / `ON_DEATH` / `ON_LEAVE` / `ON_CONTACT` | 599 / 400 / 202 / 14 / 6 |
-| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Presentation | 944 / 208 / 343 (160, 183) / 30 / 2,668 |
+| Children: Quest / Ability / Item (hand-out, consumption) / Achievement / Outfit / Mount / Experience / Presentation | 947 / 208 / 343 (160, 183) / 36 / 14 / 5 / 9 / 2,679 |
 | Children blocked: Movement / WorldObject | 800 / 891 |
 | Quest children naming a mission transition | 215 |
-| Unresolved statements (of which creature removals) / conditions | 2,059 (43) / 1,963 |
-| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 236 / 985 / 37 |
+| Unresolved statements / conditions | 1,908 / 1,916 |
+| Of the statements, naming a missing owner: delayed callback / key-value write / creature removal / condition / boss cooldown | 304 / 56 / 43 / 26 / 25 |
+| Interactions mapped / unresolved / of which decided from a conflict (§6.4) | 256 / 965 / 37 |
 
 An independent spot check of 56 randomly sampled classified lines against their source found no
 misclassification. Most interactions keep some unresolved part: local tables and lookups,
@@ -356,7 +378,8 @@ rather than being guessed. Every track a quest child writes is declared by the c
 
 The Queen of the Banshees shows the result for one quest: 18 interactions; its seven seal flames
 request the seven movement transitions of slice 3 (one per mission, the last one opening the final
-battle); 9 tracks (the seal doors and two helper counters) are undeclared. Its two conflicts keep
+battle); the 9 tracks it writes outside missions (the seal doors and two helper counters) are
+declared as auxiliary tracks (§6.5). Its two conflicts keep
 Canary: the first seal lever's item ids (the wiki is silent) and the first seal's magic walls, which
 CrystalServer triggers elsewhere and closes late, against the wiki.
 
@@ -400,7 +423,8 @@ state. Under D35 the quest domain owns them too, so the catalogue declares each 
 | The script directory whose scripts write the missions of one quest | 8 |
 | `track_owners.json`: assigned from the track and script names and the script code, checked by sampling | 158 |
 
-- 81 tracks belong to a wiki quest that is not in the catalogue yet (`wiki_quest`).
+- The 81 tracks that belonged to a wiki quest missing from the catalogue now name their
+  script-only quest.
 - 8 belong to no quest; their `note` gives the reason, for example world changes, generic helpers and
   an example script.
 - 33 auxiliary tracks are read by door gates.
@@ -410,6 +434,53 @@ that needs no record. No interaction writes an undeclared track.
 
 Both converters expand `local X = Storage.…` aliases before reading writes. That added 216
 transitions to slice 3. A file that shadows `Storage` itself keeps its full paths.
+
+### 6.6 Map check
+
+`samples/map-check/` (`ots_map_check.py`, deterministic) reads Canary's `otservbr.otbm` (release
+v3.6.1, the `mapDownloadUrl` of the pinned revision, sha256 `a80de1dd…`) and CrystalServer's own
+`world.otbm`. Neither map is committed.
+
+| | Count |
+|---|---:|
+| Chest placements with the chest item on the tile (Canary map) | 343 / 343 |
+| Door placements with the door item on the tile / tile present with no expected item | 33 / 337 |
+| Interaction anchors whose tile exists | 313 / 313 |
+| Trigger ids (`aid()`/`uid()` registrations) found on the raw map / stamped at startup / not found | 160 / 124 / 65 |
+
+- Canary stamps chest, door and most trigger ids onto placed items at startup (the Map Attributes
+  Loader tables), so the raw map holds the items but not those ids. The check therefore compares
+  item ids and reads the startup tables, where every listed item is on its tile.
+- The 65 ids not found belong to places loaded at runtime (quest overlay maps) or to scripts
+  nothing on the map triggers; they are listed for review.
+- The two open map questions of §6 are answered. The corpse chest is the same tile with a different
+  corpse item in each map, which confirms the "equivalent" decision. The Wrath of the Emperor chest
+  exists only at each server's own position on its own map: the chest moved between the servers.
+
+### 6.7 Readiness map
+
+`samples/readiness/readiness.json` (`ots_readiness.py`, from the committed samples) lists, per
+quest, the engine features it needs and the data gaps it still has. It joins interactions to
+quests through the tracks they read or write, then through the script directory.
+
+Built in the order that completes the most quests first, the features give (192 quests):
+
+| Built so far | Quests complete on the engine side (without data gaps) |
+|---|---:|
+| `USE` trigger and reward claim | 75 (75) |
+| + world objects, teleports, step triggers | 88 (76) |
+| + item consumption, kill triggers, quest state | 95 (78) |
+| + NPC dialogue and progress doors | 121 (98) |
+| + delayed callbacks, item hand-out, summons, achievements, conditions | 158 (99) |
+| + creature removal, boss cooldowns, key-value state, outfits, mounts, experience | 192 (99) |
+
+- The reward chest is the first target: with the `USE` trigger it completes 75 quests.
+- The Queen of the Banshees needs ten features, including summons and delayed callbacks, and still
+  has 18 data gaps in 9 interactions.
+- 29 of 1,221 interactions join no catalogue quest. They are generic scripts (Rookgaard helpers,
+  Candia bosses, Marapur, the Raging Mage tower, Soulpit and others), not quest content.
+  Five script directories whose name differs from their quest key are joined explicitly
+  (`DIRECTORY_QUESTS`).
 
 ## 7. Ownership
 
@@ -422,7 +493,7 @@ transitions to slice 3. A file that shadows `Storage` itself keeps its full path
   child is executed by its owner (quest, ability, item transaction), never by the interaction.
 - Gates: Content (definition and placements). Quest and level checks read character state; a key
   door's lock is channel or instance world-object state.
-- Quest records: `content/quests/definitions/` (`reward_only`, `storyline`) and
+- Quest records: `content/quests/definitions/` (`reward_only`, `script_only`, `storyline`) and
   `content/quests/missions/`.
 - Mission progress: Character persistence (one integer per track), shared across channels. Only the
   quest domain writes it, by validating a requested transition against the current stage (D35);
@@ -460,7 +531,9 @@ A player completing The Queen of the Banshees needs:
 | Quest lowering from content | none | a Quest/Interaction definition family in the Reference linker |
 
 The smallest playable slice is a reward chest: a `USE` trigger, one DUR-03 hand-out and a per-character
-claim. It needs only GAME-INTERACTION-01 and DUR-03 accepted and a claim store. A full storyline quest
+claim. It needs only GAME-INTERACTION-01 and DUR-03 accepted and a claim store, and it completes 75
+quests on the engine side (§6.7). It also needs the first durable inventory: today only XP persists,
+and item weight and capacity limits are still `PARITY_PENDING_EVIDENCE` (GAME-ITEM-01). A full storyline quest
 needs every row above.
 5. TibiaWiki BR is not captured: `www.tibiawiki.com.br` answers this capture host with a
    Cloudflare challenge.

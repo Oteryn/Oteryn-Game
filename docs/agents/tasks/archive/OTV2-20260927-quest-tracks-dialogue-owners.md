@@ -19,7 +19,7 @@ created_at: 2026-09-27
 updated_at: 2026-09-27
 execution_policy: continuous_progress
 owned_paths:
-  - docs/agents/tasks/active/OTV2-20260927-quest-tracks-dialogue-owners.md
+  - docs/agents/tasks/archive/OTV2-20260927-quest-tracks-dialogue-owners.md
   - docs/architecture/OTERYN_QUEST_AUTHORING_FORMAT_V1.md
   - docs/architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md
   - docs/architecture/OTERYN_REWARD_CHEST_PLAYABLE_SLICE_DECISIONS_V1.md

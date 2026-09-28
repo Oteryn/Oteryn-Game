@@ -35,12 +35,37 @@
           "revision": "canary-47dfd51f"
         }
       ]
+    },
+    {
+      "role": "goshnars_megalomania",
+      "creatures": [
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_megalomania_blue",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_megalomania_green",
+          "revision": "canary-47dfd51f"
+        },
+        {
+          "family": "Creature",
+          "key": "canary:creature/goshnar_s_megalomania_purple",
+          "revision": "canary-47dfd51f"
+        }
+      ]
     }
   ],
   "anchors": [],
   "phases": [],
   "state": {
-    "counters": [],
+    "counters": [
+      {
+        "name": "madness",
+        "initial": 0
+      }
+    ],
     "flags": [],
     "timers": []
   },
@@ -84,6 +109,62 @@
             "revision": "canary-47dfd51f"
           },
           "health": "full"
+        }
+      ]
+    },
+    {
+      "key": "mighty_splinter_absorbed",
+      "trigger": {
+        "kind": "creature_spawned",
+        "role": "mighty_splinter_of_madness"
+      },
+      "delay_ms": 120000,
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "say",
+          "subject": {
+            "role": "mighty_splinter_of_madness"
+          },
+          "text": "Goshnar's Megalomania feeds on its own madness and becomes stronger!",
+          "mode": "say"
+        },
+        {
+          "kind": "remove",
+          "triggering": true
+        },
+        {
+          "kind": "counter",
+          "counter": "madness",
+          "operation": "add",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "key": "madness_hardens_megalomania",
+      "trigger": {
+        "kind": "damage_taken",
+        "role": "goshnars_megalomania",
+        "source": "player"
+      },
+      "conditions": [
+        {
+          "kind": "counter_compare",
+          "counter": "madness",
+          "op": ">",
+          "value": 0
+        }
+      ],
+      "actions": [
+        {
+          "kind": "attribute",
+          "role": "goshnars_megalomania",
+          "attribute": "defense",
+          "operation": "add",
+          "value": {
+            "counter": "madness"
+          }
         }
       ]
     }

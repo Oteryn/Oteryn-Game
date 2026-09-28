@@ -77,13 +77,19 @@ fn source() -> Result<ReferencePlayableContentSource, ContentError> {
         package_manifest,
         content_lock,
         world_id: world_id()?,
-        coordinate_frame: CoordinateFrameRef::new("global-target-2026-07-28")?,
+        coordinate_frame: CoordinateFrameRef::new("global-target-2026-09-27")?,
         definitions: vec![
             ReferenceDefinition {
                 definition: object_ref.clone(),
                 kind: ReferenceDefinitionKind::LocalObjectStates(vec![
-                    closed.clone(),
-                    open.clone(),
+                    LocalObjectStateDefinition {
+                        key: closed.clone(),
+                        collision: LocalObjectCollisionPresence::Present,
+                    },
+                    LocalObjectStateDefinition {
+                        key: open.clone(),
+                        collision: LocalObjectCollisionPresence::Absent,
+                    },
                 ]),
                 client_projection: ClientProjectionClass::ClientSafe,
             },
@@ -437,6 +443,7 @@ fn source_with_target_claim(
             }],
             evidence.clone(),
         ),
+        local_object_initial_state: Some(ProductionKey::new("oteryn:reference.state.closed")?),
     };
     candidate.placements.push(placement);
     Ok(candidate)
@@ -450,6 +457,24 @@ fn source_with_ordered_target_claim(
         field_key: ProductionKey::new("oteryn:reference.field.local-door")?,
         placement_keys: vec![candidate.placements[0].key.clone()],
         evidence,
+    });
+    Ok(candidate)
+}
+
+fn source_with_extra_local_object_state(
+    key: &str,
+    collision: LocalObjectCollisionPresence,
+) -> Result<ReferencePlayableContentSource, ContentError> {
+    let mut candidate = source()?;
+    let ReferenceDefinitionKind::LocalObjectStates(states) = &mut candidate.definitions[0].kind
+    else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable local object probe changed kind",
+        ));
+    };
+    states.push(LocalObjectStateDefinition {
+        key: ProductionKey::new(key)?,
+        collision,
     });
     Ok(candidate)
 }
@@ -475,13 +500,36 @@ fn valid_reference_model_without_unproven_target_claims_links() -> Result<(), Co
         })
     ));
 
+    let ReferenceDefinitionKind::LocalObjectStates(server_states) = &canonical.definitions[0].kind
+    else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable local object probe changed kind",
+        ));
+    };
+    let closed = server_states
+        .iter()
+        .find(|state| state.key.as_str() == "oteryn:reference.state.closed")
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable local object probe missing closed state",
+        ))?;
+    let open = server_states
+        .iter()
+        .find(|state| state.key.as_str() == "oteryn:reference.state.open")
+        .ok_or(ContentError::InvalidArtifact(
+            "reference-playable local object probe missing open state",
+        ))?;
+    assert_eq!(closed.collision, LocalObjectCollisionPresence::Present);
+    assert_eq!(open.collision, LocalObjectCollisionPresence::Absent);
+
     let client = canonical.client_safe_definitions();
     assert_eq!(client.len(), 1);
     assert_eq!(client[0].definition.family(), DefinitionFamily::LocalObject);
-    assert!(matches!(
-        client[0].kind,
-        ClientSafeDefinitionKind::LocalObjectStates(_)
-    ));
+    let ClientSafeDefinitionKind::LocalObjectStates(client_states) = &client[0].kind else {
+        return Err(ContentError::InvalidArtifact(
+            "reference-playable local object client projection changed kind",
+        ));
+    };
+    assert_eq!(client_states, server_states);
     Ok(())
 }
 
@@ -1209,6 +1257,138 @@ fn transition_requires_declared_local_object_state() -> Result<(), ContentError>
     assert!(matches!(
         link_reference_playable(candidate),
         Err(ContentError::MissingReference { .. })
+    ));
+    Ok(())
+}
+
+#[test]
+fn local_object_definition_rejects_empty_state_vocabulary() -> Result<(), ContentError> {
+    let mut candidate = source()?;
+    candidate.definitions[0].kind = ReferenceDefinitionKind::LocalObjectStates(vec![]);
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable local object requires finite state vocabulary"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn local_object_definition_rejects_duplicate_state_key_regardless_of_collision()
+-> Result<(), ContentError> {
+    let mut candidate = source()?;
+    candidate.definitions[0].kind = ReferenceDefinitionKind::LocalObjectStates(vec![
+        LocalObjectStateDefinition {
+            key: ProductionKey::new("oteryn:reference.state.closed")?,
+            collision: LocalObjectCollisionPresence::Present,
+        },
+        LocalObjectStateDefinition {
+            key: ProductionKey::new("oteryn:reference.state.closed")?,
+            collision: LocalObjectCollisionPresence::Absent,
+        },
+    ]);
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::DuplicateKey(_))
+    ));
+    Ok(())
+}
+
+#[test]
+fn local_object_placement_missing_initial_state_rejects() -> Result<(), ContentError> {
+    let mut candidate = source_with_target_claim(accepted_case_binding()?)?;
+    candidate.placements[0].local_object_initial_state = None;
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable local object placement requires an authored initial state"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn local_object_placement_unknown_initial_state_rejects() -> Result<(), ContentError> {
+    let mut candidate = source_with_target_claim(accepted_case_binding()?)?;
+    candidate.placements[0].local_object_initial_state =
+        Some(ProductionKey::new("oteryn:reference.state.unavailable")?);
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::MissingReference { .. })
+    ));
+    Ok(())
+}
+
+#[test]
+fn local_object_placement_with_valid_initial_state_reaches_evidence_promotion()
+-> Result<(), ContentError> {
+    // Protected CW3 currently has no accepted CONTENT_WORLD target-sensitive evidence binding
+    // (`REFERENCE_TARGET_CLAIM_CASE_BINDINGS` above is deliberately empty), so no placement can
+    // fully link yet. A valid, in-vocabulary initial state must still clear this task's own
+    // fail-closed gate and let the placement fail only on that pre-existing evidence boundary,
+    // not on the initial-state check added by this task.
+    let candidate = source_with_target_claim(accepted_case_binding()?)?;
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::InvalidArtifact(
+            "target-sensitive Reference claim lacks promotable evidence"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn placement_rejects_local_object_initial_state_on_non_local_object_definition()
+-> Result<(), ContentError> {
+    let mut candidate = source_with_target_claim(accepted_case_binding()?)?;
+    candidate.placements[0].definition = candidate.definitions[1].definition.clone();
+    assert!(matches!(
+        link_reference_playable(candidate),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable placement declares a local object initial state for a non-local-object definition"
+        ))
+    ));
+    Ok(())
+}
+
+#[test]
+fn retag_transition_requires_matching_local_object_collision_class() -> Result<(), ContentError> {
+    let object_ref = source()?.definitions[0].definition.clone();
+    let capability = OwnerCapabilityRequirement {
+        capability_key: ProductionKey::new("oteryn:runtime.capability.local-object-transition")?,
+    };
+
+    let mut same_collision = source_with_extra_local_object_state(
+        "oteryn:reference.state.sealed",
+        LocalObjectCollisionPresence::Present,
+    )?;
+    same_collision.transitions.push(TransitionBinding {
+        key: TransitionKey::new("oteryn:reference.transition.retag-same-class")?,
+        definition: object_ref.clone(),
+        source_state: ProductionKey::new("oteryn:reference.state.closed")?,
+        normalized_intent_family: ProductionKey::new(LOCAL_OBJECT_RETAG_INTENT_FAMILY)?,
+        target_state: ProductionKey::new("oteryn:reference.state.sealed")?,
+        owner_capability: capability.clone(),
+        policy_guard_refs: vec![],
+    });
+    assert!(link_reference_playable(same_collision).is_ok());
+
+    let mut mismatched_collision = source()?;
+    mismatched_collision.transitions.push(TransitionBinding {
+        key: TransitionKey::new("oteryn:reference.transition.retag-mismatch")?,
+        definition: object_ref,
+        source_state: ProductionKey::new("oteryn:reference.state.closed")?,
+        normalized_intent_family: ProductionKey::new(LOCAL_OBJECT_RETAG_INTENT_FAMILY)?,
+        target_state: ProductionKey::new("oteryn:reference.state.open")?,
+        owner_capability: capability,
+        policy_guard_refs: vec![],
+    });
+    assert!(matches!(
+        link_reference_playable(mismatched_collision),
+        Err(ContentError::InvalidArtifact(
+            "reference-playable RETAG transition must preserve local-object collision class"
+        ))
     ));
     Ok(())
 }
