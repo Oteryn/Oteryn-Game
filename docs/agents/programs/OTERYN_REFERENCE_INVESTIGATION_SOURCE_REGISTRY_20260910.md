@@ -82,6 +82,8 @@ Limits:
 
 Possible evidence outcomes: `PROVEN`, or input to `DERIVED`; current post-target material also requires target-continuity analysis.
 
+Access (2026-09-28): tibia.com blocks the cloud containers, GitHub runners and web fetch tools, so agents do not fetch it. For the manual, read `docs/reference/tibia-manual/` (Oteryn-written notes on all 19 sections, owner capture 2026-09-28). The full text is private, in Jira `KAN-33`. For library data such as spells and creatures, use the tibia.com capture tool (`tools/official-capture/tibiacom_capture.py`), which the owner runs locally.
+
 ---
 
 ### `GLOBAL_BLACKBOX` — source role `CONTROLLED_GLOBAL_OBSERVATION`
