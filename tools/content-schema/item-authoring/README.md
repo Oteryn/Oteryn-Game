@@ -101,13 +101,16 @@ python lower_promotion_packet.py --source /path/to/crystalserver --self-check
 python lower_promotion_packet.py --source /path/to/crystalserver --check
 ```
 
-The committed output is `samples/promotion-crystal-ff7ede5.json`: 13,292 rows over
-10,674 Items (`charges.count` 121, `container.capacity` 453, `presentation.name`
-10,674, `protection.armor` 429, `weapon.attack` 621, `weapon.defense` 636,
+The committed output is `samples/promotion-crystal-ff7ede5.json`: 14,173 rows over
+11,555 Items (`charges.count` 121, `container.capacity` 453, `presentation.name`
+11,555, `protection.armor` 429, `weapon.attack` 621, `weapon.defense` 636,
 `weapon.extra_defense` 160, `weapon.hit_chance` 56, `weapon.range_cells` 142;
 ~3.4 MiB). Its `schema`/`profile`/`status`/`next_action` are deliberately different
 literal strings from the pinned Rust constants and from the wired packet's own values,
 so this candidate can never be mistaken for, or silently accepted as, the wired one.
+The #1048 Rust wiring pins an earlier copy (13,292 rows over 10,674 Items, before the wiki
+family fallback and blessing charms added Items); re-pinning that copy belongs to the
+promotion-pass assignment.
 
 This is a v1 lowering **candidate**, not a Rust-side claim: wiring it into
 `apps/game-server/src/content/cw2_b1_import.rs` (pinned byte-count/digest constants

@@ -773,6 +773,10 @@ PRIMARYTYPE_PROFILE = {
     "trees": "plant",
     "mushrooms": "plant",
     "soul cores": "material_valuable",
+    # Owner decision 2026-09-28: single-use charms that grant one blessing on use
+    # (Crystal `data/libs/systems/blessing.lua` `Blessings.All[*].charm`); the blessing
+    # effect itself is runtime behaviour, not part of the family.
+    "blessing charms": "progression_material",
 }
 # English TibiaWiki (tibia.fandom.com) infobox `primarytype` uses a handful of exact
 # vocabulary variants of the values above (case-folding and pluralization only, verified
