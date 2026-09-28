@@ -99,6 +99,11 @@ adoption, `ai/**` compilation, Ability wiring (all AI-2/AI-3/AI-4). No wiring of
   - Caps are checked against the family's own `TimerFamily::registered_maximum`, never a caller value; exceeding it gives `FamilyCapExceedsRegisteredMaximum`.
   - `CatchUpPolicy` (`SkipToLatest` for think, `DeadlineState` for respawn, per §4.9) is fixed at construction. `SkipToLatest` fires at most once per key and reports `clock.now()` rather than the stale deadline.
 - **Tests:** 20 owner_timer tests cover ordering, determinism, caps, cross-scope and handoff refusal, stamps, stale purge and catch-up.
+- **Codex on `7bd0fc0`** (P2 only):
+  - Fixed: `SkipToLatest` replacement now re-sorts, so deadline order holds across keys. A test covers it.
+  - Deferred to AI-2 as **binding items**, per the P1-only stop rule; the lane has no live caller yet:
+    - (a) Keep bounded replay evidence of fired, cancelled or purged `(family, occurrence)` identities, so an occurrence is never scheduled twice in a lane's lifetime (4126347275).
+    - (b) Make `RuntimeWorkStamp` provenance unforgeable: `schedule` accepts only an ordinal this exact scoped fence issued (4126347262).
 - **Spec gap:** live wiring into `ChannelRuntimeV1`'s owner cycle needs `runtime_actor_carrier.rs`, which is forbidden here. AI-2 adds the lane field and the `schedule`/`drain_due` calls.
 
 ## Validation

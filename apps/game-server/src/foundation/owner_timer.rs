@@ -445,6 +445,14 @@ where
             }
             kept.push(entry);
         }
+        // A replacement keeps its key's earlier slot, so restore deadline order afterwards.
+        kept.sort_by(|left, right| {
+            (left.due, left.scheduling_stamp.ordinal(), left.sequence).cmp(&(
+                right.due,
+                right.scheduling_stamp.ordinal(),
+                right.sequence,
+            ))
+        });
 
         kept.into_iter()
             .map(|entry| {
@@ -1191,5 +1199,49 @@ mod tests {
         assert_eq!(fired[0].occurrence, 2);
         assert_eq!(fired[0].due, clock.now());
         assert_eq!(lane.pending_len(), 0);
+    }
+
+    #[test]
+    fn skip_to_latest_replacement_keeps_deadline_order_across_keys() {
+        // Key A is due at t1 and t3, key B at t2: after A's t1 entry is replaced by its t3
+        // entry, B (t2) must still fire before A (t3).
+        let gen1 = generation(1);
+        let scope = scope_for(1);
+        let mut lane: OwnerTimerLane<TestFamily, u64> = OwnerTimerLane::for_generation(
+            scope,
+            gen1,
+            [(
+                TestFamily::Respawn,
+                FamilyPolicy {
+                    max_pending: 2,
+                    catch_up: CatchUpPolicy::SkipToLatest,
+                },
+            )],
+        )
+        .expect("cap within the registered maximum");
+        let mut owner_fence = fence(scope, gen1);
+        let (creature_a, creature_b) = (actor(41), actor(42));
+        for (occurrence, target, due) in [
+            (1, creature_a, 1_000),
+            (3, creature_b, 2_000),
+            (2, creature_a, 3_000),
+        ] {
+            let stamp = issue_stamp(&mut owner_fence, gen1);
+            lane.schedule(
+                &owner_fence,
+                stamp,
+                TestFamily::Respawn,
+                occurrence,
+                Some(target),
+                SemanticTimeMicros::from_micros(due),
+            )
+            .expect("schedule");
+        }
+
+        let clock = VirtualOwnerClock::new(SemanticTimeMicros::from_micros(5_000));
+        let fired = lane.drain_due(&clock, &owner_fence, |_| true);
+
+        let order: Vec<u64> = fired.iter().map(|timer| timer.occurrence).collect();
+        assert_eq!(order, vec![3, 2]);
     }
 }
