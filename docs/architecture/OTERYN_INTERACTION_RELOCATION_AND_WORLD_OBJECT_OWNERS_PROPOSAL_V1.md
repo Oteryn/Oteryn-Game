@@ -552,10 +552,39 @@ satisfied: a new, optional, content-level field on `LocalObjectStateDefinition`,
 `attribute_variant_of: Option<ProductionKey>`, names which other declared state (if any) a state is
 a pure attribute-variant of — same `collision`, differing only in per-placement
 `local_object_state_attributes`. The inverse-uniqueness search now accepts a candidate whose
-`target_state` *either* equals the forward transition's `source_state` *or* is that source state's
-declared `attribute_variant_of`, still requiring *exactly one* matching candidate — uniqueness is
-unchanged, only the equality test is widened. §9 (design point 3, corrected this round) registers
-each post-revert state with `attribute_variant_of` set to the natural source state it stands in for.
+`target_state` *either* equals the forward transition's `source_state` *or* has its own declared
+`attribute_variant_of` equal to the forward transition's `source_state` — i.e.
+`states[candidate.target_state].attribute_variant_of == Some(forward.source_state)` (Round 24, Codex
+finding 4122246542: an earlier phrasing of this predicate read backwards and would have checked the
+*source* state's own `attribute_variant_of` instead) — still requiring *exactly one* matching
+candidate — uniqueness is unchanged, only the equality test is widened. §9 (design point 3, corrected
+this round) registers each post-revert state with its *own* `attribute_variant_of` set to the natural
+source state it stands in for.
+
+Round 24 correction (owner-authorized; PR #1099 round 4 on head `93940915`, 2 P1s + 1 P2, all
+accepted, owner stop rule applies): (1) Codex finding 4122246542 — Round 23's own predicate for the
+widened inverse-uniqueness check read backwards: it said a candidate qualifies when its `target_state`
+"is that source state's declared `attribute_variant_of`," which names the *source* state's own field,
+not the *candidate*'s. The correct, and now-corrected, predicate is
+`states[candidate.target_state].attribute_variant_of == Some(forward.source_state)` — checking the
+*candidate target's own* declared field against the forward transition's `source_state`, never the
+reverse. Fixed everywhere the rule is stated: both §7 citations above, §9's design point 3, and the
+matching test obligation. (2) Codex finding 4122246550 — the still-binding "revert restores exactly
+the pre-operation state" test obligation (below) did not account for the widened rule: a
+`revert_destination`-bearing revert now lands on a declared `attribute_variant_of`, not literally the
+pre-operation `source_state` key. Added a narrow, explicit exception to that obligation: the revert
+lands on the declared variant — same `collision`, differing only in declared attributes — only when
+the bound inverse carries one; scanned §7 and §9 for every other "exactly the prior state" claim
+this could contradict and found none beyond the one fixed (the encounter-format line-144 quotation
+and the C3 "no partial footprint" obligation are unaffected — evidence above). (3) Codex finding
+4122246563 (P2, not designed for, owner stop rule) — pre-authored `CREATE` teleporters carrying
+`destination` together with `revert_after_ms` at an authored anchor (`death_priest_shargon`,
+`the_ravager`, and any other matching samples found this round) are a *distinct* shape from open
+decision 8's runtime-resolved-anchor gap: these have a pre-authored `PlacementRef`, so `bind` is not
+structurally blocked the way `death_position` creates are, but this section's design (transform-only,
+design point 4) does not cover a `CREATE` carrying `destination` either. Recorded as new open
+decision 9, not designed for; corrected the corpus-enumeration claim (Problem section below) so it no
+longer asserts completeness.
 
 ### Problem
 
@@ -802,9 +831,12 @@ today.
    duration (RECOMMENDED).** `revert_after_ms` is admissible only on a bound transition with exactly
    one *inverse* — a transition bound on the same runtime instance, for the same placement
    definition, whose `source_state` equals this transition's `target_state` and whose `target_state`
-   either equals this transition's `source_state` or is that source state's declared
-   `attribute_variant_of` (Round 23, §9 below: `LocalObjectStateDefinition.attribute_variant_of`,
-   same `collision`, differing only in per-placement attributes) *and* whose `normalized_intent_family`
+   either equals this transition's `source_state` or has its *own* declared `attribute_variant_of`
+   equal to this transition's `source_state` (Round 24, correcting Round 23's reversed phrasing, Codex
+   finding 4122246542: `states[candidate.target_state].attribute_variant_of ==
+   Some(this_transition.source_state)`, never the other direction; §9 below:
+   `LocalObjectStateDefinition.attribute_variant_of`, same `collision`, differing only in
+   per-placement attributes) *and* whose `normalized_intent_family`
    is this transition's matching inverse family (TRANSFORM↔TRANSFORM, CREATE↔REMOVE, RETAG↔RETAG,
    OPEN↔CLOSE); `bind` rejects (`InvalidBinding`) a `revert_after_ms`-carrying transition with zero
    such matches or more than one — an ambiguous inverse is exactly as invalid as a missing one — so
@@ -1007,7 +1039,9 @@ thing, not two — its lifecycle-record store).
   (`apps/game-server/src/world_runtime.rs` ~590-750): for every transition invoked with
   `revert_after_ms`, find every OTHER bound transition for the same `definition` whose
   `source_state` equals this one's `target_state`, whose `target_state` either equals this one's
-  `source_state` or is that source state's declared `attribute_variant_of` (Round 23, §9 below —
+  `source_state` or has its *own* declared `attribute_variant_of` equal to this one's `source_state`
+  — `states[candidate.target_state].attribute_variant_of == Some(this.source_state)`, never the
+  reverse (Round 24, correcting Round 23's reversed phrasing, Codex finding 4122246542; §9 below —
   `LocalObjectStateDefinition.attribute_variant_of: Option<ProductionKey>`, same `collision`,
   differing only in per-placement `local_object_state_attributes`; `None` for every state outside
   §9's covered shape, so this widening is inert for ordinary content), AND whose
@@ -1199,7 +1233,8 @@ thing, not two — its lifecycle-record store).
   and stops; do not retry it on a later wake (decided below, not left open) — a later duplicate
   presentation is answered by step 2 of the presentation order above, never a fresh occupancy check.
 
-### Open decisions for the owning lane (Rounds 15/16/19/20/21; item 8 added from §9 Round 2)
+### Open decisions for the owning lane (Rounds 15/16/19/20/21; item 8 added from §9 Round 2; item 9
+added from §9 Round 4)
 
 These are genuinely open — this document deliberately does not resolve them, per PLAYABLE_FIRST; the
 owner's Round 21 acceptance covers this section's *direction* only (`DecisionStatus` above) and
@@ -1326,17 +1361,37 @@ architecture decision.
    those three all author `map_item create` at `at: death_position`
    (`tools/content-schema/encounter-authoring/samples/mazzinor/encounter.json` lines 47-57;
    `.../gaz_haragoth/encounter.json` lines 123-132; `.../cult_soul_remains/encounter.json` lines
-   53-62 and 70-79), a runtime-resolved position with no pre-authored `PlacementRef`.
+   53-62 and 70-79), a runtime-resolved position with no pre-authored `PlacementRef`. `azerus`
+   (`.../azerus/encounter.json` lines 52-63, added Round 4, Codex finding 4122246563's corpus
+   re-scan) shares the exact same `at: death_position` blocker, carrying `destination`+
+   `revert_after_ms` instead of `interaction` — the blocker is the missing `PlacementRef`, not which
+   attribute the action carries, so it is the same gap, not a new one.
    `LocalObjectRuntime::bind` (`apps/game-server/src/world_runtime.rs` ~620-630) requires its
    `placement_key: &PlacementKey` argument to already exist in `content.placements` — a fixed,
    pre-authored list, with no dynamic-placement-creation path anywhere in the read code — and C3
    (§4 "Out of scope," lines 154-162) already excludes "a `CREATE` that reserves cells not already
    known at bind time" as a general rule. §9 does **not** design a runtime-created-placement
-   mechanism to satisfy these three samples; they stay rejected fail-closed at authoring/lowering.
+   mechanism to satisfy these four samples; they stay rejected fail-closed at authoring/lowering.
    Whether and how a runtime-resolved anchor could ever bind a `LocalObjectRuntime` — a
    dynamically-registered `PlacementRef`, a different runtime primitive entirely, or something else —
    is a new decision this document does not make; it would need its own C3-adjacent hardening review
    given C3 explicitly excludes dynamically materialized geometry today.
+9. **Pre-authored `map_item create` teleporters carrying `destination`+`revert_after_ms` at an authored
+   anchor — added from §9, Codex finding 4122246563 on PR #1099's Round 4 review.** Distinct from open
+   decision 8 above: `death_priest_shargon`
+   (`tools/content-schema/encounter-authoring/samples/death_priest_shargon/encounter.json` lines
+   47-58, `anchor: exit_teleporter`, `destination: shargon_exit`, `revert_after_ms: 300000`) and
+   `the_ravager` (`.../the_ravager/encounter.json` lines 47-58, `destination: ravager_exit`,
+   `revert_after_ms: 300000`) both author `operation: create` at a pre-authored `anchor` — a
+   `PlacementRef` genuinely exists, so `LocalObjectRuntime::bind`'s `PlacementKey` lookup is not
+   structurally blocked the way open decision 8's `death_position` samples are. The gap is different:
+   §9's design (Design point 4) admits only `map_item transform` carrying `destination`, never
+   `create`, at any anchor. A full corpus re-scan this round (evidence: the two samples above) found
+   no other sample combining `operation: create` with a pre-authored `anchor` and `destination`. §9
+   does **not** extend its design to admit `create`; these two samples stay rejected fail-closed at
+   authoring/lowering. Whether and how a `CREATE` could ever carry `destination`/`revert_after_ms` —
+   treating it as equivalent to a `transform` into a synthesized state, or something else — is a new
+   decision this document does not make.
 
 ### Exact test obligations
 
@@ -1480,10 +1535,19 @@ architecture decision.
   reaches the reservation step at all. A test asserting a record is created (and a timer later fires),
   or that capacity was reserved and then released, for an operation whose own `prepare` result was
   `unchanged` must fail — a revert has nothing to undo when the original operation changed nothing.
-- **Revert restores exactly the pre-operation state (P1).** Firing a scheduled revert whose fences
-  and expected revision still hold must land the object back in precisely the state it was in
-  immediately before the original operation committed — the one unique `source_state`/`target_state`
-  pair the bind-time inverse check validated, not an approximation.
+- **Revert restores exactly the pre-operation state, or its declared attribute variant (P1; Round 24
+  narrow exception, Codex finding 4122246550).** Firing a scheduled revert whose fences and expected
+  revision still hold must land the object in precisely the state the bind-time inverse check
+  validated as the unique match — the one unique `source_state`/`target_state` pair, not an
+  approximation. For the ordinary case, that `target_state` is literally the pre-operation
+  `source_state` — unchanged from before this round. **Narrow exception:** when the bound inverse's
+  `target_state` is a declared `attribute_variant_of` of the pre-operation `source_state` (§9
+  evidence above — a `revert_destination`-bearing occurrence), the revert lands on that variant
+  instead — the *same* `collision` as the pre-operation state, differing *only* in declared
+  attributes (§9's own construction, evidence above), never a different footprint or a different
+  underlying item. This is the sole exception; a test must not assert the revert lands on a declared
+  variant when the bound inverse carries none (still literal equality), nor that it lands on the
+  literal pre-operation state key when the bound inverse is a declared variant.
 - **Intervening change yields STALE_STATE, no mutation, via the one path (P1).** If the object was
   changed again after the revert was scheduled (a later operation on the same anchor moved it away
   from the state the revert's stored expected revision names), firing must reach `prepare` — never a
@@ -1613,10 +1677,14 @@ architecture decision.
    already-shipped operations. Open decision 3 (attribute-bearing object state, owner-decided `YES`)
    and open decision 4 (where `revert_after_ms`/inverse-selection metadata live, coupled to decision
    3) are both designed in §9 below (CANDIDATE, narrowed to the teleporter-transform shapes in §9's
-   own Round 2); this lane implements §9's design, once accepted, for the Depth trio and
-   `the_lord_of_the_lice`. Open decision 8 (runtime-created local objects at `death_position`) is a
-   separate, undesigned gap §9's Round 2 found — `mazzinor`/`gaz_haragoth`/`cult_soul_remains` stay
-   rejected until it is resolved, by this lane or another owner C3 hardening review names.
+   own Round 2); this lane implements §9's design, once accepted, for every sample matching that
+   covered shape (§9 Problem section — at least sixteen, not an exhaustive list; the Depth trio and
+   `the_lord_of_the_lice` among them). Open decision 8 (runtime-created local objects at
+   `death_position`) is a separate, undesigned gap §9's Round 2 found — `mazzinor`/`gaz_haragoth`/
+   `cult_soul_remains`/`azerus` stay rejected until it is resolved, by this lane or another owner C3
+   hardening review names. Open decision 9 (pre-authored `CREATE` teleporters carrying `destination`,
+   §9 Round 4) is a further separate, undesigned gap — `death_priest_shargon`/`the_ravager` stay
+   rejected until it is resolved.
 
 ## 9. Attribute-bearing object state: teleporter destination — CANDIDATE
 
@@ -1637,9 +1705,21 @@ architecture decision.
   transition unbindable, because its dedicated inverse's `target_state` never equals the forward
   transition's own `source_state` — §7's unique-inverse rule as written before this round required
   exact equality. Fixed by widening that rule (§7 Round 23, both citations) to also accept a
-  candidate whose `target_state` is the source state's declared `attribute_variant_of` — a new
-  optional field on `LocalObjectStateDefinition` this round adds (design point 3), inert for every
-  state that does not declare one.
+  candidate whose *own* declared `attribute_variant_of` equals the forward transition's
+  `source_state` — a new optional field on `LocalObjectStateDefinition` this round adds (design
+  point 3), inert for every state that does not declare one. **Round 4 correction** (Codex 2 P1s +
+  1 P2 on head `93940915`, accepted, owner stop rule applies): (1) Round 23's own phrasing of the
+  widened predicate read backwards — it named "the source state's declared `attribute_variant_of`"
+  when the check is the *candidate*'s own declared `attribute_variant_of`; corrected everywhere the
+  rule is stated (both §7 citations, this section, the test obligations) to
+  `states[candidate.target_state].attribute_variant_of == Some(forward.source_state)`. (2) §7's
+  still-binding "revert restores exactly the pre-operation state" obligation now has a narrow,
+  explicit exception for the `attribute_variant_of` case — the revert lands on the declared variant,
+  same `collision`, differing only in declared attributes — added below and to the matching test
+  obligation, with a full scan of §7/§9 for any other now-contradicted "exactly the prior state"
+  claim. (3) Pre-authored `CREATE` teleporters carrying `destination`+`revert_after_ms`
+  (`death_priest_shargon`, `the_ravager`, and any other matching samples) are recorded as a new open
+  decision, not designed for — see §7 open decision 9 and the Problem section below.
 
 ### Problem
 
@@ -1649,10 +1729,18 @@ full effect is modeled by `LocalObjectStateDefinition`'s `key`+`collision` pair
 `PreparedMutation::Publish` restores (`next_state`/`next_revision`/`next_blocking`,
 `apps/game-server/src/world_runtime.rs` ~1150-1159, re-verified this task, unchanged). A `map_item`
 action that also carries `destination`, `revert_destination` or `interaction` is rejected fail-closed
-at authoring/lowering, because nothing in the runtime model can apply or revert those values. Five
-authored samples are rejected under this rule today (re-verified this task, exact lines); this
-section's design covers only the first four (**Round 2**: narrowed from the original scope, see
-DecisionStatus above and Open decision 8):
+at authoring/lowering today, because nothing in the runtime model can apply or revert those values.
+This section's design covers one shape — `map_item transform` at a pre-authored anchor, carrying
+`destination` (optionally `revert_destination`) — and does not extend to `map_item create` in any
+form (**Round 2**: narrowed from the original scope, see DecisionStatus above and Open decision 8).
+**Round 4 correction (Codex finding 4122246563):** a full corpus re-scan this round found the covered
+shape in considerably more authored samples than the four line-cited below — at least sixteen,
+re-verified this round (the four below plus, among others, `deep_terror`, `ferumbras_mortal_shell`,
+`glooth_horror`, `mazoran`, `plagirath`, `professor_maxxen`, `ragiaz`, `razzagorn`, `shulgrax`,
+`tarbaz`, `the_shatterer`, `zamulosh`). The four cited below remain a representative, line-cited
+illustrative subset, not an exhaustive list; no enumeration in this section is claimed to be
+exhaustive. Two distinct `map_item create` shapes are **not** covered and stay rejected — see §7 open
+decisions 8 and 9:
 
 **Covered by this section — `map_item transform` at a pre-authored anchor, carrying `destination`:**
 
@@ -1677,6 +1765,21 @@ rejected at lowering; see §7 open decision 8:**
   `interaction: canary:interaction/33542` (line 132).
 - `.../samples/cult_soul_remains/encounter.json` lines 53-62 and 70-79 (two occurrences): same shape,
   `interaction: canary:interaction/5580` (lines 62, 79).
+- `.../samples/azerus/encounter.json` lines 52-63 (re-verified this round, Round 4 corpus re-scan):
+  same `at: death_position` blocker, but carries `destination: azerus_escape` (line 61) and
+  `revert_after_ms: 120000` (line 62) instead of `interaction` — no pre-authored anchor either way, so
+  it is the same runtime-resolved-anchor gap as the other three, not a new one.
+
+**NOT covered — `map_item create` at a pre-authored `anchor`, carrying `destination`+`revert_after_ms`;
+stays rejected at lowering; see §7 open decision 9 (Round 4, Codex finding 4122246563):**
+
+- `.../samples/death_priest_shargon/encounter.json` lines 47-58: `map_item create` (item
+  `canary:item/1949`), `anchor: exit_teleporter` (line 55), `destination: shargon_exit` (line 56),
+  `revert_after_ms: 300000` (line 57) — a pre-authored anchor exists (unlike the death-position shape
+  above), but this section's design (Design point 4 below) admits only `map_item transform`, not
+  `create`.
+- `.../samples/the_ravager/encounter.json` lines 47-58: same shape, `destination: ravager_exit`
+  (line 56), `revert_after_ms: 300000` (line 57).
 
 `OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` line 144 (re-verified this task): "`map_item` | create/
 transform/remove ItemRef at an anchor or `at: death_position` ..., `revert_after_ms`; a teleporter
@@ -1842,8 +1945,11 @@ does when used or stepped on (D29)."
      because it never checked the inverse's `target_state` against the forward transition's *actual*
      declared `source_state`. Fixed by widening §7's rule itself (evidence above), not by asserting
      the old rule already worked: the inverse-uniqueness search now accepts a candidate whose
-     `target_state` *either* equals the forward transition's `source_state` *or* is that source
-     state's declared `attribute_variant_of` — which the post-revert state always is, by the previous
+     `target_state` *either* equals the forward transition's `source_state` *or* has its *own*
+     declared `attribute_variant_of` equal to the forward transition's `source_state` —
+     `states[candidate.target_state].attribute_variant_of == Some(forward.source_state)`, never the
+     reverse (Round 24, correcting an earlier reversed phrasing here, Codex finding 4122246542) —
+     which the post-revert state's own declared `attribute_variant_of` always is, by the previous
      bullet's construction. Uniqueness is unchanged (still *exactly one* matching candidate required);
      only the equality test admits one additional, narrowly-scoped case. For a plain
      (no-`revert_destination`) transition, no state anywhere declares an `attribute_variant_of`, so
@@ -1876,15 +1982,19 @@ does when used or stepped on (D29)."
 
    A `map_item create` at `at: death_position` carrying `interaction` — `mazzinor`/`gaz_haragoth`/
    `cult_soul_remains`'s shape — is **not** admitted by this section (Round 2, evidence above: no
-   pre-authored `PlacementKey` exists for `death_position`; §7 open decision 8). `effect` (evidence
+   pre-authored `PlacementKey` exists for `death_position`; §7 open decision 8). A `map_item create` at
+   a pre-authored `anchor` carrying `destination`+`revert_after_ms` — `death_priest_shargon`/
+   `the_ravager`'s shape — is also **not** admitted: this design point names only `map_item transform`,
+   never `create`, regardless of whether a pre-authored anchor exists (Round 4, Codex finding
+   4122246563; §7 open decision 9). `effect` (evidence
    above: a sibling field with no state/collision/destination tie in either the encounter format or
    the runtime model) is presentational and stays entirely outside the world-object overlay model —
    its presence on `the_lord_of_the_lice`'s action does not affect this design and is not lowered
    into `LocalObjectStateAttributes`. Any authored `map_item` action carrying `revert_after_ms`
    together with a non-state attribute *other than* `destination`/`revert_destination` on a
    pre-authored anchor stays rejected fail-closed exactly as §7 already specifies — PLAYABLE_FIRST:
-   this section names exactly the one attribute shape the four covered samples need, not a generic
-   attribute system.
+   this section names exactly the one attribute shape the covered samples need (Problem section above
+   — at least sixteen, not an exhaustive count), not a generic attribute system.
 
 5. **Open decision 4, resolved: `revert_after_ms` and the inverse-selection metadata live on the
    placement (and, Round 2, the specific authored occurrence), not the shared `TransitionBinding`.**
@@ -1936,10 +2046,11 @@ mutation logic, and no new lifecycle-record field. It does not implement telepor
 that *consumes* a `destination` value once an object commits into a state that carries one — reading
 `attributes()` and acting on it (moving a player) is the existing, separate interaction/movement
 system's job, unaffected and unblocked by this design either way, exactly as it already was before
-this section. It does not cover `interaction` bindings or runtime-resolved anchors (Round 2: narrowed
-to the teleporter-transform shapes; §7 open decision 8) — a third authored attribute kind or a
-runtime-created-placement mechanism, if one is ever needed, is a new decision, not something this
-shape auto-supports.
+this section. It does not cover `interaction` bindings, runtime-resolved anchors (Round 2: narrowed
+to the teleporter-transform shapes; §7 open decision 8), or `map_item create` at a pre-authored anchor
+carrying `destination` (Round 4; §7 open decision 9) — a third authored attribute kind, a
+runtime-created-placement mechanism, or admitting `create` alongside `transform`, if any is ever
+needed, is a new decision, not something this shape auto-supports.
 
 ### Exact test obligations
 
@@ -1964,13 +2075,18 @@ shape auto-supports.
   `local_object_initial_state`, or that the natural source state ever carries a `destination`, must
   fail.
 - **`bind` accepts the post-revert-state inverse under the widened rule (P1, Round 23, Codex finding
-  on PR #1099 thread 4122104484).** For all four covered samples, `bind` must accept the forward
+  on PR #1099 thread 4122104484).** For every covered, `revert_destination`-bearing sample (the four
+  line-cited in the Problem section, and — Round 4 corpus re-scan — at least eight more of the same
+  shape; not asserted to be an exhaustive count), `bind` must accept the forward
   transition as `revert_after_ms`-carrying: the dedicated inverse's `target_state` does not equal the
-  forward transition's own `source_state`, but does equal that source state's declared
-  `attribute_variant_of`. A test asserting `bind` rejects these four samples with `InvalidBinding`
-  ("missing inverse") — the exact bug this round fixes — must fail; a test asserting `bind` still
-  accepts them under the *unwidened* rule (i.e., without the `attribute_variant_of` check) must also
-  fail, since that is the bug, not the fix.
+  forward transition's own `source_state`, but that `target_state`'s *own* declared
+  `attribute_variant_of` does equal the forward transition's `source_state` —
+  `states[inverse.target_state].attribute_variant_of == Some(forward.source_state)` (Round 24
+  correction, Codex finding 4122246542: checking the reverse direction is the bug, not the fix). A
+  test asserting `bind` rejects these samples with `InvalidBinding` ("missing inverse") — the
+  exact bug Round 23 fixes — must fail; a test asserting `bind` still accepts them under the
+  *unwidened* rule, or under a predicate that checks the *source* state's own `attribute_variant_of`
+  instead of the *candidate target* state's, must also fail, since that is the bug, not the fix.
 - **The widened rule is inert for ordinary, non-attribute-bearing content (regression, Round 23).** A
   plain `TRANSFORM a→b` / bound inverse `b→a` pair, neither state declaring `attribute_variant_of`,
   must be accepted or rejected by `bind` exactly as it already is today — the widened rule's `OR`
@@ -1989,6 +2105,11 @@ shape auto-supports.
   fail-closed at authoring/lowering — this section's design does not admit them (§7 open decision 8).
   A test asserting any of these three samples lowers successfully under this section's design must
   fail.
+- **`death_priest_shargon`/`the_ravager` stay rejected (Round 4, Codex finding 4122246563).** Their
+  `map_item create` actions at a pre-authored `anchor` carrying `destination`+`revert_after_ms` (and no
+  `interaction`) must still be rejected fail-closed at authoring/lowering — this section's design
+  admits only `map_item transform`, never `create` (design point 4, §7 open decision 9). A test
+  asserting either sample lowers successfully under this section's design must fail.
 - **Different placements of the same shared transition carry independent durations.** Bind two
   `LocalObjectRuntime`s at two different `PlacementKey`s that both invoke the same content-level
   `TransitionKey`, one with a `local_object_revert_after_ms` entry set and one without. Firing the
@@ -2030,9 +2151,12 @@ shape auto-supports.
 - `interaction` bindings and runtime-created local objects at a runtime-resolved anchor
   (`death_position`) are explicitly **not** designed by this section (Round 2) — see §7 open
   decision 8.
+- `map_item create` at a pre-authored anchor carrying `destination`+`revert_after_ms`
+  (`death_priest_shargon`/`the_ravager`) is explicitly **not** designed by this section (Round 4,
+  Codex finding 4122246563) — see §7 open decision 9.
 - §7's other open decisions (retention/compaction, `IN_FLIGHT` reconciliation, ordinal-issuance
   exhaustion, and any later addition to that list) are unaffected by this section — only open decision
-  3 (this section) and open decision 4 (design point 5 above) are resolved here; open decision 8 is
-  this section's own new finding, added to §7's list rather than kept separate, but it too remains
-  unresolved and the owning lane's — and everything §7 lists stays the owning lane's, as written in
+  3 (this section) and open decision 4 (design point 5 above) are resolved here; open decisions 8 and 9
+  are this section's own new findings, added to §7's list rather than kept separate, but they too
+  remain unresolved and the owning lane's — and everything §7 lists stays the owning lane's, as written in
   §7 at whatever revision the owning lane implements against.

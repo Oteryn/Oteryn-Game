@@ -34,8 +34,9 @@ external_repositories: []
 
 New §9 in `OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md`, `DecisionStatus:
 CANDIDATE`: a minimal design for local-object state that carries a teleporter `destination`
-attribute, so the four `map_item transform`-at-a-pre-authored-anchor authored timed actions §7
-currently rejects (the Depth trio, `the_lord_of_the_lice`) become admissible. **Round 2** (Codex P1s
+attribute, so `map_item transform`-at-a-pre-authored-anchor authored timed actions §7 currently
+rejects (the Depth trio, `the_lord_of_the_lice`, and — Round 4 corpus re-scan — at least sixteen
+samples total, not exhaustively enumerated) become admissible. **Round 2** (Codex P1s
 4121918211/4121918220 + P2 4121918234, all accepted, owner stop rule applies) corrected: (a)
 `revert_destination` no longer bakes into the placement's natural source state — lowering creates a
 distinct post-revert state instead; (b) narrowed scope to the teleporter-transform shapes only —
@@ -46,11 +47,9 @@ NOT covered, added as §7 open decision 8; (c) `local_object_revert_after_ms` ke
 1. Where the attributes live: two new optional per-placement fields on `PlacementRef`.
 2. How `prepare`/`Publish` carry and apply them: a pure read of `(state_attributes, current state)`,
    like collision presence; no new field on `PreparedMutation::Publish`/`commit`.
-3. How the inverse restores them, including corrected `revert_destination` semantics (post-revert
-   state, not source-state bake-in) and how §7's unique-inverse rule stays satisfied (Round 3: §7's
-   rule itself widened via a new `LocalObjectStateDefinition.attribute_variant_of` field — the
-   post-revert state's key never equals the forward transition's own `source_state`, so §7's rule as
-   written before this round rejected all four covered samples outright).
+3. How the inverse restores them, incl. corrected `revert_destination` semantics (post-revert state,
+   not source-state bake-in) and how §7's unique-inverse rule stays satisfied (Round 3: widened via
+   `LocalObjectStateDefinition.attribute_variant_of`, direction-corrected Round 4).
 4. How the Round 17/19 lowering rejection is lifted for exactly this one named shape.
 5. Open decision 4 (§7) resolved, occurrence-keyed.
 6. The lifecycle-record fields added: none — explained why.
@@ -63,23 +62,21 @@ implementation-ready (§9's own `DecisionStatus: CANDIDATE`).
 Full file:line evidence lives in the new §9 (Evidence subsection); this is the index.
 
 - `reference_playable.rs` `PlacementRef`/`local_object_initial_state`,
-  `validate_local_object_placement_state`/`validate_placement` — PROVEN, re-verified: the
-  per-placement-fact + fail-closed-validation precedent this design mirrors.
-- `LocalObjectRuntime`/`bind` (incl. `~620-630`'s `PlacementKey` requirement) — PROVEN, re-verified:
-  no attribute field today; requires an existing `content.placements` entry, no dynamic-placement.
+  `validate_local_object_placement_state`/`validate_placement` — PROVEN: the per-placement-fact +
+  fail-closed-validation precedent this design mirrors.
+- `LocalObjectRuntime`/`bind` (`~620-630`'s `PlacementKey` requirement) — PROVEN: no attribute field
+  today; requires an existing `content.placements` entry, no dynamic-placement.
 - `prepare`/`PreparedMutation`/`commit` — PROVEN: collision presence is a pure derived read from
   `(states, target_state)`, never mutable state.
-- `TransitionBinding`, `ProductionKey`/`PlacementKey` — PROVEN: shared, no per-invocation payload;
-  existing types this design reuses.
-- `validate_encounter.py`, encounter-format line 144 — PROVEN, re-verified.
-- §4 "Out of scope," C3 (lines 154-162) — PROVEN: excludes a `CREATE` reserving cells not known at
-  bind time.
-- `LocalObjectStateDefinition` (~805-813) — PROVEN: exactly `key`+`collision`, no relationship field
-  between states today; `attribute_variant_of` (Round 3) is genuinely new.
-- Seven authored samples, all re-verified file:line: `the_lord_of_the_lice` lines 58-75,
-  `the_duke_of_the_depths` lines 53-68, `the_baron_from_below`/`the_count_of_the_core` lines 63-78
-  (covered); `mazzinor` lines 47-57, `gaz_haragoth` lines 123-132, `cult_soul_remains` lines 53-62/
-  70-79 (NOT covered — §7 open decision 8).
+- `TransitionBinding`, `ProductionKey`/`PlacementKey`, `validate_encounter.py`/encounter-format line
+  144, §4 C3 (lines 154-162) — PROVEN, unchanged from §7/§8.
+- `LocalObjectStateDefinition` (~805-813) — PROVEN: exactly `key`+`collision`; `attribute_variant_of`
+  (Round 3) is genuinely new.
+- Corpus (Round 4 full re-scan of `tools/content-schema/encounter-authoring/samples/**`): at least
+  sixteen `transform`+pre-authored-anchor+`destination` samples covered (not exhaustively enumerated
+  here — §9 Problem section has the list); `mazzinor`/`gaz_haragoth`/`cult_soul_remains`/`azerus`
+  (`death_position`, NOT covered — §7 open decision 8); `death_priest_shargon`/`the_ravager`
+  (`create`+pre-authored-anchor+`destination`, NOT covered — §7 open decision 9, new Round 4).
 
 ## High-risk authority/recovery qualification
 
@@ -93,56 +90,69 @@ reason: >
 ## Acceptance criteria
 
 - [x] §9 names where the attributes live, how `prepare`/`Publish` carry them, corrected
-      `revert_destination` semantics (post-revert state, Round 2 P1), how the rejection lifts for the
-      covered shape only, open decision 4 resolved/occurrence-keyed (Round 2 P2), and the
-      lifecycle-record fields added (none).
+      `revert_destination` semantics (Round 2 P1), how the rejection lifts for the covered shape only,
+      open decision 4 resolved/occurrence-keyed (Round 2 P2), and the lifecycle-record fields added
+      (none).
 - [x] §9 narrowed to teleporter-transform shapes; `interaction`/`death_position` moved to §7 open
-      decision 8 (Round 2 P1), with §8/open-decisions cross-references updated.
+      decision 8 (Round 2 P1), with cross-references updated.
 - [x] §7's unique-inverse rule and §9's post-revert-state inverse are mutually consistent (Round 3
-      P1): `bind` accepts the widened rule's `attribute_variant_of` branch for all four covered
-      samples, and the widened rule is inert for ordinary content.
+      P1, direction-fixed Round 4): `bind` accepts the widened rule's `attribute_variant_of` branch
+      for every covered sample, inert for ordinary content.
 - [x] Every claim verified against code this task (not carried over from memory).
 - [x] §9's `DecisionStatus` is `CANDIDATE`.
 - [x] Both validators pass.
+- [x] Round 4: widened-predicate direction bug fixed (P1 4122246542); revert-restores-exactly
+      obligation given a narrow `attribute_variant_of` exception (P1 4122246550); corpus-enumeration
+      claim corrected to not assert completeness, and pre-authored `CREATE`+`destination` teleporters
+      tracked as rejected fail-closed via new §7 open decision 9 (P2 4122246563, not designed for).
 
 ## Excluded scope
 
 - Any code change (`apps/game-server`, `crates/`, `content/**`, `tools/**`).
 - Implementing CW3 linker validation, the lowering step, or `LoweredActionId`'s representation.
-- Teleportation execution; `interaction` bindings and `death_position` placements (Round 2 exclusion,
-  §7 open decision 8 names the gap, does not design a fix).
+- Teleportation execution; `interaction` bindings and `death_position` placements (§7 open decision 8,
+  does not design a fix); pre-authored `CREATE` teleporters carrying `destination` (§7 open
+  decision 9, Round 4, does not design a fix).
 - A generic attribute system beyond `destination`/`revert_destination`.
-- §7's open decisions 1, 2, 5, 6, 7 (task A) and 8 — unaffected, remain the owning lane's.
+- §7's open decisions 1, 2, 5, 6, 7 (task A) and 8/9 — unaffected, remain the owning lane's.
 - `@codex` trigger, PR/issue comments, merge action — coordinator's.
 
 ## Implementation / findings
 
-Round 1: branched fresh (`f0710bfb`). Core insight: collision presence is a pure function of
-`(states, target_state)` inside `prepare`, never mutable state — attributes reuse the same pattern.
-Wrote §9 after §8, untouched §7 (task A's concurrent PR).
+Round 1: branched fresh (`f0710bfb`); collision presence is a pure function of `(states,
+target_state)` inside `prepare`, never mutable state — attributes reuse the same pattern.
 
-Round 22: merged `origin/main` (`9beb6625`, PR #1097), resolved the one expected §8-item-7 conflict.
-Fixed Codex P2 4121718203 (reserve-after-`Publish` ordering misattributed to FND-03 §15.4).
+Round 22: merged `origin/main` (`9beb6625`, PR #1097); fixed Codex P2 4121718203 (reserve-after-
+`Publish` ordering misattributed).
 
-Round 2 (head `db49049d`; 2 P1s + 1 P2, owner stop rule): merged `origin/main` (`800e3eb6`) first.
-`revert_destination` was baking into the natural source state; fixed via a distinct post-revert
-state, natural source untouched. Narrowed §9 to teleporter-transform shapes only (death_position
-creates need a `PlacementKey` `bind` lacks and C3 excludes); added §7 open decision 8.
-`local_object_revert_after_ms` rekeyed `(TransitionKey, LoweredActionId)`.
+Round 2 (head `db49049d`; 2 P1s + 1 P2): merged `origin/main` (`800e3eb6`). `revert_destination` was
+baking into the natural source state; fixed via a distinct post-revert state. Narrowed §9 to
+teleporter-transform shapes only (death_position creates need a `PlacementKey` `bind` lacks and C3
+excludes); added §7 open decision 8. `local_object_revert_after_ms` rekeyed `(TransitionKey,
+LoweredActionId)`.
 
-Round 3 (PR #1099 Codex, head `d417e860`; 1 P1, thread 4122104484, owner stop rule): merged
-`origin/main` (`d17a3826`, unrelated, clean) first. **P1** — Round 2's post-revert state claimed §7's
-unique-inverse rule was "satisfied by construction" but never checked the inverse's `target_state`
-against the forward transition's *actual* `source_state`: since the post-revert state's key ≠ the
-natural source state's key, §7's rule as written (exact equality) finds zero candidates and rejects
-all four covered samples. Re-verified §7's rule text directly. Fixed by widening §7's rule itself:
-new optional `LocalObjectStateDefinition.attribute_variant_of: Option<ProductionKey>` (content-level,
-same `collision`, CW3-validated fail-closed); the search now accepts `target_state` equal to
-`source_state` *or* its declared `attribute_variant_of`, uniqueness unchanged. Updated both §7 rule
-citations, §9 design point 3, Evidence/PLAYABLE_FIRST-scoping/Open-items, added a Round 23 §7
-narrative paragraph and a Round 3 §9-header note. Added test obligations: widened rule accepted for
-all four samples; inert for ordinary content; `attribute_variant_of` validated fail-closed. Grepped
-for other stale rule citations and markdown defects — none found beyond what was fixed.
+Round 3 (head `d417e860`; 1 P1, thread 4122104484): merged `origin/main` (`d17a3826`). Round 2's
+post-revert state never satisfied §7's own unique-inverse rule (exact `target_state` ==
+`source_state`; post-revert key != natural source key) — `bind` would reject all covered samples.
+Fixed by widening §7's rule: new optional `LocalObjectStateDefinition.attribute_variant_of`
+(content-level, same `collision`, CW3-validated). Updated both §7 rule citations, §9 design point 3,
+evidence/scoping/open-items; added test obligations.
+
+Round 4 (head `93940915`; 2 P1s + 1 P2): merged `origin/main` (`a7ced850`, unrelated). **P1
+4122246542** — Round 3's predicate phrasing read backwards (checked the source
+state's own `attribute_variant_of` instead of the candidate's). Fixed everywhere stated (both §7
+citations, §9 design point 3/header, matching test obligations) to
+`states[candidate.target_state].attribute_variant_of == Some(forward.source_state)`. **P1
+4122246550** — §7's "revert restores exactly the pre-operation state" obligation didn't account for
+the widened rule; added a narrow exception (lands on the declared variant, same `collision`, only
+when the bound inverse carries one); grep swept §7/§9, found no other contradiction. **P2 4122246563**
+(not designed for) — corpus re-scan found: (a) the covered shape in 16+ samples, not 4 — corrected
+the Problem section/scoping/test obligations to stop claiming completeness; (b) exactly two samples
+(`death_priest_shargon`, `the_ravager`) matching a distinct shape — `create` at a pre-authored
+`anchor` carrying `destination`+`revert_after_ms` — added as new §7 open decision 9 with a
+rejected-fail-closed test obligation; (c) `azerus` shares open decision 8's `death_position` blocker
+(carries `destination` not `interaction`), added to its citation list. Updated every open-decision-8
+cross-reference to also name open decision 9.
 
 Both validators re-run after all edits: PASS (see Validation below).
 
@@ -157,8 +167,7 @@ Both validators re-run after all edits: PASS (see Validation below).
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
-- result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 50 workflows)." (round 3, after merging origin/main)
+- result: PASS (round 4, after merging origin/main)
 
 ### E2E
 
@@ -178,8 +187,7 @@ Both validators re-run after all edits: PASS (see Validation below).
 
 - exact head: pending
 - method/reviewer: implementing agent (CW1), mandatory, not delegated
-- material findings: two markdown formatting defects (heading wrapped across two lines; two
-  inline-code spans split mid-identifier) found and fixed in self-review before freeze
+- material findings: minor markdown formatting defects found and fixed in self-review before freeze
 - verdict: PASS
 
 ## Independent review
@@ -195,7 +203,7 @@ Both validators re-run after all edits: PASS (see Validation below).
 - changed-file review: pending
 - unresolved review threads: pending
 - related/superseded PRs: sequenced after task A (PR #1097, merged `061b1676`); merged `origin/main`
-  three times (round 22 for #1097; rounds 2/3 for `800e3eb6`/`d17a3826`, unrelated, no conflicts)
+  four times (round 22 for #1097; rounds 2/3/4, unrelated, no conflicts)
 - protected auto-merge: not requested by this task
 - merge commit/result: pending
 - ownership release: pending
@@ -204,15 +212,9 @@ Both validators re-run after all edits: PASS (see Validation below).
 
 ```yaml
 last_progress: >
-  Round 3 (PR #1099 Codex on d417e860, thread 4122104484): 1 P1 fixed. Section 9's post-revert-state
-  inverse (B->C) never satisfied section 7's own unique-inverse rule as written (target_state must
-  exactly equal source_state; C != A) -- bind would reject all four covered samples. Fixed by
-  widening section 7's rule itself: new optional LocalObjectStateDefinition.attribute_variant_of
-  field (content-level, same collision, CW3-validated); inverse search now accepts target_state
-  equal to source_state OR its declared attribute_variant_of, uniqueness unchanged. Updated both
-  section 7 rule citations, section 9 design point 3, evidence/scoping/open-items, added a Round 23
-  section 7 narrative paragraph and new test obligations. Merged origin/main (d17a3826, unrelated)
-  first. Validators pass; about to push.
+  Round 4 (PR #1099 Codex on 93940915: 2 P1s + 1 P2) complete -- see "Implementation / findings" above
+  for the full Round 4 entry (predicate-direction fix, narrow revert-exception, corpus re-scan +
+  open decision 9). Merged origin/main (a7ced850, unrelated) first. Validators pass; about to push.
 status: ready
 branch: claude/cw1-attribute-bearing-object-state
 head_sha: null
