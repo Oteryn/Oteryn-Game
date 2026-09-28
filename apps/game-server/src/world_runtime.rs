@@ -572,6 +572,49 @@ impl LocalObjectCommand {
     }
 }
 
+/// #162 §7: the target and delta of one scope-origin operation (`apply_scope_operation`) —
+/// exactly what `prepare` needs, with no session, connection or `CommandId`.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct ScopeLocalObjectOperation {
+    placement: PlacementKey,
+    incarnation: u64,
+    content_generation: ReferenceContentGeneration,
+    operation: LocalObjectOperation,
+    expected_revision: u64,
+}
+
+impl ScopeLocalObjectOperation {
+    #[must_use]
+    pub(crate) const fn new(
+        placement: PlacementKey,
+        incarnation: u64,
+        content_generation: ReferenceContentGeneration,
+        operation: LocalObjectOperation,
+        expected_revision: u64,
+    ) -> Self {
+        Self {
+            placement,
+            incarnation,
+            content_generation,
+            operation,
+            expected_revision,
+        }
+    }
+
+    #[must_use]
+    pub(crate) fn transition_key(&self) -> &TransitionKey {
+        self.operation.transition_key()
+    }
+}
+
+/// #162 §7: the post-operation state and revision of a `Publish` that `prepare` has already
+/// computed, shown to `apply_scope_operation`'s staging step before anything commits.
+#[derive(Debug)]
+pub(crate) struct ScopePublish<'a> {
+    pub(crate) next_state: &'a ProductionKey,
+    pub(crate) next_revision: u64,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct LocalObjectCommandResult {
     disposition: Box<str>,
@@ -712,6 +755,8 @@ pub(crate) struct LocalObjectRuntime {
     // authored action.
     state_attributes: BTreeMap<ProductionKey, LocalObjectStateAttributes>,
     transition_revert_after_ms: BTreeMap<(TransitionKey, LoweredActionId), u64>,
+    // #162 §7: the unique bound inverse `bind` validated for each timed forward transition.
+    revert_inverses: BTreeMap<TransitionKey, TransitionKey>,
 }
 
 impl LocalObjectRuntime {
@@ -844,13 +889,18 @@ impl LocalObjectRuntime {
 
         // #162 §9 (design points 1/5): the linker never sees this injected placement, so its
         // attribute and revert tables are re-validated here, and every revert-bearing transition
-        // must be bound at this placement with exactly one bound inverse (§7 Round 23/24).
+        // must be bound at this placement with exactly one bound inverse (§7 Round 23/24). A
+        // destination must resolve to exactly one placement in this scope's world and the
+        // Content coordinate frame before `attributes()` can expose it (#1133 review).
         crate::content::validate_local_object_placement_attributes(
             placement,
             definition,
             &content.placements,
             &content.transitions,
+            scope.world_id(),
+            &content.coordinate_frame,
         )?;
+        let mut revert_inverses = BTreeMap::new();
         for (transition_key, _action) in placement.local_object_revert_after_ms.keys() {
             let forward =
                 transitions
@@ -886,7 +936,7 @@ impl LocalObjectRuntime {
                 LocalObjectIntentFamily::from_key(&candidate.normalized_intent_family)
                     == Some(paired_family)
             });
-            if inverses.next().is_none() {
+            let Some(inverse) = inverses.next() else {
                 return Err(WorldRuntimeError::InvalidBinding(
                     if state_matches.is_empty() {
                         "revert_after_ms transition has no bound inverse at this placement"
@@ -894,12 +944,13 @@ impl LocalObjectRuntime {
                         "revert_after_ms inverse does not carry the paired intent family"
                     },
                 ));
-            }
+            };
             if inverses.next().is_some() {
                 return Err(WorldRuntimeError::InvalidBinding(
                     "revert_after_ms transition has an ambiguous bound inverse at this placement",
                 ));
             }
+            revert_inverses.insert(forward.key.clone(), inverse.key.clone());
         }
 
         let collision_cells = absolute_collision_cells(placement)?;
@@ -937,6 +988,7 @@ impl LocalObjectRuntime {
             transitions,
             state_attributes: placement.local_object_state_attributes.clone(),
             transition_revert_after_ms: placement.local_object_revert_after_ms.clone(),
+            revert_inverses,
         })
     }
 
@@ -960,7 +1012,7 @@ impl LocalObjectRuntime {
         not(test),
         allow(
             dead_code,
-            reason = "§9 accessor; the §7 revert driver is a later allocation"
+            reason = "§9 accessor; the §7 revert driver's live scope owner is a later allocation"
         )
     )]
     #[must_use]
@@ -972,6 +1024,12 @@ impl LocalObjectRuntime {
         self.transition_revert_after_ms
             .get(&(transition.clone(), action.clone()))
             .copied()
+    }
+
+    /// #162 §7: the unique bound inverse `bind` validated for a timed forward transition.
+    #[must_use]
+    pub(crate) fn revert_inverse(&self, forward: &TransitionKey) -> Option<&TransitionKey> {
+        self.revert_inverses.get(forward)
     }
 
     #[must_use]
@@ -1184,7 +1242,14 @@ impl LocalObjectRuntime {
         occupied_cells: &BTreeSet<LogicalCell>,
     ) -> Result<LocalObjectCommandResult, WorldRuntimeError> {
         let command_id = command.command_ref.command_id();
-        let prepared = self.prepare(command, occupied_cells)?;
+        let prepared = self.prepare(
+            &command.placement,
+            command.incarnation,
+            &command.content_generation,
+            &command.operation,
+            command.expected_revision,
+            occupied_cells,
+        )?;
         let result = LocalObjectCommandResult::from_terminal(&prepared.outcome, false);
         let outcome = prepared.outcome;
         let mutation = prepared.mutation;
@@ -1275,14 +1340,63 @@ impl LocalObjectRuntime {
         }
     }
 
+    /// #162 §7: a scope-origin, non-session operation — an encounter/server-event input or a
+    /// due revert fired by the scope's own driver (`world_object_revert`). It never touches
+    /// `CommandIngress` or `GameSessionAuthoritySnapshot`; it is fenced by the scope's own
+    /// identity and generation and then reuses exactly `prepare` and `PreparedMutation::commit`.
+    /// `stage_publish` runs only when `prepare` returned `Publish`, before `commit`; an error
+    /// from it fails the whole operation with nothing committed (§7 Round 21: capacity is
+    /// reserved only after `Publish`, in the same staged commit).
+    pub(crate) fn apply_scope_operation<E>(
+        &mut self,
+        scope: RuntimeScopeRefV1,
+        scope_generation: ScopeOwnershipGeneration,
+        operation: &ScopeLocalObjectOperation,
+        occupied_cells: &BTreeSet<LogicalCell>,
+        stage_publish: impl FnOnce(&ScopePublish<'_>) -> Result<(), E>,
+    ) -> Result<Result<TerminalSemanticOutcome, E>, WorldRuntimeError> {
+        if scope != self.scope {
+            return Err(WorldRuntimeError::StaleRuntimeScope);
+        }
+        if scope_generation != self.scope_generation {
+            return Err(WorldRuntimeError::StaleScopeOwnershipGeneration);
+        }
+        let prepared = self.prepare(
+            &operation.placement,
+            operation.incarnation,
+            &operation.content_generation,
+            &operation.operation,
+            operation.expected_revision,
+            occupied_cells,
+        )?;
+        if let PreparedMutation::Publish {
+            next_state,
+            next_revision,
+            ..
+        } = &prepared.mutation
+            && let Err(error) = stage_publish(&ScopePublish {
+                next_state,
+                next_revision: *next_revision,
+            })
+        {
+            return Ok(Err(error));
+        }
+        prepared.mutation.commit(self);
+        Ok(Ok(prepared.outcome))
+    }
+
     fn prepare(
         &self,
-        command: &LocalObjectCommand,
+        placement: &PlacementKey,
+        incarnation: u64,
+        content_generation: &ReferenceContentGeneration,
+        operation: &LocalObjectOperation,
+        expected_revision: u64,
         occupied_cells: &BTreeSet<LogicalCell>,
     ) -> Result<PreparedTerminal, WorldRuntimeError> {
-        if command.placement != self.placement
-            || command.incarnation != self.incarnation
-            || command.content_generation != self.content_generation
+        if placement != &self.placement
+            || incarnation != self.incarnation
+            || content_generation != &self.content_generation
         {
             return PreparedTerminal::unchanged(
                 DISPOSITION_BINDING_MISMATCH,
@@ -1290,7 +1404,7 @@ impl LocalObjectRuntime {
                 self.revision,
             );
         }
-        if command.expected_revision != self.revision {
+        if expected_revision != self.revision {
             return PreparedTerminal::unchanged(
                 DISPOSITION_STALE_STATE,
                 &self.state,
@@ -1298,7 +1412,7 @@ impl LocalObjectRuntime {
             );
         }
 
-        let transition = self.transition_for(&command.operation)?;
+        let transition = self.transition_for(operation)?;
         if self.state == transition.target_state {
             return PreparedTerminal::unchanged(DISPOSITION_NO_CHANGE, &self.state, self.revision);
         }

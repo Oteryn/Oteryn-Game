@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-28T10:37:40+00:00",
+  "updated_at": "2026-09-28T17:53:51+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -4940,6 +4940,53 @@
         "WORLD_OBJECT_OVERLAY state domain 2, snapshot type 1"
       ],
       "notes": "Accepted by the resource owner in #162 comment 5864914163 (USE-WIRE-V1). Derived from the existing single-chunk snapshot byte bound FND02-SNAPSHOT-CHUNK-BYTES = 524,288 bytes (apps/game-server/src/foundation/protocol.rs MAX_SNAPSHOT_CHUNK_BYTES, the same bound encode_single_chunk_snapshot enforces), divided by the maximum encoded WorldObjectOverlayEntryV1 size as an element of the repeated `entries` field. One entry-in-field is at most 1,078 bytes: outer repeated-field tag+length (1 + 2 = 3 bytes) wrapping an entry message of at most 1,075 bytes (content_generation: 1 tag + 1 length + 32 bytes = 34; placement: 1 tag + 2 length + 512 bytes = 515, using the existing accepted FIRST_PRODUCTION_MAX_KEY_BYTES = 512 from apps/game-server/src/content/production.rs; state key: 1 tag + 2 length + 512 bytes = 515, same key bound; revision: 1 tag + 10-byte u64 varint = 11; 34 + 515 + 515 + 11 = 1,075). floor(524,288 / 1,078) = 486 (486 * 1,078 = 523,908; remainder 380 bytes < 1,078). max_payload_bytes registered for WORLD_OBJECT_OVERLAY_SNAPSHOT_V1 is therefore 523,908 bytes, 380 bytes inside the FND02-SNAPSHOT-CHUNK-BYTES hard maximum."
+    },
+    {
+      "id": "WOBJ-RL-04",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Timed-revert (revert_after_ms) lifecycle records held by one scope revert driver in one scope generation, in any state (PENDING, IN_FLIGHT or TERMINAL)",
+      "unit": "records per scope generation",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked only after the forward operation's prepare returned Publish and before its commit; a full store fails the whole forward operation with no object mutation and no record. TERMINAL records are kept for the whole scope generation (the duplicate-delivery horizon) and are dropped with the scope-ephemeral driver on restart. Every key a record holds is bounded by FIRST_PRODUCTION_MAX_KEY_BYTES (512), so the worst case is about 4 KiB per record, 16 MiB per scope generation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "configured capacity N (tested at N=1): N records are created by committed forward operations",
+        "N+1: the next committed-shaped forward operation fails CAPACITY_EXCEEDED before commit; object state and revision are unchanged",
+        "a forward operation whose prepare result is unchanged never reaches the check",
+        "a configured capacity above 4096 is refused when the driver limits are built"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::apply_forward; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "Section 7 open decisions 1 and 5, resolved by the owning lane in OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
+    },
+    {
+      "id": "WOBJ-RL-05",
+      "owner_contract": "../architecture/OTERYN_INTERACTION_RELOCATION_AND_WORLD_OBJECT_OWNERS_PROPOSAL_V1.md",
+      "resource": "Due timed-revert records one scope revert-driver wake admits",
+      "unit": "records per driver wake",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "A wake fires at most this many due records in (deadline, scheduling ordinal, sequence) order and then returns to the scope owner; the remainder is neither dropped nor fired in the same wake and is reported as still due for a later wake.",
+      "client_visible": false,
+      "boundary_tests": [
+        "configured batch B (tested at B=1): B due records fire in one wake",
+        "B+1: the next due record stays PENDING and the wake reports more_due; a later wake fires it",
+        "a configured batch above 32 is refused when the driver limits are built"
+      ],
+      "consumers": [
+        "apps/game-server/src/world_object_revert.rs (ScopeRevertDriver::wake; not yet wired into a live Channel or Instance owner)"
+      ],
+      "notes": "Section 7 bounded due-work admission (FND-03 sections 7 and 14), same shape as MovementOwnerTurn's bounded max_inputs. Registered by OTV2-20260928-cw1-timed-revert-runtime (issue #162): a lane policy value, not a measurement."
     },
     {
       "id": "FND04B-LIVENESS-IDLE-PROBE-MS",
