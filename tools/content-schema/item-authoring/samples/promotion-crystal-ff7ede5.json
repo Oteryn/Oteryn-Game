@@ -7,7 +7,7 @@
     "per_field": {
       "charges.count": 121,
       "container.capacity": 453,
-      "presentation.name": 11555,
+      "presentation.name": 11556,
       "protection.armor": 429,
       "weapon.attack": 621,
       "weapon.defense": 636,
@@ -15,8 +15,8 @@
       "weapon.hit_chance": 56,
       "weapon.range_cells": 142
     },
-    "promoted_fields": 14173,
-    "promoted_items": 11555
+    "promoted_fields": 14174,
+    "promoted_items": 11556
   },
   "invariants": {
     "identity_reminted": false,
@@ -83314,6 +83314,16 @@
     },
     {
       "field_path": "presentation.name",
+      "native_key": "oteryn:item.registry.i00023587",
+      "source_item_id": 24415,
+      "source_value": "old rag",
+      "typed_value": {
+        "kind": "TEXT",
+        "value": "old rag"
+      }
+    },
+    {
+      "field_path": "presentation.name",
       "native_key": "oteryn:item.registry.i00023588",
       "source_item_id": 24416,
       "source_value": "rolled-up colourful carpet",
@@ -141890,7 +141900,7 @@
       }
     },
     "source_engine": "crystal",
-    "source_population_bundle_digest": "53247e645aff654b7ccf8e5d925d40603cde539aa704b1cebd56e7f97acd374e",
+    "source_population_bundle_digest": "9c9b4b25abe10a009f5bf6a2310fc0e5b94fd8c45a973a81eb1e2696bd045fcd",
     "source_profile": "crystal_ff7ede5_item_definition_v1",
     "source_repository": "zimbadev/crystalserver",
     "source_revision": "ff7ede593c69d4c658b382c97443e8155926924a"

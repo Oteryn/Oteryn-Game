@@ -9,7 +9,7 @@
         "oteryn:item.registry.i00000038",
         "oteryn:item.registry.i00000039"
       ],
-      "items": 11354
+      "items": 11355
     },
     {
       "blocker": "family_profile_unresolved",
@@ -20,7 +20,7 @@
         "oteryn:item.registry.i00000004",
         "oteryn:item.registry.i00000005"
       ],
-      "items": 946
+      "items": 945
     },
     {
       "blocker": "converter_missing:proficiency.proficiency_id",
@@ -3116,7 +3116,7 @@
       "items": 1
     }
   ],
-  "bundle_digest": "7346c28d4dd17fe0a38fae8aa6478ecb1e10c09aaa620aa2d6af56beae51f07b",
+  "bundle_digest": "eba7ae9f0ff8da41b246dd08d535704f5b16a900660803f8851e827ecacd615a",
   "by_profile": {
     "container": 279,
     "container_equipment": 8,
@@ -3129,7 +3129,7 @@
     "food": 189,
     "key": 12,
     "light_source": 169,
-    "material_valuable": 3052,
+    "material_valuable": 3053,
     "plant": 872,
     "progression_material": 7,
     "quest_item": 1065,
@@ -3137,7 +3137,7 @@
     "tool": 324,
     "transformation_item": 23,
     "trash": 196,
-    "unresolved": 26602,
+    "unresolved": 26601,
     "weapon_distance": 152,
     "weapon_magic": 88,
     "weapon_melee": 568
@@ -3152,20 +3152,20 @@
       "unique": 436
     },
     "decision": {
-      "eligible_false": 11122,
+      "eligible_false": 11123,
       "eligible_true": 433,
       "override": 0,
       "rule": "ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5"
     },
     "observation": {
       "member": 433,
-      "not_member": 11122,
+      "not_member": 11123,
       "source": "crystal_delivery_list"
     }
   },
   "family_profile_basis": {
-    "engine_attribute": 10679,
-    "wiki_evidence_fallback": 876
+    "engine_attribute": 10681,
+    "wiki_evidence_fallback": 875
   },
   "field_coverage": {
     "absorbpercentall": {
@@ -4525,9 +4525,9 @@
   },
   "outcome": {
     "blocked": 902,
-    "fully_resolved": 10653,
+    "fully_resolved": 10654,
     "items": 38157,
-    "not_converted": 946,
+    "not_converted": 945,
     "routed_non_item": 25656
   },
   "routed_non_item": [

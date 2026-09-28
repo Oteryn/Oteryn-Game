@@ -75,57 +75,49 @@ python test_engine_items.py
 convert to under this schema today, not a corpus migration or Game truth. It never
 commits per-item rows, only counters and capped examples in `samples/`.
 
-### Item semantic-promotion lowering (v1, wired as the single promotion source)
+### Item semantic-promotion lowering (v1, not yet wired)
 
-`apps/game-server/src/content/cw2_b1_import.rs` decodes this lowering packet
-(`docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json`,
-`OTERYN_ITEM_SEMANTIC_PROMOTION_LOWERING/v1`) into the existing Reference Item family
-for 9 field paths: `presentation.name`, `weapon.attack`/`defense`/`extra_defense`/
-`range_cells`/`hit_chance`, `protection.armor`, `charges.count`,
-`container.capacity`. As of #1048 this is the *only* Item semantic-promotion source
-(`protected_cw2_b1_item_semantic_promotion_lowering_v1_import`); the earlier,
-hand-compiled 69-field/23-item packet it superseded
+`apps/game-server/src/content/cw2_b1_import.rs` already decodes one hand-compiled Item
+semantic-promotion packet
 (`docs/agents/evidence/OTV2-20260923-content-world-item-semantic-promotion.json`,
-`OTERYN_ITEM_SEMANTIC_PROMOTION/v1`, formerly decoded by the now-retired
-`protected_cw2_b1_promoted_item_family_import`) is kept only as historical evidence,
-with no remaining Rust or test consumer. `lower_promotion_packet.py` proves this
-package's own authored Item data can systematically feed that same decoder, at
-population scale, rather than by hand: it runs `engine_items`/`validate_item` over the
-whole pinned Crystal population exactly like `population_census.py`, keeps only Items
-whose bundle validates with zero errors, and re-encodes their authored values for
-those 9 field paths in that decoder's exact typed representation (`TEXT`,
-`SIGNED_POINTS`, `CELLS`, canonical-reduced `RATIONAL_PERCENT`, `COUNT_U32`,
-`CAPACITY_U16`) — a value this package's own schema allows but the Rust decoder's
-narrower bounds do not is skipped, counted, and never smuggled in as a wrong or
-clamped value. Every row is then checked again by `validate_packet`/`validate_row`, a
-fail-closed Python restatement of the Rust decoder's own rules (shape, kind,
-source/typed equality, bounds, ordering, uniqueness, count partition), before the
-packet is written.
+`OTERYN_ITEM_SEMANTIC_PROMOTION/v1`) into the existing Reference Item family for 9
+field paths: `presentation.name`, `weapon.attack`/`defense`/`extra_defense`/
+`range_cells`/`hit_chance`, `protection.armor`, `charges.count`,
+`container.capacity`. `lower_promotion_packet.py` proves this package's own authored
+Item data can systematically feed that same decoder, at population scale, rather than
+by hand: it runs `engine_items`/`validate_item` over the whole pinned Crystal
+population exactly like `population_census.py`, keeps only Items whose bundle
+validates with zero errors, and re-encodes their authored values for those 9 field
+paths in that decoder's exact typed representation (`TEXT`, `SIGNED_POINTS`, `CELLS`,
+canonical-reduced `RATIONAL_PERCENT`, `COUNT_U32`, `CAPACITY_U16`) — a value this
+package's own schema allows but the Rust decoder's narrower bounds do not is skipped,
+counted, and never smuggled in as a wrong or clamped value. Every row is then checked
+again by `validate_packet`/`validate_row`, a fail-closed Python restatement of the
+Rust decoder's own rules (shape, kind, source/typed equality, bounds, ordering,
+uniqueness, count partition), before the packet is written.
 
 ```text
 python lower_promotion_packet.py --source /path/to/crystalserver --self-check
 python lower_promotion_packet.py --source /path/to/crystalserver --check
 ```
 
-Re-running the command above regenerates a fresh **candidate**. The committed output
-is `samples/promotion-crystal-ff7ede5.json`: 14,173 rows over 11,555 Items
-(`charges.count` 121, `container.capacity` 453, `presentation.name` 11,555,
-`protection.armor` 429, `weapon.attack` 621, `weapon.defense` 636,
+The committed output is `samples/promotion-crystal-ff7ede5.json`: 14,174 rows over
+11,556 Items (`charges.count` 121, `container.capacity` 453, `presentation.name`
+11,556, `protection.armor` 429, `weapon.attack` 621, `weapon.defense` 636,
 `weapon.extra_defense` 160, `weapon.hit_chance` 56, `weapon.range_cells` 142;
 ~3.4 MiB). Its `schema`/`profile`/`status`/`next_action` are deliberately different
-literal strings from this lowering packet's own pinned Rust constants, so a fresh
-candidate this script produces can never be mistaken for, or silently accepted as,
-the exact pinned/wired bytes.
+literal strings from the pinned Rust constants and from the wired packet's own values,
+so this candidate can never be mistaken for, or silently accepted as, the wired one.
+The #1048 Rust wiring pins an earlier copy (13,292 rows over 10,674 Items, before the wiki
+family fallback and blessing charms added Items); re-pinning that copy belongs to the
+promotion-pass assignment.
 
-The wired evidence file
-(`docs/agents/evidence/OTV2-20260928-item-promotion-lowering-v1.json`) is a
-byte-for-byte copy of an *earlier* candidate snapshot (13,292 rows over 10,674
-Items, before the wiki family fallback and blessing charms Items grew the
-population) as it stood when #1018/#1048 pinned and wired it. Re-pinning it to the
-grown `samples/promotion-crystal-ff7ede5.json` above (updated byte-count/digest
-constants, and the Rust decoder if the 9 field paths themselves change) is a
-separate follow-up task, left to the Content/World import role, since it is the one
-that owns and can requalify the target Item family this applies to.
+This is a v1 lowering **candidate**, not a Rust-side claim: wiring it into
+`apps/game-server/src/content/cw2_b1_import.rs` (pinned byte-count/digest constants
+for this packet, a bespoke apply function mirroring `apply_item_semantic_promotion`,
+and a Rust integration test, per the existing packet's own pattern) is left to the
+Content/World import role, since it is the one that owns and can requalify the target
+Item family this would apply to.
 
 ### Value-dependent fields and non-Item routing
 

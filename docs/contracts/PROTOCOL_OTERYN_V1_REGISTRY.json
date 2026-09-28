@@ -51,6 +51,15 @@
       "result_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldActorStepResultV1",
       "max_payload_bytes": 4,
       "max_result_payload_bytes": 4
+    },
+    {
+      "id": 2,
+      "name": "USE_INTENT",
+      "owner_decision": "USE-WIRE-V1 (#162 owner acceptance 5864914163)",
+      "payload_schema": "docs/contracts/protocol-oteryn/v1/world_object_v1.proto#UseIntentV1",
+      "result_schema": "docs/contracts/protocol-oteryn/v1/world_object_v1.proto#UseResultV1",
+      "max_payload_bytes": 529,
+      "max_result_payload_bytes": 4
     }
   ],
   "state_domains": [
@@ -73,6 +82,28 @@
           "name": "WORLD_SPATIAL_SNAPSHOT_V1",
           "payload_schema": "docs/contracts/protocol-oteryn/v1/world_spatial_v1.proto#WorldSpatialSnapshotV1",
           "max_payload_bytes": 64
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "WORLD_OBJECT_OVERLAY",
+      "owner_decision": "USE-WIRE-V1 (#162 owner acceptance 5864914163)",
+      "owner": "current ChannelRuntime",
+      "delta_types": [
+        {
+          "id": 1,
+          "name": "WORLD_OBJECT_OVERLAY_DELTA_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/world_object_v1.proto#WorldObjectOverlayDeltaV1",
+          "max_payload_bytes": 1078
+        }
+      ],
+      "snapshot_types": [
+        {
+          "id": 1,
+          "name": "WORLD_OBJECT_OVERLAY_SNAPSHOT_V1",
+          "payload_schema": "docs/contracts/protocol-oteryn/v1/world_object_v1.proto#WorldObjectOverlaySnapshotV1",
+          "max_payload_bytes": 523908
         }
       ]
     }
