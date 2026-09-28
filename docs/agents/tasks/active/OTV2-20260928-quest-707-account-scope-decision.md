@@ -92,17 +92,19 @@ negative_cases_required_of_implementation:
   - K6 character with the quest active under a pinned grant revision after the active revision switches to none -> still evaluated against the pinned revision until an explicit migration
 positive_cases_required_of_implementation:
   - a character completes a quest; a second character of the account passes its door
+  - a character earns an achievement; its committed grant request is later consumed once into AccountAchievement, including after the session ended
 independent_current_fact_sources:
   - character session fence rows
   - account fact table
+  - durable achievement grant request rows
 record_derived_matching_helper:
   allowed_for_positive_happy_path: true
   forbidden_for_negative_authority_or_provenance_cases: true
 finding_family_sweep:
   sibling_apis: "P03 and #1033 fences are the reference"
   protocol_versions: NOT_APPLICABLE
-  direct_and_reconciled_paths: "insert-if-absent inside the triggering transaction only"
-  fenced_durable_writes: "account fact rows only"
+  direct_and_reconciled_paths: "quest completions and gameplay cosmetic unlocks: insert-if-absent inside the triggering transaction; achievements: the triggering transaction commits a grant request, and the Achievement owner reconciles it into AccountAchievement idempotently, possibly after the session (decision §4.4)"
+  fenced_durable_writes: "quest completion and gameplay cosmetic fact rows and achievement grant request rows, under the character fence; AccountAchievement rows only from a committed request"
   restart_retry_replay_concurrency_pg_reload: "covered by K1 and K2"
   evidence:
     - apps/game-server/migrations/0002_fresh_admission_authority.sql
@@ -116,10 +118,12 @@ finding_dispositions:
     - "Codex P1 4122147295 (4c6e7dd): with later consumption the fact could not promise the earliest earner. Repaired: the fact records the provenance of the request it was derived from, not guaranteed earliest, and nothing may depend on it; K2 reworded"
     - "Codex P1 4122185020 (90634da): gap register §32 and the Store catalog decision §3 still listed Store scope as unresolved. Repaired: both records now note the scope portion as resolved by D47/D49, with delivery, identity, expiry, revocation and refunds still open"
     - "Codex P1 4122231516 (d002a3f): the Store catalog decision §3 still listed scope as open above the new note. Repaired: the §3 list and lead-in no longer list scope"
-    - "Codex P1 4122231506 (d002a3f), rejected with evidence: a commit cannot contain its own SHA (ANTI_STALL_AND_EXECUTION_BUDGET.md:71,84); each frozen head and freeze time is recorded on #162 and the terminal archive records the final head"
-  p0_p1_rejected_with_exact_evidence: []
+    - "Codex P1 4122277170 (ac27b40): the finding-family sweep still required every account-fact insert inside the triggering transaction. Repaired: the sweep separates direct quest/cosmetic inserts from reconciled achievement consumption and lists grant requests as a fact source"
+  p0_p1_rejected_with_exact_evidence:
+    - "Codex P1 4122231506 (d002a3f): a commit cannot contain its own SHA (ANTI_STALL_AND_EXECUTION_BUDGET.md:71,84); each frozen head and freeze time is recorded on #162 and the terminal archive records the final head"
   p2_fixed_accepted_or_deferred:
     - "Codex P2 4121915460 (d7f8834): an opt-out did not stop old facts from satisfying conditions. Fixed: readers apply the current world and quest policy (§4.2); K6 added."
+    - "Codex P2 4122277186 (ac27b40): the rejected finding sat in the accepted bucket. Fixed: moved to p0_p1_rejected_with_exact_evidence"
 ```
 
 ## Acceptance criteria

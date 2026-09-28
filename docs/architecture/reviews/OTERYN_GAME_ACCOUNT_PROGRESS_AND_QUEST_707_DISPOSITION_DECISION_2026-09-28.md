@@ -38,7 +38,7 @@ Two questions follow:
 | D46 | A quest grants its completion to the account by default. A quest may opt out. A quest whose unlock depends on an exclusive choice is opted out automatically. | "3. A" |
 | D47 | Outfits, outfit addons, mounts and Tibia Store purchases belong to the account, not the character (§4.3, §4.5). | "przypisane do konta nie postaci, tak samo rzeczy zakupione w tibia store" |
 | D48 | Achievements belong to the account; progress counters stay per character (§4.4). | Chosen option "Konto, liczniki per postać" |
-| D49 | Portability. Cosmetic unlocks, achievements and Store unlocks apply on every world of the account, in both profiles. Quest completions apply on every world of the same profile family. A Store item can be claimed on any world of the profile family it was bought for, subject to item compatibility (§4.2-§4.5). | Chosen options "Wszystko na wszystkich", then "Kosmetyki wszędzie" and "Dowolny świat profilu" |
+| D49 | Portability. Cosmetic unlocks, achievements and Store unlocks apply on every world of the account, in both profiles; a Store unlock only while its entitlement is usable (§4.5). Quest completions apply on every world of the same profile family. A Store item can be claimed on any world of the profile family it was bought for, subject to item compatibility (§4.2-§4.5). | Chosen options "Wszystko na wszystkich", then "Kosmetyki wszędzie" and "Dowolny świat profilu" |
 
 ## 3. Facts
 
