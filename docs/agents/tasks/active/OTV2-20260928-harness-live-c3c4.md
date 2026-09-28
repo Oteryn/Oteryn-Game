@@ -4,14 +4,14 @@
 task_id: OTV2-20260928-harness-live-c3c4
 title: harness live mode - render the join snapshot, step and click-the-door through oteryn-dev-client
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1174
 allocation_comment: control-plane allocation on #162 (alias "impl interaction"); owner decision D93
 base_branch: main
 branch: claude/harness-live-c3c4
-base_sha: 75a5baa285e691f8d1ac9c310ba790b299fc0dee
+base_sha: be242b8fbcd2908ec7b2c58408354eddd414bc0f
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -143,12 +143,12 @@ crate: unchanged. No `@codex`, no auto-merge, no review-thread resolution by thi
 ## Context checkpoint
 
 ```yaml
-last_progress: live mode implemented and validated locally; C2 record archived
-status: implementing
+last_progress: PR #1174 opened; live mode implemented and validated locally; C2 record archived
+status: ready
 branch: claude/harness-live-c3c4
-pr: null
+pr: 1174
 final_head_sha: the frozen final head of the PR
 owner_action_required: null
 blocker: null
-next_action: open the PR, then await required checks and independent review
+next_action: await required checks and independent review on PR #1174
 ```
