@@ -184,6 +184,22 @@ def test_cache_exact_revision_avoids_content_fetch() -> None:
         assert len(client.calls) == 1
 
 
+def test_cache_is_namespaced_by_target_cut() -> None:
+    assert collector.cache_path(Path("c"), 10, 395428).name == f"page-10-rev-395428-cut-{collector.TARGET_CUT}.json"
+    stale = {"page_id": 10, "revision_id": 395428, "target_cut": "2026-07-28"}
+    with tempfile.TemporaryDirectory() as directory:
+        cache = Path(directory)
+        (cache / "page-10-rev-395428.json").write_text(json.dumps(stale), encoding="utf-8")
+        assert collector.load_cached_record(cache, 10, 395428) is None
+        collector.cache_path(cache, 10, 395428).write_text(json.dumps(stale), encoding="utf-8")
+        try:
+            collector.load_cached_record(cache, 10, 395428)
+        except collector.CurrentSourceError as exc:
+            assert str(exc) == "CACHE_TARGET_CUT_MISMATCH"
+        else:
+            raise AssertionError("a record for another target cut must not be a cache hit")
+
+
 def test_manifest_excludes_raw_wikitext() -> None:
     full = {
         "schema": collector.SCHEMA,

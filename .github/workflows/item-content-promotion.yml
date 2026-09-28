@@ -59,7 +59,7 @@ jobs:
       - name: Verify protected predecessor algorithms
         run: |
           set -euo pipefail
-          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
+          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "0e23b3dd721cd054ef42d112df4bf848d73cd672b4ebd241a2a9de450f3f0fd5"
           test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "05eef574f5dfa5383ad5c20dd6961eead4508640457772b9899af0e259498bd4"
 
       - name: Install Rust toolchain

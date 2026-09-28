@@ -40,7 +40,7 @@ CURRENT_SOURCE_COLLECTOR_PATH = (
     "tools/reference-world-corridor-census/item_current_source_tibiawiki.py"
 )
 PROTECTED_CURRENT_SOURCE_COLLECTOR_SHA256 = (
-    "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
+    "0e23b3dd721cd054ef42d112df4bf848d73cd672b4ebd241a2a9de450f3f0fd5"
 )
 
 MAX_CANDIDATE_FIELDS = 256

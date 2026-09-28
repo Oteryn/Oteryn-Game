@@ -72,7 +72,7 @@ jobs:
           set -euo pipefail
           ROOT="$RUNNER_TEMP/item-field-verification"
           PROTECTED_MANIFEST="docs/agents/evidence/OTV2-20260927-content-world-item-current-source.json"
-          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
+          test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "0e23b3dd721cd054ef42d112df4bf848d73cd672b4ebd241a2a9de450f3f0fd5"
           python tools/reference-world-corridor-census/item_current_source_tibiawiki_self_test.py
           python tools/reference-world-corridor-census/item_current_source_tibiawiki.py \
             --game-root . \
