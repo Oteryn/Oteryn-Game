@@ -1186,6 +1186,7 @@ pub struct ProjectV2TravelDestination {
 pub struct ProjectV2DialogueKeyword {
     /// Lowercase slug, unique among sibling keywords.
     pub key: String,
+    /// Words that must all occur in the player's message, as in the source keyword handlers.
     /// Empty exactly when `fallback` is set.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub triggers: Vec<String>,
