@@ -394,17 +394,19 @@ TibiaWiki BR binding also exists it must agree.
 | validator errors | 0 | 0 |
 | valid, only the sprite atlas pending | 11,216 | 10,879 |
 | valid, other blockers | 902 | 877 |
-| routed to a non-Item owner | 25,670 | 25,207 |
-| not converted (no family, or no identity binding) | 369 | 564 |
+| routed to a non-Item owner | 25,728 | 25,265 |
+| not converted (no family, or no identity binding) | 311 | 506 |
 | Delivery Task eligible | 433 | 401 |
 
 Entries that are not portable Items are counted as `routed_non_item` with an owner and
 reason, not as failures (Crystal counts): WorldObject `immovable_unclassified` 8,450,
-`appearance_placeholder_slot` 4,300, `corpse` 3,344, `corpse_decoration` 14,
+`appearance_placeholder_slot` 4,338, `corpse` 3,344, `corpse_decoration` 14,
 `primarytype_world_object` 981; Terrain `primarytype_world_object` 5,138,
-`ground_or_border` 3,443. An immovable entry that resolves an Item family stays an Item
-with `physical.movable = false`. `corpse_decoration` (owner decision 2026-09-28, §5c) is
-identical on Canary (14).
+`ground_or_border` 3,443; Fluid `fluid_type_without_appearance` 20 (§5d). An immovable
+entry that resolves an Item family stays an Item with `physical.movable = false`.
+`corpse_decoration` (owner decision 2026-09-28, §5c) is identical on Canary (14); so are
+`fluid_type_without_appearance` (20) and the 38-item increase in
+`appearance_placeholder_slot` (§5d).
 
 `PRIMARYTYPE_PROFILE` also admits two case-fold/plural aliases of existing entries
 (`decorations`, `lamps`); neither occurs in either engine's `items.xml`, so they change no
@@ -421,14 +423,15 @@ identical in both engines) and mantra damage types (energy, fire, earth, ice). A
 with proficiency `238` cites both engines' admitted crosswalks.
 
 Remaining blockers (Crystal): `sprite_atlas_not_admitted` on every converted Item (no
-admitted sprite atlas yet); `family_profile_unresolved` 369 (no structural signal and no
-admitted wiki evidence, engine wrap-target or owner name-rule evidence either; editorial
-backlog); other proficiency ids 642, `augments` 83 and `runespellname` 36 (need an Ability
-identity crosswalk); `flags.forceuse` 34 (loaded but unused by both engines); and small
+admitted sprite atlas yet); `family_profile_unresolved` 311 (no structural signal and no
+admitted wiki evidence, engine wrap-target, owner name-rule, fluid-type or
+late-placeholder evidence either; editorial backlog — see §5d); other
+proficiency ids 642, `augments` 83 and `runespellname` 36 (need an Ability identity
+crosswalk); `flags.forceuse` 34 (loaded but unused by both engines); and small
 data-quality residuals such as `stopduration` without decay or a container without
-`containersize`. Canary's own `family_profile_unresolved` is 328, plus 236
+`containersize`. Canary's own `family_profile_unresolved` is 270, plus 236
 `identity_not_in_b1_catalog` (no Crystal allocator key at all, so the wiki fallback below
-is never consulted for those).
+is never consulted for those; 270 + 236 = 506).
 
 `family_profile_basis` distinguishes how each converted Item's `family_profile` was
 decided: `engine_attribute` (the engine's own `primarytype`/`weapontype`/slot/etc., as
@@ -558,6 +561,18 @@ The title index itself is not pinned in the schema (it is provenance, not correc
 every record's own wiki page/revision identity is what the loader verifies); its count and
 digest are recorded in the capture tool's uncommitted report only.
 
+`collect_unresolved` (the function that decides which ids still need a wiki lookup) must
+probe using only the classifiers that outrank the wiki fallback -- engine attributes and
+`immovable_non_item_route` -- never wrap-target inheritance, the dead-item rules, or
+either of the two §5d last-resort routes, all of which rank *below* the wiki fallback in
+`convert_item`. `sources["skip_post_wiki_fallback_routes"]` enforces this: without it, an
+id independently resolvable by one of those lower-priority rules would be wrongly excluded
+from the lookup, permanently dropping its real (and, in production, still-winning) wiki
+evidence on the next recapture. This was verified empirically while adding the §5d rules:
+the fixed probe reproduces the exact same 3,563 unresolved pairs / 1,565 id-matched keys /
+1,415 committed records as the original capture, byte-for-byte identical evidence for
+every shared key.
+
 ## 5c. Engine wrap-target inheritance and corpse-like "dead ..." items
 
 Two further owner decisions (2026-09-28), both applied only once every existing
@@ -605,6 +620,181 @@ Both rules recover the exact same 111 items (85 + 14 + 12) in Crystal and Canary
 `family_profile_unresolved` 480 -> 369 (Crystal), 439 -> 328 (Canary); `routed_non_item`
 25,656 -> 25,670 (Crystal), 25,193 -> 25,207 (Canary); no other outcome or blocker count
 changes.
+
+## 5d. Fluid types and late placeholder names
+
+Two more owner decisions (2026-09-28), each applied only once every rule above --
+including §5c -- has already failed to resolve a family for this exact item, so neither
+can ever reroute an already-resolved or already-routed id. Verified by diffing every id's
+full outcome against the pre-task baseline (the committed §5c state): exactly 58 ids
+change in each engine, all from `family_profile_unresolved` to one of these two routes;
+every other id's outcome (resolved, routed, or still unresolved) is byte-identical.
+
+(A wiki-evidence `world_object` routing -- itemid-matched pages agreeing on a
+`WORLD_OBJECT_PRIMARYTYPES` `primarytype` instead of an admitted Item profile -- was
+investigated and then removed: it never routed a single item in the current universe
+(playable-first doctrine: no speculative machinery for zero observed cases). The
+id-matched-but-otherwise-unresolved pages' own `primarytype`/`objectclass` values, kept
+here for reference only since nothing acts on them: `primarytype` empty 57 (remains of a
+crude dream, sacramental wine, gnomish lava fishing rod), `primarytype = others` 23
+(etcher, special bat coffin, "the tale of joran and yvette - part i"), `objectclass =
+other items` 15 (some mortal essence, cleansed sanity, cask), `objectclass = household
+items` 3 (dragon pinata, pantibian amphora), `objectclass = tools and other equipment` 3
+(spying eye, sulphur blossom lamp), `primarytype = contest prizes` 1 (cm token),
+`primarytype = tools (objects)` 1 (root vegetable dish), `primarytype = valuables` 1 (cm
+token). None is a `WORLD_OBJECT_PRIMARYTYPES` key.)
+
+**(b) Fluid types with no appearance object** (reason `fluid_type_without_appearance`,
+owner `Fluid`). Both pinned engines' `data/items/items.xml` ids 1-20 name the server's
+own `Fluids_t` enum values (`FLUID_WATER`=1 .. `FLUID_CHOCOLATE`=20; `FLUID_NONE`=0 has no
+items.xml row), verified identical in both engines' own upstream source --
+`src/utils/utils_definitions.hpp` (Canary `research_clones/canary-full` lines 413-433,
+Crystal `research_clones/crystal-full` lines 423-443; the pinned data-only checkouts this
+converter reads carry no engine source tree of their own) -- and carry no
+`appearances.dat` object in either engine. `FLUID_TYPE_NAMES` names exactly this list
+(water, wine, beer, mud, blood, slime, oil, urine, milk, manafluid, lifefluid, lemonade,
+rum, fruit juice, coconut milk, mead, tea, ink, candyfluid, chocolate); an items.xml
+record with one of these exact names and no appearance routes non-Item to `Fluid`. Every
+other appearance-less `family_profile_unresolved` name stays unresolved: `arena
+leaderboard`, `bridge`, `buttress`, `cracked wall`, `earth`, `flooded sand`, `glowing
+obsidian pipes`, `hive structure`, `hivecomb floor`, `ice`, `insectoid meatball`, the five
+"miniature of a ..." names, `obsidian pipes`, `pepper grass`, `sandy rock pile`, `sewer
+pipe`, `skull pile`, `slimy growth`, `small stream`, `stone pavement`,
+`time-particle extractor`, `trapped water`, `waterway`, and `weapon of mayhem` (see (d)
+below) -- all 20 ids resolve identically in Crystal and Canary.
+
+**(c) Late placeholder names** (reason `appearance_placeholder_slot`, owner
+`WorldObject` -- same as the early `PLACEHOLDER_APPEARANCE_NAMES` check in
+`non_item_route`). `LATE_PLACEHOLDER_APPEARANCE_NAMES` (`old tibia item`, `unknown item`,
+`unknow`, `event item`, `unknown corpse`) route the same way, but only once every other
+classifier has already failed -- deliberately never added to the early check, and never
+gated on "no other items.xml attribute" the way the early check is, because some ids
+carrying these very names are genuinely resolved by engine attributes or by wiki evidence
+(id-matched, independent of name) and must never be rerouted. Routed ids (identical in
+both engines): `event item` 2 (31964, 32006), `old tibia item` 19 (24504, 24505, 24657-
+24664, 24696, 24766-24771, 24774, 24775), `unknow` 6 (32577, 32592, 32637, 32695, 32696,
+32706), `unknown corpse` 1 (4023), `unknown item` 10 (9117, 12078, 12259, 12261, 12303,
+17345, 27952, 27953, 28185, 28186) -- 38 total.
+
+**(d) Investigation: "weapon of mayhem" (46 Crystal items; resolved by §5e below).**
+Crystal `items.xml` carries two disjoint id ranges under the server's generic overcharge
+description ("This weapon is overcharged", no `weapontype`/`primarytype` attribute of
+their own): `23223-23342` named `weapon of carving`, and `23577-23667` named `weapon of
+mayhem`. TibiaWiki's per-weapon "X of Mayhem" pages (Slayer of Mayhem, Bow of Mayhem
+(Charged), etc.) carry `itemid` values `23224`, `23226`, `23228`, `23229`, `23239` --
+inside the `weapon of carving` range, not the `weapon of mayhem` one; the exact-id join
+already resolves all of those correctly (`primarytype = Sword Weapons` -> `weapon_melee`),
+which is why "weapon of carving" is fully resolved today. A full-text search of the whole
+wiki for every id in `23577-23667` returns zero hits: no page anywhere declares any of
+those ids by itemid. But the client's own `appearances.dat` carries CipSoft's real
+per-id names for this range (id 23580 "slayer of mayhem", 23595 "bow of mayhem", etc.) --
+different from the blanket items.xml label -- and TibiaWiki does document these under
+those real per-weapon names, just not by itemid; see §5e, which resolves 45 of the 46 by
+that appearance name instead. Of the 91 ids in the range, 45 already resolve via
+`flags.clothes.slot` (`equipment_offhand`); of the remaining 46, 45 resolve via §5e and
+the last one has no `appearances.dat` object at all and routes via §5h.
+
+Together (b)+(c) recover 58 items identically in both engines. §5e-5h below extend the
+same branch, applied in order after (b)/(c): 225 ids change per engine in the final
+state (20 fluid + 38 late placeholder + 45 appearance-title + 17 actualname + 105
+no-client-appearance), all from the pre-task `family_profile_unresolved` baseline of 369
+(Crystal) / 328 (Canary) down to 144 (Crystal) / 103 (Canary); every other outcome is
+byte-identical. See `docs/agents/tasks/active/OTV2-20260928-item-nonitem-routing.md` for
+the full changed-id proof.
+
+## 5e. Appearance-name wiki title join (`match_basis: "appearance_title"`)
+
+For a key still unresolved after both the exact-id and title joins (§5b), whose own
+`appearances.dat` object carries a non-empty `name` that differs (case-insensitively)
+from its items.xml name, the capture tool looks that appearance name up in the same exact
+case-insensitive title index the `title` join already builds (same `(Item)`/`(Object)`
+suffix and disambiguation handling). This exists because a blanket items.xml range label
+can hide real, individually wiki-documented per-id names: Crystal/Canary ids
+`23577-23667` all share the single items.xml name `weapon of mayhem`, but the client's own
+`appearances.dat` carries CipSoft's real per-id names (23580 "slayer of mayhem", 23595
+"bow of mayhem", 23638 "wand of remedy", 23660 "rod of carving", ...), and TibiaWiki
+documents these under those real names. Records carry `match_basis: "appearance_title"`
+and `matched_names` = the appearance name (lower-cased); `convert_item`'s name gate checks
+the item's own appearance name instead of its items.xml name for these records.
+
+Resolves 45 of the 46 remaining "weapon of mayhem" ids (§5d) identically in both engines,
+to `weapon_melee` or `weapon_distance` depending on the matched page's own weapon type;
+the 46th has no `appearances.dat` object and routes via §5h instead. Owner decision
+(2026-09-28): these 10.94 Carving/Mayhem/Remedy weapons carry TibiaWiki `status =
+unavailable` (merged into "of Destruction" in the 2017 Winter Update) and are kept as
+ordinary Items with their real weapon family -- `status = unavailable` is never used to
+exclude or specially route an item (see §5f).
+
+## 5f. Availability from TibiaWiki `status`
+
+Every wiki-matched record (any `match_basis`) also carries the matched page's own
+`status` infobox field as an optional top-level Item `availability` field: `{"status":
+<value>, "evidence": {"source": "tibiawiki", "page_id", "revision_id", "wiki_title",
+"match_basis"}}`. TibiaWiki's `Infobox Object` template forwards `status` verbatim to
+`Status Messagebox`, whose own `{{#if:{{{1|}}}|...}}` renders nothing when the field is
+absent or empty -- confirmed from the live template source, not assumed -- so there is no
+"active" default to fall back to: an absent/empty `status`, or an item with no wiki record
+at all, carries no `availability` field at all (absence means "not asserted", never
+"available"). A disambiguation record only carries `availability` when every candidate
+page agrees on `status`. The admitted enum is exactly the five distinct values TibiaWiki's
+own `Status Messagebox` switch recognizes (`deprecated`, `ts-only`, `event`,
+`unobtainable`, `unavailable`); an unadmitted value fails closed in the loader. Observed
+in the recapture (both engines, identical): `unavailable` 105 (includes all 45 §5e
+Carving/Mayhem/Remedy weapons), `event` 5, `unobtainable` 2, `ts-only` 1 -- `deprecated`
+was not observed. Availability is purely additive: it is never consulted by
+`classify_family_profile`, routing, or any other outcome, and the changed-id invariant
+proof covers only the (b)/(c)/(e)/(g)/(h) routing changes above.
+
+## 5g. Exact `actualname` join (`match_basis: "actualname"`)
+
+Every TibiaWiki `Infobox Object` page also carries its own `actualname` field -- the
+exact in-game object name, which often differs from the page title (page "Water
+(Liquid)" `actualname` "vial of water", page "Mosaic" `actualname` "mosaic"). The
+exact-id join (§5b) already fetches all ~9,980 Infobox Object pages, so a second index is
+built from their own `actualname` field (lower-cased, trimmed, comma/semicolon lists
+split) at no extra network cost. For a key still unresolved after the itemid, title and
+appearance-title joins, the item's own items.xml name (and, if different, its appearance
+name) is looked up in that index; it resolves only when every page sharing that exact
+`actualname` agrees through the existing primarytype/objectclass/status order -- one page
+resolves directly, two or more must all agree, any disagreement or unresolvable page
+leaves the item unresolved with no further fallback. `matched_names` records whichever of
+the item's own names (items.xml or appearance) produced the match.
+
+Because this is a looser, name-string join rather than an exact id, a generic engine name
+already correctly handled by an *engine-data-driven* rule can coincidentally collide with
+an unrelated wiki page's `actualname` -- found empirically while implementing this join:
+"dead rat" (already routed by §5c's `DEAD_CREATURE_PROFILE` table to `material_valuable`)
+and "dead goblin" (already routed by §5c's corpse-decoration rule to
+`WorldObject`/`corpse_decoration`) both also happen to be the literal `actualname` of
+unrelated Oramond-quest-specific pages ("Dead Rat (Oramond)", three "Dead Goblin (...)
+Quest" pages), which would have silently overridden the already-correct §5c answer.
+`convert_item` therefore consults `appearance_title`/`actualname` evidence (§5e/§5g) only
+*after* wrap-target inheritance and both dead-item rules (§5c) have already failed to
+resolve or route the item; the exact `itemid`/`title` bases (§5b) are unaffected and still
+rank above §5c, as before this change (`fallback_entry_matches_name`'s
+`HIGH_CONFIDENCE_MATCH_BASES` vs. `NAME_JOINED_MATCH_BASES` in `engine_items.py`). Both
+"dead rat"/"dead goblin" keep their original §5c outcome; the changed-id invariant proof
+(both engines, zero unsafe diffs) covers this directly.
+
+Resolves 17 items identically in both engines: "tic-tac-toe token" (2 ids, via
+disambiguation over "Tic-Tac-Toe Token (O)"/"(X)", `primarytype = Game Tokens` ->
+`event_collectible`) and "stone" (15 ids, via disambiguation over nine "Stone (...)"
+size/location variant pages, `primarytype = Rocks`/`Metals` -> `material_valuable`).
+
+## 5h. No-client-appearance last resort (`no_client_appearance`)
+
+Once every rule above -- both wiki-evidence tiers (§5b, §5e/§5g), wrap-target and
+dead-item (§5c) -- has failed, an item with no `appearances.dat` object at all (the
+fluid-type (b) and late-placeholder (c) routes are checked first and keep their own
+reasons) routes `routed_non_item` owner `WorldObject`, reason `no_client_appearance`: it
+has no client-visible presence anywhere in the pinned 15.30 universe, so it cannot be a
+placed, renderable Item. These are id gaps inside a blanket items.xml range where only
+some ids also got a client appearance -- e.g. Crystal `bridge` (71 of 103 ids have an
+appearance and already route Terrain/WorldObject via other rules; the appearance-less 32
+stay); the same pattern recurs for `hive structure` (20), `stone pavement` (12), `slimy
+growth` (12), `arena leaderboard`, `obsidian pipes`, and others. Resolves 105 items
+identically in both engines. An item with a resolvable wiki record, or any
+`appearances.dat` object at all, is never affected.
 
 ## 6. Validation and non-claims
 

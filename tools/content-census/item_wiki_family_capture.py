@@ -25,10 +25,9 @@ indexed by the integer(s) in its own `| itemid = ...` field (comma-separated lis
 included). When one or more pages list the engine's own numeric id, ONLY those pages are
 ever considered for that id -- one page resolves through the admitted fields as usual;
 2+ pages must all agree on the exact same profile -- and this evidence is authoritative:
-if the id-matched pages exist but do not resolve (or disagree), the item stays
-unresolved with no fallback to name matching. Only when no page lists the id at all does
-this fall back to the pre-existing name-based join (`match_basis: "title"`) described
-next.
+if the id-matched pages exist but do not resolve, the item stays unresolved with no
+fallback to name matching. Only when no page lists the id at all does this fall back to
+the pre-existing name-based join (`match_basis: "title"`) described next.
 
 Every engine name without an id match is resolved against an exact, case-insensitive
 index of every main-namespace TibiaWiki title (`action=query&list=allpages&apnamespace=0
@@ -97,7 +96,7 @@ GENERIC_PLACEHOLDER_NAMES = {
 
 INFOBOX_RE = re.compile(r"\{\{\s*Infobox[ _](Object|Item)\b", re.IGNORECASE)
 FIELD_RE = re.compile(
-    r"^\|[ \t]*(primarytype|objectclass|status|itemid)[ \t]*=[ \t]*(.*?)[ \t]*$",
+    r"^\|[ \t]*(primarytype|objectclass|status|itemid|actualname)[ \t]*=[ \t]*(.*?)[ \t]*$",
     re.IGNORECASE | re.MULTILINE,
 )
 DISAMBIG_RE = re.compile(r"\{\{\s*Disambig\b", re.IGNORECASE)
@@ -206,16 +205,51 @@ def build_itemid_index(fetcher, titles):
     return index
 
 
-def resolve_id_matched_pages(pages):
-    """Resolve one item id's already-fetched, id-matched `pages` (see
-    `build_itemid_index`) to a `match_basis: "itemid"` record base, or `None` when they
-    do not all resolve to the exact same admitted profile -- id evidence is
-    authoritative once it exists, so the caller never falls back to name matching on
-    `None`. Mirrors `resolve_direct_page`/the multi-candidate branch of `resolve_name`,
-    but never reports (id-join outcomes are counted separately by the caller) and never
-    needs a `{{Disambig}}` page: every page here already carries its own admitted
-    infobox by construction (it embeds `Template:Infobox Object`)."""
+def diagnose_id_matched_unresolved(pages):
+    """For an id-matched group that fails to resolve an admitted Item `family_profile`,
+    return the sorted list of distinct `field=value` (lower-cased) strings its own
+    pages' `primarytype`/`objectclass` fields actually carry -- report-only evidence for
+    a human to review a possible future policy addition; never consulted by any routing
+    decision, and never written to the committed snapshot."""
+    seen = set()
+    for page in pages:
+        fields = parse_infobox_fields(page["content"])
+        if not fields:
+            continue
+        _profile, field, value = resolve_infobox_fields(fields)
+        if field is not None:
+            seen.add(f"{field}={value.strip().lower()}")
+    return sorted(seen)
+
+
+def page_status_value(fields):
+    """This page's own infobox `status` field, lower-cased and trimmed, or `None` when
+    absent or empty. `Template:Infobox Object` only ever forwards a non-empty `status`
+    into `{{Status Messagebox|{{{status|}}}}}`; that template's own source
+    (`{{#if:{{{1|}}}|...}}`) renders nothing at all when the argument is empty, so there
+    is no confirmed implicit default (in particular no confirmed "active") for an
+    absent field -- it is recorded as no availability fact at all, never guessed."""
+    value = (fields.get("status") or "").strip().lower()
+    return value or None
+
+
+def resolve_page_group(pages, match_basis):
+    """Resolve a group of already-fetched pages that all evidence the SAME external key
+    (a numeric itemid, or -- task g -- an exact `actualname`) to a `match_basis`-tagged
+    record base, or `None` when they do not all resolve to the exact same admitted
+    profile -- this evidence is authoritative once it exists, so the caller never falls
+    back to a lower-priority join on `None`. Mirrors `resolve_direct_page`/the
+    multi-candidate branch of `resolve_name`, but never reports (join outcomes are
+    counted separately by each caller) and never needs a `{{Disambig}}` page: every page
+    here already carries its own admitted infobox by construction (it embeds
+    `Template:Infobox Object`).
+
+    The record also carries `availability_status` (owner decision 2026-09-28, task f):
+    every page's own `status` field, only when every page agrees on the exact same
+    non-empty value; `None` otherwise (never guessed, and never blocks the profile
+    resolution itself)."""
     resolved = []
+    statuses = []
     for page in pages:
         fields = parse_infobox_fields(page["content"])
         if not fields:
@@ -224,15 +258,18 @@ def resolve_id_matched_pages(pages):
         if profile is None:
             return None
         resolved.append((profile, field, value, page))
+        statuses.append(page_status_value(fields))
     if len({profile for profile, _f, _v, _p in resolved}) != 1:
         return None
+    availability_status = statuses[0] if len(set(statuses)) == 1 else None
     if len(resolved) == 1:
         profile, field, value, page = resolved[0]
         return {
             "resolution": "direct",
             "field": field,
             "value": value,
-            "match_basis": "itemid",
+            "match_basis": match_basis,
+            "availability_status": availability_status,
             **evidence_row(page),
         }
     return {
@@ -241,8 +278,41 @@ def resolve_id_matched_pages(pages):
             {**evidence_row(page), "field": field, "value": value}
             for _profile, field, value, page in resolved
         ],
-        "match_basis": "itemid",
+        "match_basis": match_basis,
+        "availability_status": availability_status,
     }
+
+
+def resolve_id_matched_pages(pages):
+    """`resolve_page_group` for the exact-id join (`match_basis: "itemid"`)."""
+    return resolve_page_group(pages, "itemid")
+
+
+def build_actualname_index(fetcher, titles):
+    """{actualname_lower: [page, ...]} from the own `actualname` field of every
+    already-fetched `Infobox Object` page in `titles` (see `build_itemid_index`; the
+    same already-fetched page set, no extra network calls) -- comma/semicolon-separated
+    lists are split, each entry trimmed and lower-cased, owner decision 2026-09-28
+    (task g). TibiaWiki's own `actualname` names the exact in-game object name, which
+    can differ from both the page title and this converter's engine name/appearance
+    name (e.g. a blanket items.xml range label over ids the client itself names
+    individually)."""
+    index = defaultdict(list)
+    for title in titles:
+        page = fetcher.cache.get(title)
+        if page is None:
+            continue
+        fields = parse_infobox_fields(page["content"])
+        if not fields or "actualname" not in fields:
+            continue
+        for part in re.split(r"[;,]", fields["actualname"]):
+            name = part.strip().lower()
+            if not name:
+                continue
+            bucket = index[name]
+            if not any(existing["page_id"] == page["page_id"] for existing in bucket):
+                bucket.append(page)
+    return index
 
 
 def build_title_index(titles):
@@ -296,6 +366,11 @@ def parse_infobox_fields(content):
     for field_match in FIELD_RE.finditer(window):
         field_name = field_match.group(1).lower()
         field_value = field_match.group(2).strip()
+        # A page's last parameter is sometimes written with no trailing newline before
+        # the template's own closing `}}` (e.g. `|status=unobtainable}}`); `(.*?)$`
+        # would otherwise capture that closer as part of the value. Never legitimate
+        # for any of these plain enum-like fields, so it is always stripped.
+        field_value = re.sub(r"\}\}\s*$", "", field_value).strip()
         if field_name not in fields:
             fields[field_name] = field_value
     return fields
@@ -433,7 +508,16 @@ _NO_EXISTING_WIKI_FALLBACK = Path("/dev/null/no-existing-wiki-family-fallback-sn
 
 
 def collect_unresolved(engine, source_root, rule_source, captured_at, report):
-    """Yield (registry_key, item_id, name_lower) for every family_profile_unresolved id.
+    """Return `(pairs, appearance_pairs)` for every family_profile_unresolved id.
+
+    `pairs` is `(registry_key, item_id, name_lower)` using each id's own items.xml name
+    (as before). `appearance_pairs` is `(registry_key, item_id, appearance_name_lower)`
+    for the subset whose own `appearances.dat` object carries a non-empty name that
+    differs (case-insensitively) from its items.xml name (owner decision 2026-09-28,
+    task e) -- e.g. a blanket items.xml range label ("weapon of mayhem") over ids whose
+    real client name is per-id ("blade of mayhem", "slayer of mayhem", ...). The caller
+    only ever tries `appearance_pairs` once the itemid and title joins on `pairs` have
+    both failed for that key.
 
     Always run as if no wiki-evidence fallback snapshot were committed yet
     (`wiki_fallback_path` points at a path that can never exist): this discovers new
@@ -446,8 +530,18 @@ def collect_unresolved(engine, source_root, rule_source, captured_at, report):
         rule_source=rule_source,
         wiki_fallback_path=_NO_EXISTING_WIKI_FALLBACK,
     )
+    # Wrap-target inheritance, the dead-item rules and the three last-resort non-Item
+    # routes (fluid-type, late-placeholder, no-client-appearance) are all LOWER priority
+    # than the wiki fallback
+    # itself (see `engine_items.convert_item`): real wiki evidence, once it exists,
+    # always wins over any of them. With this flag unset, one of them firing here (wiki
+    # is off in this probe) would wrongly mark the id "already handled" and exclude it
+    # from the lookup below, permanently dropping its real, still-current wiki evidence
+    # from the snapshot on every future recapture.
+    sources["skip_post_wiki_fallback_routes"] = True
     identity_index = sources["identity_index"]
     out = []
+    appearance_out = []
     for item_id in sorted(sources["items"]):
         _item, _deps, item_report = engine_items.convert_item(sources, item_id)
         if "family_profile_unresolved" not in item_report.get("blockers", ()):
@@ -467,8 +561,14 @@ def collect_unresolved(engine, source_root, rule_source, captured_at, report):
         if not name:
             report["no_name"] += 1
             continue
-        out.append((key, item_id, name.lower()))
-    return out
+        name = name.lower()
+        out.append((key, item_id, name))
+        appearance_name = (
+            (appearance.get("name") if appearance else None) or ""
+        ).strip()
+        if appearance_name and appearance_name.lower() != name:
+            appearance_out.append((key, item_id, appearance_name.lower()))
+    return out, appearance_out
 
 
 def evidence_row(page):
@@ -541,6 +641,7 @@ def resolve_direct_page(name, page, report, report_examples):
             "field": field,
             "value": value,
             "match_basis": "title",
+            "availability_status": page_status_value(fields),
             **evidence_row(page),
         }
     if field is None:
@@ -574,6 +675,7 @@ def resolve_disambig_links(page, fetcher):
         return "no_candidates", None
     candidates = []
     profiles = set()
+    statuses = []
     for candidate_title in candidate_titles:
         candidate_page = fetcher.cache.get(candidate_title)
         if candidate_page is None:
@@ -585,12 +687,14 @@ def resolve_disambig_links(page, fetcher):
         if profile is None:
             return "candidate_unresolved", None
         profiles.add(profile)
+        statuses.append(page_status_value(fields))
         candidates.append(
             {**evidence_row(candidate_page), "field": field, "value": value}
         )
     if len(profiles) != 1:
         return "divergent", None
-    return "ok", (next(iter(profiles)), candidates)
+    availability_status = statuses[0] if len(set(statuses)) == 1 else None
+    return "ok", (next(iter(profiles)), candidates, availability_status)
 
 
 def resolve_disambiguation_page(name, page, fetcher, report, report_examples):
@@ -606,12 +710,13 @@ def resolve_disambiguation_page(name, page, fetcher, report, report_examples):
         report[reason] += 1
         report_examples[reason].append(name)
         return None
-    _profile, candidates = payload
+    _profile, candidates, availability_status = payload
     return {
         "matched_names": [name],
         "resolution": "disambiguation",
         "candidates": candidates,
         "match_basis": "title",
+        "availability_status": availability_status,
     }
 
 
@@ -725,12 +830,15 @@ def main():
     report_examples = defaultdict(list)
 
     pairs = []
-    pairs += collect_unresolved(
-        "crystal", args.crystal_source, None, captured_at, report
-    )
-    pairs += collect_unresolved(
-        "canary", args.canary_source, args.crystal_source, captured_at, report
-    )
+    appearance_pairs = []
+    for engine_pairs, engine_appearance_pairs in (
+        collect_unresolved("crystal", args.crystal_source, None, captured_at, report),
+        collect_unresolved(
+            "canary", args.canary_source, args.crystal_source, captured_at, report
+        ),
+    ):
+        pairs += engine_pairs
+        appearance_pairs += engine_appearance_pairs
 
     # {key: {name_lower, ...}} / {key: {item_id, ...}}
     names_by_key = defaultdict(set)
@@ -738,6 +846,11 @@ def main():
     for key, item_id, name in pairs:
         names_by_key[key].add(name)
         ids_by_key[key].add(item_id)
+    # {key: {appearance_name_lower, ...}}, task e: only ever consulted for a key that
+    # neither the itemid nor the title join resolves (see the finalize loop below).
+    appearance_names_by_key = defaultdict(set)
+    for key, _item_id, appearance_name in appearance_pairs:
+        appearance_names_by_key[key].add(appearance_name)
     print(f"unresolved (engine,id) pairs: {len(pairs)}", file=sys.stderr)
     print(
         f"unique engine names: {len({name for _k, _i, name in pairs})}", file=sys.stderr
@@ -760,6 +873,13 @@ def main():
     )
 
     id_matched_records = {}  # key -> record-base-or-None
+    # Report-only: distinct `field=value` (lower-cased) strings seen on id-matched pages
+    # that fail to resolve an admitted Item profile -- see
+    # `diagnose_id_matched_unresolved`. Never consulted by any routing decision, never
+    # written to the committed snapshot.
+    id_matched_unresolved_field_value_diagnostics = defaultdict(
+        lambda: {"count": 0, "example_names": []}
+    )
     for key, ids in ids_by_key.items():
         pages = []
         seen_page_ids = set()
@@ -771,14 +891,24 @@ def main():
         if not pages:
             continue
         base = resolve_id_matched_pages(pages)
-        id_matched_records[key] = base
-        if base is None:
-            report["itemid_match_unresolved"] += 1
-            report_examples["itemid_match_unresolved"].append(key)
-        elif base["resolution"] == "direct":
-            report["itemid_match_resolved_direct"] += 1
-        else:
-            report["itemid_match_resolved_disambiguation"] += 1
+        if base is not None:
+            id_matched_records[key] = base
+            if base["resolution"] == "direct":
+                report["itemid_match_resolved_direct"] += 1
+            else:
+                report["itemid_match_resolved_disambiguation"] += 1
+            continue
+        id_matched_records[key] = None
+        report["itemid_match_unresolved"] += 1
+        report_examples["itemid_match_unresolved"].append(key)
+        for field_value in diagnose_id_matched_unresolved(pages):
+            bucket = id_matched_unresolved_field_value_diagnostics[field_value]
+            bucket["count"] += 1
+            if len(bucket["example_names"]) < 3:
+                for example_name in sorted(names_by_key.get(key, ())):
+                    if example_name not in bucket["example_names"]:
+                        bucket["example_names"].append(example_name)
+                        break
     print(
         f"itemid join: {len(id_matched_records)} registry keys matched by id "
         f"({sum(1 for v in id_matched_records.values() if v is not None)} resolved)",
@@ -892,6 +1022,139 @@ def main():
             ]
         records[key] = record
 
+    # Appearance-title join (task e, owner decision 2026-09-28): only ever tried for a
+    # key neither the itemid nor the title join above resolved, and only ever using an
+    # id's own appearances.dat name (never its items.xml name -- see
+    # `collect_unresolved`). Mirrors the title join exactly (same candidate-title
+    # derivation, same disambiguation handling), except the emitted `match_basis` is
+    # `appearance_title`, not `title`.
+    appearance_candidate_titles_by_name = {
+        name: candidate_titles_for_name(name, title_index)
+        for name in sorted(
+            {n for names in appearance_names_by_key.values() for n in names}
+        )
+    }
+    appearance_wave1_titles = sorted(
+        {t for titles in appearance_candidate_titles_by_name.values() for t in titles}
+    )
+    print(
+        f"appearance-title join: fetching {len(appearance_wave1_titles)} candidate "
+        "titles",
+        file=sys.stderr,
+    )
+    fetcher.fetch_titles(appearance_wave1_titles)
+    appearance_names_with_pages = [
+        name
+        for name in appearance_candidate_titles_by_name
+        if any(
+            fetcher.cache.get(title) is not None
+            for title in appearance_candidate_titles_by_name[name]
+        )
+    ]
+    appearance_wave2_titles = set()
+    for name in appearance_names_with_pages:
+        for title in appearance_candidate_titles_by_name[name]:
+            page = fetcher.cache.get(title)
+            if page is not None and DISAMBIG_RE.search(page["content"]):
+                appearance_wave2_titles.update(extract_candidate_links(page["content"]))
+    fetcher.fetch_titles(sorted(appearance_wave2_titles))
+
+    appearance_resolution_by_name = {}
+    for name in appearance_names_with_pages:
+        record = resolve_name(
+            name,
+            appearance_candidate_titles_by_name[name],
+            fetcher,
+            report,
+            report_examples,
+        )
+        if record is not None:
+            record["match_basis"] = "appearance_title"
+            appearance_resolution_by_name[name] = record
+
+    for key, names in sorted(appearance_names_by_key.items()):
+        if key in records:
+            continue  # already resolved by the itemid or title join above.
+        resolved_names = sorted(n for n in names if n in appearance_resolution_by_name)
+        if not resolved_names:
+            continue
+        base = appearance_resolution_by_name[resolved_names[0]]
+        if len(resolved_names) > 1:
+            first_shape = json.dumps(base, sort_keys=True)
+            if any(
+                json.dumps(appearance_resolution_by_name[n], sort_keys=True)
+                != first_shape
+                for n in resolved_names[1:]
+            ):
+                report["multi_name_key_divergent"] += 1
+                report_examples["multi_name_key_divergent"].append(key)
+                continue
+        record = dict(base)
+        record["matched_names"] = resolved_names
+        record["registry_key"] = key
+        if record["resolution"] == "direct":
+            record["captured_at"] = captured_at
+        else:
+            record["candidates"] = [
+                {**candidate, "captured_at": captured_at}
+                for candidate in record["candidates"]
+            ]
+        records[key] = record
+
+    # Actualname join (task g, owner decision 2026-09-28): only ever tried for a key
+    # that survived the itemid, title AND appearance_title joins above (all higher
+    # priority). Tries this key's own items.xml name(s) and its own appearance name(s)
+    # (task e) against every already-fetched Infobox Object page's own `actualname`
+    # field, built once from that same page set (no extra network calls); each
+    # candidate name's own page group must independently agree on one profile (exactly
+    # `resolve_page_group`'s rule), and if 2+ different candidate names for this key
+    # both resolve, they too must agree, or the whole key stays unresolved.
+    actualname_index = build_actualname_index(fetcher, infobox_object_titles)
+    print(
+        f"actualname join: {len(actualname_index)} distinct actualnames indexed",
+        file=sys.stderr,
+    )
+    for key in sorted(set(names_by_key) | set(appearance_names_by_key)):
+        if key in records:
+            continue
+        candidate_names = sorted(
+            names_by_key.get(key, set()) | appearance_names_by_key.get(key, set())
+        )
+        resolved_for_key = []
+        for candidate_name in candidate_names:
+            pages = actualname_index.get(candidate_name)
+            if not pages:
+                continue
+            base = resolve_page_group(pages, "actualname")
+            if base is not None:
+                resolved_for_key.append((candidate_name, base))
+        if not resolved_for_key:
+            continue
+        if len(resolved_for_key) > 1:
+            first_shape = json.dumps(resolved_for_key[0][1], sort_keys=True)
+            if any(
+                json.dumps(base, sort_keys=True) != first_shape
+                for _name, base in resolved_for_key[1:]
+            ):
+                report["multi_name_key_divergent"] += 1
+                report_examples["multi_name_key_divergent"].append(key)
+                continue
+        matched_names = sorted(
+            {candidate_name for candidate_name, _b in resolved_for_key}
+        )
+        base = resolved_for_key[0][1]
+        record = dict(base)
+        record["matched_names"] = matched_names
+        record["registry_key"] = key
+        if record["resolution"] == "direct":
+            record["captured_at"] = captured_at
+        else:
+            record["candidates"] = [
+                {**candidate, "captured_at": captured_at}
+                for candidate in record["candidates"]
+            ]
+        records[key] = record
+
     snapshot_sha256 = hashlib.sha256(canonical_records_bytes(records)).hexdigest()
     snapshot = {
         "schema": SCHEMA,
@@ -931,6 +1194,16 @@ def main():
                     "keys_unresolved_by_id_no_fallback": sum(
                         1 for v in id_matched_records.values() if v is None
                     ),
+                },
+                # Report-only: distinct primarytype/objectclass values seen on
+                # id-matched pages that fail to resolve an admitted Item profile. Never
+                # consulted by any routing decision -- see
+                # `diagnose_id_matched_unresolved`.
+                "itemid_unresolved_field_values": {
+                    field_value: data
+                    for field_value, data in sorted(
+                        id_matched_unresolved_field_value_diagnostics.items()
+                    )
                 },
                 "title_index": {
                     "count": title_index_count,

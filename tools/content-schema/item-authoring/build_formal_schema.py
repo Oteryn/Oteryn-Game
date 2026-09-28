@@ -4,6 +4,7 @@ import copy
 import json
 from pathlib import Path
 
+import engine_items
 from proficiency_profiles import (
     CANARY_PROFICIENCY_SOURCE,
     CRYSTAL_PROFICIENCY_SOURCE,
@@ -1019,6 +1020,35 @@ def build_item_schema():
             "wrapping": use("wrapping"),
         }
     )
+    d["availabilityEvidence"] = obj(
+        {
+            "source": enum("tibiawiki"),
+            "page_id": integer(1),
+            "revision_id": integer(1),
+            "wiki_title": text(),
+            "match_basis": enum("itemid", "title", "appearance_title", "actualname"),
+        },
+        ("source", "page_id", "revision_id", "wiki_title", "match_basis"),
+    )
+    d["availability"] = obj(
+        {
+            "status": enum(*sorted(engine_items.ADMITTED_AVAILABILITY_STATUSES)),
+            "evidence": use("availabilityEvidence"),
+        },
+        ("status", "evidence"),
+        description=(
+            "Owner decision 2026-09-28 (task f): whether TibiaWiki's own Infobox "
+            "Object 'status' field asserted something about the exact page that "
+            "decided this Item's family_profile. Present only when the wiki-evidence "
+            "fallback resolved family_profile AND that page's own 'status' was "
+            "non-empty (for a disambiguation, only when every candidate page agreed); "
+            "absence means 'not asserted', never 'available' -- an Item with no wiki "
+            "record, or one resolved some other way (engine attribute, wrap-target, "
+            "dead-item, fluid-type, late-placeholder), never carries this field. "
+            "'status' never affects family classification, routing or any other "
+            "outcome; it is observed fact only."
+        ),
+    )
     d["trade"] = obj(
         {
             "tradeable": use("bool"),
@@ -1120,7 +1150,7 @@ def build_item_schema():
     d["familyProfileEvidence"] = obj(
         {
             "resolution": enum("direct", "disambiguation"),
-            "match_basis": enum("itemid", "title"),
+            "match_basis": enum("itemid", "title", "appearance_title", "actualname"),
             "field": enum("primarytype", "objectclass", "status"),
             "value": text(),
             "wiki_source": use("wikiEvidenceSource"),
@@ -1141,7 +1171,12 @@ def build_item_schema():
             "'match_basis' is an audit field: 'itemid' when the pages were joined by the "
             "item's own exact numeric TibiaWiki 'itemid', which takes precedence and is "
             "authoritative over 'title' (the engine name matched against the wiki title "
-            "index). 'engine_wrap_target' (wrap_target_id/wrap_target_primarytype): this "
+            "index), 'appearance_title' (the item's own appearances.dat name, when it "
+            "differs from its items.xml name, matched against the same title index), "
+            "and 'actualname' (the item's own items.xml or appearance name matched "
+            "against the wiki's own infobox 'actualname' field, tried only once none of "
+            "the other three joins resolved). 'engine_wrap_target' "
+            "(wrap_target_id/wrap_target_primarytype): this "
             "item's own items.xml 'wrapableto' names another items.xml id whose own "
             "engine primarytype resolved the family (one hop only, never chained, never "
             "through that id's own wiki fallback). 'owner_name_rule' "
@@ -1227,6 +1262,7 @@ def build_item_schema():
         "light": use("light"),
         "use": use("use"),
         "lifecycle": use("lifecycle"),
+        "availability": use("availability"),
         "trade": use("trade"),
         "source_observations": use("sourceObservations"),
         "editor": use("editor"),
