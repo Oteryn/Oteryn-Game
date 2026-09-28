@@ -27,8 +27,15 @@ os, io, require, dofile, loadfile, package, debug = nil, nil, nil, nil, nil, nil
 logger = { error = function() end, warn = function() end, info = function() end, debug = function() end }
 
 local SYM = {}
+local SYMS = {}
 local function sym(name)
-  return setmetatable({ __sym = name }, SYM)
+  -- One symbol per dotted name, so symbols work as table keys (towns[TOWNS_LIST.THAIS]).
+  local s = SYMS[name]
+  if not s then
+    s = setmetatable({ __sym = name }, SYM)
+    SYMS[name] = s
+  end
+  return s
 end
 local function symname(v) return rawget(v, "__sym") end
 local function text(v)
@@ -36,6 +43,7 @@ local function text(v)
   return tostring(v)
 end
 SYM.__index = function(t, k) return sym(symname(t) .. "." .. tostring(k)) end
+SYM.__newindex = function() end  -- symbols stay names: a library assigning StdModule.kick must not replace it
 SYM.__call = function(t, ...) return sym(symname(t) .. "()") end
 SYM.__concat = function(a, b) return text(a) .. text(b) end
 SYM.__tostring = function(t) return "<" .. symname(t) .. ">" end
@@ -82,7 +90,16 @@ Game = setmetatable({
       __newindex = function(t, k, v) record.events[#record.events + 1] = k end,
     })
   end,
+  -- Global storage reads as unset, as on a fresh server.
+  getStorageValue = function() return -1 end,
 }, { __index = function(t, k) return sym("Game." .. tostring(k)) end })
+
+-- Server configuration reads as neutral values, as the files only use it in arithmetic and tests.
+configManager = setmetatable({
+  getNumber = function() return 0 end,
+  getBoolean = function() return false end,
+  getString = function() return "" end,
+}, { __index = function(t, k) return sym("configManager." .. tostring(k)) end })
 
 NpcHandler = {}
 function NpcHandler:new(keywordHandler)

@@ -136,6 +136,30 @@ non-empty coordinate frame, x and y in 0..=65535 and floor 0..=15. Tests:
    Done in `OTV2-20260927-npc-admission-wave-a`: 983 NPCs, 289 trade and 53 travel Services, 2,035 source
    bindings; the successor tree gains `content/npcs/definitions` and `content/services/{trade,travel}`.
    Dragon Ancestor Spirit is deferred (`MOVEMENT_UNDECLARED`): neither source declares its walk configuration.
+   D8 (`OTV2-20260927-npc-admission-wiki-completion`) then admits 110 more NPCs, all confirmed by the wiki:
+
+   - 82 NPCs that neither source places but whose wiki page has a position;
+   - 17 Day/Night or stage variants confirmed by their base name's page;
+   - 2 NPCs confirmed by the infobox `actualname`;
+   - 2 Canary misspellings confirmed by a single-edit match;
+   - 2 seasonal NPCs without a fixed position (Santa Claus, Messenger of Santa);
+   - 5 NPCs whose conflicting source placements the wiki position decides.
+
+   A sandbox fix (one symbol per name, neutral `configManager` values and unset global storage) loads
+   Towncryer, Captain Dreadnought, Enpa-Deia Pema and Enpa Rudra. The first two are admitted. The two Enpa
+   NPCs, which had passed only on Crystal while Canary failed to load, are now held for their conflicting
+   outfit colours.
+
+   Wave A is then 1,093 NPCs, with 308 trade and 55 travel Services and 2,281 bindings.
+
+   Still held:
+   - 7 unplaced NPCs without a wiki page;
+   - 9 NPCs unknown to the wiki;
+   - 2 rejected server-only NPCs;
+   - 9 definition conflicts;
+   - 1 placement conflict;
+   - 3 naming issues;
+   - 3 NPCs that do not load.
 5. Later: placements after World admission; dialogue after Oteryn-authored text; held NPCs, offers and
    routes as their blockers close.
 

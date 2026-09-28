@@ -340,11 +340,13 @@ def build_npc_record(page):
     if not fields:
         return None  # page embeds the template only transitively (e.g. via a "<city> NPCs" subpage)
     name = strip_wiki_markup(fields.get('name')) or page['title']
+    actualname = strip_wiki_markup(fields.get('actualname')) or None
     jobs = [strip_wiki_markup(fields.get(key)) for key in ('job', 'job2', 'job3')]
     jobs = [job for job in jobs if job]
     x, y, z = parse_coord(fields.get('posx')), parse_coord(fields.get('posy')), parse_int(fields.get('posz'))
     position = {'x': x, 'y': y, 'z': z} if None not in (x, y, z) else None
-    return {'pageid': page['pageid'], 'revid': revid, 'title': page['title'], 'name': name, 'jobs': jobs,
+    return {'pageid': page['pageid'], 'revid': revid, 'title': page['title'], 'name': name,
+            'actualname': actualname, 'jobs': jobs,
             'city': strip_wiki_markup(fields.get('city')), 'location': strip_wiki_markup(fields.get('location'))[:300],
             'position': position, 'transport': parse_transport(fields.get('notes'))}
 

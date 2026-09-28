@@ -27,6 +27,11 @@ mod gameplay_transport;
 )]
 mod movement;
 pub mod node;
+#[allow(
+    dead_code,
+    reason = "player spell core (P3a) awaits the cast protocol and runtime state contracts (P3b)"
+)]
+mod spell;
 
 pub use gameplay_transport::{
     FreshEvidenceSource, GameplayListenerConfig, GameplaySeamOwners, GameplayServeError,
