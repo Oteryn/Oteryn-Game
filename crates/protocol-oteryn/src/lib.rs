@@ -531,6 +531,12 @@ pub enum CommandStatus {
     // Constructed by the gameplay transport, which path-included test crates omit.
     #[allow(dead_code)]
     Rejected = 2,
+    /// `COMMAND_STATUS_DUPLICATE_REPLAY` (FND-02 §13.2): the retained terminal result of an
+    /// already reserved lower `CommandId`, replayed; the command is never executed again.
+    DuplicateReplay = 3,
+    /// `COMMAND_STATUS_DUPLICATE_OUTCOME_EXPIRED` (FND-02 §13.2): an already reserved lower
+    /// `CommandId` whose terminal result is no longer retained; reconciliation is required.
+    DuplicateOutcomeExpired = 4,
 }
 
 /// One post-admission `ClientCommand` (FND-02): its command identity, registered type and the
@@ -801,9 +807,9 @@ pub struct CommandResultView<'a> {
 
 /// Decodes one `CommandResult` message payload — a `WireEnvelopeView::payload()` whose
 /// `message_type()` is `MessageType::CommandResult`. Reuses `validate_command_result_ingress`,
-/// then recovers the typed fields. A zero/absent `command_id` or `status`, or a status this
-/// crate does not register (`DUPLICATE_REPLAY`, `DUPLICATE_OUTCOME_EXPIRED`: the server reports
-/// those as a `ProtocolError`, never as a `CommandResult`), fails closed.
+/// then recovers the typed fields. A zero/absent `command_id`, or an absent, unspecified or
+/// unregistered `status`, fails closed; the four registered statuses (`ACCEPTED`, `REJECTED`,
+/// `DUPLICATE_REPLAY`, `DUPLICATE_OUTCOME_EXPIRED`) decode.
 pub fn decode_command_result(
     payload: &[u8],
 ) -> Result<CommandResultView<'_>, FoundationProtocolError> {
@@ -832,6 +838,8 @@ pub fn decode_command_result(
     let status = match status {
         Some(1) => CommandStatus::Accepted,
         Some(2) => CommandStatus::Rejected,
+        Some(3) => CommandStatus::DuplicateReplay,
+        Some(4) => CommandStatus::DuplicateOutcomeExpired,
         _ => return Err(FoundationProtocolError::MalformedEnvelope),
     };
     Ok(CommandResultView {
@@ -3754,14 +3762,40 @@ mod tests {
         Ok(())
     }
 
+    /// The registered duplicate statuses (FND-02 §13.2) round-trip through the existing server
+    /// encoder, carrying the replayed payload (or none) and the sequenced envelope.
+    #[test]
+    fn command_result_decoder_represents_the_duplicate_statuses()
+    -> Result<(), FoundationProtocolError> {
+        for (status, wire_status, payload) in [
+            (CommandStatus::DuplicateReplay, 3, &[0x08, 0x02][..]),
+            (CommandStatus::DuplicateOutcomeExpired, 4, &[][..]),
+        ] {
+            assert_eq!(status as u32, wire_status);
+            let wire = encode_command_result(4, 12, 6, status, payload)?;
+            let envelope = decode_wire_envelope(&wire)?;
+            assert_eq!(envelope.validate(Direction::ServerToClient, true), Ok(()));
+            assert_eq!(envelope.server_sequence(), 12);
+            assert_eq!(
+                decode_command_result(envelope.payload())?,
+                CommandResultView {
+                    command_id: 6,
+                    status,
+                    error_code: 0,
+                    payload,
+                }
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn command_result_decoder_fails_closed_on_unusable_results() {
-        // status 3/4 (not produced as CommandResults), unspecified or absent status, an absent
-        // or zero command id, a duplicated singular field, a wrong-wire-type payload and an
-        // error code above u32 all fail closed.
+        // An unregistered status (5), unspecified or absent status, an absent or zero command
+        // id, a duplicated singular field, a wrong-wire-type payload and an error code above
+        // u32 all fail closed.
         for payload in [
-            &[0x08, 0x01, 0x10, 0x03][..],
-            &[0x08, 0x01, 0x10, 0x04],
+            &[0x08, 0x01, 0x10, 0x05][..],
             &[0x08, 0x01, 0x10, 0x00],
             &[0x08, 0x01],
             &[0x10, 0x01],

@@ -59,9 +59,18 @@ Discipline, all fail-closed (any violation, timeout or I/O error makes the sessi
   just sent.
 - A `StateDelta` must name the promised domain, the registered `delta_type` (1), be based on
   exactly the last applied domain revision (start: the join snapshot's domain revisions, now
-  exposed on `JoinSnapshot`), and carry the loaded `content_generation`.
-- A `LivenessProbe` between frames is answered with a `LivenessAck` (last applied sequence) and
-  otherwise ignored, so the 5 s idle cadence cannot desynchronise a slow client.
+  exposed on `JoinSnapshot`), and carry the loaded `content_generation`; an overlay delta's
+  entry revision must equal its `new_revision`, else nothing is installed.
+- A `CommandResult` status must pair with its disposition: the server sends ACCEPTED for every
+  disposition but `Rejected`, which it sends with REJECTED (STEP and USE alike); anything else
+  fails closed.
+- FND-02 §13.2 duplicate statuses (DUPLICATE_REPLAY, DUPLICATE_OUTCOME_EXPIRED, now represented
+  by `CommandStatus`/`decode_command_result`) for an earlier CommandId this session sent are
+  surfaced by `take_duplicate_outcomes` (no delta, no poisoning); a duplicate for a CommandId
+  never sent, or for the command just sent, fails closed.
+- Liveness: no background task. A `LivenessProbe` arriving while a reply is read is acked; an
+  idle caller must call `service_liveness(duration)`, which acks probes for that window and
+  fails closed on any other frame.
 
 `crates/protocol-oteryn` gained only additive client-direction codecs, each round-tripped
 against the existing server encoder: `encode_client_command` (+ `ClientCommandValue`),
@@ -116,9 +125,10 @@ reason: >
   `cargo run --locked -p oteryn-architecture-check -- workspace .`;
   `python3 tools/agents/validate_governance.py`;
   `python3 tools/repository/validate_repository_policy.py`; `git diff --check`
-- result: all PASS. protocol-oteryn 57/57 (+8: client command, liveness ack/probe, command
-  result, state delta, snapshot target sequence, each with negatives); dev-client 25/25 (+13:
-  full door scenario with every disposition, rejected step, liveness, unencodable use, one
+- result: all PASS. protocol-oteryn 58/58 (+9: client command, liveness ack/probe, command
+  result incl. duplicate statuses, state delta, snapshot target sequence, each with negatives);
+  dev-client 31/31 (+19: full door scenario with every disposition, rejected step, liveness,
+  idle liveness, unencodable use, status pairing, overlay entry revision, duplicates, one
   negative test per client check, stall timeout); game-server --lib 695/0/2-ignored.
 
 ### Component/integration
@@ -165,7 +175,7 @@ other than `qualification.rs`, registries and proto files, `wp5_s3b/run.sh`: unc
 ## Context checkpoint
 
 ```yaml
-last_progress: implementation and local validation complete; PR #1166 opened
+last_progress: Codex fix round (3 P2 + 1 P1) applied and validated locally on PR #1166
 status: ready
 branch: claude/dev-client-step-use-c2
 pr: 1166

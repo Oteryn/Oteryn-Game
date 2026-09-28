@@ -178,6 +178,25 @@ pub enum DevClientError {
     ContentGenerationMismatch {
         domain_id: u32,
     },
+    /// A `WORLD_OBJECT_OVERLAY` delta's entry carried a `revision` other than the delta's own
+    /// `new_revision`; nothing from it is applied.
+    OverlayEntryRevisionMismatch {
+        new_revision: u64,
+        entry_revision: u64,
+    },
+    /// A `CommandResult`'s status did not pair with its typed disposition (the server sends
+    /// `ACCEPTED` for every disposition except `REJECTED`, which it sends with `REJECTED`), or
+    /// it carried a duplicate status for the command just sent (a fresh `CommandId` cannot be a
+    /// duplicate).
+    InconsistentCommandResult {
+        command_id: u64,
+        status: CommandStatus,
+    },
+    /// A duplicate-status `CommandResult` (FND-02 §13.2) named a `CommandId` this session never
+    /// sent (below its first, or not yet sent).
+    DuplicateForUnsentCommand {
+        command_id: u64,
+    },
 }
 
 impl fmt::Display for DevClientError {
@@ -266,6 +285,21 @@ impl fmt::Display for DevClientError {
             Self::ContentGenerationMismatch { domain_id } => write!(
                 formatter,
                 "domain {domain_id} delta content generation differs from the loaded one"
+            ),
+            Self::OverlayEntryRevisionMismatch {
+                new_revision,
+                entry_revision,
+            } => write!(
+                formatter,
+                "overlay delta new_revision {new_revision} differs from its entry revision {entry_revision}"
+            ),
+            Self::InconsistentCommandResult { command_id, status } => write!(
+                formatter,
+                "command {command_id} result status {status:?} is inconsistent with its disposition"
+            ),
+            Self::DuplicateForUnsentCommand { command_id } => write!(
+                formatter,
+                "duplicate result for command {command_id}, which this session never sent"
             ),
         }
     }
@@ -528,6 +562,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
         stream,
         deadline: request.deadline,
         connection_generation: session_generation,
+        first_command_id: accepted_fields.next_command_id,
         next_command_id: accepted_fields.next_command_id,
         last_server_sequence: begin.target_server_sequence,
         spatial_revision,
@@ -536,6 +571,7 @@ pub async fn connect_session(request: JoinRequest<'_>) -> Result<DevClientSessio
         world_object_overlay: snapshot.world_object_overlay.clone(),
         join_snapshot: snapshot,
         unusable: false,
+        duplicates: Vec::new(),
     })
 }
 
@@ -578,10 +614,18 @@ pub type UseOutcome = CommandOutcome<UseDisposition>;
 /// `CommandResult`/`StateDelta` must arrive at exactly the previous applied `server_sequence`
 /// plus one; a `CommandResult` must correlate to the command just sent; a `StateDelta` must name
 /// the domain and registered `delta_type` the disposition promised, be based on exactly the
-/// domain revision last applied, and carry the loaded `content_generation`. A `LivenessProbe`
-/// arriving between commands is answered with a `LivenessAck` and otherwise ignored. Any
+/// domain revision last applied, and carry the loaded `content_generation`. A `CommandResult`'s
+/// status must pair with its disposition (`REJECTED` only with `Rejected`). A duplicate-status
+/// result (FND-02 §13.2) for a `CommandId` this session sent is not a violation: it is
+/// recorded and returned by `take_duplicate_outcomes`, never followed by a delta. Any other
 /// violation, timeout or I/O failure makes the session unusable (`SessionUnusable`): the
 /// server's state is no longer known, so nothing further is sent.
+///
+/// Liveness: the session runs no background task. A `LivenessProbe` that arrives while a
+/// command's reply is being read is answered with a `LivenessAck` and otherwise ignored, but
+/// nothing reads (so nothing answers) while the session is idle. A caller that idles longer than
+/// the server's probe cadence (5 s out of combat, three unanswered probes lose control) must
+/// call `service_liveness` for the idle time.
 ///
 /// Dropping the session closes the connection.
 #[derive(Debug)]
@@ -597,7 +641,24 @@ pub struct DevClientSession {
     world_object_overlay: Vec<WorldObjectOverlayEntry>,
     join_snapshot: JoinSnapshot,
     unusable: bool,
+    first_command_id: u64,
+    duplicates: Vec<DuplicateOutcome>,
 }
+
+/// A duplicate-status `CommandResult` (FND-02 §13.2) for an earlier `CommandId` of this session:
+/// the server did not execute that command again. `payload` is the replayed typed result for
+/// `DuplicateReplay` (undecoded; it belongs to the original command's type) and empty for
+/// `DuplicateOutcomeExpired`. It promises no delta.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DuplicateOutcome {
+    pub command_id: u64,
+    pub status: CommandStatus,
+    pub server_sequence: u64,
+    pub payload: Vec<u8>,
+}
+
+/// Most duplicate results retained between `take_duplicate_outcomes` calls; more fails closed.
+const MAX_RETAINED_DUPLICATES: usize = 64;
 
 impl DevClientSession {
     /// The join snapshot exactly as decoded, before any command.
@@ -627,6 +688,84 @@ impl DevClientSession {
     /// The `server_sequence` of the last frame applied (initially the snapshot's target).
     pub fn last_server_sequence(&self) -> u64 {
         self.last_server_sequence
+    }
+
+    /// Returns (and clears) the duplicate-status results received while reading command results.
+    pub fn take_duplicate_outcomes(&mut self) -> Vec<DuplicateOutcome> {
+        std::mem::take(&mut self.duplicates)
+    }
+
+    /// Keeps an otherwise idle session alive: for up to `duration`, reads frames and answers each
+    /// `LivenessProbe` with a `LivenessAck` (last applied `server_sequence`). Returns `Ok` when
+    /// the time elapses. Any other frame, a failed validation, a closed connection or an I/O
+    /// error fails closed and makes the session unusable. Runs on the caller's task only.
+    pub async fn service_liveness(&mut self, duration: Duration) -> Result<(), DevClientError> {
+        self.ensure_usable()?;
+        let until = tokio::time::Instant::now() + duration;
+        let outcome = self.serve_liveness_until(until).await;
+        self.poison_on_error(outcome)
+    }
+
+    async fn serve_liveness_until(
+        &mut self,
+        until: tokio::time::Instant,
+    ) -> Result<(), DevClientError> {
+        loop {
+            // Waiting for the first byte is cancel-safe (a plain `read` either returns data or
+            // consumes nothing), so the idle window can end without losing part of a frame; the
+            // rest of a started frame is then read under the ordinary per-frame deadline.
+            let mut first = [0_u8; 1];
+            match tokio::time::timeout_at(until, self.stream.read(&mut first)).await {
+                Err(_elapsed) => return Ok(()),
+                Ok(Err(error)) => return Err(error.into()),
+                Ok(Ok(0)) => return Err(io::Error::from(io::ErrorKind::UnexpectedEof).into()),
+                Ok(Ok(_)) => {}
+            }
+            let frame = bounded(
+                self.deadline,
+                "idle frame",
+                read_frame_after(&mut self.stream, first[0]),
+            )
+            .await?;
+            let envelope = decode_wire_envelope(&frame)?;
+            envelope.validate(Direction::ServerToClient, true)?;
+            self.check_generation(&envelope)?;
+            if envelope.message_type() != MessageType::LivenessProbe {
+                return Err(DevClientError::UnexpectedMessage {
+                    expected: MessageType::LivenessProbe,
+                    actual: envelope.message_type(),
+                });
+            }
+            self.answer_probe(envelope.payload()).await?;
+        }
+    }
+
+    fn check_generation(
+        &self,
+        envelope: &oteryn_protocol_oteryn::WireEnvelopeView<'_>,
+    ) -> Result<(), DevClientError> {
+        if envelope.connection_generation() != self.connection_generation {
+            return Err(DevClientError::ConnectionGenerationMismatch {
+                expected: self.connection_generation,
+                actual: envelope.connection_generation(),
+            });
+        }
+        Ok(())
+    }
+
+    async fn answer_probe(&mut self, payload: &[u8]) -> Result<(), DevClientError> {
+        let probe_id = decode_liveness_probe(payload)?;
+        let ack = encode_liveness_ack(
+            self.connection_generation,
+            probe_id,
+            self.last_server_sequence,
+        )?;
+        bounded(
+            self.deadline,
+            "LivenessAck write",
+            write_frame(&mut self.stream, &ack),
+        )
+        .await
     }
 
     /// Sends the FND-02 `ClientCommand` type 1 `WORLD_ACTOR_STEP_INTENT` for `direction` and
@@ -679,6 +818,11 @@ impl DevClientSession {
             .send_and_read_result(world_spatial::COMMAND_TYPE_WORLD_ACTOR_STEP_INTENT, payload)
             .await?;
         let disposition = world_spatial::decode_step_result(&result.payload)?;
+        check_status_pairing(
+            result.command_id,
+            result.status,
+            disposition == StepDisposition::Rejected,
+        )?;
         let world_spatial_delta =
             if result.status == CommandStatus::Accepted && disposition == StepDisposition::Moved {
                 Some(self.read_spatial_delta().await?)
@@ -700,6 +844,11 @@ impl DevClientSession {
             .send_and_read_result(world_object::COMMAND_TYPE_USE_INTENT, payload)
             .await?;
         let disposition = world_object::decode_use_result(&result.payload)?;
+        check_status_pairing(
+            result.command_id,
+            result.status,
+            disposition == UseDisposition::Rejected,
+        )?;
         let world_object_overlay_delta = if result.status == CommandStatus::Accepted
             && disposition == UseDisposition::Committed
         {
@@ -744,22 +893,54 @@ impl DevClientSession {
         )
         .await?;
 
-        let (server_sequence, result_payload) = self
-            .read_sequenced("CommandResult", MessageType::CommandResult)
-            .await?;
-        let result = decode_command_result(&result_payload)?;
-        if result.command_id != command_id {
-            return Err(DevClientError::CommandIdMismatch {
-                expected: command_id,
-                actual: result.command_id,
+        loop {
+            let (server_sequence, result_payload) = self
+                .read_sequenced("CommandResult", MessageType::CommandResult)
+                .await?;
+            let result = decode_command_result(&result_payload)?;
+            if matches!(
+                result.status,
+                CommandStatus::DuplicateReplay | CommandStatus::DuplicateOutcomeExpired
+            ) {
+                // FND-02 §13.2: a duplicate names an already reserved lower CommandId and is
+                // never executed again, so it is only ever valid for a CommandId this session
+                // sent before the current one; the current command's own result is never a
+                // duplicate. It carries no delta and does not end the wait for the real result.
+                if result.command_id == command_id {
+                    return Err(DevClientError::InconsistentCommandResult {
+                        command_id,
+                        status: result.status,
+                    });
+                }
+                if result.command_id < self.first_command_id || result.command_id > command_id {
+                    return Err(DevClientError::DuplicateForUnsentCommand {
+                        command_id: result.command_id,
+                    });
+                }
+                if self.duplicates.len() >= MAX_RETAINED_DUPLICATES {
+                    return Err(FoundationProtocolError::PayloadLimitExceeded.into());
+                }
+                self.duplicates.push(DuplicateOutcome {
+                    command_id: result.command_id,
+                    status: result.status,
+                    server_sequence,
+                    payload: result.payload.to_vec(),
+                });
+                continue;
+            }
+            if result.command_id != command_id {
+                return Err(DevClientError::CommandIdMismatch {
+                    expected: command_id,
+                    actual: result.command_id,
+                });
+            }
+            return Ok(ReceivedResult {
+                command_id,
+                status: result.status,
+                server_sequence,
+                payload: result.payload.to_vec(),
             });
         }
-        Ok(ReceivedResult {
-            command_id,
-            status: result.status,
-            server_sequence,
-            payload: result.payload.to_vec(),
-        })
     }
 
     async fn read_spatial_delta(
@@ -799,6 +980,12 @@ impl DevClientSession {
             )
             .await?;
         let entry = world_object::decode_world_object_overlay_delta(&delta.payload)?;
+        if entry.revision != delta.new_revision {
+            return Err(DevClientError::OverlayEntryRevisionMismatch {
+                new_revision: delta.new_revision,
+                entry_revision: entry.revision,
+            });
+        }
         if entry.content_generation != self.world_spatial.content_generation {
             return Err(DevClientError::ContentGenerationMismatch {
                 domain_id: world_object::STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
@@ -872,27 +1059,11 @@ impl DevClientSession {
             let frame = bounded(self.deadline, label, read_frame(&mut self.stream)).await?;
             let envelope = decode_wire_envelope(&frame)?;
             envelope.validate(Direction::ServerToClient, true)?;
-            if envelope.connection_generation() != self.connection_generation {
-                return Err(DevClientError::ConnectionGenerationMismatch {
-                    expected: self.connection_generation,
-                    actual: envelope.connection_generation(),
-                });
-            }
+            self.check_generation(&envelope)?;
             if envelope.message_type() != MessageType::LivenessProbe {
                 return Ok(frame);
             }
-            let probe_id = decode_liveness_probe(envelope.payload())?;
-            let ack = encode_liveness_ack(
-                self.connection_generation,
-                probe_id,
-                self.last_server_sequence,
-            )?;
-            bounded(
-                self.deadline,
-                "LivenessAck write",
-                write_frame(&mut self.stream, &ack),
-            )
-            .await?;
+            self.answer_probe(envelope.payload()).await?;
         }
     }
 
@@ -1010,10 +1181,47 @@ async fn read_frame<S: tokio::io::AsyncRead + Unpin>(
 ) -> Result<Vec<u8>, DevClientError> {
     let mut prefix = [0_u8; 4];
     stream.read_exact(&mut prefix).await?;
+    read_frame_body(stream, prefix).await
+}
+
+/// `read_frame` for a frame whose first length-prefix byte was already read.
+async fn read_frame_after<S: tokio::io::AsyncRead + Unpin>(
+    stream: &mut S,
+    first: u8,
+) -> Result<Vec<u8>, DevClientError> {
+    let mut prefix = [first, 0, 0, 0];
+    stream.read_exact(&mut prefix[1..]).await?;
+    read_frame_body(stream, prefix).await
+}
+
+async fn read_frame_body<S: tokio::io::AsyncRead + Unpin>(
+    stream: &mut S,
+    prefix: [u8; 4],
+) -> Result<Vec<u8>, DevClientError> {
     let length = FrameLength::from_prefix(&prefix)?;
     let mut body = vec![0_u8; length.get() as usize];
     stream.read_exact(&mut body).await?;
     Ok(body)
+}
+
+/// The server sends `ACCEPTED` for every typed disposition except `REJECTED`, which it sends
+/// with `REJECTED` (`connection.rs` `serve_admitted`, both `STEP` and `USE_INTENT`); any other
+/// pairing is a violation.
+fn check_status_pairing(
+    command_id: u64,
+    status: CommandStatus,
+    disposition_rejected: bool,
+) -> Result<(), DevClientError> {
+    let consistent = match status {
+        CommandStatus::Accepted => !disposition_rejected,
+        CommandStatus::Rejected => disposition_rejected,
+        CommandStatus::DuplicateReplay | CommandStatus::DuplicateOutcomeExpired => false,
+    };
+    if consistent {
+        Ok(())
+    } else {
+        Err(DevClientError::InconsistentCommandResult { command_id, status })
+    }
 }
 
 fn tls_connector(root: &CertificateDer<'static>) -> Result<TlsConnector, DevClientError> {
@@ -2418,8 +2626,8 @@ mod tests {
         Ok(())
     }
 
-    /// A `LivenessProbe` between commands, and between a `CommandResult` and its delta, is
-    /// answered with a `LivenessAck` for that probe (carrying the last applied `server_sequence`)
+    /// A `LivenessProbe` that arrives while a command's reply is being read (before its
+    /// `CommandResult`, or between it and its delta) is answered with a `LivenessAck` for that probe (carrying the last applied `server_sequence`)
     /// and does not disturb the command flow or the sequence chain.
     #[test]
     fn liveness_probes_are_acked_and_do_not_disturb_the_command_flow() -> Result<(), BoxError> {
@@ -2828,5 +3036,315 @@ mod tests {
         drop(session);
         server.await??;
         Ok(())
+    }
+
+    /// Codex P2: an overlay delta whose decoded entry `revision` differs from the delta's own
+    /// `new_revision` is refused and nothing from it is installed.
+    #[test]
+    fn an_overlay_entry_revision_differing_from_new_revision_is_not_installed()
+    -> Result<(), BoxError> {
+        block_on(run_overlay_entry_revision_case())?
+    }
+
+    async fn run_overlay_entry_revision_case() -> Result<(), BoxError> {
+        // base 2 -> new 3, but the entry claims revision 4.
+        let entry = world_object::encode_world_object_overlay_delta(&door_entry(
+            DOOR_OPEN_STATE,
+            4,
+            CONTENT_GENERATION,
+        ))
+        .map_err(|error| format!("encode_world_object_overlay_delta: {error:?}"))?;
+        let frames = vec![
+            use_result_frame(41, 7, UseDisposition::Committed)?,
+            state_delta_frame(
+                42,
+                STATE_DOMAIN_WORLD_OBJECT_OVERLAY,
+                2,
+                3,
+                world_object::DELTA_TYPE_WORLD_OBJECT_OVERLAY_V1,
+                &entry,
+            )?,
+        ];
+        let (mut session, server) = joined_session(TEST_DEADLINE, move |mut stream| async move {
+            read_command(&mut stream).await?;
+            send(&mut stream, &frames).await?;
+            wait_for_client_close(&mut stream).await;
+            Ok(())
+        })
+        .await?;
+        let result = session
+            .use_object(DOOR_PLACEMENT.as_bytes(), JOIN_DOOR_REVISION)
+            .await;
+        assert!(matches!(
+            result,
+            Err(DevClientError::OverlayEntryRevisionMismatch {
+                new_revision: 3,
+                entry_revision: 4
+            })
+        ));
+        assert_eq!(
+            session.world_object_overlay(),
+            &[door_entry(
+                DOOR_STATE,
+                JOIN_DOOR_REVISION,
+                CONTENT_GENERATION
+            )]
+        );
+        assert!(matches!(
+            session.step(StepDirection::East).await,
+            Err(DevClientError::SessionUnusable)
+        ));
+        drop(session);
+        server.await??;
+        Ok(())
+    }
+
+    /// Codex P2: a `CommandResult` status that does not pair with its disposition fails closed
+    /// (the server sends `ACCEPTED` for everything except `Rejected`, which gets `REJECTED`).
+    #[test]
+    fn an_inconsistent_status_and_disposition_pairing_is_rejected() -> Result<(), BoxError> {
+        let step = |disposition| world_spatial::encode_step_result(disposition);
+        let use_ = |disposition| world_object::encode_use_result(disposition);
+        for (action, status, payload) in [
+            (
+                Action::Step,
+                CommandStatus::Accepted,
+                step(StepDisposition::Rejected),
+            ),
+            (
+                Action::Step,
+                CommandStatus::Rejected,
+                step(StepDisposition::Blocked),
+            ),
+            (
+                Action::Step,
+                CommandStatus::Rejected,
+                step(StepDisposition::Moved),
+            ),
+            (
+                Action::Use,
+                CommandStatus::Rejected,
+                use_(UseDisposition::Committed),
+            ),
+            (
+                Action::Use,
+                CommandStatus::Rejected,
+                use_(UseDisposition::StaleState),
+            ),
+            (
+                Action::Use,
+                CommandStatus::Accepted,
+                use_(UseDisposition::Rejected),
+            ),
+        ] {
+            block_on(assert_command_fails(
+                action,
+                vec![command_result_frame(41, 7, status, &payload)?],
+                move |error| {
+                    matches!(
+                        error,
+                        DevClientError::InconsistentCommandResult { command_id: 7, status: actual }
+                            if *actual == status
+                    )
+                },
+            ))??;
+        }
+        Ok(())
+    }
+
+    /// Codex P2: a probe that arrives while the session is idle is acked by `service_liveness`,
+    /// which then returns when the window ends; the session stays usable.
+    #[test]
+    fn service_liveness_acks_probes_that_arrive_while_idle() -> Result<(), BoxError> {
+        block_on(run_idle_liveness_case())?
+    }
+
+    async fn run_idle_liveness_case() -> Result<(), BoxError> {
+        let (mut session, server) = joined_session(TEST_DEADLINE, |mut stream| async move {
+            for probe_id in [5, 6] {
+                send(
+                    &mut stream,
+                    &[oteryn_protocol_oteryn::encode_liveness_probe(
+                        GENERATION, probe_id,
+                    )?],
+                )
+                .await?;
+                let body = read_frame(&mut stream).await?;
+                assert_eq!(
+                    decode_wire_envelope(&body)?.liveness_ack(GENERATION)?,
+                    oteryn_protocol_oteryn::LivenessAckView {
+                        probe_id,
+                        last_applied_server_sequence: Some(JOIN_SEQUENCE),
+                    }
+                );
+            }
+            expect_step(&mut stream, 7, StepDirection::East).await?;
+            send(
+                &mut stream,
+                &[step_result_frame(41, 7, StepDisposition::Blocked)?],
+            )
+            .await?;
+            wait_for_client_close(&mut stream).await;
+            Ok(())
+        })
+        .await?;
+        let started = tokio::time::Instant::now();
+        session.service_liveness(Duration::from_millis(400)).await?;
+        assert!(started.elapsed() >= Duration::from_millis(350));
+        assert_eq!(
+            session.step(StepDirection::East).await?,
+            step_outcome(7, 41, StepDisposition::Blocked, None)
+        );
+        drop(session);
+        server.await??;
+        Ok(())
+    }
+
+    /// `service_liveness` fails closed on anything but a probe, and the session is then unusable.
+    #[test]
+    fn service_liveness_fails_closed_on_an_unexpected_frame() -> Result<(), BoxError> {
+        block_on(run_idle_unexpected_frame_case())?
+    }
+
+    async fn run_idle_unexpected_frame_case() -> Result<(), BoxError> {
+        let (mut session, server) = joined_session(TEST_DEADLINE, |mut stream| async move {
+            send(
+                &mut stream,
+                &[step_result_frame(41, 7, StepDisposition::Blocked)?],
+            )
+            .await?;
+            wait_for_client_close(&mut stream).await;
+            Ok(())
+        })
+        .await?;
+        assert!(matches!(
+            session.service_liveness(Duration::from_secs(2)).await,
+            Err(DevClientError::UnexpectedMessage {
+                expected: MessageType::LivenessProbe,
+                actual: MessageType::CommandResult
+            })
+        ));
+        assert!(matches!(
+            session.service_liveness(Duration::from_millis(10)).await,
+            Err(DevClientError::SessionUnusable)
+        ));
+        drop(session);
+        server.await??;
+        Ok(())
+    }
+
+    /// Codex P1: FND-02 §13.2 duplicate results for earlier CommandIds this session sent are
+    /// surfaced as distinct outcomes (no delta), do not end the wait for the current command's
+    /// own result, and do not poison the session.
+    #[test]
+    fn duplicate_results_for_sent_commands_are_surfaced_and_do_not_poison_the_session()
+    -> Result<(), BoxError> {
+        block_on(run_duplicate_outcome_case())?
+    }
+
+    async fn run_duplicate_outcome_case() -> Result<(), BoxError> {
+        let replayed = world_spatial::encode_step_result(StepDisposition::Blocked);
+        let replayed_frames = replayed.clone();
+        let (mut session, server) = joined_session(TEST_DEADLINE, move |mut stream| async move {
+            expect_step(&mut stream, 7, StepDirection::West).await?;
+            send(
+                &mut stream,
+                &[step_result_frame(41, 7, StepDisposition::Blocked)?],
+            )
+            .await?;
+            expect_step(&mut stream, 8, StepDirection::East).await?;
+            send(
+                &mut stream,
+                &[
+                    command_result_frame(42, 7, CommandStatus::DuplicateReplay, &replayed_frames)?,
+                    command_result_frame(43, 7, CommandStatus::DuplicateOutcomeExpired, &[])?,
+                    step_result_frame(44, 8, StepDisposition::Moved)?,
+                    spatial_delta_frame(45, 5, 1, 0)?,
+                ],
+            )
+            .await?;
+            expect_step(&mut stream, 9, StepDirection::West).await?;
+            send(
+                &mut stream,
+                &[step_result_frame(46, 9, StepDisposition::Blocked)?],
+            )
+            .await?;
+            wait_for_client_close(&mut stream).await;
+            Ok(())
+        })
+        .await?;
+        session.step(StepDirection::West).await?;
+        assert!(session.take_duplicate_outcomes().is_empty());
+        assert_eq!(
+            session.step(StepDirection::East).await?,
+            step_outcome(8, 44, StepDisposition::Moved, moved_to(45, 5, 1, 0))
+        );
+        assert_eq!(
+            session.take_duplicate_outcomes(),
+            vec![
+                DuplicateOutcome {
+                    command_id: 7,
+                    status: CommandStatus::DuplicateReplay,
+                    server_sequence: 42,
+                    payload: replayed,
+                },
+                DuplicateOutcome {
+                    command_id: 7,
+                    status: CommandStatus::DuplicateOutcomeExpired,
+                    server_sequence: 43,
+                    payload: Vec::new(),
+                },
+            ]
+        );
+        assert!(session.take_duplicate_outcomes().is_empty());
+        assert_eq!(
+            session.step(StepDirection::West).await?,
+            step_outcome(9, 46, StepDisposition::Blocked, None)
+        );
+        drop(session);
+        server.await??;
+        Ok(())
+    }
+
+    /// A duplicate for a CommandId this session never sent (below its first, or not yet sent), or
+    /// for the command just sent, fails closed.
+    #[test]
+    fn a_duplicate_for_an_unsent_command_id_fails_closed() -> Result<(), BoxError> {
+        for unsent in [6, 8, 99] {
+            block_on(assert_command_fails(
+                Action::Step,
+                vec![command_result_frame(
+                    41,
+                    unsent,
+                    CommandStatus::DuplicateReplay,
+                    &[],
+                )?],
+                move |error| {
+                    matches!(
+                        error,
+                        DevClientError::DuplicateForUnsentCommand { command_id }
+                            if *command_id == unsent
+                    )
+                },
+            ))??;
+        }
+        block_on(assert_command_fails(
+            Action::Step,
+            vec![command_result_frame(
+                41,
+                7,
+                CommandStatus::DuplicateOutcomeExpired,
+                &[],
+            )?],
+            |error| {
+                matches!(
+                    error,
+                    DevClientError::InconsistentCommandResult {
+                        command_id: 7,
+                        status: CommandStatus::DuplicateOutcomeExpired
+                    }
+                )
+            },
+        ))?
     }
 }
