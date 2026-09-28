@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-character-appearance-decision
 title: "Character appearance owner decision (D47, D49, D61)"
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1115
 base_sha: ae252cec2fde5cb6e6efaf4d3a4d1762426d4406
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 31c605c2e4611bea57e3db0cce668bed601a2d65
+final_head_sha: 31c605c2e4611bea57e3db0cce668bed601a2d65
+final_head_frozen_at: 2026-09-28T14:13Z
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -118,9 +118,9 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing validators.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing validators.
+- [x] Independent exact-head review (one Codex review, one repair generation; owner decision to merge after green CI).
+- [x] Protected Merge Queue integration (`117a8998`).
 
 ## Excluded scope
 
@@ -132,14 +132,25 @@ finding_dispositions:
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Terminal integration
+
+- PR #1115 merged through the Merge Queue on 2026-09-28 as `117a8998`.
+- Review: one Codex review of `5611abc` (two P1s, two P2s), all repaired in the single repair
+  generation `31c605c`; the owner decided to merge after green CI (#162 comment 5871738114).
+- Protected-main readback: the decision, this record and the archived #1110 record on `117a8998`
+  are byte-identical to the frozen head `31c605c`.
+- Next allocations: APP-1 (after Character sex becomes a creation input) and APP-2.
+- Archived under `OTV2-20260928-premium-activation-decision`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1115 open
-status: validating
+last_progress: protected-integrated as 117a8998; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 31c605c2e4611bea57e3db0cce668bed601a2d65
 pr: 1115
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1115
+next_action: null
 ```
