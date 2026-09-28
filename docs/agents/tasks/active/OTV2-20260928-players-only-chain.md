@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-players-only-chain
 title: Players-only chain picker for monster chain spells
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1052
 jira: KAN-16
 base_sha: e91cafdd95c165668126e1dccaf93422af29d55c
 head_sha: null
