@@ -5,16 +5,17 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use oteryn_game_server::content::{
-    CW2_B1_FULL_ITEM_FAMILY_COUNT, CanonicalProjectDocuments, ImportBatch, ProjectDraft,
-    ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2AuthoringProfile, ProjectV2Declaration,
-    ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry, ProjectV2EvidenceClass,
-    ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring, ProjectV2ItemForgeProfile,
-    ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle, ProjectV2ItemTaxonomy, ProjectV2Source,
-    ProjectV2SourceIdentityBinding, ProjectV2SourceIdentityDisposition, ProjectV2State,
-    R7_P04_GOLD_COIN_EVIDENCE_PACKET, ReferenceCells, ReferenceItemField, ReferenceItemImbuement,
-    ReferenceItemPresentation, ReferenceItemSemantics, ReferenceItemStack,
-    ReferenceItemTradeRestrictions, ReferenceItemWeapon, ReferenceRationalPercent,
-    ReferenceSignedPoints, ReferenceWeaponType, protected_r7_p04_gold_coin_item_family_import,
+    CW2_B1_FULL_ITEM_FAMILY_COUNT, CandidateValue, CanonicalProjectDocuments, ImportBatch,
+    ProjectDraft, ProjectEvidenceLimits, ProjectReferenceRecord, ProjectV2AuthoringProfile,
+    ProjectV2Declaration, ProjectV2DefinitionRef, ProjectV2Draft, ProjectV2EditorEntry,
+    ProjectV2EvidenceClass, ProjectV2Family, ProjectV2Identity, ProjectV2ItemAuthoring,
+    ProjectV2ItemForgeProfile, ProjectV2ItemLifecycle, ProjectV2ItemSourceLifecycle,
+    ProjectV2ItemTaxonomy, ProjectV2Source, ProjectV2SourceIdentityBinding,
+    ProjectV2SourceIdentityDisposition, ProjectV2State, R7_P04_GOLD_COIN_EVIDENCE_PACKET,
+    ReferenceCells, ReferenceItemField, ReferenceItemImbuement, ReferenceItemPresentation,
+    ReferenceItemSemantics, ReferenceItemStack, ReferenceItemTradeRestrictions,
+    ReferenceItemWeapon, ReferenceRationalPercent, ReferenceSignedPoints, ReferenceWeaponType,
+    ReimportDecision, ReimportFieldState, protected_r7_p04_gold_coin_item_family_import,
 };
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -63,9 +64,9 @@ const CREATURE_STAGED: &[u8] = include_bytes!(
     "../../../docs/agents/evidence/OTV2-20260927-creature-admission-wave-a-staged.json"
 );
 const CREATURE_STAGED_SHA256: &str =
-    "817009225b59c4983e74920a2a2b8a97ab788e18efc5cf55a5dad228191ca45a";
+    "205ed805a3f5a9a90230a940ccecc8b867e36b0b4a6d8b267fc88a99d667b905";
 const CREATURE_STAGE_TOOL_SHA256: &str =
-    "f784abf15353a22372fa293bb96b47195e0cc7b1efbed882a4f2186818be9605";
+    "8e4f3cec836d89c12f4769ef27924d924ade614b39dcf6b7097c56d3766e6e24";
 const CANARY_REVISION: &str = "47dfd51f45280a59a1d3e50ba7edd573d7234446";
 /// D44: creatures Tibia has at the target and Canary lacks, authored from TibiaWiki (`wiki_authored.py`).
 const CREATURE_WIKI_SAMPLE_SHA256: &str =
@@ -105,9 +106,11 @@ const NPC_DIALOGUE_STAGED_SHA256: &str =
 const NPC_DIALOGUES: usize = 701;
 const NPC_DIALOGUE_NODES: usize = 6313;
 const NPC_BINDINGS: usize = 2282;
-const CREATURE_COUNT: usize = 1319;
-const CREATURE_RECORDS: usize = 18348;
-const CREATURE_PROFILES: usize = 17381;
+const CREATURE_COUNT: usize = 1450;
+const CREATURE_RECORDS: usize = 20379;
+const CREATURE_PROFILES: usize = 19435;
+/// Encounter admission E1-E5: encounters admitted with the creatures they cover.
+const ENCOUNTER_COUNT: usize = 58;
 
 fn limits() -> ProjectEvidenceLimits {
     ProjectEvidenceLimits {
@@ -121,7 +124,7 @@ fn limits() -> ProjectEvidenceLimits {
         max_locator_segments: 8,
         max_reference_records: CW2_B1_FULL_ITEM_FAMILY_COUNT + CREATURE_RECORDS + NPC_RECORDS,
         max_import_records: 8,
-        max_reimport_states: 1,
+        max_reimport_states: ENCOUNTER_COUNT,
     }
 }
 
@@ -1148,6 +1151,7 @@ struct CreaturePopulation {
     wiki_import: ImportBatch,
     wiki_source: ProjectV2Source,
     records: Vec<ProjectReferenceRecord>,
+    declarations: Vec<ProjectV2Declaration>,
     profiles: Vec<ProjectV2AuthoringProfile>,
     bindings: Vec<ProjectV2SourceIdentityBinding>,
 }
@@ -1167,6 +1171,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         || counts["creatures"] != CREATURE_COUNT
         || counts["records"] != CREATURE_RECORDS
         || counts["profiles"] != CREATURE_PROFILES
+        || counts["encounters"] != ENCOUNTER_COUNT
         || packet["source"]["wiki_authored"]["revision"] != CREATURE_WIKI_REVISION
         || packet["source"]["wiki_authored"]["sample_sha256"] != CREATURE_WIKI_SAMPLE_SHA256
     {
@@ -1177,6 +1182,15 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         serde_json::from_value(packet["authoring_profiles"].clone())?;
     let bindings: Vec<ProjectV2SourceIdentityBinding> =
         serde_json::from_value(packet["source_identity_bindings"].clone())?;
+    let declarations: Vec<ProjectV2Declaration> =
+        serde_json::from_value(packet["declarations"].clone())?;
+    if declarations.len() != ENCOUNTER_COUNT
+        || declarations
+            .iter()
+            .any(|declaration| !matches!(declaration, ProjectV2Declaration::Encounter { .. }))
+    {
+        return Err("staged encounter declarations drifted".into());
+    }
     let creatures = records
         .iter()
         .filter(|record| matches!(record, ProjectReferenceRecord::Creature { .. }))
@@ -1184,30 +1198,37 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     if records.len() != CREATURE_RECORDS
         || profiles.len() != CREATURE_PROFILES
         || creatures != CREATURE_COUNT
-        || bindings.len() != CREATURE_COUNT
+        || bindings.len() != CREATURE_COUNT + ENCOUNTER_COUNT
         || bindings
             .iter()
             .filter(|binding| binding.source_key == "oteryn:source.tibiawiki")
             .count()
             != CREATURE_WIKI_COUNT
         || bindings.iter().any(|binding| {
-            binding.target.family != ProjectV2Family::Creature
-                || !matches!(
-                    (
-                        binding.source_key.as_str(),
-                        binding.source_revision.as_str(),
-                        binding.identity_namespace.as_str()
-                    ),
-                    (
-                        "oteryn:source.canary",
-                        CANARY_REVISION,
-                        "canary/monster-file"
-                    ) | (
-                        "oteryn:source.tibiawiki",
-                        CREATURE_WIKI_REVISION,
-                        "mediawiki/page_id"
-                    )
+            !matches!(
+                (
+                    binding.target.family,
+                    binding.source_key.as_str(),
+                    binding.source_revision.as_str(),
+                    binding.identity_namespace.as_str()
+                ),
+                (
+                    ProjectV2Family::Creature,
+                    "oteryn:source.canary",
+                    CANARY_REVISION,
+                    "canary/monster-file"
+                ) | (
+                    ProjectV2Family::Encounter,
+                    "oteryn:source.canary",
+                    CANARY_REVISION,
+                    "canary/encounter"
+                ) | (
+                    ProjectV2Family::Creature,
+                    "oteryn:source.tibiawiki",
+                    CREATURE_WIKI_REVISION,
+                    "mediawiki/page_id"
                 )
+            )
         })
     {
         return Err("staged creature admission counts drifted".into());
@@ -1224,6 +1245,39 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
     {
         return Err("wiki-authored creature page binding drifted".into());
     }
+    // E5: each admitted encounter keeps the digest of the manifest it was mapped from as its reimport baseline.
+    let manifests = packet["encounter_manifests"]
+        .as_object()
+        .ok_or("staged encounter manifests are missing")?;
+    let mut reimport_states = Vec::with_capacity(ENCOUNTER_COUNT);
+    for binding in bindings
+        .iter()
+        .filter(|binding| binding.target.family == ProjectV2Family::Encounter)
+    {
+        let digest = manifests
+            .get(&binding.external_id)
+            .and_then(Value::as_str)
+            .filter(|digest| {
+                digest.len() == 64
+                    && digest
+                        .bytes()
+                        .all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
+            })
+            .ok_or("staged encounter manifest digest is missing")?;
+        let value = Some(CandidateValue::Text(digest.to_owned()));
+        reimport_states.push(ReimportFieldState {
+            stable_identity: binding.target.key.clone(),
+            field_path: "encounter_manifest_sha256".to_owned(),
+            baseline: value.clone(),
+            upstream: value.clone(),
+            local: value,
+            decision: ReimportDecision::Unchanged,
+        });
+    }
+    if manifests.len() != ENCOUNTER_COUNT || reimport_states.len() != ENCOUNTER_COUNT {
+        return Err("staged encounter manifests drifted".into());
+    }
+    reimport_states.sort_by(|left, right| left.stable_identity.cmp(&right.stable_identity));
     let import = ImportBatch {
         batch_id: "g4-creature-canary-wave-a-r1".to_owned(),
         source_repository: "opentibiabr/canary".to_owned(),
@@ -1236,7 +1290,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         mapper_revision: "creature-admission-r1".to_owned(),
         mapper_sha256: CREATURE_STAGE_TOOL_SHA256.to_owned(),
         candidates: Vec::new(),
-        reimport_states: Vec::new(),
+        reimport_states,
     };
     let source = ProjectV2Source {
         key: "oteryn:source.canary".to_owned(),
@@ -1272,6 +1326,7 @@ fn populate_creatures() -> Result<CreaturePopulation, Box<dyn std::error::Error>
         wiki_import,
         wiki_source,
         records,
+        declarations,
         profiles,
         bindings,
     })
@@ -1526,10 +1581,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         wiki_import: creature_wiki_import,
         wiki_source: creature_wiki_source,
         records: creature_records,
+        declarations: encounter_declarations,
         profiles: mut authoring_profiles,
         bindings: creature_bindings,
     } = populate_creatures()?;
     records.extend(creature_records);
+    declarations.extend(encounter_declarations);
     bindings.extend(creature_bindings);
     let NpcPopulation {
         import: npc_import,
@@ -1593,7 +1650,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let tree_sha256 = write_documents(&root, &documents)?;
     println!(
-        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
+        "documents={DOCUMENT_COUNT} items={CW2_B1_FULL_ITEM_FAMILY_COUNT} promoted_items={} promoted_fields={} item_bindings=165 item_fields=12 wave1_items={ITEM_WAVE1_ITEMS} wave1_promoted={wave1_promoted} mounts=252 mount_fields=0 outfits=133 outfit_fields=0 outfit_blocked_post_cut=1 creatures={CREATURE_COUNT} creature_records={CREATURE_RECORDS} creature_profiles={CREATURE_PROFILES} encounters={ENCOUNTER_COUNT} npcs={NPC_COUNT} npc_declarations={NPC_DECLARATIONS} tree_sha256={tree_sha256}",
         promoted.promoted_items, promoted.promoted_fields
     );
     Ok(())

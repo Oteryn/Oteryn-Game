@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -15,19 +16,25 @@ assert manifest["compatibility"] == {
 }
 assert lock["family_counts"] == {
     "Item": 38157, "Mount": 252,
-    "Creature": 1319, "Presentation": 2407, "Behavior": 2407, "Loot": 978, "Ability": 5257, "Effect": 3929, "Formula": 4227,
-    "NPC": 1088, "Dialogue": 701, "Service.Trade": 307, "Service.Travel": 55,
+    "Creature": 1450, "Presentation": 2538, "Behavior": 2538, "Loot": 1025, "Ability": 5826, "Effect": 4432, "Formula": 4746,
+    "NPC": 1088, "Dialogue": 701, "Service.Trade": 307, "Service.Travel": 55, "Encounter": 58,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1319, "NPC": 2282}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1450, "Encounter": 58, "NPC": 2282}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
 assert len(paths) == len(set(paths))
+shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
+for directory in {(ROOT / path).parent for path in paths if shard_name.search(path)}:
+    stale = sorted(file.relative_to(ROOT).as_posix() for file in directory.glob("*.json")
+                   if shard_name.search(file.name) and file.relative_to(ROOT).as_posix() not in paths)
+    assert not stale, stale
 assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 77
 assert any(path.startswith("content/cosmetics/mounts/mounts-") for path in paths)
 assert any(path.startswith("content/creatures/definitions/creatures-") for path in paths)
 assert any(path.startswith("content/npcs/definitions/npcs-") for path in paths)
 assert any(path.startswith("content/dialogues/definitions/dialogues-") for path in paths)
+assert any(path.startswith("content/encounters/definitions/encounters-") for path in paths)
 assert any(path.startswith("content/services/trade/trade-") for path in paths)
 assert any(path.startswith("content/services/travel/travel-") for path in paths)
 assert "imports/canary/bindings/creatures.json" in paths
