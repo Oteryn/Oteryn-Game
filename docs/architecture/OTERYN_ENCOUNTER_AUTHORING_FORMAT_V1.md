@@ -526,11 +526,11 @@ census is unchanged.
 | Boss | Unresolved mechanic | Proposal |
 |---|---|---|
 | Alptramun | the `alptramun summon` escalation | no extension: D29 `ability_cast` with D45 covers it; resolvable once Q1 is answered |
-| Gorzindel | the Stolen Tome of Portals portal: each player to the next free knowledge room for 10 s | CW2-1: `teleport` of the `triggering` creature |
+| Gorzindel | the Stolen Tome of Portals portal: each player to the next free knowledge room for 10 s | CW2-1: `teleport` and `in_anchor` of the `triggering` creature |
 | Melting Frozen Horror | death actions on "the top creature" of two fixed tiles | no extension: the lever script names both roles; resolvable now |
-| The Sandking | the stage counter the credit reads, and the fight that advances it | CW2-2: `stepped_on` a role's `corpse_of`; CW2-3: `map_item remove triggering` |
+| The Sandking | the stage counter the credit reads, and the fight that advances it | CW2-2: `stepped_on` a role's `corpse_of`; CW2-3: `map_item remove triggering`; CW2-4: `random_in` with `free: true` |
 
-All three extensions widen a parameter of an existing term. No trigger, condition or action kind is added, so the
+All four extensions widen a parameter of an existing term. No trigger, condition or action kind is added, so the
 counts in E1 of `OTERYN_WORLD_PROJECT_V2_ENCOUNTER_ADMISSION_V1.md` (17 triggers, 14 conditions, 25 actions) stay
 the same.
 
@@ -574,7 +574,7 @@ the same.
 6. **Out of scope.** Alptramun's other spells, `facelessHealth` (already mapped) and the lever's day-of-week boss
    rotation (entry, not encounter).
 
-### 12.2 Gorzindel: CW2-1, `teleport` of the `triggering` creature
+### 12.2 Gorzindel: CW2-1, `teleport` and `in_anchor` of the `triggering` creature
 
 1. **Mechanic.** The portal left by the Stolen Tome of Portals sends each player who steps in to the first free
    knowledge room, and brings that player back after 10 s.
@@ -592,6 +592,11 @@ the same.
 3. **Extension CW2-1.** `teleport.who` also takes `{"triggering": true}`: the creature or player that fired the
    rule. This extends the D31 `remove triggering`. It is valid in a rule fired by one creature (§9 rule 2) and in
    `area_entered`/`area_left`, which also fire per creature.
+   - CW2-1 also lets the existing `in_anchor` condition take `{"triggering": true}` as its subject, in the same
+     rules. It holds only while that creature or player is still in this encounter instance and stands in the
+     anchor. It is false for one that has left the instance, even if it is still online elsewhere. This is the
+     membership check the delayed return needs, and no new condition is added. `triggering` is not added to the
+     shared `subject` of `say`, `heal` and the other actions.
    - The first-free-room choice needs no new term. Rules run in order and each reads the flags the earlier ones set,
      as `white_deer` already does with `deer_variant_chosen`.
    - The portal tile is a one-tile area anchor. The tome cannot leave that tile and occupies it whenever no portal
@@ -613,23 +618,30 @@ the same.
                  {"kind": "flag", "flag": "portal_assigned", "value": true},
                  {"kind": "timer", "timer": "room_1_hold", "operation": "start"}]},
     {"key": "portal_return", "trigger": {"kind": "area_entered", "anchor": "portal_tile", "who": "player"},
-     "delay_ms": 10000, "conditions": [],
+     "delay_ms": 10000,
+     "conditions": [{"kind": "in_anchor", "subject": {"triggering": true}, "anchor": "knowledge_range"}],
      "actions": [{"kind": "teleport", "who": {"triggering": true}, "to": "library_middle"}]},
     {"key": "room_1_reopens", "trigger": {"kind": "timer_elapsed", "timer": "room_1_hold"},
      "conditions": [], "actions": [{"kind": "flag", "flag": "room_1_busy", "value": false}]}]
    ```
    The tome's death rule creates item 1949 `at: death_position` with `revert_after_ms` 10000, and a `delay_ms` 10000
    rule on the same death spawns the tome at `death_position`. Both use existing terms.
+   - The delayed return is gated on `in_anchor` of the triggering player in `knowledge_range`, the sample's existing
+     anchor for the main room and the five knowledge rooms. The condition is evaluated 10 s later (§9 rule 2). A
+     player who has left the instance, whether still online or not, is not pulled back.
+   - The rooms reopen at 10 s through their own timers, whatever happened to the player.
    - The lever admits five players (`gorzindel.lua:7-13`), and a player in a room cannot reach the portal, so every
-     step finds a free room and the unconditional return equals Canary's.
-   - If a larger party ever finds all rooms busy, that player only moves to the middle after 10 s.
+     step finds a free room. If a larger party ever finds all rooms busy, that player only moves to the middle
+     after 10 s.
 5. **Validation and tests.**
-   - Schema: `teleport.who` gains the `triggering` branch.
-   - Semantic: `teleport triggering` fails in a rule whose trigger is neither fired by one creature nor
-     `area_entered`/`area_left` (for example `timer_elapsed`). `remove triggering` keeps its current rule, and it
+   - Schema: `teleport.who` gains the `triggering` branch. The `in_anchor` subject gains it too, and only there.
+   - Semantic: `teleport triggering` and `in_anchor` of `triggering` fail in a rule whose trigger is neither fired
+     by one creature nor `area_entered`/`area_left` (for example `timer_elapsed`). `remove triggering` keeps its current rule, and it
      also fails when the trigger names `who: player`, because players are never removed.
-   - `verify_encounter_schema.py`: one positive check (the Gorzindel portal) and those two negative checks.
-   - Rust (E1): the typed `teleport` mirror gains the variant and the same check, with a focused positive and negative
+   - `verify_encounter_schema.py`: one positive check (the Gorzindel portal) and negative checks for
+     `teleport triggering` and `in_anchor` of `triggering` in a `timer_elapsed` rule, and for `remove triggering`
+     with `who: player`.
+   - Rust (E1): the typed `teleport` and `in_anchor` mirrors gain the variant and the same check, with a focused positive and negative
      test in `content_world_project_v2_encounter_admission.rs`.
    - Transcription: anchors `portal_tile`, `knowledge_room_1`…`5` and `library_middle` located from the lever and
      movement scripts (E2); every line of `creaturescripts_gorzindel.lua` 38-50 and `movements_gorzindel.lua` 1-38
@@ -670,8 +682,8 @@ the same.
    ```
    `role_position` is taken when the trigger fires (§9 rule 2), so the dragon appears on the egg's tile after the egg
    is removed. If damage over time kills the parked horror, Canary removes the dying horror itself and leaves the
-   solid horror in the room; this rule removes the solid horror. That edge case of a stuck fight is recorded in the
-   manifest.
+   solid horror in the room, while this rule removes the solid horror. That deviation is owner question Q4; the rule
+   above stays as drafted until Q4 is answered.
 5. **Validation and tests.** No vocabulary change. The transcription adds the two participants, the anchor and the
    rule, maps `creaturescripts_bosses_kill.lua` 37-48 and `creaturescripts_melting_death.lua` 1-21, and adds
    `MeltingDeath` to the manifest `covers`. `validate_encounter.py` must pass with the catalog.
@@ -680,7 +692,7 @@ the same.
    under E4 this encounter is admitted only with it. That transcription is a later slice, and this design does not
    claim the vocabulary covers it.
 
-### 12.4 The Sandking: CW2-2 `stepped_on corpse_of`, CW2-3 `map_item remove triggering`
+### 12.4 The Sandking: CW2-2 `stepped_on corpse_of`, CW2-3 `map_item remove triggering`, CW2-4 `free` random tiles
 
 1. **Mechanic.** The credit reads the fight stage (at least 5). The stages come from the Sandking's
    vanish-and-brood cycle, during which a Sandking heals by walking over sand brood corpses.
@@ -710,10 +722,15 @@ the same.
      cannot say this: it is shared with other monsters and changes as the corpse decays.
    - **CW2-3:** `map_item` with `operation: remove` takes `triggering: true` in place of `item` and `anchor`/`at`. It
      removes the item that fired the `stepped_on` rule.
+   - **CW2-4:** the `random_in` position takes an optional `free: true`, which draws uniformly among the tiles of the
+     area that a creature can be placed on now. If no such tile exists, that spawn creates nothing and the remaining
+     actions still run. Without `free`, or with `free: false`, `random_in` keeps its current semantics exactly:
+     existing uses such as `razzagorn`, whose manifest records that a failed random creation ends the cast, are
+     untouched. `free` is used only for the Sandking broods, and only if Q3 accepts it.
    - Everything else uses existing terms:
      - `health_crossed` (a think check, as in the ninth slice);
      - the `stage` and `broods_left` counters, and repeating 5 s timers `brood_wave` and `brood_check`;
-     - `spawn` at `random_in`, `creature_present` absent, and `remove` of a role;
+     - `spawn`, `creature_present` absent, and `remove` of a role;
      - the `spawned` speaker and `shared_life` (D34);
      - a flag, so the three shared deaths bring one real Sandking;
      - a `delay_ms` 2000 rule for stage 5.
@@ -736,21 +753,22 @@ the same.
                 {"kind": "spawn", "creature": {"family": "Creature", "key": "canary:creature/sand_vortex", "revision": "canary-47dfd51f"},
                  "role": "sand_vortex", "count": 1, "at": {"anchor": "vortex_1"}, "owner": "none", "health": "full"},
                 {"kind": "spawn", "creature": {"family": "Creature", "key": "canary:creature/sand_brood", "revision": "canary-47dfd51f"},
-                 "role": "sand_brood", "count": 1, "at": {"random_in": "brood_area"}, "owner": "none", "health": "full"},
+                 "role": "sand_brood", "count": 1, "at": {"random_in": "brood_area", "free": true}, "owner": "none", "health": "full"},
                 {"kind": "counter", "counter": "broods_left", "operation": "set", "value": 9},
                 {"kind": "timer", "timer": "brood_wave", "operation": "start"}]}
    ```
    Vortices 2-4 are three more `spawn` actions. `stage` starts at 1, the value the lever writes. The sample's credit
    condition (`stage >= 5`) is unchanged.
 5. **Validation and tests.**
-   - Schema: `stepped_on` takes exactly one of `item` and `corpse_of`, and `map_item` gains `triggering`.
+   - Schema: `stepped_on` takes exactly one of `item` and `corpse_of`, `map_item` gains `triggering`, and the
+     `random_in` position gains an optional boolean `free`.
    - Semantic: `corpse_of` names a known role. `map_item triggering` is valid only with `operation: remove` and in a
      `stepped_on` rule, and it forbids `item`, `into`, `anchor`, `at`, `destination`, `revert_*`, `effect` and
      `interaction`.
    - `verify_encounter_schema.py`: a positive check (the corpse rule) and negative checks for both and for neither of
      `item` and `corpse_of`, an unknown `corpse_of` role, `triggering` with `create` or `transform`, and `triggering`
-     outside `stepped_on`.
-   - Rust (E1): the typed `stepped_on` and `map_item` mirrors gain the same variants and checks, with focused tests.
+     outside `stepped_on`. Every existing sample that uses `random_in` validates unchanged.
+   - Rust (E1): the typed `stepped_on`, `map_item` and position mirrors gain the same variants and checks, with focused tests.
    - Transcription: every line of `creaturescripts_sandking.lua`, `movements_sandking.lua` and lever lines 480-481 is
      mapped or omitted with a reason. The anchors are located from the script coordinates (E2), and the
      `the_sandking` manifest row turns `mapped`.
@@ -762,9 +780,9 @@ the same.
 
 ### 12.5 Implementation order after acceptance
 
-1. Schema, `validate_encounter.py` and `verify_encounter_schema.py` for CW2-1..3.
-2. Transcriptions: the Melting Frozen Horror death rule; Gorzindel and The Sandking with CW2-1..3; Alptramun after
-   Q1.
+1. Schema, `validate_encounter.py` and `verify_encounter_schema.py` for CW2-1..4.
+2. Transcriptions: the Melting Frozen Horror death rule after Q4; Gorzindel and The Sandking with CW2-1..4;
+   Alptramun after Q1.
 3. The Rust typed profile and its tests (slice 3 of the admission design).
 4. Restaging under E4. Melting Frozen Horror then stays deferred behind the dragon egg.
 
@@ -776,4 +794,5 @@ Each step is its own owned slice.
 |---|---|---|---|
 | Q1 | Alptramun's escalation: follow Canary, or adopt the wiki? | The spell is never cast, and a cast would not escalate because the counter skips summons (§12.1). The reference-date wiki says killed summons are replaced by stronger ones, without numbers. | Follow Canary: record the spell as `approved_omission`. Adopting the wiki needs owner-chosen numbers: the cast interval and chance, and whether summoned dreams count. |
 | Q2 | Gorzindel's portal defects: free each room after 10 s in every case, and return only players still in the instance? | The room table is server-wide. A room stays busy forever if its player is gone when the 10 s end, and a player who died and respawned is still pulled back to the middle (`movements_gorzindel.lua:24-30`). | Yes. The room state is per instance (D26), and the return acts only on a player still in the fight (§9 rule 2). |
-| Q3 | The Sandking's brood calls: spawn each brood on a free tile of the area? | A brood is created on an unchecked random tile. If that fails, the call chain stops and the Sandking never returns (`creaturescripts_sandking.lua:43-44`). | Yes. `random_in` draws a free tile of `brood_area`. |
+| Q3 | The Sandking's brood calls: spawn each brood on a free tile of the area? | A brood is created on an unchecked random tile. If that fails, the call chain stops and the Sandking never returns (`creaturescripts_sandking.lua:43-44`). | Yes. Only the brood spawns use `random_in` with `free: true` (CW2-4); every existing `random_in` keeps its semantics. |
+| Q4 | Melting Frozen Horror: when damage over time kills the parked melting horror, remove the Solid Frozen Horror anyway? | The death script removes the top creature of the parking tile, which is then the dying melting horror itself. The solid horror stays in the room, and `revertHorror` finds no melting horror to swap back (`creaturescripts_bosses_kill.lua:44-47`, `creaturescripts_dragon_egg.lua:1-22`). The egg still hatches and the kill is still credited. | Follow Canary. Gate the removal with the existing `creature_present(solid_frozen_horror, parking_tile, present)` on a one-tile anchor, in a rule of its own. The fight is already credited, and the leftover solid horror goes when the instance resets (D26). Removing it everywhere would be a deviation with no evidence. |

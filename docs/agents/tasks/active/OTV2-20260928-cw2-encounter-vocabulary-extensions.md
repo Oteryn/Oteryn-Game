@@ -40,14 +40,15 @@ acceptance, for the `unresolved_semantics` rows of four encounters. Evidence is 
 | Boss | Mechanic | Proposal |
 |---|---|---|
 | Alptramun | `alptramun summon` escalation | no extension; D29 `ability_cast` with D45 covers it; the row is resolvable in the vocabulary, and evidence waits on Q1 |
-| Gorzindel | the tome's portal to the first free knowledge room for 10 s | CW2-1: `teleport who: {triggering: true}` |
+| Gorzindel | the tome's portal to the first free knowledge room for 10 s | CW2-1: `teleport who: {triggering: true}`, with `in_anchor` of `triggering` gating the delayed return to players still in the instance |
 | Melting Frozen Horror | death actions on two fixed tiles | no extension; the lever names `dragon_egg` and `solid_frozen_horror`; resolvable now |
-| The Sandking | the stage counter and the brood cycle behind it | CW2-2: `stepped_on corpse_of: role`; CW2-3: `map_item remove triggering: true` |
+| The Sandking | the stage counter and the brood cycle behind it | CW2-2: `stepped_on corpse_of: role`; CW2-3: `map_item remove triggering: true`; CW2-4: `random_in` with an optional `free: true` (existing `random_in` semantics unchanged) |
 
 The extensions widen parameters of existing terms. No trigger, condition or action kind is added.
 
 Owner questions (deviations and product choices only): Q1 Alptramun (follow Canary's never-cast spell, or the
-wiki), Q2 Gorzindel room and return defects, Q3 Sandking brood spawn failure.
+wiki), Q2 Gorzindel room and return defects, Q3 Sandking brood spawn failure, Q4 Melting Frozen Horror killed
+while parked (recommended: follow Canary).
 
 ## Excluded scope
 
@@ -59,11 +60,11 @@ wiki), Q2 Gorzindel room and return defects, Q3 Sandking brood spawn failure.
 ## Validation
 
 - The authored-JSON examples were checked against the current schema. The rules without new terms pass. The only
-  failures are the three new terms (CW2-1..3).
+  failures are the new terms (CW2-1..4).
 - `python3 tools/agents/validate_governance.py` and `python3 tools/repository/validate_repository_policy.py`: see
   the PR.
 
 ## Context checkpoint
 
-last_progress: §12 candidate design written; PR #1183 open for review and owner acceptance
+last_progress: review round 2 on #1183 addressed (free random tiles as CW2-4, instance-membership gate on the Gorzindel return, Q4 added)
 jira: pending (no mapped Story resolved in this worker session)
