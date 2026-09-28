@@ -50,5 +50,5 @@ There are no content changes. It also archives the task record of #1136.
 ## Acceptance and evidence
 
 - `cargo fmt --check`, `cargo clippy --all-targets -D warnings` and `cargo test --locked -p oteryn-game-server` pass.
-- The encounter admission tests cover a round trip, canonical sets and authored order, 22 broken invariants, and unknown fields and kinds failing closed.
+- The encounter admission tests cover a round trip, canonical sets and authored order, 24 broken invariants, and unknown fields and kinds failing closed.
 - Exact-head review before the Merge Queue (protected v2 contract surface).

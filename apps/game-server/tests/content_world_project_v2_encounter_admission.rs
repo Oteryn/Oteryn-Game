@@ -335,7 +335,29 @@ fn admitted_encounter_round_trips_and_stays_declarative() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 22] = [
+    let cases: [(&str, &str, Mutation); 24] = [
+        (
+            "an encounter-backed ability without its ability_cast rule",
+            "v2 encounter-backed Ability has no ability_cast rule in its encounter",
+            |draft| {
+                encounter_mut(draft).rules[0].trigger = ProjectV2EncounterTrigger::CreatureDied {
+                    role: "the_hunger".into(),
+                };
+            },
+        ),
+        (
+            "more counters than the evidence limit",
+            "v2 encounter counters",
+            |draft| {
+                let state = &mut encounter_mut(draft).state;
+                state
+                    .counters
+                    .extend((0..64).map(|n| ProjectV2EncounterCounter {
+                        name: format!("extra_{n}"),
+                        initial: 0,
+                    }));
+            },
+        ),
         (
             "an encounter-backed ability with an area",
             "v2 encounter-backed Ability has no area or chain",
@@ -555,8 +577,8 @@ fn each_broken_invariant_is_rejected() {
             },
         ),
         (
-            "a creature bound to an encounter that does not cover it",
-            "v2 Creature encounters differ from the creatures their encounters cover",
+            "a creature bound to an unadmitted encounter",
+            "unresolved v2 typed definition reference",
             |draft| {
                 for profile in &mut draft.state.authoring_profiles {
                     if let ProjectV2AuthoringProfileData::Creature(creature) = &mut profile.data {

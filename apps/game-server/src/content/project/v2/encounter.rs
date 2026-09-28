@@ -929,7 +929,12 @@ fn sorted_refs(
         .try_for_each(|value| reference(value, expected, require_ref))
 }
 
-fn damage_types(values: &[String]) -> Result<(), ProjectError> {
+fn damage_types(values: &[String], limits: ProjectEvidenceLimits) -> Result<(), ProjectError> {
+    limits.check(
+        "v2 encounter damage types",
+        values.len(),
+        limits.max_reference_records,
+    )?;
     if values.windows(2).any(|pair| pair[0] >= pair[1]) {
         return invalid("v2 encounter damage types are not sorted and unique");
     }
@@ -1003,6 +1008,12 @@ pub(super) fn validate_encounter_details(
         ("v2 encounter participants", details.participants.len()),
         ("v2 encounter anchors", details.anchors.len()),
         ("v2 encounter rules", details.rules.len()),
+        ("v2 encounter counters", details.state.counters.len()),
+        ("v2 encounter flags", details.state.flags.len()),
+        ("v2 encounter timers", details.state.timers.len()),
+        ("v2 encounter phases", details.phases.len()),
+        ("v2 encounter outcomes", details.outcomes.len()),
+        ("v2 encounter abilities", details.abilities.len()),
     ] {
         limits.check(label, count, limits.max_reference_records)?;
     }
@@ -1451,7 +1462,7 @@ fn actions(
                 ..
             } => {
                 names.role(role)?;
-                damage_types(types)?;
+                damage_types(types, limits)?;
                 if let ProjectV2DamageMultiplier::TimerRemaining {
                     timer,
                     floor_percent,
@@ -1476,7 +1487,7 @@ fn actions(
                 damage_types: types,
             } => {
                 names.role(role)?;
-                damage_types(types)?;
+                damage_types(types, limits)?;
                 if *percent == 0 || *percent > 100 {
                     return invalid("v2 reflect percent is outside 1..=100");
                 }
@@ -1487,7 +1498,7 @@ fn actions(
                 ..
             } => {
                 names.role(role)?;
-                damage_types(types)?;
+                damage_types(types, limits)?;
             }
             A::Teleport { who, to } => {
                 match who {
@@ -1633,6 +1644,11 @@ fn actions(
                 if branches.len() < 2 {
                     return invalid("v2 one_of needs two branches");
                 }
+                limits.check(
+                    "v2 encounter branches",
+                    branches.len(),
+                    limits.max_reference_records,
+                )?;
                 for branch in branches {
                     if branch.weight == 0 {
                         return invalid("v2 one_of weight must be positive");

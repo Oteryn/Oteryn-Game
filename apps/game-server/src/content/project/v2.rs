@@ -2195,6 +2195,34 @@ fn validate_v2_encounter_bindings(
             "v2 Creature encounters differ from the creatures their encounters cover",
         ));
     }
+    // D45: an encounter-backed Ability has its effect only through an `ability_cast` rule of its encounter.
+    let mut cast = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Encounter(ProjectV2EncounterAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+        {
+            for rule in &details.rules {
+                if let ProjectV2EncounterTrigger::AbilityCast { ability, .. } = &rule.trigger {
+                    cast.insert((&profile.target, ability));
+                }
+            }
+        }
+    }
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Ability(ProjectV2AbilityAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+            && let Some(encounter) = &details.encounter
+            && !cast.contains(&(encounter, &profile.target))
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 encounter-backed Ability has no ability_cast rule in its encounter",
+            ));
+        }
+    }
     Ok(())
 }
 
@@ -2645,7 +2673,6 @@ fn validate_v2_state(
             "v2 authoring profiles are not target sorted and unique",
         ));
     }
-    validate_v2_encounter_bindings(&state.authoring_profiles)?;
     for profile in &state.authoring_profiles {
         validate_v2_authoring_profile(profile, &require_ref, limits)?;
         if let ProjectV2AuthoringProfileData::Loot(loot) = &profile.data {
@@ -2666,6 +2693,8 @@ fn validate_v2_state(
             }
         }
     }
+
+    validate_v2_encounter_bindings(&state.authoring_profiles)?;
 
     limits.check(
         "v2 item authoring",
