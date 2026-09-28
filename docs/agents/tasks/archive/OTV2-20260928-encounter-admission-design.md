@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-encounter-admission-design
 title: Encounter admission into WorldProject/v2 (decision E1-E5) and anchor locations
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
@@ -12,8 +12,8 @@ issue: 162
 pr: 1136
 jira: KAN-16
 base_sha: 1a2d1bd0da0ce87ea7d172fdaef97a0a651bfb7a
-head_sha: null
-final_head_sha: null
+head_sha: 8ece2c66872f1b990b93b2acd462535ffb35dfc7
+final_head_sha: 8ece2c66872f1b990b93b2acd462535ffb35dfc7
 final_head_frozen_at: null
 owner: claude/nice-edison-h9aqh0
 created_at: 2026-09-28
@@ -49,3 +49,8 @@ zones stay unlocated. It also archives the task record of #1127.
 - `verify_encounter_schema.py` 148/148; 83 encounters validate and 78 manifests resolve fully.
 - No manifest changes, so the census, the staging and `content/world` are unchanged.
 - `validate_governance.py` passes.
+
+## Completion
+
+Merged through the Merge Queue as `812930a7` (#1136) from head `8ece2c66`. Codex found a missing decision test (P1) and a
+multi-floor box (P2); both were fixed before the final head, which had no findings. Owner released.

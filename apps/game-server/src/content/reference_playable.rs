@@ -2234,6 +2234,8 @@ pub(crate) fn validate_local_object_placement_attributes(
     definition: &ReferenceDefinition,
     placements: &[PlacementRef],
     transitions: &[TransitionBinding],
+    world_id: WorldId,
+    coordinate_frame: &CoordinateFrameRef,
 ) -> Result<(), ContentError> {
     let ReferenceDefinitionKind::LocalObjectStates(states) = &definition.kind else {
         if !placement.local_object_state_attributes.is_empty()
@@ -2252,15 +2254,28 @@ pub(crate) fn validate_local_object_placement_attributes(
                 target: state.as_str().to_owned(),
             });
         }
-        if let Some(destination) = &attributes.destination
-            && !placements
+        // #1133 review: a destination resolves to exactly one placement, in the bound world and
+        // coordinate frame, before it can be exposed or consumed; anything else fails closed.
+        if let Some(destination) = &attributes.destination {
+            let mut matches = placements
                 .iter()
-                .any(|candidate| &candidate.key == destination)
-        {
-            return Err(ContentError::MissingReference {
-                owner: placement.key.as_str().to_owned(),
-                target: destination.as_str().to_owned(),
-            });
+                .filter(|candidate| &candidate.key == destination);
+            let resolved = matches
+                .next()
+                .ok_or_else(|| ContentError::MissingReference {
+                    owner: placement.key.as_str().to_owned(),
+                    target: destination.as_str().to_owned(),
+                })?;
+            if matches.next().is_some() {
+                return Err(ContentError::DuplicateKey(destination.as_str().to_owned()));
+            }
+            if resolved.address.world_id != world_id
+                || &resolved.address.coordinate_frame != coordinate_frame
+            {
+                return Err(ContentError::InvalidArtifact(
+                    "reference-playable placement destination is outside the bound world or coordinate frame",
+                ));
+            }
         }
     }
     for ((transition_key, _action), revert_after_ms) in &placement.local_object_revert_after_ms {
@@ -2297,6 +2312,8 @@ fn validate_placement(
         definition,
         &source.placements,
         &source.transitions,
+        source.world_id,
+        &source.coordinate_frame,
     )?;
     if placement.address.world_id != source.world_id {
         return Err(ContentError::InvalidArtifact(

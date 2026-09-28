@@ -22,6 +22,7 @@ members = [
     "tools/architecture-check",
     "tools/synthetic-asset-compiler",
     "tools/synthetic-client-harness",
+    "tools/dev-client",
 ]
 exclude = [
     "vendor/sqlx-core-0.9.0",

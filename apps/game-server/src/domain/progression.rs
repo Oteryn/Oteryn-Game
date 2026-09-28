@@ -175,7 +175,7 @@ where
     })
 }
 
-fn validate_policy<R, const N: usize>(
+pub fn validate_policy<R, const N: usize>(
     policy: &FiniteProgressionPolicy<R, N>,
 ) -> Result<(), ProgressionCalculationError>
 where

@@ -86,6 +86,12 @@ pub(crate) fn spell_from_bundle(
     }
     let costs = field(spell, "costs")?;
     let targeting = field(spell, "targeting")?;
+    // S20: a cast at a chosen position needs a position cast intent, which the cast wire does not carry yet.
+    if targeting.get("cast_at_position").is_some() && flag(targeting, "cast_at_position")? {
+        return fail(
+            "the spell is cast at a chosen position, which the cast wire does not carry yet",
+        );
+    }
     let carrier = match text(spell, "carrier")? {
         "instant" => Carrier::Instant {
             words: text(spell, "words")?.to_owned(),

@@ -4,7 +4,9 @@
 use super::*;
 
 mod creature;
+mod encounter;
 pub use creature::*;
+pub use encounter::*;
 
 pub const WORLD_PROJECT_V2_SOURCE_PROFILE: &str = "OTERYN_WORLD_PROJECT_SOURCE_PROFILE/v2";
 pub const WORLD_PROJECT_V2_ROOT_SCHEMA: &str = "OTERYN_WORLD_PROJECT_ROOT/v2";
@@ -672,6 +674,10 @@ pub struct ProjectV2CreatureAuthoring {
     /// Admission §5: the rest of the monster authoring creature section.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub details: Option<Box<ProjectV2CreatureDetails>>,
+    /// Encounter admission E3: the encounters that cover this creature. A later spawn, placement
+    /// or activation slice never activates the creature without them.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub encounters: Vec<ProjectV2DefinitionRef>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -789,6 +795,9 @@ pub struct ProjectV2EncounterAuthoring {
     pub repeatable: Option<bool>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub interactions: Vec<ProjectV2DefinitionRef>,
+    /// Encounter admission E1: the whole encounter authoring format v1.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub details: Option<Box<ProjectV2EncounterDetails>>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub fields: Vec<ProjectV2CandidateField>,
 }
@@ -840,6 +849,7 @@ impl ProjectV2AuthoringProfile {
                     .sort_by(|left, right| left.damage_type.cmp(&right.damage_type));
                 profile.immunities.sort();
                 profile.abilities.sort();
+                profile.encounters.sort();
                 if let Some(bestiary) = &mut profile.bestiary {
                     bestiary.kill_thresholds.sort();
                 }
@@ -884,6 +894,9 @@ impl ProjectV2AuthoringProfile {
             ProjectV2AuthoringProfileData::Encounter(profile) => {
                 profile.areas.sort();
                 profile.interactions.sort();
+                if let Some(details) = &mut profile.details {
+                    details.canonicalize();
+                }
                 profile
                     .fields
                     .sort_by(|left, right| left.field_path.cmp(&right.field_path));
@@ -2152,6 +2165,107 @@ fn require_target(
     Ok(())
 }
 
+/// E3: every creature an encounter covers lists that encounter in its Creature profile, and every
+/// encounter a Creature profile lists covers it.
+fn validate_v2_encounter_bindings(
+    profiles: &[ProjectV2AuthoringProfile],
+) -> Result<(), ProjectError> {
+    let mut covered = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Encounter(ProjectV2EncounterAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+        {
+            for creature in &details.covers {
+                covered.insert((&creature.key, &creature.revision, &profile.target));
+            }
+        }
+    }
+    let mut bound = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Creature(creature) = &profile.data {
+            for encounter in &creature.encounters {
+                bound.insert((&profile.target.key, &profile.target.revision, encounter));
+            }
+        }
+    }
+    if covered != bound {
+        return Err(ProjectError::InvalidProject(
+            "v2 Creature encounters differ from the creatures their encounters cover",
+        ));
+    }
+    // An `ability_cast` rule can only fire when its role can be a creature that owns the ability.
+    let owned = profiles
+        .iter()
+        .filter_map(|profile| match &profile.data {
+            ProjectV2AuthoringProfileData::Creature(creature) => Some(
+                creature
+                    .abilities
+                    .iter()
+                    .map(move |ability| (&profile.target, ability)),
+            ),
+            _ => None,
+        })
+        .flatten()
+        .collect::<std::collections::BTreeSet<_>>();
+    // D45: an encounter-backed Ability has its effect only through an `ability_cast` rule of its encounter.
+    let mut cast = std::collections::BTreeSet::new();
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Encounter(ProjectV2EncounterAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+        {
+            for rule in &details.rules {
+                if let ProjectV2EncounterTrigger::AbilityCast { role, ability } = &rule.trigger {
+                    if !details
+                        .role_creatures(role)
+                        .into_iter()
+                        .any(|creature| owned.contains(&(creature, ability)))
+                    {
+                        return Err(ProjectError::InvalidProject(
+                            "v2 encounter ability_cast role has no creature that owns the ability",
+                        ));
+                    }
+                    cast.insert((&profile.target, ability));
+                }
+            }
+        }
+    }
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Ability(ProjectV2AbilityAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+            && let Some(encounter) = &details.encounter
+            && !cast.contains(&(encounter, &profile.target))
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 encounter-backed Ability has no ability_cast rule in its encounter",
+            ));
+        }
+    }
+    // E3: a creature that owns an encounter-backed Ability is bound to, and covered by, its encounter.
+    for profile in profiles {
+        if let ProjectV2AuthoringProfileData::Ability(ProjectV2AbilityAuthoring {
+            details: Some(details),
+            ..
+        }) = &profile.data
+            && let Some(encounter) = &details.encounter
+            && owned.iter().any(|(creature, ability)| {
+                *ability == &profile.target
+                    && !bound.contains(&(&creature.key, &creature.revision, encounter))
+            })
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 creature owning an encounter-backed Ability is not bound to its encounter",
+            ));
+        }
+    }
+    Ok(())
+}
+
 fn validate_v2_authoring_profile(
     profile: &ProjectV2AuthoringProfile,
     require_ref: &impl Fn(&ProjectV2DefinitionRef) -> Result<(), ProjectError>,
@@ -2211,6 +2325,14 @@ fn validate_v2_authoring_profile(
                 ProjectV2Family::Ability,
                 "v2 Creature abilities",
                 "v2 Creature abilities are invalid",
+                require_ref,
+                limits,
+            )?;
+            validate_v2_ref_list(
+                &value.encounters,
+                ProjectV2Family::Encounter,
+                "v2 Creature encounters",
+                "v2 Creature encounters are invalid",
                 require_ref,
                 limits,
             )?;
@@ -2414,6 +2536,13 @@ fn validate_v2_authoring_profile(
                 require_ref,
                 limits,
             )?;
+            // E1: an admitted encounter carries its whole authored fight, never its identity alone.
+            let Some(details) = &value.details else {
+                return Err(ProjectError::InvalidProject(
+                    "v2 Encounter authoring requires details",
+                ));
+            };
+            validate_encounter_details(details, require_ref, limits)?;
             validate_v2_candidate_fields(&value.fields)?;
         }
         ProjectV2AuthoringProfileData::WorldObject(value) => {
@@ -2604,6 +2733,8 @@ fn validate_v2_state(
             }
         }
     }
+
+    validate_v2_encounter_bindings(&state.authoring_profiles)?;
 
     limits.check(
         "v2 item authoring",

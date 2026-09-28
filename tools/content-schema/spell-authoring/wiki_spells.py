@@ -48,6 +48,7 @@ LICENSE_NOTE = ('TibiaWiki (Fandom), CC BY-SA; only short allowlisted infobox fa
                 'under owner decision S19.')
 FORMULAE_PAGE = WIKIS['fandom']['formulae']
 MAX_ALL_FIELD_LENGTH = 200
+ALL_FIELD_LENGTH = {'effect': 4000, 'notes': 4000}  # mechanics prose for the S7 behaviours (owner, 2026-09-28)
 THROTTLE_SECONDS = 0.5
 RETRIES = 4
 SPELL_FIELDS = ('name', 'spellid', 'type', 'subclass', 'secondarygroup', 'runegroup', 'damagetype', 'words',
@@ -209,7 +210,8 @@ def level_curve(content):
 
 
 def all_infoboxes(content):
-    """Every top-level `{{Infobox ...}}` template of a page with each value cut to MAX_ALL_FIELD_LENGTH.
+    """Every top-level `{{Infobox ...}}` template of a page with each value cut to MAX_ALL_FIELD_LENGTH (effect and notes
+    to ALL_FIELD_LENGTH).
 
     Used for a wiki whose field names are not mapped yet (TibiaWiki BR): the result shows the field
     names to map; it is a hosted-runner artifact and is not committed."""
@@ -217,7 +219,7 @@ def all_infoboxes(content):
     for match in re.finditer(r'\{\{\s*(Infobox[^|}\n]*)', content):
         name = match.group(1).strip()
         fields = top_level_fields(content, match.start())
-        found.setdefault(name, {k: v[:MAX_ALL_FIELD_LENGTH] for k, v in fields.items() if v})
+        found.setdefault(name, {k: v[:ALL_FIELD_LENGTH.get(k, MAX_ALL_FIELD_LENGTH)] for k, v in fields.items() if v})
     return found
 
 
@@ -407,7 +409,8 @@ def compare_damage_type(stats, rows, record, raw):
 BR_SPELL_FIELDS = {'name': 'name', 'words': 'words', 'expLvl': 'levelrequired', 'mana': 'mana', 'soul': 'soul',
                    'premium': 'premium', 'cooldownproprio': 'cooldown', 'cooldowngrupo': 'cooldowngroup',
                    'voc': 'voc', 'basePower': 'basepower', 'damagetype': 'damagetype', 'spellrange': 'spellrange',
-                   'implemented': 'implemented', 'wheelSpellType': 'wheelspell', 'spellcost': 'spellcost'}
+                   'implemented': 'implemented', 'wheelSpellType': 'wheelspell', 'spellcost': 'spellcost',
+                   'aimattarget': 'aimattarget'}  # S20: the Aim at Target cast option (BR only)
 BR_RUNE_FIELDS = {'name': 'name', 'levelrequired': 'levelrequired', 'mlrequired': 'mlrequired',
                   'vocrequired': 'vocrequired', 'basePower': 'basepower', 'damagetype': 'damagetype',
                   'implemented': 'implemented'}
@@ -427,7 +430,7 @@ BR_WORDS = {'virtude': 'virtue',  # Portuguese group names BR keeps as page cate
 
 def br_value(key, value):
     value = value.strip()
-    if key == 'premium':
+    if key in ('premium', 'aimattarget'):
         return BR_YES_NO.get(plain(value).lower(), value)
     if key == 'damagetype':
         return BR_DAMAGE.get(plain(value).lower(), value)

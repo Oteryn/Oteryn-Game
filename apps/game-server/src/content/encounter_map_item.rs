@@ -1063,16 +1063,84 @@ mod tests {
         );
         assert_eq!(runtime.revert_after_ms(&revert, &action), None);
 
-        assert_eq!(invoke(&mut runtime, &mut ingress, 1, FORWARD)?, "COMMITTED");
+        // #1144 P1 4125535249: the timed forward is not session-invocable (the session path never
+        // schedules its revert), refused before ingress or mutation like an unbound transition.
+        let refused = invoke(&mut runtime, &mut ingress, 1, FORWARD)
+            .err()
+            .and_then(|error| error.downcast::<WorldRuntimeError>().ok());
+        assert!(matches!(
+            refused.as_deref(),
+            Some(WorldRuntimeError::InvalidBinding(
+                "command names a transition this local-object runtime does not bind"
+            ))
+        ));
+        assert_eq!(ingress.outstanding(), 0);
+        assert_eq!(runtime.revision(), 0);
+
+        // #1144 P1 4125881398: a scope operation without the driver's scheduling capability is
+        // refused too, before mutation.
+        let (_, _, scope) = authority(10)?;
+        let generation = ScopeOwnershipGeneration::new(1).map_err(fixture)?;
+        let forward = crate::world_runtime::ScopeLocalObjectOperation::new(
+            runtime.placement_key().clone(),
+            runtime.incarnation(),
+            runtime.content_generation().clone(),
+            LocalObjectOperation::new(TransitionKey::new(FORWARD)?),
+            runtime.revision(),
+        );
+        assert!(matches!(
+            runtime.apply_scope_operation(
+                scope,
+                generation,
+                &forward,
+                &BTreeSet::new(),
+                None,
+                |_| Ok::<(), std::convert::Infallible>(()),
+            ),
+            Err(WorldRuntimeError::InvalidBinding(
+                "timed transition commits only through the revert scheduler"
+            ))
+        ));
+        assert_eq!(runtime.revision(), 0);
+
+        // It commits only through the §7 revert driver, which records its revert.
+        let clock = oteryn_foundation::ManualClock::new(oteryn_foundation::Moment::ZERO);
+        let mut driver = crate::world_object_revert::ScopeRevertDriver::new(
+            scope,
+            crate::world_object_revert::TestIssuer::new(generation),
+            std::sync::Arc::new(clock),
+            crate::world_object_revert::RevertDriverLimits::registered(),
+        );
+        let revisions =
+            crate::interaction::SemanticRevisionContext::new("content:r1", "ruleset:r1", "sim:v1")?;
+        let death = crate::interaction::ChildOccurrenceRef::for_root(
+            &crate::interaction::RootSourceOccurrenceRef::new("encounter:duke-death/1")?,
+            "encounter:map_item",
+            "encounter:anchor",
+            "transform",
+            None,
+            &revisions,
+        )?;
+        let committed = driver.apply_forward(
+            &mut runtime,
+            &death,
+            &revisions,
+            &action,
+            &forward,
+            &BTreeSet::new(),
+        )?;
+        assert_eq!(committed.outcome.disposition(), "COMMITTED");
+        assert!(committed.scheduled.is_some());
+        assert_eq!(driver.record_count(), 1);
         assert_eq!(
             destination_of(&runtime),
             Some(anchor_placement_key(DUKE_KEY, "reward_destination")?.as_str())
         );
 
-        // The dedicated inverse (invoked directly; the timed §7 driver is a later allocation)
-        // lands on the post-revert variant, which exposes `revert_destination`.
+        // The untimed dedicated inverse stays session-invocable and lands on the post-revert
+        // variant, which exposes `revert_destination`.
         assert_eq!(
-            invoke(&mut runtime, &mut ingress, 2, revert.as_str())?,
+            invoke(&mut runtime, &mut ingress, 1, revert.as_str())?,
             "COMMITTED"
         );
         assert_eq!(runtime.state_key(), &duke_post_revert()?);
