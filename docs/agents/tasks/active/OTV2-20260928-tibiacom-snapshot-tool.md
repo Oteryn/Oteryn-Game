@@ -4,14 +4,14 @@
 task_id: OTV2-20260928-tibiacom-snapshot-tool
 title: Official tibia.com manual/spell-library capture tool (owner-run fetch, offline verify)
 mode: BUILD
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/tibiacom-snapshot-tool
 issue: 1077
-pr: null
-base_sha: null
-head_sha: null
+pr: 1083
+base_sha: 8d320703ec39b39c44c0b38268a07e4b0579e060
+head_sha: 7b7f75eeaf0bff834fb9690f5ea069c3e38f94fd
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn content-import worker (Claude Code)
@@ -196,8 +196,9 @@ reason: >
 - changed-file review: all changed files fall within `owned_paths` above; `tools/content-schema/spell-authoring/**`
   and `.github/workflows/spell-wiki-capture.yml` untouched.
 - unresolved review threads: none at open.
-- related/superseded PRs: none; references #1077 (the tibia.com block report and the S15 spell
-  library, which this task's `PENDING_1077` fallback defers to).
+- related/superseded PRs: none superseded; this task's PR is #1083, which references #1077 (the
+  tibia.com block report and the S15 spell library, which this task's `PENDING_1077` fallback
+  defers to).
 - protected auto-merge: not requested by this task; left to owner/control-plane review.
 - merge commit/result: pending.
 - ownership release: pending merge.
@@ -205,11 +206,11 @@ reason: >
 ## Context checkpoint
 
 ```yaml
-last_progress: tool + workflow + docs + task record authored, self-test green, preparing to open PR against main
-status: implementing
+last_progress: PR #1083 opened against main on head 7b7f75e; awaiting CI
+status: validating
 branch: claude/tibiacom-snapshot-tool
-head_sha: null
-pr: null
+head_sha: 7b7f75eeaf0bff834fb9690f5ea069c3e38f94fd
+pr: 1083
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: push
@@ -227,5 +228,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: owner runs `tibiacom_capture.py fetch` once and commits the resulting imports/official/tibia-com/<date>/ snapshot
+next_action: wait for PR #1083 checks, then owner runs `tibiacom_capture.py fetch` once and commits the resulting imports/official/tibia-com/<date>/ snapshot
 ```
