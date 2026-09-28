@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/ai1-owner-timer-lane
 issue: 162
-pr: null
+pr: 1150
 allocation: "#162 comment 5876068445 (GAME-AI-01 child AI-1)"
 base_sha: 7d1134f090ac249f964fede017efabba91e22b90
 head_sha: pending_push
@@ -143,7 +143,7 @@ last_progress: owner_timer.rs implemented and unit-tested (11/11), foundation li
 status: waiting
 branch: claude/ai1-owner-timer-lane
 head_sha: pending_push
-pr: null
+pr: 1150
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
