@@ -48,7 +48,7 @@ unregistered. Which ceilings apply?
 | 3 | `COMBAT01-DEATH-WORKFLOWS-PER-SCOPE` | 64 active death and loot-settlement workflows per scope | structurally unreachable (creatures ≤ 64); reject if reached |
 | 4 | `COMBAT01-LOOT-PLAN-ENTRIES` | 16 entries per death | content validation rejects |
 | 4 | `COMBAT01-LOOT-PLAN-ITEMS` | 16 ItemInstances per death; one MINT per entry; a stack is one instance with quantity | reject before allocation |
-| 4 | `COMBAT01-LOOT-PLAN-BYTES` | 12,288 B per death: 16 × 704 B per entry (512 B content key, 128 B technical, 64 B fixed fields) plus a 1,024 B header | reject, never truncate |
+| 4 | `COMBAT01-LOOT-PLAN-BYTES` | 30,720 B per death: 16 × 1,792 B per entry plus a 2,048 B header (§4.1.1) | reject, never truncate |
 | 5 | `COMBAT01-LOOT-RNG-DRAWS` | 32 draws per death (a chance draw and a quantity draw per entry) | reject before planning |
 | 6 | `COMBAT01-CORPSES-PER-SCOPE` | 64 corpse projections per scope | reject the projection; the death still commits and loot follows D52 |
 | 6 | `COMBAT01-ITEMS-PER-CORPSE` | 16, direct root only | reject |
@@ -59,6 +59,21 @@ unregistered. Which ceilings apply?
 | 11 | `COMBAT01-RESULT-BYTES` | 4,096 B per combat result projection, at most 2 result entries | reject |
 | 11 | `COMBAT01-STATE-ENTRIES-PER-DELTA` | 64 combat state entries per delta, within `FND02-ORDINARY-REPEATED-ENTRIES` | reject |
 | 12 | `COMBAT01-DIAGNOSTIC-VARIABLE-BYTES` | 0; fixed counters only | not reachable |
+
+#### 4.1.1 Loot plan byte derivation
+
+The plan bound follows the complete typed identities that `durability/item_mint.rs` validates and
+encodes (`validate_definition`, `push_text` with a u16 length prefix; DUR-03 RL-07 field bounds):
+
+- A `TypedDefinitionRef` is at most 1,152 B: `family` 128 B (technical text), `production_key`
+  512 B and `revision_ref` 512 B (content keys).
+- Entry, 1,792 B: the item `TypedDefinitionRef` (1,152 B), the purpose key (a content key, 512 B)
+  and 128 B for length prefixes and fixed fields (draw ordinal, quantity, chance and quantity
+  draws).
+- Header, 2,048 B: the loot table `TypedDefinitionRef` (1,152 B) and 896 B for the death key
+  (World, Channel, scope generation, actor id and generation: 52 B), length prefixes and fixed
+  fields.
+- 16 × 1,792 B + 2,048 B = 30,720 B. A plan of 16 entries with maximum-width valid identities fits.
 
 ### 4.2 Registration conditions
 
@@ -104,7 +119,7 @@ implementation_may_resume: true   # D1 (D79) may be allocated on the owner decis
 required_fresh_allocation: true
 required_independent_review: "exact-head independent review (resource ceilings, D1 exception)"
 required_revalidation:
-  - "Combat D registration: max and max+1 per row; the loot plan at 16 entries and 12,288 B accepted, 17 entries or one extra byte rejected; 64 in-flight MINTs with backpressure beyond"
+  - "Combat D registration: max and max+1 per row; the loot plan at 16 maximum-width entries and 30,720 B accepted, 17 entries or one extra byte rejected; 64 in-flight MINTs with backpressure beyond"
   - "D1: one death key yields one MINT with the fixture entry; a replay yields the same result; no XP path exists"
 remaining_unknowns:
   - loot tables, boss loot, corpse decay, MOVE-RL-11 visibility

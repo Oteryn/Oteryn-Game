@@ -48,7 +48,7 @@ No registry, runtime or migration change: the Combat D allocation registers the 
   - VSL-COMBAT-01 §19, §24.1, §24.3;
   - the registered `ABILITY01-*`, `INTERACTION01-*`, `DUR03-*` and `MOVE-RL-11` rows;
   - D52 (#1079); D57 (#1110).
-- `DERIVED`: the loot plan bytes (16 × 704 B + 1,024 B).
+- `DERIVED`: the loot plan bytes (16 × 1,792 B + 2,048 B = 30,720 B, decision §4.1.1).
 - `UNKNOWN`: boss loot sizes, corpse decay times.
 
 ## High-risk authority/recovery qualification
@@ -66,6 +66,14 @@ Boundary tests bind the Combat D registration.
 ## Excluded scope
 
 - Registry rows, runtime code, loot tables, XP values, `MOVE-RL-11`.
+
+## Finding dispositions
+
+- Codex P1 (PR #1123 review comment 4124139006, `COMBAT01-LOOT-PLAN-BYTES` undersized): ACCEPTED.
+  The row was 12,288 B from a 704 B entry, below one maximum-width `TypedDefinitionRef` (1,152 B)
+  and with the purpose key sized as technical text instead of a 512 B content key. It is now
+  30,720 B, derived from the `item_mint.rs` encoding in decision §4.1.1. The owner choices D77-D79
+  are unchanged; only the derived byte value changed. Repair generation 1 of 1.
 
 ## Validation
 
