@@ -280,6 +280,10 @@ announcement 8783 is not final.
 - Death Echo mana 155 (8833, 2026-06-02) is superseded by the later official tibia.com list, which states 150.
 - Expose Weakness and Sap Strength were removed by 8833 (they became the level-175 Aura stances). They are blocked
   as removed spells, not as native-behaviour candidates.
+- A comparison with the current TibiaData spell library found a converter error. The library is the current state,
+  not the target date, and was used only as a check. The group of a rune now comes from the wiki `runegroup`;
+  `subclass` is the group of the spell that conjures the rune. Intense and Ultimate Healing Rune move from `support`
+  to `healing`, as Canary, Crystal and the library state.
 
 The official tibia.com spell library (S15) answers a Cloudflare browser check from the build container
 and blocks GitHub-hosted runners outright ("Sorry, you have been blocked"). `tibiacom_spells.py fetch`
