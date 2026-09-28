@@ -2861,7 +2861,8 @@
         },
         "rule": {
           "enum": [
-            "take_able_dead_creature"
+            "take_able_dead_creature",
+            "owner_leftover_review_2026_09_28"
           ]
         },
         "name": {
@@ -2870,7 +2871,7 @@
         }
       },
       "required": [],
-      "description": "The admitted-mapping fact that resolved family_profile when no direct engine attribute did; the shape carried is exactly one of three mutually exclusive families, keyed by family_profile_basis. 'wiki_evidence_fallback' (resolution/match_basis/...): 'direct' cites the one matched TibiaWiki page's field/value; 'disambiguation' cites 2+ candidate pages that all resolved to the same profile (the family invariant across candidates). 'match_basis' is an audit field: 'itemid' when the pages were joined by the item's own exact numeric TibiaWiki 'itemid', which takes precedence and is authoritative over 'title' (the engine name matched against the wiki title index), 'appearance_title' (the item's own appearances.dat name, when it differs from its items.xml name, matched against the same title index), and 'actualname' (the item's own items.xml or appearance name matched against the wiki's own infobox 'actualname' field, tried only once none of the other three joins resolved). 'engine_wrap_target' (wrap_target_id/wrap_target_primarytype): this item's own items.xml 'wrapableto' names another items.xml id whose own engine primarytype resolved the family (one hop only, never chained, never through that id's own wiki fallback). 'owner_name_rule' (rule/name): the item's exact lower-cased engine name matched an explicit, reviewed owner table keyed by 'rule'.",
+      "description": "The admitted-mapping fact that resolved family_profile when no direct engine attribute did; the shape carried is exactly one of three mutually exclusive families, keyed by family_profile_basis. 'wiki_evidence_fallback' (resolution/match_basis/...): 'direct' cites the one matched TibiaWiki page's field/value; 'disambiguation' cites 2+ candidate pages that all resolved to the same profile (the family invariant across candidates). 'match_basis' is an audit field: 'itemid' when the pages were joined by the item's own exact numeric TibiaWiki 'itemid', which takes precedence and is authoritative over 'title' (the engine name matched against the wiki title index), 'appearance_title' (the item's own appearances.dat name, when it differs from its items.xml name, matched against the same title index), and 'actualname' (the item's own items.xml or appearance name matched against the wiki's own infobox 'actualname' field, tried only once none of the other three joins resolved). 'engine_wrap_target' (wrap_target_id/wrap_target_primarytype): this item's own items.xml 'wrapableto' names another items.xml id whose own engine primarytype resolved the family (one hop only, never chained, never through that id's own wiki fallback). 'owner_name_rule' (rule/name): the item's exact lower-cased engine name matched an explicit, reviewed owner table keyed by 'rule' -- 'take_able_dead_creature' (the small dead-item carcass table) or 'owner_leftover_review_2026_09_28' (the per-item leftover-family review of the ids that still stayed unresolved after every other classifier, lowest priority of all).",
       "allOf": [
         {
           "if": {

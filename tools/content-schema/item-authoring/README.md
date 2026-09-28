@@ -29,6 +29,7 @@ Architecture and boundaries:
 | `verify_formal_schema.py` | Focused positive/negative contract checks and deterministic fixtures. |
 | `engine_items.py` | Converts one pinned Crystal/Canary `items.xml` + `appearances.dat` into candidate Item bundles: identity allocator, family_profile/taxonomy rules, field mapping, appearance/Presentation binding, and the `delivery_task_eligible` decision from the `ADOPT_CRYSTAL_DELIVERY_LIST@ff7ede5` authoring rule. Digest-verifies every input artifact first (text artifacts after CRLF->LF normalization, `appearances.dat` as exact raw bytes); a missing pinned artifact is a hard error. |
 | `delivery-task-overrides.json` | Per-Item exceptions to the Delivery Task adoption rule (`{key: {eligible, reason}}`), strictly validated; starts empty. |
+| `owner-item-family-decisions.json` | Owner-reviewed `family_profile` decisions (task #15, 2026-09-28) for ids every automated classifier left unresolved; strictly validated, applied as the last classifier. |
 | `population_census.py` | Runs `engine_items` over an engine's full item universe, validates every emitted bundle (the real `delivery_task_eligible` decision, not a proposal), and writes one deterministic outcome census (counters, top blockers/validator errors, per-raw-field coverage, Delivery Task decision/observation/crystal-list counts, and a `routed_non_item` owner/reason breakdown). `--self-check` runs required engine-specific assertions for both engines; `--check` diffs an in-memory regeneration against the committed file instead of writing. |
 | `test_engine_items.py` | Fixture-checkout tests for `engine_items`/`population_census`: LF/CRLF digest portability, per-engine Delivery Task pool parsing, the Crystal-list adoption rule and its per-item overrides, plus direct synthetic-`sources` tests (real identity index and disposition catalogs, fabricated `items`/`appearances`) for every implemented field family and value route. Run with `python test_engine_items.py`. |
 | `samples/population-crystal-ff7ede5.json`, `samples/population-canary-47dfd51f.json` | Committed census outputs for the two pinned engine revisions. |
@@ -101,11 +102,11 @@ python lower_promotion_packet.py --source /path/to/crystalserver --self-check
 python lower_promotion_packet.py --source /path/to/crystalserver --check
 ```
 
-The committed output is `samples/promotion-crystal-ff7ede5.json`: 14,742 rows over
-12,118 Items (`charges.count` 124, `container.capacity` 453, `presentation.name`
-12,118, `protection.armor` 432, `weapon.attack` 621, `weapon.defense` 636,
+The committed output is `samples/promotion-crystal-ff7ede5.json`: 14,927 rows over
+12,301 Items (`charges.count` 126, `container.capacity` 453, `presentation.name`
+12,301, `protection.armor` 432, `weapon.attack` 621, `weapon.defense` 636,
 `weapon.extra_defense` 160, `weapon.hit_chance` 56, `weapon.range_cells` 142;
-~3.7 MiB). Its `schema`/`profile`/`status`/`next_action` are deliberately different
+~3.8 MiB). Its `schema`/`profile`/`status`/`next_action` are deliberately different
 literal strings from the pinned Rust constants and from the wired packet's own values,
 so this candidate can never be mistaken for, or silently accepted as, the wired one.
 The #1048 Rust wiring pins an earlier copy (13,292 rows over 10,674 Items, before the wiki
@@ -250,6 +251,35 @@ e.g. `bridge`, `hive structure`, `stone pavement`) routes `routed_non_item` owne
 `WorldObject`, reason `no_client_appearance`; the fluid-type and late-placeholder routes
 above stay checked first and keep their own reasons. An item with a resolvable wiki
 record, or any `appearances.dat` object at all, is never affected.
+
+### Owner leftover-family decision table and the empty-object last resort
+
+After every rule above, 144 Crystal / 103 Canary ids stayed `family_profile_unresolved`.
+The owner manually reviewed every one and produced a per-item family decision or an
+explicit `UNSURE`; the non-`UNSURE` rows are committed as
+`owner-item-family-decisions.json` (schema `OTERYN_ITEM_OWNER_FAMILY_DECISIONS/v1`,
+keyed by Oteryn registry key: `name`/`profile`/`reason`/`source`), loaded by
+`engine_items.load_owner_family_decisions` -- a strict, fail-closed loader modelled on
+`load_delivery_overrides` (unique keys, closed key sets, a known registry key, an
+admitted profile, non-empty `reason`/`source.facts`). It is the LAST classifier: only
+consulted once every higher-priority rule -- engine attributes, both wiki-evidence
+tiers, wrap-target inheritance and the dead-item rules -- has already failed, gated by
+`skip_post_wiki_fallback_routes` the same way as every other post-wiki-fallback rule. A
+hit sets `family_profile_basis: "owner_name_rule"` with evidence
+`{rule: "owner_leftover_review_2026_09_28", name}`. Resolves 121 Crystal / 80 Canary
+items.
+
+Once even the owner table has failed, an item that DOES have an `appearances.dat`
+object but whose `flags` dict is completely empty (not even `take`/`usable`) routes the
+same way the placeholder-name checks do: `routed_non_item` owner `WorldObject`, reason
+`appearance_placeholder_slot` -- a flag-less client object carries literally nothing to
+anchor a family to, the same kind of unauthored placeholder slot, just not
+name-identifiable. Resolves 13 items identically in both engines (energy barrier, skull
+stone x6, tentugly, towel, wilds monsters outfit x4).
+
+10 ids (identical in both engines) remain the owner's own `UNSURE` verdict -- no wiki
+page, or a matched page with no distinguishing fact, and non-diagnostic client flags --
+and stay `family_profile_unresolved`, fail-closed editorial backlog.
 
 A field this converter cannot implement because the schema needs data neither pinned
 engine's evidence supplies keeps a precise blocker rather than a guessed value:

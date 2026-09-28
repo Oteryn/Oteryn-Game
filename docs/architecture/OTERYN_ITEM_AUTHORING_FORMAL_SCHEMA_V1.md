@@ -796,6 +796,78 @@ growth` (12), `arena leaderboard`, `obsidian pipes`, and others. Resolves 105 it
 identically in both engines. An item with a resolvable wiki record, or any
 `appearances.dat` object at all, is never affected.
 
+## 5i. Owner leftover-family decision table (task #15, 2026-09-28)
+
+After §5b-§5h, exactly 144 Crystal / 103 Canary ids stayed `family_profile_unresolved`.
+The owner manually reviewed every one (per-item wiki lookup, client-flag inspection and
+a proposed profile or an explicit `UNSURE`; the raw review evidence itself is not
+committed, only its accepted conclusions below) and produced a per-item family
+decision. `tools/content-schema/item-authoring/owner-item-family-decisions.json`
+(schema `OTERYN_ITEM_OWNER_FAMILY_DECISIONS/v1`, loaded by
+`engine_items.load_owner_family_decisions`, modelled on `load_delivery_overrides`'s
+fail-closed style) commits the non-`UNSURE` rows, keyed by Oteryn registry key: `name`
+(the exact lower-cased engine name, a guard against a same-key coincidence), `profile`
+(one of the 22 admitted profiles), `reason`, and `source` (`wiki_url` or `null` plus a
+`facts` summary). 121 of the review's 123 non-`UNSURE` ids were still unresolved on
+this branch (2, "tic-tac-toe token", had already resolved via the §5g actualname join
+by the time of this review and are correctly excluded); all 121 map to a real registry
+key with a matching engine name, verified before committing the table.
+
+The table is the LAST classifier: `convert_item` only ever consults it once every
+higher-priority rule -- engine attributes, both wiki-evidence tiers (§5b/§5e/§5g),
+wrap-target inheritance and the dead-item rules (§5c) -- has already failed, gated by
+`skip_post_wiki_fallback_routes` the same way as every other post-wiki-fallback rule (a
+per-item owner decision still ranks below real wiki evidence for the capture tool's
+"does this id need a lookup" probe). A hit sets `family_profile_basis:
+"owner_name_rule"` with evidence `{rule: "owner_leftover_review_2026_09_28", name}` --
+the same basis the dead-item owner table (§5c) uses, distinguished by `rule`.
+
+Resolves 121 Crystal / 80 Canary items -- Canary has fewer real ids in the CW2 B1
+allocator's shared id space for this exact set (41 Crystal-only ids have no Canary
+counterpart at all). By profile: Crystal `quest_item` 37, `decoration` 28, `document`
+15, `tool` 9, `trash` 5, `transformation_item` 5, `light_source` 4, `material_valuable`
+4, `plant` 3, `progression_material` 3, `event_collectible` 3, `fluid` 3, `food` 2;
+Canary `quest_item` 33, `decoration` 18, `document` 3, `tool` 6, `trash` 5,
+`transformation_item` 2, `light_source` 4, `plant` 3, `progression_material` 3,
+`event_collectible` 3 (`material_valuable`/`fluid`/`food` have zero Canary-side ids in
+this set).
+
+## 5j. Empty client object last resort (task #15, 2026-09-28)
+
+Once every rule above -- including the §5i owner table -- has failed, an item that DOES
+have an `appearances.dat` object, but whose `flags` dict is completely empty (not even
+`take`/`usable`; `decode_flags`'s own "presence == key in dict" contract means an empty
+dict is a proven absence of every flag, never a decode gap), routes `routed_non_item`
+owner `WorldObject`, reason `appearance_placeholder_slot` -- the same reason the early
+`PLACEHOLDER_APPEARANCE_NAMES` and late `LATE_PLACEHOLDER_APPEARANCE_NAMES` checks use:
+a flag-less client object is the same kind of unauthored placeholder slot, just not
+identifiable by name. Verified against the pinned Crystal/Canary appearances: energy
+barrier (25799), skull stone (10134-10139), tentugly (39003), towel (20889) and wilds
+monsters outfit (19125-19128) all decode to `flags: {}` exactly -- 13 ids, identical in
+both engines. An id in that name set that turns out to carry any real flag is left
+alone by this rule (none of the 13 did).
+
+## 5k. Remaining gap (task #15, 2026-09-28)
+
+10 ids (identical in both engines) stay `family_profile_unresolved` -- the owner's own
+`UNSURE` verdict, no wiki page or only a wiki page with no distinguishing fact, and a
+non-empty but non-diagnostic set of client flags: `aligned opticording sphere` (19392),
+`arena certificate` (23547), `blackened hand mirror` (36876), `cask` (34078),
+`eye-shaped frame` (36707), `frost cannon` (9132), `remains of a crude dream` (20129,
+20131), `the ashes of a device` (21212), `unknow item` (32267). Each stays fail-closed
+editorial backlog rather than guessed; recovering any of them needs either new wiki
+evidence or a further owner decision, not a rule change.
+
+Together, §5i-§5j recover 134 Crystal / 93 Canary items (121+13 / 80+13):
+`family_profile_unresolved` 144 -> 10 (both engines); `routed_non_item` 25,833 ->
+25,846 (Crystal), 25,370 -> 25,383 (Canary); `fully_resolved` 11,278 -> 11,399
+(Crystal), 10,941 -> 11,021 (Canary). No other outcome or blocker count changes --
+proven by diffing every item id's full outcome against the pre-task baseline (PR #1105,
+`bddc0616`), both engines: exactly 134 (Crystal) / 93 (Canary) ids change, every one
+previously `family_profile_unresolved`, zero unsafe diffs. See
+`docs/agents/tasks/active/OTV2-20260928-item-owner-leftover-table.md` for the full
+changed-id proof.
+
 ## 6. Validation and non-claims
 
 The schema validator checks:
