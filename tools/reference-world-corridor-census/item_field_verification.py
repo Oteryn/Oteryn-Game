@@ -806,8 +806,8 @@ def build_manifest(
             (
                 "The protected #767 current-source snapshot and later fresh "
                 "observations retain target_continuity=UNKNOWN unless separately "
-                "proven; current September values are never auto-promoted to the "
-                "July 28 target."
+                "proven; values observed after the target day are never "
+                "auto-promoted to the 2026-09-27 target."
             ),
             (
                 "TibiaWiki structured data remains Reference evidence, not "

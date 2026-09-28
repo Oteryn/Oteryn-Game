@@ -60,7 +60,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$(sha256sum tools/reference-world-corridor-census/item_current_source_tibiawiki.py | awk '{print $1}')" = "9b14b6baf14307407fa0c0580edcdaf310b35e8d8ff9ba6a9d32b1db6ac49206"
-          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "65673ddf1ba39f51a07bec9093be54cbe73117780afa901319c5e61cc6a78d95"
+          test "$(sha256sum tools/reference-world-corridor-census/item_field_verification.py | awk '{print $1}')" = "05eef574f5dfa5383ad5c20dd6961eead4508640457772b9899af0e259498bd4"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
