@@ -66,5 +66,5 @@ while parked (recommended: follow Canary).
 
 ## Context checkpoint
 
-last_progress: review round 2 on #1183 addressed (free random tiles as CW2-4, instance-membership gate on the Gorzindel return, Q4 added)
+last_progress: review round 3 on #1183 addressed (decision test added as §12.7; design unchanged)
 jira: pending (no mapped Story resolved in this worker session)

@@ -796,3 +796,62 @@ Each step is its own owned slice.
 | Q2 | Gorzindel's portal defects: free each room after 10 s in every case, and return only players still in the instance? | The room table is server-wide. A room stays busy forever if its player is gone when the 10 s end, and a player who died and respawned is still pulled back to the middle (`movements_gorzindel.lua:24-30`). | Yes. The room state is per instance (D26), and the return acts only on a player still in the fight (§9 rule 2). |
 | Q3 | The Sandking's brood calls: spawn each brood on a free tile of the area? | A brood is created on an unchecked random tile. If that fails, the call chain stops and the Sandking never returns (`creaturescripts_sandking.lua:43-44`). | Yes. Only the brood spawns use `random_in` with `free: true` (CW2-4); every existing `random_in` keeps its semantics. |
 | Q4 | Melting Frozen Horror: when damage over time kills the parked melting horror, remove the Solid Frozen Horror anyway? | The death script removes the top creature of the parking tile, which is then the dying melting horror itself. The solid horror stays in the room, and `revertHorror` finds no melting horror to swap back (`creaturescripts_bosses_kill.lua:44-47`, `creaturescripts_dragon_egg.lua:1-22`). The egg still hatches and the kill is still credited. | Follow Canary. Gate the removal with the existing `creature_present(solid_frozen_horror, parking_tile, present)` on a one-tile anchor, in a rule of its own. The fight is already credited, and the leftover solid horror goes when the instance resets (D26). Removing it everywhere would be a deviation with no evidence. |
+
+### 12.7 Decision test (`ARCHITECTURE_DECISION_DISCIPLINE.md`)
+
+The test covers CW2-1..4 together, because each one widens the closed v1 vocabulary of §9 rule 1. Where the
+extensions differ, the differences are named. Alptramun (Q1) and Melting Frozen Horror (Q4) need no vocabulary change,
+only evidence answers.
+
+1. **Must decide now?**
+   - **CW2-1..3: YES.** E4 admits an encounter only when its manifest has no `unresolved_semantics` row. Without these
+     terms the Gorzindel and The Sandking rows cannot resolve, and the closed vocabulary rules out approximating or
+     scripting them (D28). The owner scheduled this proposal on #162 (batch item 4).
+   - **CW2-4: YES only if Q3 accepts** the free-tile brood spawn. If Q3 declines, CW2-4 is dropped: the Sandking
+     transcription keeps plain `random_in` and records Canary's failed-spawn behaviour.
+   - No runtime work waits on any of this. The decision concerns content admission only.
+2. **What concrete downstream work is blocked?**
+   - Slice 1 of §12.5: the schema, validator and `verify_encounter_schema.py` additions.
+   - The Gorzindel and The Sandking transcriptions in `canary_encounters.py` and their manifests.
+   - The typed Encounter profile variants in `apps/game-server/src/content/project/v2/encounter.rs`, which are slice 3
+     of the admission design.
+   - The E4 restage that admits these two encounters and the creatures they cover. Today those creatures wait as
+     `deferred_encounter`.
+3. **What becomes harder or impossible later?**
+   - **Schema compatibility.** Each extension is an additive, optional branch:
+     - CW2-1: `triggering` in `teleport.who` and in the `in_anchor` subject;
+     - CW2-2: `corpse_of` as the alternative to `item`;
+     - CW2-3: `triggering` in `map_item`;
+     - CW2-4: `free`, default false.
+     Every existing sample and admitted encounter stays valid with its meaning unchanged, and §12.4 makes that a
+     validation obligation.
+   - **Older readers.** Documents that use the new branches are rejected by the current schema, validator and Rust
+     profile.
+   - **Profile revision.** Under the E1 decision test, a change to the v2 Encounter profile shape needs a new profile
+     revision and a restage. That happens once, for all four extensions.
+   - **Runtime obligations**, which bind a future Encounter runtime once these encounters are admitted:
+     - CW2-1: the runtime must keep a player's identity through a rule delay, and define instance membership for
+       `in_anchor`. That couples the check to the activity-instance admission contract (D26).
+     - CW2-2 creates the strongest coupling. The runtime must know which role and instance a corpse came from,
+       across its decay stages, so it depends on the item domain's corpse and decay model.
+     - CW2-3: a `stepped_on` trigger must carry the identity of the item stepped on.
+     - CW2-4: the runtime must query whether a tile is free (placeable and unoccupied) when it spawns.
+4. **What evidence would justify superseding it?**
+   - The Encounter runtime or the item domain cannot keep corpse provenance through decay. CW2-2 would then give way
+     to an item match over the decay chain, or to a marker item.
+   - An interaction-domain contract that owns per-instance step-in state. The Gorzindel portal would then move to
+     `map_item.interaction`, the alternative declined in §12.2.
+   - An activity-instance admission contract whose rule for leaving an instance differs from the one `in_anchor` of
+     `triggering` assumes. The check would follow that contract.
+   - Reference-date wiki evidence (D25) that contradicts the Canary behaviour of these fights.
+   - The owner declines Q3, which drops CW2-4. A later encounter that needs `triggering` in another subject is a new
+     decision, not an unrecorded widening.
+5. **What is deliberately not decided?**
+   - `triggering` in any subject or action other than `teleport.who`, `in_anchor`, `map_item` and the existing D31
+     `remove`.
+   - `free` for any position kind other than `random_in`, or for any encounter other than The Sandking.
+   - The Q1-Q4 answers.
+   - Ferumbras Mortal Shell and the dragon egg transcription.
+   - The Encounter runtime, instancing and map binding.
+   - The interaction-domain step-in exits.
+   - The Rust type names.
