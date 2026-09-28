@@ -4,10 +4,10 @@
 task_id: OTV2-20260928-appa-appearance-validation
 title: APP-a - pure appearance-selection validation
 mode: IMPLEMENT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
-pr: null
+pr: 1172
 allocation_comment: "#162 5878933966 (request), owner-authorized in this window (2026-09-28)"
 base_branch: main
 branch: claude/appa-appearance-validation
