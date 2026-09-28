@@ -53,7 +53,7 @@
    "trigger_kill": 48,
    "trigger_step": 74,
    "trigger_use": 188,
-   "world_object": 76
+   "world_object": 75
   },
   "quests_without_data_gaps": 111,
   "interactions_joined": 1192,
@@ -1236,7 +1236,7 @@
    "interactions": 63,
    "data_gaps": {
     "interactions_with_gaps": 44,
-    "unresolved_items": 121
+    "unresolved_items": 123
    }
   },
   {
@@ -1526,8 +1526,7 @@
     "teleport",
     "trigger_kill",
     "trigger_step",
-    "trigger_use",
-    "world_object"
+    "trigger_use"
    ],
    "interactions": 35,
    "data_gaps": {
@@ -2433,7 +2432,7 @@
    "interactions": 24,
    "data_gaps": {
     "interactions_with_gaps": 9,
-    "unresolved_items": 36
+    "unresolved_items": 37
    }
   },
   {
@@ -2691,7 +2690,7 @@
    "interactions": 10,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 31
+    "unresolved_items": 32
    }
   },
   {
@@ -2858,7 +2857,7 @@
    "interactions": 20,
    "data_gaps": {
     "interactions_with_gaps": 8,
-    "unresolved_items": 13
+    "unresolved_items": 14
    }
   },
   {
