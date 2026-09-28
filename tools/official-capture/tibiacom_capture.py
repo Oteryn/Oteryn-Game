@@ -615,6 +615,12 @@ def verify_snapshot(directory):
         if not isinstance(anchor, str):
             errors.append(f'{directory}: fact {key!r} anchor {anchor!r} must be a string')
             continue
+        if not value.strip():
+            # An empty (or whitespace-only) value must not count toward a section's completeness
+            # (P2 r4121218009): a hand-authored or truncated snapshot could otherwise satisfy the
+            # "at least one fact per section" requirement with no actual factual content.
+            errors.append(f'{directory}: fact {key!r} value must be non-empty after stripping whitespace')
+            continue
         if len(value) > FACT_VALUE_LIMIT:
             errors.append(f'{directory}: fact {key!r} value is {len(value)} chars, '
                           f'over the {FACT_VALUE_LIMIT}-char cap (no full page text)')
@@ -1014,6 +1020,15 @@ def self_test():
         _write_snapshot(directory, base_manifest, facts_doc)
         errors = verify_snapshot(directory)
         assert any('zero facts' in e for e in errors), errors
+
+        # An empty (or whitespace-only) value is rejected outright and does not count toward a
+        # section's completeness (P2 r4121218009).
+        facts_doc = copy.deepcopy(base_facts)
+        facts_doc['facts'][0]['value'] = '   '
+        _write_snapshot(directory, base_manifest, facts_doc)
+        errors = verify_snapshot(directory)
+        assert any('value must be non-empty' in e for e in errors), errors
+        assert any('zero facts' in e for e in errors), errors  # the section now has no valid facts
 
         # Per-section fact-count cap, enforced independently by verify too.
         facts_doc = copy.deepcopy(base_facts)

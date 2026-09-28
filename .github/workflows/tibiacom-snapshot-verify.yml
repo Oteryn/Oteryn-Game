@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - tools/official-capture/**
+      - tools/content-schema/spell-authoring/tibiacom_spells.py
       - imports/official/tibia-com/**
       - .github/workflows/tibiacom-snapshot-verify.yml
   workflow_dispatch:
