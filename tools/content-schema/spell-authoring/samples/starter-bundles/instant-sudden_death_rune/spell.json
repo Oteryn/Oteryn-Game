@@ -1,0 +1,59 @@
+{
+  "spell": {
+    "identity": {
+      "key": "candidate:spell/sudden_death_rune",
+      "revision": "spell-p2-r1"
+    },
+    "name": "Sudden Death Rune",
+    "carrier": "instant",
+    "words": "adori gran mort",
+    "requirements": {
+      "vocations": [
+        "master_sorcerer",
+        "sorcerer"
+      ],
+      "level": 45,
+      "premium": false,
+      "learning_required": false
+    },
+    "costs": {
+      "mana": 985,
+      "soul": 5
+    },
+    "cooldown_ms": 2000,
+    "groups": [
+      {
+        "group": "support",
+        "cooldown_ms": 2000
+      }
+    ],
+    "targeting": {
+      "aggressive": false,
+      "self_target": false,
+      "needs_target": false,
+      "needs_direction": false,
+      "target_or_direction": false,
+      "block_walls": true,
+      "allow_on_self": true,
+      "check_floor": true,
+      "parameter": "none"
+    },
+    "pz_locks_caster": false,
+    "needs_weapon": false,
+    "execution": {
+      "conjure": {
+        "result": {
+          "family": "Item",
+          "key": "candidate:item/3155",
+          "revision": "spell-p2-r1"
+        },
+        "count": 3,
+        "reagent": {
+          "family": "Item",
+          "key": "candidate:item/3147",
+          "revision": "spell-p2-r1"
+        }
+      }
+    }
+  }
+}
