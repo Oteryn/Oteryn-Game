@@ -80,7 +80,9 @@ with any PvP contribution is out of scope and keeps the D54 floor until the PvP 
 ### 4.3 Durable consequences: one Character transaction
 
 Off the owner lane (the owner never waits on the database), one DUR transaction under the
-character's full session-generation fence, keyed by the death occurrence, commits all of:
+character's full session-generation fence, keyed by the death occurrence, commits the death
+outcome. It writes Character state only; every item effect it selects is executed afterwards by
+DUR-03 (§4.4). It commits all of:
 
 1. **XP loss** (D58, D59, D66, D67, D68):
    `loss = floor( ((L+50)/100) × 50 × (L² − 5L + 8) × (1 − 0.08 × blessings − 0.30 × promoted) )`,
@@ -89,19 +91,32 @@ character's full session-generation fence, keyed by the death occurrence, commit
    capped so experience never drops below 0. Level follows the new experience (Global
    delevelling). Skills and magic level are unchanged.
 2. **Blessings:** every regular blessing is consumed.
-3. **Amulet of Loss:** if worn and the character has fewer than 5 blessings, it is consumed and
-   no item is lost.
+3. **Amulet of Loss:** if worn and the character has fewer than 5 blessings, it is selected for
+   consumption and no item is lost. The transaction records the selection; the amulet itself is
+   consumed by a DUR-03 operation (§4.4).
 4. **Lost-item set:** otherwise, and unless D65 exempts the character, each equipped item and the
    backpack are drawn against the D62 ladder with an RNG stream bound to the death occurrence.
    A lost container is lost with its contents. The set is recorded in the transaction; it is not
    yet moved.
 5. **Respawn position:** the home temple of the character's home town.
 
-A retry with the same occurrence returns the first result. The calculator's
+A retry with the same occurrence returns the first result.
+
+**Storage prerequisite.** The current Character store cannot commit this transaction: migration
+`0009_character_progression.sql` admits only a strictly larger `total_experience` with an XP-award
+receipt, and the Character/item composition decision (2026-09-27, §3.6) leaves every other
+Character semantic write to a later migration and receipt redesign. This transaction lowers
+experience and writes blessings and the respawn position, so it needs a death receipt and its
+migration under their own architecture decision (DEATH-0, §5) before DEATH-1 can commit anything.
+
+The calculator's
 `ApplyDeathExperienceLoss` changes to this formula: the L−1→L span, the level factor, the
 reductions and floor rounding. The skill and magic-level families stay untouched.
 
-### 4.4 Item drops
+### 4.4 Item effects: a resumable death item workflow
+
+The committed lost-item set and the amulet selection are the durable death outcome. Their item
+effects form one workflow keyed by the death occurrence:
 
 - Each lost item moves in its own DUR-03 TRANSFER from `CharacterInventory` to Ground at the death
   cell, associated with the player's corpse. Its source cause is (death occurrence, item instance).
@@ -109,15 +124,29 @@ reductions and floor rounding. The skill and magic-level families stay untouched
 - A container moves as one item with its contents, as DUR-03 container semantics allow; until
   container expansion is admitted (DUR03-RL-05 = 0), a lost backpack with contents waits for that
   admission, and the implementation must not split it.
-- **Restart rule** (as D52 for creatures): a lost item whose transfer has not committed when the
-  runtime scope generation ends stays in the character's inventory. It is never duplicated and
-  never lost twice.
+- The Amulet of Loss is consumed by one DUR-03 destroy (DUR-03 contract §15) with the typed sink
+  cause (death occurrence, amulet instance), idempotent per cause. The Character writer never
+  deletes it.
+- **Composition.** The Character transaction commits first; the item operations follow, each in
+  its own one-item DUR-03 transaction. They are not one atomic transaction (§6); the committed
+  outcome is authoritative and the item operations are driven to it.
+- **Restart rule.** After a restart or generation change, the recovering owner reads the committed
+  outcome and resumes every outstanding (death occurrence, item instance) cause. A committed cause
+  returns its first result, so nothing is duplicated or lost twice. Resumed drops land on Ground
+  at the death cell; a corpse association is attached only while the corpse projection exists.
+- **No spending before completion.** The character is not respawned or re-admitted to play until
+  every item operation of the occurrence has committed. The player cannot move or use a selected
+  item in the meantime, so no custody state is needed.
+- **Delivery gap.** Until DEATH-3 is admitted (DUR-03 TRANSFER and destroy, container expansion),
+  a death records an empty lost-item set and selects no amulet: XP and blessings still apply. This
+  is a delivery order, not a rule change; a backpack with contents is never split.
 - The corpse is a runtime projection with a lootable association. Any player may pick items up
   through the ordinary pickup path.
 
 ### 4.5 Respawn
 
-After the Character transaction commits, the player respawns at the recorded temple with full HP
+After the Character transaction and every item operation of the occurrence (§4.4) commit, the
+player respawns at the recorded temple with full HP
 and mana (D63), as a new runtime actor. No protection window applies. If the transaction's outcome
 is ambiguous, the same occurrence is reconciled before respawn. If the generation ends before it
 commits, no durable death happened: the character recovers normally, and HP starts at the maximum
@@ -140,9 +169,10 @@ for a new actor (SPELL-D2).
 
 | Child | Scope | Depends on |
 |---|---|---|
-| DEATH-1 | Calculator change (§4.3.1) and the durable Character death transaction | progression readiness; P03 |
+| DEATH-0 | Death receipt and Character migration decision (§4.3 storage prerequisite), then its migration | architecture decision; Character persistence owner |
+| DEATH-1 | Calculator change (§4.3.1) and the durable Character death transaction | DEATH-0; progression readiness; P03 |
 | DEATH-2 | Death trigger, occurrence and respawn in the Channel owner; removal of the D54 floor | spell P3b-2 vitals; AI-4 |
-| DEATH-3 | Item drops through DUR-03 TRANSFER with corpse association | DUR-03 TRANSFER (B3); container admission for backpacks |
+| DEATH-3 | The death item workflow: drops through DUR-03 TRANSFER, the amulet through DUR-03 destroy, resumption after restart | DUR-03 TRANSFER (B3) and destroy; container admission for backpacks |
 | DEATH-4 | Blessing state and the NPC blessing service | NPC service owner |
 | E (Combat) | Client observation of death and respawn | protocol lane |
 
@@ -151,8 +181,10 @@ for a new actor (SPELL-D2).
 - **XP and items in one distributed transaction.** DUR-03 keeps one-item transactions; the
   occurrence key makes the parts idempotent instead.
 - **Keep the old L→L+1 basis.** The owner chose Global exactly (D58).
-- **Lose items on a restart before their transfer.** It could lose value twice or not at all
-  depending on timing; staying in the inventory is safe and never duplicates.
+- **Leave a selected item in the inventory after a restart.** It would change the committed D62
+  outcome depending on timing. Resuming the same cause keeps the outcome and never duplicates.
+- **Delete the amulet in the Character transaction.** Item disappearance outside DUR-03 has no
+  typed sink or conservation evidence (DUR-03 contract §15).
 
 ## 7. Decision test
 
@@ -179,13 +211,14 @@ cross_repository_authority_changed: false
 implementation_may_resume: false
 required_fresh_allocation: true
 required_independent_review: "exact-head independent review (Character durability, DUR-03 transfers, restart safety)"
-implementation_lanes: [DEATH-1, DEATH-2, DEATH-3, DEATH-4]
+implementation_lanes: [DEATH-0, DEATH-1, DEATH-2, DEATH-3, DEATH-4]
 required_revalidation:
   - "DEATH-1: the loss matches the D58 formula at levels 1, 23, 24, 100 and 500 with 0 to 4 blessings; floor rounding; experience never below 0; skills and magic level unchanged; a retry returns the first result; a stale fence writes nothing"
   - "DEATH-2: HP 0 from a creature starts one death; no input until respawn; respawn at the temple with full HP and mana; a PvP-contributed death is out of scope"
-  - "DEATH-3: the drop ladder per blessing count; Amulet of Loss consumed and no loss with fewer than 5 blessings; exemptions up to level 8 and without a vocation; a pending transfer at a generation change leaves the item in the inventory; no duplication"
+  - "DEATH-0: the migration admits a death receipt that lowers experience and writes blessings and the respawn position, bound to the occurrence; XP-award receipts are unchanged"
+  - "DEATH-3: the drop ladder per blessing count; Amulet of Loss consumed by a DUR-03 destroy and no loss with fewer than 5 blessings; exemptions up to level 8 and without a vocation; after a restart every outstanding cause resumes and commits once; no respawn before all item operations commit; no duplication"
 remaining_unknowns:
   - the Newhaven low-level exemption at the target date
   - temple positions (content)
-next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates DEATH-1 after progression readiness."
+next_action: "#162 validates this exact head, routes the independent review, integrates it, then allocates DEATH-0, and DEATH-1 after DEATH-0 and progression readiness."
 ```

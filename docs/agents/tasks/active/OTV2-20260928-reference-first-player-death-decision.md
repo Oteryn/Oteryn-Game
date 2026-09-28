@@ -68,6 +68,22 @@ never duplicates or doubly loses an item.
 
 - Runtime code, the calculator change, blessing prices, PvP death, Death Redemption, charms.
 
+## Finding dispositions
+
+Codex review of `846788d`, three P1 findings, all ACCEPTED in repair generation 1 of 1 (#162
+convergence rule 5869165340). No owner decision changed.
+
+- 4124521185 (restart left selected items in the inventory): the committed lost-item set is the
+  durable outcome; a death item workflow resumes every outstanding (occurrence, item) cause after
+  a restart, and the character is not respawned until all item operations commit (decision §4.4,
+  §4.5, §6).
+- 4124521176 (the P03 store cannot commit the death transaction): the `0009` guard admits only XP
+  increases with an XP-award receipt; DEATH-0 (death receipt and migration decision) is added as a
+  prerequisite of DEATH-1 (decision §4.3, §5).
+- 4124521197 (Amulet of Loss consumed outside DUR-03): the amulet is consumed by a DUR-03 destroy
+  with a typed sink cause, composed after the Character outcome like the drops (decision §4.3,
+  §4.4, §6).
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
