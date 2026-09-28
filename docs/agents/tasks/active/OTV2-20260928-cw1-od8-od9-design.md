@@ -42,8 +42,8 @@ This task adds a docs-only design as §10 of
 
 - **Shared model (§10.2).** A created object has two states. The first is a synthesized absent
   state: `collision: Absent`, a new `absent` marker, no attributes. The second is the created
-  item's present state. A `CREATE` forward and a `REMOVE` inverse connect them, and §7/§9 run
-  unchanged.
+  item's present state. A `CREATE` forward and a `REMOVE` inverse connect them. §7/§9 run as they are, except for a
+  runtime-placement flag on `PendingRevert` and a terminal-release rule used only by OD8.
 - **OD8 (§10.3), runtime placements at `death_position`:**
   - A lowered immutable template per action is bound at run time as an injected `PlacementRef`,
     following the `bind_native_entry_door` precedent, through `bind`'s unchanged validations.
@@ -79,6 +79,12 @@ This task adds a docs-only design as §10 of
     It is not edited here.
   - Until it exists, `mazzinor`, `gaz_haragoth` and `cult_soul_remains` stay rejected with named
     errors, and a test obligation covers rejecting untyped `REMOVE` children.
+- **Round 4** (Codex on `35fe1d88`, two P1s and one P2, all accepted):
+  - A §10.9 decision test covers the five mandatory questions, with options and trade-offs for
+    runtime identity, record retention, capacity, the contract prerequisite and the OD9 model.
+  - §10.2 states the `PendingRevert` flag and the terminal-release exception explicitly, and the
+    "unchanged" claims in §10 are corrected.
+  - The `triggering_object` target is restricted to `ON_ENTER`.
 - **Closeout** of `OTV2-20260928-cw1-teleporter-rearm`: archived as completed, merged `195ef53a`.
 
 ## Excluded scope
@@ -95,5 +101,5 @@ This task adds a docs-only design as §10 of
 
 ## Context checkpoint
 
-last_progress: Round 3 repair (Codex P1 4127486973) on PR #1182; new candidate head pending freeze
+last_progress: Round 4 repair (Codex P1 4127532478, P1 4127532494, P2 4127532499) on PR #1182; new candidate head pending freeze
 jira: pending (no mapped Story resolved in this worker session)

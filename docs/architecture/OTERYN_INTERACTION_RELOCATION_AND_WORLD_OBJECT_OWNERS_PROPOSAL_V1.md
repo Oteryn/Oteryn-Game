@@ -2235,6 +2235,8 @@ comment 5875958040, both "as Global":
   accepted.
 - Scope: exactly the six samples §7 open decisions 8 and 9 name. OD8: `mazzinor`, `gaz_haragoth`,
   `cult_soul_remains` and `azerus`. OD9: `death_priest_shargon` and `the_ravager`.
+- The mandatory decision test (`docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`) and the options
+  for the material choices are in 10.9.
 
 ### 10.1 Canary behaviour (reference evidence)
 
@@ -2293,8 +2295,20 @@ is a transition between them:
 
 Because a revert lands exactly on the absent state, where the authored forward matches again, no
 separate re-arm edge is needed. This is the case `encounter_map_item.rs` already describes for a
-`revert_after_ms` without `revert_destination` (D90). Nothing in `prepare`, `commit`,
-`PreparedMutation`, `PendingRevert` or the lifecycle record changes.
+`revert_after_ms` without `revert_destination` (D90).
+
+**What changes in the §7 machinery (Round 4, Codex P1 4127532494).** `prepare`, `commit` and
+`PreparedMutation` do not change. The lifecycle record's fields, states and presentation order do
+not change either, with two exceptions, both used only by OD8 runtime placements (10.3 D3):
+
+- **One new flag on `PendingRevert`.** It is set at scheduling when the target placement is
+  runtime-created.
+- **One new rule in `ScopeRevertDriver::terminalize`.** A record carrying that flag is released
+  when it becomes `TERMINAL` instead of being retained for the scope generation. This is the
+  narrow exception to §7 open decisions 1 and 5 that D3 argues for.
+
+For every pre-authored placement, including all OD9 teleporters and all §9 content, the flag is
+never set and the driver behaves exactly as it does today.
 
 ### 10.3 OD8: runtime placements at `death_position`
 
@@ -2485,7 +2499,9 @@ position) stay excluded by C3, unchanged. That would be a new decision.
     - **Minimal shape:** one more alternative on the existing `WorldObject` `REMOVE` variant,
       `"target": {"kind": "triggering_object"}`. It mirrors the `kind`-tagged
       `relocation_target`, and it is admissible only on a definition whose `source.edge` is
-      `ON_ENTER` or `USE` with an `aid(...)` registration.
+      `ON_ENTER` with an `aid(...)` registration (Round 4, Codex P2 4127532499). Every covered
+      object is used by stepping onto it. Admitting the target on a `USE` edge would need its own
+      decision.
     - **Transcription:** the transcriber sets it only where the source provably removes the
       callback's own `item` argument (for example `movements_mazzinor.lua:15` `item:remove(1)`).
     - **Ownership:** this section does not edit that contract; the interaction lane adds it.
@@ -2512,7 +2528,8 @@ position) stay excluded by C3, unchanged. That would be a new decision.
 - `destination` (`azerus`) is the §9 attribute, reused as is.
 - Both attributes are a pure read of `(state_attributes, state)`: present exposes them, absent
   exposes none.
-- The timed revert is §7 without change. The record's inverse is the remove edge, its expected
+- The timed revert is §7, plus the runtime-placement flag and terminal-release rule from 10.2.
+  The record's inverse is the remove edge, its expected
   state is present, its deadline is `revert_after_ms` from the create commit, and a timer-origin
   firing schedules nothing. No re-arm or extension exists, since each death creates a new object
   (Canary property 6).
@@ -2567,7 +2584,8 @@ same packet amends the `WOBJ-RL-04` allocation note for D3's record release.
   - `local_object_revert_after_ms[(<action id>/create, action id)] = revert_after_ms`.
 
   The forward runs from absent to present: the owner's "§9 transform from a synthesized absent
-  state", run by the unchanged §7 driver and §9 attribute tables.
+  state". It runs on the §7 driver's existing retention path, since a pre-authored placement
+  never carries 10.2's runtime flag, and on the §9 attribute tables.
 - **Admitted shape.** `create` at an `anchor` with `destination` and `revert_after_ms` both
   required, plus optional `effect`.
 - **Still rejected fail-closed:** `revert_destination` on a `create` (reverting to absent leaves
@@ -2605,8 +2623,9 @@ This section adds:
 - one proposed limit (`WOBJ-RL-08`);
 - the lowering of `create` into the absent/present pair.
 
-It adds no second binding path, no change to `prepare`, `commit` or `PreparedMutation`, no new
-driver mechanism, no persistence, no collision-bearing runtime geometry and no new wire message.
+It adds no second binding path, no change to `prepare`, `commit` or `PreparedMutation`, no
+persistence, no collision-bearing runtime geometry and no new wire message. The only driver
+change is 10.2's flag and its terminal-release rule, which apply to runtime placements only.
 It does not implement:
 
 - the step-in interaction consumers (outfit, teleport, quest storage, consumption);
@@ -2760,3 +2779,60 @@ OD9:
   exact client mapping belongs to the transport lane.
 - D91 enforcement, a precondition for admitting both shapes live (10.3 D5).
 - The `#139` resource packet for `WOBJ-RL-08` and the `WOBJ-RL-04` note (D6).
+
+### 10.9 Decision test (Round 4, Codex P1 4127532478)
+
+This is the mandatory test of `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md` ("Mandatory
+decision test", "Required analysis shape"). It records the choices above and does not change
+them.
+
+1. **Must decide now?**
+   - **OD9: YES.** The owner admitted the shape (item 2). The two samples are rejected at lowering
+     today, and their boss exits are the same live teleporter path as the Duke wiring (#162, "Live
+     wiring: approved").
+   - **OD8: YES** for the design (item 1: "design now"). Implementation stays gated by 10.8's
+     prerequisites. The runtime identity, the retention exception and the `WOBJ-RL-03`
+     interaction touch the already-implemented §7 driver and an accepted wire bound. Deciding
+     them later would mean retrofitting shipped code.
+2. **What it unblocks.**
+   - **OD9:** lowering and live wiring for `death_priest_shargon` and `the_ravager`.
+   - **OD8:** `azerus` as soon as it is implemented, because it has no interaction prerequisite.
+     `mazzinor` and `cult_soul_remains` follow once the interaction lane's typed
+     `triggering_object` target and their definitions land. `gaz_haragoth` follows once its
+     `aid(33542)` definition exists.
+   - **Both:** the CW3 lowering and linker work and the scope-owner creation hook in 10.8.
+3. **What becomes harder later.**
+   - The reserved `oteryn-runtime` placement namespace becomes a content-wide commitment.
+   - The `absent` marker becomes part of the shared `LocalObjectStateDefinition` shape.
+   - A released runtime record answers a late re-presentation with `UnknownOccurrence`, not its
+     original outcome. A future consumer that needs the old outcome would need a new retention
+     rule.
+   - `WOBJ-RL-08` becomes player-visible behaviour at the cap.
+   - The combined check ties runtime creation to how densely a scope is pre-authored.
+4. **What would supersede it.**
+   - Measured live runtime objects per Channel near or far from 64, which would retune
+     `WOBJ-RL-08`.
+   - A requirement for collision-`Present` runtime objects, which needs a new C3 decision.
+   - A frozen GAME-INTERACTION-01 duplicate-delivery horizon (§7 open decisions 1 and 5) that
+     covers runtime records differently.
+   - A requirement for durable world-object state, which would reopen W2.
+   - A `USE`-edge interaction that removes its own object, which needs its own decision (D5).
+   - The owner's answers to Q1-Q3.
+5. **What is not decided.**
+   - Interaction and teleport consumers, encounter-trigger wiring and client rendering of
+     `absent`.
+   - D91's implementation.
+   - Presentation order of stacked objects.
+   - Collision-`Present` runtime objects.
+   - A `USE`-edge `triggering_object` target.
+   - Exact code representations (template, flag, key spelling), which are 10.8's.
+
+**Options and trade-offs for the material choices** (the chosen option is listed first):
+
+| Choice | Chosen | Alternative | Why chosen |
+|---|---|---|---|
+| Runtime identity (D2) | Scope-monotonic sequence in a reserved-namespace `PlacementKey`: never reused and needs no memory. | Key derived from the creating occurrence identity. It recognizes duplicate creations, but a retired key must then be remembered for the whole generation (unbounded tombstones), and occurrence identities (`WOBJ-RL-07`, 4,096 bytes) do not fit the 512-byte key bound. | Bounded and simple. The cost is safety condition C-A: creation happens in-turn only, since a sequence cannot recognize duplicates. |
+| Record retention (D3) | Release a runtime placement's records at `TERMINAL`; this is structurally safe because the key is retired and the forward cannot recur. | Keep §7 open decisions 1/5 as they are: no exception, but `WOBJ-RL-04` runs out after 1,024 creations per Channel generation, a Canary deviation for `channel_shared` remains. Or evict under a bounded dedup horizon, which GAME-INTERACTION-01 has not frozen. | It keeps `channel_shared` hunting playable without inventing a horizon. The cost: late re-presentations get `UnknownOccurrence`. |
+| Capacity (D6) | `WOBJ-RL-08` = 64, plus a combined `< 486` check when an object is materialized. | Reserve 64 overlay slots at content validation (pre-authored ≤ 422). This guarantees runtime room, but constrains every scope, including those that never create objects. | One comparison and no content-validation change. The cost: a creation can be refused in a densely pre-authored scope. |
+| Contract prerequisite (D5) | A typed `REMOVE` target `{"kind": "triggering_object"}` in the interaction contract, `ON_ENTER` only, owned by the interaction lane. | Infer the target from `value_source_line`: no wait, but it is a security-relevant inference (discipline lines 54-58). Or drop the consuming `REMOVE`: the object would outlive a step-in, a Canary deviation. | Explicit and typed. The cost: `mazzinor` and `cult_soul_remains` wait on another lane. |
+| OD9 model (10.4) | A synthesized absent state on the pre-authored placement, reusing §7/§9. | Treat OD9 as an OD8 runtime creation at a fixed cell. That duplicates the runtime-placement machinery for a place that already has a placement, and loses D90's plain re-arm. | Smallest: one marker and a lowering rule. |
