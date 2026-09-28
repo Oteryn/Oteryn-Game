@@ -2,15 +2,101 @@
   "schema": "OTERYN_SPELL_OFFICIAL_CHANGES/v1",
   "note": "S11 evidence: official Tibia changes that decide a TibiaWiki BR / Fandom conflict. Values use the wiki units (seconds, gold, levels). Only the fact and its source are recorded.",
   "changes": [
-    {"spell": "wound cleansing", "field": "mana", "value": "60", "date": "2026-07-07", "source": "https://tibiopedia.pl/forum/t/32768", "fact": "Vocation Adjustments Changes: Wound Cleansing mana 40 -> 60"},
-    {"spell": "fair wound cleansing", "field": "mana", "value": "135", "date": "2026-07-07", "source": "https://tibiopedia.pl/forum/t/32768", "fact": "Vocation Adjustments Changes: Fair Wound Cleansing mana 90 -> 135"},
-    {"spell": "intense wound cleansing", "field": "mana", "value": "300", "date": "2026-07-07", "source": "https://tibiopedia.pl/forum/t/32768", "fact": "Vocation Adjustments Changes: Intense Wound Cleansing mana 200 -> 300"},
-    {"spell": "mystic repulse", "field": "cooldown", "value": "8", "date": "2026-09-01", "source": "https://tibiopedia.pl/forum/t/32869", "fact": "Monk Adjustments: Mystic Repulse cooldown 12 -> 8 seconds"},
-    {"spell": "mystic repulse", "field": "basepower", "value": "85", "date": "2026-06-16", "source": "https://tibia.fandom.com/wiki/Updates/15.25.3a4a52", "fact": "15.25: Mystic Repulse base power 72 -> 85"},
-    {"spell": "thousand fist blows", "field": "cooldown", "value": "8", "date": "2026-09-01", "source": "https://tibiopedia.pl/forum/t/32869", "fact": "Monk Adjustments: Thousand Fist Blows cooldown 12 -> 8 seconds"},
-    {"spell": "devastating knockout", "field": "cooldown", "value": "8", "date": "2026-09-01", "source": "https://tibiopedia.pl/forum/t/32869", "fact": "Monk Adjustments: Devastating Knockout cooldown 24 -> 8 seconds, range 1 -> 7"},
-    {"spell": "devastating knockout", "field": "spellrange", "value": "7", "date": "2026-09-01", "source": "https://tibiopedia.pl/forum/t/32869", "fact": "Monk Adjustments: Devastating Knockout range 1 -> 7"},
-    {"spell": "swift foot", "field": "cooldown", "value": "4", "date": "2026-06-16", "source": "https://tibia.fandom.com/wiki/Updates/15.25.3a4a52", "fact": "15.25 Vocation Adjustments (news 8849): Swift Foot individual cooldown 10 -> 4 seconds"},
-    {"spell": "strong ice wave", "field": "basepower", "value": "140", "date": "2026-07-07", "source": "https://tibia.fandom.com/wiki/Updates/15.25.bd5a04", "fact": "15.25.bd5a04 Vocation Adjustment Changes (news 8872): Strong Ice Wave base damage 150 -> 140"}
+    {
+      "spell": "wound cleansing",
+      "field": "mana",
+      "value": "60",
+      "date": "2026-07-07",
+      "source": "https://tibiopedia.pl/forum/t/32768",
+      "fact": "Vocation Adjustments Changes: Wound Cleansing mana 40 -> 60"
+    },
+    {
+      "spell": "fair wound cleansing",
+      "field": "mana",
+      "value": "135",
+      "date": "2026-07-07",
+      "source": "https://tibiopedia.pl/forum/t/32768",
+      "fact": "Vocation Adjustments Changes: Fair Wound Cleansing mana 90 -> 135"
+    },
+    {
+      "spell": "intense wound cleansing",
+      "field": "mana",
+      "value": "300",
+      "date": "2026-07-07",
+      "source": "https://tibiopedia.pl/forum/t/32768",
+      "fact": "Vocation Adjustments Changes: Intense Wound Cleansing mana 200 -> 300"
+    },
+    {
+      "spell": "mystic repulse",
+      "field": "cooldown",
+      "value": "8",
+      "date": "2026-09-01",
+      "source": "https://tibiopedia.pl/forum/t/32869",
+      "fact": "Monk Adjustments: Mystic Repulse cooldown 12 -> 8 seconds"
+    },
+    {
+      "spell": "mystic repulse",
+      "field": "basepower",
+      "value": "85",
+      "date": "2026-06-16",
+      "source": "https://tibia.fandom.com/wiki/Updates/15.25.3a4a52",
+      "fact": "15.25: Mystic Repulse base power 72 -> 85"
+    },
+    {
+      "spell": "thousand fist blows",
+      "field": "cooldown",
+      "value": "8",
+      "date": "2026-09-01",
+      "source": "https://tibiopedia.pl/forum/t/32869",
+      "fact": "Monk Adjustments: Thousand Fist Blows cooldown 12 -> 8 seconds"
+    },
+    {
+      "spell": "devastating knockout",
+      "field": "cooldown",
+      "value": "8",
+      "date": "2026-09-01",
+      "source": "https://tibiopedia.pl/forum/t/32869",
+      "fact": "Monk Adjustments: Devastating Knockout cooldown 24 -> 8 seconds, range 1 -> 7"
+    },
+    {
+      "spell": "devastating knockout",
+      "field": "spellrange",
+      "value": "7",
+      "date": "2026-09-01",
+      "source": "https://tibiopedia.pl/forum/t/32869",
+      "fact": "Monk Adjustments: Devastating Knockout range 1 -> 7"
+    },
+    {
+      "spell": "swift foot",
+      "field": "cooldown",
+      "value": "4",
+      "date": "2026-06-16",
+      "source": "https://tibia.fandom.com/wiki/Updates/15.25.3a4a52",
+      "fact": "15.25 Vocation Adjustments (news 8849): Swift Foot individual cooldown 10 -> 4 seconds"
+    },
+    {
+      "spell": "strong ice wave",
+      "field": "basepower",
+      "value": "140",
+      "date": "2026-07-07",
+      "source": "https://tibia.fandom.com/wiki/Updates/15.25.bd5a04",
+      "fact": "15.25.bd5a04 Vocation Adjustment Changes (news 8872): Strong Ice Wave base damage 150 -> 140"
+    },
+    {
+      "spell": "expose weakness",
+      "field": "removed",
+      "value": "yes",
+      "date": "2026-06-02",
+      "source": "https://www.tibia.com/news/?subtopic=newsarchive&id=8833",
+      "fact": "Vocation Adjustments release state: the crippling spells Sap Strength and Expose Weakness are turned into passive stances (Aura of Sapped Strength, Aura of Exposed Weakness) unlocked at level 175"
+    },
+    {
+      "spell": "sap strength",
+      "field": "removed",
+      "value": "yes",
+      "date": "2026-06-02",
+      "source": "https://www.tibia.com/news/?subtopic=newsarchive&id=8833",
+      "fact": "Vocation Adjustments release state: the crippling spells Sap Strength and Expose Weakness are turned into passive stances (Aura of Sapped Strength, Aura of Exposed Weakness) unlocked at level 175"
+    }
   ]
 }
