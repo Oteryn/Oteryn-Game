@@ -4,20 +4,20 @@
 task_id: OTV2-20260928-use-wire-m2b
 title: USE-WIRE-V1 M2b - server seam wiring (use dispatch, door runtime, movement blocking)
 mode: IMPLEMENT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5868482467
 base_branch: main
 branch: claude/use-wire-m2b
-pr: null
+pr: 1104
 base_sha: 69284a571a3b58249546e17f992dff59883be42f
-head_sha: null
+head_sha: ce1ddef17d869687adfcbdfd2e5c342f144ad371
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: impl server seam" (Claude Code)
 created_at: 2026-09-28T11:30:00Z
-updated_at: 2026-09-28T11:30:00Z
+updated_at: 2026-09-28T12:00:00Z
 execution_policy: continuous_progress
 owned_paths:
   - apps/game-server/src/gameplay_transport/connection.rs
@@ -160,25 +160,22 @@ reason: >
 
 - `gameplay_transport::connection::tests` exercises the full `serve_admitted` dispatch loop for
   `USE_INTENT` against a fixture authority: join snapshot with the overlay domain, COMMITTED ->
-  `CommandResult` + `StateDelta`, a non-committing disposition emits no delta, an unregistered
-  command type gets an empty result payload. PASS.
+  result+delta, a non-committing disposition emits no delta, unregistered type is empty. PASS.
 
 ### E2E
 
-- `gameplay_transport::qualification::server_seam_real_owners_over_tcp_tls` extended with the
-  full USE-WIRE-V1 scenario list; requires the disposable WP5 S3-B Platform + PostgreSQL 17.6
-  topology, `#[ignore]`d, **not runnable in this environment**; CI runs it. Reviewed by hand
-  against the exact command/sequence/revision arithmetic (documented inline in `use_wire_frames`);
-  not executed by this worker.
+- `qualification::server_seam_real_owners_over_tcp_tls` extended with the full USE-WIRE-V1
+  scenario list; requires the disposable WP5 S3-B topology, `#[ignore]`d, **not runnable here**;
+  CI runs it. Reviewed by hand against the exact sequence/revision arithmetic in `use_wire_frames`.
 
 ### Exact-head CI
 
-- final head: pending — see the live PR.
-- trigger source: push to `claude/use-wire-m2b`; pending.
+- final head: pending — see PR #1104 for current head/checks.
+- trigger source: push to `claude/use-wire-m2b`; PR #1104 opened on `ce1ddef17d869687adfcbdfd2e5c342f144ad371`.
 
 ## Self-review
 
-- exact head: pending.
+- exact head: `ce1ddef1`.
 - method/reviewer: implementing agent (this session).
 - material findings: none beyond the two documented, reasoned deviations above. No fabricated
   evidence, no skipped validation, no faked profile IDs; the synthetic placement stays labeled
@@ -194,28 +191,28 @@ reason: >
 
 ## PR and closeout
 
-- PR: to be opened against `main`, referencing #162 5868482467 and this task record.
+- PR #1104 opened against `main`, referencing #162 5868482467 and this task record.
 - changed-file review / unresolved threads / auto-merge / merge commit / ownership release:
-  pending — see the live PR and #162, not tracked here.
+  pending — see PR #1104 and #162 for current status, not tracked here.
 - related/superseded PRs: none known.
 
 ## Context checkpoint
 
 ```yaml
 last_progress: Server Seam composition implemented and locally validated (fmt/clippy/full test
-  suite/governance/repository-policy all green); M2a task record archived; this record written;
-  about to commit and push.
-status: implementing
+  suite/governance/repository-policy all green); M2a task record archived; pushed
+  ce1ddef17d869687adfcbdfd2e5c342f144ad371; PR #1104 opened.
+status: validating
 branch: claude/use-wire-m2b
-head_sha: null
-pr: null
+head_sha: ce1ddef17d869687adfcbdfd2e5c342f144ad371
+pr: 1104
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: push to claude/use-wire-m2b
 ci_checks_for_current_head: 0
 runner_assignment_state: unknown
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit, push, open PR referencing #162 5868482467
+next_action: await CI/exact-head readback and independent review on PR #1104
 ```
