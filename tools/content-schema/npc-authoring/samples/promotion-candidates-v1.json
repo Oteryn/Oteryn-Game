@@ -2817,6 +2817,17 @@
    "arbitration": [
     {
      "chosen": "wiki",
+     "fact": "trade.3308.SellToPlayer",
+     "item_name": "machete",
+     "price": 35,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
      "item_name": "shovel",
      "price": 50,
@@ -3195,7 +3206,7 @@
       },
       "source_item_id": 3308,
       "sub_type": null,
-      "unit_price": 6
+      "unit_price": 35
      },
      {
       "count": null,
@@ -6059,7 +6070,107 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.allen",
@@ -6281,7 +6392,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -6293,7 +6404,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -6305,7 +6416,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -6317,7 +6428,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -6329,7 +6440,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -6389,7 +6500,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -6401,7 +6512,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -6413,7 +6524,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -6437,7 +6548,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      }
     ]
    },
@@ -10710,7 +10821,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.20207.BuyFromPlayer",
+     "item_name": "pool of chitinous glue",
+     "price": 480,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.asnarus",
@@ -10980,7 +11103,7 @@
       },
       "source_item_id": 20207,
       "sub_type": null,
-      "unit_price": 430
+      "unit_price": 480
      },
      {
       "count": null,
@@ -20681,6 +20804,17 @@
    "arbitration": [
     {
      "chosen": "wiki",
+     "fact": "trade.3308.SellToPlayer",
+     "item_name": "machete",
+     "price": 35,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
      "item_name": "shovel",
      "price": 50,
@@ -21047,7 +21181,7 @@
       },
       "source_item_id": 3308,
       "sub_type": null,
-      "unit_price": 6
+      "unit_price": 35
      },
      {
       "count": null,
@@ -27178,9 +27312,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -27356,7 +27545,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -27872,7 +28061,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -27908,7 +28097,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -27944,7 +28133,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -27980,7 +28169,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -34188,6 +34377,50 @@
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -34951,7 +35184,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -34987,7 +35220,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -35023,7 +35256,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -35059,7 +35292,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -44605,6 +44838,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -45549,7 +45881,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -45561,7 +45893,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -45573,7 +45905,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -45585,7 +45917,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -45597,7 +45929,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -45657,7 +45989,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -45669,7 +46001,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -45681,7 +46013,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -45705,7 +46037,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -47200,6 +47532,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -48098,7 +48529,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -48110,7 +48541,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -48122,7 +48553,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -48134,7 +48565,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -48146,7 +48577,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -48206,7 +48637,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -48218,7 +48649,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -48230,7 +48661,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -48254,7 +48685,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -48443,9 +48874,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -48621,7 +49107,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -49137,7 +49623,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -49173,7 +49659,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -49209,7 +49695,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -49245,7 +49731,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -49950,6 +50436,105 @@
      "chosen": "crystal",
      "fact": "trade.2806",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     },
     {
      "chosen": "canary",
@@ -50898,7 +51483,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -50910,7 +51495,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -50922,7 +51507,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -50934,7 +51519,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -50946,7 +51531,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -51006,7 +51591,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -51018,7 +51603,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -51030,7 +51615,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -51054,7 +51639,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -56826,6 +57411,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -57760,7 +58444,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -57772,7 +58456,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -57784,7 +58468,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -57796,7 +58480,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -57808,7 +58492,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -57868,7 +58552,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -57880,7 +58564,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -57892,7 +58576,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -57916,7 +58600,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -64495,9 +65179,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -64673,7 +65412,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -65189,7 +65928,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -65225,7 +65964,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -65261,7 +66000,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -65297,7 +66036,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -65452,7 +66191,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3277.SellToPlayer",
+     "item_name": "spear",
+     "price": 9,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.galuna",
@@ -65518,7 +66269,7 @@
       },
       "source_item_id": 3277,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 9
      },
      {
       "count": null,
@@ -66639,6 +67390,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -67513,7 +68363,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -67525,7 +68375,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -67537,7 +68387,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -67549,7 +68399,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -67561,7 +68411,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -67621,7 +68471,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -67633,7 +68483,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -67645,7 +68495,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -67669,7 +68519,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -69182,7 +70032,52 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.giri",
@@ -69884,7 +70779,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -69920,7 +70815,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -69956,7 +70851,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -69992,7 +70887,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -72378,7 +73273,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3277.SellToPlayer",
+     "item_name": "spear",
+     "price": 9,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.gnomerrow",
@@ -72444,7 +73351,7 @@
       },
       "source_item_id": 3277,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 9
      },
      {
       "count": null,
@@ -73518,7 +74425,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.9626.BuyFromPlayer",
+     "item_name": "silver fafnar trophy",
+     "price": 1000,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.gnomission",
@@ -74220,7 +75139,7 @@
       },
       "source_item_id": 9626,
       "sub_type": null,
-      "unit_price": 10000
+      "unit_price": 1000
      },
      {
       "count": null,
@@ -75474,6 +76393,17 @@
    "arbitration": [
     {
      "chosen": "wiki",
+     "fact": "trade.3308.SellToPlayer",
+     "item_name": "machete",
+     "price": 35,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
      "item_name": "shovel",
      "price": 50,
@@ -75485,6 +76415,17 @@
      "item_name": "fishing rod",
      "price": 150,
      "rule": "WIKI_PRICE"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.8861.SellToPlayer",
+     "item_name": "brocade bag",
+     "price": 4,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -75840,7 +76781,7 @@
       },
       "source_item_id": 3308,
       "sub_type": null,
-      "unit_price": 6
+      "unit_price": 35
      },
      {
       "count": null,
@@ -76044,7 +76985,7 @@
       },
       "source_item_id": 8861,
       "sub_type": null,
-      "unit_price": 5
+      "unit_price": 4
      }
     ]
    },
@@ -80740,6 +81681,17 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.3264.SellToPlayer",
+     "item_name": "sword",
+     "price": 85,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.50181",
      "rule": "WIKI_ARBITER"
@@ -80892,7 +81844,7 @@
       },
       "source_item_id": 3264,
       "sub_type": null,
-      "unit_price": 25
+      "unit_price": 85
      },
      {
       "count": null,
@@ -81815,6 +82767,17 @@
    "arbitration": [
     {
      "chosen": "wiki",
+     "fact": "trade.3308.SellToPlayer",
+     "item_name": "machete",
+     "price": 35,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
      "item_name": "shovel",
      "price": 50,
@@ -82203,7 +83166,7 @@
       },
       "source_item_id": 3308,
       "sub_type": null,
-      "unit_price": 6
+      "unit_price": 35
      },
      {
       "count": null,
@@ -82793,9 +83756,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -82981,7 +83999,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -83509,7 +84527,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -83545,7 +84563,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -83581,7 +84599,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -83617,7 +84635,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -87606,6 +88624,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -88516,7 +89633,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -88528,7 +89645,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -88540,7 +89657,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -88552,7 +89669,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -88564,7 +89681,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -88624,7 +89741,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -88636,7 +89753,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -88648,7 +89765,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -88672,7 +89789,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -91713,7 +92830,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3277.SellToPlayer",
+     "item_name": "spear",
+     "price": 9,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.irea",
@@ -91779,7 +92908,7 @@
       },
       "source_item_id": 3277,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 9
      },
      {
       "count": null,
@@ -92702,9 +93831,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -92880,7 +94064,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -93396,7 +94580,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -93432,7 +94616,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -93468,7 +94652,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -93504,7 +94688,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -94322,9 +95506,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -94500,7 +95739,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -95016,7 +96255,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -95052,7 +96291,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -95088,7 +96327,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -95124,7 +96363,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -95284,6 +96523,105 @@
      "chosen": "crystal",
      "fact": "trade.2806",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     },
     {
      "chosen": "canary",
@@ -96220,7 +97558,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -96232,7 +97570,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -96244,7 +97582,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -96256,7 +97594,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -96268,7 +97606,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -96328,7 +97666,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -96340,7 +97678,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -96352,7 +97690,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -96376,7 +97714,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -97520,6 +98858,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -98454,7 +99891,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -98466,7 +99903,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -98478,7 +99915,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -98490,7 +99927,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -98502,7 +99939,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -98562,7 +99999,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -98574,7 +100011,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -98586,7 +100023,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -98610,7 +100047,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -99423,6 +100860,50 @@
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -100186,7 +101667,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -100222,7 +101703,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -100258,7 +101739,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -100294,7 +101775,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -102921,7 +104402,74 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3061.BuyFromPlayer",
+     "item_name": "life crystal",
+     "price": 75,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3062.BuyFromPlayer",
+     "item_name": "mind stone",
+     "price": 150,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.8072.BuyFromPlayer",
+     "item_name": "spellbook of enlightenment",
+     "price": 3500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.8073.BuyFromPlayer",
+     "item_name": "spellbook of warding",
+     "price": 7500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.8074.BuyFromPlayer",
+     "item_name": "spellbook of mind control",
+     "price": 12000,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.8075.BuyFromPlayer",
+     "item_name": "spellbook of lost souls",
+     "price": 17500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.khanna",
@@ -103023,7 +104571,7 @@
       },
       "source_item_id": 3061,
       "sub_type": null,
-      "unit_price": 85
+      "unit_price": 75
      },
      {
       "count": null,
@@ -103035,7 +104583,7 @@
       },
       "source_item_id": 3062,
       "sub_type": null,
-      "unit_price": 170
+      "unit_price": 150
      },
      {
       "count": null,
@@ -103815,7 +105363,7 @@
       },
       "source_item_id": 8072,
       "sub_type": null,
-      "unit_price": 4000
+      "unit_price": 3500
      },
      {
       "count": null,
@@ -103827,7 +105375,7 @@
       },
       "source_item_id": 8073,
       "sub_type": null,
-      "unit_price": 8000
+      "unit_price": 7500
      },
      {
       "count": null,
@@ -103839,7 +105387,7 @@
       },
       "source_item_id": 8074,
       "sub_type": null,
-      "unit_price": 13000
+      "unit_price": 12000
      },
      {
       "count": null,
@@ -103851,7 +105399,7 @@
       },
       "source_item_id": 8075,
       "sub_type": null,
-      "unit_price": 19000
+      "unit_price": 17500
      },
      {
       "count": null,
@@ -110581,7 +112129,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.17830.BuyFromPlayer",
+     "item_name": "bonecarving knife",
+     "price": 190,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.malunga",
@@ -111211,7 +112771,7 @@
       },
       "source_item_id": 17830,
       "sub_type": null,
-      "unit_price": 140
+      "unit_price": 190
      },
      {
       "count": null,
@@ -123439,6 +124999,17 @@
    "arbitration": [
     {
      "chosen": "wiki",
+     "fact": "trade.3308.SellToPlayer",
+     "item_name": "machete",
+     "price": 35,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
      "fact": "trade.3457.SellToPlayer",
      "item_name": "shovel",
      "price": 50,
@@ -123805,7 +125376,7 @@
       },
       "source_item_id": 3308,
       "sub_type": null,
-      "unit_price": 6
+      "unit_price": 35
      },
      {
       "count": null,
@@ -124050,6 +125621,105 @@
      "chosen": "crystal",
      "fact": "trade.2806",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     },
     {
      "chosen": "canary",
@@ -124987,7 +126657,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -124999,7 +126669,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -125011,7 +126681,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -125023,7 +126693,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -125035,7 +126705,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -125095,7 +126765,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -125107,7 +126777,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -125119,7 +126789,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -125143,7 +126813,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -127833,6 +129503,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -128767,7 +130536,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -128779,7 +130548,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -128791,7 +130560,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -128803,7 +130572,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -128815,7 +130584,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -128875,7 +130644,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -128887,7 +130656,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -128899,7 +130668,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -128923,7 +130692,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -129795,6 +131564,50 @@
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -130558,7 +132371,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -130594,7 +132407,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -130630,7 +132443,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -130666,7 +132479,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -130835,9 +132648,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -131013,7 +132881,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -131529,7 +133397,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -131565,7 +133433,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -131601,7 +133469,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -131637,7 +133505,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -134464,6 +136332,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -135398,7 +137365,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -135410,7 +137377,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -135422,7 +137389,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -135434,7 +137401,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -135446,7 +137413,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -135506,7 +137473,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -135518,7 +137485,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -135530,7 +137497,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -135554,7 +137521,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -135943,7 +137910,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3277.SellToPlayer",
+     "item_name": "spear",
+     "price": 9,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.perac",
@@ -136009,7 +137988,7 @@
       },
       "source_item_id": 3277,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 9
      },
      {
       "count": null,
@@ -136280,6 +138259,17 @@
   },
   {
    "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3308.SellToPlayer",
+     "item_name": "machete",
+     "price": 35,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
     {
      "chosen": "wiki",
      "fact": "trade.3349.BuyFromPlayer",
@@ -136790,7 +138780,7 @@
       },
       "source_item_id": 3308,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 35
      },
      {
       "count": null,
@@ -157883,7 +159873,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3601.SellToPlayer",
+     "item_name": "roll",
+     "price": 3,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "br",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.sessek",
@@ -158115,7 +160117,7 @@
       },
       "source_item_id": 3601,
       "sub_type": null,
-      "unit_price": 2
+      "unit_price": 3
      },
      {
       "count": null,
@@ -158263,6 +160265,61 @@
   },
   {
    "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3286.BuyFromPlayer",
+     "item_name": "mace",
+     "price": 30,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3353.BuyFromPlayer",
+     "item_name": "iron helmet",
+     "price": 150,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3411.BuyFromPlayer",
+     "item_name": "brass shield",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3558.BuyFromPlayer",
+     "item_name": "chain legs",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3559.BuyFromPlayer",
+     "item_name": "leather legs",
+     "price": 9,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
     {
      "chosen": "crystal",
      "fact": "trade.50181",
@@ -158574,7 +160631,7 @@
       },
       "source_item_id": 3286,
       "sub_type": null,
-      "unit_price": 23
+      "unit_price": 30
      },
      {
       "count": null,
@@ -158682,7 +160739,7 @@
       },
       "source_item_id": 3353,
       "sub_type": null,
-      "unit_price": 145
+      "unit_price": 150
      },
      {
       "count": null,
@@ -158898,7 +160955,7 @@
       },
       "source_item_id": 3411,
       "sub_type": null,
-      "unit_price": 16
+      "unit_price": 25
      },
      {
       "count": null,
@@ -159066,7 +161123,7 @@
       },
       "source_item_id": 3558,
       "sub_type": null,
-      "unit_price": 20
+      "unit_price": 25
      },
      {
       "count": null,
@@ -159078,7 +161135,7 @@
       },
       "source_item_id": 3559,
       "sub_type": null,
-      "unit_price": 1
+      "unit_price": 9
      },
      {
       "count": 500,
@@ -164522,7 +166579,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3147.SellToPlayer",
+     "item_name": "blank rune",
+     "price": 15,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "br",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.sundara",
@@ -164888,7 +166957,7 @@
       },
       "source_item_id": 3147,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 15
      },
      {
       "count": null,
@@ -166361,6 +168430,50 @@
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -167917,7 +170030,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -167953,7 +170066,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -167989,7 +170102,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -168025,7 +170138,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -168264,7 +170377,30 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3349.SellToPlayer",
+     "item_name": "crossbow",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.3446.SellToPlayer",
+     "item_name": "bolt",
+     "price": 4,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.talphion",
@@ -168330,7 +170466,7 @@
       },
       "source_item_id": 3349,
       "sub_type": null,
-      "unit_price": 1150
+      "unit_price": 500
      },
      {
       "count": null,
@@ -168342,7 +170478,7 @@
       },
       "source_item_id": 3446,
       "sub_type": null,
-      "unit_price": 5
+      "unit_price": 4
      }
     ]
    },
@@ -171904,9 +174040,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -172082,7 +174273,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -172598,7 +174789,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -172634,7 +174825,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -172670,7 +174861,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -172706,7 +174897,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -179254,6 +181445,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -180188,7 +182478,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -180200,7 +182490,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -180212,7 +182502,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -180224,7 +182514,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -180236,7 +182526,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -180296,7 +182586,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -180308,7 +182598,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -180320,7 +182610,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -180344,7 +182634,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -182670,6 +184960,17 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.3269.BuyFromPlayer",
+     "item_name": "halberd",
+     "price": 400,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.50181",
      "rule": "WIKI_ARBITER"
@@ -182908,7 +185209,7 @@
       },
       "source_item_id": 3269,
       "sub_type": null,
-      "unit_price": 310
+      "unit_price": 400
      },
      {
       "count": null,
@@ -184018,6 +186319,50 @@
      "chosen": "wiki",
      "fact": "placements",
      "rule": "WIKI_POSITION"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -185579,7 +187924,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -185615,7 +187960,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -185651,7 +187996,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -185687,7 +188032,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -186384,6 +188729,105 @@
      "chosen": "crystal",
      "fact": "trade.2806",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     },
     {
      "chosen": "canary",
@@ -187296,7 +189740,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -187308,7 +189752,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -187320,7 +189764,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -187332,7 +189776,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -187344,7 +189788,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -187404,7 +189848,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -187416,7 +189860,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -187428,7 +189872,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -187452,7 +189896,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -194441,7 +196885,19 @@
    }
   },
   {
-   "arbitration": [],
+   "arbitration": [
+    {
+     "chosen": "wiki",
+     "fact": "trade.3277.SellToPlayer",
+     "item_name": "spear",
+     "price": 9,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    }
+   ],
    "identity": {
     "family": "NPC",
     "key": "oteryn:npc.xed",
@@ -194507,7 +196963,7 @@
       },
       "source_item_id": 3277,
       "sub_type": null,
-      "unit_price": 10
+      "unit_price": 9
      },
      {
       "count": null,
@@ -205691,6 +208147,105 @@
      "rule": "WIKI_ARBITER"
     },
     {
+     "chosen": "wiki",
+     "fact": "trade.32477.SellToPlayer",
+     "item_name": "cot headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32478.SellToPlayer",
+     "item_name": "hammock head section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32479.SellToPlayer",
+     "item_name": "simple headboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32480.SellToPlayer",
+     "item_name": "straw mat head section",
+     "price": 10,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32481.SellToPlayer",
+     "item_name": "canopy headboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32486.SellToPlayer",
+     "item_name": "cot footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32487.SellToPlayer",
+     "item_name": "hammock foot section",
+     "price": 25,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32488.SellToPlayer",
+     "item_name": "simple footboard",
+     "price": 20,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.32490.SellToPlayer",
+     "item_name": "canopy footboard",
+     "price": 100,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "canary",
      "fact": "trade.3513",
      "rule": "WIKI_ARBITER"
@@ -206625,7 +209180,7 @@
       },
       "source_item_id": 32477,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -206637,7 +209192,7 @@
       },
       "source_item_id": 32478,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -206649,7 +209204,7 @@
       },
       "source_item_id": 32479,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -206661,7 +209216,7 @@
       },
       "source_item_id": 32480,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 10
      },
      {
       "count": null,
@@ -206673,7 +209228,7 @@
       },
       "source_item_id": 32481,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -206733,7 +209288,7 @@
       },
       "source_item_id": 32486,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -206745,7 +209300,7 @@
       },
       "source_item_id": 32487,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 25
      },
      {
       "count": null,
@@ -206757,7 +209312,7 @@
       },
       "source_item_id": 32488,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 20
      },
      {
       "count": null,
@@ -206781,7 +209336,7 @@
       },
       "source_item_id": 32490,
       "sub_type": null,
-      "unit_price": 40
+      "unit_price": 100
      },
      {
       "count": null,
@@ -206914,9 +209469,64 @@
   {
    "arbitration": [
     {
+     "chosen": "wiki",
+     "fact": "trade.22193.BuyFromPlayer",
+     "item_name": "onyx chip",
+     "price": 500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
      "chosen": "crystal",
      "fact": "trade.25737",
      "rule": "WIKI_ARBITER"
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44602.BuyFromPlayer",
+     "item_name": "lesser guardian gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44605.BuyFromPlayer",
+     "item_name": "lesser marksman gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44608.BuyFromPlayer",
+     "item_name": "lesser sage gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
+    },
+    {
+     "chosen": "wiki",
+     "fact": "trade.44611.BuyFromPlayer",
+     "item_name": "lesser mystic gem",
+     "price": 2500,
+     "rule": "WIKI_MAJORITY_PRICE",
+     "wikis": [
+      "fandom",
+      "tibiopedia"
+     ]
     }
    ],
    "identity": {
@@ -207092,7 +209702,7 @@
       },
       "source_item_id": 22193,
       "sub_type": null,
-      "unit_price": 400
+      "unit_price": 500
      },
      {
       "count": null,
@@ -207608,7 +210218,7 @@
       },
       "source_item_id": 44602,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -207644,7 +210254,7 @@
       },
       "source_item_id": 44605,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -207680,7 +210290,7 @@
       },
       "source_item_id": 44608,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -207716,7 +210326,7 @@
       },
       "source_item_id": 44611,
       "sub_type": null,
-      "unit_price": 1000
+      "unit_price": 2500
      },
      {
       "count": null,
@@ -210384,7 +212994,8 @@
   "D7",
   "D8",
   "D11",
-  "D12"
+  "D12",
+  "D13"
  ],
  "evidence": "OTS_HYPOTHESIS_ONLY",
  "held": [
@@ -210705,8 +213316,9 @@
  "item_map_sha256": "83ba3c26d10af8834191bf5491280882b6453bca0911b86d180c07a15cec679a",
  "schema": "OTERYN_NPC_PROMOTION_CANDIDATES/v1",
  "snapshot_sha256": "52f87d29eddd1a4e99d154e832813a711ba4d07d34487b76776d80d8884ade42",
+ "tibiopedia_facts_sha256": "44d11b4516f114b69c49841e6b92426c1c2ca0e5c50a7b92766ed57fd7d66bcb",
  "totals": {
-  "arbitrated_facts": 303,
+  "arbitrated_facts": 539,
   "candidates": 1089,
   "held:DEFINITION_CONFLICT": 9,
   "held:EMPTY_SLUG": 1,

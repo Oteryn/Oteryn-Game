@@ -18,7 +18,7 @@ assert lock["family_counts"] == {
     "Creature": 1319, "Presentation": 2407, "Behavior": 2407, "Loot": 978, "Ability": 5257, "Effect": 3929, "Formula": 4227,
     "NPC": 1088, "Dialogue": 701, "Service.Trade": 307, "Service.Travel": 55,
 }
-assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1319, "NPC": 2282}
+assert lock["source_binding_counts"] == {"Item": 165, "Mount": 252, "Creature": 1319, "NPC": 2296}
 assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
