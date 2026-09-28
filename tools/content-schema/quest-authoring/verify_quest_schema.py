@@ -2,6 +2,8 @@
 import json
 import sys
 
+import ots_interactions as oi
+from ots_chests import parse_level, parse_premium, requirements_of
 from validate_quest_content import BLOCKED, validate, validate_gates, validate_interactions, validate_storylines
 
 
@@ -67,6 +69,13 @@ case('written text on an item not handed out', lambda c, q, cat, m: c['placement
 case('link basis without a quest', lambda c, q, cat, m: c.update(quest=None))
 case('section candidate on a linked claim', lambda c, q, cat, m: c.update(quest_candidate_from_section=ref('Quest', 'quest/x')))
 case('link basis is closed', lambda c, q, cat, m: c.update(quest_link_basis='section'))
+case('curated link basis accepted', lambda c, q, cat, m: c.update(quest_link_basis='curated'), expected=True)
+case('typed requirements accepted', lambda c, q, cat, m: q.update(requirements={'premium': True, 'min_level': 100}), expected=True)
+case('unparsed requirements accepted', lambda c, q, cat, m: q.update(requirements={'premium': None, 'min_level': None},
+                                                                    requirements_unparsed={'premium': 'partial', 'min_level': 'range'}), expected=True)
+case('requirements are typed, not strings', lambda c, q, cat, m: q.update(requirements={'premium': 'yes'}))
+case('requirements has no other fields', lambda c, q, cat, m: q.update(requirements={'level': 5}))
+case('requirements_unparsed reason is closed', lambda c, q, cat, m: q.update(requirements={'min_level': None}, requirements_unparsed={'min_level': 'guess'}))
 case('quest lists an unknown claim', lambda c, q, cat, m: q['claims'].append(ref('RewardClaim', 'reward-claim/ghost')))
 case('claim and quest disagree', lambda c, q, cat, m: c.update(quest=ref('Quest', 'quest/other')))
 case('quest kind is closed', lambda c, q, cat, m: q.update(kind='storyline'))
@@ -387,6 +396,84 @@ interaction_case('conflict needs two sources',
 interaction_case('every interaction has a manifest entry', lambda i, c, m: m['entries'].clear())
 interaction_case('manifest lists an interaction once', lambda i, c, m: m['entries'].append(dict(m['entries'][0])))
 interaction_case('interaction keys are unique', lambda i, c, m: i.update(twin=True))
+
+# ots_interactions.py's curated interaction_overrides.json mechanism (D36 exception), on synthetic rule trees so
+# it never needs the real Canary/CrystalServer checkouts.
+def override_result(name, ok):
+    results.append({'name': name, 'expected_valid': True, 'passed': ok, 'first_error': None if ok else 'mismatch'})
+
+
+_saved_overrides = oi.OVERRIDES
+try:
+    oi.OVERRIDES = {'canary:interaction/x/y': {'5': {'condition': {'actor_is_player': True, 'negate': False},
+                                                      'basis': 'test fixture'}}}
+    rules = [{'branch': [{'when': {'unresolved': {'line': 5}}, 'then': []}]}]
+    used = set()
+    oi.apply_overrides(rules, 'canary:interaction/x/y', used)
+    override_result('override replaces its named unresolved line',
+                    rules[0]['branch'][0]['when'] == {'actor_is_player': True, 'negate': False}
+                    and used == {('canary:interaction/x/y', '5')})
+
+    rules = [{'branch': [{'when': {'unresolved': {'line': 9}}, 'then': []}]}]
+    used = set()
+    oi.apply_overrides(rules, 'canary:interaction/x/y', used)
+    override_result('override leaves an unresolved line it does not name alone',
+                    rules[0]['branch'][0]['when'] == {'unresolved': {'line': 9}} and not used)
+
+    rules = [{'branch': [{'when': {'all': [{'unresolved': {'line': 5}}, {'actor_is_player': True, 'negate': False}]},
+                         'then': []}]}]
+    used = set()
+    oi.apply_overrides(rules, 'canary:interaction/x/y', used)
+    override_result('override applies inside a compound (all/any) condition',
+                    rules[0]['branch'][0]['when'] == {'all': [{'actor_is_player': True, 'negate': False},
+                                                              {'actor_is_player': True, 'negate': False}]}
+                    and used == {('canary:interaction/x/y', '5')})
+
+    try:
+        oi.unused_overrides(set())
+        raised = False
+    except SystemExit:
+        raised = True
+    override_result('a stale override (no matching unresolved line was replaced) fails the run', raised)
+
+    try:
+        oi.unused_overrides({('canary:interaction/x/y', '5')})
+        raised = False
+    except SystemExit:
+        raised = True
+    override_result('a used override does not fail the run', not raised)
+finally:
+    oi.OVERRIDES = _saved_overrides
+
+def parser_case(name, got, expected):
+    results.append({'name': name, 'expected_valid': True, 'passed': got == expected,
+                    'first_error': None if got == expected else f'got {got!r}, expected {expected!r}'})
+
+
+# every distinct raw lvl value of samples/quest-coverage-2026-09-27.json (2026-09-27), classified once here
+LEVEL_CASES = [
+    ('0', (0, None)), ('100', (100, None)), ('8', (8, None)), ('1', (1, None)),
+    ('0?', (None, 'uncertain')), ('42?', (None, 'uncertain')), ('?', (None, 'uncertain')),
+    ('2 - 20', (None, 'range')), ('10 / 12', (None, 'range')), ('0-35', (None, 'range')), ('0 - 5', (None, 'range')),
+    ('8+', (None, 'range')), ('1000+', (None, 'range')),
+    ('0 (100 For The Firewalker Boots Part)', (None, 'note')), ('40*', (None, 'note')),
+    ('77*(for the last mission only)', (None, 'note')), ('35 (The Shattered Isles Quest)', (None, 'note')),
+    ('None', (None, 'none')), ('Varies', (None, 'varies')), ('various', (None, 'varies')),
+]
+for value, expected in LEVEL_CASES:
+    parser_case(f'parse_level({value!r})', parse_level(value), expected)
+
+PREMIUM_CASES = [('yes', (True, None)), ('no', (False, None)), ('partial', (None, 'partial')), ('?', (None, 'uncertain'))]
+for value, expected in PREMIUM_CASES:
+    parser_case(f'parse_premium({value!r})', parse_premium(value), expected)
+
+parser_case('requirements_of never guesses', requirements_of({'premium': 'partial', 'lvl': '2 - 20'}),
+           {'requirements_from_wiki': {'premium': 'partial', 'lvl': '2 - 20'},
+            'requirements': {'premium': None, 'min_level': None},
+            'requirements_unparsed': {'premium': 'partial', 'min_level': 'range'}})
+parser_case('requirements_of parses a clean pair', requirements_of({'premium': 'yes', 'lvl': '100'}),
+           {'requirements_from_wiki': {'premium': 'yes', 'lvl': '100'}, 'requirements': {'premium': True, 'min_level': 100}})
+parser_case('requirements_of is empty when nothing is recorded', requirements_of({'premium': '', 'lvl': ''}), {})
 
 failed = [r for r in results if not r['passed']]
 if '--verbose' in sys.argv:

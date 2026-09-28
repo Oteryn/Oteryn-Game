@@ -4066,9 +4066,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 8
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u8_0/barbarian_test/questline",
+                  "op": ">=",
+                  "value": 3
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -4081,9 +4084,24 @@
             },
             {
               "when": {
-                "unresolved": {
-                  "line": 10
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u8_0/barbarian_test/questline",
+                      "op": "==",
+                      "value": 2
+                    },
+                    "negate": false
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u8_0/barbarian_test/mead_total_sips",
+                      "op": "<",
+                      "value": 20
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -4543,9 +4561,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 15
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/repaired_crystal_count",
+                          "op": "==",
+                          "value": 5
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_crystal_keeper",
+                          "op": "~=",
+                          "value": 1
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -4651,9 +4684,24 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 4
-                }
+                "any": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/extracted_count",
+                      "op": "==",
+                      "value": 7
+                    },
+                    "negate": false
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_raiders_of_the_lost_spark",
+                      "op": "~=",
+                      "value": 1
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": []
             }
@@ -5155,9 +5203,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 12
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/mushroom_count",
+                          "op": "==",
+                          "value": 3
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -5700,9 +5751,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 16
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/spore_count",
+                          "op": "==",
+                          "value": 4
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_60/bigfoots_burden/mission_spore_gathering",
+                          "op": "~=",
+                          "value": 1
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -12548,9 +12614,24 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 15
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+                      "op": "~=",
+                      "value": 12
+                    },
+                    "negate": false
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+                      "op": "~=",
+                      "value": 13
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -12605,9 +12686,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 59
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u11_40/cults_of_tibia/mot_a/mission",
+                      "op": "==",
+                      "value": 12
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -13555,9 +13639,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 122
-                        }
+                        "world_state": {
+                          "key": "canary:world-state/sandking",
+                          "op": "==",
+                          "value": 4
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -16970,9 +17057,32 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 134
-                            }
+                            "all": [
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/growth",
+                                  "op": "==",
+                                  "value": 1
+                                },
+                                "negate": false
+                              },
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/barrel_count",
+                                  "op": "<",
+                                  "value": 5
+                                },
+                                "negate": false
+                              },
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/scouts/barrel_timer",
+                                  "op": "<=",
+                                  "value": 0
+                                },
+                                "negate": false
+                              }
+                            ]
                           },
                           "then": [
                             {
@@ -17594,9 +17704,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 10
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/dwarves/home",
+                          "op": "==",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u11_50/dangerous_depths/dwarves/prisoners",
+                          "op": "<",
+                          "value": 3
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -44952,9 +45077,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 5
-                }
+                "world_state": {
+                  "key": "canary:world-state/global_storage_heart_of_destruction_outburst_charging_killed",
+                  "op": "<",
+                  "value": 1
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -58424,9 +58552,24 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 40
-                }
+                "any": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u10_50/oramond_quest/probing/mission",
+                      "op": "==",
+                      "value": 0
+                    },
+                    "negate": false
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u10_50/oramond_quest/probing/mission",
+                      "op": ">=",
+                      "value": 2
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": []
             }
@@ -58532,9 +58675,24 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 81
-                }
+                "any": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u10_50/oramond_quest/probing/mission",
+                      "op": "==",
+                      "value": 0
+                    },
+                    "negate": false
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u10_50/oramond_quest/probing/mission",
+                      "op": ">=",
+                      "value": 2
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": []
             }
@@ -58649,9 +58807,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 30
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u10_50/oramond_quest/the_ancient_sewers/mission",
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u10_50/oramond_quest/the_ancient_sewers/mission",
+                          "op": "<",
+                          "value": 20
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -58664,9 +58837,12 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 32
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u10_50/oramond_quest/the_ancient_sewers/mission",
+                      "op": "==",
+                      "value": 20
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -60690,9 +60866,12 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 112
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+                              "op": "<",
+                              "value": 14
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -60706,9 +60885,12 @@
                         },
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 114
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u8_1/rest_in_hallowed_ground/holy_water",
+                              "op": "==",
+                              "value": 14
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -65700,9 +65882,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 119
-                }
+                "quest_stage": {
+                  "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/questline",
+                  "op": "~=",
+                  "value": 3
+                },
+                "negate": false
               },
               "then": []
             }
@@ -65789,9 +65974,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 64
-                }
+                "quest_stage": {
+                  "progress": "crystalserver:quest-progress/quest/u8_5/shadows_of_yalahar/questline",
+                  "op": "~=",
+                  "value": 3
+                },
+                "negate": false
               },
               "then": []
             }
@@ -70159,9 +70347,12 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 88
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_upper_track_main",
+                              "op": "==",
+                              "value": 2
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -70247,9 +70438,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 10
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u10_20/spike_task_quest/spike_middle_charge_main",
+                  "op": "==",
+                  "value": 3
+                },
+                "negate": false
               },
               "then": []
             }
@@ -71202,9 +71396,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 9
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/pit_door",
+                          "op": "<",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/pit_door",
+                          "op": ">",
+                          "value": 10
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -71214,9 +71423,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 14
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/arena",
+                          "op": "<",
+                          "value": 1
+                        },
+                        "negate": false
                       },
                       "then": []
                     }
@@ -71386,9 +71598,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 10
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/pit_door",
+                          "op": "<",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/pit_door",
+                          "op": ">",
+                          "value": 10
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -71557,9 +71784,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 26
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/pit_door",
+                          "op": ">",
+                          "value": 10
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -71578,9 +71808,12 @@
                           "branch": [
                             {
                               "when": {
-                                "unresolved": {
-                                  "line": 30
-                                }
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/arena",
+                                  "op": "==",
+                                  "value": 1
+                                },
+                                "negate": false
                               },
                               "then": [
                                 {
@@ -71604,9 +71837,12 @@
                             },
                             {
                               "when": {
-                                "unresolved": {
-                                  "line": 34
-                                }
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/arena",
+                                  "op": "==",
+                                  "value": 2
+                                },
+                                "negate": false
                               },
                               "then": [
                                 {
@@ -71630,9 +71866,12 @@
                             },
                             {
                               "when": {
-                                "unresolved": {
-                                  "line": 38
-                                }
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u8_0/barbarian_arena/arena",
+                                  "op": "==",
+                                  "value": 3
+                                },
+                                "negate": false
                               },
                               "then": [
                                 {
@@ -77977,9 +78216,24 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 24
-                            }
+                            "all": [
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/questline",
+                                  "op": "==",
+                                  "value": 3
+                                },
+                                "negate": false
+                              },
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/ward_stones/port_hope_stone",
+                                  "op": "<",
+                                  "value": 1
+                                },
+                                "negate": false
+                              }
+                            ]
                           },
                           "then": [
                             {
@@ -78810,9 +79064,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 14
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+                          "op": "==",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                          "op": "<",
+                          "value": 1
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -79662,9 +79931,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 67
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+                          "op": "==",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                          "op": "<",
+                          "value": 1
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -79959,9 +80243,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 31
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -80721,9 +81008,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 34
-                    }
+                    "world_state": {
+                      "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "op": "==",
+                      "value": 5
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -80741,9 +81031,12 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 38
-                    }
+                    "world_state": {
+                      "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "op": "<",
+                      "value": 0
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -80756,9 +81049,24 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 40
-                    }
+                    "all": [
+                      {
+                        "world_state": {
+                          "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                          "op": ">=",
+                          "value": 0
+                        },
+                        "negate": false
+                      },
+                      {
+                        "world_state": {
+                          "key": "crystalserver:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                          "op": "<",
+                          "value": 5
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -81284,9 +81592,24 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 24
-                            }
+                            "all": [
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/unsafe_release/questline",
+                                  "op": "==",
+                                  "value": 3
+                                },
+                                "negate": false
+                              },
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/ward_stones/port_hope_stone",
+                                  "op": "<",
+                                  "value": 1
+                                },
+                                "negate": false
+                              }
+                            ]
                           },
                           "then": [
                             {
@@ -82117,9 +82440,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 14
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+                          "op": "==",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                          "op": "<",
+                          "value": 1
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -82871,9 +83209,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 67
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+                          "op": "==",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/tomb",
+                          "op": "<",
+                          "value": 1
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -83168,9 +83521,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 31
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u12_00/the_dream_courts/haunted_house/questline",
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -83980,9 +84336,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 34
-                    }
+                    "world_state": {
+                      "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "op": "==",
+                      "value": 5
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -84000,9 +84359,12 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 38
-                    }
+                    "world_state": {
+                      "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                      "op": "<",
+                      "value": 0
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -84015,9 +84377,24 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 40
-                    }
+                    "all": [
+                      {
+                        "world_state": {
+                          "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                          "op": ">=",
+                          "value": 0
+                        },
+                        "negate": false
+                      },
+                      {
+                        "world_state": {
+                          "key": "canary:world-state/storage_quest_u12_00_the_dream_courts_burried_catedral_global_faceless_tiles",
+                          "op": "<",
+                          "value": 5
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -95674,9 +96051,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 11
-                }
+                "world_state": {
+                  "key": "canary:world-state/global_storage_the_order_of_the_lion_drume_total_lion_commanders",
+                  "op": ">",
+                  "value": 1
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -95738,9 +96118,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 33
-                }
+                "world_state": {
+                  "key": "canary:world-state/global_storage_the_order_of_the_lion_drume_total_usurper_commanders",
+                  "op": ">",
+                  "value": 0
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -95753,9 +96136,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 35
-                        }
+                        "world_state": {
+                          "key": "canary:world-state/global_storage_the_order_of_the_lion_drume_total_usurper_commanders",
+                          "op": "==",
+                          "value": 1
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -96321,9 +96707,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 11
-                }
+                "world_state": {
+                  "key": "crystalserver:world-state/global_storage_the_order_of_the_lion_drume_total_lion_commanders",
+                  "op": ">",
+                  "value": 1
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -96385,9 +96774,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 33
-                }
+                "world_state": {
+                  "key": "crystalserver:world-state/global_storage_the_order_of_the_lion_drume_total_usurper_commanders",
+                  "op": ">",
+                  "value": 0
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -96400,9 +96792,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 35
-                        }
+                        "world_state": {
+                          "key": "crystalserver:world-state/global_storage_the_order_of_the_lion_drume_total_usurper_commanders",
+                          "op": "==",
+                          "value": 1
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -100577,9 +100972,35 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 5
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30010
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30011
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30012
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": []
             }
@@ -100823,9 +101244,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 9
-                    }
+                    "world_state": {
+                      "key": "canary:world-state/switch_num",
+                      "op": "==",
+                      "value": -1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -100842,9 +101266,48 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 14
-                    }
+                    "all": [
+                      {
+                        "world_state": {
+                          "key": "canary:world-state/switch_num",
+                          "op": "~=",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "world_state": {
+                          "key": "canary:world-state/switch_num",
+                          "op": "~=",
+                          "value": 2
+                        },
+                        "negate": false
+                      },
+                      {
+                        "world_state": {
+                          "key": "canary:world-state/switch_num",
+                          "op": "~=",
+                          "value": 3
+                        },
+                        "negate": false
+                      },
+                      {
+                        "world_state": {
+                          "key": "canary:world-state/switch_num",
+                          "op": "~=",
+                          "value": 4
+                        },
+                        "negate": false
+                      },
+                      {
+                        "world_state": {
+                          "key": "canary:world-state/switch_num",
+                          "op": "~=",
+                          "value": 5
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -100981,9 +101444,62 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 5
-                }
+                "all": [
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30018
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30019
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30020
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30021
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30022
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "source",
+                      "field": "unique_id",
+                      "op": "~=",
+                      "value": 30023
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": []
             }
@@ -102275,9 +102791,24 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 12
-                            }
+                            "all": [
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
+                                  "op": ">=",
+                                  "value": 1
+                                },
+                                "negate": false
+                              },
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u7_2/the_queen_of_the_banshees/fifth_seal_tile",
+                                  "op": "<=",
+                                  "value": 8
+                                },
+                                "negate": false
+                              }
+                            ]
                           },
                           "then": [
                             {
@@ -102574,9 +103105,12 @@
                           "branch": [
                             {
                               "when": {
-                                "unresolved": {
-                                  "line": 128
-                                }
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission02",
+                                  "op": "==",
+                                  "value": 2
+                                },
+                                "negate": false
                               },
                               "then": [
                                 {
@@ -102589,9 +103123,12 @@
                             },
                             {
                               "when": {
-                                "unresolved": {
-                                  "line": 130
-                                }
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission02",
+                                  "op": "==",
+                                  "value": 3
+                                },
+                                "negate": false
                               },
                               "then": [
                                 {
@@ -102680,9 +103217,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 47
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission02",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission02",
+                          "op": ">=",
+                          "value": 4
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -102784,9 +103336,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 88
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission02",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -102796,18 +103351,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 91
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission02",
+                      "op": "<=",
+                      "value": 3
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 92
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission02",
+                              "op": "==",
+                              "value": 1
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -102919,9 +103480,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 36
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission04",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission04",
+                          "op": ">",
+                          "value": 2
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -103002,9 +103578,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 91
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -103014,9 +103593,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 94
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                          "op": "<=",
+                          "value": 2
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                          "op": "==",
+                          "value": 4
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -103105,9 +103699,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 38
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                          "op": "==",
+                          "value": 3
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -103218,9 +103827,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 74
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                          "op": ">=",
+                          "value": 3
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -103273,9 +103897,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 123
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                      "op": "==",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -103312,9 +103939,12 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 130
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                      "op": "==",
+                      "value": 3
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -103369,9 +103999,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 150
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -103381,9 +104014,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 153
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                          "op": "==",
+                          "value": 2
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission05",
+                          "op": "==",
+                          "value": 4
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -103437,9 +104085,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 39
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                          "op": ">=",
+                          "value": 4
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -103520,9 +104183,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 177
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -103532,18 +104198,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 180
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                      "op": "==",
+                      "value": 2
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 182
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/poacher_corpse",
+                              "op": "==",
+                              "value": -1
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -103615,9 +104287,25 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 204
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                      "op": "==",
+                      "value": 3
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "unique_id",
+                      "op": "==",
+                      "value": 40045
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -103690,9 +104378,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 154
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                      "op": "==",
+                      "value": 4
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -103757,9 +104448,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 224
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -103769,9 +104463,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 228
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/war_wolf_den_chest",
+                      "op": "==",
+                      "value": -1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -103843,9 +104540,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 71
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                          "op": ">=",
+                          "value": 4
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -103898,9 +104610,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 110
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission06",
+                      "op": "==",
+                      "value": -1
+                    },
+                    "negate": false
                   },
                   "then": []
                 }
@@ -104001,9 +104716,29 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 122
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission07",
+                      "op": "==",
+                      "value": 1
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/12743",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -104127,9 +104862,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 66
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission07",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission07",
+                          "op": "==",
+                          "value": 2
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -104238,9 +104988,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 32
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission07",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission07",
+                          "op": "==",
+                          "value": 2
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -104250,9 +105015,24 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 38
-                        }
+                        "all": [
+                          {
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission07",
+                              "op": "==",
+                              "value": 1
+                            },
+                            "negate": false
+                          },
+                          {
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/library_chest",
+                              "op": "==",
+                              "value": -1
+                            },
+                            "negate": false
+                          }
+                        ]
                       },
                       "then": [
                         {
@@ -104321,9 +105101,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 141
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission07",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -104333,18 +105116,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 144
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission07",
+                      "op": "==",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 146
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/library_chest",
+                              "op": "==",
+                              "value": -1
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -104420,9 +105209,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 38
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission09",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission09",
+                          "op": ">",
+                          "value": 7
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -104523,9 +105327,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 109
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission09",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -104535,9 +105342,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 112
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission09",
+                      "op": ">=",
+                      "value": 2
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -104622,9 +105432,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 73
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission09",
+                      "op": "==",
+                      "value": -1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -104643,9 +105456,12 @@
                 },
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 76
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission09",
+                      "op": ">=",
+                      "value": 7
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -104698,9 +105514,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 50
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission10",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission10",
+                          "op": ">",
+                          "value": 1
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -104749,9 +105580,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 84
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission10",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -104761,18 +105595,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 87
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission10",
+                      "op": ">=",
+                      "value": 1
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 89
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/sarcophagus",
+                              "op": "==",
+                              "value": -1
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -104837,9 +105677,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 133
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission10",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -104951,9 +105794,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 27
-                    }
+                    "any": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission11",
+                          "op": "==",
+                          "value": -1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission11",
+                          "op": ">",
+                          "value": 1
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": []
                 }
@@ -105054,9 +105912,29 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 58
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission11",
+                      "op": "==",
+                      "value": 2
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/5989",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -105113,9 +105991,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 680
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -105125,9 +106006,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 683
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "==",
+                      "value": 13
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -105259,9 +106143,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 355
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "==",
+                      "value": -1
+                    },
+                    "negate": false
                   },
                   "then": []
                 }
@@ -105271,9 +106158,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 358
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                          "op": ">=",
+                          "value": 9
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -105306,9 +106196,12 @@
                           "branch": [
                             {
                               "when": {
-                                "unresolved": {
-                                  "line": 369
-                                }
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                                  "op": "==",
+                                  "value": 9
+                                },
+                                "negate": false
                               },
                               "then": [
                                 {
@@ -105387,9 +106280,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 548
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "==",
+                      "value": -1
+                    },
+                    "negate": false
                   },
                   "then": []
                 }
@@ -105399,9 +106295,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 551
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                          "op": ">=",
+                          "value": 11
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -105540,9 +106439,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 624
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "==",
+                      "value": 12
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -105729,9 +106631,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 716
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "==",
+                      "value": 13
+                    },
+                    "negate": false
                   },
                   "then": [
                     {
@@ -105807,9 +106712,29 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 276
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": ">=",
+                      "value": 5
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/12792",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -105822,9 +106747,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 278
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                          "op": "==",
+                          "value": 5
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -105972,9 +106900,12 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 110
-                    }
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "==",
+                      "value": -1
+                    },
+                    "negate": false
                   },
                   "then": []
                 }
@@ -106049,9 +106980,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 480
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                  "op": ">=",
+                  "value": 10
+                },
+                "negate": false
               },
               "then": [
                 {
@@ -106163,9 +107097,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 773
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission10",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -106266,9 +107203,25 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 309
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "==",
+                      "value": 7
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "action_id",
+                      "op": "==",
+                      "value": 40012
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -106324,9 +107277,37 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 208
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": ">=",
+                      "value": 2
+                    },
+                    "negate": false
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "<=",
+                      "value": 13
+                    },
+                    "negate": false
+                  },
+                  {
+                    "object": {
+                      "role": "use_target",
+                      "field": "item_type",
+                      "op": "==",
+                      "item": {
+                        "family": "Item",
+                        "key": "canary:item/12790",
+                        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+                      }
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -106339,9 +107320,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 210
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                          "op": "==",
+                          "value": 2
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -106419,9 +107403,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 330
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                          "op": "==",
+                          "value": 8
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -106477,9 +107464,12 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 167
-                }
+                "quest_stage": {
+                  "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                  "op": "==",
+                  "value": -1
+                },
+                "negate": false
               },
               "then": []
             }
@@ -106489,9 +107479,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 170
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                          "op": ">=",
+                          "value": 1
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                          "op": "<=",
+                          "value": 13
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -106575,9 +107580,24 @@
           "branch": [
             {
               "when": {
-                "unresolved": {
-                  "line": 231
-                }
+                "all": [
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": ">=",
+                      "value": 3
+                    },
+                    "negate": false
+                  },
+                  {
+                    "quest_stage": {
+                      "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                      "op": "<=",
+                      "value": 13
+                    },
+                    "negate": false
+                  }
+                ]
               },
               "then": [
                 {
@@ -106590,9 +107610,12 @@
                   "branch": [
                     {
                       "when": {
-                        "unresolved": {
-                          "line": 233
-                        }
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u9_1/the_rookie_guard/mission12",
+                          "op": "==",
+                          "value": 3
+                        },
+                        "negate": false
                       },
                       "then": [
                         {
@@ -107612,9 +108635,12 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 12
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/boat_stages",
+                              "op": "<",
+                              "value": 1
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -107633,9 +108659,24 @@
                         },
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 15
-                            }
+                            "all": [
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/boat_stages",
+                                  "op": ">=",
+                                  "value": 1
+                                },
+                                "negate": false
+                              },
+                              {
+                                "quest_stage": {
+                                  "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/boat_stages",
+                                  "op": "<",
+                                  "value": 2
+                                },
+                                "negate": false
+                              }
+                            ]
                           },
                           "then": [
                             {
@@ -107665,9 +108706,12 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 19
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/boat_stages",
+                              "op": "<=",
+                              "value": 1
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -107733,9 +108777,12 @@
                         },
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 29
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/boat_stages",
+                              "op": "==",
+                              "value": 2
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -107748,9 +108795,12 @@
                         },
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 31
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u11_80/the_secret_library/small_islands/boat_stages",
+                              "op": "==",
+                              "value": 3
+                            },
+                            "negate": false
                           },
                           "then": [
                             {
@@ -112274,9 +113324,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 45
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02_1",
+                          "op": "==",
+                          "value": 3
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                          "op": "<",
+                          "value": 5
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -112314,9 +113379,12 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 53
-                                    }
+                                    "quest_stage": {
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                      "op": "==",
+                                      "value": -1
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -114080,9 +115148,24 @@
               "branch": [
                 {
                   "when": {
-                    "unresolved": {
-                      "line": 43
-                    }
+                    "all": [
+                      {
+                        "quest_stage": {
+                          "progress": "crystalserver:quest-progress/quest/u11_40/threatened_dreams/mission02/nightmare_intruders",
+                          "op": "==",
+                          "value": 3
+                        },
+                        "negate": false
+                      },
+                      {
+                        "quest_stage": {
+                          "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                          "op": "<",
+                          "value": 5
+                        },
+                        "negate": false
+                      }
+                    ]
                   },
                   "then": [
                     {
@@ -114120,9 +115203,12 @@
                               "branch": [
                                 {
                                   "when": {
-                                    "unresolved": {
-                                      "line": 51
-                                    }
+                                    "quest_stage": {
+                                      "progress": "canary:quest-progress/quest/u11_40/threatened_dreams/mission02/fairies_counter",
+                                      "op": "==",
+                                      "value": -1
+                                    },
+                                    "negate": false
                                   },
                                   "then": [
                                     {
@@ -117245,9 +118331,12 @@
                       "branch": [
                         {
                           "when": {
-                            "unresolved": {
-                              "line": 42
-                            }
+                            "quest_stage": {
+                              "progress": "canary:quest-progress/quest/u8_54/unnatural_selection/dance_status",
+                              "op": "==",
+                              "value": 1
+                            },
+                            "negate": false
                           },
                           "then": [
                             {

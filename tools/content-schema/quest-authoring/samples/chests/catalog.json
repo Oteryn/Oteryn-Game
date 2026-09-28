@@ -2057,6 +2057,11 @@
     },
     {
       "family": "Quest",
+      "key": "canary:quest/beggar_outfits_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
       "key": "canary:quest/behemoth_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
@@ -2272,6 +2277,11 @@
     },
     {
       "family": "Quest",
+      "key": "canary:quest/inukaya_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
       "key": "canary:quest/iron_hammer_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
@@ -2312,6 +2322,11 @@
     },
     {
       "family": "Quest",
+      "key": "canary:quest/lion_trophy_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
       "key": "canary:quest/lone_medusa_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
@@ -2323,6 +2338,11 @@
     {
       "family": "Quest",
       "key": "canary:quest/mad_mage_room_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "canary:quest/medusa_shield_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
     {
@@ -2343,6 +2363,11 @@
     {
       "family": "Quest",
       "key": "canary:quest/naginata_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "canary:quest/newhaven_legion_helmet_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
     {
@@ -2447,6 +2472,11 @@
     },
     {
       "family": "Quest",
+      "key": "canary:quest/short_sword_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
       "key": "canary:quest/silver_amulet_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
@@ -2482,12 +2512,27 @@
     },
     {
       "family": "Quest",
+      "key": "canary:quest/studded_shield_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "canary:quest/thais_lighthouse_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
       "key": "canary:quest/the_annihilator_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
     {
       "family": "Quest",
       "key": "canary:quest/the_ape_city_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "canary:quest/the_desert_dungeon_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
     {
@@ -2513,6 +2558,11 @@
     {
       "family": "Quest",
       "key": "canary:quest/the_new_frontier_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "canary:quest/the_outlaw_camp_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
     {
@@ -2543,6 +2593,11 @@
     {
       "family": "Quest",
       "key": "canary:quest/the_thieves_guild_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "canary:quest/the_white_raven_monastery_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
     {
@@ -2613,6 +2668,26 @@
     {
       "family": "Quest",
       "key": "canary:quest/wrath_of_the_emperor_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "crystalserver:quest/berserk_potion_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "crystalserver:quest/frost_dragon_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "crystalserver:quest/skeleton_decoration_quest",
+      "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+    },
+    {
+      "family": "Quest",
+      "key": "crystalserver:quest/studded_legs_quest",
       "revision": "canary-47dfd51f+crystalserver-ff7ede59"
     },
     {
