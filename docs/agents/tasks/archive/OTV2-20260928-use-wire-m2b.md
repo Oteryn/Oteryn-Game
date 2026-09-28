@@ -4,7 +4,7 @@
 task_id: OTV2-20260928-use-wire-m2b
 title: USE-WIRE-V1 M2b - server seam wiring (use dispatch, door runtime, movement blocking)
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 allocation_comment: 5868482467
@@ -12,9 +12,9 @@ base_branch: main
 branch: claude/use-wire-m2b
 pr: 1104
 base_sha: 69284a571a3b58249546e17f992dff59883be42f
-head_sha: 11103201fb3aa7612c3bdfffc365ff5df3ba3ec7
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 0a7feafa4c4fe7d06762f1259abf25be261c59eb
+final_head_sha: 0a7feafa4c4fe7d06762f1259abf25be261c59eb
+final_head_frozen_at: 2026-09-28T13:44:40Z
 owner: "Oteryn: impl server seam" (Claude Code)
 created_at: 2026-09-28T11:30:00Z
 updated_at: 2026-09-28T15:00:00Z
@@ -206,6 +206,12 @@ reason: >
   pending — see PR #1104 and #162 for current status, not tracked here.
 - related/superseded PRs: none known.
 
+## Terminal integration
+
+- final frozen head `0a7feafa4c4fe7d06762f1259abf25be261c59eb`; independent review: Codex rounds on #1104: occupancy of all actors (r4121956127), revision-first ordering (5869579920), reconnect fence domain 2 (r4122215795, shared lease resume.rs #162 5870253781), post-transmission continuity update (r4122508665) repaired; final @codex review on the exact head found no issues; shared lease foundation/runtime_actor_carrier.rs committed_player_positions granted retroactively (#162 5869911385).
+- exact-head CI green; merged through the Merge Queue as PR #1104, merge commit `0ff661e` (protected-main readback by the control plane, #162).
+- owned paths released.
+
 ## Context checkpoint
 
 ```yaml
@@ -213,17 +219,17 @@ last_progress: Repair round 4 complete: overlay_revision/spatial_revision now wr
   the frame(s) carrying them are confirmed sent (join snapshot, USE delta, and the same bug fixed
   for STEP's spatial_revision); new deterministic FailNthWrite-based regression test;
   fmt/clippy/full tests/both validators green; pushing.
-status: validating
+status: completed
 branch: claude/use-wire-m2b
-head_sha: 11103201fb3aa7612c3bdfffc365ff5df3ba3ec7
+head_sha: 0a7feafa4c4fe7d06762f1259abf25be261c59eb
 pr: 1104
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: 0a7feafa4c4fe7d06762f1259abf25be261c59eb
+final_head_frozen_at: 2026-09-28T13:44:40Z
 ci_trigger_source: push to claude/use-wire-m2b
 ci_checks_for_current_head: 0
 runner_assignment_state: unknown
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: await CI/exact-head readback and independent review on the repaired head
+next_action: none (terminal)
 ```

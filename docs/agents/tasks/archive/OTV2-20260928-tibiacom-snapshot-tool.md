@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-tibiacom-snapshot-tool
 title: Official tibia.com manual/spell-library capture tool (owner-run fetch, offline verify)
 mode: BUILD
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/tibiacom-snapshot-tool
 issue: 1077
 pr: 1083
 base_sha: 8d320703ec39b39c44c0b38268a07e4b0579e060
-head_sha: 7b7f75eeaf0bff834fb9690f5ea069c3e38f94fd
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 0949b89590c831c6225ab930033ad5b09ab5f900
+final_head_sha: 0949b89590c831c6225ab930033ad5b09ab5f900
+final_head_frozen_at: 2026-09-28T11:10:40Z
 owner: Oteryn content-import worker (Claude Code)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -210,16 +210,22 @@ threads (`#1083#discussion_r<id>`); this is a terse index by head SHA.
 - merge commit/result: pending.
 - ownership release: pending merge.
 
+## Terminal integration
+
+- final frozen head `0949b89590c831c6225ab930033ad5b09ab5f900`; independent review: Codex rounds 1-9 on #1083; MATERIAL findings (page copy, HTTP 200, completeness, hashing, immutability, redirects, absolute byte caps) repaired; remaining HARDENING (literal YYYY-MM-DD shape r4121489584; workflow not fanned into game-gate r4121217986 with procedural control #162 5868328937) recorded as follow-ups.
+- exact-head CI green; merged through the Merge Queue as PR #1083, merge commit `7cb3c38` (protected-main readback by the control plane, #162).
+- owned paths released.
+
 ## Context checkpoint
 
 ```yaml
 last_progress: PR #1083 opened against main on head 7b7f75e; awaiting CI
-status: validating
+status: completed
 branch: claude/tibiacom-snapshot-tool
-head_sha: 7b7f75eeaf0bff834fb9690f5ea069c3e38f94fd
+head_sha: 0949b89590c831c6225ab930033ad5b09ab5f900
 pr: 1083
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: 0949b89590c831c6225ab930033ad5b09ab5f900
+final_head_frozen_at: 2026-09-28T11:10:40Z
 ci_trigger_source: push
 ci_check_generation: null
 ci_checks_for_current_head: 0
@@ -235,5 +241,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: wait for PR #1083 checks, then owner runs `tibiacom_capture.py fetch` once and commits the resulting imports/official/tibia-com/<date>/ snapshot
+next_action: none (terminal)
 ```
