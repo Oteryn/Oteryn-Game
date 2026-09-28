@@ -67,7 +67,17 @@ from promotion_candidates import slug
 SCHEMA = 'OTERYN_NPC_PROMOTION_CANDIDATES/v1'
 EVIDENCE = 'OTS_HYPOTHESIS_ONLY'
 DECISIONS = ['D4', 'D5', 'D6', 'D7', 'D8', 'D11']
-WIKI_PRICE_FACT = re.compile(r'trade\.(\d+)(?:x\d+)?(?:s-?\d+)?\.(SellToPlayer|BuyFromPlayer)')
+# `trade.<source item id>[x<count>][s<sub type>].<direction>`, as promotion_candidates labels an offer
+WIKI_PRICE_FACT = re.compile(r'trade\.(\d+)(?:x(\d+))?(?:s(-?\d+))?\.(SellToPlayer|BuyFromPlayer)')
+
+
+def named_offers(candidate, match):
+    """The admitted offers a WIKI_PRICE fact names: the exact (item, count, sub type, direction) tuple."""
+    source_item_id, count, sub_type, direction = match.groups()
+    return [offer for offer in (candidate.get('trade_service') or {}).get('offers') or []
+            if offer.get('source_item_id') == int(source_item_id) and offer.get('direction') == direction
+            and (offer.get('count') or None) == (int(count) if count else None)
+            and offer.get('sub_type') == (int(sub_type) if sub_type is not None else None)]
 KEY_RE = re.compile(r'^oteryn:npc\.[a-z0-9]+(_[a-z0-9]+)*$')
 ITEM_KEY_RE = re.compile(r'^oteryn:item\.[a-z0-9_.]+$')
 SHA256_RE = re.compile(r'^[0-9a-f]{64}$')
@@ -299,9 +309,7 @@ def candidate_errors(candidate, index):
                 errs.append(f"{alabel}: fact {fact!r} is not a trade offer direction for rule {rule!r}")
             else:
                 # the fact names an admitted offer, and that offer carries the wiki price
-                source_item_id, direction = int(match.group(1)), match.group(2)
-                named = [offer for offer in (candidate.get('trade_service') or {}).get('offers') or []
-                         if offer.get('source_item_id') == source_item_id and offer.get('direction') == direction]
+                named = named_offers(candidate, match)
                 if not named:
                     errs.append(f"{alabel}: fact {fact!r} names no admitted offer")
                 elif any(offer.get('unit_price') != price for offer in named):
@@ -433,9 +441,7 @@ def item_name_errors(report, registry_names):
             match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') == 'WIKI_PRICE' else None
             if match is None:
                 continue
-            named = {registry_names.get((offer.get('item') or {}).get('key'))
-                     for offer in (candidate.get('trade_service') or {}).get('offers') or []
-                     if offer.get('source_item_id') == int(match.group(1)) and offer.get('direction') == match.group(2)}
+            named = {registry_names.get((offer.get('item') or {}).get('key')) for offer in named_offers(candidate, match)}
             if named != {promotion_candidates.fold(str(row.get('item_name')))}:
                 errs.append(f"candidates[{index}]: WIKI_PRICE {row['fact']} item_name {row.get('item_name')!r} "
                             f"is not the offer's registered item {sorted(n for n in named if n)!r}")
@@ -464,7 +470,7 @@ def wiki_price_errors(report, snapshot_bytes, br_facts_bytes, registry_names):
             match = WIKI_PRICE_FACT.fullmatch(row.get('fact') or '') if row.get('rule') == 'WIKI_PRICE' else None
             if match is None:
                 continue  # not a WIKI_PRICE row, or a malformed one errors() reports
-            stated = builder.wiki_price(name, match.group(2), row.get('item_name'), fandom)
+            stated = builder.wiki_price(name, match.group(4), row.get('item_name'), fandom)
             if stated != row.get('price'):
                 errs.append(f"candidates[{index}]: WIKI_PRICE {row['fact']} price {row.get('price')!r} != "
                             f"the price both wikis state ({stated!r})")
@@ -483,6 +489,8 @@ def main():
     parser.add_argument('--snapshot', type=Path, help='the pinned Fandom snapshot; checks every WIKI_PRICE row')
     parser.add_argument('--br-facts', type=Path, help='the pinned TibiaWiki BR facts; checks every WIKI_PRICE row')
     args = parser.parse_args()
+    if bool(args.snapshot) != bool(args.br_facts):
+        parser.error('--snapshot and --br-facts check the WIKI_PRICE evidence together; pass both or neither')
     report = json.loads(Path(args.report).read_text(encoding='utf-8'))
     registry_names = registry_item_names()
     all_errors = errors(report) + item_name_errors(report, registry_names)

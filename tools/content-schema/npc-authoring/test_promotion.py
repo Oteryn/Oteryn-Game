@@ -63,6 +63,14 @@ class PromotionValidatorTests(unittest.TestCase):
         row['fact'] = 'trade.999999.SellToPlayer'
         self.assertTrue(any('names no admitted offer' in e for e in validate_promotion.errors(report)))
 
+    def test_wiki_price_fact_names_the_exact_offer_variant(self):
+        report = load_sample()
+        ahmet = find_candidate(report, 'Ahmet')
+        row = next(r for r in ahmet['arbitration'] if r['rule'] == 'WIKI_PRICE')
+        item, direction = row['fact'].split('.')[1], row['fact'].rsplit('.', 1)[1]
+        row['fact'] = f'trade.{item}x999.{direction}'  # no count-999 variant is admitted
+        self.assertTrue(any('names no admitted offer' in e for e in validate_promotion.errors(report)))
+
     def test_wiki_price_must_match_the_offer_price(self):
         report = load_sample()
         ahmet = find_candidate(report, 'Ahmet')

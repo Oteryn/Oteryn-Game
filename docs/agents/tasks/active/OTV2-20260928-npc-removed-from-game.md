@@ -88,7 +88,7 @@ against TibiaWiki BR ("Kontynuuj" and "Tak kontynuuj" on the proposed fix order:
 ## Acceptance and evidence
 
 - The candidates reproduced byte for byte before the change. After it, `validate_promotion` and
-  `test_promotion` (50 tests, including REMOVED_FROM_GAME, WIKI_PRICE, missing-BR-digest, unknown-offer, wrong-item
+  `test_promotion` (51 tests, including REMOVED_FROM_GAME, WIKI_PRICE, missing-BR-digest, unknown-offer, offer-variant, wrong-item
   and wrong-price cases) pass; with the pinned Fandom snapshot and BR facts, `validate_promotion` confirms
   every WIKI_PRICE row, and every admitted offer both wikis price (877), carries the price both wikis state.
 - The dialogue and admission stages re-run with the same inputs as #1095.
