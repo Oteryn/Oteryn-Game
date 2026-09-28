@@ -428,9 +428,10 @@ Round 17 correction (owner-authorized; Codex finding 4120251303 on frozen head `
 said "`bind` rejects it" — wrong boundary. `bind` operates on `TransitionBinding` alone (evidence
 below), which carries no `revert_after_ms` field and no attribute payload; `destination`/
 `revert_destination` exist only on the authored `map_item` action, a layer `bind` never sees. By the
-time a transition reaches `bind`, `the_lord_of_the_lice`'s attribute-changing teleporter and
-`DepthWarzoneBossDeath`'s state-only one are already the same shape — `bind` structurally cannot tell
-them apart. Fixed: moved the rejection to the boundary that *does* see the authored action —
+time a transition reaches `bind`, an attribute-changing teleporter like `the_lord_of_the_lice`'s and
+a genuinely state-only transform are already the same shape — `bind` structurally cannot tell
+them apart (Round 18 below: `DepthWarzoneBossDeath` itself is not an example of the latter). Fixed:
+moved the rejection to the boundary that *does* see the authored action —
 authoring/lowering, fail-closed, with a named error, so an attribute-changing `revert_after_ms`
 binding never reaches `bind` at all. Verified directly (evidence below): no server-side encounter
 lowering step exists in the read code yet; the closest existing precedent is
@@ -438,6 +439,20 @@ lowering step exists in the read code yet; the closest existing precedent is
 tooling explicitly marked "the server does not read these files" — so this is stated as an obligation
 on whichever lowering/validation step is built, naming that file as the natural host, not a claim that
 enforcement already exists anywhere today.
+
+Round 18 correction (owner-authorized; Codex finding 4120357243 on frozen head `95f7db70`): every
+prior round's text called `DepthWarzoneBossDeath` "state-only," citing that it authors no
+`destination`/`revert_destination` — wrong: the encounter-format line (171-172) is narrative
+shorthand, and all three generated Depth encounters it actually produces —
+`the_duke_of_the_depths`/`the_baron_from_below`/`the_count_of_the_core` (evidence below) — carry both
+`destination` and `revert_destination`, so they are attribute-changing, not state-only, and are
+rejected at authoring/lowering under rounds 16/17 the same as `the_lord_of_the_lice`. Checked directly
+(evidence below): no authored `transform` anywhere in `encounter-authoring/samples/**` omits
+`destination`/`revert_destination`; no genuinely state-only fixture for the "encounter-originated
+timed transform" test obligation exists in the corpus today. Fixed: corrected every place this
+section called `DepthWarzoneBossDeath` or a Depth encounter state-only; replaced that test
+obligation's fixture with a clearly-labeled synthetic transform, and stated plainly that no authored
+encounter currently exercises a state-only timed revert.
 
 ### Problem
 
@@ -623,17 +638,20 @@ today.
   in `LocalObjectStateDefinition`/`PreparedMutation` can represent today. PROVEN
   (`tools/content-schema/encounter-authoring/samples/the_lord_of_the_lice/encounter.json` lines
   70/71/73/74): a concrete authored instance — `anchor: exit_teleporter`, `destination: godbreaker`,
-  `revert_after_ms: 60000`, `revert_destination: ascendant_exit` — of exactly this case. Contrast
-  (evidence above): the `DepthWarzoneBossDeath` example this section already cites as a test
-  obligation (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` lines 171-172) authors no `destination`/
-  `revert_destination` at all — a state-only transform, unaffected by this finding.
+  `revert_after_ms: 60000`, `revert_destination: ascendant_exit` — of exactly this case. NOT a
+  contrast, corrected Round 18 (evidence below): the `DepthWarzoneBossDeath` example this section
+  cites as a test obligation (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` lines 171-172) reads as
+  authoring no `destination`/`revert_destination`, but that line is narrative shorthand only — every
+  generated Depth encounter it actually produces carries both (evidence below); it is not a
+  state-only example either.
 - PROVEN, round 17 (`apps/game-server/src/content/reference_playable.rs` `TransitionBinding`
   ~1334-1342): exactly `key`/`definition`/`source_state`/`normalized_intent_family`/`target_state`/
   `owner_capability`/`policy_guard_refs` — no `revert_after_ms` field and no attribute payload;
   `bind` operates on this type alone and cannot see the authored `map_item` action `destination`/
-  `revert_destination` came from, so it cannot tell `the_lord_of_the_lice` apart from
-  `DepthWarzoneBossDeath` — round 16's "`bind` rejects it" named a boundary that structurally cannot
-  do the check. PROVEN (`tools/content-schema/encounter-authoring/validate_encounter.py` ~188-201):
+  `revert_destination` came from, so it cannot tell an attribute-changing transition like
+  `the_lord_of_the_lice`'s apart from a genuinely state-only one — round 16's "`bind` rejects it"
+  named a boundary that structurally cannot do the check. PROVEN
+  (`tools/content-schema/encounter-authoring/validate_encounter.py` ~188-201):
   the existing `map_item` validation block already reads `destination`/`revert_destination`/
   `revert_after_ms` together on one authored action and already enforces one related cross-field rule
   ("`revert_destination` needs `revert_after_ms`", ~200-201) — it does not yet reject
@@ -642,6 +660,21 @@ today.
   these files" — this validator is offline tooling for a `CANDIDATE` format, not a wired production
   boundary. No server-side encounter-lowering step exists in the read code (evidence above:
   `TransitionBinding` has no `revert_after_ms` field; CW4 shipped without `revert_after`).
+- PROVEN, round 18 (`tools/content-schema/encounter-authoring/samples/*/encounter.json`, exhaustive
+  check across every sample): all three generated Depth encounters carry both `destination` and
+  `revert_destination` alongside `revert_after_ms` — `the_duke_of_the_depths/encounter.json` lines
+  65-68 (`anchor: exit_teleporter`, `destination: reward_destination`, `revert_after_ms: 1200000`,
+  `revert_destination: warzone_exit`), `the_baron_from_below/encounter.json` lines 75-78 and
+  `the_count_of_the_core/encounter.json` lines 75-78 (identical shape) — `DepthWarzoneBossDeath` is
+  attribute-changing, not state-only. PROVEN: every authored `map_item` action combining `operation:
+  transform` with `revert_after_ms` across the whole sample corpus also carries `destination`/
+  `revert_destination` — no exception found. The only `revert_after_ms`-carrying actions that omit
+  both are `create` actions — `mazzinor/encounter.json` lines 47-56, `gaz_haragoth/encounter.json`
+  lines 123-132, `cult_soul_remains/encounter.json` lines 53-62 and 70-79 — each of which carries an
+  `interaction` binding instead; this document does not decide here whether `interaction` is also a
+  disqualifying non-state attribute, so none of these is claimed as a proven state-only fixture
+  either. No authored sample under `encounter-authoring/samples/**` is a proven state-only
+  `revert_after_ms` usage.
 
 ### Options (minimum real set)
 
@@ -864,10 +897,11 @@ thing, not two — its lifecycle-record store).
   only `key`/`definition`/`source_state`/`normalized_intent_family`/`target_state`/`owner_capability`/
   `policy_guard_refs` — no `revert_after_ms` field and no attribute payload of any kind — while a
   `map_item` teleporter's `destination`/`revert_destination` exist only on the authored encounter
-  action, a layer `bind` never sees (evidence above: `TransitionBinding` cannot even tell
-  `DepthWarzoneBossDeath`'s state-only transform apart from `the_lord_of_the_lice`'s
-  attribute-changing one — both would already have been reduced to the same shape by the time either
-  reaches `bind`). The rejection therefore belongs to the boundary that *does* see the authored
+  action, a layer `bind` never sees (evidence above: `TransitionBinding` cannot even tell a genuinely
+  state-only transform apart from `the_lord_of_the_lice`'s attribute-changing one — both would
+  already have been reduced to the same shape by the time either reaches `bind`; `DepthWarzoneBossDeath`
+  itself is not a state-only example, Round 18 below). The rejection therefore belongs to the
+  boundary that *does* see the authored
   action: an authored `map_item` action carrying `revert_after_ms` together with `destination`,
   `revert_destination`, or any other non-state attribute is rejected fail-closed, with a named error,
   at authoring/lowering — it must never reach `bind` at all as a revert-bearing operation. Concretely
@@ -926,10 +960,12 @@ thing, not two — its lifecycle-record store).
   `has_elapsed`/`remaining` at wake time for that scope — never mix two clock instances (evidence
   above: `SystemClock::new()` starts a fresh, incomparable origin each time).
 - On any `revert_after`-carrying overlay operation whose origin is *not* the firing of a pending
-  revert timer (evidence above: player/command via `apply`/`resume_pending`, an encounter/
-  server-event-originated overlay operation such as `DepthWarzoneBossDeath`'s boss-death teleporter
-  transform, or any other non-timer authoritative input — the test is "is this execution the firing
-  of a pending revert timer," not which entry point produced it), as part of the *same* staged
+  revert timer (evidence above: player/command via `apply`/`resume_pending`, a state-only
+  encounter/server-event-originated overlay operation that has already passed the authoring/lowering
+  rejection above (Round 18: `DepthWarzoneBossDeath` itself is not such an example — it is
+  attribute-changing and rejected before it gets here), or any other non-timer authoritative input —
+  the test is "is this execution the firing of a pending revert timer," not which entry point
+  produced it), as part of the *same* staged
   commit as the original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve safe bounded
   capacity for one new lifecycle record *once*, before anything else — Round 14 folds round 13's
   separate "timer capacity" and "retained-outcome capacity" reservations into this one reservation,
@@ -1164,9 +1200,11 @@ not this architecture decision.
   reads the action (evidence above) — it must never reach `bind` as a revert-bearing operation at all,
   so a test asserting `bind` itself is what performs this check must fail (`bind` structurally cannot:
   `TransitionBinding` carries no attribute payload, evidence above). Conversely, an authored
-  `map_item` action carrying `revert_after_ms` with *no* `destination`/`revert_destination` (a
-  state-only transform, like `DepthWarzoneBossDeath`, evidence above) must pass lowering and reach
-  `bind` normally. A test asserting a binding for an attribute-changing transition reaches `bind` at
+  `map_item` action carrying `revert_after_ms` with *no* `destination`/`revert_destination` and no
+  other non-state attribute (a genuinely state-only transform — the synthetic fixture below, since no
+  authored sample under `encounter-authoring/samples/**` qualifies today, evidence above;
+  `DepthWarzoneBossDeath` itself does not, Round 18) must pass lowering and reach `bind` normally. A
+  test asserting a binding for an attribute-changing transition reaches `bind` at
   all and later fires `DISPOSITION_COMMITTED` with the object's attributes left unrestored (stale
   `destination`) must fail — `revert_after_ms` covers only what `LocalObjectStateDefinition`/
   `PreparedMutation::Publish` model today (evidence above), never a silent partial revert.
@@ -1201,15 +1239,33 @@ not this architecture decision.
   firing — no `PENDING` record exists afterward for either direction. Re-arming only happens if some
   later non-timer-origin execution (a player/command, an encounter/server-event, or any other
   authoritative input) invokes `b→a` (or `a→b`) itself.
-- **An encounter-originated timed transform registers and fires (P1, Round 8; scope note Round 16).**
-  Bind `DepthWarzoneBossDeath`'s `map_item(transform teleporter at anchor, revert_after_ms 1200000)`
-  (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` lines 171-172) with its bound inverse — as authored, this
-  example carries no `destination`/`revert_destination`, so it is a state-only transform admissible
-  under the Round 16 scope restriction above (evidence above); it is not a stand-in for
-  `the_lord_of_the_lice`'s attribute-changing teleporter, which the previous obligation covers
-  separately. The `creature_died(boss)`-triggered transform — an encounter/server-event-originated
-  operation, never `apply`/`resume_pending` — must register exactly one revert timer at commit, and
-  that timer must later fire and restore the teleporter; a test asserting it stays transformed
+- **An encounter-originated timed transform registers and fires (P1, Round 8; corrected Round 18 —
+  no authored fixture qualifies, use a synthetic one).** Round 16/17 said `DepthWarzoneBossDeath`'s
+  `map_item(transform teleporter at anchor, revert_after_ms 1200000)`
+  (`OTERYN_ENCOUNTER_AUTHORING_FORMAT_V1.md` lines 171-172) authors no `destination`/
+  `revert_destination`, so it was cited here as state-only — wrong: that line is narrative shorthand,
+  and every one of the three generated Depth encounters this pattern actually produces —
+  `the_duke_of_the_depths` (`.../samples/the_duke_of_the_depths/encounter.json` lines 65-68:
+  `anchor: exit_teleporter`, `destination: reward_destination`, `revert_after_ms: 1200000`,
+  `revert_destination: warzone_exit`), `the_baron_from_below` (lines 75-78, identical shape) and
+  `the_count_of_the_core` (lines 75-78, identical shape) — carries both `destination` and
+  `revert_destination` (evidence above). All three are attribute-changing and rejected at
+  authoring/lowering under the Round 16/17 restriction; they are not this obligation's fixture.
+  Checked directly (Round 18, evidence above): no authored `map_item` action anywhere under
+  `tools/content-schema/encounter-authoring/samples/**` combines `revert_after_ms` with a `transform`
+  and omits `destination`/`revert_destination` — every authored `transform` in the corpus carries
+  both. The closest near-misses are `create` actions (`mazzinor`, `gaz_haragoth`,
+  `cult_soul_remains` ×2) that omit `destination`/`revert_destination` but carry an `interaction`
+  binding; this document does not resolve here whether `interaction` also disqualifies them, so they
+  are not claimed as state-only fixtures either. **No authored encounter currently exercises a
+  state-only timed revert**, and the Depth encounters stay rejected until "Open decisions" item 3
+  (attribute-bearing object state) is resolved. Use a **synthetic, clearly-labeled** state-only
+  encounter-originated transform instead — for example, a `map_item(transform sealed_wall to
+  cracked_wall at anchor, revert_after_ms 300000)` authored with no `destination`/`revert_destination`
+  and no other non-state attribute, illustrative only, not drawn from any sample file. Binding it with
+  its bound inverse, the `creature_died(boss)`-triggered transform — an encounter/server-event-
+  originated operation, never `apply`/`resume_pending` — must register exactly one revert timer at
+  commit, and that timer must later fire and restore the wall; a test asserting it stays transformed
   forever (round 7's bug) must fail.
 - **Occupied target cells refuse deterministically (decided, not deferred).** `prepare`
   (`apps/game-server/src/world_runtime.rs` ~973-1050) computes and returns its terminal disposition in
