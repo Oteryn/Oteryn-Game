@@ -17,6 +17,7 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 import canary_batch as cb
+import official_library
 import wiki_authored
 import validate_monster as vm
 
@@ -61,6 +62,8 @@ def main():
     converter.wiki = {m['monster']: m for m in json.loads(wiki_text)['monsters']}
     br_text = BR_FILL.read_text(encoding='utf-8')
     converter.br = {m['monster']: m for m in json.loads(br_text)['monsters']}
+    official_text = official_library.SAMPLE.read_text(encoding='utf-8')
+    converter.official = {m['monster']: m for m in json.loads(official_text)['monsters']}
 
     files = sorted((args.canary / cb.MONSTER_DIR).rglob('*.lua'))
     outcome = Counter()
@@ -126,6 +129,8 @@ def main():
 
     report = {'source': {'repository': cb.REPOSITORY, 'revision': cb.REVISION, 'monster_dir': cb.MONSTER_DIR},
               'wiki_reference': {'file': str(WIKI.relative_to(ROOT)), 'sha256': hashlib.sha256(wiki_text.encode('utf-8')).hexdigest()},
+              'official_library': {'file': str(official_library.SAMPLE.relative_to(ROOT)),
+                                   'sha256': hashlib.sha256(official_text.encode('utf-8')).hexdigest()},
               'br_fill_reference': {'file': str(BR_FILL.relative_to(ROOT)), 'sha256': hashlib.sha256(br_text.encode('utf-8')).hexdigest()},
               'wiki_authored_reference': {'file': str(wiki_authored.SAMPLE.relative_to(ROOT)),
                                           'sha256': hashlib.sha256(authored_text.encode('utf-8')).hexdigest()},
