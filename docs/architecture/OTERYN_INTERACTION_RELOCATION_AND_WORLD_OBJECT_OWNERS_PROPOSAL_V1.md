@@ -1695,7 +1695,7 @@ architecture decision.
    §9 Round 4) is a further separate, undesigned gap — `death_priest_shargon`/`the_ravager` stay
    rejected until it is resolved.
 
-## 9. Attribute-bearing object state: teleporter destination — CANDIDATE
+## 9. Attribute-bearing object state: teleporter destination — ACCEPTED
 
 - DecisionStatus: ACCEPTED by owner 2026-09-28 (issue #162, issuecomment-5873353684). The owner
   decided §7's open decision 3 `YES` (issue #162, 2026-09-28): supporting attribute-bearing object

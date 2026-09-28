@@ -80,6 +80,11 @@ Implements the owner-accepted §9 of
 - Two `revert_destination` occurrences on one forward transition yield two qualifying inverses;
   `bind` rejects that as ambiguous (§9 design point 3 leaves the case undesigned).
 
+## Open items for task B
+
+- §7 intent-family pairing is not enforced by `bind`: main has no inverse-family vocabulary.
+- A bound inverse can also be picked by USE selection from the forward target state.
+
 ## Acceptance and evidence
 
 - Tests: `content::encounter_map_item::tests` (lowering, widened bind rule, attributes by state,
