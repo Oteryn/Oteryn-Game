@@ -55,7 +55,7 @@ walk-away, send-trade, `say` keyword replies and voices) is stored in full in Wo
 | --- | --- |
 | D1 | First step is schema + converter + census only. No `content/` writes and no native NPC identity; keys stay source-scoped (`canary:` / `crystal:`). |
 | D2 | Canary and Crystal are equal sources. No automatic winner: every `CONFLICT` and one-sided fact in the source diff stays an open decision row. |
-| D3 | TibiaWiki (Fandom, CC BY-SA) is compared now; TibiaWiki BR is added later. BR is behind a Cloudflare challenge from the build container (HTTP 403), so it needs another access route or an owner-supplied export. Only compared facts and page/revision ids are stored. |
+| D3 | TibiaWiki (Fandom, CC BY-SA) and TibiaWiki BR are compared. BR is behind a Cloudflare challenge from the build container (HTTP 403); it is captured by a repository workflow instead (`npc-tibiawiki-br-capture.yml`, owner request 2026-09-28), whose raw wikitext stays a CI artifact. Only compared facts and page/revision ids are stored: for BR, `imports/tibiawiki/npc-br/<date>/` keeps each page's ids and raw SHA-256, `implemented`/`removed`, map positions, trade lists and the lines the NPC itself speaks in its transcript (Tibia NPC text, D9), never wiki prose. |
 
 | D4 | Native NPC key `oteryn:npc.<slug>` (resolves O1). The slug is derived once from the registered name (ASCII fold, lower case, non-alphanumerics to `_`) and is frozen at promotion; a later rename keeps the key. Source names, file stems and numeric ids stay provenance only. Two NPCs with one slug are both held. A travel service is `oteryn:service.travel.<slug>`. Placements carry no identity yet. |
 | D5 | NPC text is authored by Oteryn (resolves O2). Canary/Crystal supply structure only (keywords, services, placeholders, links); no Tibia text is promoted. Description, voices and dialogue stay out of promotion until authored. |
@@ -164,7 +164,7 @@ Open decisions before promotion:
 - **O4 scripted behaviour:** owner for Lua predicates/actions/handlers (quest state, storage gates),
   i.e. Interaction/Quest vs. NPC service.
 - **O5 item join:** resolved: offers resolve through the protected Item identity map (§8).
-- **O6 TibiaWiki BR:** access route (D3).
+- **O6 TibiaWiki BR:** resolved by D3 (repository workflow capture; committed facts only).
 - **O7 wiki disagreements:** resolved by D6.
 - **O8 admission route:** resolved: `OTERYN_WORLD_PROJECT_V2_NPC_ADMISSION_V1.md` admits NPCs through
   WorldProject/v2, with the content tree regenerated from it.

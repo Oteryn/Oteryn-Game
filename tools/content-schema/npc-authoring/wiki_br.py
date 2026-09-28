@@ -1,11 +1,18 @@
-"""Capture the NPC pages of TibiaWiki BR (tibiawiki.com.br) as an exact-revision wikitext snapshot.
+"""Capture the NPC pages of TibiaWiki BR (tibiawiki.com.br) and extract their compared facts.
 
 Evidence tooling only. TibiaWiki BR is a player-observed reference source; its NPC pages carry the
-outfit, position and in-game dialogue of Tibia Global NPCs, including recent ones that the Fandom
-wiki only stubs. The snapshot records each page's id, exact revision, timestamp, the SHA-256 of its
-wikitext and the wikitext itself, so any later comparison can be re-checked against the same bytes.
-Tibia NPC text is reference data under OTERYN_NPC_AUTHORING_SCHEMA_V1 D9; the snapshot is a CI
-artifact, not a committed corpus.
+position, trade lists and in-game dialogue transcripts of Tibia Global NPCs, including recent ones
+that the Fandom wiki only stubs.
+
+`fetch` writes the raw snapshot: each page's id, exact revision, timestamp, the SHA-256 of its
+wikitext and the wikitext itself. It stays a CI artifact and is never committed (wiki prose is not
+bulk-copied, OTERYN_WORLD_PROJECT_SOURCE_PROFILE_V2_DECISION).
+
+`facts` reduces a snapshot to the facts that are compared (OTERYN_NPC_AUTHORING_SCHEMA_V1 D3): page and
+revision ids, the SHA-256 of each raw page, infobox name, `implemented` and `removed` versions, map
+positions, trade lists (item name and explicit price) and the lines the NPC itself speaks in the
+transcript, which are Tibia NPC text kept as reference data (D9). No notes, descriptions or other wiki
+prose. That file is committed.
 
 Pages: every namespace-0 member of `Categoria:NPCs no Tibia` and its subcategories, plus every
 namespace-0 subpage (`<NPC>/...`) of those pages. Python stdlib only, <= 2 requests/s, neutral
@@ -16,11 +23,13 @@ refuse other networks.
 
 Usage:
     python wiki_br.py fetch --out <dir>/tibiawiki-br-npc-snapshot.json
+    python wiki_br.py facts --snapshot <dir>/tibiawiki-br-npc-snapshot.json --out <facts.json>
     python wiki_br.py self-test
 """
 import argparse
 import hashlib
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -32,6 +41,7 @@ API = 'https://www.tibiawiki.com.br/api.php'
 USER_AGENT = 'OterynNpcAuthoring/1.0 (+https://github.com/Oteryn/Oteryn-Game)'
 ROOT_CATEGORY = 'Categoria:NPCs no Tibia'
 SNAPSHOT_SCHEMA = 'OTERYN_NPC_TIBIAWIKI_BR_SNAPSHOT/v1'
+FACTS_SCHEMA = 'OTERYN_NPC_TIBIAWIKI_BR_FACTS/v1'
 LICENSE_NOTE = 'TibiaWiki BR, player-observed reference data; used under OTERYN_NPC_AUTHORING_SCHEMA_V1 D9.'
 THROTTLE_SECONDS = 0.5  # <= 2 requests/s
 RETRIES = 4
@@ -128,6 +138,8 @@ def page_record(page):
 
 
 def build_snapshot(npc_pages, sub_pages, records, categories, fetched_at):
+    enumerated = {**npc_pages, **sub_pages}
+    missing = [{'pageid': pageid, 'title': enumerated[pageid]} for pageid in sorted(enumerated) if pageid not in records]
     pages = []
     for pageid in sorted(records):
         record = dict(records[pageid])
@@ -138,8 +150,8 @@ def build_snapshot(npc_pages, sub_pages, records, categories, fetched_at):
         'schema': SNAPSHOT_SCHEMA, 'license': LICENSE_NOTE, 'api': API, 'root_category': ROOT_CATEGORY,
         'fetched_at': fetched_at, 'categories': categories,
         'counts': {'categories': len(categories), 'npc_pages': len(npc_pages), 'subpages': len(sub_pages),
-                   'captured': len(pages), 'missing': len(npc_pages) + len(sub_pages) - len(pages)},
-        'pages_digest': digest, 'pages': pages,
+                   'captured': len(pages), 'missing': len(missing)},
+        'pages_digest': digest, 'pages': pages, 'missing_pages': missing,
     }
 
 
@@ -150,12 +162,85 @@ def cmd_fetch(args):
     sub_pages = {pageid: title for pageid, title in subpages(set(npc_pages.values())).items()
                  if pageid not in npc_pages}
     records = fetch_revisions(set(npc_pages) | set(sub_pages))
+    missing = (set(npc_pages) | set(sub_pages)) - set(records)
+    if missing:  # a page can lose its revision between enumeration and fetch; retry once, then record it
+        records.update(fetch_revisions(missing))
     snapshot = build_snapshot(npc_pages, sub_pages, records, categories,
                               datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ'))
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(snapshot, ensure_ascii=False, indent=1, sort_keys=True) + '\n', encoding='utf-8')
     print(json.dumps({'out': str(out), 'counts': snapshot['counts'], 'pages_digest': snapshot['pages_digest']}))
+
+
+# -- facts ---------------------------------------------------------------------------------------
+MAPA = re.compile(r'\{\{\s*[Mm]apa\s*\|\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)')
+TRADES = re.compile(r'\{\{\s*Trades/(Buy|Sell)(.*?)\}\}', re.S)
+LINK = re.compile(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]')
+SPEAKER = re.compile(r"\s*(?:'''|\[\[)(.+?)(?::'''|\]\]:)\s*(.*)$")
+FIELD = re.compile(r'^\|\s*([a-z0-9_]+)\s*=(.*)$', re.M)
+
+
+def infobox_field(wikitext, name):
+    for match in FIELD.finditer(wikitext):
+        if match.group(1) == name:
+            return match.group(2).strip()
+    return ''
+
+
+def fold(text):
+    return re.sub(r'\s+', ' ', text).strip().casefold()
+
+
+def page_facts(page):
+    wikitext = page['wikitext']
+    name = infobox_field(wikitext, 'name') or page['title']
+    trades = {'BuyFromPlayer': {}, 'SellToPlayer': {}}
+    for kind, body in TRADES.findall(wikitext):
+        direction = 'SellToPlayer' if kind == 'Sell' else 'BuyFromPlayer'
+        for part in body.split('|')[1:]:
+            fields = [field.strip() for field in LINK.sub(r'\1', part).split(',')]
+            if fields[0]:
+                trades[direction].setdefault(fields[0], int(fields[1]) if len(fields) > 1 and fields[1].isdigit() else None)
+    speakers = {fold(page['title']), fold(name)}
+    lines = []
+    for raw in wikitext.split('\n'):
+        match = SPEAKER.match(raw)
+        if match and fold(match.group(1)) in speakers:
+            text = re.sub(r'</?br\s*/?>', ' ', match.group(2), flags=re.I)
+            text = re.sub(r'\s+', ' ', LINK.sub(r'\1', text).replace("'''", '').replace("''", '')).strip()
+            if text:
+                lines.append(text)
+    return {'pageid': page['pageid'], 'revid': page['revid'], 'timestamp': page['timestamp'],
+            'sha256': page['sha256'], 'title': page['title'], 'role': page['role'], 'name': name,
+            'implemented': infobox_field(wikitext, 'implemented'), 'removed': infobox_field(wikitext, 'removed'),
+            'positions': sorted({(int(x), int(y), int(z)) for x, y, z in MAPA.findall(wikitext)}),
+            'trades': trades, 'npc_lines': lines}
+
+
+def build_facts(snapshot):
+    if snapshot['schema'] != SNAPSHOT_SCHEMA:
+        raise SystemExit('not a TibiaWiki BR snapshot')
+    for page in snapshot['pages']:
+        if hashlib.sha256(page['wikitext'].encode('utf-8')).hexdigest() != page['sha256']:
+            raise SystemExit(f'page {page["pageid"]} wikitext does not match its sha256')
+    pages = [page_facts(page) for page in sorted(snapshot['pages'], key=lambda p: p['pageid'])]
+    return {'schema': FACTS_SCHEMA, 'license': LICENSE_NOTE, 'api': snapshot['api'],
+            'fetched_at': snapshot['fetched_at'], 'snapshot_pages_digest': snapshot['pages_digest'],
+            'missing_pages': snapshot.get('missing_pages', []),
+            'counts': {'pages': len(pages), 'with_positions': sum(1 for p in pages if p['positions']),
+                       'with_trades': sum(1 for p in pages if any(p['trades'].values())),
+                       'with_npc_lines': sum(1 for p in pages if p['npc_lines']),
+                       'removed': sum(1 for p in pages if p['removed'])},
+            'pages': pages}
+
+
+def cmd_facts(args):
+    facts = build_facts(json.loads(Path(args.snapshot).read_text(encoding='utf-8')))
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(facts, ensure_ascii=False, indent=1, sort_keys=True) + '\n', encoding='utf-8')
+    print(json.dumps({'out': str(out), 'counts': facts['counts']}))
 
 
 def cmd_self_test(_args):
@@ -171,8 +256,19 @@ def cmd_self_test(_args):
     assert [p['pageid'] for p in snapshot['pages']] == [7, 9]
     assert [p['role'] for p in snapshot['pages']] == ['npc', 'subpage']
     assert snapshot['counts'] == {'categories': 1, 'npc_pages': 2, 'subpages': 1, 'captured': 2, 'missing': 1}
+    assert snapshot['missing_pages'] == [{'pageid': 10, 'title': 'Gone'}]
     again = build_snapshot({7: 'Goldro', 10: 'Gone'}, {9: 'Goldro/Diálogos'}, {7: record, 9: sub}, [ROOT_CATEGORY], 'T')
     assert again == snapshot
+    text = ("{{Infobox_NPC\n| name = Goldro\n| implemented = 15.30\n| removed = \n"
+            "| location = [[Salgadora]] ({{Mapa|34055,32503,7:2|aqui}}).\n| notes = Long wiki prose.\n"
+            "| sells = {{Trades/Sell\n| Bread,4\n| [[Cheese]]}}\n| falas = \n''Jogador:'' '''Hi'''</br>\n"
+            "'''Goldro:''' Hello, ''Jogador''. Ask about [[Salgadora|the town]].</br>\n[[Other]]: Not mine.\n}}")
+    facts = page_facts({**page_record({'pageid': 7, 'title': 'Goldro', 'revisions': [
+        {'revid': 11, 'timestamp': 'T', 'slots': {'main': {'content': text}}}]}), 'role': 'npc'})
+    assert facts['positions'] == [(34055, 32503, 7)], facts
+    assert facts['trades'] == {'BuyFromPlayer': {}, 'SellToPlayer': {'Bread': 4, 'Cheese': None}}, facts
+    assert facts['npc_lines'] == ['Hello, Jogador. Ask about the town.'], facts
+    assert 'prose' not in json.dumps(facts), facts
     print('wiki_br self-test: PASS')
 
 
@@ -182,6 +278,10 @@ def main():
     fetch_parser = sub.add_parser('fetch', help='capture the NPC pages into a snapshot')
     fetch_parser.add_argument('--out', required=True)
     fetch_parser.set_defaults(func=cmd_fetch)
+    facts_parser = sub.add_parser('facts', help='reduce a snapshot to its compared facts')
+    facts_parser.add_argument('--snapshot', required=True)
+    facts_parser.add_argument('--out', required=True)
+    facts_parser.set_defaults(func=cmd_facts)
     sub.add_parser('self-test', help='offline checks, no network').set_defaults(func=cmd_self_test)
     args = parser.parse_args()
     args.func(args)

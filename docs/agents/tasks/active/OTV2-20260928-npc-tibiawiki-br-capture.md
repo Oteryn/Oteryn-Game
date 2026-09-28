@@ -2,7 +2,7 @@
 
 ```yaml
 task_id: OTV2-20260928-npc-tibiawiki-br-capture
-title: NPC TibiaWiki BR capture - exact-revision wikitext snapshot of every NPC page for Tibia Global fidelity checks
+title: NPC TibiaWiki BR capture and cross-check - committed BR facts for every NPC page and a fidelity report for every admitted NPC
 mode: IMPLEMENT
 status: validating
 repository: Oteryn/Oteryn-Game
@@ -27,6 +27,9 @@ owned_paths:
   - tools/content-schema/npc-authoring/README.md
   - .github/workflows/npc-tibiawiki-br-capture.yml
   - imports/tibiawiki/npc-br/**
+  - tools/content-schema/npc-authoring/tibiawiki_br_crosscheck.py
+  - tools/content-schema/npc-authoring/samples/tibiawiki-br-crosscheck-v1.json
+  - docs/architecture/OTERYN_NPC_AUTHORING_SCHEMA_V1.md
 public_contracts: []
 depends_on:
   - OTV2-20260928-npc-dialogue-transcripts
@@ -37,28 +40,45 @@ external_repositories: []
 
 ## Outcome
 
-`wiki_br.py` captures every NPC page of TibiaWiki BR (`Categoria:NPCs no Tibia` and its subcategories,
-plus their `<NPC>/...` subpages) as an exact-revision wikitext snapshot: page id, revision, timestamp,
-SHA-256 and wikitext per page, plus a digest over all pages. The site refuses this session's network but
-answers the repository's runners, as it did for the G4 non-Item capture, so
-`npc-tibiawiki-br-capture.yml` runs the capture and publishes the snapshot as an artifact.
+`wiki_br.py fetch` captures every NPC page of TibiaWiki BR (`Categoria:NPCs no Tibia` and its
+subcategories, plus their `<NPC>/...` subpages) at exact revisions. A page that loses its revision between
+enumeration and fetch is retried once and then recorded in `missing_pages`. The site refuses this
+session's network but answers the repository's runners, as it did for the G4 non-Item capture, so
+`npc-tibiawiki-br-capture.yml` runs the capture. The raw wikitext stays a CI artifact.
 
-So that the data does not expire with the artifact, the first capture is committed immutable under
-`imports/tibiawiki/npc-br/2026-09-28/` (1,253 NPC pages, 3.5 MB), with a README recording its run,
-artifact, file SHA-256 and `pages_digest`. 259 pages carry a dialogue transcript in `falas`, and about
-440 carry trade lists.
+`wiki_br.py facts` reduces a capture to the compared facts, and those are committed immutable under
+`imports/tibiawiki/npc-br/2026-09-28/` (1,253 pages, run 36418989024):
 
-The snapshot is evidence only. It gives the position, trade lists and dialogue that Fandom only stubs for
-recent NPCs (for example the 15.30 Marapur NPCs), so later NPC work can check Canary, Crystal and branch
-facts against Tibia Global. The pages carry no outfit field. Nothing is admitted into `content/` by this task.
+- each page's ids and raw SHA-256;
+- `implemented` and `removed`;
+- map positions;
+- trade lists;
+- the lines the NPC itself speaks in its transcript.
+
+No wiki prose is stored. D3 records the access route and what is kept (the source-profile decision
+forbids bulk-copying TibiaWiki prose).
+
+`tibiawiki_br_crosscheck.py` compares every admitted NPC with those facts and writes
+`samples/tibiawiki-br-crosscheck-v1.json`. The report changes nothing that is admitted.
+
+| Check | Result |
+| --- | --- |
+| BR page found | 1,060 of 1,094 NPCs |
+| Removed on BR (13.12) | 5 |
+| Positions | 220 same tile, 677 within 3 tiles, 94 within 10, 25 on another floor, 41 far |
+| Trade | 89 agree, 207 differ (28 explicit price differences), 63 with BR offers but none admitted |
+| Dialogue | 203 NPCs checked: of 3,870 texts, 1,766 match a transcript line exactly and 243 nearly; 40 NPCs match none |
 
 The D10 dialogue task record (#1095) is archived with its merge commit.
 
-Authority: owner request in this session to take all needed NPC data from TibiaWiki BR and keep it stored.
+Authority: owner request in this session to take all needed NPC data from TibiaWiki BR, keep it stored
+and cross-check every NPC against it.
 
 ## Acceptance and evidence
 
-- `wiki_br.py self-test` passes offline.
-- The workflow run on this PR (run 36418989024) captured the snapshot. The committed file matches the
-  artifact byte for byte, every page's SHA-256 matches its wikitext, and `pages_digest` recomputes.
+- `wiki_br.py self-test` passes offline, including facts extraction and missing-page records.
+- The committed facts were extracted from the run 36418989024 artifact. Every page's SHA-256 was checked
+  against its wikitext before extraction.
+- The cross-check is byte-identical on re-run, and it gives the same result from the facts as from the
+  raw capture.
 - Governance and the repository policy pass.

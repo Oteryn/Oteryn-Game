@@ -12,7 +12,8 @@ Game truth and nothing writes `content/`.
 | `validate_npc.py` | Schema plus semantic checks (status, key namespace, no committed text, every gate/script has an unresolved row). |
 | `source_diff.py` | Canary vs Crystal fact-level diff (owner decision D2: equal sources, no automatic winner). |
 | `wiki_fandom.py` | TibiaWiki (Fandom) snapshot fetch and position/travel/trade comparison (stdlib only, ≤2 requests/s, neutral User-Agent). |
-| `wiki_br.py` | TibiaWiki BR NPC page snapshot (wikitext at exact revisions, stdlib only, ≤2 requests/s, neutral User-Agent); run by `.github/workflows/npc-tibiawiki-br-capture.yml`, whose artifact is the snapshot. |
+| `wiki_br.py` | TibiaWiki BR NPC pages: `fetch` captures the raw wikitext at exact revisions (stdlib only, ≤2 requests/s, neutral User-Agent; run by `.github/workflows/npc-tibiawiki-br-capture.yml`, artifact only), `facts` reduces it to the committed facts in `imports/tibiawiki/npc-br/`. |
+| `tibiawiki_br_crosscheck.py` | Cross-checks every admitted NPC's position, trade and dialogue against the BR facts (`samples/tibiawiki-br-crosscheck-v1.json`). |
 | `population_census.py` | Readiness census over converted bundles. |
 | `promotion_candidates.py` | Merges Canary+Crystal with the wiki as tie-breaker into native-keyed promotion candidates (D4–D6). |
 | `validate_promotion.py` | Checks a promotion-candidate report (keys, slugs, routes, placements, provenance, no text). |
