@@ -32,6 +32,30 @@ WorldProject/v2 already has the `Encounter` family: a `ProjectV2Declaration::Enc
 | E4 | Admission is closed, as for creatures. An encounter is admitted only when its manifest has no `unresolved_semantics` row, every anchor has a location, and every Creature, Item and Ability it references is admitted. A monster covered by encounters is admitted only when all of them are admitted. The staging tool repeats this until nothing more is dropped. | Admitting an encounter with a hole in it. |
 | E5 | Mapping details: identity `oteryn:encounter.<slug>`, revision `definition-r1`. `instance_per_party` becomes `Instance` and `channel_shared` becomes `Channel`. `encounter_type` is `Boss` when a participant has a bosstiary entry or the `reward_boss` flag, otherwise `Generic`. `cooldown_seconds` and `repeatable` stay unset: under D27 boss cooldowns belong to the reward domain, so `outcome_evidence` stays evidence for it. The source binding uses namespace `canary/encounter`, with the sample slug as external id, and the manifest digests go in the import batch. | Filling cooldowns from Canary into the encounter. |
 
+### Decision test (`ARCHITECTURE_DECISION_DISCIPLINE.md`)
+
+1. **Must decide now?** Yes. Slices 2-4 need the profile shape, the anchor locations and the admission rule, and
+   164 encounter-covered monsters are blocked from `content/world` until they exist.
+2. **What downstream work is blocked?** The creature staging (`creature_admission_stage.py`, `deferred_encounter`), the
+   Rust admission of the Encounter profile, the `content/encounters/**` tree, and every later Encounter runtime slice,
+   which needs admitted encounters to interpret.
+3. **What becomes harder later?** Changing the v2 Encounter profile shape means a new profile revision and a restage.
+   The Canary anchor coordinates become project data that a map project must bind or replace.
+4. **What evidence would justify superseding it?**
+   - An Encounter runtime slice that cannot interpret the v1 vocabulary as typed, for example a mechanic the closed
+     vocabulary cannot express without scripts (D28).
+   - A map project whose coordinate frame differs from the Canary map, so that anchor locations need a transform
+     rather than a binding.
+   - Evidence that an admitted encounter-bound creature was activated without its encounter, which E3 forbids.
+   - A reward or quest domain contract that needs cooldowns or progress inside the encounter, contrary to D27.
+   - A change in the owner's playable-first priorities, for example a runtime needed before admission.
+5. **What is deliberately not decided?**
+   - The Encounter runtime and its instancing.
+   - Map binding and the World admission.
+   - The reward and quest consumers of outcomes.
+   - The asset bindings of anchor effects.
+   - Whether later encounters that are not from Canary use the same profile unchanged.
+
 ## 3. Expected scope of the first encounter wave
 
 The estimate below is a closure over the current census. The staging tool's counts are the authority.
