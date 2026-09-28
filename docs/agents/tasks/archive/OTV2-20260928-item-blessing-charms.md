@@ -4,15 +4,15 @@
 task_id: OTV2-20260928-item-blessing-charms
 title: Classify blessing charms as progression material and restore the wiki batch registration
 mode: MIGRATE
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/compassionate-albattani-s29syw
 issue: 162
 pr: 1063
 base_sha: 13efb4fc
-head_sha: null
-final_head_sha: null
+head_sha: 0c6eed475b2db51216e5c6a6c367dfd6e928736b
+final_head_sha: 0c6eed475b2db51216e5c6a6c367dfd6e928736b
 final_head_frozen_at: null
 owner: owner-launched Claude Code session
 created_at: 2026-09-28T00:00:00Z
@@ -32,7 +32,7 @@ owned_paths:
   - docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md
   - .github/workflows/item-authoring-schema.yml
   - docs/agents/tasks/archive/OTV2-20260927-item-wiki-family-fallback.md
-  - docs/agents/tasks/active/OTV2-20260928-item-blessing-charms.md
+  - docs/agents/tasks/archive/OTV2-20260928-item-blessing-charms.md
 public_contracts: []
 depends_on:
   - "docs/architecture/OTERYN_ITEM_AUTHORING_FORMAL_SCHEMA_V1.md"
@@ -135,11 +135,11 @@ covered 10,674 Items with 13,292 fields. Only `presentation.name` grows.
 
 ```yaml
 last_progress: blessing charms admitted, snapshot recaptured, registration restored, censuses and promotion packet regenerated
-status: implementing
+status: completed
 branch: claude/compassionate-albattani-s29syw
-head_sha: null
+head_sha: 0c6eed475b2db51216e5c6a6c367dfd6e928736b
 pr: 1063
-final_head_sha: null
+final_head_sha: 0c6eed475b2db51216e5c6a6c367dfd6e928736b
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -156,5 +156,11 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish PR and drive CI to green
+next_action: null
 ```
+
+## Completion
+
+Merged as PR #1063 (`f3c2ec57`) from final head `0c6eed475b2db51216e5c6a6c367dfd6e928736b` on
+2026-09-28. Ownership released. The Clothing Accessories decision follows in
+`OTV2-20260928-item-clothing-accessories`.
