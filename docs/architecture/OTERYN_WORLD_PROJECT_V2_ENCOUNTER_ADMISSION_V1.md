@@ -101,7 +101,9 @@ creatures, in the same slices.
    `ProjectV2EncounterDetails.covers` names the participant creatures the encounter covers, and
    `ProjectV2CreatureAuthoring.encounters` binds a creature to its encounters (E3). The project checks both directions:
    a covered creature lists its encounter, and a listed encounter covers the creature. The D45 summon spells get `ProjectV2AbilityDetails.encounter`: exactly one of effects, variants
-   and encounter, and an encounter-backed ability must be a spell. Tests:
+   and encounter, and an encounter-backed ability must be a spell. Every such ability needs an `ability_cast` rule in its
+   encounter. The rule's role must be able to be a creature, participant or spawned, that owns the ability. Every
+   owner of the ability is bound to, and covered by, that encounter. Tests:
    `apps/game-server/tests/content_world_project_v2_encounter_admission.rs`.
 4. Writer and the first wave: `creature_admission_stage.py` stages the encounters and their creatures under E4, the
    materializer pins the result, and the content tree is regenerated (`content/encounters/{bosses,…}`). One
