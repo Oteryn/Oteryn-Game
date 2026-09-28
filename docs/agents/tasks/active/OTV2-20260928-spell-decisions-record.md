@@ -103,6 +103,9 @@ complete this qualification itself.
 - `1686320`: Codex P2 4121579408 (PROD-ENTITLEMENTS-01 is already accepted, so it is not a gate).
   Accepted: the gate is an explicit product-specific Premium activation or transition decision; the
   V1 soul maximum stays 100.
+- `e40fff6`: Codex P2 4121626122 (every retry was said to return the original result, against
+  the FND-02 §13.2 bounded retention). Accepted: never executed or charged twice; the original
+  result while retained, then `COMMAND_OUTCOME_EXPIRED` with reconciliation.
 
 ## Context checkpoint
 
