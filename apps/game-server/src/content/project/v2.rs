@@ -1187,6 +1187,21 @@ pub struct ProjectV2DialogueKeyword {
     pub key: String,
     pub triggers: Vec<String>,
     pub reply: String,
+    /// Answers only while the player is in conversation with the NPC.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub only_focus: bool,
+    /// Answers only while the player is not in conversation with the NPC.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub only_unfocus: bool,
+    /// Returns the conversation to the top-level keywords after replying.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub reset: bool,
+    /// Ends the conversation after replying.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub ungreet: bool,
+    /// Moves the conversation this many keyword levels up after replying.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub move_up: Option<u8>,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub children: Vec<ProjectV2DialogueKeyword>,
 }
@@ -1902,6 +1917,19 @@ fn validate_v2_dialogue_keywords(
             }
         }
         validate_v2_dialogue_text("v2 Dialogue keyword reply", &keyword.reply, limits)?;
+        if keyword.only_focus && keyword.only_unfocus {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword is both focus-only and unfocus-only",
+            ));
+        }
+        if keyword
+            .move_up
+            .is_some_and(|levels| levels == 0 || usize::from(levels) > V2_DIALOGUE_MAX_DEPTH)
+        {
+            return Err(ProjectError::InvalidProject(
+                "v2 Dialogue keyword move_up is out of range",
+            ));
+        }
         validate_v2_dialogue_keywords(&keyword.children, depth + 1, node_count, limits)?;
     }
     Ok(())

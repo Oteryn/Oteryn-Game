@@ -114,8 +114,9 @@ Dialogue, voice and description text is Tibia narrative content. `LICENSE-ASSETS
 recorded as reference data for faithful reconstruction.
 Committed bundles carry text references only; `convert.py --include-text` adds text for local review and
 `validate_npc.py` rejects such bundles unless `--allow-text` is given. Promoted NPC text is taken 1:1
-from the sources (D9); `tools/content-migration/npc_dialogue_stage.py` stages it from bundles converted
-with `--include-text`.
+from the sources (D9). The later dialogue admission slice stages it from bundles converted with
+`--include-text` and keeps each `say` node's conversation flags (`only_focus`, `only_unfocus`, `reset`,
+`ungreet`, `move_up`).
 
 ## 7. Import readiness and open decisions
 

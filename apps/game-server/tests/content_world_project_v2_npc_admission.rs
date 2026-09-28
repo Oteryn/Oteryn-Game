@@ -218,6 +218,11 @@ fn keyword(
         key: key.into(),
         triggers: triggers.iter().map(|trigger| (*trigger).into()).collect(),
         reply: reply.into(),
+        only_focus: false,
+        only_unfocus: false,
+        reset: false,
+        ungreet: false,
+        move_up: None,
         children,
     }
 }
@@ -232,6 +237,11 @@ fn keyword_owned(
         key,
         triggers: vec![trigger],
         reply: reply.into(),
+        only_focus: false,
+        only_unfocus: false,
+        reset: false,
+        ungreet: false,
+        move_up: None,
         children,
     }
 }
@@ -243,12 +253,17 @@ fn dialogue_keywords() -> Vec<ProjectV2DialogueKeyword> {
             "cargo",
             &["cargo", "hold"],
             "We carry crates of spice and cloth.",
-            vec![keyword(
-                "price",
-                &["cost", "price"],
-                "Ask about one good for its price.",
-                vec![],
-            )],
+            vec![ProjectV2DialogueKeyword {
+                only_focus: true,
+                reset: true,
+                move_up: Some(1),
+                ..keyword(
+                    "price",
+                    &["cost", "price"],
+                    "Ask about one good for its price.",
+                    vec![],
+                )
+            }],
         ),
         keyword(
             "trade",
@@ -556,7 +571,7 @@ fn dialogue_keywords_admit_the_maximum_depth() {
 #[test]
 fn each_broken_invariant_is_rejected() {
     type Mutation = fn(&mut ProjectV2Draft);
-    let cases: [(&str, &str, Mutation); 22] = [
+    let cases: [(&str, &str, Mutation); 24] = [
         (
             "wander without walking",
             "v2 wander requires a walking creature and a positive interval",
@@ -724,6 +739,25 @@ fn each_broken_invariant_is_rejected() {
             |draft| {
                 if let ProjectV2Declaration::Dialogue { send_trade, .. } = dialogue_mut(draft) {
                     *send_trade = Some("  ".into());
+                }
+            },
+        ),
+        (
+            "dialogue keyword both focus-only and unfocus-only",
+            "v2 Dialogue keyword is both focus-only and unfocus-only",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].only_focus = true;
+                    keywords[0].only_unfocus = true;
+                }
+            },
+        ),
+        (
+            "dialogue keyword moving up zero levels",
+            "v2 Dialogue keyword move_up is out of range",
+            |draft| {
+                if let ProjectV2Declaration::Dialogue { keywords, .. } = dialogue_mut(draft) {
+                    keywords[0].move_up = Some(0);
                 }
             },
         ),
