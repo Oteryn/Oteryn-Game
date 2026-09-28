@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,6 +24,11 @@ assert lock["editor_entry_counts"] == {"Item": 165, "Mount": 252}
 
 paths = [row["path"] for row in manifest["managed_files"]]
 assert len(paths) == len(set(paths))
+shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
+for directory in {(ROOT / path).parent for path in paths if shard_name.search(path)}:
+    stale = sorted(file.relative_to(ROOT).as_posix() for file in directory.glob("*.json")
+                   if shard_name.search(file.name) and file.relative_to(ROOT).as_posix() not in paths)
+    assert not stale, stale
 assert sum(path.startswith("content/items/definitions/items-") for path in paths) == 77
 assert any(path.startswith("content/cosmetics/mounts/mounts-") for path in paths)
 assert any(path.startswith("content/creatures/definitions/creatures-") for path in paths)

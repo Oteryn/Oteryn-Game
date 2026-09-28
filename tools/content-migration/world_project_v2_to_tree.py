@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from pathlib import Path
 from collections import Counter
 from typing import Any
@@ -440,6 +441,14 @@ def main() -> int:
                       *encounter_shards, "content/encounters/definitions/index.json",
                       *dialogue_shards, "content/dialogues/definitions/index.json",
                       *service_managed, *outputs.keys()])
+    # A family that grows renames its last shard; drop the superseded shard files so every shard is managed.
+    shard_name = re.compile(r"-\d{5}-\d{5}\.json$")
+    managed_set = set(managed)
+    for directory in sorted({(ROOT / path).parent for path in managed if shard_name.search(path)}):
+        for stale in sorted(directory.glob("*.json")):
+            relative = stale.relative_to(ROOT).as_posix()
+            if shard_name.search(stale.name) and relative not in managed_set:
+                stale.unlink()
     write("content/manifest.json", {
         "schema": "OTERYN_GAME_CONTENT_TREE_MANIFEST/v1",
         "project_revision": REVISION,
