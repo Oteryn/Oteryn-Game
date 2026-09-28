@@ -1,17 +1,17 @@
-# OTV2-20260928-npc-tibiawiki-br-capture
+# OTV2-20260928-npc-tibiawiki-br-crosscheck
 
 ```yaml
-task_id: OTV2-20260928-npc-tibiawiki-br-capture
-title: NPC TibiaWiki BR capture and cross-check - committed BR facts for every NPC page and a fidelity report for every admitted NPC
+task_id: OTV2-20260928-npc-tibiawiki-br-crosscheck
+title: NPC TibiaWiki BR facts and cross-check - replace the raw BR capture with compared facts and report every admitted NPC against them
 mode: IMPLEMENT
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/dazzling-brown-1u2xxo
 issue: 162
-pr: 1103
+pr: null
 jira: KAN-16
-base_sha: 43807fb40549ba9aa7c102862c705ddf146c4866
+base_sha: d17a38266d7197b807ff4d68c064eb1394849e2b
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -20,9 +20,9 @@ created_at: 2026-09-28
 updated_at: 2026-09-28
 execution_policy: continuous_progress
 owned_paths:
+  - docs/agents/tasks/active/OTV2-20260928-npc-tibiawiki-br-crosscheck.md
   - docs/agents/tasks/active/OTV2-20260928-npc-tibiawiki-br-capture.md
-  - docs/agents/tasks/active/OTV2-20260928-npc-dialogue-transcripts.md
-  - docs/agents/tasks/archive/OTV2-20260928-npc-dialogue-transcripts.md
+  - docs/agents/tasks/archive/OTV2-20260928-npc-tibiawiki-br-capture.md
   - tools/content-schema/npc-authoring/wiki_br.py
   - tools/content-schema/npc-authoring/README.md
   - .github/workflows/npc-tibiawiki-br-capture.yml
@@ -32,7 +32,7 @@ owned_paths:
   - docs/architecture/OTERYN_NPC_AUTHORING_SCHEMA_V1.md
 public_contracts: []
 depends_on:
-  - OTV2-20260928-npc-dialogue-transcripts
+  - OTV2-20260928-npc-tibiawiki-br-capture
 blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
@@ -40,9 +40,9 @@ external_repositories: []
 
 ## Outcome
 
-`wiki_br.py fetch` captures every NPC page of TibiaWiki BR (`Categoria:NPCs no Tibia` and its
-subcategories, plus their `<NPC>/...` subpages) at exact revisions. A page that loses its revision between
-enumeration and fetch is retried once and then recorded in `missing_pages`. The site refuses this
+#1103 added `wiki_br.py fetch`, which captures every NPC page of TibiaWiki BR (`Categoria:NPCs no Tibia`
+and its subcategories, plus their `<NPC>/...` subpages) at exact revisions. Now a page that loses its
+revision between enumeration and fetch is retried once and then recorded in `missing_pages`. The site refuses this
 session's network but answers the repository's runners, as it did for the G4 non-Item capture, so
 `npc-tibiawiki-br-capture.yml` runs the capture. The raw wikitext stays a CI artifact.
 
@@ -69,7 +69,8 @@ forbids bulk-copying TibiaWiki prose).
 | Trade | 89 agree, 207 differ (28 explicit price differences), 63 with BR offers but none admitted |
 | Dialogue | 203 NPCs checked: of 3,870 texts, 1,766 match a transcript line exactly and 243 nearly; 40 NPCs match none |
 
-The D10 dialogue task record (#1095) is archived with its merge commit.
+#1103 committed the raw capture itself before a review finding about this could be applied. This task
+removes it from the tree (it remains in the history of `d17a3826`) and archives the #1103 task record.
 
 Authority: owner request in this session to take all needed NPC data from TibiaWiki BR, keep it stored
 and cross-check every NPC against it.
