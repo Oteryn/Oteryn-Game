@@ -152,9 +152,17 @@ d['ability']=obj({'identity':use('identity'),'kind':enum('melee','spell'),'range
         description='D18: the cast needs a walking path to its target found within max_search_tiles (and a clear line of sight '
             'when clear_sight); without one the cast fails and nothing happens.'),
     'chain':obj({'max_targets':integer(1),'range_tiles':integer(1),'backtracking':use('bool'),'chain_asset_binding':use('assetBinding'),
-                 'target_filter':enum('players')},
-                ('max_targets','range_tiles','backtracking'),description='D12: the effect jumps between up to max_targets creatures; '
-                'target_filter players skips every creature that is not a player (the players-only chain picker).'),
+                 'target_filter':enum('players','ranged_monsters'),
+                 'shape':{**enum('sequential','fork'),'description':'sequential (default): each jump starts at the last creature '
+                     'hit; fork: every further creature is chosen within range_tiles of the first creature.'},
+                 'initial_range_tiles':integer(1,description='Search radius for the first creature of a cast without a target; '
+                     'absent means range_tiles.'),
+                 'damage_step_percent':integer(-100,100,description='Per-step change of the rolled value: step i gets '
+                     '(100 + i * damage_step_percent)%, at least 0; absent means 0.')},
+                ('max_targets','range_tiles','backtracking'),description='D12: one cast hits the first creature and up to max_targets '
+                'further creatures (Canary: the chain value callback count). target_filter players skips every creature that is not a '
+                'player (the players-only chain picker); ranged_monsters keeps monsters that are not summons, not reward bosses and '
+                'prefer a target distance above 1. Spell chains: OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md.'),
     'encounter':{**use('EncounterRef'),'description':'D45: the cast has no effect of its own; its effect is the ability_cast rule '
         'of this Encounter, which owns the fight state the script reads (summon counts, counters, arena tiles).'}},
     ('identity','kind','range_tiles','needs_target','needs_direction'),

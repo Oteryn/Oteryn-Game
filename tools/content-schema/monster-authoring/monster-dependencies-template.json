@@ -49,7 +49,10 @@
         "range_tiles": null,
         "backtracking": null,
         "chain_asset_binding": null,
-        "target_filter": null
+        "target_filter": null,
+        "shape": null,
+        "initial_range_tiles": null,
+        "damage_step_percent": null
       },
       "encounter": {
         "family": null,

@@ -50,8 +50,11 @@ TIBIACOM_LIST = SAMPLES / 'tibiacom-spell-list-2026-09-28.json'
 # S15: tibia.com list names that differ from the source spell names (source name -> tibia.com name).
 TIBIACOM_NAMES = {'invisibility': 'invisible', 'paralyze rune': 'paralyse rune', 'monk familiar': 'summon monk familiar'}
 OFFICIAL = ROOT / 'official-changes.json'
+# S23: accepted chain parameters of player spells (OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md).
+CHAINS = json.loads((ROOT / 'chain-behaviours.json').read_text(encoding='utf-8'))['spells']
+CHAIN_FIELDS = ('max_targets', 'range_tiles', 'backtracking', 'shape', 'initial_range_tiles', 'damage_step_percent')
 CANARY_DECIDES = 'S21: the Canary 15.30 branch decides a Canary/Crystal conflict no wiki or tibia.com states'
-REVISION = 'spell-p2-r8'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level
+REVISION = 'spell-p2-r9'  # r2: S13; r3: S14 (Canary 15.30 branch source and tie vote); r4: S18 presentation; r5: S15 list; r6: wiki spellid; r7: S19 library text; r8: S20 cast options, S21 Canary precedence, S22 Wheel level; r9: S23 chains
 SOURCES = {'canary': {'repository': 'opentibiabr/canary', 'branch': 'dudantas/fix-tibia-15-30-regressions',
                       'revision': '99902524e052f37574194466c2949c576e4ab269', 'tag': 'canary-99902524'},  # S14
            'crystal': {'repository': 'zimbadev/crystalserver', 'revision': 'ff7ede593c69d4c658b382c97443e8155926924a',
@@ -284,7 +287,7 @@ class Execution:
     def __init__(self, source, root):
         self.source, self.root = source, root
         self.converter = canary_batch.Converter(root, {}, {}, {}, {})
-        self.converter.spell_scripts = spell_scripts.SpellScripts(root)
+        self.converter.spell_scripts = spell_scripts.SpellScripts(root, player_chains=True)
         self.converter.pending_definitions = set()
         self.tag = SOURCES[source]['tag']
         self.canonical = self.converter  # S18: replaced by the Canary 15.30 tables once both sources exist
@@ -334,11 +337,21 @@ class Execution:
         keys = [key] if len(order) == 1 else [f'{key}/variant-{n}' for n in range(1, len(order) + 1)]
         for ability_key, combat_index in zip(keys, order):
             local = []
+            combat = info['combats'][combat_index]
+            chain = None
+            if 'CALLBACK_PARAM_CHAINVALUE' in combat['callbacks']:
+                chain = CHAINS.get(str(record['name']).lower())
+                if chain is None:
+                    raise Unresolved(f'{self.source}: a chain spell without accepted chain parameters (S23)')
+                combat = {**combat, 'chain': [chain['max_targets'], chain['range_tiles'], chain['backtracking']]}
             try:
-                self.converter.combat_ability(ability_key, info['combats'][combat_index], geometry, range_tiles, deps,
-                                              lambda a: a, local)
+                self.converter.combat_ability(ability_key, combat, geometry, range_tiles, deps, lambda a: a, local)
             except canary_batch.SpellUnresolved as exc:
                 raise Unresolved(f'{self.source}: {exc}')
+            if chain is not None:
+                ability = next(a for a in deps['abilities'] if a['identity']['key'] == ability_key)
+                ability['chain'].update({k: chain[k] for k in CHAIN_FIELDS[3:] if k in chain})
+                local.append('S23: chain parameters from chain-behaviours.json (' + chain['sources'] + ')')
             notes.update(n.strip() for n in local if n.strip() and 'monster caster' not in n and 'player formula' not in n)
             census_combat = record['combats'][combat_index]
             callbacks = [c for c in census_combat.get('callbacks', []) if 'formula' in c]

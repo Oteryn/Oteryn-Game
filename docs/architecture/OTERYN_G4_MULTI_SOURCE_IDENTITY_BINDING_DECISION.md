@@ -5,6 +5,9 @@
 - Status: owner-directed architecture addendum; protected integration required
 - Protected baseline inspected: `main@88efe885c1b9ff08dc3a33e061d9a63474d67824`
 - Scope: identity/provenance crosswalk only; no runtime/wire ID allocation and no asset redistribution
+- Extension: donor-only Item ids get an additive opaque identity epoch, and the frozen CW2-B1
+  import stays unchanged (owner decisions D96-D97,
+  `reviews/OTERYN_GAME_A8_DONOR_ITEM_IDENTITY_EPOCH_DECISION_2026-09-28.md`).
 
 ## Decision
 
