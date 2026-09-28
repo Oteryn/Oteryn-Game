@@ -46,6 +46,10 @@ CANARY_MAP_URL = "https://github.com/opentibiabr/canary/releases/download/v3.6.1
 # (data-otservbr-global/startup/tables at the pinned revision); `*Action` tables key action ids, `*Unique` unique ids.
 CANARY_REVISION_PREFIX = "47dfd51f"
 STARTUP_TABLES = "data-otservbr-global/startup/tables"
+# CrystalServer checkout revision the runtime-assignment grep (resolve_not_found_interactions,
+# --crystalserver-source) is evidenced against; the same zimbadev/crystalserver commit
+# CRYSTALSERVER_MAP_SHA256 below is pinned to.
+CRYSTALSERVER_SOURCE_REVISION = "ff7ede593c69d4c658b382c97443e8155926924a"
 
 
 def startup_assignments(canary: Path) -> dict[tuple[str, int], list[dict[str, Any]]]:
@@ -120,6 +124,141 @@ EXTRA_MAP_NOTES = [
         "loaded_at_startup": False,
         "reason": "Same pattern: quest-triggered Game.loadMap(...) overlays, not startup-loaded.",
     },
+]
+
+# Per-file registry (one entry per actual .otbm under the Canary checkout, not a glob) used to scan
+# for interaction trigger ids that are on neither the main release map nor Canary's startup tables:
+# these are the maps Canary's own Lua loads over the live world at runtime via Game.loadMap(...), or
+# (for world/custom) at startup via CanaryServer::loadMaps. Not downloaded separately: they are part
+# of the same git-tracked Canary checkout the startup tables are read from, so they are pinned by
+# that checkout's revision (CANARY_REVISION_PREFIX) plus each file's own sha256, recorded per-file
+# in the report. `loader` cites the exact Game.loadMap(...) call site(s) (file:line) found by
+# grepping the checkout at that revision, and whether that call runs at server start or is
+# event-triggered (quest progress, a globalevent timer, world-change rotation).
+OVERLAY_MAPS = [
+    {
+        "path": "data-otservbr-global/world/custom/otservbr-custom.otbm",
+        "loaded_at_startup": True,
+        "loader": "src/canary_server.cpp:346 CanaryServer::loadMaps -> g_game().loadCustomMaps("
+        "DATA_DIRECTORY/world/custom/) (toggleMapCustom=true, config.lua.dist default); every "
+        "*.otbm under world/custom/ loads right after the main map, at server start.",
+    },
+    {
+        "path": "data-otservbr-global/world/annual_events/winterlight_solstice/island.otbm",
+        "loaded_at_startup": False,
+        "loader": "no Game.loadMap(...)/loadCustomMaps(...) reference to this path found anywhere "
+        "in scripts/ or src/ at the pinned revision: this overlay appears unwired, not currently "
+        "loaded by any known code path.",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow-empty.otbm",
+        "loaded_at_startup": False,
+        "loader": "lib/quests/soul_war.lua mapsPath.empty; loaded by "
+        "scripts/quests/soul_war/soul_war_mechanics.lua:304 and "
+        "scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:78 (event-triggered: "
+        "the Ebb and Flow water-level cycle).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow-inundate.otbm",
+        "loaded_at_startup": False,
+        "loader": "lib/quests/soul_war.lua mapsPath.inundate; loaded by "
+        "scripts/quests/soul_war/soul_war_mechanics.lua:306 and "
+        "scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:153 (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow.otbm",
+        "loaded_at_startup": False,
+        "loader": "lib/quests/soul_war.lua mapsPath.ebbFlow; loaded by "
+        "scripts/quests/soul_war/soul_war_mechanics.lua:308 and "
+        "scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:175 (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/ferumbras_ascendant/habitats.otbm",
+        "loaded_at_startup": False,
+        "loader": "data/libs/functions/functions.lua:385, on demand when the Ferumbras habitats "
+        "are reset (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/the_dream_courts/alptramun.otbm",
+        "loaded_at_startup": False,
+        "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, "
+        "one of dayConfig.map's daily rotation targets (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/the_dream_courts/izcandar_the_banished.otbm",
+        "loaded_at_startup": False,
+        "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, "
+        "one of dayConfig.map's daily rotation targets (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/the_dream_courts/malofur_mangrinder.otbm",
+        "loaded_at_startup": False,
+        "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, "
+        "one of dayConfig.map's daily rotation targets (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/the_dream_courts/maxxenius.otbm",
+        "loaded_at_startup": False,
+        "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, "
+        "one of dayConfig.map's daily rotation targets (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/the_dream_courts/plagueroot.otbm",
+        "loaded_at_startup": False,
+        "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, "
+        "one of dayConfig.map's daily rotation targets (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/illusion.otbm",
+        "loaded_at_startup": False,
+        "loader": "scripts/quests/cults_of_tibia/actions_misguided.lua:33 (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/reality.otbm",
+        "loaded_at_startup": False,
+        "loader": "scripts/quests/cults_of_tibia/actions_misguided.lua:36 (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/world_changes/full_moon/final.otbm",
+        "loaded_at_startup": False,
+        "loader": "lib/quests/grimvale.lua:15 (event-triggered).",
+    },
+    {
+        "path": "data-otservbr-global/world/world_changes/full_moon/middle.otbm",
+        "loaded_at_startup": False,
+        "loader": "scripts/quests/grimvale/globalevents_grimvale_feroxa.lua:18, via "
+        "addEvent(Game.loadMap, ...) (event-triggered, 30-minute delay).",
+    },
+    *[
+        {
+            "path": f"data-otservbr-global/world/world_changes/fury_gates/{town}.otbm",
+            "loaded_at_startup": False,
+            "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's "
+            "rotation targets (event-triggered).",
+        }
+        for town in (
+            "abdendriel", "ankrahmun", "carlin", "darashia", "edron",
+            "kazordoon", "libertybay", "porthope", "thais", "venore",
+        )
+    ],
+    *[
+        {
+            "path": f"data-otservbr-global/world/world_changes/nightmare_isle/{name}.otbm",
+            "loaded_at_startup": False,
+            "loader": "scripts/world_changes/nightmare_isles.lua:19, one of randomMap.mapName's "
+            "rotation targets (event-triggered).",
+        }
+        for name in ("ankrahmun-north", "darashia-north", "darashia-west")
+    ],
+    *[
+        {
+            "path": f"data-otservbr-global/world/world_changes/oriental_trader/{town}.otbm",
+            "loaded_at_startup": False,
+            "loader": "scripts/world_changes/oriental_trader.lua:62, one of mapName's rotation "
+            "targets (event-triggered).",
+        }
+        for town in ("ankrahmun", "carlin", "libertybay")
+    ],
 ]
 
 # The two open map questions from OTERYN_QUEST_AUTHORING_FORMAT_V1.md §6.
@@ -725,6 +864,168 @@ def check_interactions(tiles: dict[tuple[int, int, int], dict[str, Any]],
     }
 
 
+# --------------------------------------------------------------------------- not-found trigger ids --
+# Resolves whatever check_interactions() above could not: ids on neither the raw release map nor
+# Canary's startup tables. First tried against the overlay maps Canary's own Lua loads over the
+# live world at runtime (OVERLAY_MAPS); anything still unresolved is then looked up as a *runtime*
+# id assignment in both servers' Lua (item:setActionId(id)/setUniqueId(id), or
+# item:setAttribute(ITEM_ATTRIBUTE_ACTIONID|UNIQUEID, id)), which is how quest scripts stamp an id
+# onto an item they create or find at runtime instead of it being baked into any map file.
+def scan_overlay_maps(canary_root: Path, unresolved: dict[tuple[str, int], list[str]]) -> dict[str, Any]:
+    maps_report: list[dict[str, Any]] = []
+    found: dict[str, dict[str, Any]] = {}
+    for spec in OVERLAY_MAPS:
+        path = canary_root / spec["path"]
+        entry = dict(spec)
+        if not path.is_file():
+            entry["present"] = False
+            maps_report.append(entry)
+            continue
+        entry["present"] = True
+        entry["sha256"] = sha256_of(path)
+        idx: dict[tuple[str, int], list] = {key: [] for key in unresolved}
+        try:
+            walk_map(path, set(), idx)
+        except OtbmError as ex:
+            entry["error"] = str(ex)
+            maps_report.append(entry)
+            continue
+        hits = {f"{k[0]}:{k[1]}": sorted(v) for k, v in idx.items() if v}
+        if hits:
+            entry["trigger_ids_found"] = sorted(hits)
+            for key_str, positions in hits.items():
+                found[key_str] = {"map": spec["path"], "positions": positions[:20]}
+        maps_report.append(entry)
+    return {
+        "note": "Overlay .otbm maps Canary's own Lua loads over the live world (at startup for "
+        "world/custom, at runtime for quest/world-change overlays); scanned for whichever trigger "
+        "ids check_interactions could not find on the raw map or in the startup tables. Pinned by "
+        "the Canary checkout revision plus each file's own sha256 (not downloaded separately: they "
+        "are part of the same git-tracked checkout the startup tables come from).",
+        "canary_checkout_revision": CANARY_REVISION_PREFIX,
+        "maps": maps_report,
+        "found": found,
+    }
+
+
+_RUNTIME_ASSIGN_RE = re.compile(
+    r"(?P<fn>setActionId|setUniqueId)\s*\(\s*(?P<n1>\d+)\s*\)"
+    r"|ITEM_ATTRIBUTE_(?P<attr>ACTIONID|UNIQUEID)\s*,\s*(?P<n2>\d+)\s*\)"
+)
+
+
+def scan_runtime_assignments(root: Path) -> dict[tuple[str, int], list[str]]:
+    """('aid'|'uid', n) -> sorted ['relative/path.lua:line', ...] for every literal
+    item:setActionId(n)/item:setUniqueId(n) call or item:setAttribute(ITEM_ATTRIBUTE_ACTIONID|
+    UNIQUEID, n) call under a Lua source tree. Only literal integer arguments are matched (not a
+    named constant), matching what this check can verify without evaluating the script."""
+    hits: dict[tuple[str, int], list[str]] = {}
+    for path in sorted(root.rglob("*.lua")):
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for lineno, line in enumerate(text.splitlines(), 1):
+            for m in _RUNTIME_ASSIGN_RE.finditer(line):
+                if m.group("fn"):
+                    kind = "aid" if m.group("fn") == "setActionId" else "uid"
+                    value = int(m.group("n1"))
+                else:
+                    kind = "aid" if m.group("attr") == "ACTIONID" else "uid"
+                    value = int(m.group("n2"))
+                rel = path.relative_to(root).as_posix()
+                hits.setdefault((kind, value), []).append(f"{rel}:{lineno}")
+    return hits
+
+
+_REGISTRATION_RE = {
+    "aid": r"[:.]aid\s*\(\s*{n}\s*\)",
+    "uid": r"[:.]uid\s*\(\s*{n}\s*\)",
+}
+
+
+def find_registration_lines(root: Path, kind: str, value: int) -> list[str]:
+    """['relative/path.lua:line', ...] where the literal `:aid(value)`/`:uid(value)` MoveEvent/
+    Action registration call itself appears in a Lua source tree (regardless of which server's
+    interaction transcription this id came from), used to tell a genuinely CrystalServer-only
+    trigger apart from one Canary also registers but never assigns to anything."""
+    rx = re.compile(_REGISTRATION_RE[kind].format(n=value))
+    out: list[str] = []
+    for path in sorted(root.rglob("*.lua")):
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for lineno, line in enumerate(text.splitlines(), 1):
+            if rx.search(line):
+                out.append(f"{path.relative_to(root).as_posix()}:{lineno}")
+    return out
+
+
+def resolve_not_found_interactions(
+    not_found: list[dict[str, Any]],
+    canary_root: Path | None,
+    crystalserver_source_root: Path | None,
+) -> dict[str, Any]:
+    unresolved: dict[tuple[str, int], list[str]] = {}
+    for entry in not_found:
+        kind, value = entry["id"].split(":")
+        unresolved[(kind, int(value))] = entry["interactions"]
+
+    overlay_maps: dict[str, Any] | None = None
+    if canary_root is not None:
+        overlay_maps = scan_overlay_maps(canary_root, unresolved)
+        for key_str in overlay_maps["found"]:
+            kind, value = key_str.split(":")
+            unresolved.pop((kind, int(value)), None)
+
+    script_resolution: dict[str, Any] | None = None
+    if canary_root is not None and crystalserver_source_root is not None:
+        canary_assign = scan_runtime_assignments(canary_root)
+        crystal_assign = scan_runtime_assignments(crystalserver_source_root)
+        assigned_by_script: dict[str, Any] = {}
+        crystalserver_only_script: dict[str, Any] = {}
+        not_found_anywhere: list[str] = []
+        for key in sorted(unresolved):
+            kind, value = key
+            key_str = f"{kind}:{value}"
+            canary_hits = canary_assign.get(key, [])
+            crystal_hits = crystal_assign.get(key, [])
+            if canary_hits or crystal_hits:
+                entry = {}
+                if canary_hits:
+                    entry["canary"] = canary_hits
+                if crystal_hits:
+                    entry["crystalserver"] = crystal_hits
+                assigned_by_script[key_str] = entry
+                continue
+            canary_registration = find_registration_lines(canary_root, kind, value)
+            crystal_registration = find_registration_lines(crystalserver_source_root, kind, value)
+            if not canary_registration and crystal_registration:
+                crystalserver_only_script[key_str] = {
+                    "reason": "no :aid()/:uid() registration for this id exists anywhere in the "
+                    "Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+                    "crystalserver_registration": crystal_registration,
+                }
+            else:
+                not_found_anywhere.append(key_str)
+        script_resolution = {
+            "note": "For ids the overlay maps did not resolve: grepped both servers' Lua for the "
+            "literal runtime id-assignment calls (setActionId/setUniqueId/setAttribute with "
+            "ITEM_ATTRIBUTE_ACTIONID|UNIQUEID). assigned_by_script cites the assigning file:line; "
+            "crystalserver_only_script means the id is never registered anywhere in Canary at all "
+            "(CrystalServer-only content, not a Canary gap); not_found_anywhere means neither "
+            "server's Lua assigns it anywhere this check can see, so the registration is likely a "
+            "dead script.",
+            "crystalserver_source_revision": CRYSTALSERVER_SOURCE_REVISION,
+            "assigned_by_script": assigned_by_script,
+            "crystalserver_only_script": crystalserver_only_script,
+            "not_found_anywhere": sorted(not_found_anywhere),
+        }
+
+    return {"overlay_maps": overlay_maps, "runtime_script_resolution": script_resolution}
+
+
 # --------------------------------------------------------------------------- map decisions --
 def check_map_decisions(
     canary_tiles: dict[tuple[int, int, int], dict[str, Any]],
@@ -794,6 +1095,13 @@ def main() -> int:
     )
     parser.add_argument("--canary", type=Path, default=None,
                         help="Canary checkout at the pinned revision, for the startup id tables")
+    parser.add_argument(
+        "--crystalserver-source",
+        type=Path,
+        default=None,
+        help="CrystalServer checkout at the pinned revision (CRYSTALSERVER_SOURCE_REVISION), for "
+        "the runtime id-assignment grep on trigger ids still not found after the overlay maps",
+    )
     args = parser.parse_args()
 
     canary_path: Path = args.canary_map
@@ -868,6 +1176,29 @@ def main() -> int:
             {WOTE_CRYSTALSERVER_POSITION, CORPSE_CHEST_POSITION, WOTE_CANARY_ONLY_POSITION},
         )
 
+    interactions_report = check_interactions(canary_tiles, id_index, startup)
+    resolution = resolve_not_found_interactions(
+        interactions_report["not_found"], args.canary, args.crystalserver_source
+    )
+    interactions_report["overlay_maps"] = resolution["overlay_maps"]
+    interactions_report["runtime_script_resolution"] = resolution["runtime_script_resolution"]
+
+    by_resolution = {
+        "found_on_raw_map": interactions_report["trigger_ids_found_on_map"],
+        "assigned_at_startup": interactions_report["trigger_ids_assigned_at_startup"],
+        "found_on_overlay_map": len(resolution["overlay_maps"]["found"]) if resolution["overlay_maps"] else 0,
+    }
+    if resolution["runtime_script_resolution"] is not None:
+        script = resolution["runtime_script_resolution"]
+        by_resolution["assigned_by_script"] = len(script["assigned_by_script"])
+        by_resolution["crystalserver_only_script"] = len(script["crystalserver_only_script"])
+        by_resolution["not_found_anywhere"] = len(script["not_found_anywhere"])
+    else:
+        remaining = interactions_report["trigger_ids_not_found_on_map"] - by_resolution["found_on_overlay_map"]
+        by_resolution["unresolved_pending_script_grep"] = remaining
+    by_resolution["total"] = sum(by_resolution.values())
+    interactions_report["trigger_ids_by_resolution"] = by_resolution
+
     report = {
         "format": "oteryn-ots-map-check-v1",
         "classification": "OTS_HYPOTHESIS_ONLY",
@@ -890,7 +1221,7 @@ def main() -> int:
         "extra_maps_canary_config_references": EXTRA_MAP_NOTES,
         "chests": check_chests(canary_tiles),
         "doors": check_doors(canary_tiles),
-        "interactions": check_interactions(canary_tiles, id_index, startup),
+        "interactions": interactions_report,
         "map_decisions": check_map_decisions(canary_tiles, crystalserver_tiles),
     }
 

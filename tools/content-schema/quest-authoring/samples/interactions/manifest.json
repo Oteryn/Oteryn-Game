@@ -28,10 +28,10 @@
     },
     "quest_children_naming_a_transition": 215,
     "unresolved_lines": 1908,
-    "unresolved_conditions": 1916,
+    "unresolved_conditions": 1786,
     "by_status": {
-      "mapped": 256,
-      "unresolved_semantics": 965
+      "mapped": 268,
+      "unresolved_semantics": 953
     }
   },
   "undeclared_progress_tracks": [
@@ -799,7 +799,7 @@
     },
     {
       "destination": "canary:interaction/bigfoot_burden/actions_extractor",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -913,7 +913,7 @@
     },
     {
       "destination": "canary:interaction/bigfoot_burden/actions_pig",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -16360,7 +16360,7 @@
     },
     {
       "destination": "canary:interaction/the_order_of_lion/creatureevent_commander_kills_usurper_commander_death",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in canary",
       "sources": [
         {
@@ -16438,7 +16438,7 @@
     },
     {
       "destination": "crystalserver:interaction/the_order_of_lion_quest/creaturescripts_commander_kills_usurper_commander_death",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "present only in crystalserver",
       "sources": [
         {
@@ -17798,7 +17798,7 @@
     },
     {
       "destination": "canary:interaction/the_queen_of_the_banshees/movement_5_fifth_seal_path",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -17988,7 +17988,7 @@
     },
     {
       "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_spider_lair_hole",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -18026,7 +18026,7 @@
     },
     {
       "destination": "canary:interaction/the_rookie_guard/mission05_web_terror_spider_web",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -18083,7 +18083,7 @@
     },
     {
       "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_skinning_knife",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -18140,7 +18140,7 @@
     },
     {
       "destination": "canary:interaction/the_rookie_guard/mission06_run_like_wolf_war_wolf_den_hole",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -18311,7 +18311,7 @@
     },
     {
       "destination": "canary:interaction/the_rookie_guard/mission09_rock_troll_tunnel_hole",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {
@@ -18406,7 +18406,7 @@
     },
     {
       "destination": "canary:interaction/the_rookie_guard/mission11_sweet_poison_special_flask",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "the servers differ; D25 decides for canary (equivalent: Two storage reads merged into one inline condition; same mission-state check.)",
       "sources": [
         {
@@ -18653,7 +18653,7 @@
     },
     {
       "destination": "canary:interaction/the_rookie_guard/mission12_into_fortress_poison_flask",
-      "status": "unresolved_semantics",
+      "status": "mapped",
       "resolution": "identical in both servers",
       "sources": [
         {

@@ -4532,7 +4532,541 @@
           "crystalserver:interaction/kilmaresh/actions_tumuloerro"
         ]
       }
-    ]
+    ],
+    "overlay_maps": {
+      "note": "Overlay .otbm maps Canary's own Lua loads over the live world (at startup for world/custom, at runtime for quest/world-change overlays); scanned for whichever trigger ids check_interactions could not find on the raw map or in the startup tables. Pinned by the Canary checkout revision plus each file's own sha256 (not downloaded separately: they are part of the same git-tracked checkout the startup tables come from).",
+      "canary_checkout_revision": "47dfd51f",
+      "maps": [
+        {
+          "path": "data-otservbr-global/world/custom/otservbr-custom.otbm",
+          "loaded_at_startup": true,
+          "loader": "src/canary_server.cpp:346 CanaryServer::loadMaps -> g_game().loadCustomMaps(DATA_DIRECTORY/world/custom/) (toggleMapCustom=true, config.lua.dist default); every *.otbm under world/custom/ loads right after the main map, at server start.",
+          "present": true,
+          "sha256": "cdaca76caf36567c116bca42a9ca869a3c685a8b50ef014174534a583f7d6d37"
+        },
+        {
+          "path": "data-otservbr-global/world/annual_events/winterlight_solstice/island.otbm",
+          "loaded_at_startup": false,
+          "loader": "no Game.loadMap(...)/loadCustomMaps(...) reference to this path found anywhere in scripts/ or src/ at the pinned revision: this overlay appears unwired, not currently loaded by any known code path.",
+          "present": true,
+          "sha256": "1e718e01e53be8aa35df9c0c6a67797ffdd6816e4e38c59a0f46263b772594cf"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow-empty.otbm",
+          "loaded_at_startup": false,
+          "loader": "lib/quests/soul_war.lua mapsPath.empty; loaded by scripts/quests/soul_war/soul_war_mechanics.lua:304 and scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:78 (event-triggered: the Ebb and Flow water-level cycle).",
+          "present": true,
+          "sha256": "6b52ade34776b4f3ba1ccc047233940bffb3f4f88667de8d3d79f982f79b05ce"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow-inundate.otbm",
+          "loaded_at_startup": false,
+          "loader": "lib/quests/soul_war.lua mapsPath.inundate; loaded by scripts/quests/soul_war/soul_war_mechanics.lua:306 and scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:153 (event-triggered).",
+          "present": true,
+          "sha256": "f99cee95f55ec67526115def195f9d81fdcb4e487e8dadd2d63fae3f1d1ee726"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/soul_war/ebb_and_flow/ebb-flow.otbm",
+          "loaded_at_startup": false,
+          "loader": "lib/quests/soul_war.lua mapsPath.ebbFlow; loaded by scripts/quests/soul_war/soul_war_mechanics.lua:308 and scripts/quests/soul_war/globalevent-ebb_and_flow_change_maps.lua:175 (event-triggered).",
+          "present": true,
+          "sha256": "38725fb32054e71b9c736d4ac5a8c0072ef24ff2efb64c3b01a6a5e919eb2d7e"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/ferumbras_ascendant/habitats.otbm",
+          "loaded_at_startup": false,
+          "loader": "data/libs/functions/functions.lua:385, on demand when the Ferumbras habitats are reset (event-triggered).",
+          "present": true,
+          "sha256": "5877b9fd7ce8ea72acfe2fc27a5f60a79f7fab055618366cc82451cca713a061"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/alptramun.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "a1af2ddb2edf30fb0cafdd7e4b1efb36e6f7296ebbc19704857440ad886eb1cf"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/izcandar_the_banished.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "d728b50d5391fc40d39c7a76a9980a6dc9362ef17eac06a1a43e59e129e8a295"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/malofur_mangrinder.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "83575fa533973bcb1d2da8d554d4ace84cf16e7d4f4f8cad7b551458485d172c"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/maxxenius.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "718073764d4a1e60e391e840d1ed7d7e07927c23e80486b43110b373fbb368da"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/the_dream_courts/plagueroot.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/the_dream_courts_quest/globalevents_the_dream_courts.lua:21, one of dayConfig.map's daily rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "d15d4bebce14e464819219e581e0e08b25e0608fd1d83bc21058607f51ae8b8d"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/illusion.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/cults_of_tibia/actions_misguided.lua:33 (event-triggered).",
+          "present": true,
+          "sha256": "5cfc549bf7632a977291c753bad894594c2160f5816d83f117c7dad5a65b4e46"
+        },
+        {
+          "path": "data-otservbr-global/world/quest/cults_of_tibia/misguided/reality.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/cults_of_tibia/actions_misguided.lua:36 (event-triggered).",
+          "present": true,
+          "sha256": "03dc34e946dff2d065ffbfdd455f2f6537b916757d0d4a6037d1005bb2fe7f78"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/full_moon/final.otbm",
+          "loaded_at_startup": false,
+          "loader": "lib/quests/grimvale.lua:15 (event-triggered).",
+          "present": true,
+          "sha256": "502015045cfa0e27442c67cc352a1570fbffb2f0c1c5f3b29c8cbd1ed6d36629"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/full_moon/middle.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/quests/grimvale/globalevents_grimvale_feroxa.lua:18, via addEvent(Game.loadMap, ...) (event-triggered, 30-minute delay).",
+          "present": true,
+          "sha256": "c322389e8619bc18789ddc97d9f7d960c0dec04d369cdbe926d92d6c6029cf53"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/abdendriel.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "54150cb97714dd0378cf92f0f7d748fb977bc8d9bb8339beb99f36b7391eb81b"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/ankrahmun.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "73fb96a28a97777b1162f56f1814cd2c2a039edcd13cff2dcf8ec8d883b86398"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/carlin.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "adc06e12aff7eec1c17ea2d0f5eab26d9a79830cc55e2a27fc8f11526a4c104c"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/darashia.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "e45ff336e021d4293e74e9a68ee21e6139de94fdd398bbf46b987c64df96b9a8"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/edron.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "1d79a68bd3a03f75a5569d46cbf5fda897ceba6fdd07821dc4fd39b48d91db47"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/kazordoon.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "f9bb26a910ac417800c2e55d4f5d157206def91a3bb921626827829d73f0fe86"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/libertybay.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "8839e5b21ed6fbb566de9c5a480f2690078608437d143e9003c061d3b81c7829"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/porthope.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "cde3621c0e5cf3fc5f0fc86b373ff981c2bb8282f46c368bd7d1968fa3287f3d"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/thais.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "87da7cc3229327313d063ec3e52c69e0e08da6ce491efc697ba230dc8426be18"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/fury_gates/venore.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/fury_gates.lua:28, one of selectedGate.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "9679e8a15e9d29f67cd291ef26a6fe7a72b766a22926a371abf6b1784fe31fa9"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/nightmare_isle/ankrahmun-north.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/nightmare_isles.lua:19, one of randomMap.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "81d174a520c7e0dcf0b1ce83f9203104b2a65da6fc5e6807406b5d06fefc1c42"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/nightmare_isle/darashia-north.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/nightmare_isles.lua:19, one of randomMap.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "8fdf5184da45afa00e70f9b38cd2a14ec1a9b2240304dd343f111c46457af725"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/nightmare_isle/darashia-west.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/nightmare_isles.lua:19, one of randomMap.mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "92dbd3254c10dac5cf9111aa99c5f5ce257a87ce1c10b992a8d5b598a40185c1"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/oriental_trader/ankrahmun.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/oriental_trader.lua:62, one of mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "6300477cb81e36237436d02d835f6b8390c602685dbafa6cd955c311b271b167"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/oriental_trader/carlin.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/oriental_trader.lua:62, one of mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "ee767080d637c6352c7facd47a729101396596a9d1b88f7b22daf2ab9076a292"
+        },
+        {
+          "path": "data-otservbr-global/world/world_changes/oriental_trader/libertybay.otbm",
+          "loaded_at_startup": false,
+          "loader": "scripts/world_changes/oriental_trader.lua:62, one of mapName's rotation targets (event-triggered).",
+          "present": true,
+          "sha256": "56d618bc23e51d73d52d2d100d768cb7d36c96229ed38f4983b94e9ae9fa08f6"
+        }
+      ],
+      "found": {}
+    },
+    "runtime_script_resolution": {
+      "note": "For ids the overlay maps did not resolve: grepped both servers' Lua for the literal runtime id-assignment calls (setActionId/setUniqueId/setAttribute with ITEM_ATTRIBUTE_ACTIONID|UNIQUEID). assigned_by_script cites the assigning file:line; crystalserver_only_script means the id is never registered anywhere in Canary at all (CrystalServer-only content, not a Canary gap); not_found_anywhere means neither server's Lua assigns it anywhere this check can see, so the registration is likely a dead script.",
+      "crystalserver_source_revision": "ff7ede593c69d4c658b382c97443e8155926924a",
+      "assigned_by_script": {
+        "aid:5580": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua:5"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/cults_of_tibia/creaturescripts_carlin_vortex_spawn.lua:5"
+          ]
+        },
+        "aid:5595": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/cults_of_tibia/creaturescripts_sandking.lua:115"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/cults_of_tibia/creaturescripts_sandking.lua:115"
+          ]
+        },
+        "aid:9032": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua:47"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/dreamers_challenge_quest/actions_tic_tac_teleport.lua:47"
+          ]
+        },
+        "aid:26665": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/forgotten_knowledge/creaturescripts_replica_servants.lua:25"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/forgotten_knowledge/creaturescripts_replica_servants.lua:25"
+          ]
+        },
+        "aid:27830": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/forgotten_knowledge/actions_plant.lua:489"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/forgotten_knowledge/actions_plant.lua:489"
+          ]
+        },
+        "aid:34200": {
+          "canary": [
+            "data-otservbr-global/scripts/spells/monster/mazoran_fire.lua:948"
+          ],
+          "crystalserver": [
+            "data-crystal/scripts/spells/monster/mazoran_fire.lua:948",
+            "data-global/scripts/spells/monster/mazoran_fire.lua:948"
+          ]
+        },
+        "aid:50001": {
+          "crystalserver": [
+            "data-global/monster/quests/rotten_blood_quest/bakragore.lua:271",
+            "data-global/monster/quests/rotten_blood_quest/chagorz.lua:253",
+            "data-global/monster/quests/rotten_blood_quest/vemiath.lua:263",
+            "data-global/scripts/quests/rotten_blood_quest/test_teleport_command.lua:44"
+          ]
+        },
+        "aid:53821": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:69",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:70"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:69",
+            "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:70"
+          ]
+        },
+        "aid:53822": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:70",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:71"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:70",
+            "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:71"
+          ]
+        },
+        "aid:53823": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:71",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:72"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:71",
+            "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:72"
+          ]
+        },
+        "aid:53824": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:72",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:73",
+            "data-otservbr-global/scripts/quests/ferumbras_ascension/movements_red_gem.lua:73"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/ferumbras_ascension/movements_blue_gem.lua:72",
+            "data-global/scripts/quests/ferumbras_ascension/movements_green_gem.lua:73",
+            "data-global/scripts/quests/ferumbras_ascension/movements_red_gem.lua:73"
+          ]
+        },
+        "aid:57233": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua:72"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/dangerous_depth/creaturescripts_lost_exile_task.lua:72"
+          ]
+        },
+        "aid:57243": {
+          "canary": [
+            "data-otservbr-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:441",
+            "data-otservbr-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:476",
+            "data-otservbr-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:511"
+          ],
+          "crystalserver": [
+            "data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:441",
+            "data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:476",
+            "data-global/scripts/quests/dangerous_depth/actions_using_crystals.lua:511"
+          ]
+        }
+      },
+      "crystalserver_only_script": {
+        "aid:4953": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua:62"
+          ]
+        },
+        "aid:4954": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission09.lua:89"
+          ]
+        },
+        "aid:4955": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission11.lua:66"
+          ]
+        },
+        "aid:4968": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission12.lua:121"
+          ]
+        },
+        "aid:4969": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua:111"
+          ]
+        },
+        "aid:4970": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission02.lua:143"
+          ]
+        },
+        "aid:12108": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/the_ancient_tombs/movements_oasis_lever_door.lua:14"
+          ]
+        },
+        "aid:25030": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/movements_mission05.lua:29"
+          ]
+        },
+        "aid:25031": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/movements_mission11.lua:35"
+          ]
+        },
+        "aid:25032": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/movements_mission12.lua:70"
+          ]
+        },
+        "aid:34065": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:65"
+          ]
+        },
+        "aid:34101": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:30"
+          ]
+        },
+        "aid:34120": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/actions_putrefactory.lua:14"
+          ]
+        },
+        "aid:35508": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:43"
+          ]
+        },
+        "aid:47501": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:75"
+          ]
+        },
+        "aid:47502": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/a_pirates_tail_quest/actions_cheesy_key.lua:107"
+          ]
+        },
+        "aid:47949": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/movements_fields.lua:71"
+          ]
+        },
+        "aid:47953": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/rotten_blood_quest/creaturescripts_putrefactory-x.lua:223"
+          ]
+        },
+        "aid:57235": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/action_telas_teleport.lua:40"
+          ]
+        },
+        "aid:57236": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/shadows_of_yalahar_quest/actions_mission13.lua:43"
+          ]
+        },
+        "aid:57237": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/the_isle_of_evil_quest/actions_lever_teleport.lua:20"
+          ]
+        },
+        "uid:14043": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/blood_brothers_quest/actions_castle_book.lua:40"
+          ]
+        },
+        "uid:14052": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/blood_brothers_quest/actions_blood_goblet.lua:18"
+          ]
+        },
+        "uid:57504": {
+          "reason": "no :aid()/:uid() registration for this id exists anywhere in the Canary checkout; CrystalServer registers and only CrystalServer implements it.",
+          "crystalserver_registration": [
+            "data-global/scripts/quests/kilmaresh/actions_books.lua:13"
+          ]
+        }
+      },
+      "not_found_anywhere": [
+        "aid:10102",
+        "aid:12441",
+        "aid:14561",
+        "aid:19910",
+        "aid:26667",
+        "aid:34301",
+        "aid:36568",
+        "aid:36569",
+        "aid:40532",
+        "aid:47710",
+        "aid:4901",
+        "aid:4951",
+        "aid:50111",
+        "aid:50161",
+        "aid:51394",
+        "aid:57303",
+        "aid:9029",
+        "aid:9299",
+        "uid:24850",
+        "uid:57518",
+        "uid:57525",
+        "uid:57526",
+        "uid:57527",
+        "uid:57528",
+        "uid:57529",
+        "uid:57530",
+        "uid:57543",
+        "uid:57544"
+      ]
+    },
+    "trigger_ids_by_resolution": {
+      "found_on_raw_map": 160,
+      "assigned_at_startup": 124,
+      "found_on_overlay_map": 0,
+      "assigned_by_script": 13,
+      "crystalserver_only_script": 24,
+      "not_found_anywhere": 28,
+      "total": 349
+    }
   },
   "map_decisions": {
     "corpse_chest": {

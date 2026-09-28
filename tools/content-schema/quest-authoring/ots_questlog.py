@@ -23,7 +23,7 @@ from pathlib import Path
 
 import lua_tables
 import lua_writers
-from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, quest_key, ref, slug, text_ref, unused_decisions, wiki_matcher
+from ots_chests import CONFLICT_DECISIONS, REVISION, ROOT, SOURCES, check_checkout, decided, git_blob, quest_key, ref, requirements_counts, requirements_of, slug, text_ref, unused_decisions, wiki_matcher
 
 
 
@@ -184,9 +184,7 @@ def script_only_quests(coverage):
         quest = {'identity': {'key': key, 'revision': REVISION}, 'display_name': wiki['title'],
                  'kind': 'script_only', 'shown_in_quest_log': False,
                  'wiki': {k: wiki[k] for k in ('title', 'pageid', 'revid')}, 'claims': []}
-        requirements = {f: wiki[f] for f in ('premium', 'lvl') if wiki.get(f)}
-        if requirements:
-            quest['requirements_from_wiki'] = requirements
+        quest.update(requirements_of(wiki))
         quests.append(quest)
     return quests
 
@@ -331,9 +329,7 @@ def build(repos, chests_dir, doors_dir, coverage):
                  'missions': missions, 'claims': [], 'gates': []}
         if wiki:
             quest['wiki'] = {k: wiki[k] for k in ('title', 'pageid', 'revid')}
-            requirements = {f: wiki[f] for f in ('premium', 'lvl') if wiki.get(f)}
-            if requirements:
-                quest['requirements_from_wiki'] = requirements
+            quest.update(requirements_of(wiki))
         storyline[key] = quest
 
     # link claims and gates: through their quest link, or through a track one of the quest's missions uses
@@ -351,16 +347,22 @@ def build(repos, chests_dir, doors_dir, coverage):
             storyline[owner]['gates'].append(ref('Gate', gate['identity']['key']))
 
     catalogue = list(storyline.values())
+    script_only = script_only_quests(coverage)
+    script_only_by_key = {q['identity']['key']: q for q in script_only}
     absorbed = []
     for key, quest in sorted(reward_only.items()):
         if key in storyline:
             absorbed.append(key)
+        elif key in script_only_by_key:
+            # a curated chest link (§6, chest_quest_links.json) named the same quest script_quests.json
+            # already curated from its script directory: the script owns the identity, the chest its claims
+            absorbed.append(key)
+            script_only_by_key[key]['claims'].extend(quest['claims'])
         else:
             catalogue.append(quest)
-    script_only = script_only_quests(coverage)
     for quest in script_only:
         key = quest['identity']['key']
-        if key in storyline or key in reward_only:
+        if key in storyline:
             raise SystemExit(f'script_quests.json: {key} collides with an existing quest')
         catalogue.append(quest)
     catalogue.sort(key=lambda q: q['identity']['key'])
@@ -409,6 +411,7 @@ def build(repos, chests_dir, doors_dir, coverage):
             'script_only_quests': len(script_only),
             'catalogue_quests': len(catalogue),
             'by_status': dict(sorted(counts.items())),
+            'requirements_parsed': requirements_counts(catalogue),
         },
         'reward_only_absorbed': absorbed,
         'entries': sorted(manifest_entries, key=lambda e: json.dumps(e, sort_keys=True)),

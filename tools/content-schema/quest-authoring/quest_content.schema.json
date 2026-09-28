@@ -67,7 +67,7 @@
         "label": {"type": ["string", "null"]},
         "section": {"type": ["string", "null"]},
         "quest": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
-        "quest_link_basis": {"enum": ["kv_quest_name", "storage_key", "label", null]},
+        "quest_link_basis": {"enum": ["kv_quest_name", "storage_key", "label", "curated", null]},
         "quest_candidate_from_section": {"oneOf": [{"$ref": "#/$defs/ref"}, {"type": "null"}]},
         "claim": {
           "type": "object", "additionalProperties": false, "required": ["per", "repeat"],
@@ -189,8 +189,20 @@
           "properties": {"title": {"type": "string"}, "pageid": {"type": "integer"}, "revid": {"type": "integer"}}
         },
         "requirements_from_wiki": {
+          "description": "The wiki infobox premium/lvl fields, as recorded (evidence): not yet typed, and not always a clean single value.",
           "type": "object", "additionalProperties": false,
           "properties": {"premium": {"type": "string"}, "lvl": {"type": "string"}}
+        },
+        "requirements": {
+          "description": "The typed sibling of requirements_from_wiki: null (never a guess) for anything requirements_unparsed explains.",
+          "type": "object", "additionalProperties": false,
+          "properties": {"premium": {"type": ["boolean", "null"]}, "min_level": {"type": ["integer", "null"], "minimum": 0}}
+        },
+        "requirements_unparsed": {
+          "description": "Why a requirements field is null despite requirements_from_wiki recording a value: a range or open-ended '+', a '?' marker, a parenthetical or '*' footnote, literal 'none'/'varies', or an unrecognized form.",
+          "type": "object", "additionalProperties": false,
+          "properties": {"premium": {"enum": ["partial", "uncertain", "unrecognized"]},
+                         "min_level": {"enum": ["range", "note", "uncertain", "none", "varies", "unrecognized"]}}
         },
         "claims": {"type": "array", "items": {"$ref": "#/$defs/ref"}},
         "source_name": {"type": "string", "minLength": 1},

@@ -23,6 +23,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -48,11 +52,20 @@
           "family": "RewardClaim",
           "key": "canary:reward-claim/kv/alawars_vault2",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id4502",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -78,6 +91,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -143,6 +160,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -168,6 +189,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -193,6 +218,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -216,6 +245,16 @@
         },
         {
           "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/bear_chest2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/bear_chest3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
           "key": "canary:reward-claim/quest/key/id4601",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
@@ -223,6 +262,39 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/beggar_outfits_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Beggar Outfits Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Beggar Outfits Quest",
+        "pageid": 8559,
+        "revid": 1090688
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/simon_the_beggars_favorite_staff",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -241,13 +313,32 @@
       "claims": [
         {
           "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/behemothquest1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
           "key": "canary:reward-claim/kv/behemothquest2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/behemothquest3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/behemothquest4",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
       }
     },
     {
@@ -273,6 +364,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -308,6 +403,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "50"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 50
       }
     },
     {
@@ -333,6 +432,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -358,6 +461,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -393,6 +500,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -423,6 +534,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "32"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 32
       }
     },
     {
@@ -448,6 +563,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -473,6 +592,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "35"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 35
       }
     },
     {
@@ -503,6 +626,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "60"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 60
       }
     },
     {
@@ -528,6 +655,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "8"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 8
       }
     },
     {
@@ -553,6 +684,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "40"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 40
       }
     },
     {
@@ -578,6 +713,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -613,6 +752,13 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "?"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "uncertain"
       }
     },
     {
@@ -643,6 +789,13 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "2 - 20"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "range"
       }
     },
     {
@@ -668,6 +821,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -718,6 +875,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "50"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 50
       }
     },
     {
@@ -753,6 +914,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "100"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 100
       }
     },
     {
@@ -783,6 +948,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "60"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 60
       }
     },
     {
@@ -803,11 +972,35 @@
           "family": "RewardClaim",
           "key": "canary:reward-claim/kv/devilhemet1",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/devilhemet2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/devilhemet3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3610",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3667",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "30"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 30
       }
     },
     {
@@ -838,6 +1031,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -863,6 +1060,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -888,11 +1089,25 @@
           "family": "RewardClaim",
           "key": "canary:reward-claim/kv/draconia2",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3002",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3008",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "25"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 25
       }
     },
     {
@@ -918,6 +1133,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -948,6 +1167,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -988,6 +1211,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1013,6 +1240,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1043,6 +1274,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1068,6 +1303,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1086,6 +1325,16 @@
       "claims": [
         {
           "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3800",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3802",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
           "key": "canary:reward-claim/quest/u6_1/emperors_cookies/rewards/cookies",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
@@ -1093,6 +1342,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1118,6 +1371,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1138,11 +1395,20 @@
           "family": "RewardClaim",
           "key": "canary:reward-claim/kv/fanfare",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3520",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1178,6 +1444,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "150"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 150
       }
     },
     {
@@ -1208,6 +1478,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "60"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 60
       }
     },
     {
@@ -1233,6 +1507,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1251,13 +1529,52 @@
       "claims": [
         {
           "family": "RewardClaim",
+          "key": "canary:reward-claim/halls_of_hope/reward1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/halls_of_hope/reward2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/halls_of_hope/reward3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/halls_of_hope/reward4",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/halls_of_hope/reward5",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
           "key": "canary:reward-claim/kv/ghostsilver_lantern_quest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/imbuing_crystal_quest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/painting_of_agirl_quest",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1283,6 +1600,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1308,11 +1629,20 @@
           "family": "RewardClaim",
           "key": "canary:reward-claim/kv/ghoulroom2",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3600",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1343,6 +1673,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1378,6 +1712,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "30"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 30
       }
     },
     {
@@ -1403,6 +1741,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1438,6 +1780,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1463,6 +1809,39 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/inukaya_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Inukaya Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Inukaya Quest",
+        "pageid": 17223,
+        "revid": 842352
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/inukaya",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1488,6 +1867,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1513,6 +1896,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1538,6 +1925,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1563,6 +1954,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1586,6 +1981,11 @@
         },
         {
           "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/katanacorpse2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
           "key": "canary:reward-claim/quest/key/id4603",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
@@ -1593,6 +1993,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1618,6 +2022,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1673,6 +2081,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "40"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 40
       }
     },
     {
@@ -1698,6 +2110,39 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/lion_trophy_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Lion Trophy Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Lion Trophy Quest",
+        "pageid": 17387,
+        "revid": 842366
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/formorgar_mines",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1723,6 +2168,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1758,6 +2207,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1793,6 +2246,39 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "40"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/medusa_shield_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Medusa Shield Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Medusa Shield Quest",
+        "pageid": 3793,
+        "revid": 771196
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_3/the_medusa_quest",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "60"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 60
       }
     },
     {
@@ -1813,11 +2299,25 @@
           "family": "RewardClaim",
           "key": "canary:reward-claim/kv/minohell1",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/minohell2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/minohell3",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1843,6 +2343,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1868,6 +2372,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -1893,6 +2401,37 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "40"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 40
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/newhaven_legion_helmet_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Newhaven Legion Helmet Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Newhaven Legion Helmet Quest",
+        "pageid": 111269,
+        "revid": 1204291
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/legiondawnport",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no"
+      },
+      "requirements": {
+        "premium": false
       }
     },
     {
@@ -1918,6 +2457,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -1948,6 +2491,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "35"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 35
       }
     },
     {
@@ -1983,6 +2530,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "40"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 40
       }
     },
     {
@@ -2008,6 +2559,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2033,6 +2588,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2063,6 +2622,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2093,6 +2656,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2118,6 +2685,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2143,6 +2714,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2168,6 +2743,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2186,6 +2765,11 @@
       "claims": [
         {
           "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/powerbolt1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
           "key": "canary:reward-claim/kv/powerbolt2",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
@@ -2193,6 +2777,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2223,6 +2811,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2248,6 +2840,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2283,6 +2879,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "60"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 60
       }
     },
     {
@@ -2303,11 +2903,20 @@
           "family": "RewardClaim",
           "key": "canary:reward-claim/kv/ringquest1",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/ringquest2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2333,6 +2942,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2403,6 +3016,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "50"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 50
       }
     },
     {
@@ -2428,6 +3045,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2471,6 +3092,11 @@
         },
         {
           "family": "RewardClaim",
+          "key": "crystalserver:reward-claim/kv/golem_wrench",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
           "key": "crystalserver:reward-claim/kv/old_power_core",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         },
@@ -2493,6 +3119,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "75"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 75
       }
     },
     {
@@ -2518,6 +3148,39 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/short_sword_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Short Sword Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Short Sword Quest",
+        "pageid": 2729,
+        "revid": 1044891
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/shortswordbook",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2543,6 +3206,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2568,6 +3235,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2593,6 +3264,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2618,6 +3293,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2638,11 +3317,20 @@
           "family": "RewardClaim",
           "key": "canary:reward-claim/kv/stealhring1",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/stealhring2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
       ],
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2683,6 +3371,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2708,6 +3400,78 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/studded_shield_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Studded Shield Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Studded Shield Quest",
+        "pageid": 3213,
+        "revid": 1044893
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/bananafree",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/bananapremium",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/thais_lighthouse_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Thais Lighthouse Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Thais Lighthouse Quest",
+        "pageid": 3159,
+        "revid": 1043475
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/lighthouse1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/lighthouse2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -2733,6 +3497,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "100"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 100
       }
     },
     {
@@ -2763,6 +3531,44 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_desert_dungeon_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Desert Dungeon Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Desert Dungeon Quest",
+        "pageid": 2496,
+        "revid": 1103387
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/desert1",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/desert2",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "20"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 20
       }
     },
     {
@@ -2818,6 +3624,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2868,6 +3678,13 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0 (100 For The Firewalker Boots Part)"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -2898,6 +3715,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -2928,6 +3749,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "100"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 100
       }
     },
     {
@@ -2973,6 +3798,57 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "77*(for the last mission only)"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_outlaw_camp_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The Outlaw Camp Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The Outlaw Camp Quest",
+        "pageid": 3557,
+        "revid": 1043657
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3301",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3302",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3303",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3304",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "45"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 45
       }
     },
     {
@@ -2989,6 +3865,11 @@
         "revid": 889277
       },
       "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/key/id3899",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
         {
           "family": "RewardClaim",
           "key": "canary:reward-claim/quest/u7_24/the_paradox_tower/reward/egg",
@@ -3013,6 +3894,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "30"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 30
       }
     },
     {
@@ -3083,6 +3968,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "80"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 80
       }
     },
     {
@@ -3133,6 +4022,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "60"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 60
       }
     },
     {
@@ -3273,6 +4166,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "250"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 250
       }
     },
     {
@@ -3298,6 +4195,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "20"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 20
       }
     },
     {
@@ -3343,6 +4244,39 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "canary:quest/the_white_raven_monastery_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "The White Raven Monastery Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": true,
+      "wiki": {
+        "title": "The White Raven Monastery Quest",
+        "pageid": 3766,
+        "revid": 756263
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u7_24/family_brooch/brooch",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "no",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -3373,6 +4307,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "30"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 30
       }
     },
     {
@@ -3398,6 +4336,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -3433,6 +4375,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -3473,6 +4419,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -3498,6 +4448,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -3543,6 +4497,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -3568,6 +4526,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -3593,6 +4555,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -3618,6 +4584,10 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": 0
       }
     },
     {
@@ -3653,6 +4623,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "70"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 70
       }
     },
     {
@@ -3678,6 +4652,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -3708,6 +4686,10 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -3726,6 +4708,11 @@
       "claims": [
         {
           "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_1/what_afoolish_quest/bag_book_knife",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        },
+        {
+          "family": "RewardClaim",
           "key": "canary:reward-claim/quest/u8_1/what_afoolish_quest/magical_watch",
           "revision": "canary-47dfd51f+crystalserver-ff7ede59"
         }
@@ -3733,6 +4720,13 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "40*"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
       }
     },
     {
@@ -3768,6 +4762,129 @@
       "requirements_from_wiki": {
         "premium": "yes",
         "lvl": "80 (Expertise door during mission 8)"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "note"
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/berserk_potion_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Berserk Potion Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Berserk Potion Quest",
+        "pageid": 17205,
+        "revid": 842195
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/helheim",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/frost_dragon_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Frost Dragon Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Frost Dragon Quest",
+        "pageid": 17086,
+        "revid": 842275
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/okolnir",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/skeleton_decoration_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Skeleton Decoration Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Skeleton Decoration Quest",
+        "pageid": 17016,
+        "revid": 842459
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/quest/u8_0/shardsof_ancient_winters/tyrsung",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
+      }
+    },
+    {
+      "identity": {
+        "key": "crystalserver:quest/studded_legs_quest",
+        "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+      },
+      "display_name": "Studded Legs Quest",
+      "kind": "reward_only",
+      "shown_in_quest_log": false,
+      "wiki": {
+        "title": "Studded Legs Quest",
+        "pageid": 3225,
+        "revid": 1044892
+      },
+      "claims": [
+        {
+          "family": "RewardClaim",
+          "key": "canary:reward-claim/kv/honeyflower",
+          "revision": "canary-47dfd51f+crystalserver-ff7ede59"
+        }
+      ],
+      "requirements_from_wiki": {
+        "premium": "yes",
+        "lvl": "0"
+      },
+      "requirements": {
+        "premium": true,
+        "min_level": 0
       }
     },
     {
@@ -3798,6 +4915,13 @@
       "requirements_from_wiki": {
         "premium": "no",
         "lvl": "10 / 12"
+      },
+      "requirements": {
+        "premium": false,
+        "min_level": null
+      },
+      "requirements_unparsed": {
+        "min_level": "range"
       }
     }
   ]
