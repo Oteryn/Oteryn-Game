@@ -127,9 +127,11 @@ keeps its lifetime and exclusions.
   CW4 shipped (PR #1055, merged) `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` **without** `revert_after`,
   per D38 W1; `revert_after` still awaits §7 below being accepted.
 
-- **Timed revert.** Every operation may carry `revert_after`, which covers `decay` and
-  `revertItem`/`addEvent` reverts. The revert is the same owner's own later operation, with its
-  own identity derived from the first. §7 records the still-open decision on what logical
+- **Timed revert.** A player/command-initiated operation may carry `revert_after`, which covers
+  `decay` and `revertItem`/`addEvent` reverts. The revert is the same owner's own later operation,
+  with its own identity derived from the first, and firing it never itself schedules another
+  timer — even when the inverse transition it executes also carries `revert_after`, so a mutually
+  timed pair cannot ping-pong (§7 Round 7). §7 records the still-open decision on what logical
   progression input `revert_after` is measured against; nothing here is implemented yet.
 - **Identity, fences and completion.** As in §3: the child identity; World, scope and content
   generation fences, plus the overlay revision of the anchor; the committed overlay revision is the
@@ -238,6 +240,15 @@ path: pre-`prepare` discard is now reserved for fences that invalidate the timer
 (`scope_generation`/`content_generation` changing), and every due revert reaches `prepare` with its
 stored inverse key and expected revision, so a changed anchor is rejected there, by the same
 mechanism any other command already uses.
+
+Round 7 correction (owner-authorized): if both a transition and its bound inverse each carry
+`revert_after_ms` (a mutually timed pair — e.g. a wall that decays and a re-creation that also
+expires), firing one timer executes the inverse, and the inverse's own commit is itself
+`revert_after_ms`-carrying — so a timer that also stages a new timer for whatever it just did would
+ping-pong the two transitions back and forth forever. Fixed, minimal and one-shot: a timer-origin
+execution never registers a new timer for itself, even when its own transition carries
+`revert_after_ms`; only a player/command-initiated execution of a `revert_after_ms`-carrying
+transition schedules a revert. No periodic or repeating timer semantics are introduced.
 
 ### Problem
 
@@ -362,9 +373,10 @@ today.
    CREATE↔REMOVE, RETAG↔RETAG, OPEN↔CLOSE); `bind` rejects (`InvalidBinding`) a `revert_after_ms`-
    carrying transition with zero such matches or more than one — an ambiguous inverse is exactly as
    invalid as a missing one — so firing never has to guess which delta restores the object (evidence
-   above). At commit time — as
-   part of the *same* staged commit as the original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03
-   §15.4, below) — compute `Deadline::after(clock,
+   above). At commit time, and only for a player/command-initiated operation (never for a timer's own
+   firing of its inverse, which never re-arms itself even when that inverse also carries
+   `revert_after_ms` — Round 7) — as part of the *same* staged commit as the original
+   `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below) — compute `Deadline::after(clock,
    Duration::from_millis(revert_after_ms))` from the one clock instance the scope owns (evidence
    above) and register it under an FND-03 §10.1 scheduling key: World/Channel/InstanceId,
    `scope_generation`, the anchor's overlay revision captured now, the `Deadline`, and §10.1's own
@@ -429,9 +441,11 @@ today.
    not the revert's derived child identity), its atomic pending-removal-before-`accept_input`
    de-duplication, bounded per-cycle due-work admission (§7/§14), the fail-closed unique-bound-inverse
    precondition on `revert_after_ms` itself (zero or ambiguous inverse ⇒ `InvalidBinding`, never a
-   guessed delta), and the single firing path (a changed object is rejected only inside `prepare`,
-   never by a separate pre-`prepare` cancellation) — all five are bound to existing FND-03 sections
-   or the merged CW4 bind-time model, not open design questions. `NO` for the driver's exact wake
+   guessed delta), the single firing path (a changed object is rejected only inside `prepare`, never
+   by a separate pre-`prepare` cancellation), and the one-shot rule (a timer-origin execution never
+   registers a new timer for itself, so a mutually timed pair cannot ping-pong; no periodic/repeating
+   semantics) — all six are bound to existing FND-03 sections or the merged CW4 bind-time model, not
+   open design questions. `NO` for the driver's exact wake
    mechanism, whether `ScopeRuntimeFence` is
    promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
    pending-set storage representation, the exact field/encoding of `revert_after_ms` on
@@ -505,10 +519,12 @@ not implement it; it is CANDIDATE and not owner-accepted.
   called again per call site) and use it for every `Deadline::after` at commit time and every
   `has_elapsed`/`remaining` at wake time for that scope — never mix two clock instances (evidence
   above: `SystemClock::new()` starts a fresh, incomparable origin each time).
-- On any `revert_after`-carrying overlay operation, as part of the *same* staged commit as the
-  original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve safe bounded timer capacity
-  first; if none is available, fail the *entire* original operation before anything commits — no
-  object mutation and no partial timer entry survive. If capacity is available, compute
+- On any `revert_after`-carrying overlay operation *that a player/command initiated* (reached
+  through `apply`/`resume_pending`, never through a due timer's own firing below), as part of the
+  *same* staged commit as the original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve
+  safe bounded timer capacity first; if none is available, fail the *entire* original operation
+  before anything commits — no object mutation and no partial timer entry survive. If capacity is
+  available, compute
   `Deadline::after(clock, Duration::from_millis(revert_after_ms))` and register it under the FND-03
   §10.1 scheduling key: World/Channel/InstanceId, `scope_generation`, the overlay revision of the
   anchor, the `Deadline`, and the equal-deadline tie-break — the *scheduling* resolution's own
@@ -535,7 +551,11 @@ not implement it; it is CANDIDATE and not owner-accepted.
   again after this revert was scheduled) is rejected there, never guessed at. Commit through the
   same scope-authority path (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, ~1040-1054) —
   never `apply`/`resume_pending`/`CommandIngress`, which require a live `GameSessionAuthoritySnapshot`
-  this timer does not have (P1, evidence above).
+  this timer does not have (P1, evidence above). This commit is a timer-origin execution: it reuses
+  only the state/footprint commit mechanics above, never the timer-capacity-reservation-and-register
+  step of the previous bullet, even when the inverse `TransitionKey` it just executed itself carries
+  `revert_after_ms` (Round 7) — a mutually timed pair fires one direction and stops, it does not
+  re-arm itself.
 - Pre-`prepare` discard (§10.3's "scope ownership generation changed"/"invalidated" triggers) is
   reserved for fences that invalidate the *timer itself*, never for a changed object: `scope_generation`
   or `content_generation` changing clears the pending entry with the rest of the scope-ephemeral
@@ -598,6 +618,12 @@ not implement it; it is CANDIDATE and not owner-accepted.
   pre-`prepare` cancellation — and hit `prepare`'s existing `DISPOSITION_STALE_STATE` path (evidence
   above), committing nothing; the revert never overwrites whatever the object has become in the
   meantime, and there is no second, separate check that could instead silently discard the entry.
+- **A mutually timed pair fires once and stops (P2, Round 7).** Bind a `TRANSFORM a→b` and its
+  inverse `TRANSFORM b→a` so *both* carry `revert_after_ms`; schedule the forward operation, let its
+  timer become due. The test must observe: exactly one `RuntimeExecutionOrdinal` minted, exactly one
+  inverse execution (the object lands in `a`), and *zero* new timers registered as part of that
+  firing — no pending entry exists afterward for either direction. Re-arming only happens if a
+  player/command later executes `b→a` (or `a→b`) itself.
 - **Occupied target cells refuse deterministically (decided, not deferred).**
   `apps/game-server/src/world_runtime.rs` `terminalize_current` (~875-888) commits and terminalizes
   every prepared outcome in the same call, and `resume_pending`'s
@@ -613,8 +639,10 @@ not implement it; it is CANDIDATE and not owner-accepted.
   despite occupancy, that is a future definition-level requirement (the definition names a
   fallback), not a hidden retry loop here.
 - **Timer-capacity atomicity (FND-03 §15.4).** If safe bounded timer capacity is unavailable when a
-  `revert_after`-carrying operation is about to commit, the *entire* original operation fails before
-  anything commits: neither the world-object mutation nor a partial/orphaned timer entry survive.
+  player/command-initiated `revert_after`-carrying operation is about to commit, the *entire*
+  original operation fails before anything commits: neither the world-object mutation nor a
+  partial/orphaned timer entry survive. A timer-origin execution never attempts this reservation at
+  all (Round 7), so it has nothing to fail on.
   An already-accepted timer already in the pending set is never discarded merely because the due
   queue is congested (FND-03 §15.4, second sentence) — that pressure produces `CAPACITY_EXCEEDED` on
   the *next incoming* operation, not eviction of an existing entry.
