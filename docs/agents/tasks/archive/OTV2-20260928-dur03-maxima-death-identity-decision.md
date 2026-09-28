@@ -4,16 +4,17 @@
 task_id: OTV2-20260928-dur03-maxima-death-identity-decision
 title: DUR-03 resource maxima (A5) and creature-death identity (A4) decision
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
 pr: 1079
 base_sha: 57a0fc76f9f4812c1e66a18560ff14d05ef36579
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 385bd84d7048c13d90780ec64a404aa8d29b2201
+final_head_sha: 385bd84d7048c13d90780ec64a404aa8d29b2201
+final_head_frozen_at: 2026-09-28T09:32:28Z
+merge_commit: 0f80b8c1ca70d50551141d627e5223e28c3233ff
 owner: claude-code-session-01XdHJyZNPJMcmMnmSDgwQvZ (Sol Supervising Architect)
 created_at: 2026-09-28
 updated_at: 2026-09-28
@@ -127,9 +128,9 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] The decision document is on an exact frozen head with passing governance and repository policy.
-- [ ] Independent exact-head review.
-- [ ] Protected Merge Queue integration.
+- [x] The decision document is on an exact frozen head with passing governance and repository policy.
+- [x] Independent exact-head review: Codex on `385bd84` found no issues.
+- [x] Protected Merge Queue integration: `0f80b8c`.
 
 ## Excluded scope
 
@@ -142,14 +143,24 @@ finding_dispositions:
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 - The #1072 closeout record is archived with terminal integration evidence (`9fa52e3`).
 
+## Terminal integration
+
+- PR #1079 merged through the Merge Queue on 2026-09-28 as `0f80b8c`.
+- Review rounds: Codex P1 and P2 on `5c0f994`, then P2 on `6238499`; all accepted and repaired. The
+  owner raised the RL-07 envelope cap to 9,216 B after the normative-envelope recount. `385bd84`
+  was clean.
+- Protected-main readback: all changed files matched the frozen head `385bd84` blobs.
+- Archived under `OTV2-20260928-spell-decisions-record`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: authored; PR #1079 open
-status: validating
+last_progress: protected-integrated as 0f80b8c; archived
+status: completed
 branch: claude/gifted-rubin-a0axzx
+head_sha: 385bd84d7048c13d90780ec64a404aa8d29b2201
 pr: 1079
 owner_action_required: null
 blocker: null
-next_action: exact-head review and Merge Queue integration of #1079
+next_action: null
 ```
