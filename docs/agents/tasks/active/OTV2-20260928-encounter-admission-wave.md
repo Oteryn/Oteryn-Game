@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-encounter-admission-wave
 title: Encounter admission slice 4 (58 encounters and their creatures into WorldProject/v2)
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/nice-edison-h9aqh0
 issue: 162
-pr: null
+pr: 1158
 jira: KAN-16
 base_sha: 64720c2086ec1838c7dcd0fe4faae496557096d4
 head_sha: null
