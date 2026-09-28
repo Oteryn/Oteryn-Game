@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-cw1-attribute-bearing-object-state
 title: Minimal design for attribute-bearing local-object state (destination/interaction)
 mode: CONTRACT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-attribute-bearing-object-state
-pr: null
+pr: 1099
 base_sha: f0710bfb0513147d6bf573dbbfac591da0dadfa6
 head_sha: null
 final_head_sha: null
@@ -218,11 +218,11 @@ last_progress: >
   PlacementRef; zero new PreparedMutation/commit/lifecycle-record fields (attributes are a pure read
   of placement-state, mirroring how collision presence already works). revert_destination resolved
   as a lowering-time concern. Open decision 4 resolved as a side effect. Validators pass; about to
-  push and open the PR.
-status: implementing
+  Pushed as 6bd9da69, PR #1099 opened.
+status: ready
 branch: claude/cw1-attribute-bearing-object-state
 head_sha: null
-pr: null
+pr: 1099
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -240,5 +240,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: push, open PR, report READY_FOR_INTEGRATION with PR number + head SHA
+next_action: coordinator freeze at the reported head + independent review
 ```
