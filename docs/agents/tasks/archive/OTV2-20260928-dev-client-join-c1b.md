@@ -4,10 +4,12 @@
 task_id: OTV2-20260928-dev-client-join-c1b
 title: dev client join C1b - dev/qualification-only native client, joins and decodes the join snapshot
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1147
+merge_pr: 1147
+merge_sha: ebc86db54a8733da6c7756a267bf8d038f42a794
 allocation_comment: 5875272684 (allocation); coordinator resume 5875470550 (owner: option 1, leases)
 base_branch: main
 branch: claude/dev-client-join-c1b
@@ -192,8 +194,8 @@ reason: >
 ## Context checkpoint
 
 ```yaml
-last_progress: fix round 3 pushed (assemble-before-decode/validate/zero-id); replied on 3 threads
-status: ready
+last_progress: PR #1147 merged; record archived
+status: completed
 branch: claude/dev-client-join-c1b
 head_sha: 965682618ddf3cd9d9fed14c6efeff70c5bb7c6d
 pr: 1147
@@ -214,5 +216,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: await new exact-head CI and review on PR #1147
+next_action: none; merged as PR #1147 and archived
 ```

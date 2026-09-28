@@ -4,10 +4,12 @@
 task_id: OTV2-20260928-protocol-oteryn-crate-c1a
 title: protocol-oteryn crate C1a - extract FND-02 wire codecs
 mode: IMPLEMENT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 pr: 1131
+merge_pr: 1131
+merge_sha: 0e76e9b90f3992554267ec74e302a3d1dbbfca45
 allocation_comment: latest #162 comment (owner accepted A6)
 base_branch: main
 branch: claude/protocol-oteryn-c1a
@@ -164,8 +166,8 @@ names. No `@codex review` trigger, no comment on #162.
 ## Context checkpoint
 
 ```yaml
-last_progress: coordinator repair of workspace boundary guards; awaiting exact-head checks and review on the frozen PR #1131 head
-status: ready
+last_progress: PR #1131 merged; record archived
+status: completed
 branch: claude/protocol-oteryn-c1a
 head_sha: e7370bc783f9888e45c50089f29585f3d0090cdb
 pr: 1131
@@ -186,5 +188,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: await required checks and independent review on PR #1131
+next_action: none; merged as PR #1131 and archived
 ```
