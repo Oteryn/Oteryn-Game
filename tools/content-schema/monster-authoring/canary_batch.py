@@ -834,19 +834,21 @@ class Converter:
                    'experience': ('/monster/creature/stats/experience', 'experience', r'^monster\.experience', 'experience')}
         index = None
         for field, value in sorted(record['fields'].items()):
-            if creature['stats'][field] == value:
-                continue
             if index is None:
                 sources.append({'kind': 'official_capture', 'url': record['url'], 'title': record['title'],
                                 'captured': record['captured'], 'content_sha256': record['content_sha256']})
                 index = len(sources) - 1
             destination, canary_field, pattern, label = targets[field]
-            text = f'Value {creature["stats"][field]} superseded by the Tibia.com library {label} {value} ({OFFICIAL_ADOPTION}).'
+            text = (f'Value {value} confirmed by the Tibia.com library {label} ({OFFICIAL_ADOPTION}).'
+                    if creature['stats'][field] == value else
+                    f'Value {creature["stats"][field]} superseded by the Tibia.com library {label} {value} ({OFFICIAL_ADOPTION}).')
             for entry in rows:
                 if entry['status'] == 'mapped' and entry.get('destination') == destination:
                     entry.update(status='approved_omission', resolution=text)
                     entry.pop('destination', None)
-            if field == 'max_health':
+            if creature['stats'][field] == value:
+                pass
+            elif field == 'max_health':
                 for entry in rows:
                     if entry['source_index'] == 0 and entry['source_field'] == 'health' and entry['status'] == 'mapped':
                         entry.update(status='approved_omission', resolution=text)
