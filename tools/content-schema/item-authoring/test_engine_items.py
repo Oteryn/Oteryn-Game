@@ -2329,7 +2329,18 @@ def test_committed_wiki_fallback_snapshot_loads_fail_closed():
     resolved = engine_items.load_wiki_family_fallback(
         engine_items.WIKI_FAMILY_FALLBACK_PATH, engine_items.build_identity_index()
     )
-    check(len(resolved) == 1482, len(resolved))
+    # 1,482 pinned-engine records plus the 8 epoch-2 donor records appended by B2.
+    check(len(resolved) == 1490, len(resolved))
+    donor_keys = sorted(
+        key
+        for key in resolved
+        if int(key.rsplit("i", 1)[1]) >= 38094  # first epoch-2 sequence (B1b)
+    )
+    check(len(donor_keys) == 8, donor_keys)
+    check(
+        all(resolved[key]["match_basis"] == "itemid" for key in donor_keys),
+        "donor records join by exact itemid only",
+    )
     check(
         all(
             entry["profile"] in engine_items.PROFILE_ITEM_CLASS
