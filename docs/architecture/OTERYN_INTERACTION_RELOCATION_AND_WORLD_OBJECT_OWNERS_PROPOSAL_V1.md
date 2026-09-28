@@ -336,6 +336,38 @@ scope-ephemeral overlay on restart, which is exactly when GAME-INTERACTION-01's 
 concern stops applying (the object's own overlay state resets with it). A duplicate presentation now
 finds and returns that retained outcome instead of finding nothing.
 
+**Round 13's two-structure design is corrected by round 14 below: it had gaps at the seams.** Keeping
+a separate pending set and a separate retained-outcome store, joined only by "the driver checks one,
+then the other," left two windows unrepresented: between removing the pending entry and writing the
+terminal record (a lost race or an interruption there erased the identity from both structures at
+once), and a duplicate could hit round 9's scope/content/incarnation fences *before* the
+retained-outcome lookup, discarding an already-terminal identity instead of returning its outcome.
+Both are seam bugs from having two structures instead of one; round 14 removes the seam.
+
+Round 14 correction (owner-authorized): replace the two structures with **one scope-owned lifecycle
+record per `InteractionChildOccurrenceRef`**, matching GAME-INTERACTION-01 §7's own lifecycle
+directly instead of approximating it with a pending set plus a side store. The record's state is
+`PENDING(entry fields) | IN_FLIGHT | TERMINAL(outcome)` — `PENDING` here is this document's name for
+what §7 calls `UNSTARTED` (accepted, not yet executed); `IN_FLIGHT` is what §7 calls `PENDING`
+(outcome unresolved, execution underway); `TERMINAL(outcome)` collapses §7's `COMMITTED`/`REJECTED`
+into one state carrying whichever it is. It is created `PENDING` in the original operation's staged
+commit, with capacity reserved *once* for the whole lifecycle (FND-03 §15.4) — not twice, since one
+record now serves what round 13 split across a timer-capacity reservation and a retention-capacity
+reservation. Every presentation of an identity, whatever produced it, follows one fixed order: look
+the identity up; `TERMINAL` returns the first outcome verbatim, no fences, no ordinal, no mutation;
+`IN_FLIGHT` converges — do not execute, do not mint, the in-flight execution already owns resolving
+it; only `PENDING` reaches the scope/content/incarnation fences, and only now, after the lookup has
+already found no terminal or in-flight identity to answer from. A fence failure at that point
+atomically transitions the record to its own `TERMINAL(REJECTED, reason)`, never a bare discard, so
+the *next* duplicate finds a terminal record too, not a fence check repeated on stale data. Passing
+the fences atomically transitions `PENDING`→`IN_FLIGHT`, mints the ordinal and runs `prepare`/commit,
+then atomically transitions `IN_FLIGHT`→`TERMINAL(outcome)`. There is never a bare removal at any
+step; the record is dropped only on scope restart, exactly as round 13 already established for the
+whole overlay. An interruption between `IN_FLIGHT` and writing `TERMINAL` leaves the record
+`IN_FLIGHT` — scope-ephemeral like everything else here, so it is dropped only with the rest of the
+overlay on scope restart, never left to be silently re-executed or silently forgotten while the scope
+generation is still live.
+
 ### Problem
 
 `revert_after` needs *some* value that advances on its own, independent of whether a player ever
@@ -447,7 +479,7 @@ today.
   `LocalObjectCommand` (~412-419) requires `placement`, `incarnation` and `content_generation` in
   addition to the operation and `expected_revision`, and `prepare`'s *first* check (~978-987) rejects
   with `DISPOSITION_BINDING_MISMATCH` — a different outcome from `DISPOSITION_STALE_STATE` — if any
-  of those three do not match `self`. The pending entry's stored "overlay revision" alone cannot
+  of those three do not match `self`. The lifecycle record's stored "overlay revision" alone cannot
   address an object: it is a per-anchor local counter, so two different anchors can coincidentally
   share a revision, and nothing before round 9 stored which anchor, incarnation or content
   generation a given timer targets.
@@ -507,39 +539,41 @@ today.
    above). At commit time, for any non-timer-origin operation — every authoritative input except the
    firing of a pending revert timer itself, which never re-arms itself even when its own transition
    also carries `revert_after_ms` (Round 7/8) — as part of the *same* staged commit as the original
-   `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below), register a pending entry under an
-   FND-03 §10.1 scheduling key. The entry's exact contents — every field it needs and why — are the
-   single canonical **"Pending entry: complete field list"** at the start of Exact delta below; this
-   option does not repeat them. Among them is the revert's own `InteractionChildOccurrenceRef`
-   (Round 11, evidence above), computed once now as a nested child of the original operation's own
-   GAME-INTERACTION identity (§3/§4) and never re-derived from the scheduling `RuntimeExecutionOrdinal`,
-   which stays a pure ordering/authority value (evidence above), never logical identity. One
-   scope-owned driver — one per scope owner, never per object, never per pending revert — wakes at
-   the earliest pending deadline and admits at most a registered bounded batch of due entries per
-   cycle (FND-03 §7/§14, evidence above), yielding the remainder to a later cycle through the same
-   owner arbitration any other input source uses, so a same-deadline burst cannot starve unrelated
-   scope work. For each admitted entry, the driver first atomically transitions it out of the pending
-   set (removed/in-flight) and only then calls the scope's ordinal issuer's `accept_input` (§10.2,
-   reusing `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` — evidence above — as one scope-wide
-   instance rather than per-`GameSession`) — `accept_input` itself tracks no timer identity (evidence
-   above), so this ordering is what prevents two near-simultaneous presentations of the *same still-
-   pending* entry from both minting an ordinal. That guards only the pending window; it is not the
-   dedup the owning identity contract requires (Round 13, evidence above): before either that removal
-   or `accept_input`, the driver first checks the retained-outcome store (below) for the entry's
-   `InteractionChildOccurrenceRef` — a hit means an already-terminal duplicate, returned as-is with no
-   ordinal and no mutation (GAME-INTERACTION-01 §7); only a miss proceeds to removal/`accept_input`.
-   The revert's state/footprint delta reuses `prepare`'s pure transition logic;
-   committing it does **not** go through `apply`/`resume_pending`/`CommandIngress`, because there is
-   no live client command or session to replay (P1, evidence above) — the retained-outcome store is a
-   separate, minimal mechanism, not a reuse of `CommandIngress` (round 12's evidence for why
-   `CommandIngress` cannot serve still holds; it only ruled out that one type, not retention itself).
-   Pre-`prepare` discard is
-   reserved for fences that invalidate the timer itself — `scope_generation`, `content_generation` or
-   the target's `incarnation` changing (Round 9) — never for a changed object: a due revert whose
-   stored target identity still matches always reaches `prepare` with its stored inverse key and
-   expected revision, one path, and `prepare`'s own stale-state check is what accepts or rejects a
-   same-incarnation changed anchor (below). The driver and the ordinal-issuer promotion are
-   still one real new mechanism each, but the unit it stores, the tie-break it uses and the
+   `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4, below), create one `PENDING` lifecycle record
+   under an FND-03 §10.1 scheduling key. The record's exact contents — every field it needs and why —
+   are the single canonical **"Lifecycle record: complete field list"** at the start of Exact delta
+   below (Round 14, replacing round 11's pending-entry-only table); this option does not repeat them.
+   Among them is the revert's own `InteractionChildOccurrenceRef` (Round 11, evidence above), computed
+   once now as a nested child of the original operation's own GAME-INTERACTION identity (§3/§4) and
+   never re-derived from the scheduling `RuntimeExecutionOrdinal`, which stays a pure
+   ordering/authority value (evidence above), never logical identity — it is the record's own lookup
+   key, present in every state. One scope-owned driver — one per scope owner, never per object, never
+   per pending revert — wakes at the earliest pending deadline and admits at most a registered bounded
+   batch of due entries per cycle (FND-03 §7/§14, evidence above), yielding the remainder to a later
+   cycle through the same owner arbitration any other input source uses, so a same-deadline burst
+   cannot starve unrelated scope work. Every presentation of an admitted entry's identity — a normal
+   due-wake, a second driver pass, a crash-recovery rescan, any of them — follows the one fixed order
+   Round 14 fixes at the record level (Exact delta below, evidence above): look the identity up;
+   `TERMINAL` answers with its first outcome, no fences, no ordinal, no mutation; `IN_FLIGHT`
+   converges (no execution, no ordinal — the in-flight attempt already owns resolving it); only
+   `PENDING` reaches the scope/content/incarnation fences, and only then does a fence pass atomically
+   transition `PENDING`→`IN_FLIGHT` and call the scope's ordinal issuer's `accept_input` (§10.2,
+   reusing `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` — evidence above — as one scope-wide instance
+   rather than per-`GameSession`). This single order is what round 13's two separate structures (a
+   pending set plus a side retained-outcome store) could not guarantee on their own — a duplicate
+   could reach the fences before the terminal-outcome check, or a lost race between "remove from
+   pending" and "write the terminal record" could leave the identity briefly unrepresented; one record
+   with one presentation order closes both gaps (evidence above). The revert's state/footprint delta
+   reuses `prepare`'s pure transition logic; committing it does **not** go through
+   `apply`/`resume_pending`/`CommandIngress`, because there is no live client command or session to
+   replay (P1, evidence above) — the lifecycle record is a separate, minimal mechanism, not a reuse of
+   `CommandIngress` (round 12's evidence for why `CommandIngress` cannot serve still holds; it only
+   ruled out that one type, not retention itself). A fence failure at the `PENDING` step atomically
+   transitions the record to its own `TERMINAL(REJECTED, reason)` — never a bare discard — so a later
+   duplicate finds that terminal record instead of re-running a fence check against data that may have
+   moved on again; `prepare`'s own stale-state check is still what accepts or rejects a same-incarnation
+   changed anchor once the record is `IN_FLIGHT` (below). The driver and the ordinal-issuer promotion
+   are still one real new mechanism each, but the unit it stores, the tie-break it uses and the
    ordinal/cancellation contract it follows are not invented: they are the authored `revert_after_ms`
    field, the already-implemented `Deadline` primitive, the already-implemented `ChildOccurrenceRef`
    nested-identity mechanics, and the already-accepted FND-03 §7/§10/§14 timer contract.
@@ -554,8 +588,9 @@ today.
      needs the same new driver as option 2, plus an invented step-to-millisecond mapping on top of
      it.
    - *Determinism/exactly-once.* Both give the same exactly-once execution guarantee in this
-     proposal's sense (atomic pending-removal before `accept_input`, no re-fire after commit — see
-     test obligations below); `ManualClock` (evidence above) already gives deterministic,
+     proposal's sense (the lifecycle record's atomic `PENDING`→`IN_FLIGHT`→`TERMINAL` transitions,
+     Round 14, no re-fire after commit — see test obligations below); `ManualClock` (evidence above)
+     already gives deterministic,
      test-controlled time for the `Deadline` option, so option 2 does not trade away deterministic
      testing to gain authored-duration fidelity.
    - *Reset on scope restart.* Identical for both: both are `scope_generation`-scoped state owned by
@@ -578,30 +613,34 @@ today.
    owned `Deadline` fired as an FND-03 §10 authoritative timer with its own ordinal/cancellation/
    capacity contract, never a client `LocalObjectCommand` — vs. the record of why 1, 3 and 4 are
    rejected/superseded), including its equal-deadline tie-break (§10.1's own ordinal-plus-sequence,
-   not the revert's derived child identity), its two-layer de-duplication (Round 13: retained-outcome
-   lookup first, per GAME-INTERACTION-01 §7's convergence rule, then atomic pending-removal-before-
-   `accept_input` as the remaining same-window race guard), bounded per-cycle due-work admission
-   (§7/§14), the fail-closed unique-bound-inverse precondition on `revert_after_ms` itself (zero or
-   ambiguous inverse ⇒ `InvalidBinding`, never a guessed delta), the single firing path (a changed
-   object is rejected only inside `prepare`, never by a separate pre-`prepare` cancellation), and the
-   one-shot origin test (suppress registration only when this execution *is* the firing of a pending
-   revert timer; every other authoritative origin — player/command, encounter/server-event, or
-   otherwise — registers its own one-shot revert as normal, so a mutually timed pair cannot ping-pong
-   and an encounter-originated timed transform is not silently starved of its revert; no periodic/
-   repeating semantics), the complete stored pending-entry field list (Round 11, "Exact delta" below)
-   — target identity (`PlacementKey`/`incarnation`/`content_generation`, addressed exactly and never
-   re-derived from the overlay revision alone, with a changed `incarnation` like `scope_generation`/
-   `content_generation` discarding the timer pre-`prepare`) *and* the revert's own derived
+   not the revert's derived child identity), its single-record de-duplication (Round 14: one
+   scope-owned lifecycle record per identity, `PENDING`→`IN_FLIGHT`→`TERMINAL`, matching
+   GAME-INTERACTION-01 §7's own lifecycle directly — every presentation looks the identity up first,
+   `TERMINAL` returns the first outcome, `IN_FLIGHT` converges, and only `PENDING` reaches the fences),
+   bounded per-cycle due-work admission (§7/§14), the fail-closed unique-bound-inverse precondition on
+   `revert_after_ms` itself (zero or ambiguous inverse ⇒ `InvalidBinding`, never a guessed delta), the
+   single firing path (a changed object is rejected only inside `prepare`, never by a separate
+   pre-`prepare` cancellation), and the one-shot origin test (suppress registration only when this
+   execution *is* the firing of a pending revert timer; every other authoritative origin —
+   player/command, encounter/server-event, or otherwise — registers its own one-shot revert as normal,
+   so a mutually timed pair cannot ping-pong and an encounter-originated timed transform is not
+   silently starved of its revert; no periodic/repeating semantics), the complete lifecycle-record
+   field list (Round 14, "Exact delta" below) — target identity (`PlacementKey`/`incarnation`/
+   `content_generation`, addressed exactly and never re-derived from the overlay revision alone, with
+   a changed `incarnation` like `scope_generation`/`content_generation` transitioning the record to
+   `TERMINAL(REJECTED, reason)` at the `PENDING` fence step) *and* the revert's own derived
    `InteractionChildOccurrenceRef` (GAME-INTERACTION-01 §5.1's nested-cascade rule, computed once at
-   scheduling time, never re-derived from the scheduling ordinal per §4.4/§5.8) — and (Round 13) that
-   this identity's terminal outcome is retained as scope-owned state, with retention capacity reserved
-   in the same staged commit as timer capacity, per GAME-INTERACTION-01 §7 (the retention *semantic*
-   is decided now; its numeric bound, like the timer-capacity bound, is not — §5.9/§25) — all nine are
+   scheduling time, never re-derived from the scheduling ordinal per §4.4/§5.8) as the record's own
+   lookup key, present in every state — and that the record's terminal outcome is retained as
+   scope-owned state for the life of the scope generation, with capacity reserved once for the whole
+   lifecycle in the same staged commit as everything else (Round 14, folding round 13's separate
+   timer/retention reservations into one), per GAME-INTERACTION-01 §7 (the retention *semantic* is
+   decided now; its numeric bound, like the timer-capacity bound, is not — §5.9/§25) — all nine are
    bound to existing FND-03 sections, GAME-INTERACTION-01's already-implemented identity model, or the
    merged CW4 bind-time model, not open design questions. `NO` for the driver's exact wake
    mechanism, whether `ScopeRuntimeFence` is
    promoted to a scope-wide instance or a new scope-owned ordinal issuer is introduced, the exact
-   pending-set storage representation, the exact field/encoding of `revert_after_ms` on
+   lifecycle-record storage representation, the exact field/encoding of `revert_after_ms` on
    `TransitionBinding` or its content source, and the concrete timer-capacity/due-batch numeric
    bounds (FND-03 §14.1: "Concrete numeric limits gate implementation, not this architecture
    decision" — they belong in `RESOURCE_LIMITS_REGISTRY.json`). Those belong to the owning lane's
@@ -621,7 +660,7 @@ today.
    which §4 already excludes).
 5. **What is deliberately not decided?** The exact wake mechanism inside the scope's step driver, the
    exact way `RuntimeExecutionOrdinal`/`ScopeRuntimeFence` is made scope-wide, the exact storage
-   representation of the pending-timer set, the exact field/encoding of `revert_after_ms` on
+   representation of the lifecycle-record store, the exact field/encoding of `revert_after_ms` on
    `TransitionBinding` or its content-authoring source, and the concrete timer-capacity and
    per-cycle due-batch numeric bounds in `RESOURCE_LIMITS_REGISTRY.json`. Those belong to the owning
    lane's implementation, not this architecture delta.
@@ -633,43 +672,45 @@ Owner: the scope-runtime/Foundation carrier lane behind `ChannelRuntimeV1`/`Inst
 lane (`apps/game-server/src/world_runtime.rs`) that owns `LocalObjectRuntime`. This document does
 not implement it; it is CANDIDATE and not owner-accepted.
 
-**Pending entry: complete field list (Round 11).** Every field below is captured exactly once, at
-scheduling time, from the original operation's own already-validated commit; firing never looks up,
-re-derives or guesses any of them. Every other place in this section (Option 2, and each bullet
-below) refers back to this one list instead of re-enumerating fields.
+**Lifecycle record: complete field list (Round 14, replaces round 11's pending-entry-only table).**
+One scope-owned record per `InteractionChildOccurrenceRef`, state ∈
+`PENDING(entry fields) | IN_FLIGHT | TERMINAL(outcome)` — see the round 14 narrative above for the
+mapping onto GAME-INTERACTION-01 §7's own `UNSTARTED | PENDING | COMMITTED | REJECTED`. Every field
+below is captured exactly once, at scheduling time, from the original operation's own
+already-validated commit; firing never looks up, re-derives or guesses any of them. Every other place
+in this section (Option 2, and each bullet below) refers back to this one list instead of
+re-enumerating fields.
 
-| Field | Consumed for | Source at scheduling time |
-|---|---|---|
-| World/Channel/InstanceId | scope identity (fence) | the scope's own binding |
-| `scope_generation` | timer-invalidating fence, pre-`prepare` discard | the scope's own binding |
-| `PlacementKey` | which anchor to address | the original operation's own placement |
-| `incarnation` | timer-invalidating fence, pre-`prepare` discard (Round 9) | the original operation's own target |
-| `content_generation` | timer-invalidating fence, pre-`prepare` discard | the original operation's own content pin |
-| `Deadline` | when the timer becomes due (ordering) | `Deadline::after(clock, revert_after_ms)` |
-| scheduling `RuntimeExecutionOrdinal` + within-resolution sequence | equal-deadline tie-break, FND-03 §10.1 (ordering) | the scheduling resolution's own ordinal |
-| inverse `TransitionKey` | which delta to replay (`prepare`'s `operation`) | the bind-time unique-inverse check (rounds 5/6) |
-| expected post-operation state + overlay revision | `prepare`'s `expected_revision`/stale-state check | `transition.target_state`/`next_revision`, already computed by the original commit |
-| the revert's own `InteractionChildOccurrenceRef` | dedup/retained-outcome lookup key (GAME-INTERACTION-01 §7, Round 11/13) | a nested child of the original operation's own GAME-INTERACTION identity (§3/§4), never the scheduling ordinal (evidence above) |
+| Field | Present in | Consumed for | Source at scheduling time |
+|---|---|---|---|
+| `InteractionChildOccurrenceRef` | every state (the key) | looking the record up before anything else (Round 14 presentation order) | a nested child of the original operation's own GAME-INTERACTION identity (§3/§4), never the scheduling ordinal (evidence above) |
+| World/Channel/InstanceId | `PENDING` | scope identity fence | the scope's own binding |
+| `scope_generation` | `PENDING` | fence — mismatch transitions the record to `TERMINAL(REJECTED, reason=SCOPE_GENERATION_CHANGED)` | the scope's own binding |
+| `PlacementKey` | `PENDING`→`IN_FLIGHT` | which anchor to address | the original operation's own placement |
+| `incarnation` | `PENDING` | fence — mismatch transitions to `TERMINAL(REJECTED, reason=INCARNATION_CHANGED)` (Round 9) | the original operation's own target |
+| `content_generation` | `PENDING` | fence — mismatch transitions to `TERMINAL(REJECTED, reason=CONTENT_GENERATION_CHANGED)` | the original operation's own content pin |
+| `Deadline` | `PENDING` | when the timer becomes due (ordering) | `Deadline::after(clock, revert_after_ms)` |
+| scheduling `RuntimeExecutionOrdinal` + within-resolution sequence | `PENDING` | equal-deadline tie-break, FND-03 §10.1 (ordering) | the scheduling resolution's own ordinal |
+| inverse `TransitionKey` | `PENDING`→`IN_FLIGHT` | which delta `prepare`'s `operation` applies | the bind-time unique-inverse check (rounds 5/6) |
+| expected post-operation state + overlay revision | `PENDING`→`IN_FLIGHT` | `prepare`'s `expected_revision`/stale-state check | `transition.target_state`/`next_revision`, already computed by the original commit |
+| outcome (`TerminalSemanticOutcome`, or the fence-discard reason above) | `TERMINAL` only | the record's one answer to every later presentation of this identity | `prepare`'s outcome, or the `PENDING`-step fence that discarded it |
 
 Together: `PlacementKey`/`incarnation`/`content_generation`/inverse `TransitionKey`/expected
 revision are exactly what `LocalObjectCommand` needs to call `prepare` (evidence above);
 World/Channel/InstanceId/`scope_generation` are the same scope-identity fences every other overlay
-operation already carries; `Deadline`/ordinal/sequence are FND-03 §10.1's own scheduling key; and
+operation already carries; `Deadline`/ordinal/sequence are FND-03 §10.1's own scheduling key;
 `InteractionChildOccurrenceRef` is the GAME-INTERACTION-01 identity every prior round assumed but
-never listed. Capacity release needs no separate stored field: it is implicit in the same atomic
-pending-removal step (below) — the scope's own capacity counter is live scope state, not part of the
-entry. Lifecycle (Round 13, corrects round 12): the *pending* entry is consumed by that same atomic
-removal step and does not survive past it, but its `InteractionChildOccurrenceRef` graduates at that
-same moment into a separate, minimal retained-outcome record — `InteractionChildOccurrenceRef` →
-`TerminalSemanticOutcome` — per GAME-INTERACTION-01 §7 ("duplicate delivery of the same sibling MUST
-converge to one lifecycle/outcome"; evidence above). That record's retention capacity is reserved in
-the *same* staged commit as the timer capacity below (FND-03 §15.4), so it is never silently evicted
-within one scope generation; it is dropped only on scope restart, together with the rest of the
-scope-ephemeral overlay (§7's numeric retention bound is explicitly not decided by GAME-INTERACTION-01
-itself — §5.9/§25, evidence above — so this document does not invent one either, matching the timer
-capacity bound below). Nothing the firing path consumes is missing from this list or derivable only
-from something outside it plus the scope's own live state (its clock, its ordinal issuer, its pending
-set, and — from round 13 — its retained-outcome record).
+never listed, now the record's own key; and `outcome` is what `TERMINAL` returns to every later
+presentation, whichever of `prepare`'s dispositions or the `PENDING`-step fences produced it. Capacity
+is reserved *once*, for the whole record's lifecycle, in the same staged commit that creates it
+`PENDING` (below) — not once for a "timer entry" and again for a "retained outcome" (round 13's split,
+now removed): the scope's own capacity counter is live scope state, not part of the record. Lifecycle
+(Round 14, replaces round 13's two-structure split): the record is never bare-removed at any
+transition; it is dropped only on scope restart, together with the rest of the scope-ephemeral
+overlay (§7's numeric retention bound is explicitly not decided by GAME-INTERACTION-01 itself —
+§5.9/§25, evidence above — so this document does not invent one either). Nothing the firing path
+consumes is missing from this list or derivable only from something outside it plus the scope's own
+live state (its clock, its ordinal issuer, and — as one thing, not two — its lifecycle-record store).
 
 - Add `revert_after_ms` as an optional field on the authored transition (`TransitionBinding` or its
   content-authoring source, evidence above), and validate it fail-closed inside `bind`
@@ -684,7 +725,7 @@ set, and — from round 13 — its retained-outcome record).
   second collision-class check). Reject the whole binding with `WorldRuntimeError::InvalidBinding`
   unless *exactly one* transition matches — zero matches is a missing inverse, more than one is an
   ambiguous inverse, and both are equally invalid — producing the one unique inverse `TransitionKey`
-  the pending entry stores (complete field list above).
+  the lifecycle record stores (complete field list above).
 - Introduce the scope owner's own step driver: one per scope owner (`ChannelRuntimeV1`/
   `InstanceRuntime`), never a per-object or per-revert timer, that wakes at the earliest pending
   `Deadline` and drives that scope's own due reverts forward. Whether it piggybacks on a cadence the
@@ -701,16 +742,26 @@ set, and — from round 13 — its retained-outcome record).
   (`RuntimeExecutionOrdinal`/`ScopeRuntimeFence`, currently instantiated per `GameSession` in
   `apps/game-server/src/foundation/admission.rs`), or an equivalent scope-owned issuer. Because
   `accept_input` tracks no timer identity by itself (evidence above), de-duplication is the driver's
-  responsibility, not the issuer's, and (Round 13) it is now two checks, in order: first look up the
-  entry's `InteractionChildOccurrenceRef` in the retained-outcome record (below) — a hit means this
-  identity already has a terminal outcome, which is returned as-is with no ordinal minted and no
-  mutation, per GAME-INTERACTION-01 §7's "duplicate delivery of the same sibling MUST converge to one
-  lifecycle/outcome" (evidence above). Only a miss proceeds to the original race guard: atomically
-  transition the entry out of the pending set (remove it, or mark it in-flight) *before* calling
-  `accept_input`; only an entry that was still pending at that moment proceeds to mint an ordinal and
-  commit. This second check still matters on its own: it is what stops two near-simultaneous
-  presentations of the *same still-pending* entry (neither yet terminal, so the first check misses
-  for both) from each minting an ordinal.
+  responsibility, not the issuer's, and (Round 14) it is one fixed presentation order over the single
+  lifecycle record, applied to *every* presentation of an identity before anything else runs:
+  1. Look the identity up in the lifecycle-record store.
+  2. `TERMINAL` — return the first outcome exactly as recorded; no fences, no ordinal minted, no
+     mutation. GAME-INTERACTION-01 §7's "duplicate delivery of the same sibling MUST converge to one
+     lifecycle/outcome" is satisfied unconditionally here, before any fence could re-discard it
+     (evidence above; this ordering is what round 13 got wrong).
+  3. `IN_FLIGHT` — converge: mint no ordinal, run no mutation. The presentation already under way owns
+     resolving this identity to `TERMINAL`; a second presentation observes only that the identity is
+     still unresolved and takes no further action.
+  4. `PENDING` — only now, having found no terminal or in-flight identity to answer from, apply the
+     `scope_generation`/`content_generation`/`incarnation` fences (Round 9, field list above). A fence
+     failure atomically transitions the record straight to `TERMINAL(REJECTED, reason)` (next bullet
+     names the reason) — never a bare discard, so the very next duplicate finds step 2, not step 4
+     again. Passing all three fences atomically transitions `PENDING`→`IN_FLIGHT` and calls
+     `accept_input`; only a presentation that made it this far mints an ordinal.
+  This single order is what prevents both P1 gaps round 13's two separate structures left open: a
+  fence check landing before the terminal-outcome lookup (Codex finding, evidence above), and a lost
+  race between "remove the pending entry" and "write the terminal record" leaving the identity
+  briefly unrepresented in either structure.
 - Provide one shared `MonotonicClock` instance per scope (constructed once, never `SystemClock::new()`
   called again per call site) and use it for every `Deadline::after` at commit time and every
   `has_elapsed`/`remaining` at wake time for that scope — never mix two clock instances (evidence
@@ -721,129 +772,155 @@ set, and — from round 13 — its retained-outcome record).
   transform, or any other non-timer authoritative input — the test is "is this execution the firing
   of a pending revert timer," not which entry point produced it), as part of the *same* staged
   commit as the original `TRANSFORM`/`CREATE`/`REMOVE`/`RETAG` (FND-03 §15.4): reserve safe bounded
-  timer capacity *and* (Round 13) safe bounded retained-outcome capacity for this same child together,
-  before anything else; if either is unavailable, fail the *entire* original operation before anything
-  commits — no object mutation and no partial timer entry or retained-outcome slot survives. GAME-
-  INTERACTION-01 requires the retention, not its numeric bound (§7 vs. §5.9/§25, evidence above), so
-  folding its reservation into this existing staged check is what supplies the bound without inventing
-  one: the two reservations share one atomic fail-before-commit decision, exactly like the timer
-  capacity check already used alone through round 12. If both are available, populate and register a
-  pending entry with the complete field list above (World/Channel/InstanceId, `scope_generation`,
-  `PlacementKey`, `incarnation`, `content_generation`, `Deadline`, scheduling
-  `RuntimeExecutionOrdinal`/sequence, inverse `TransitionKey`, expected state/revision, and the
-  revert's own `InteractionChildOccurrenceRef` computed now as a nested child of the original
-  operation's own identity) under the FND-03 §10.1 scheduling key — so nothing about the revert is
-  derived later, only applied from what was stored. This pending-entry state is `scope_generation`-
-  scoped, owned by the same `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay;
-  a scope restart is a new instance (corrected evidence above), so both the pending entry and (Round
-  13) its reserved retained-outcome slot are dropped together with no separate cleanup path — the
-  same restart that would make "loss of a retained result payload" (GAME-INTERACTION-01 §7) possible
-  is exactly the restart that also resets the object's own overlay state, so nothing is left that
-  could be wrongly re-enabled. Map either capacity failure to `CAPACITY_EXCEEDED` (FND-03 §28) and
-  register both concrete numeric bounds in `RESOURCE_LIMITS_REGISTRY.json` per FND-03 §14.1 — neither
-  number is decided here.
+  capacity for one new lifecycle record *once*, before anything else — Round 14 folds round 13's
+  separate "timer capacity" and "retained-outcome capacity" reservations into this one reservation,
+  since one record now serves the identity's whole life; if capacity is unavailable, fail the
+  *entire* original operation before anything commits — no object mutation and no partial-lifecycle
+  record survives. If capacity is available, create the record `PENDING` with the complete field
+  list above (World/Channel/InstanceId, `scope_generation`, `PlacementKey`, `incarnation`,
+  `content_generation`, `Deadline`, scheduling `RuntimeExecutionOrdinal`/sequence, inverse
+  `TransitionKey`, expected state/revision) keyed by the revert's own `InteractionChildOccurrenceRef`
+  computed now as a nested child of the original operation's own identity, under the FND-03 §10.1
+  scheduling key — so nothing about the revert is derived later, only applied from what was stored.
+  This record is `scope_generation`-scoped, owned by the same `ChannelRuntimeV1`/`InstanceRuntime`
+  instance as the rest of the overlay; a scope restart is a new instance (corrected evidence above),
+  so it is dropped whole, in whichever state it was in, with no separate cleanup path — the same
+  restart that would make "loss of a retained result payload" (GAME-INTERACTION-01 §7) possible is
+  exactly the restart that also resets the object's own overlay state, so nothing is left that could
+  be wrongly re-enabled. Map the capacity failure to `CAPACITY_EXCEEDED` (FND-03 §28) and register
+  the concrete numeric bound in `RESOURCE_LIMITS_REGISTRY.json` per FND-03 §14.1 — that number is not
+  decided here.
 - On each driver wake, present admitted due entries (bounded above) as normalized FND-03 §10.2
   authoritative inputs, in their stored (deadline, scheduling ordinal, within-resolution sequence)
-  tie-break order (field list above): run the retained-outcome-then-pending-removal de-duplication
-  steps above (after the incarnation/content-generation fence below has already passed), mint the
-  surviving entries' `RuntimeExecutionOrdinal`s via the scope's ordinal issuer, then call `prepare`
-  addressing exactly the entry's stored `PlacementKey`/`incarnation`/`content_generation` (never
-  looked up, never guessed, never re-derived from the overlay revision alone) with the entry's stored
-  inverse `TransitionKey` and its stored expected revision as `expected_revision` — reusing
-  `prepare`'s existing stale-precondition checks (`DISPOSITION_STALE_STATE`,
-  `apps/game-server/src/world_runtime.rs` ~988-1013) exactly as they already work for any command, so
-  an object the entry's own fences did not already catch (changed again after this revert was
-  scheduled, but still the same incarnation) is rejected there, never guessed at. Every disposition
-  this commit reaches — `DISPOSITION_COMMITTED`, `DISPOSITION_STALE_STATE`, `DISPOSITION_OCCUPIED` —
-  is produced exactly once, under the entry's stored `InteractionChildOccurrenceRef` (field list
-  above), and immediately written into the retained-outcome record (Round 13, GAME-INTERACTION-01
-  §7: "`COMMITTED`: semantic commit proven exactly once; replay/retry never reapplies it";
-  "`REJECTED`: logical child terminal; replay does not reevaluate it as fresh work" — `STALE_STATE`
-  and `OCCUPIED` are this child's `REJECTED`, `COMMITTED` is `COMMITTED`) as that occurrence's one
-  terminal outcome; a distinct occurrence (a new `revert_after` registration, even at the same
-  anchor) carries its own distinct nested-child identity, so one occurrence's outcome never stands
-  for another's, and a later duplicate presentation of *this* occurrence's identity is answered from
-  that record (previous bullet) rather than executed again. Commit through the
+  tie-break order (field list above), and run the fixed presentation order above for each one: a
+  `TERMINAL` or `IN_FLIGHT` identity is answered or deferred without ever reaching `prepare`; only a
+  `PENDING` identity that passes its fences (below) is transitioned to `IN_FLIGHT`, mints its
+  `RuntimeExecutionOrdinal` via the scope's ordinal issuer, and reaches `prepare`, addressed exactly
+  by the record's stored `PlacementKey`/`incarnation`/`content_generation` (never looked up, never
+  guessed, never re-derived from the overlay revision alone) with its stored inverse `TransitionKey`
+  and its stored expected revision as `expected_revision` — reusing `prepare`'s existing
+  stale-precondition checks (`DISPOSITION_STALE_STATE`, `apps/game-server/src/world_runtime.rs`
+  ~988-1013) exactly as they already work for any command, so an object the record's own fences did
+  not already catch (changed again after this revert was scheduled, but still the same incarnation)
+  is rejected there, never guessed at. Every disposition `prepare` reaches —
+  `DISPOSITION_COMMITTED`, `DISPOSITION_STALE_STATE`, `DISPOSITION_OCCUPIED` — atomically transitions
+  the record `IN_FLIGHT`→`TERMINAL(outcome)` (GAME-INTERACTION-01 §7: "`COMMITTED`: semantic commit
+  proven exactly once; replay/retry never reapplies it"; "`REJECTED`: logical child terminal; replay
+  does not reevaluate it as fresh work" — `STALE_STATE`/`OCCUPIED` are this child's `REJECTED`,
+  `COMMITTED` is `COMMITTED`); a distinct occurrence (a new `revert_after` registration, even at the
+  same anchor) carries its own distinct nested-child identity and its own distinct record, so one
+  occurrence's outcome never stands for another's. Commit through the
   same scope-authority path (`PreparedMutation::Publish`/`TerminalSemanticOutcome`, ~1040-1054) —
   never `apply`/`resume_pending`/`CommandIngress`, which require a live `GameSessionAuthoritySnapshot`
   this timer does not have (P1, evidence above). This commit is a timer-origin execution: it reuses
-  only the state/footprint commit mechanics above, never the timer-capacity-reservation-and-register
-  step of the previous bullet, even when the inverse `TransitionKey` it just executed itself carries
+  only the state/footprint commit mechanics above, never the capacity-reservation-and-create step of
+  the previous bullet, even when the inverse `TransitionKey` it just executed itself carries
   `revert_after_ms` (Round 7/8) — a mutually timed pair fires one direction and stops, it does not
   re-arm itself.
-- Pre-`prepare` discard (§10.3's "scope ownership generation changed"/"invalidated" triggers) is
-  reserved for fences that invalidate the *timer itself*, never for a changed object:
-  `scope_generation` or `content_generation` changing clears the pending entry with the rest of the
-  scope-ephemeral overlay (same reset as §4's "Lifetime"); the entry's stored `incarnation` no
-  longer matching the current object at that `PlacementKey` (Round 9 — a replacement incarnation at
-  the same anchor) discards the pending entry the same way — all three are checked before the entry
-  is ever presented to `prepare`. A mismatched overlay revision on the anchor, or any other
-  same-incarnation state/revision change, is deliberately *not* one of these pre-`prepare` checks —
-  that case is the previous bullet's job: the entry still reaches `prepare` with its stored inverse
-  key and expected revision, and `prepare`'s own stale-precondition check rejects it there. One path,
-  not two, for "the object changed within the same incarnation."
-- On an occupancy conflict, terminalize `DISPOSITION_OCCUPIED` for the entry's stored derived
-  identity (field list above), record it in the retained-outcome record as that identity's `REJECTED`
-  (GAME-INTERACTION-01 §7, Round 13) and stop; do not retry it on a later wake (decided below, not
-  left open) — a later duplicate presentation returns this same recorded outcome (previous bullets),
-  never a fresh occupancy check.
+- Fences (§10.3's "scope ownership generation changed"/"invalidated" triggers) apply only to a
+  `PENDING` identity (Round 14, step 4 of the presentation order above), never to `TERMINAL` or
+  `IN_FLIGHT` — the lookup in the previous bullet already routed those away before fences could ever
+  run against them (this is the second P1 gap round 13 left open: fences must never see an
+  already-terminal identity). For a `PENDING` identity: `scope_generation` or `content_generation`
+  changing invalidates the timer itself, the same reset as the rest of the scope-ephemeral overlay
+  (§4's "Lifetime"); the record's stored `incarnation` no longer matching the current object at that
+  `PlacementKey` (Round 9 — a replacement incarnation at the same anchor) invalidates it the same
+  way — all three are checked before the record is ever presented to `prepare`, and any one failing
+  atomically transitions the record to `TERMINAL(REJECTED, reason)`, naming which fence failed
+  (`SCOPE_GENERATION_CHANGED` / `CONTENT_GENERATION_CHANGED` / `INCARNATION_CHANGED`, field list
+  above) — never a bare discard, so a later duplicate finds step 2 of the presentation order (`return
+  the first outcome`), not this fence check re-run against data that may have moved on again. A
+  mismatched overlay revision on the anchor, or any other same-incarnation state/revision change, is
+  deliberately *not* one of these `PENDING`-step fences — that case is the previous bullet's job: the
+  record still reaches `prepare` with its stored inverse key and expected revision, and `prepare`'s
+  own stale-precondition check rejects it there, itself atomically transitioning the record to
+  `TERMINAL(REJECTED)` as any other disposition does. One path, not two, for "the object changed
+  within the same incarnation."
+- On an occupancy conflict, `prepare` returns `DISPOSITION_OCCUPIED`, which (previous bullets)
+  atomically transitions the record to `TERMINAL(REJECTED)` under its own `InteractionChildOccurrenceRef`
+  and stops; do not retry it on a later wake (decided below, not left open) — a later duplicate
+  presentation is answered by step 2 of the presentation order above, never a fresh occupancy check.
 
 ### Exact test obligations
 
-- **Fires once, mints exactly one ordinal (P2, de-duplication, Round 13 two-layer).** A test that
-  presents the same due entry twice within the pending window (neither presentation yet terminal —
-  e.g. a second driver pass or a crash-recovery rescan re-observing it before either finished) must
-  observe exactly one `RuntimeExecutionOrdinal` minted and exactly one commit; the pending→removed/
-  in-flight transition happening *before* `accept_input` is what stops the second. This is
-  deliberately not "a deterministic no-op result from `accept_input`": `accept_input` itself
-  (evidence above) has no way to recognize a repeat, so this layer's guarantee lives entirely in the
-  driver's atomic removal-before-accept ordering, and the test must exercise that ordering directly.
-- **Fenced, one path (P1, FND-03 §10.1/§10.3).** The revert commits only under the same fences named
-  in the pending entry's complete field list ("Exact delta" above) as any other §4 operation, but only
-  three of them are checked *before* `prepare`: `scope_generation`, `content_generation` or the stored
-  `incarnation` no longer matching (Round 9) each discard the pending entry without ever calling
-  `prepare` (the timer itself is invalid — §10.3's "scope ownership generation changed"/target-
-  generation-mismatch triggers). A mismatched overlay revision (a same-incarnation state/revision
-  change) is deliberately *not* checked there; a test asserting it is (a separate pre-`prepare`
-  cancellation path for a changed object) must fail — the only path for a same-incarnation changed
-  object is `prepare`'s own `DISPOSITION_STALE_STATE` (below).
-- **Redelivery convergence, terminal stays terminal, distinct occurrences never collide, retention
-  bound follows the contract's rule (P1, Round 13, GAME-INTERACTION-01 §7/§5.9/§25).** (a) Re-
-  presenting an entry whose `InteractionChildOccurrenceRef` already has a retained terminal
-  outcome — the pending entry itself is long gone by this point — must find that record and return it
-  exactly as first produced: zero new `RuntimeExecutionOrdinal`s minted, zero mutations, no
-  re-evaluation of `prepare` or current occupancy. A test asserting this instead falls through as a
-  silent no-op with nothing returned (round 12's now-superseded behavior) must fail — that violates
-  §7's "duplicate delivery of the same sibling MUST converge to one lifecycle/outcome." (b) Terminal
-  stays terminal: once retained as `COMMITTED` or `REJECTED` (`STALE_STATE`/`OCCUPIED`), a test that
-  re-runs `prepare` or re-checks occupancy for that identity on a later presentation — instead of
-  returning the retained record — must fail; per §7, "`COMMITTED`... replay/retry never reapplies it"
-  and "`REJECTED`... replay does not reevaluate it as fresh work." (c) Distinct occurrences never
-  collide: schedule two distinct `revert_after` registrations that resolve to the same anchor/target/
-  edge (e.g. the same transform fired twice at different times, or a mutually timed pair's two
-  directions); each must compute and retain its own distinct `InteractionChildOccurrenceRef` (a
-  distinct nested child of its own triggering operation's identity, never the scheduling ordinal —
-  §4.4/§5.8), so a test that lets one registration's retained outcome answer for the other's must
-  fail. (d) Retention bound follows the contract's rule: GAME-INTERACTION-01 requires the retention
-  behavior in (a)-(c) but explicitly does not name a numeric retention window/count (§5.9, §25) — a
-  test MUST NOT assert any specific retained-record count/duration as architecturally required here;
-  it MAY assert that retained-outcome capacity is reserved atomically with timer capacity at
-  scheduling (previous section) and that exhaustion of either fails the whole original operation
-  before commit, and that a retained record survives for the full life of its scope generation and is
-  cleared only on scope restart (next obligation).
-- **Cleared on scope restart, including the retained-outcome record (Round 13).** Both the
-  pending-timer set (keyed by `Deadline`) and (Round 13) the retained-outcome record (keyed by
-  `InteractionChildOccurrenceRef`) are `scope_generation`-scoped state owned by the same
+- **Fires once, mints exactly one ordinal (P2, de-duplication, Round 14 single record).** A test that
+  presents the same due identity twice while it is still `PENDING` (neither presentation has reached
+  `TERMINAL` yet — e.g. a second driver pass or a crash-recovery rescan re-observing it before either
+  finished) must observe exactly one `RuntimeExecutionOrdinal` minted and exactly one commit; the
+  atomic `PENDING`→`IN_FLIGHT` transition (step 4 of the presentation order, Exact delta above) is
+  what stops the second presentation from also minting. This is deliberately not "a deterministic
+  no-op result from `accept_input`": `accept_input` itself (evidence above) has no way to recognize a
+  repeat, so the guarantee lives entirely in the record's atomic state transition, and the test must
+  exercise that transition directly.
+- **A duplicate during `IN_FLIGHT` converges (P1, Round 14).** Present the same identity a second time
+  after the first presentation has minted its ordinal and started running `prepare`/commit, but before
+  it has written `TERMINAL`. The second presentation must observe the record as `IN_FLIGHT` (step 3 of
+  the presentation order) and take no action of its own: zero new `RuntimeExecutionOrdinal`s, zero
+  calls into `prepare`, zero mutation, and it must not re-check the `PENDING`-step fences (those apply
+  only to `PENDING`, never to `IN_FLIGHT` — Exact delta above). Whichever outcome the first,
+  still-in-flight presentation eventually writes is what any later presentation of this identity —
+  including this one, if it is retried after the first completes — receives.
+- **Fenced, one path, fences apply only to `PENDING` (P1, FND-03 §10.1/§10.3, Round 14).** The revert
+  commits only under the same fences named in the lifecycle record's complete field list ("Exact
+  delta" above) as any other §4 operation, but only three of them are ever checked, and only while the
+  record is `PENDING`: `scope_generation`, `content_generation` or the stored `incarnation` no longer
+  matching (Round 9) each atomically transition the record to `TERMINAL(REJECTED, reason)` without
+  ever calling `prepare` (the timer itself is invalid — §10.3's "scope ownership generation
+  changed"/target-generation-mismatch triggers). A test asserting these fences are re-checked against
+  a `TERMINAL` or `IN_FLIGHT` record must fail — the presentation-order lookup (Exact delta above)
+  routes those away before any fence runs, which is exactly the ordering Codex's P1 finding required
+  (a duplicate of an already-terminal child must never be discarded by a fence check that runs before
+  the terminal-outcome lookup). A mismatched overlay revision (a same-incarnation state/revision
+  change) is deliberately *not* one of these `PENDING`-step fences; a test asserting it is (a separate
+  pre-`prepare` cancellation path for a changed object) must fail — the only path for a
+  same-incarnation changed object is `prepare`'s own `DISPOSITION_STALE_STATE` (below).
+- **A duplicate after `TERMINAL` returns the first outcome, even after the target is replaced (P1,
+  Round 14, GAME-INTERACTION-01 §7).** Let a revert reach `TERMINAL` (any outcome), then replace the
+  target object's incarnation at the same `PlacementKey` (the pre-existing recycling path) or otherwise
+  change the object again. Present the same identity once more: it must return the first `TERMINAL`
+  outcome exactly as recorded — zero new `RuntimeExecutionOrdinal`s, zero mutations, no re-evaluation
+  of `prepare`, occupancy or the `PENDING`-step fences against the object's new state — because step 2
+  of the presentation order (Exact delta above) answers from the record alone and never re-derives
+  anything from current object state. A test asserting the replaced target changes what this duplicate
+  observes must fail; per §7, "`COMMITTED`... replay/retry never reapplies it" and "`REJECTED`...
+  replay does not reevaluate it as fresh work" — unconditionally, not just while the target is
+  unchanged.
+- **Distinct occurrences never collide (P1, Round 14, GAME-INTERACTION-01 §5.1/§5.8).** Schedule two
+  distinct `revert_after` registrations that resolve to the same anchor/target/edge (e.g. the same
+  transform fired twice at different times, or a mutually timed pair's two directions): each must
+  compute its own distinct `InteractionChildOccurrenceRef` (a distinct nested child of its own
+  triggering operation's identity, never the scheduling ordinal — §4.4/§5.8) and therefore its own
+  distinct lifecycle record, so a test that lets one registration's record answer for the other's must
+  fail.
+- **Retention bound follows the contract's rule (P1, Round 14, GAME-INTERACTION-01 §5.9/§25).**
+  GAME-INTERACTION-01 requires the convergence/retention behavior above but explicitly does not name a
+  numeric retention window/count (§5.9, §25) — a test MUST NOT assert any specific record count or
+  retention duration as architecturally required here; it MAY assert that lifecycle-record capacity is
+  reserved once, atomically, at scheduling (previous section), that exhaustion fails the whole original
+  operation before commit, and that a record survives for the full life of its scope generation
+  (next obligation).
+- **An interruption leaves the identity represented until scope restart (P1, Round 14,
+  GAME-INTERACTION-01 §7).** Drive a record from `PENDING` to `IN_FLIGHT` (ordinal minted, `prepare`
+  about to run or already run) and then simulate an interruption before `TERMINAL` is ever written —
+  a crash, a dropped task, any failure that stops execution mid-flight. The record must be observed as
+  `IN_FLIGHT`, not absent and not silently reset to `PENDING`: a test asserting the identity becomes
+  unrepresented, or that a later presentation re-executes it from scratch, must fail. The record stays
+  `IN_FLIGHT` — scope-ephemeral like the rest of the overlay — until the scope restarts, at which point
+  it is dropped together with everything else the scope owns; there is no separate recovery/cleanup
+  path for an interrupted record within a live generation, and none is needed, because nothing reaches
+  `IN_FLIGHT` without first having passed the `PENDING` fences exactly once.
+- **Cleared on scope restart (Round 14).** The lifecycle-record store (keyed by
+  `InteractionChildOccurrenceRef`) is `scope_generation`-scoped state owned by the same
   `ChannelRuntimeV1`/`InstanceRuntime` instance as the rest of the overlay; a scope restart is a new
-  instance (corrected evidence above), so both are dropped together with no separate cleanup path —
-  the same lifetime §4 already states ("Lifetime: Scope-ephemeral") and the same trigger FND-03 §10.3
-  already names ("scope ownership generation changed"). Because it never crosses a process lifetime,
-  FND-03 §9's durable-encoding requirement does not apply here (evidence above) — this is a positive
-  test, not merely an absence. A test MUST also assert the record is *not* dropped for any other
-  reason within one live scope generation — no eviction, no expiry — since GAME-INTERACTION-01 §7
-  forbids "loss of a retained result payload" re-enabling execution, and this design avoids that loss
-  entirely within a generation by reserving retention capacity up front (previous section) rather than
-  evicting under pressure.
+  instance (corrected evidence above), so every record — in whichever state — is dropped together with
+  no separate cleanup path — the same lifetime §4 already states ("Lifetime: Scope-ephemeral") and the
+  same trigger FND-03 §10.3 already names ("scope ownership generation changed"). Because it never
+  crosses a process lifetime, FND-03 §9's durable-encoding requirement does not apply here (evidence
+  above) — this is a positive test, not merely an absence. A test MUST also assert a record is *not*
+  dropped for any other reason within one live scope generation — no eviction, no expiry — since
+  GAME-INTERACTION-01 §7 forbids "loss of a retained result payload" re-enabling execution, and this
+  design avoids that loss entirely within a generation by reserving capacity up front (previous
+  section) rather than evicting under pressure.
 - **No partial footprint.** A revert applies its full target state in the same single commit as any
   other overlay operation (the existing `PreparedMutation::Publish` path); this is exactly the C3
   fixed-footprint boundary in §4 — only the anchor's pre-authored, bind-time-reserved footprint is
@@ -863,26 +940,28 @@ set, and — from round 13 — its retained-outcome record).
 - **Intervening change yields STALE_STATE, no mutation, via the one path (P1).** If the object was
   changed again after the revert was scheduled (a later operation on the same anchor moved it away
   from the state the revert's stored expected revision names), firing must reach `prepare` — never a
-  pre-`prepare` cancellation — and hit `prepare`'s existing `DISPOSITION_STALE_STATE` path (evidence
-  above), committing nothing; the revert never overwrites whatever the object has become in the
-  meantime, and there is no second, separate check that could instead silently discard the entry.
+  `PENDING`-step fence discard — and hit `prepare`'s existing `DISPOSITION_STALE_STATE` path (evidence
+  above), committing nothing and atomically transitioning the record to `TERMINAL(REJECTED)`; the
+  revert never overwrites whatever the object has become in the meantime, and there is no second,
+  separate check that could instead discard the record some other way.
 - **Two anchors with an equal overlay revision fire independently (P1, Round 9).** Bind two
   different `LocalObjectRuntime`s at two different `PlacementKey`s whose overlay revisions happen to
   be numerically equal, each with its own `revert_after_ms`-carrying operation scheduled. When both
   timers become due, each must fire against its own stored `PlacementKey` and mutate only its own
   object; a test that lets either fire against the other's anchor (because it addressed by overlay
   revision alone instead of the stored `PlacementKey`) must fail.
-- **A replacement incarnation discards the old timer (P1, Round 9).** Schedule a revert, then replace
-  the target object's incarnation at the same `PlacementKey` (the pre-existing recycling path, not
-  something this decision adds). The old timer's entry must be discarded pre-`prepare` when its
-  stored `incarnation` no longer matches — it must never reach `prepare`, never mutate the
-  replacement incarnation's object, and must not appear as a `DISPOSITION_BINDING_MISMATCH` outcome
-  either, since there is no command awaiting a reply for an internally-discarded timer.
+- **A replacement incarnation transitions the old timer to `TERMINAL` (P1, Round 9/14).** Schedule a
+  revert, then replace the target object's incarnation at the same `PlacementKey` (the pre-existing
+  recycling path, not something this decision adds). The old record must atomically transition
+  `PENDING`→`TERMINAL(REJECTED, reason=INCARNATION_CHANGED)` at the fence step when its stored
+  `incarnation` no longer matches — it must never reach `prepare`, never mutate the replacement
+  incarnation's object, and must not appear as a `DISPOSITION_BINDING_MISMATCH` outcome either, since
+  there is no command awaiting a reply for an internally-discarded timer.
 - **A mutually timed pair fires once and stops (P2, Round 7).** Bind a `TRANSFORM a→b` and its
   inverse `TRANSFORM b→a` so *both* carry `revert_after_ms`; schedule the forward operation, let its
   timer become due. The test must observe: exactly one `RuntimeExecutionOrdinal` minted, exactly one
-  inverse execution (the object lands in `a`), and *zero* new timers registered as part of that
-  firing — no pending entry exists afterward for either direction. Re-arming only happens if some
+  inverse execution (the object lands in `a`), and *zero* new records registered as part of that
+  firing — no `PENDING` record exists afterward for either direction. Re-arming only happens if some
   later non-timer-origin execution (a player/command, an encounter/server-event, or any other
   authoritative input) invokes `b→a` (or `a→b`) itself.
 - **An encounter-originated timed transform registers and fires (P1, Round 8).** Bind
@@ -895,27 +974,28 @@ set, and — from round 13 — its retained-outcome record).
 - **Occupied target cells refuse deterministically (decided, not deferred).** `prepare`
   (`apps/game-server/src/world_runtime.rs` ~973-1050) computes and returns its terminal disposition in
   one shot from current state; it never re-evaluates against occupancy that changes later, and (Round
-  13) that outcome is written into the retained-outcome record as this identity's terminal `REJECTED`
-  the moment it is produced, so a later call finds the record rather than re-evaluating `prepare`. A
-  revert whose target state's footprint conflicts with currently occupied cells terminalizes as
-  `DISPOSITION_OCCUPIED` (`apps/game-server/src/world_runtime.rs` ~1023-1027) for that one execution,
-  under the entry's stored derived identity (field list above), and is refused permanently — the same
-  "no silent search for a free tile unless the definition names one" discipline §3 already applies to
-  a blocked relocation. There is no retry: giving a revert a fresh identity per wake to work around
-  this would be new per-object retry machinery this decision does not introduce, and the retained
-  `REJECTED` record (Round 13) is exactly what makes that unnecessary — any later duplicate
-  presentation already converges to the same refusal on its own. If a revert must eventually succeed
-  despite occupancy, that is a future definition-level requirement (the definition names a fallback,
-  which would be a *distinct* occurrence with its own identity), not a hidden retry loop here.
-- **Timer-capacity atomicity (FND-03 §15.4).** If safe bounded timer capacity is unavailable when
-  any non-timer-origin `revert_after`-carrying operation is about to commit — player/command,
-  encounter/server-event-originated, or any other authoritative input — the *entire* original
-  operation fails before anything commits: neither the world-object mutation nor a partial/orphaned
-  timer entry survive. Only a timer-origin execution (the firing path itself) never attempts this
-  reservation at all (Round 7/8), so it has nothing to fail on.
-  An already-accepted timer already in the pending set is never discarded merely because the due
-  queue is congested (FND-03 §15.4, second sentence) — that pressure produces `CAPACITY_EXCEEDED` on
-  the *next incoming* operation, not eviction of an existing entry.
+  14) that outcome atomically transitions the record `IN_FLIGHT`→`TERMINAL(REJECTED)` the moment it is
+  produced, so a later presentation is answered by step 2 of the presentation order rather than
+  re-evaluating `prepare`. A revert whose target state's footprint conflicts with currently occupied
+  cells terminalizes as `DISPOSITION_OCCUPIED` (`apps/game-server/src/world_runtime.rs` ~1023-1027)
+  for that one execution, under the record's own derived identity (field list above), and is refused
+  permanently — the same "no silent search for a free tile unless the definition names one"
+  discipline §3 already applies to a blocked relocation. There is no retry: giving a revert a fresh
+  identity per wake to work around this would be new per-object retry machinery this decision does
+  not introduce, and the `TERMINAL(REJECTED)` record (Round 14) is exactly what makes that
+  unnecessary — any later duplicate presentation already converges to the same refusal on its own. If
+  a revert must eventually succeed despite occupancy, that is a future definition-level requirement
+  (the definition names a fallback, which would be a *distinct* occurrence with its own identity), not
+  a hidden retry loop here.
+- **Lifecycle-record capacity atomicity (FND-03 §15.4, Round 14).** If safe bounded capacity for one
+  new lifecycle record is unavailable when any non-timer-origin `revert_after`-carrying operation is
+  about to commit — player/command, encounter/server-event-originated, or any other authoritative
+  input — the *entire* original operation fails before anything commits: neither the world-object
+  mutation nor a partial-lifecycle record survives. Only a timer-origin execution (the firing path
+  itself) never attempts this reservation at all (Round 7/8), so it has nothing to fail on.
+  An already-accepted `PENDING`/`IN_FLIGHT` record is never discarded merely because the due queue is
+  congested (FND-03 §15.4, second sentence) — that pressure produces `CAPACITY_EXCEEDED` on the *next
+  incoming* operation, not eviction of an existing record.
 - **Equal-deadline order replays scheduling order (P2, FND-03 §10.1).** Two timers scheduled in two
   *different* owner resolutions (different `RuntimeExecutionOrdinal`s at scheduling time) that later
   become due with the identical `Deadline` must fire in the order their scheduling resolutions

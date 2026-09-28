@@ -41,8 +41,9 @@ still `DecisionStatus: CANDIDATE` for the new part:
    `Deadline` from authored `revert_after_ms`, RECOMMENDED; a step counter, superseded; reactive
    re-evaluation, rejected), the must-decide-now test, the exact delta the owning lane (the
    scope-runtime/Foundation carrier lane behind `ChannelRuntimeV1`/`InstanceRuntime`, not this task)
-   must supply — including a canonical complete pending-entry field list (Round 11) — and exact test
-   obligations. The owner question itself (who accepts this decision) stays explicit and unresolved.
+   must supply — including one canonical scope-owned lifecycle record per identity, `PENDING`→
+   `IN_FLIGHT`→`TERMINAL` (Round 14) — and exact test obligations. The owner question itself (who
+   accepts this decision) stays explicit and unresolved.
 2. §4/§5 record, without designing it, the CW3 Content-model worker's delta (allocation
    `OTV2-20260928-cw3-local-object-state-model`: 1a per-state collision presence, 1b authored
    initial state validated fail-closed, 1c RETAG decision) and the C3 hardening clarification
@@ -65,22 +66,21 @@ Full file:line evidence lives in §7 of the owned doc (Evidence subsection); thi
   `placement`/`incarnation`/`content_generation`; `prepare`'s first check (~978-987) rejects a
   mismatch with `DISPOSITION_BINDING_MISMATCH`, distinct from `DISPOSITION_STALE_STATE`.
 - `foundation/runtime_actor_carrier.rs` `from_committed_assignment` (~702-750) — production-only:
-  pins `scope_generation` once. No scope/global clock (bounded grep, evidence in §7) — PROVEN.
-- `crates/foundation/src/time.rs` `Deadline`/`ManualClock`/`SystemClock::new()` (~50-166) — PROVEN:
-  unused in `apps/game-server/src`, fresh incomparable origin per call. `OTERYN_ENCOUNTER_
-  AUTHORING_FORMAT_V1.md` line 144 — authors `revert_after_ms`.
+  pins `scope_generation` once. No scope/global clock — PROVEN.
+- `crates/foundation/src/time.rs` `Deadline`/`ManualClock`/`SystemClock::new()` (~50-166) — unused
+  in `apps/game-server/src`, fresh incomparable origin per call. Encounter doc line 144 — authors
+  `revert_after_ms`.
 - `FND-03_RUNTIME_EXECUTION_CONTRACT.md` §7/§9/§10/§14/§15.4/§28 — binds `revert_after`.
   `foundation/mod.rs` `ScopeRuntimeFence::accept_input` (~1040-1050) — mints an ordinal per
   generation only, tracks no timer identity. `movement.rs` `MovementOwnerTurn` — bounded precedent.
-- `GAME-INTERACTION-01_..._CANDIDATE.md` §4.1/§4.4/§5.1/§5.8, `interaction/identity.rs`
-  `ChildOccurrenceRef` (~69-157) — nested-cascade identity; ordinal is fence evidence, not identity.
-  Round 13, read in full: §7 (265-280) — "duplicate delivery ... MUST converge to one lifecycle/
-  outcome," "loss of a retained result payload MUST NOT re-enable execution"; §5.9/§25 (214-225/
-  780-798) — retention window/count explicitly unfrozen, no numeric bound named.
-- `foundation/mod.rs` `CommandIngress` (~53-742) — round 12: only terminal-retention mechanism in
-  the repo; `CommandId`-keyed, single-slot, session-gated — rules out reuse, not retention itself.
-- PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c. `git diff ac8395b8
-  origin/main` — only `world_runtime.rs`/encounter doc line numbers shifted.
+- `GAME-INTERACTION-01_..._CANDIDATE.md` §4.1/§4.4/§5.1/§5.8/§7 (265-280)/§5.9/§25, `interaction/
+  identity.rs` `ChildOccurrenceRef` (~69-157) — nested-cascade identity; §7: "duplicate delivery ...
+  MUST converge to one lifecycle/outcome," "loss of a retained result payload MUST NOT re-enable
+  execution"; §5.9/§25: retention window/count explicitly unfrozen, no numeric bound named — the
+  owning lifecycle contract for round 14's single record.
+- `foundation/mod.rs` `CommandIngress` (~53-742) — round 12: `CommandId`-keyed, single-slot,
+  session-gated — rules out reuse, not retention itself.
+- PR #1055/#1046 (merged) generalized `LocalObjectRuntime`, shipped 1a/1b/1c.
 
 ## High-risk authority/recovery qualification
 
@@ -117,27 +117,31 @@ option recommended; rebound to FND-03 §10 authoritative timer with staged capac
 equal-deadline tie-break, one clock per scope; merged origin/main (PR #1055/#1046); `revert_after_ms`
 admissible only with exactly one bound inverse; pre-`prepare` discard restricted to
 `scope_generation`/`content_generation`. Round 7: timer-origin execution never re-arms. Round 8:
-restated as an origin test so `DepthWarzoneBossDeath`'s revert isn't starved. Round 9: pending entry
-gained exact target identity; changed `incarnation` joins the pre-`prepare` discard fences. Round 10:
-fixed a stale summary contradicting round 9. Round 11 (`87b974b1`): pending entry never stored its
-derived `InteractionChildOccurrenceRef`; fixed with one canonical field-list table. Round 12
-(`8e12f6bf`): round 11's replay test contradicted the driver's no-op rule; checked `CommandIngress`
-(`CommandId`-keyed, single-slot, session-gated); specified redelivery as a no-op with nothing retained.
+restated as an origin test. Round 9: pending entry gained exact target identity. Round 10: fixed a
+stale summary. Round 11 (`87b974b1`): pending entry never stored its derived
+`InteractionChildOccurrenceRef`; fixed with one field-list table. Round 12 (`8e12f6bf`): specified
+redelivery as a no-op with nothing retained. Round 13 (`f7e9c7f2`): round 12 superseded — violated
+GAME-INTERACTION-01 §7's retention requirement; terminal outcome became retained scope-owned state,
+capacity folded into the existing FND-03 §15.4 timer-capacity reservation, dropped only on scope
+restart.
 
-Round 13 (Codex 4119805483, head `f7e9c7f2`): **round 12 is superseded — it was wrong.** It violates
-the owning contract itself: `GAME-INTERACTION-01_..._CANDIDATE.md` §7 requires duplicate delivery of
-the same child to converge to one lifecycle/outcome, and "loss of a retained result payload MUST NOT
-re-enable execution" (presupposes retention exists). Read GAME-INTERACTION-01 in full: §7 mandates
-retention *semantics*; §5.9/§25 explicitly leave the numeric bound unfrozen — the same decided-
-semantics/undecided-number split already used for FND-03 §15.4 timer capacity, so no number invented.
-Fixed: the revert's terminal outcome (`InteractionChildOccurrenceRef` → `TerminalSemanticOutcome`) is
-now retained scope-owned state, its capacity folded into the same staged FND-03 §15.4 reservation as
-timer capacity; never evicted mid-generation, dropped only on scope restart with the rest of the
-overlay (so "loss" and the object's own overlay reset always coincide). Duplicate presentation now
-returns the retained outcome (zero new ordinals/mutations); the original atomic pending-removal guard
-is kept as a narrower second layer (same-window races only). Rewrote every affected bullet/obligation
-and grepped the whole doc for "not retained"/"no-op"/"replay"/"retain," fixing every instance. Merged
-`origin/main` (`452c3e2c`, unrelated); `git diff f7e9c7f2 HEAD` confirms no cited file drifted.
+Round 14 (Codex 4119913770/4119913778, head `a0519257`): **round 13 is superseded — two P1 seam
+bugs.** (1) The pending entry was removed before any terminal record existed; a lost race or an
+interruption left the identity briefly unrepresented. (2) A duplicate of an already-terminal child
+hit the incarnation/content fences *before* the retained-outcome lookup, discarding it instead of
+returning its first outcome. Root cause: two separate structures with a gap at the seam. Per
+coordinator decision: replaced both with **one scope-owned lifecycle record per
+`InteractionChildOccurrenceRef`**, state `PENDING(entry fields) | IN_FLIGHT | TERMINAL(outcome)`,
+matching GAME-INTERACTION-01 §7's own lifecycle directly, one capacity reservation for its whole
+life. Fixed presentation order: look up → `TERMINAL` returns the first outcome (no fences) →
+`IN_FLIGHT` converges (no execute, no mint) → only `PENDING` reaches the fences, failure atomically
+transitions straight to `TERMINAL(REJECTED, named reason)`, never a bare discard. No bare removal
+ever; dropped only on scope restart. Interruption mid-flight leaves `IN_FLIGHT`, scope-ephemeral.
+Rewrote the field list, Option 2, Must-decide-now, every "Exact delta" bullet and the test
+obligations (added: duplicate-during-`IN_FLIGHT` converges; duplicate-after-`TERMINAL` returns the
+first outcome even after the target is replaced; interruption leaves the identity represented until
+restart); grepped the whole doc for stale two-structure wording. Merged `origin/main` (`61c6b35c`,
+unrelated); `git diff a0519257 HEAD` confirms no cited file drifted.
 
 All validators re-run after each round's commit; unchanged pass (see Validation below).
 
@@ -147,13 +151,13 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 - command/run: `python3 tools/agents/validate_governance.py`
 - result: PASS — "Governance validation passed for Oteryn/Oteryn-Game. Validated 22 required policy
-  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-13; unchanged)
+  documents and 9 project lanes." (re-run after each pre-freeze fix commit, rounds 1-14; unchanged)
 
 ### Component/integration
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 47 workflows)." (round 13, main unmoved since round 12; unchanged)
+  validation passed (23 files, 47 workflows)." (round 14; unchanged)
 
 ### E2E
 
@@ -178,7 +182,7 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ## Independent review
 
-- required: YES — same review path as the proposal; not self-accepted.
+- required: YES — same review path as the proposal.
 - exact head: pending
 - method/auditor: pending
 - material findings: pending
@@ -197,14 +201,15 @@ All validators re-run after each round's commit; unchanged pass (see Validation 
 
 ```yaml
 last_progress: >
-  PR #1045 pre-freeze round 13 (Codex 4119805483 on frozen head f7e9c7f2): round 12 was WRONG --
-  superseded. Violated owning GAME-INTERACTION-01 SS7: duplicate delivery MUST converge to one
-  outcome; loss of a retained result payload MUST NOT re-enable execution. Read SS7 in full: mandates
-  retention semantics; SS5.9/SS25 leave the numeric bound unfrozen -- same pattern as FND-03
-  timer-capacity, no number invented. Fixed: terminal outcome is now retained scope-owned state
-  (InteractionChildOccurrenceRef -> TerminalSemanticOutcome), capacity folded into the existing
-  staged FND-03 SS15.4 reservation, dropped only on scope restart. Duplicate presentation now returns
-  the retained outcome. Rewrote every affected bullet/obligation; grepped whole doc; validators pass.
+  PR #1045 pre-freeze round 14 (Codex 4119913770/4119913778 on frozen head a0519257): round 13's
+  two-structure design had two P1 seam bugs -- an unrepresented window between removal and
+  terminal-write, and fences running before the terminal lookup. Replaced both with ONE scope-owned
+  lifecycle record per InteractionChildOccurrenceRef: PENDING(entry fields) | IN_FLIGHT |
+  TERMINAL(outcome), matching GAME-INTERACTION-01 SS7. One capacity reservation for the whole
+  lifecycle. Presentation order: lookup -> TERMINAL returns first outcome -> IN_FLIGHT converges ->
+  only PENDING reaches fences, failure atomically transitions to TERMINAL(REJECTED, named reason).
+  Interruption leaves IN_FLIGHT, scope-ephemeral. Rewrote field list, all Exact-delta bullets, test
+  obligations; grepped whole doc; validators pass.
 status: ready
 branch: claude/cw1-world-object-revert-progression
 head_sha: null
