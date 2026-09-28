@@ -59,7 +59,14 @@ without weakening that chain?
   - the blessing set before and after (after is empty for regular blessings, D58-D68 §4.3.2);
   - the Amulet of Loss selection and the lost-item set (item ids, ≤ the DEATH-3 bound; empty
     until DEATH-3 is admitted);
+  - the death cell: World, Channel, spatial position (≤ 128 B) and map revision, the durable
+    destination that a resumed DEATH-3 item workflow needs after runtime state is lost
+    (death decision §4.4);
   - the respawn position reference (≤ 128 B) and the death policy revision;
+  - `command_binding` (1..1,024 B) and `policy_digest` (32 B), as in an XP receipt: the binding
+    is a digest of the complete death intent (character, original revision, occurrence, the
+    policy contents, blessings held, the promotion and Premium evaluation, the Amulet of Loss
+    state, the equipment and backpack snapshot, the RNG stream binding and the death cell);
   - the same revision fields as an XP receipt, and `committed_at`.
 - The XP receipt table is unchanged. A `CharacterRevision` successor now has exactly one receipt
   of either kind.
@@ -86,18 +93,29 @@ without weakening that chain?
   own receipt kind, decided with DEATH-4. Until then, no path inserts blessings and every death
   records an empty set.
 
-### 3.4 Respawn position
+### 3.4 Respawn position and pending respawn
 
-The receipt records the respawn position. Persisting a Character position for the next login is a
-separate Character position lane; until it exists, the respawn is runtime (death decision §4.5)
-and the next login follows the existing admission placement.
+- The receipt records the respawn position.
+- The death transaction also inserts one row in a new table `game_character_pending_respawns`
+  (`character_id` primary key, `death_occurrence_id`, the respawn position). It is an obligation
+  of the committed death outcome, outside the revision chain: it neither advances nor needs a
+  `CharacterRevision`, like DUR-03 cause records keyed by a Character.
+- **Consumption:** the runtime respawn (death decision §4.5), and after a restart the next
+  admission or recovery of the character, reads the pending row, places the new actor at its
+  position with full HP and mana, and deletes the row under the same session fences in the same
+  transaction as the placement it records. A committed death therefore always respawns at its
+  recorded temple, even if the generation ended before the runtime respawn.
+- A second death cannot commit while a pending respawn exists (the character is not playable).
+- Persisting a general Character position for ordinary logins remains a separate lane.
 
 ### 3.5 Writer
 
 - `commit_character_death` mirrors `commit_character_experience`: the same recovery fence,
   admission-relation locks, reconnect-session row, runtime-scope assignment and `character_root`
-  row lock, keyed by the death occurrence. A retry with the same occurrence returns the first
-  receipt; a changed intent under the same occurrence conflicts; a stale fence writes nothing.
+  row lock, keyed by the death occurrence. A retry with the same occurrence and the same
+  `command_binding` returns the first receipt; the same occurrence with a different binding
+  conflicts (compared before replay, as `commit_character_experience` does); a stale fence writes
+  nothing.
 - `reconcile_character_death` resolves an ambiguous outcome by occurrence before respawn.
 - An XP award and a death serialize on the `character_root` lock; the chain rejects any
   interleaving that breaks `before = predecessor.after`.
@@ -106,8 +124,8 @@ and the next login follows the existing admission placement.
 
 | Child | Scope | Depends on |
 |---|---|---|
-| DEATH-0 | The migration (§3.1-§3.3), guard changes and tests; no writer | this decision |
-| DEATH-1 | `commit_character_death` and `reconcile_character_death`, the calculator change | DEATH-0; progression readiness |
+| DEATH-0 | The migration (§3.1-§3.4: death receipts, blessings, pending respawns), guard changes and tests; no writer | this decision |
+| DEATH-1 | `commit_character_death` and `reconcile_character_death`, the calculator change, pending-respawn consumption at respawn, admission and recovery | DEATH-0; progression readiness |
 
 ## 5. Rejected options
 
@@ -144,7 +162,8 @@ required_independent_review: "exact-head independent review (receipt chain, guar
 implementation_lanes: [DEATH-0, DEATH-1]
 required_revalidation:
   - "DEATH-0: a death receipt lowers experience and advances the revision; an XP receipt still requires a strict increase; mixed chains XP → death → XP pass; a gap, a duplicate revision or a before/after mismatch across kinds fails the deferred guard; death receipts are immutable and untruncatable"
-  - "DEATH-1: a retry with the same occurrence returns the first receipt; a changed intent conflicts; a stale fence writes nothing; an XP award and a death serialize without deadlock"
+  - "DEATH-1: a retry with the same occurrence and binding returns the first receipt; the same occurrence with a changed policy or input conflicts even when the stored outputs would match; a stale fence writes nothing; an XP award and a death serialize without deadlock"
+  - "DEATH-1: a restart after the death commits and before respawn places the character at the recorded temple on the next admission and deletes the pending row once; a death receipt carries the death cell a resumed DEATH-3 workflow reads"
 remaining_unknowns:
   - Character position persistence
   - blessing purchase receipts (DEATH-4)

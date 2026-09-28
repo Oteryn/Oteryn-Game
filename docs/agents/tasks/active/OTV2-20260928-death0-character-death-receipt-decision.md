@@ -61,6 +61,18 @@ idempotency. DEATH-0 and DEATH-1 carry the negative cases in the handback when a
 
 - The migration, the writer code, Character position persistence, blessing purchases, item effects.
 
+## Finding dispositions
+
+Codex review of `053819d`: three P1, all ACCEPTED in repair generation 1 of 1 (#162 convergence
+rule 5869165340).
+
+- 4125646927 (respawn ignored after a restart): a `game_character_pending_respawns` obligation row
+  is inserted by the death transaction and consumed at respawn, admission or recovery (§3.4).
+- 4125646943 (no complete intent binding): the receipt carries `command_binding` and
+  `policy_digest`; the writer compares the binding before replay (§3.1, §3.5).
+- 4125646935 (no durable death cell): the receipt records the death cell for resumed DEATH-3 item
+  effects (§3.1).
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
