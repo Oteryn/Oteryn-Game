@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-cw1-revert-acceptance
 title: Record owner acceptance of §7 revert_after direction and open decision 7
 mode: CONTRACT
-status: implementing
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-revert-acceptance
-pr: null
+pr: 1097
 base_sha: f0710bfb0513147d6bf573dbbfac591da0dadfa6
 head_sha: null
 final_head_sha: null
@@ -180,11 +180,11 @@ last_progress: >
   task B in progress). Added open decision 7 (Codex 4120777222): reserve lifecycle-record capacity
   only after prepare returns Publish, not before prepare runs. Corrected the staging bullet and the
   two test obligations it superseded. Fixed every stale "no owner acceptance" reference in the doc.
-  Validators pass; about to push and open the PR.
-status: implementing
+  Validators pass; pushed as 7880de9e, PR #1097 opened.
+status: ready
 branch: claude/cw1-revert-acceptance
 head_sha: null
-pr: null
+pr: 1097
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -202,5 +202,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: push, open PR, report PR number + head SHA, then start task B without waiting
+next_action: coordinator freeze at the reported head + independent review; task B started next without waiting
 ```
