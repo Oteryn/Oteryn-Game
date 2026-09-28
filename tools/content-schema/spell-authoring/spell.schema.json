@@ -590,6 +590,14 @@
                 "player_name",
                 "text"
               ]
+            },
+            "aim_at_target": {
+              "$ref": "#/$defs/bool",
+              "description": "S20: a direction spell the player may set to turn towards the attacked creature before casting (client \"Aim at Target\"; BR aimattarget)."
+            },
+            "cast_at_position": {
+              "$ref": "#/$defs/bool",
+              "description": "S20: the spell may be cast at a chosen position: with crosshair, at the cursor or at the target (Canary 15.30 spell:optionalTarget)."
             }
           },
           "required": [
@@ -600,6 +608,49 @@
             "target_or_direction",
             "block_walls",
             "parameter"
+          ],
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "aim_at_target": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "aim_at_target"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "needs_direction": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "needs_direction"
+                ]
+              }
+            },
+            {
+              "if": {
+                "properties": {
+                  "cast_at_position": {
+                    "const": true
+                  }
+                },
+                "required": [
+                  "cast_at_position"
+                ]
+              },
+              "then": {
+                "properties": {
+                  "needs_target": {
+                    "const": false
+                  }
+                }
+              }
+            }
           ]
         },
         "pz_locks_caster": {

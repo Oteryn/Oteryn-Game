@@ -152,7 +152,10 @@ LIGHT = {'type': 'light', 'lifetime': 'fixed_duration', 'light': {'level': 6, 'c
 REGENERATION = {'type': 'regeneration', 'lifetime': 'fixed_duration', 'buff_spell': True,
                 'regeneration': {'health_gain': 20, 'health_interval_ms': 3000}}
 VALID_MUTATIONS = {'light condition': condition_effect(LIGHT), 'regeneration condition': condition_effect(REGENERATION),
-                   'library text': case('light_healing', 'spell', ('library_text',), 'A basic healing spell.', None)}
+                   'library text': case('light_healing', 'spell', ('library_text',), 'A basic healing spell.', None),
+                   'cast at position': case('light_healing', 'spell', ('targeting', 'cast_at_position'), True, None),
+                   'aim at target': mutate('light_healing', lambda spell, deps: spell['targeting'].update(
+                       needs_direction=True, aim_at_target=True), None)}
 
 
 def expecting(mutation, expect):
@@ -217,6 +220,10 @@ NEGATIVE = {
     'wheel_unlock not boolean': case('light_healing', 'spell', ('requirements', 'wheel_unlock'), 'yes', 'is not of type'),
     'empty library text': case('light_healing', 'spell', ('library_text',), '', 'should be non-empty'),
     'library text not a string': case('light_healing', 'spell', ('library_text',), 3, 'is not of type'),
+    'aim at target without a direction': case('light_healing', 'spell', ('targeting', 'aim_at_target'), True,
+                                              'was expected'),
+    'cast at position needing a target': mutate('light_healing', lambda spell, deps: (
+        spell['targeting'].update(cast_at_position=True, needs_target=True)), 'was expected'),
 }
 
 

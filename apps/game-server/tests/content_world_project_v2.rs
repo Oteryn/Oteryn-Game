@@ -1199,6 +1199,7 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
                     owner_speed_bonus: Some(10),
                 }),
                 details: None,
+                encounters: vec![],
                 fields: vec![],
             }),
         },
@@ -1271,6 +1272,20 @@ fn wiki_coverage_candidate() -> ProjectV2Draft {
                 cooldown_seconds: Some(3_600),
                 repeatable: Some(true),
                 interactions: vec![interaction.clone()],
+                details: Some(Box::new(
+                    serde_json::from_value(serde_json::json!({
+                        "display_name": "Courier raid",
+                        "participants": [{"role": "courier", "creatures": [{
+                            "family": "Creature",
+                            "key": "oteryn:reference.creature.wiki-alpha",
+                            "revision": "definition-r1"
+                        }]}],
+                        "state": {"flags": [{"name": "started", "initial": false}]},
+                        "rules": [{"key": "start", "trigger": {"kind": "encounter_started"},
+                                   "actions": [{"kind": "flag", "flag": "started", "value": true}]}]
+                    }))
+                    .expect("encounter details"),
+                )),
                 fields: vec![],
             }),
         },

@@ -321,6 +321,14 @@ player in a protection zone (`combat.cpp` `canDoCombat`), so the only effect of 
 chain skips other creatures, such as player summons. Any other picker body stays unresolved. This
 resolves Quara Looter, Rootthing Bug Tracker, Mould Phantom and Rotten Golem.
 
+`Ability.chain` gained optional fields for player spells (spell rule S23, owner 2026-09-28):
+- `shape` (`sequential`/`fork`), `initial_range_tiles`, `damage_step_percent`;
+- the `ranged_monsters` filter.
+
+`max_targets` counts the further creatures after the first. This is what the stored Canary value already means:
+Canary hits that many creatures plus one. No monster uses the new fields, and the creature admission does not
+accept them yet (see `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md`).
+
 `area_damage_named_target` is probed like `heal_allies_in_area`. A `CALLBACK_PARAM_TARGETTILE` callback that, on each
 tile of the ability area, takes a fixed or rolled amount of health from the top creature through `Creature:addHealth`
 is authored as an extra `damage` effect of damage type `untyped`:

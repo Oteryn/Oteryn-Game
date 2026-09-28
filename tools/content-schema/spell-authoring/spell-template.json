@@ -40,7 +40,9 @@
       "block_walls": "<bool>",
       "allow_on_self": "<bool>",
       "check_floor": "<bool>",
-      "parameter": "<none|player_name|text>"
+      "parameter": "<none|player_name|text>",
+      "aim_at_target": "<bool>",
+      "cast_at_position": "<bool>"
     },
     "pz_locks_caster": "<bool>",
     "needs_weapon": "<bool>",

@@ -153,6 +153,19 @@ How does such a transaction relate to the global `CharacterRevision`?
      advances the revision with its receipt, and §3.1 covers the item part. This decision does
      not require or allocate such a combined transaction.
 
+### 3.1 Amendment (2026-09-28): B3 and reward chest locations
+
+The B3 decision (`OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md`,
+D80) places items in the character's `CharacterEquipment` container slot and in direct entries of
+its equipped main backpack (DUR-03 §5.2 `Container`), and the reward chest `CHEST-1` child mints
+into those entries (reward chest decisions §5.1, D92). Rule 1 applies to those locations exactly
+as to `CharacterInventory`: a DUR-03 transaction whose only Character-related effects are item
+locations in the character's container slot or in direct entries of its equipped main backpack,
+and DUR-03 cause records keyed by a Character, does not advance `CharacterRevision` and writes no
+Character root, progression or receipt row. Rules 2-6 (the complete fence, the cause lock and
+replay, the `character_root` row lock, atomicity in DUR-03) apply unchanged. Nested bags and other
+equipment slots are not covered until their own decisions.
+
 ## 4. Rejected options
 
 - **Put every item transaction into the `CharacterRevision` chain** with a closed union of typed
