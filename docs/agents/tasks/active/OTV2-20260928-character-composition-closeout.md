@@ -78,6 +78,12 @@ authority, fence or recovery semantics.
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
 - `python3 tools/repository/validate_repository_policy.py`: PASS on the authoring tree.
 
+## Independent review
+
+- `f40c489`: Codex P2 4120106386 (the TRANSFER reopening condition omitted TRANSFER admission).
+  Accepted and fixed in `2af6463`.
+- The successor head needs a fresh exact-head review.
+
 ## Context checkpoint
 
 ```yaml
