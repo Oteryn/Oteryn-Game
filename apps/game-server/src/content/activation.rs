@@ -1258,4 +1258,122 @@ mod tests {
         assert_eq!(controller.last_activation_sequence(), 7);
         Ok(())
     }
+
+    /// OTV2-20260928-cw1-duke-teleporter-entry-placement (#162 owner decision): the live boot
+    /// binds the temporary duke teleporter from the activated room content, under the same fence
+    /// and Channel scope as the door, and leaves the door unchanged.
+    #[test]
+    fn native_entry_boot_binds_the_duke_teleporter_beside_the_unchanged_door() -> NativeResult<()> {
+        use super::super::accepted;
+        use crate::content::encounter_map_item::anchor_placement_key;
+        use crate::world_runtime::{
+            LocalObjectUseOutcome, ReferenceContentGeneration, ScopeContentGenerationFence,
+            bind_native_entry_door, bind_native_entry_duke_teleporter,
+            native_entry_duke_teleporter_content,
+        };
+        let world = native_world(1)?;
+        let (issuance, _) = native_issuance(world)?;
+        let mut controller = ContentActivationController::new();
+        let (_, _, room_content) =
+            activate_native(&mut controller, world, &issuance)?.into_channel_parts();
+        let mut channel_bytes = [0_u8; 16];
+        channel_bytes[15] = 3;
+        channel_bytes[6] = 0x70;
+        channel_bytes[8] = 0x80;
+        let channel = crate::foundation::ChannelId::decode(&channel_bytes)?;
+        let scope = crate::foundation::RuntimeScopeRefV1::channel(world, channel);
+        let generation =
+            crate::foundation::ScopeOwnershipGeneration::new(1).map_err(|e| format!("{e:?}"))?;
+        let fence = ScopeContentGenerationFence::for_activation(
+            scope,
+            generation,
+            ReferenceContentGeneration::from_content(&room_content)
+                .map_err(|e| format!("{e:?}"))?,
+        );
+        let fail = |error: crate::world_runtime::WorldRuntimeError| format!("{error:?}");
+
+        // The door: unchanged content, binding and USE behaviour.
+        assert_eq!(room_content.definitions.len(), 1);
+        assert!(room_content.placements.is_empty());
+        let mut door =
+            bind_native_entry_door(&room_content, &fence, scope, generation).map_err(fail)?;
+        assert_eq!(door.placement_key().as_str(), accepted::DOOR_CELL.0);
+        assert_eq!(door.state_key().as_str(), accepted::DOOR_CLOSED_STATE);
+        assert_eq!(door.attributes(), None);
+        let empty = std::collections::BTreeSet::new();
+        assert!(matches!(
+            door.attempt_use(0, &empty).map_err(fail)?,
+            LocalObjectUseOutcome::Committed { revision: 1, .. }
+        ));
+        assert_eq!(door.state_key().as_str(), accepted::DOOR_OPEN_STATE);
+
+        // The teleporter: bound at the anchor with its timed forward and lowered inverse.
+        let duke = "canary:encounter/the_duke_of_the_depths";
+        let action = crate::content::LoweredActionId::new(&format!(
+            "{duke}/the_duke_of_the_depths_death/0"
+        ))?;
+        let forward = crate::content::TransitionKey::new(&format!("{}/forward", action.as_str()))?;
+        let mut teleporter =
+            bind_native_entry_duke_teleporter(&room_content, &fence, scope, generation)
+                .map_err(fail)?;
+        assert_eq!(
+            teleporter.placement_key(),
+            &anchor_placement_key(duke, "exit_teleporter")?
+        );
+        assert_eq!(teleporter.state_key().as_str(), "canary:item/1949");
+        assert_eq!(
+            teleporter.revert_after_ms(&forward, &action),
+            Some(1_200_000)
+        );
+        assert_eq!(
+            teleporter
+                .revert_inverse(&forward)
+                .map(|key| key.as_str().to_owned()),
+            Some(format!("{}/revert", action.as_str()))
+        );
+        // Natural state: no destination is exposed.
+        assert_eq!(teleporter.attributes(), None);
+        // USE is refused: the only edge from the natural state is timed.
+        assert_eq!(
+            teleporter.attempt_use(0, &empty).map_err(fail)?,
+            LocalObjectUseOutcome::NothingToUse
+        );
+        assert_eq!(teleporter.revision(), 0);
+        assert_eq!(teleporter.state_key().as_str(), "canary:item/1949");
+
+        // Each anchor and destination resolves to exactly one placement on its room cell, in
+        // the Channel's World and the room's frame.
+        let (content, _, _) = native_entry_duke_teleporter_content(&room_content).map_err(fail)?;
+        let expected = [
+            ("exit_teleporter", accepted::CELLS[1]),
+            ("reward_destination", accepted::DOOR_CELL),
+            ("warzone_exit", accepted::CELLS[0]),
+        ];
+        assert_eq!(content.placements.len(), expected.len());
+        for (anchor, (_, x, y, floor, walkable)) in expected {
+            let key = anchor_placement_key(duke, anchor)?;
+            let mut matches = content
+                .placements
+                .iter()
+                .filter(|placement| placement.key == key);
+            let (Some(placement), None) = (matches.next(), matches.next()) else {
+                return Err(format!("{anchor} does not resolve to exactly one placement").into());
+            };
+            assert!(walkable);
+            assert_eq!(placement.address.world_id, world);
+            assert_eq!(
+                placement.address.coordinate_frame,
+                room_content.coordinate_frame
+            );
+            assert_eq!(
+                (
+                    placement.address.cell.x,
+                    placement.address.cell.y,
+                    placement.address.cell.z
+                ),
+                (x, y, i32::from(floor))
+            );
+        }
+        Ok(())
+    }
 }

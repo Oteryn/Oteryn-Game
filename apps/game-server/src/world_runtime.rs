@@ -473,7 +473,7 @@ pub(crate) fn bind_native_entry_door(
     };
     let mut content = door_content.clone();
     content.placements = vec![placement];
-    LocalObjectRuntime::bind(
+    let door = LocalObjectRuntime::bind(
         &content,
         fence,
         scope,
@@ -484,6 +484,232 @@ pub(crate) fn bind_native_entry_door(
             TransitionKey::new(door_accepted::DOOR_OPEN_TRANSITION).map_err(invalid)?,
             TransitionKey::new(door_accepted::DOOR_CLOSE_TRANSITION).map_err(invalid)?,
         ],
+    )?;
+    // Owner decision (#162, OTV2-20260928-cw1-duke-teleporter-entry-placement): every Channel
+    // activation also binds the temporary duke teleporter, fail-closed, under the same fence.
+    // Nothing holds it yet: its death trigger and revert wake hosting are later lanes, which take
+    // `bind_native_entry_duke_teleporter`'s runtime from the Channel activation owner.
+    bind_native_entry_duke_teleporter(door_content, fence, scope, scope_generation)?;
+    Ok(door)
+}
+
+/// The authored `the_duke_of_the_depths` encounter whose `map_item transform` the entry room
+/// hosts temporarily (#162 §9).
+const NATIVE_ENTRY_DUKE_ENCOUNTER: &str = include_str!(
+    "../../../tools/content-schema/encounter-authoring/samples/the_duke_of_the_depths/encounter.json"
+);
+/// The duke teleporter's LocalObject definition key: its states are the sample's own ItemRefs.
+const NATIVE_ENTRY_DUKE_TELEPORTER: &str = "oteryn:local-object/entry-duke-teleporter";
+/// Encounter anchor -> native entry-room cell (§8 item 2). The teleporter stands on `east`; it
+/// opens to the door cell and reverts to the start cell. All three are walkable room cells.
+const NATIVE_ENTRY_DUKE_ANCHOR_CELLS: [(&str, &str); 3] = [
+    ("exit_teleporter", "oteryn:cell/entry-east"),
+    ("reward_destination", "oteryn:cell/entry-door"),
+    ("warzone_exit", "oteryn:cell/entry-start"),
+];
+
+/// The duke teleporter's Reference content, lowered through the §9 `map_item` lowering and
+/// linked, with its synthetic, non-promotable anchor and destination placements injected (as
+/// `bind_native_entry_door` injects the door's). `room_content` is the qualified native entry
+/// Reference content; the result shares its package, Content Lock, WorldId and frame, so it binds
+/// under the same `ScopeContentGenerationFence`. Returns the content, the teleporter placement and
+/// every transition the lowered content declares for the teleporter definition.
+pub(crate) fn native_entry_duke_teleporter_content(
+    room_content: &CanonicalReferencePlayableContent,
+) -> Result<
+    (
+        CanonicalReferencePlayableContent,
+        PlacementKey,
+        Vec<TransitionKey>,
+    ),
+    WorldRuntimeError,
+> {
+    use crate::content::accepted as room;
+    use crate::content::encounter_map_item as lowering;
+    let invalid = |_| WorldRuntimeError::InvalidBinding("native entry duke teleporter binding");
+    let revision = crate::content::DefinitionRevisionRef::new(room::DEFINITION_REVISION)?;
+    let teleporter = TypedDefinitionRef::new(
+        DefinitionFamily::LocalObject,
+        ProductionKey::new(NATIVE_ENTRY_DUKE_TELEPORTER)?,
+        revision.clone(),
+    );
+    let marker = TypedDefinitionRef::new(
+        DefinitionFamily::Terrain,
+        ProductionKey::new(room::TERRAIN)?,
+        revision,
+    );
+    let admitted =
+        lowering::admitted_map_item_transforms(NATIVE_ENTRY_DUKE_ENCOUNTER).map_err(invalid)?;
+    let anchor_cell = |anchor: &str| {
+        NATIVE_ENTRY_DUKE_ANCHOR_CELLS
+            .iter()
+            .find(|(candidate, _)| *candidate == anchor)
+            .and_then(|(_, cell)| {
+                room::CELLS
+                    .iter()
+                    .chain([&room::DOOR_CELL])
+                    .find(|(key, ..)| key == cell)
+            })
+            .map(|&(_, x, y, floor, _)| LogicalCell {
+                x,
+                y,
+                z: i32::from(floor),
+            })
+    };
+    let anchors = NATIVE_ENTRY_DUKE_ANCHOR_CELLS
+        .iter()
+        .map(|(anchor, _)| {
+            Ok((
+                lowering::anchor_placement_key(&admitted.encounter, anchor)?,
+                *anchor,
+            ))
+        })
+        .collect::<Result<BTreeMap<_, _>, ContentError>>()?;
+
+    // The anchor object's vocabulary is the sample's own ItemRefs, walk-through in every state,
+    // and one TRANSFORM edge per distinct authored `item -> into`.
+    let mut states: Vec<LocalObjectStateDefinition> = Vec::new();
+    let mut transitions: Vec<TransitionBinding> = Vec::new();
+    for transform in &admitted.transforms {
+        for key in [&transform.item, &transform.into] {
+            if !states.iter().any(|state| &state.key == key) {
+                states.push(LocalObjectStateDefinition {
+                    key: key.clone(),
+                    collision: LocalObjectCollisionPresence::Absent,
+                    attribute_variant_of: None,
+                });
+            }
+        }
+        if !transitions.iter().any(|transition| {
+            transition.source_state == transform.item && transition.target_state == transform.into
+        }) {
+            transitions.push(TransitionBinding {
+                key: TransitionKey::new(&format!("{}/forward", transform.action.as_str()))?,
+                definition: teleporter.clone(),
+                source_state: transform.item.clone(),
+                normalized_intent_family: ProductionKey::new(
+                    crate::content::LOCAL_OBJECT_TRANSFORM_INTENT_FAMILY,
+                )?,
+                target_state: transform.into.clone(),
+                owner_capability: crate::content::OwnerCapabilityRequirement {
+                    capability_key: ProductionKey::new(LOCAL_OBJECT_TRANSITION_CAPABILITY)?,
+                },
+                policy_guard_refs: Vec::new(),
+            });
+        }
+    }
+    let natural_state = admitted
+        .transforms
+        .first()
+        .map(|transform| transform.item.clone())
+        .ok_or(WorldRuntimeError::InvalidBinding(
+            "native entry duke encounter authors no map_item transform",
+        ))?;
+    let mut source = ReferencePlayableContentSource {
+        profile_revision: room_content.profile_revision.clone(),
+        capability_profile: room_content.capability_profile.clone(),
+        package_manifest: room_content.package_manifest.clone(),
+        content_lock: room_content.content_lock.clone(),
+        world_id: room_content.world_id,
+        coordinate_frame: room_content.coordinate_frame.clone(),
+        definitions: vec![
+            crate::content::ReferenceDefinition {
+                definition: teleporter.clone(),
+                kind: ReferenceDefinitionKind::LocalObjectStates(states),
+                client_projection: crate::content::ClientProjectionClass::ClientSafe,
+            },
+            crate::content::ReferenceDefinition {
+                definition: marker.clone(),
+                kind: ReferenceDefinitionKind::Generic,
+                client_projection: crate::content::ClientProjectionClass::ServerOnly,
+            },
+        ],
+        placements: Vec::new(),
+        ordered_placements: Vec::new(),
+        transitions,
+    };
+    let anchor_objects = admitted
+        .transforms
+        .iter()
+        .map(|transform| (transform.anchor.clone(), teleporter.clone()))
+        .collect();
+    let lowered =
+        lowering::lower_map_item_transforms(NATIVE_ENTRY_DUKE_ENCOUNTER, &source, &anchor_objects)
+            .map_err(invalid)?;
+    lowered.apply_to_source(&mut source).map_err(invalid)?;
+    let mut content = link_reference_playable(source)?;
+
+    let evidence = crate::content::EvidenceBindingRef::new(
+        crate::content::ProductionAtom::new(
+            "native entry duke teleporter manifest revision",
+            "manifest-r0",
+        )?,
+        ProductionKey::new("oteryn:cw4.native-entry-duke-teleporter-placement")?,
+        crate::content::EvidenceDisposition::Unknown,
+    );
+    let map_revision = crate::content::MapRevisionRef::new(room::REVISIONS[1])?;
+    let placement_at = |key: &PlacementKey, definition: &TypedDefinitionRef| {
+        let cell = anchors
+            .get(key)
+            .and_then(|anchor| anchor_cell(anchor))
+            .ok_or(WorldRuntimeError::InvalidBinding(
+                "native entry duke anchor has no entry-room cell",
+            ))?;
+        Ok::<_, WorldRuntimeError>(lowering::marker_placement(
+            key.clone(),
+            definition.clone(),
+            map_revision.clone(),
+            crate::content::SpatialAddress {
+                world_id: content.world_id,
+                coordinate_frame: content.coordinate_frame.clone(),
+                cell,
+                evidence: evidence.clone(),
+            },
+        ))
+    };
+    let mut lowered_placements = lowered.placements.iter();
+    let (Some((anchor, tables)), None) = (lowered_placements.next(), lowered_placements.next())
+    else {
+        return Err(WorldRuntimeError::InvalidBinding(
+            "native entry duke encounter must lower exactly one teleporter anchor",
+        ));
+    };
+    let mut teleporter_placement = placement_at(anchor, &tables.definition)?;
+    teleporter_placement.local_object_initial_state = Some(natural_state);
+    teleporter_placement.local_object_state_attributes = tables.state_attributes.clone();
+    teleporter_placement.local_object_revert_after_ms = tables.revert_after_ms.clone();
+    let mut placements = vec![teleporter_placement];
+    for destination in &lowered.destination_markers {
+        placements.push(placement_at(destination, &marker)?);
+    }
+    content.placements = placements;
+    let transition_keys = content
+        .transitions
+        .iter()
+        .filter(|transition| transition.definition == tables.definition)
+        .map(|transition| transition.key.clone())
+        .collect();
+    Ok((content, anchor.clone(), transition_keys))
+}
+
+/// Binds the temporary duke teleporter (#162, owner decision: the native entry room hosts it on
+/// the shared Channel until the Dangerous Depth map exists) through `LocalObjectRuntime::bind`,
+/// with its §9 attributes, timed transitions and every lowered inverse, under `fence`.
+pub(crate) fn bind_native_entry_duke_teleporter(
+    room_content: &CanonicalReferencePlayableContent,
+    fence: &ScopeContentGenerationFence,
+    scope: RuntimeScopeRefV1,
+    scope_generation: ScopeOwnershipGeneration,
+) -> Result<LocalObjectRuntime, WorldRuntimeError> {
+    let (content, placement, transitions) = native_entry_duke_teleporter_content(room_content)?;
+    LocalObjectRuntime::bind(
+        &content,
+        fence,
+        scope,
+        scope_generation,
+        &placement,
+        1,
+        &transitions,
     )
 }
 
