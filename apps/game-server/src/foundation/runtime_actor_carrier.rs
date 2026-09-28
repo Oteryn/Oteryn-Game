@@ -52,6 +52,9 @@ pub(crate) enum CarrierError {
     CorpseProjectionConflict,
     InjectedCorpseProjectionFailure,
     InjectedCorpseResponseFailure,
+    /// D2b: `reward_occurrence` was asked for a different reward principal
+    /// than the one already memoized for this committed death.
+    RewardPrincipalConflict,
 }
 
 impl std::fmt::Display for CarrierError {
@@ -525,6 +528,33 @@ impl CurrentOwnerCombatDeath<'_> {
             fail_after_write,
         )
     }
+
+    /// D2b: the death key and corpse position of this generation's projected
+    /// committed death of `actor`, read from the owner's own projection.
+    pub(crate) fn projected_death(
+        &self,
+        actor: ExactActorRef,
+    ) -> Result<(CreatureDeathOccurrenceKey, MovementLocalPosition), CarrierError> {
+        self.carrier.validate_ref(self.continuity, actor.0)?;
+        self.carrier
+            .corpse_projection
+            .as_ref()
+            .filter(|projection| projection.occurrence.actor == actor)
+            .map(|projection| (projection.occurrence.death_key(), projection.position()))
+            .ok_or(CarrierError::CommittedLethalUnavailable)
+    }
+
+    /// D2b: the memoized XP `ExperienceRewardOccurrence` bytes of this
+    /// generation's committed death for `character`, minting them on first
+    /// call. See [`ChannelActorCarrier::reward_occurrence_inner`].
+    pub(crate) fn reward_occurrence(
+        &mut self,
+        actor: ExactActorRef,
+        character: [u8; 16],
+    ) -> Result<([u8; 16], bool), CarrierError> {
+        self.carrier
+            .reward_occurrence_inner(self.continuity, actor.0, character)
+    }
 }
 
 impl CurrentOwnerExactActorLookup<'_> {
@@ -648,6 +678,54 @@ struct ChannelActorCarrier {
     free_head: Option<u32>,
     has_creature: bool,
     corpse_projection: Option<RuntimeCorpseProjection>,
+    /// D2b: the memoized XP reward occurrence of this generation's one
+    /// committed death, minted at most once (DUR-03 decision §4.2). A fresh
+    /// carrier is bootstrapped per ownership generation, so this is never
+    /// initialized from a prior generation: a scope move drops whatever was
+    /// pending here rather than reusing or duplicating it (D52).
+    death_reward_occurrence: Option<DeathRewardOccurrence>,
+}
+
+/// D2b: one memoized `(reward principal, ExperienceRewardOccurrence)` pair
+/// for this generation's committed death. Not durable: it lives only in the
+/// physical Channel owner's in-process state, matching the accepted D52
+/// decision that no durable death row is needed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct DeathRewardOccurrence {
+    actor: ActorRef,
+    character: [u8; 16],
+    occurrence: [u8; 16],
+}
+
+/// D2b: mints a fresh v7-shaped `ExperienceRewardOccurrence` byte pattern
+/// (RFC 9562 version/variant nibbles; the remaining bits are a SHA-256
+/// digest of the death's exact actor reference, the reward principal and the
+/// current wall-clock millisecond, so two calls never collide). Called at
+/// most once per (death, character): `reward_occurrence_inner` memoizes the
+/// first result and every later call returns that same value.
+fn mint_reward_occurrence_bytes(actor: ActorRef, character: [u8; 16]) -> [u8; 16] {
+    use sha2::{Digest, Sha256};
+    let millis = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|elapsed| u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX))
+        .unwrap_or(0);
+    let digest = Sha256::new()
+        .chain_update(b"oteryn:combat-death-xp-occurrence:v1")
+        .chain_update(actor.world_id.as_bytes())
+        .chain_update(actor.channel_id.as_bytes())
+        .chain_update(actor.scope_generation.get().to_be_bytes())
+        .chain_update(actor.actor_local_id.0.to_be_bytes())
+        .chain_update(actor.actor_local_generation.0.to_be_bytes())
+        .chain_update(character)
+        .chain_update(millis.to_be_bytes())
+        .finalize();
+    let mut bytes = [0_u8; 16];
+    bytes[0..6].copy_from_slice(&millis.to_be_bytes()[2..8]);
+    bytes[6] = 0x70 | (digest[0] & 0x0f);
+    bytes[7] = digest[1];
+    bytes[8] = 0x80 | (digest[2] & 0x3f);
+    bytes[9..16].copy_from_slice(&digest[3..10]);
+    bytes
 }
 
 /// The exact active Content generation a Channel runtime is created with (#935 "Activation issuer
@@ -1201,6 +1279,7 @@ impl ChannelActorCarrier {
             free_head: Some(0),
             has_creature: false,
             corpse_projection: None,
+            death_reward_occurrence: None,
         })
     }
 
@@ -1737,6 +1816,50 @@ impl ChannelActorCarrier {
         } else {
             Err(CarrierError::CorpseProjectionConflict)
         }
+    }
+
+    /// D2b: the memoized XP reward occurrence of this generation's committed
+    /// death (DUR-03 decision §4.2). The projected corpse must already name
+    /// `actor_ref`. A first call mints and stores the occurrence; every later
+    /// call for the same `(actor, character)` returns the identical stored
+    /// value with no new mint; a different `character` for the same actor
+    /// conflicts (`RewardPrincipalConflict`) rather than silently reassigning
+    /// the reward.
+    /// Returns the occurrence bytes and whether this exact call minted them
+    /// (`true`) or reused an already-memoized value (`false`). The caller
+    /// uses that distinction to decide whether progression initialization is
+    /// needed again: on a fresh mint (a first attempt this generation) it is;
+    /// on reuse (a retry) the R7 P03 XP writer's own occurrence-keyed replay
+    /// resolves without it.
+    fn reward_occurrence_inner(
+        &mut self,
+        continuity: &NamespaceContinuityGuard,
+        actor_ref: ActorRef,
+        character: [u8; 16],
+    ) -> Result<([u8; 16], bool), CarrierError> {
+        self.validate_ref(continuity, actor_ref)?;
+        let committed = self
+            .corpse_projection
+            .as_ref()
+            .filter(|projection| projection.occurrence.actor == ExactActorRef(actor_ref))
+            .is_some();
+        if !committed {
+            return Err(CarrierError::CommittedLethalUnavailable);
+        }
+        if let Some(existing) = self.death_reward_occurrence {
+            return if existing.actor == actor_ref && existing.character == character {
+                Ok((existing.occurrence, false))
+            } else {
+                Err(CarrierError::RewardPrincipalConflict)
+            };
+        }
+        let occurrence = mint_reward_occurrence_bytes(actor_ref, character);
+        self.death_reward_occurrence = Some(DeathRewardOccurrence {
+            actor: actor_ref,
+            character,
+            occurrence,
+        });
+        Ok((occurrence, true))
     }
 
     fn validate_position_context(
@@ -2352,6 +2475,13 @@ impl CombatDeathFixture {
     /// Administrative despawn: the creature leaves without a semantic death.
     pub(crate) fn despawn(&mut self) -> Result<(), CarrierError> {
         self.carrier.remove(&self.owner, self.actor.0).map(|_| ())
+    }
+
+    /// D2b: the same current-owner Combat-death capability
+    /// [`ChannelRuntimeV1::borrow_combat_death`] grants, for
+    /// `reward_occurrence` tests.
+    pub(crate) fn borrow_combat_death(&mut self) -> CurrentOwnerCombatDeath<'_> {
+        self.carrier.current_owner_combat_death(&self.owner)
     }
 
     /// The scope moved: owner continuity advances to `next`, while this
