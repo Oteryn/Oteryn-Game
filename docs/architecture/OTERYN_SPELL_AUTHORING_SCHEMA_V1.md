@@ -2,7 +2,7 @@
 
 - Date: 2026-09-27
 - Status: CANDIDATE / authoring schema with executable validation and source evidence; S1–S5, S11 and S12
-  decided by the owner on 2026-09-27, S13–S23 and S6–S10 on 2026-09-28 (S6–S10: #162 comment 5867161696); no runtime, WorldProject storage or `content/` change
+  decided by the owner on 2026-09-27, S13–S24 and S6–S10 on 2026-09-28 (S6–S10: #162 comment 5867161696); no runtime, WorldProject storage or `content/` change
 - Request: owner request of 2026-09-27 (schema and implementation plan for player spells, as for monsters);
   programme story KAN-16; no GitHub task allocation yet
 - Machine artifacts: `tools/content-schema/spell-authoring/`
@@ -272,6 +272,15 @@ S23 (`spell-p2-r9`) brings readiness to 162 ready and 90 blocked:
   group cooldown, which no source states (S9).
 - The game core rejects an ability with `chain` until the chain runtime exists.
 
+S24 (`spell-p2-r10`): official news check. The TibiaData API mirrors the tibia.com news archive; tibia.com itself
+answers 403 here. It was read for all development/technical news and tickers from 2025-12-01 to 2026-09-27: 158 items,
+ids 8569–8984. That gives 89 numeric player-spell field changes from the release state 8833 onwards; the test-server
+announcement 8783 is not final.
+- The converted data agrees with 88 of them.
+- Death Echo mana 155 (8833, 2026-06-02) is superseded by the later official tibia.com list, which states 150.
+- Expose Weakness and Sap Strength were removed by 8833 (they became the level-175 Aura stances). They are blocked
+  as removed spells, not as native-behaviour candidates.
+
 The official tibia.com spell library (S15) answers a Cloudflare browser check from the build container
 and blocks GitHub-hosted runners outright ("Sorry, you have been blocked"). `tibiacom_spells.py fetch`
 therefore runs on an ordinary machine the site serves (no challenge bypass).
@@ -358,6 +367,7 @@ with the converted bundles:
 | S21 | **DECIDED (owner, 2026-09-28).** Amends S4: a value Canary and Crystal disagree on and that no wiki or tibia.com states follows the Canary 15.30 branch (S14), for fields, vocations, rune blocking, conjured items and plain-combat executions; the Crystal value stays an `approved_omission`. Against the owner's tibia.com list the 15.30 branch has 3 values wrong that Crystal has right, Crystal 30 the other way (Crystal lacks most of the 15.25 vocation adjustment), and the 15.30 branch carries the 15.25 chain mechanics. A source whose script is custom still yields to the other source's plain combat (S4). Divine and Ethereal Barrage become ready. | §4.4 comparison; patch notes 15.25.3a4a52 and 15.25.bd5a04. |
 | S22 | **DECIDED (owner, 2026-09-28).** A Wheel of Destiny revelation spell has level 0: the client spell list shows 0 and tibia.com states no level; the Wheel unlock gates it (S6/S16). This applies only where tibia.com states no level (the 11 revelation spells: the five avatars, Divine Empowerment, Divine Grenade, Executioner's Throw, Ice Burst, Terra Burst, Spiritual Outburst); the wikis' level 300 for the avatars is superseded. Where tibia.com states a level, the spell unlocks at it: the Fandom `wheelspell` marking on Mystic Repulse (30) and Flurry of Blows (35) is superseded under S15 (BR states none), so they lose `wheel_unlock`; Focus Harmony and Forceful Uppercut keep the Canary `needLearn` gate with their tibia.com level. | Owner in-game screenshot: Spiritual Outburst level 0, Mystic Repulse level 30. |
 | S23 | **DECIDED (owner, 2026-09-28).** A chain spell is a plain `Ability` with a `chain` block: the monster D12 `Ability.chain`, extended with `shape` (`sequential`/`fork`), `initial_range_tiles`, `damage_step_percent` and the `ranged_monsters` filter. `max_targets` counts the further creatures after the first. The parameters are the accepted values in `chain-behaviours.json`; a chain spell without a row stays blocked. The behaviour, the per-spell values and their sources are in `OTERYN_SPELL_CHAIN_BEHAVIOUR_CANDIDATE_V1.md`. The game core rejects a chain until its runtime exists; the creature admission does not accept the new fields yet (no monster uses them). | Owner in session; #162 comment 5876917107. |
+| S24 | **DECIDED (owner, 2026-09-28).** Source order for a value: an official tibia.com announcement dated on or before the target date (2026-09-27), then the wiki at the target date, then Canary/Crystal (hypothesis only). A later official source (the tibia.com spell list, S15) supersedes an earlier announcement. A percent change is applied as stated (rounding marked uncertain); a change without a number is recorded as known but not quantified, never guessed. News is read through the TibiaData API (api.tibiadata.com/v4), never by bypassing tibia.com's protection. A spell an announcement removed is blocked as removed (`official-changes.json` field `removed`). | Owner in session. |
 
 ## 6. Mapping to WorldProject/v2
 
