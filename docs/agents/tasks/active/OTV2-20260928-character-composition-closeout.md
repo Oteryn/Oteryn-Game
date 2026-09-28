@@ -4,12 +4,12 @@
 task_id: OTV2-20260928-character-composition-closeout
 title: Close out the character revision composition decision and cite it in DUR-03
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: claude/gifted-rubin-a0axzx
 issue: 162
-pr: null
+pr: 1072
 base_sha: 00691b5bdc4b96fe41954e0b62b99353e0b03bf0
 head_sha: null
 final_head_sha: null
@@ -81,11 +81,11 @@ authority, fence or recovery semantics.
 ## Context checkpoint
 
 ```yaml
-last_progress: citation and closeout edits authored
-status: implementing
+last_progress: authored; PR #1072 open
+status: validating
 branch: claude/gifted-rubin-a0axzx
-pr: null
+pr: 1072
 owner_action_required: null
 blocker: null
-next_action: validate, commit, push, open PR, request exact-head review
+next_action: exact-head review and Merge Queue integration of #1072
 ```
