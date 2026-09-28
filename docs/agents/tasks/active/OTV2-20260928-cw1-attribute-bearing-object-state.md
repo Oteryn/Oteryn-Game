@@ -120,38 +120,29 @@ reason: >
 
 ## Implementation / findings
 
-Branched from fresh `origin/main` (`f0710bfb`, same base task A used, since task A's PR #1097 had
-not yet merged — "start task B without waiting" per the coordinator). Re-verified every code claim
-directly rather than reusing §7's existing citations by reference: `PlacementRef`/
-`local_object_initial_state` and its validator, `LocalObjectRuntime`/`bind`, `prepare`/
-`PreparedMutation`/`commit`, `TransitionBinding`, `ProductionKey`/`PlacementKey`, and all seven
-sample files (all file:line citations re-confirmed by direct read/grep, not carried over from a
-prior round's memory).
+Round 1: branched from fresh `origin/main` (`f0710bfb`, task A's PR #1097 not yet merged — "start
+task B without waiting"). Re-verified every code claim directly (not reused from §7's citations):
+`PlacementRef`/`local_object_initial_state`+validator, `LocalObjectRuntime`/`bind`, `prepare`/
+`PreparedMutation`/`commit`, `TransitionBinding`, `ProductionKey`/`PlacementKey`, all 7 sample files.
+Core insight: collision presence is already a pure function of `(states, target_state)` inside
+`prepare`, never separate mutable state — attributes reuse the identical pattern
+(`(placement's state table, current state)`), needing zero new `PreparedMutation`/`commit`/
+lifecycle-record fields. `revert_destination` resolved as a pure lowering-time bake-in (no
+runtime-level override branch). Open decision 4 resolved as a side effect of per-placement
+`local_object_revert_after_ms`, answering Codex 4120487841. Wrote §9 after §8, untouched §7 to avoid
+a merge conflict with task A's concurrent PR. Self-review caught and fixed 2 markdown defects
+(wrapped heading; 2 inline-code spans split mid-identifier).
 
-Core design insight, verified against `prepare`'s existing handling of collision presence
-(`apps/game-server/src/world_runtime.rs` ~973-1050): collision presence is already a pure function of
-`(states, target_state)`, computed fresh inside `prepare` and never stored as separate mutable state
-on `LocalObjectRuntime`. Attributes (`destination`/`interaction`) can reuse exactly this pattern if
-they are made a pure function of `(placement's own state-attribute table, current state)` instead of
-something that needs to flow through `PreparedMutation::Publish` or the round-14 lifecycle record.
-This is why the design needs zero new `PreparedMutation` fields, zero new `commit` logic and zero new
-lifecycle-record fields — the smallest change consistent with PLAYABLE_FIRST.
-
-Resolved `revert_destination` (line 144) as a pure lowering-time concern: since attributes are
-per-placement-per-state and static since `bind`, "restore the original" and "apply the
-`revert_destination` override" collapse into the same fact once lowering bakes the override into the
-source state's own attribute entry — no runtime-level override/restore branch needed.
-
-Resolved open decision 4 as a side effect of design point 1 (per-placement `local_object_
-revert_after_ms`, keyed by `TransitionKey`): different placements sharing one content-level
-`TransitionBinding` can author independent durations, directly answering Codex 4120487841. The
-existing inverse-uniqueness check (§7) is simplified to run against the placement's own already-built
-`transitions` map (`bind` ~679-714) instead of a content-level search.
-
-Wrote §9 as a new top-level section after §8 (end of file), avoiding any edit to §7's existing text
-(owned by task A's concurrent PR #1097) to prevent a merge conflict between the two sequenced tasks.
-Fixed one authoring mistake caught by a markdown-heading-must-be-one-line and inline-code-span
-mid-identifier-split self-review (two `this_`/`local_object_state_` splits fixed).
+Round 22 (coordinator-directed, after PR #1097 merged as `061b1676`): merged `origin/main` (merge
+commit `9beb6625`); one expected conflict in §8 item 7 (both sides touched it) — kept origin/main's
+wording, appended §9 unchanged, updated item 7 to name decisions 3 and 4 as designed in §9. Marked
+§7's own "Open decisions" item 4 "resolved by §9 (CANDIDATE)," kept not deleted. Fixed Codex P2
+4121718203 (~line 521 on `main`): Round 21's narrative and open decision 7's entry both misattributed
+the reserve-after-`Publish` ordering to an "FND-03 §15.4 discipline" — FND-03 §15.4's actual text
+(lines 560-564, re-verified) requires only fail-before-commit when capacity is unavailable and
+no-discard-for-congestion, nothing about reservation timing relative to `prepare`. Fixed both to
+attribute the ordering to §7's own accepted requirement (open decision 7), citing FND-03 §15.4 only
+for fail-before-commit. Grepped the doc for other misattributions — none found.
 
 Both validators re-run after all edits: PASS (see Validation below).
 
@@ -167,7 +158,7 @@ Both validators re-run after all edits: PASS (see Validation below).
 
 - command/run: `python3 tools/repository/validate_repository_policy.py`
 - result: PASS — "Post-merge exact-candidate routing regressions PASS / Repository policy
-  validation passed (23 files, 48 workflows)."
+  validation passed (23 files, 49 workflows)." (round 22, after merging origin/main)
 
 ### E2E
 
@@ -203,8 +194,9 @@ Both validators re-run after all edits: PASS (see Validation below).
 
 - changed-file review: pending
 - unresolved review threads: pending
-- related/superseded PRs: sequenced after task A (`OTV2-20260928-cw1-revert-acceptance`, PR #1097) on
-  the same document; expect the coordinator to merge task A first
+- related/superseded PRs: sequenced after task A (`OTV2-20260928-cw1-revert-acceptance`, PR #1097),
+  merged as `061b1676` on protected `main`; this branch merged `origin/main` (round 22) to pick it up
+  and resolve the resulting conflict
 - protected auto-merge: not requested by this task
 - merge commit/result: pending
 - ownership release: pending
@@ -217,8 +209,12 @@ last_progress: >
   interaction), all code claims re-verified this task. Two new optional per-placement fields on
   PlacementRef; zero new PreparedMutation/commit/lifecycle-record fields (attributes are a pure read
   of placement-state, mirroring how collision presence already works). revert_destination resolved
-  as a lowering-time concern. Open decision 4 resolved as a side effect. Validators pass; about to
-  Pushed as 6bd9da69, PR #1099 opened.
+  as a lowering-time concern. Open decision 4 resolved as a side effect. Validators pass. Pushed as
+  6bd9da69, PR #1099 opened. Round 22: merged origin/main (061b1676, includes #1097) with a merge
+  commit; resolved the conflict in §8 item 7 vs. the new §9; fixed Codex P2 4121718203 (open decision
+  7's ordering was misattributed to FND-03 §15.4, corrected to be this section's own accepted
+  requirement); marked §7 open decision 4 "resolved by §9 (CANDIDATE)," not deleted. Pushed as
+  9beb6625.
 status: ready
 branch: claude/cw1-attribute-bearing-object-state
 head_sha: null
