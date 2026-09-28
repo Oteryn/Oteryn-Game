@@ -4,16 +4,16 @@
 task_id: OTV2-20260928-cw1-revert-acceptance
 title: Record owner acceptance of §7 revert_after direction and open decision 7
 mode: CONTRACT
-status: ready
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 162
 base_branch: main
 branch: claude/cw1-revert-acceptance
 pr: 1097
 base_sha: f0710bfb0513147d6bf573dbbfac591da0dadfa6
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 563bf47011d048ea0b5b6a03dc3416215c281f5b
+final_head_sha: 563bf47011d048ea0b5b6a03dc3416215c281f5b
+final_head_frozen_at: 2026-09-28T11:25:49Z
 owner: Oteryn: content world architecture (CW1)
 created_at: 2026-09-28T00:00:00Z
 updated_at: 2026-09-28T00:00:00Z
@@ -140,16 +140,17 @@ Both validators re-run after all edits: PASS (see Validation below).
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: `563bf47011d048ea0b5b6a03dc3416215c281f5b` (frozen final head)
+- trigger source: protected-`main` merge of PR #1097
+- workflow/run/job: `game-gate` and repository protected-branch checks
+- runner assignment: complete
+- classification: PASS
+- result: PASS — merged as `061b1676` on protected `main`; protected-main readback passed (see
+  Terminal integration)
 
 ## Self-review
 
-- exact head: pending
+- exact head: `563bf47011d048ea0b5b6a03dc3416215c281f5b` (frozen final head)
 - method/reviewer: implementing agent (CW1), mandatory, not delegated
 - material findings: none beyond the stale-wording sweep above
 - verdict: PASS
@@ -157,44 +158,46 @@ Both validators re-run after all edits: PASS (see Validation below).
 ## Independent review
 
 - required: YES.
-- exact head: pending
-- method/auditor: pending (coordinator-directed, no `@codex` trigger from this task)
-- material findings: pending
-- verdict: pending
+- exact head reviewed: `563bf47011d048ea0b5b6a03dc3416215c281f5b` (frozen final head, only round)
+- method/auditor: Codex review on PR #1097
+- material findings: one P2 (Codex 4121718203) — the post-`prepare` capacity-reservation ordering was
+  attributed to FND-03 §15.4, which requires only fail-before-commit, not "reserve only what will
+  actually be spent." Not fixed in this PR (owner stop rule: no P1 open); the reply committed to
+  fixing the attribution in task B's PR (#1099), which did so (task B's Round 22 entry, Codex
+  4121718203).
+- verdict: PASS; protected `main` admitted the frozen final head with the P2 tracked forward, not open
+  at merge
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
-- related/superseded PRs: none known; sequenced immediately before task B on the same document
+- changed-file review: complete (2 files changed: architecture doc + this task record; see Terminal
+  integration)
+- unresolved review threads: none blocking at merge (the one P2 thread, 4121718203, was resolved with
+  a forward-fix commitment honored in #1099)
+- related/superseded PRs: none known; sequenced immediately before task B (PR #1099, merged `a20850d5`)
+  on the same document
 - protected auto-merge: not requested by this task
-- merge commit/result: pending
-- ownership release: pending
+- merge commit/result: `061b1676` on protected `main`
+- ownership release: complete; owned paths released at archive
 
 ## Context checkpoint
 
 ```yaml
-last_progress: >
-  §7 DecisionStatus updated to record owner acceptance of direction (issue #162, 2026-09-28), naming
-  what is accepted and which open decisions (1,2,4,5,6,7) are delegated vs. decision 3 (owner YES,
-  task B in progress). Added open decision 7 (Codex 4120777222): reserve lifecycle-record capacity
-  only after prepare returns Publish, not before prepare runs. Corrected the staging bullet and the
-  two test obligations it superseded. Fixed every stale "no owner acceptance" reference in the doc.
-  Validators pass; pushed as 7880de9e, PR #1097 opened.
-status: ready
+last_progress: terminal integration recorded; PR #1097 merged on protected main as 061b1676; record archived
+status: completed
 branch: claude/cw1-revert-acceptance
-head_sha: null
+head_sha: 563bf47011d048ea0b5b6a03dc3416215c281f5b
 pr: 1097
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+final_head_sha: 563bf47011d048ea0b5b6a03dc3416215c281f5b
+final_head_frozen_at: 2026-09-28T11:25:49Z
+ci_trigger_source: protected_main_merge
+ci_check_generation: final
+ci_checks_for_current_head: 1
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
@@ -202,5 +205,30 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: coordinator freeze at the reported head + independent review; task B started next without waiting
+next_action: none; task closed. Forward-fix commitment (Codex 4121718203) honored in #1099 (see Terminal integration)
 ```
+
+## Terminal integration
+
+This section supersedes the historical `ready`/pending metadata and checkpoint above with the frozen
+terminal outcome; the complete implementation record above remains verbatim as historical evidence.
+This closeout performs no architecture, code or schema mutation of its own; it only moves this record
+from `docs/agents/tasks/active/` to `docs/agents/tasks/archive/` and binds terminal lifecycle fields.
+Coordination: issue #162 (control plane).
+
+The owner stop rule applied: PR #1097 merged with no open P1. Frozen final head
+`563bf47011d048ea0b5b6a03dc3416215c281f5b` (the PR's actual final commit — `refs/pull/1097/head`,
+byte-identical to the merged content for the owned architecture doc) merged on protected `main` as
+commit `061b1676` at 2026-09-28T11:51:50Z. Protected-main readback passed: the owned architecture doc
+is byte-identical between the frozen head and `origin/main` for that file.
+
+**Codex P2 4121718203, carried forward and now resolved.** The one review finding — the post-`prepare`
+capacity-reservation ordering (open decision 7) was attributed to FND-03 §15.4, which requires only
+fail-before-commit, not "reserve only what will actually be spent" — was not fixed in this PR (owner
+stop rule: no P1 open), with a reply committing to fix the attribution in task B's PR. Task B (PR
+#1099, merged `a20850d5`) honored that commitment (its Round 22 entry fixes the misattribution).
+
+Task status: `completed`. Aggregate issue #162 remains open for further work, including the owning
+lane's implementation of open decisions 1, 2, 4, 5, 6 and 7, and task B's design (merged as §9,
+`DecisionStatus: CANDIDATE`, awaiting owner acceptance before implementation — see
+`docs/agents/tasks/archive/OTV2-20260928-cw1-attribute-bearing-object-state.md`).
