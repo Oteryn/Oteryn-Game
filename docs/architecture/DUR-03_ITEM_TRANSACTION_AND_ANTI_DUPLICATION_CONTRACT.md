@@ -686,7 +686,9 @@ MINT and the later TRANSFER are separate transactions, with separate
 TransactionIds, event candidates and atomic boundaries. Aggregation does not
 combine their sequence into one commit. This child does not support mint into an
 existing stack, multiple touched items, quantity redistribution, burn, transform,
-non-item accounts, nested containers or additional custody families. Unsupported
+non-item accounts, nested containers or additional custody families. (The B3
+amendment in §39.3 admits the two-item merge and top-up shapes and direct entries of
+the equipped main backpack.) Unsupported
 shapes reject instead of acquiring meaning through a generic delta, metadata bag
 or unbounded repeated effects. The quantity-one private fixture is not an accepted
 Content definition or a production quantity ceiling.
@@ -923,11 +925,14 @@ TRANSFER placement policy is unresolved, as §39.2 permits; TRANSFER itself is
 not admissible until a legal destination position and all applicable capacity,
 placement and current-authority rules are accepted and proven.
 
-**B3 amendment (destination scope only).** Owner decisions D80-D83 in
+**B3 amendment.** Owner decisions D80-D83 in
 `reviews/OTERYN_GAME_B3_INVENTORY_DESTINATION_CAPACITY_AND_STACKS_DECISION_2026-09-28.md`
-admit, besides this destination, the character's `CharacterEquipment` container slot
-and direct entries of the equipped main backpack (§5.2 `Container`), and the merge
-and top-up shapes of §13. Every other obligation of this section is unchanged.
+(§4.6) admit, besides this destination, the character's `CharacterEquipment` container slot
+and direct entries of the equipped main backpack (§5.2 `Container`), and the two-item merge
+and top-up shapes of §13. For those shapes they supersede the §39.1 exclusions of multiple
+touched items, quantity redistribution and nested containers, and resolve the "NO" of the
+decision test below for destination, capacity and placement. Every other obligation of this
+section is unchanged.
 
 **Expected bindings versus current authority.** The immutable MINT/TRANSFER
 candidate binds expected item definition/state, source occurrence, WorldId,

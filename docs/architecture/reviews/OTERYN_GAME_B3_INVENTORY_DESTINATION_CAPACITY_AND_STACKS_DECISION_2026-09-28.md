@@ -84,7 +84,10 @@ capacity changed by the 2025 Newhaven update (GAME-CHAR-01 Stage B evidence).
   Global (manual §controls 4.1.10). A placement never renumbers the other entries; the capacity is
   the number of entries.
 - **Container slot:** an empty container item may move from Ground into the empty `container`
-  slot. This is how a character without a backpack gets one in this slice; a starter kit is a
+  slot only if its definition declares a complete equip pattern whose primary slot is `container`
+  (GAME-ITEM-01 §6.2). Being a container is not enough. The backpack definition's equipment
+  semantics are still `UNKNOWN` in content, so B3-1 needs that pattern proven for at least one
+  container. This is how a character without a backpack gets one in this slice; a starter kit is a
   separate decision.
 - Nothing else is a destination in this slice: other equipment slots, bags inside the backpack,
   Ground drops and depot are later decisions.
@@ -93,8 +96,8 @@ capacity changed by the 2025 Newhaven update (GAME-CHAR-01 Stage B evidence).
 
 ### 4.2 Capacity (D81)
 
-- An entry-placing TRANSFER needs a free entry in the main backpack (count ≤ its definition
-  capacity). A full backpack rejects; the item stays on Ground and the player is told why.
+- An entry-placing TRANSFER needs a free entry in the main backpack: before the insert,
+  `current_entry_count < definition_capacity`. A full backpack rejects; the item stays on Ground and the player is told why.
 - Weight capacity is **not** checked in this slice. This is a declared delivery gap against Global,
   closed by child B3-3 once item weights and the character capacity source are accepted.
 - The moved item may be a container only if it is empty (RL-05 stays 0: no descendant expansion).
@@ -110,15 +113,18 @@ capacity changed by the 2025 Newhaven update (GAME-CHAR-01 Stage B evidence).
 
 On pickup of stackable Ground item A (quantity q), the receiver B is the compatible stack in the
 main backpack with room that comes first in display order (the highest ordinal). Compatible means
-the same definition key and revision, the same item state, and both stackable. Then, in one DUR-03 transaction:
+the same definition key and revision, both stackable, and equal item state apart from quantity
+(the quantities may differ). Then, in one DUR-03 transaction:
 
-| Case | Effect | Touched items | Location lines | Value lines |
+| Case | Effect | Touched items (participants) | Location lines | Quantity changes |
 |---|---|---|---|---|
 | No compatible B with room | plain TRANSFER of A to a new entry (new ordinal), if the backpack has a free entry; otherwise rejected | 1 | 2 | 0 |
 | B.q + q ≤ max | full merge: B grows by q, A retires (§13, §11.5) | 2 | 1 | 2 |
 | B.q + q > max, a free entry exists | top-up: B grows to max, A keeps its id with the remainder and moves to a new entry (new ordinal) | 2 | 2 | 2 |
 | B.q + q > max, no free entry | rejected; nothing moves (partial pickup is `UNKNOWN` parity) | 0 | 0 | 0 |
 
+Quantity changes are item state of the touched ItemInstances, recorded as their before and after
+evidence; they are not value lines (RL-03 counts non-item value and account lines, DUR-03 §18).
 Exact units are conserved (`SPLIT_MERGE_QUANTITY`). A retry of the same pickup command returns the
 first result.
 
@@ -130,10 +136,11 @@ tests; checked before allocation, never truncated.
 | Row | Value | Note |
 |---|---|---|
 | `DUR03-RL-01` touched items | **2** for the merge and top-up shapes; 1 otherwise | amended |
+| `DUR03-RL-06-PARTICIPANTS` | **2** for the merge and top-up shapes (A and B); 1 otherwise | amended |
 | `DUR03-RL-02` location lines | 2 | unchanged |
-| `DUR03-RL-03` value lines | **2** for the merge and top-up shapes; 0 otherwise | amended |
+| `DUR03-RL-03` value lines | 0 | unchanged; stack quantities are item state, not value lines |
 | `DUR03-RL-05` container expansion | 0 | unchanged; reading the main backpack's entry count is not expansion |
-| `DUR03-RL-06` work units | **4** for the merge and top-up shapes (one per touched item, the entry count, the audit); 3 otherwise | amended |
+| `DUR03-RL-06-EFFECT-WORK-UNITS` | **6** for the merge and top-up shapes; 3 otherwise | amended; a participant plus its effects: top-up A = 1 + Ground removal + entry placement + quantity = 4, B = 1 + quantity = 2; full merge A = 1 + Ground removal + retirement = 3, B = 2 |
 | `DUR03-RL-07` envelope / payload | 9,216 B / 7,936 B | unchanged: the receiver adds at most 256 B (id 16 B, position ≤ 128 B, two quantities, tags), so the payload stays ≤ 7,821 B |
 | `GAMEITEM01-STACK-QUANTITY-MAX` | 100 | new absolute ceiling (D82) |
 | `GAMEITEM01-CONTAINER-ENTRIES-MAX` | 20 | new; a main backpack with a larger capacity waits for a new decision |
@@ -145,15 +152,25 @@ registered caps, the merge shapes would return for a new decision instead of wid
 
 ### 4.6 DUR-03 amendment
 
-DUR-03 §39.1 and §39.3 admit, besides Ground → direct-root `CharacterInventory`, the destinations
-of §4.1 and the merge shapes of §4.4, with every other §39 obligation unchanged (fences, cause,
-evidence, idempotency, current authority). A pointer note is added to §39.3.
+This decision explicitly supersedes, for the shapes below only, these DUR-03 statements:
+
+- §39.1: "multiple touched items", "quantity redistribution" and "nested containers" are
+  unsupported. The merge and top-up shapes of §4.4 (exactly two same-definition stacks, DUR-03 §13)
+  and placement into direct entries of the equipped main backpack are admitted.
+- §39.1 and §39.3: TRANSFER goes only to direct-root `CharacterInventory`. The destinations of
+  §4.1 are admitted.
+- §39.3 decision test: "NO for the unresolved TRANSFER destination position, capacity and
+  admission". B3 resolves destination, capacity and placement; TRANSFER is admissible once B3-1
+  proves them.
+
+Every other §39 obligation is unchanged (fences, cause, evidence, idempotency, current authority).
+Pointer notes are added to §39.1 and §39.3.
 
 ## 5. Delivery (each child needs its own #162 allocation)
 
 | Child | Scope | Depends on |
 |---|---|---|
-| B3-1 | Equipment slot and container-entry location tables (migration), TRANSFER to the container slot and to backpack entries, the merge and top-up shapes, the resource rows, the pickup refusal reasons | DUR-03 C/MINT (done); the Character/item composition decision |
+| B3-1 | Equipment slot and container-entry location tables (migration), TRANSFER to the container slot and to backpack entries, the merge and top-up shapes, the resource rows, the pickup refusal reasons | DUR-03 C/MINT (done); the Character/item composition decision; a content definition proving a `container`-slot equip pattern |
 | B3-2 | Combat pickup through GAME-INTERACTION into B3-1 | B3-1; Combat D |
 | B3-3 | Weight capacity: item weights, the character capacity source, refusal on overweight | evidence for item weights and base capacity |
 | Later | Bags inside the backpack (RL-05 > 0), other equipment slots, drop to Ground, starter backpack, DEATH-3 container drops and the fresh empty bag after a lost backpack (§characters 5.1.11) | their own decisions |
@@ -168,6 +185,8 @@ evidence, idempotency, current authority). A pointer note is added to §39.3.
 - **Store the slot index.** Global inserts new items in the first slot, so a stored index would
   renumber every entry on each placement and touch up to 20 items; the ordinal keeps one touched
   item.
+- **Charge stack quantities to RL-03.** RL-03 is the fail-closed non-item value line; widening it
+  would admit a capability these shapes do not use.
 - **Pick the receiver stack by UUID or client order.** DUR-03 §13 forbids it; the placement ordinal is
   a semantic order.
 
@@ -197,9 +216,9 @@ required_fresh_allocation: true
 required_independent_review: "exact-head independent review (DUR-03 destinations, merge conservation, resource rows)"
 implementation_lanes: [B3-1, B3-2, B3-3]
 required_revalidation:
-  - "B3-1: pickup places the item as the newest entry, shown first; a full backpack rejects and the item stays on Ground; no backpack rejects; an empty container enters the empty container slot; a non-empty container is rejected"
-  - "B3-1 merge: full merge retires the source; top-up keeps the source id with the remainder in a free entry; no free entry rejects with nothing moved; units conserved; receiver chosen as the first compatible stack in display order; a retry returns the first result"
-  - "B3-1 rows: max and max+1 for each row; the merge-shape RL-07 worst case within 7,936 B payload"
+  - "B3-1: pickup places the item as the newest entry, shown first; with 20 entries the 21st is rejected and the item stays on Ground; no backpack rejects; an empty container with a container-slot equip pattern enters the empty container slot; a container without that pattern or with contents is rejected"
+  - "B3-1 merge: full merge retires the source; top-up keeps the source id with the remainder in a free entry; no free entry rejects with nothing moved; units conserved; stacks with different quantities are compatible; receiver chosen as the first compatible stack in display order; a retry returns the first result"
+  - "B3-1 rows: max and max+1 for each row (touched items 2, participants 2, work units 6, RL-03 still 0); the merge-shape RL-07 worst case within 7,936 B payload"
 remaining_unknowns:
   - item weights and base capacity (B3-3)
   - Global partial pickup with a full backpack

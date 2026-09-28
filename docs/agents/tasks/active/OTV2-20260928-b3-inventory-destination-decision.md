@@ -67,6 +67,21 @@ idempotency and evidence obligations of DUR-03 §39 are unchanged.
 
 - Registry rows, migrations, runtime code, weight capacity, nested bags, other equipment slots.
 
+## Finding dispositions
+
+Codex review of `ed4f32a`: five P1 and one P2, all ACCEPTED in repair generation 1 of 1 (#162
+convergence rule 5869165340). No owner decision changed.
+
+- 4124831687 (P1, §39.1 exclusions not superseded): decision §4.6 now lists the superseded
+  statements; pointer notes in DUR-03 §39.1 and §39.3.
+- 4124831695 (P1, quantity in stack compatibility): compatibility compares all non-quantity state.
+- 4124831720 (P2, capacity off-by-one): `current_entry_count < definition_capacity` before insert.
+- 4124831702 (P1, stack quantities as RL-03 value lines): RL-03 stays 0; quantities are item state.
+- 4124831716 (P1, container slot without equip pattern): the definition must declare a
+  `container`-slot equip pattern (GAME-ITEM-01 §6.2).
+- 4124831709 (P1, RL-06 participants): participants 2 and work units 6 for the merge shapes,
+  derived as participant plus effects.
+
 ## Validation
 
 - `python3 tools/agents/validate_governance.py`: PASS on the authoring tree.
