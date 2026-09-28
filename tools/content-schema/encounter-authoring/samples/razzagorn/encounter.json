@@ -32,6 +32,11 @@
       "key": "ascendant_exit",
       "kind": "point",
       "description": "Default teleporter destination; Canary (33319, 32318, 13)."
+    },
+    {
+      "key": "razzagorn_arena",
+      "kind": "area",
+      "description": "Every tile from Canary (33416, 32460, 14) to (33431, 32474, 14)."
     }
   ],
   "phases": [],
@@ -72,6 +77,35 @@
           "effect": "canary.appearance:effect/thunder",
           "revert_after_ms": 60000,
           "revert_destination": "ascendant_exit"
+        }
+      ]
+    },
+    {
+      "key": "razzagorn_summons_demons",
+      "trigger": {
+        "kind": "ability_cast",
+        "role": "razzagorn",
+        "ability": {
+          "family": "Ability",
+          "key": "canary:ability/spell/razzagorn_summon",
+          "revision": "canary-47dfd51f"
+        }
+      },
+      "conditions": [],
+      "actions": [
+        {
+          "kind": "spawn",
+          "creature": {
+            "family": "Creature",
+            "key": "canary:creature/demon",
+            "revision": "canary-47dfd51f"
+          },
+          "count": 4,
+          "at": {
+            "random_in": "razzagorn_arena"
+          },
+          "owner": "none",
+          "health": "full"
         }
       ]
     }

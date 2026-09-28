@@ -265,6 +265,15 @@ if __name__=='__main__':
     case('ability variants accepted (D12)',variants(),True)
     case('ability variants exclude effects',variants(with_effects=True))
     case('ability variant cannot nest variants',variants(nested=True))
+    def encounter_cast(with_effects=False):
+        def mutate(m,d,c):
+            base=d['abilities'][0]
+            encounter=ref('Encounter','canary:encounter/boss')
+            d['abilities'][0]={k:v for k,v in base.items() if with_effects or k!='effects'}|{'encounter':encounter}
+            c['definitions'].append(encounter)
+        return mutate
+    case('encounter-driven ability accepted (D45)',encounter_cast(),True)
+    case('encounter-driven ability excludes effects',encounter_cast(with_effects=True))
     def caster(magnitude):
         def mutate(m,d,c):
             d['formulas'][0]={'identity':d['formulas'][0]['identity'],'kind':'caster_magnitude'}

@@ -50,6 +50,11 @@
         "backtracking": null,
         "chain_asset_binding": null,
         "target_filter": null
+      },
+      "encounter": {
+        "family": null,
+        "key": null,
+        "revision": null
       }
     }
   ],

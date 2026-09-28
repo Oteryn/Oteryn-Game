@@ -19,10 +19,10 @@
   "scope": "In-memory conversion of every monster file with the D15 wiki values and the D43 TibiaWiki BR fills applied; structure validation plus open manifest rows. Not runtime qualification.",
   "monster_files": 1656,
   "outcome": {
-    "blocked": 102,
-    "fully_resolved": 1548,
+    "blocked": 98,
+    "fully_resolved": 1552,
     "not_converted": 6,
-    "wiki_adopted_monsters": 1181,
+    "wiki_adopted_monsters": 1183,
     "wiki_authored": 1
   },
   "wiki_adopted_rows": {
@@ -99,24 +99,13 @@
     },
     {
       "blocker": "unresolved_semantics defenses[] -> conditional_summon",
-      "monsters": 8,
-      "examples": [
-        "plagirath",
-        "razzagorn",
-        "shulgrax",
-        "mounted_thorn_knight",
-        "soulcatcher"
-      ]
-    },
-    {
-      "blocker": "unresolved_semantics attacks[] -> conditional_summon",
       "monsters": 6,
       "examples": [
-        "lady_tenebris",
-        "the_destruction",
-        "the_hunger",
-        "the_rage",
-        "world_devourer"
+        "plagirath",
+        "mounted_thorn_knight",
+        "soulcatcher",
+        "glooth_generator",
+        "professor_maxxen"
       ]
     },
     {
@@ -149,6 +138,16 @@
         "angry_sugar_fairy",
         "priestess_of_the_wild_sun",
         "sister_hetai"
+      ]
+    },
+    {
+      "blocker": "unresolved_semantics attacks[] -> conditional_summon",
+      "monsters": 4,
+      "examples": [
+        "lady_tenebris",
+        "the_hunger",
+        "world_devourer",
+        "gaz_haragoth"
       ]
     },
     {
@@ -1402,6 +1401,7 @@
     "ravenous_hunger",
     "ravenous_lava_lurker",
     "raxias",
+    "razzagorn",
     "reality_reaver",
     "realityquake",
     "red_butterfly",
@@ -1492,6 +1492,7 @@
     "shock_head",
     "shredderthrower",
     "shrieking_cry_stal",
+    "shulgrax",
     "sibang",
     "sight_of_surrender",
     "silencer",
@@ -1631,6 +1632,7 @@
     "the_count",
     "the_count_of_the_core",
     "the_dark_dancer",
+    "the_destruction",
     "the_devourer_of_secrets",
     "the_diamond_blossom",
     "the_dread_maiden",
@@ -1669,6 +1671,7 @@
     "the_percht_queen",
     "the_pit_lord",
     "the_plasmother",
+    "the_rage",
     "the_ravager",
     "the_red_knight",
     "the_remorseless_corruptor",

@@ -19,6 +19,12 @@
     ],
     "ChargedDisruptionTransform": [
       "canary:creature/charged_disruption"
+    ],
+    "spell.rage summon": [
+      "canary:creature/the_rage"
+    ],
+    "spell.destruction summon": [
+      "canary:creature/the_destruction"
     ]
   },
   "sources": [
@@ -112,6 +118,20 @@
       "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
       "path": "data-otservbr-global/scripts/quests/heart_of_destruction/creaturescripts_charged_disruption_transform.lua",
       "blob_sha1": "b80a485ac64ebd30a40cb6a21ac1eca9e551fb2b"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/rage_summon.lua",
+      "blob_sha1": "266e3c272a9caad2ccf068b6e8fc7e6414b60a8d"
+    },
+    {
+      "kind": "git",
+      "repository": "opentibiabr/canary",
+      "revision": "47dfd51f45280a59a1d3e50ba7edd573d7234446",
+      "path": "data-otservbr-global/scripts/spells/monster/destruction_summon.lua",
+      "blob_sha1": "67433c26331cb5791bbf1f49e88d1395c457b088"
     }
   ],
   "entries": [
@@ -511,6 +531,104 @@
       "status": "mapped",
       "resolution": "onThink counts the thinks of each charged disruption (one per second); the first think records 1 and at 18 a fresh overcharged disruption replaces it on its tile. The first think falls within the first second, so the change comes 18-19 s after the charged disruption appears.",
       "destination": "/encounter/rules/9"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "The Rage is the the_rage participant.",
+      "destination": "/encounter/participants/6/creatures"
+    },
+    {
+      "source_index": 8,
+      "source_lines": [
+        80
+      ],
+      "status": "mapped",
+      "resolution": "The Rage casts the registered spell \"rage summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 13,
+      "source_lines": [
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell creates a Frenzy on a random tile next to The Rage (x and y each -1..1) while the rage_summons counter is below three, then raises it. The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki says the Frenzy appears with The Rage.",
+      "destination": "/encounter/rules/10"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        1
+      ],
+      "status": "mapped",
+      "resolution": "The Destruction is the the_destruction participant.",
+      "destination": "/encounter/participants/5/creatures"
+    },
+    {
+      "source_index": 7,
+      "source_lines": [
+        80
+      ],
+      "status": "mapped",
+      "resolution": "The Destruction casts the registered spell \"destruction summon\"; its effect is this encounter's ability_cast rule (D45).",
+      "destination": "/encounter/rules"
+    },
+    {
+      "source_index": 14,
+      "source_lines": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26
+      ],
+      "status": "mapped",
+      "resolution": "onCastSpell creates a Disruption on a random tile next to The Destruction (x and y each -1..1) while the destruction_summons counter is below three, then raises it and blocks the next summon for 15 s (the file-level delay flag becomes an encounter flag and timer). The spell's own combat has type COMBAT_NONE and no effect. The reference-date wiki says the Disruption appears with The Destruction.",
+      "destination": "/encounter/rules/11"
+    },
+    {
+      "source_index": 14,
+      "source_lines": [
+        8,
+        9,
+        10,
+        23
+      ],
+      "status": "mapped",
+      "resolution": "removeDelay clears the flag after 15 s.",
+      "destination": "/encounter/rules/12"
     }
   ],
   "outcome_evidence": [

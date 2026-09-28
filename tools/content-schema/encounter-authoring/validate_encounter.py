@@ -136,7 +136,7 @@ def semantic(e, catalog):
             elif ck == 'in_anchor':
                 subject(condition['subject'], at, trigger)
                 need_area(condition['anchor'], at)
-            elif ck == 'has_master':
+            elif ck in ('has_master', 'summon_count'):
                 need('role', condition['role'], known_roles, at)
             elif ck == 'health_percent':
                 need('role', condition['role'], known_roles, at)

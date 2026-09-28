@@ -1148,6 +1148,9 @@ class Converter:
         if info is None:
             return 'UNRESOLVED', f'"{name}" is neither an inline spell kind nor a registered spell name (D10).'
         where = f'registered {info["kind"]} spell "{name}" ({info["script"]})'
+        encounters = ENCOUNTERS.get((f'spell.{name}', f'canary:creature/{self.current_slug}'))
+        if encounters:
+            return self.encounter_spell(name, info, where, spell, deps, encounters)
         if info.get('tier') == 'NOOP':
             return 'OMIT', f'{where} returns false for a non-player caster, so it has no effect in Canary (D14).'
         pattern = self.behaviour_patterns().get(name)
@@ -1212,6 +1215,22 @@ class Converter:
         except SpellUnresolved as exc:
             return 'UNRESOLVED', f'{where}: {exc} Needs a schema or native decision.{tag}'
         return self.spell_result(key, spell, notes, uses_magnitude)
+
+    def encounter_spell(self, name, info, where, spell, deps, encounters):
+        """D45: a registered spell whose effect is an Encounter ability_cast rule. The monster keeps the cast and its schedule;
+        the Ability names the Encounter instead of carrying effects."""
+        key = f'canary:ability/spell/{slug(name)}'
+        encounter_key = encounters[0].split(' ', 1)[0]
+        flags = info['spell_calls']
+        if key not in {a['identity']['key'] for a in deps['abilities']}:
+            deps['abilities'].append({'identity': ident(key), 'kind': 'spell', 'range_tiles': int(flags.get('range', [0])[0] or 0),
+                                      'needs_target': bool(flags.get('needTarget', [False])[0]),
+                                      'needs_direction': bool(flags.get('needDirection', [False])[0]),
+                                      'encounter': ref('Encounter', encounter_key)})
+        self.pending_definitions.add(('Encounter', encounter_key))
+        notes = [f'{where}: its effect is the ability_cast rule of Encounter {", ".join(encounters)}, which owns the fight state '
+                 'the script reads; the monster keeps only the cast and its schedule (D45).']
+        return self.spell_result(key, spell, notes, False)
 
     def spell_result(self, key, spell, notes, uses_magnitude):
         extras = {}
